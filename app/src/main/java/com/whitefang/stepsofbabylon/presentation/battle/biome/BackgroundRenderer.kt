@@ -14,7 +14,7 @@ class BackgroundRenderer(
     private data class Particle(var x: Float, var y: Float, val alpha: Float, val size: Float)
 
     private val skyPaint = Paint().apply {
-        shader = LinearGradient(0f, 0f, 0f, height * 0.75f, theme.skyColorTop, theme.skyColorBottom, Shader.TileMode.CLAMP)
+        shader = LinearGradient(0f, 0f, 0f, height * 0.70f, theme.skyColorTop, theme.skyColorBottom, Shader.TileMode.CLAMP)
     }
     private val groundPaint = Paint().apply { color = theme.groundColor }
     private val particlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = theme.particleColor }
@@ -33,8 +33,9 @@ class BackgroundRenderer(
     }
 
     fun render(canvas: Canvas) {
-        canvas.drawRect(0f, 0f, width, height * 0.75f, skyPaint)
-        canvas.drawRect(0f, height * 0.75f, width, height, groundPaint)
+        val groundY = height * 0.70f
+        canvas.drawRect(0f, 0f, width, groundY, skyPaint)
+        canvas.drawRect(0f, groundY, width, height, groundPaint)
         for (p in particles) {
             particlePaint.alpha = (p.alpha * 255).toInt()
             canvas.drawCircle(p.x, p.y, p.size, particlePaint)
