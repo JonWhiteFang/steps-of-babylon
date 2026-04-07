@@ -36,7 +36,6 @@ import kotlin.math.pow
 fun InRoundUpgradeMenu(
     cash: Long,
     inRoundLevels: Map<UpgradeType, Int>,
-    workshopLevels: Map<UpgradeType, Int>,
     onPurchase: (UpgradeType) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -73,11 +72,9 @@ fun InRoundUpgradeMenu(
         // Upgrade list
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(upgrades) { type ->
-                val wsLevel = workshopLevels[type] ?: 0
-                val irLevel = inRoundLevels[type] ?: 0
-                val combinedLevel = wsLevel + irLevel
-                val maxed = type.config.maxLevel != null && combinedLevel >= type.config.maxLevel!!
-                val cost = if (maxed) 0L else ceil(type.config.baseCost * type.config.scaling.pow(combinedLevel)).toLong()
+                val level = inRoundLevels[type] ?: 0
+                val maxed = type.config.maxLevel != null && level >= type.config.maxLevel!!
+                val cost = if (maxed) 0L else ceil(type.config.baseCost * type.config.scaling.pow(level)).toLong()
                 val affordable = cash >= cost && !maxed
 
                 Row(
@@ -87,8 +84,7 @@ fun InRoundUpgradeMenu(
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(type.name.replace("_", " "), color = Color.White, fontSize = 13.sp)
-                        val levelText = if (wsLevel > 0) "Lv $combinedLevel ($wsLevel from Workshop)" else "Lv $combinedLevel"
-                        Text("$levelText · ${type.config.description}", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                        Text("Lv $level · ${type.config.description}", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
                     }
                     if (maxed) {
                         Text("MAX", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(end = 8.dp))

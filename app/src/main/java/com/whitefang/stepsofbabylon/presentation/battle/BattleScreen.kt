@@ -143,7 +143,6 @@ fun BattleScreen(
         if (state.showUpgradeMenu && roundActive) {
             Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 72.dp)) {
                 InRoundUpgradeMenu(cash = state.cash, inRoundLevels = state.inRoundLevels,
-                    workshopLevels = viewModel.workshopLevels,
                     onPurchase = viewModel::purchaseInRoundUpgrade, onDismiss = viewModel::toggleUpgradeMenu)
             }
         }

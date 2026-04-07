@@ -210,17 +210,15 @@ class BattleViewModel @Inject constructor(
 
     fun purchaseInRoundUpgrade(type: UpgradeType) {
         val eng = engine ?: return
-        val currentIrLevel = inRoundLevels[type] ?: 0
-        val wsLevel = workshopLevels[type] ?: 0
-        val combinedLevel = wsLevel + currentIrLevel
+        val currentLevel = inRoundLevels[type] ?: 0
         val maxLevel = type.config.maxLevel
-        if (maxLevel != null && combinedLevel >= maxLevel) return
-        val cost = calculateCost(type, combinedLevel)
+        if (maxLevel != null && currentLevel >= maxLevel) return
+        val cost = calculateCost(type, currentLevel)
         val freeLevel = workshopLevels[UpgradeType.FREE_UPGRADES] ?: 0
         val freeChance = min(freeLevel * 0.01, 0.25)
         val isFree = freeChance > 0 && Random.nextDouble() < freeChance
         if (!isFree && !eng.spendCash(cost)) return
-        inRoundLevels[type] = currentIrLevel + 1
+        inRoundLevels[type] = currentLevel + 1
         resolvedStats = resolveStats(workshopLevels, inRoundLevels)
         eng.updateZigguratStats(resolvedStats)
         eng.soundManager?.play(com.whitefang.stepsofbabylon.presentation.audio.SoundEffect.UPGRADE_PURCHASE)
