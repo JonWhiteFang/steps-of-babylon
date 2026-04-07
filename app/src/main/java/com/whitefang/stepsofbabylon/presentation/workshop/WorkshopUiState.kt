@@ -10,6 +10,7 @@ data class UpgradeDisplayInfo(
     val isMaxed: Boolean,
     val canAfford: Boolean,
     val description: String,
+    val statValue: String = "",
 )
 
 data class WorkshopUiState(

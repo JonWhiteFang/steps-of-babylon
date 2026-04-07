@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
+import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
@@ -11,6 +12,7 @@ import com.whitefang.stepsofbabylon.domain.repository.WorkshopRepository
 import com.whitefang.stepsofbabylon.domain.usecase.CalculateUpgradeCost
 import com.whitefang.stepsofbabylon.domain.usecase.PurchaseUpgrade
 import com.whitefang.stepsofbabylon.domain.usecase.QuickInvest
+import com.whitefang.stepsofbabylon.domain.usecase.ResolveStats
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,6 +34,7 @@ class WorkshopViewModel @Inject constructor(
     private val calculateCost = CalculateUpgradeCost()
     private val purchaseUpgrade = PurchaseUpgrade(workshopRepository, playerRepository, calculateCost)
     private val quickInvest = QuickInvest(calculateCost)
+    private val resolveStats = ResolveStats()
 
     private val _selectedCategory = MutableStateFlow(UpgradeCategory.ATTACK)
     private val _processing = MutableStateFlow(false)
@@ -47,6 +50,7 @@ class WorkshopViewModel @Inject constructor(
         _userMessage,
     ) { upgrades, wallet, category, processing, message ->
         allUpgrades = upgrades
+        val stats = resolveStats(upgrades)
         val filtered = upgrades.filter { (type, _) -> type.category == category && type !in hiddenUpgrades }
         WorkshopUiState(
             upgrades = filtered.map { (type, level) ->
@@ -57,6 +61,7 @@ class WorkshopViewModel @Inject constructor(
                     type = type, level = level, cost = cost, isMaxed = isMaxed,
                     canAfford = !isMaxed && wallet.stepBalance >= cost,
                     description = type.config.description,
+                    statValue = statValueFor(type, stats),
                 )
             },
             stepBalance = wallet.stepBalance,
@@ -122,4 +127,25 @@ class WorkshopViewModel @Inject constructor(
     }
 
     fun clearMessage() { _userMessage.value = null }
+
+    private fun statValueFor(type: UpgradeType, s: ResolvedStats): String = when (type) {
+        UpgradeType.DAMAGE -> "%.1f dmg".format(s.damage)
+        UpgradeType.ATTACK_SPEED -> "%.2f/s".format(s.attackSpeed)
+        UpgradeType.CRITICAL_CHANCE -> "%.1f%%".format(s.critChance * 100)
+        UpgradeType.CRITICAL_FACTOR -> "%.1fx".format(s.critMultiplier)
+        UpgradeType.RANGE -> "%.0f range".format(s.range)
+        UpgradeType.HEALTH -> "%.0f HP".format(s.maxHealth)
+        UpgradeType.HEALTH_REGEN -> "%.1f/s".format(s.healthRegen)
+        UpgradeType.DEFENSE_PERCENT -> "%.1f%%".format(s.defensePercent * 100)
+        UpgradeType.DEFENSE_ABSOLUTE -> "%.0f block".format(s.defenseAbsolute)
+        UpgradeType.KNOCKBACK -> "%.1f force".format(s.knockbackForce)
+        UpgradeType.THORN_DAMAGE -> "%.0f%%".format(s.thornPercent * 100)
+        UpgradeType.LIFESTEAL -> "%.1f%%".format(s.lifestealPercent * 100)
+        UpgradeType.DAMAGE_PER_METER -> "%.0f%%/m".format(s.damagePerMeterBonus * 100)
+        UpgradeType.DEATH_DEFY -> "%.0f%%".format(s.deathDefyChance * 100)
+        UpgradeType.MULTISHOT -> "${s.multishotTargets} targets"
+        UpgradeType.BOUNCE_SHOT -> "${s.bounceCount} bounces"
+        UpgradeType.ORBS -> "${s.orbCount} orbs"
+        else -> ""
+    }
 }

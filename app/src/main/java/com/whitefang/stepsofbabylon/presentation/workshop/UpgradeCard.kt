@@ -85,6 +85,13 @@ fun UpgradeCard(info: UpgradeDisplayInfo, onClick: () -> Unit) {
                     fontWeight = FontWeight.Bold,
                     color = if (info.isMaxed) Gold else MaterialTheme.colorScheme.onSurface,
                 )
+                if (info.statValue.isNotEmpty()) {
+                    Text(
+                        text = info.statValue,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Gold,
+                    )
+                }
                 if (!info.isMaxed) {
                     Text(
                         text = "${info.cost} Steps",
