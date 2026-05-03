@@ -3,6 +3,7 @@ package com.whitefang.stepsofbabylon.presentation.battle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
+import com.whitefang.stepsofbabylon.data.local.DailyStepDao
 import com.whitefang.stepsofbabylon.domain.model.AdPlacement
 import com.whitefang.stepsofbabylon.domain.model.AdResult
 import com.whitefang.stepsofbabylon.domain.model.Biome
@@ -18,6 +19,7 @@ import com.whitefang.stepsofbabylon.domain.repository.RewardAdManager
 import com.whitefang.stepsofbabylon.domain.repository.CardRepository
 import com.whitefang.stepsofbabylon.domain.repository.UltimateWeaponRepository
 import com.whitefang.stepsofbabylon.domain.repository.WorkshopRepository
+import com.whitefang.stepsofbabylon.domain.usecase.AwardBattleSteps
 import com.whitefang.stepsofbabylon.domain.usecase.AwardWaveMilestone
 import com.whitefang.stepsofbabylon.domain.usecase.ActivateOverdrive
 import com.whitefang.stepsofbabylon.domain.usecase.ApplyCardEffects
@@ -50,6 +52,7 @@ class BattleViewModel @Inject constructor(
     private val uwRepository: UltimateWeaponRepository,
     private val cardRepository: CardRepository,
     private val dailyMissionDao: DailyMissionDao,
+    private val dailyStepDao: DailyStepDao,
     private val milestoneNotificationManager: MilestoneNotificationManager,
     private val rewardAdManager: RewardAdManager,
 ) : ViewModel() {
@@ -64,6 +67,7 @@ class BattleViewModel @Inject constructor(
     private val activateOverdriveUseCase = ActivateOverdrive()
     private val awardWaveMilestone = AwardWaveMilestone(playerRepository)
     private val applyCardEffects = ApplyCardEffects()
+    private val awardBattleSteps = AwardBattleSteps(playerRepository, dailyStepDao)
 
     var resolvedStats: ResolvedStats = ResolvedStats(); private set
     var workshopLevels: Map<UpgradeType, Int> = emptyMap(); private set
@@ -111,6 +115,7 @@ class BattleViewModel @Inject constructor(
         this.engine = engine; this.surfaceView = surfaceView
         engine.setStats(resolvedStats); engine.initUWs(equippedWeapons)
         engine.secondWindHpPercent = cardSecondWind; engine.cashBonusPercent = cardCashBonus
+        wireStepRewardCallback(engine)
         roundEnded = false
         viewModelScope.launch {
             while (true) {
@@ -151,7 +156,8 @@ class BattleViewModel @Inject constructor(
             _uiState.update {
                 it.copy(isPaused = false, showUpgradeMenu = false, showOverdriveMenu = false,
                     roundEndState = RoundEndState(wave, eng.totalEnemiesKilled, eng.totalCashEarned,
-                        eng.elapsedTimeSeconds, result.isNewRecord, result.previousBest, newTier, psAwarded, adRemoved = it.adRemoved))
+                        eng.elapsedTimeSeconds, result.isNewRecord, result.previousBest, newTier, psAwarded,
+                        stepsEarned = it.stepsEarnedThisRound, adRemoved = it.adRemoved))
             }
             // Update daily mission progress for battle missions
             try {
@@ -179,6 +185,29 @@ class BattleViewModel @Inject constructor(
 
     fun quitRound() { val eng = engine ?: return; eng.roundOver = true; endRound() }
 
+    /**
+     * Wires the engine's per-kill Step reward callback to [awardBattleSteps]
+     * and forwards credited amounts into [BattleUiState]. Exposed at package
+     * visibility so tests can exercise the callback without starting the
+     * polling loop.
+     */
+    @androidx.annotation.VisibleForTesting
+    internal fun wireStepRewardCallback(engine: GameEngine) {
+        engine.onStepReward = { amount ->
+            viewModelScope.launch {
+                val credited = awardBattleSteps(amount)
+                if (credited > 0L) {
+                    _uiState.update { s ->
+                        s.copy(
+                            stepsEarnedThisRound = s.stepsEarnedThisRound + credited,
+                            stepBalance = s.stepBalance + credited,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     fun playAgain() {
         roundEnded = false; inRoundLevels.clear()
         resolvedStats = resolveStats(workshopLevels)
@@ -193,6 +222,11 @@ class BattleViewModel @Inject constructor(
         engine?.secondWindHpPercent = cardSecondWind; engine?.cashBonusPercent = cardCashBonus
         val eng = engine ?: return; val sv = surfaceView ?: return
         startPollingEngine(eng, sv)
+    }
+
+    override fun onCleared() {
+        engine?.onStepReward = null
+        super.onCleared()
     }
 
     fun activateOverdrive(type: OverdriveType) {

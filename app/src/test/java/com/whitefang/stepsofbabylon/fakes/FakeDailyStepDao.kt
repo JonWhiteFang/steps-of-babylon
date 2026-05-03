@@ -27,4 +27,14 @@ class FakeDailyStepDao : DailyStepDao {
 
     override suspend fun sumCreditedSteps(startDate: String, endDate: String): Long =
         data.value.values.filter { it.date in startDate..endDate }.sumOf { it.creditedSteps }
+
+    override suspend fun getBattleStepsEarned(date: String): Long =
+        data.value[date]?.battleStepsEarned ?: 0L
+
+    override suspend fun incrementBattleSteps(date: String, delta: Long) {
+        val existing = data.value[date]
+        val updated = existing?.copy(battleStepsEarned = existing.battleStepsEarned + delta)
+            ?: DailyStepRecordEntity(date = date, battleStepsEarned = delta)
+        data.value = data.value + (date to updated)
+    }
 }

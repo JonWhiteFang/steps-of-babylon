@@ -23,6 +23,7 @@ object DatabaseModule {
         // Downgrades (dev/QA only) reset gracefully; upgrades require explicit Migration objects.
         return Room.databaseBuilder(context, AppDatabase::class.java, "steps_of_babylon.db")
             .openHelperFactory(factory)
+            .addMigrations(*AppMigrations.ALL)
             .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
             .build()
     }

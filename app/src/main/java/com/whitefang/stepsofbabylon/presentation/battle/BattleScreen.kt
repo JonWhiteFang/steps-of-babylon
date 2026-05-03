@@ -77,6 +77,14 @@ fun BattleScreen(
             Text("Wave ${state.currentWave} · ${state.enemyCount} enemies", color = Color.White, style = MaterialTheme.typography.titleMedium)
             Text(state.wavePhase.lowercase().replaceFirstChar { it.uppercase() }, color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
             Text("$${state.cash}", color = Color(0xFFD4A843), style = MaterialTheme.typography.titleSmall)
+            if (state.stepsEarnedThisRound > 0) {
+                Text(
+                    "👟 +${state.stepsEarnedThisRound} Steps",
+                    color = Color(0xFF4CAF50),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.semantics { contentDescription = "Battle Steps earned this round: ${state.stepsEarnedThisRound}" },
+                )
+            }
             state.activeOverdriveType?.let { type ->
                 Text("⚡ ${type.name} ${state.overdriveTimeRemaining.toInt()}s", color = Color(0xFFFF9800), style = MaterialTheme.typography.labelMedium)
             }

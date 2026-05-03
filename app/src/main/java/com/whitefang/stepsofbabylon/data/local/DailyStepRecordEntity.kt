@@ -13,4 +13,10 @@ data class DailyStepRecordEntity(
     val escrowSyncCount: Int = 0,
     val activityMinutes: Map<String, Int> = emptyMap(),
     val stepEquivalents: Long = 0,
+    /**
+     * Steps earned from battle enemy kills this day. Tracked separately from
+     * [creditedSteps] (which is walking-only) and enforced against the
+     * per-day battle-Step cap in AwardBattleSteps. Added in DB v8.
+     */
+    val battleStepsEarned: Long = 0,
 )

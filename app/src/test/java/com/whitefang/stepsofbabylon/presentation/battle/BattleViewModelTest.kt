@@ -2,6 +2,7 @@ package com.whitefang.stepsofbabylon.presentation.battle
 
 import com.whitefang.stepsofbabylon.data.BiomePreferences
 import com.whitefang.stepsofbabylon.domain.model.*
+import com.whitefang.stepsofbabylon.domain.usecase.AwardBattleSteps
 import com.whitefang.stepsofbabylon.fakes.*
 import com.whitefang.stepsofbabylon.service.MilestoneNotificationManager
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +30,8 @@ class BattleViewModelTest {
     private lateinit var uwRepo: FakeUltimateWeaponRepository
     private lateinit var cardRepo: FakeCardRepository
     private lateinit var adManager: FakeRewardAdManager
+    private lateinit var dailyStepDao: FakeDailyStepDao
+    private lateinit var awardBattleSteps: AwardBattleSteps
     private val biomePreferences = mock<BiomePreferences>()
     private val dailyMissionDao = mock<com.whitefang.stepsofbabylon.data.local.DailyMissionDao>()
     private val milestoneNotificationManager = mock<MilestoneNotificationManager>()
@@ -42,6 +45,8 @@ class BattleViewModelTest {
         uwRepo = FakeUltimateWeaponRepository()
         cardRepo = FakeCardRepository()
         adManager = FakeRewardAdManager()
+        dailyStepDao = FakeDailyStepDao()
+        awardBattleSteps = AwardBattleSteps(playerRepo, dailyStepDao)
         whenever(biomePreferences.hasSeenBiome(any())).thenReturn(true)
         whenever(dailyMissionDao.getByDateOnce(any())).thenReturn(emptyList())
     }
@@ -51,7 +56,7 @@ class BattleViewModelTest {
 
     private fun createVm() = BattleViewModel(
         workshopRepo, playerRepo, biomePreferences, uwRepo, cardRepo,
-        dailyMissionDao, milestoneNotificationManager, adManager,
+        dailyMissionDao, dailyStepDao, milestoneNotificationManager, adManager,
     )
 
     @Test
@@ -146,5 +151,64 @@ class BattleViewModelTest {
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
         assertTrue(vm.uiState.value.adRemoved)
+    }
+
+    @Test
+    fun `onStepReward credits wallet and updates stepsEarnedThisRound`() = runTest(dispatcher) {
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val engine = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine()
+        vm.wireStepRewardCallback(engine)
+        val initialBalance = playerRepo.profile.value.stepBalance
+
+        repeat(5) { engine.onStepReward?.invoke(1L) }
+        advanceUntilIdle()
+
+        assertEquals(5L, vm.uiState.value.stepsEarnedThisRound)
+        assertEquals(initialBalance + 5L, playerRepo.profile.value.stepBalance)
+        assertEquals(initialBalance + 5L, vm.uiState.value.stepBalance)
+    }
+
+    @Test
+    fun `onStepReward no-ops when daily cap already exhausted`() = runTest(dispatcher) {
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        // Exhaust today's cap up front.
+        dailyStepDao.incrementBattleSteps(
+            java.time.LocalDate.now().toString(),
+            AwardBattleSteps.DAILY_BATTLE_STEP_CAP,
+        )
+        val engine = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine()
+        vm.wireStepRewardCallback(engine)
+        val initialBalance = playerRepo.profile.value.stepBalance
+
+        engine.onStepReward?.invoke(10L)
+        advanceUntilIdle()
+
+        assertEquals(0L, vm.uiState.value.stepsEarnedThisRound)
+        assertEquals(initialBalance, playerRepo.profile.value.stepBalance)
+    }
+
+    @Test
+    fun `onStepReward partial credit when remaining is less than reward`() = runTest(dispatcher) {
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        // 3 remaining in the cap.
+        dailyStepDao.incrementBattleSteps(
+            java.time.LocalDate.now().toString(),
+            AwardBattleSteps.DAILY_BATTLE_STEP_CAP - 3L,
+        )
+        val engine = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine()
+        vm.wireStepRewardCallback(engine)
+        val initialBalance = playerRepo.profile.value.stepBalance
+
+        engine.onStepReward?.invoke(10L)
+        advanceUntilIdle()
+
+        assertEquals(3L, vm.uiState.value.stepsEarnedThisRound)
+        assertEquals(initialBalance + 3L, playerRepo.profile.value.stepBalance)
     }
 }

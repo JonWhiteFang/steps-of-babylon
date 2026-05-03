@@ -67,6 +67,7 @@ class GameEngine {
     @Volatile var totalCashEarned: Long = 0L; private set
     @Volatile var roundOver: Boolean = false
     @Volatile var totalEnemiesKilled: Int = 0; private set
+    @Volatile var totalStepsEarned: Long = 0L; private set
     @Volatile var elapsedTimeSeconds: Float = 0f; private set
     @Volatile var activeOverdrive: OverdriveType? = null; private set
     @Volatile var overdriveTimeRemaining: Float = 0f; private set
@@ -75,6 +76,13 @@ class GameEngine {
     @Volatile var cashBonusPercent: Double = 0.0
     private var preOverdriveStats: ResolvedStats? = null
     private var fortuneMultiplier: Double = 1.0
+
+    /**
+     * Invoked on the game-loop thread every time a kill grants a non-zero
+     * step reward. The listener must not block the loop — forward to a
+     * coroutine scope. Set to `null` to unsubscribe (e.g. in ViewModel.onCleared).
+     */
+    @Volatile var onStepReward: ((Long) -> Unit)? = null
 
     data class UWState(val type: UltimateWeaponType, val level: Int, var cooldownRemaining: Float = 0f, var effectTimeRemaining: Float = 0f)
     val uwStates = mutableListOf<UWState>()
@@ -97,7 +105,7 @@ class GameEngine {
         screenWidth = width; screenHeight = height
         entities.clear(); pendingAdd.clear()
         cash = 0L; totalCashEarned = 0L; roundOver = false
-        totalEnemiesKilled = 0; elapsedTimeSeconds = 0f
+        totalEnemiesKilled = 0; totalStepsEarned = 0L; elapsedTimeSeconds = 0f
         activeOverdrive = null; overdriveTimeRemaining = 0f; preOverdriveStats = null; fortuneMultiplier = 1.0
         secondWindUsed = false
         uwStates.clear(); chronoActive = false; goldenZigActive = false; preGoldenStats = null
@@ -546,6 +554,24 @@ class GameEngine {
             if (enemy.enemyType == EnemyType.BOSS && !reducedMotion) {
                 fx.screenShake.trigger(8f, 0.3f)
             }
+        }
+
+        // Battle Step reward — flat per enemy type, independent of multipliers.
+        // Actual wallet credit and cap enforcement happens in the ViewModel via
+        // the onStepReward callback; the engine only emits the raw reward and
+        // spawns a floating '+N Step' indicator.
+        val stepReward = EnemyScaler.stepReward(enemy.enemyType)
+        if (stepReward > 0L) {
+            totalStepsEarned += stepReward
+            onStepReward?.invoke(stepReward)
+            fx?.addEffect(
+                FloatingText(
+                    x = enemy.x,
+                    y = enemy.y + 24f,
+                    text = "+$stepReward Step",
+                    color = FloatingText.STEP_COLOR,
+                )
+            )
         }
 
         if (enemy.enemyType == EnemyType.SCATTER) {

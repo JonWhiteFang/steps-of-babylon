@@ -72,11 +72,23 @@ fun PostRoundOverlay(
                     Text("💎 +${state.powerStonesAwarded} Power Stones", style = MaterialTheme.typography.titleMedium, color = Color(0xFF9C27B0))
                 }
 
+                if (state.stepsEarned > 0) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "👟 +${state.stepsEarned} Steps",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color(0xFF4CAF50),
+                    )
+                }
+
                 Spacer(Modifier.height(16.dp))
 
                 StatRow("Wave Reached", "${state.waveReached}")
                 StatRow("Enemies Killed", "${state.enemiesKilled}")
                 StatRow("Cash Earned", "$${state.totalCashEarned}")
+                if (state.stepsEarned > 0) {
+                    StatRow("Steps Earned", "+${state.stepsEarned}")
+                }
                 StatRow("Time Survived", "%d:%02d".format(minutes, seconds))
 
                 Spacer(Modifier.height(24.dp))

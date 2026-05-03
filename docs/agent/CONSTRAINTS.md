@@ -23,6 +23,7 @@
 - Health Connect cross-validation: graduated response (4 offense levels: escrow → faster discard → cap at HC → cap minus 10%).
 - Activity minute validation: rejects micro-sessions (<2min), truncates extreme (>4hr), caps at 5 activity types/day.
 - Per-minute overlap deduction: sensor steps ≥50/min → credit only sensor steps, not activity minutes.
+- Battle Steps cap: 2,000/day, tracked on `DailyStepRecordEntity.battleStepsEarned` and enforced by `AwardBattleSteps`. Separate from the 50k walking ceiling — never additive. Flat per-enemy-type only; NOT multiplied by Fortune overdrive, Cash Bonus upgrade, or Golden Ziggurat UW. See ADR-0003.
 - Step counting must work reliably when app is backgrounded or killed.
 
 ## Security

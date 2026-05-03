@@ -1389,3 +1389,61 @@ Full codebase documentation audit after R01–R05 remediation. Find and fix stal
 - Hybrid reactive approach for economy dashboard: live profile flow for balances, one-shot refresh for weekly/login data.
 
 **What remains:** Plan R2 fully complete. Plan 31 (Play Console & Store Publication) is unblocked.
+
+## 2026-05-03 — Feature: Battle Step Rewards (ADR-0003)
+
+**Trigger:** Player-facing feature request. "Killing enemies in a round gives steps as a reward, to add incentive to playing."
+
+**Scope:** Add Steps as an enemy-kill reward separate from the walking pipeline, with a per-day cap, running HUD counter, floating +N Step text on kill, and a Round End summary line item.
+
+**Design decisions:** See ADR-0003.
+- Small supplement (BASIC/FAST/SCATTER=1, RANGED=2, TANK=3, BOSS=10). ~350–550 Steps per typical round.
+- 2,000 battle-Steps/day cap, tracked on `DailyStepRecordEntity.battleStepsEarned`. Separate from the 50k walking ceiling (never additive).
+- Flat per-enemy-type rewards — NOT multiplied by Fortune overdrive, Cash Bonus upgrade, or Golden Ziggurat UW. Anti-cheat-predictable.
+- Credit immediately on each kill via callback → coroutine → use case (game loop must not suspend).
+- Room v7 → v8 migration: first explicit `Migration` object in the project (stored in new `data/local/Migrations.kt`).
+
+**What was done (9 tasks):**
+1. Added `EnemyScaler.stepReward(type)` with agreed constants. `EnemyScalerTest` extended with per-type assertions + positive-for-all-types regression.
+2. Added `battleStepsEarned: Long = 0` to `DailyStepRecordEntity`. Bumped `@Database(version = 7)` → `8`. Created `data/local/Migrations.kt` with `MIGRATION_7_8`. Wired `.addMigrations(*AppMigrations.ALL)` in `DatabaseModule`. Added DAO methods `getBattleStepsEarned(date)` (COALESCE→0) and `incrementBattleSteps(date, delta)` (UPSERT via `INSERT ... ON CONFLICT(date) DO UPDATE`). Updated `FakeDailyStepDao`.
+3. Created `domain/usecase/AwardBattleSteps.kt` with `DAILY_BATTLE_STEP_CAP = 2_000L`. Logic: skip if amount≤0; compute remaining from DAO; credit `min(amount, remaining)` via `addSteps` + `incrementBattleSteps`. `AwardBattleStepsTest` — 6 tests covering full/partial/exhausted/rollover/negative/dao-amount.
+4. Wired `GameEngine`: `@Volatile totalStepsEarned: Long = 0`, `@Volatile onStepReward: ((Long) -> Unit)? = null`. Reset in `init()`. In `handleEnemyDeath`, compute `EnemyScaler.stepReward(enemy.enemyType)`, invoke callback, spawn green `FloatingText` at `y + 24f`. Extended `FloatingText` with `color` parameter (default unchanged yellow-gold, new `STEP_COLOR = 0xFF4CAF50`).
+5. Injected `AwardBattleSteps` into `BattleViewModel`. Added `stepsEarnedThisRound: Long = 0` to `BattleUiState`, `stepsEarned: Long = 0` to `RoundEndState`. Extracted callback wiring into `@VisibleForTesting internal fun wireStepRewardCallback(engine)` — prevents test deadlock with the polling loop. Override `onCleared()` nulls the callback on the engine. `BattleViewModelTest` extended with 3 new tests.
+6. Added HUD Step counter (green `👟 +N Steps`) in `BattleScreen.kt`'s top-left column, shown only when `stepsEarnedThisRound > 0`. Includes `contentDescription` for accessibility.
+7. Added green "Steps" banner + "Steps Earned" StatRow in `PostRoundOverlay.kt`, shown when `stepsEarned > 0`. `BattleViewModel.endRound()` populates `RoundEndState.stepsEarned` from `_uiState.value.stepsEarnedThisRound` (capped credited amount).
+8. Created ADR-0003. Updated `STATE.md` (feature status, DB v8), `CONSTRAINTS.md` (new anti-cheat invariant), appended this RUN_LOG entry.
+9. Integration — see test/build results below.
+
+**Test results:** `./run-gradle.sh test` — BUILD SUCCESSFUL, **412 JVM tests, 0 failures** (was 401, +11 new). `./run-gradle.sh assembleDebug` — BUILD SUCCESSFUL. Room schema v8 exported at `app/schemas/com.whitefang.stepsofbabylon.data.local.AppDatabase/8.json` with `battleStepsEarned INTEGER NOT NULL` column.
+
+**Bug caught during verification:** Initial build failed with Hilt `MissingBinding` error because I had added `AwardBattleSteps` to `BattleViewModel`'s constructor. Project convention (verified across all 32 existing use cases) is that domain use cases are **instantiated inline inside ViewModels**, not injected via Hilt. Fixed by:
+1. Removed `AwardBattleSteps` from constructor; added `DailyStepDao` instead (already provided by `DatabaseModule`).
+2. Construct `private val awardBattleSteps = AwardBattleSteps(playerRepository, dailyStepDao)` inline, matching the pattern used by `UpdateBestWave`, `AwardWaveMilestone`, `ApplyCardEffects`, etc.
+3. Updated `BattleViewModelTest.createVm()` to pass `dailyStepDao` instead of `awardBattleSteps`.
+
+After the fix, tests pass on first try and assembleDebug is clean.
+
+**Files changed:**
+- `app/src/main/java/com/whitefang/stepsofbabylon/data/local/DailyStepRecordEntity.kt`
+- `app/src/main/java/com/whitefang/stepsofbabylon/data/local/AppDatabase.kt`
+- `app/src/main/java/com/whitefang/stepsofbabylon/data/local/Migrations.kt` (new)
+- `app/src/main/java/com/whitefang/stepsofbabylon/data/local/DailyStepDao.kt`
+- `app/src/main/java/com/whitefang/stepsofbabylon/di/DatabaseModule.kt`
+- `app/src/main/java/com/whitefang/stepsofbabylon/domain/usecase/AwardBattleSteps.kt` (new)
+- `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/engine/EnemyScaler.kt`
+- `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/engine/GameEngine.kt`
+- `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/effects/FloatingText.kt`
+- `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/BattleUiState.kt`
+- `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/BattleViewModel.kt`
+- `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/BattleScreen.kt`
+- `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/ui/PostRoundOverlay.kt`
+- `app/src/test/java/com/whitefang/stepsofbabylon/presentation/battle/engine/EnemyScalerTest.kt`
+- `app/src/test/java/com/whitefang/stepsofbabylon/domain/usecase/AwardBattleStepsTest.kt` (new)
+- `app/src/test/java/com/whitefang/stepsofbabylon/fakes/FakeDailyStepDao.kt`
+- `app/src/test/java/com/whitefang/stepsofbabylon/presentation/battle/BattleViewModelTest.kt`
+- `docs/agent/DECISIONS/ADR-0003-battle-step-rewards.md` (new)
+- `docs/agent/STATE.md`
+- `docs/agent/CONSTRAINTS.md`
+- `docs/agent/RUN_LOG.md`
+
+**What remains:** Plan 31 (Play Console & Store Publication).

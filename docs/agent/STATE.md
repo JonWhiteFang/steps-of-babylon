@@ -1,14 +1,15 @@
 # Project State
 
 ## Current objective
-- Plan R2: Second remediation pass — all 12 sub-plans complete.
+- Battle Step Rewards feature complete — kills grant Steps with a 2k/day cap (ADR-0003). DB schema v8.
 - Plan 31: Play Console & Store Publication — unblocked, ready to start.
 
 ## What works
 - Plans 01–30 + 10b: All foundation layers, battle system, full round lifecycle, tier/biome progression, all progression systems, notifications & widget, anti-cheat, monetization (stub), polish & VFX, balancing, testing, release prep complete.
 - Plan R (Remediation): All 12 sub-plans (R01–R12) complete.
 - Plan R2 (Remediation 2): All 12 sub-plans (R2-01–R2-12) complete.
-- DB version 7: 12 entities. 401 JVM tests, all green. Release APK builds (26MB).
+- Battle Step Rewards (ADR-0003): enemy kills grant flat per-type Steps (BASIC/FAST/SCATTER=1, RANGED=2, TANK=3, BOSS=10), capped at 2,000/day via `AwardBattleSteps` against `DailyStepRecordEntity.battleStepsEarned`. Wired through `GameEngine.onStepReward` callback, surfaced as HUD counter + green '+N Step' FloatingText + Round End line item.
+- DB version 8: 12 entities, first explicit Room Migration (v7→v8) registered. **412 JVM tests**, all green. Release APK builds (26MB).
 
 ## Known issues / debt
 - Billing/ads use stub implementations — real SDK integration deferred to Plan 31.
@@ -40,6 +41,7 @@
 - `app/build.gradle.kts` — signing config, version 1.0.0.
 
 ## References
+- ADR-0003 (Battle Step Rewards): docs/agent/DECISIONS/ADR-0003-battle-step-rewards.md
 - Remediation plan (1st review): docs/plans/plan-R-remediation.md
 - Remediation plan (2nd review): docs/plans/plan-R2-remediation.md
 - External review (1st): docs/external-reviews/REPO_ANALYSIS_BUGS_AND_UX.md
@@ -47,5 +49,5 @@
 - Master plan: docs/plans/master-plan.md
 - Balance report: docs/balance/balance-report.md
 - Release docs: docs/release/
-- Critical path: 01→…→30→R→R2→31
-- Last run: 2026-03-13 (R2-06 through R2-12 complete)
+- Critical path: 01→…→30→R→R2→ Battle Step Rewards →31
+- Last run: 2026-05-03 (Battle Step Rewards feature complete, DB v8)
