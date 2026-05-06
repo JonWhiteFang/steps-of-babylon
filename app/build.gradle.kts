@@ -110,6 +110,7 @@ dependencies {
     // Testing
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testRuntimeOnly(libs.junit.vintage.engine)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.robolectric)
