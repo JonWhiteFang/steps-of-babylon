@@ -127,12 +127,14 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     pendingNavigation.collect { route ->
                         if (route != null) {
-                            when (route) {
-                                "supplies" -> navController.navigate(Screen.Supplies.route)
-                                "workshop" -> navController.navigate(Screen.Workshop.route)
-                                "battle" -> navController.navigate(Screen.Battle.route)
-                                "missions" -> navController.navigate(Screen.Missions.route)
-                            }
+                            // Generic deep-link handler for argument-free routes
+                            // (currently all 12). Unknown route strings fall
+                            // through to the start destination silently rather
+                            // than crashing; this matches the prior 4-route
+                            // `when` behaviour for unmapped values.
+                            Screen.fromRoute(route)
+                                ?.takeIf { it.route in Screen.argumentFreeRoutes }
+                                ?.let { navController.navigate(it.route) }
                             pendingNavigation.value = null
                         }
                     }
