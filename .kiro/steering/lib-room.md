@@ -64,7 +64,7 @@ class Converters {
 
 - Auto migrations: `@Database(autoMigrations = [@AutoMigration(from = 1, to = 2)])`
 - Manual migrations for complex changes (column renames, data transforms)
-- Current schema version: 2
+- Current schema version: 8
 
 ## Flow Integration
 
@@ -86,7 +86,7 @@ class PlayerRepositoryImpl @Inject constructor(
 
 - Entity files: `*Entity.kt` in `data/local/`
 - DAO files: `*Dao.kt` in `data/local/`
-- Database: `AppDatabase.kt` in `data/local/` (9 entities, 9 DAOs)
+- Database: `AppDatabase.kt` in `data/local/` (12 entities, 12 DAOs)
 - Room is the single source of truth for all game state
 - Player profile uses single-row pattern (id=1)
 - Prefer `@Upsert` over `@Insert(onConflict = REPLACE)`

@@ -92,6 +92,7 @@ Historical step data, one row per day.
 | escrowSyncCount | Int | Number of sync attempts for escrow resolution |
 | activityMinutes | String (JSON) | Map<ActivityType, Int> |
 | stepEquivalents | Long | From Activity Minute Parity |
+| battleStepsEarned | Long | Steps credited from enemy kills today; capped at 2,000/day. Separate from the 50k walking ceiling. See ADR-0003. |
 
 ### WalkingEncounter
 
@@ -208,13 +209,14 @@ Each entity gets its own DAO:
 - Write manual migrations for complex changes (column renames, data transforms)
 - Version numbering: increment by 1 per plan that touches the schema
 - Test migrations with `MigrationTestHelper` in instrumented tests
-- Current schema version: 7
+- Current schema version: 8
 - v1→v2: Added `highestUnlockedTier` column to `player_profile` (Plan 13). Uses `fallbackToDestructiveMigration` during development.
 - v2→v3: Added `labSlotCount` column to `player_profile` (Plan 16). Uses `fallbackToDestructiveMigration` during development.
 - v3→v4: Added `WeeklyChallengeEntity`, `DailyLoginEntity`, streak fields on `player_profile` (Plan 20). Uses `fallbackToDestructiveMigration`.
 - v4→v5: Added `MilestoneEntity`, `DailyMissionEntity` (Plan 21). Uses `fallbackToDestructiveMigration`.
 - v5→v6: Added lifetime currency counters and battle stats to `player_profile` (Plan 22). Uses `fallbackToDestructiveMigration`.
 - v6→v7: Added `CosmeticEntity`, monetization fields on `player_profile` (adRemoved, seasonPassActive, seasonPassExpiry, freeLabRushUsedToday, freeCardPackAdUsedToday) (Plan 26). Uses `fallbackToDestructiveMigration`.
+- v7→v8: Added `battleStepsEarned` column to `daily_step_record` (Battle Step Rewards, ADR-0003). First explicit `Migration` object (`MIGRATION_7_8` in `data/local/Migrations.kt`); `fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)` retained for dev/QA downgrades only.
 
 ## Type Converters
 

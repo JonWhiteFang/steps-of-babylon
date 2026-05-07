@@ -133,7 +133,7 @@ All in `domain/model/`:
 | `di/HealthConnectModule.kt` | Hilt module: Health Connect organizational module |
 | `di/BillingModule.kt` | Hilt module: binds BillingManager to stub |
 | `di/AdModule.kt` | Hilt module: binds RewardAdManager to stub |
-| `data/local/AppDatabase.kt` | Room database (12 entities, 12 DAOs, version 7) |
+| `data/local/AppDatabase.kt` | Room database (12 entities, 12 DAOs, version 8) |
 | `data/local/DatabaseKeyManager.kt` | SQLCipher passphrase via Android Keystore |
 | `data/local/Converters.kt` | TypeConverters for `Map<Int,Int>` and `Map<String,Int>` (JSON) |
 | `data/sensor/StepSensorDataSource.kt` | TYPE_STEP_COUNTER wrapper, emits deltas via callbackFlow |

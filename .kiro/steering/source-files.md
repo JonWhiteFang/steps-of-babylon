@@ -17,7 +17,8 @@ di/AdModule.kt                     # Hilt: RewardAdManager stub binding
 ## Data Layer — Room
 
 ```
-data/local/AppDatabase.kt         # @Database: 12 entities, 12 DAOs, version 7, exportSchema=true
+data/local/AppDatabase.kt         # @Database: 12 entities, 12 DAOs, version 8, exportSchema=true
+data/local/Migrations.kt          # Registered Migration objects (v7→8 for battleStepsEarned, ADR-0003)
 data/local/Converters.kt          # @TypeConverters: Map<Int,Int> and Map<String,Int> via JSON
 data/local/DatabaseKeyManager.kt  # SQLCipher passphrase via Android Keystore
 data/local/PlayerProfileEntity.kt # Player profile entity (single row, id=1)
