@@ -184,3 +184,20 @@ Strictly optional — none block release:
 1. Add `junit-vintage-engine` as `testRuntimeOnly` (one-line change; raises run count 412 → 418, closes Area 4 cases 4.1, 4.2, 4.4). See fix path above.
 2. Or, port `RoomSchemaTest` + `StepWidgetProviderTest` to JUnit 5 + Robolectric extension so the suite is stylistically uniform.
 3. Keep the smoke-test documents (`README.md`, `test_plan.md`, this file) as the canonical pre-commit / pre-release confidence check; rerun them before each PR to Plan 31.
+
+---
+
+## Update 2026-05-07 — resolved in Phase A.2 (commit a336bce)
+
+The junit-vintage-engine gap documented above is **resolved**. The fix path this report recommended ("add `testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.11.4")` to `app/build.gradle.kts`") was landed exactly as described. After the change the test classpath audit (`./run-gradle.sh :app:dependencies --configuration debugUnitTestRuntimeClasspath | grep vintage`) now shows `junit-vintage-engine:5.11.4`.
+
+Additional workaround required on the three affected test classes beyond what this report predicted: each needed `@Config(sdk = [34], application = android.app.Application::class)`. Reasons:
+
+- `sdk = [34]` — Robolectric 4.14.1 does not yet support `compileSdk 36`. Selecting SDK 34 (matching the project's `minSdk`) keeps the Robolectric shadow set intact without requiring an SDK upgrade.
+- `application = android.app.Application::class` — the default Hilt-generated test Application tries to initialise `DatabaseModule`, which loads the SQLCipher native library. That fails with `UnsatisfiedLinkError` on the JVM test classpath. These three tests don't need Hilt injection, so using the plain Android `Application` sidesteps the whole DI graph.
+
+Test count recovery landed at **412 → 421 (+9)**, matching the prediction that the affected files carried 9 `@Test` methods (3 × 3), not 6 as originally thought — the smoke report's original scoping missed `DeepLinkRoutingTest.kt` as a third affected file.
+
+Subsequent Phase A work pushed tests to 453, and Phase B.1 raised that to 455. The junit-vintage setup has been stable across all additions since.
+
+**Remaining non-goals:** the long-term cleanup item ("port the three files to JUnit 5 + `@ExtendWith(RobolectricExtension::class)` for uniformity") is still deferred. The vintage engine solution is fine for v1.0.

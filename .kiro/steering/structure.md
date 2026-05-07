@@ -36,7 +36,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── store/          # StoreScreen, StoreViewModel
 │   ├── audio/          # SoundManager (SoundPool wrapper, 7 effects, volume/mute)
 │   └── ui/theme/       # Compose theme, colors (Material3)
-├── di/                 # Hilt modules (DatabaseModule, RepositoryModule, StepModule, HealthConnectModule, BillingModule, AdModule)
+├── di/                 # Hilt modules (DatabaseModule, RepositoryModule, StepModule, HealthConnectModule, BillingModule, AdModule, TimeModule)
 └── service/            # Foreground step-counting service, WorkManager workers, boot receiver
 
 app/src/test/java/com/whitefang/stepsofbabylon/
@@ -133,6 +133,9 @@ All in `domain/model/`:
 | `di/HealthConnectModule.kt` | Hilt module: Health Connect organizational module |
 | `di/BillingModule.kt` | Hilt module: binds BillingManager to stub |
 | `di/AdModule.kt` | Hilt module: binds RewardAdManager to stub |
+| `di/TimeModule.kt` | Hilt module: binds TimeProvider to SystemTimeProvider (B.1, RO-01) |
+| `domain/time/TimeProvider.kt` | Pure-Kotlin seam for wall-clock access; migrated 3 sites in B.1 PR 2 |
+| `data/time/SystemTimeProvider.kt` | Production TimeProvider: delegates to Instant.now() / LocalDate.now() |
 | `data/local/AppDatabase.kt` | Room database (12 entities, 12 DAOs, version 8) |
 | `data/local/DatabaseKeyManager.kt` | SQLCipher passphrase via Android Keystore |
 | `data/local/Converters.kt` | TypeConverters for `Map<Int,Int>` and `Map<String,Int>` (JSON) |

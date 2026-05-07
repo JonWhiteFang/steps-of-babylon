@@ -12,6 +12,7 @@ di/StepModule.kt                   # Hilt: SensorManager provider
 di/HealthConnectModule.kt          # Hilt: Health Connect organizational module
 di/BillingModule.kt                # Hilt: BillingManager stub binding
 di/AdModule.kt                     # Hilt: RewardAdManager stub binding
+di/TimeModule.kt                   # Hilt: TimeProvider → SystemTimeProvider (B.1)
 ```
 
 ## Data Layer — Room
@@ -92,6 +93,18 @@ data/MilestoneNotificationPreferences.kt           # SharedPreferences wrapper f
 data/NotificationPreferences.kt                   # SharedPreferences wrapper for 4 notification toggles
 data/SoundPreferences.kt                          # SharedPreferences wrapper for sound mute/volume
 data/anticheat/AntiCheatPreferences.kt            # SharedPreferences wrapper for anti-cheat counters + CV offense tracking
+```
+
+## Data Layer — Time
+
+```
+data/time/SystemTimeProvider.kt       # Production TimeProvider backed by Instant.now() / LocalDate.now(). @Singleton @Inject.
+```
+
+## Domain Layer — Time
+
+```
+domain/time/TimeProvider.kt           # Wall-clock seam: now() / today(). No Android imports. Introduced by B.1.
 ```
 
 ## Domain Layer — Models
@@ -299,6 +312,7 @@ fakes/FakeDailyMissionDao.kt                     # In-memory fake for DailyMissi
 fakes/FakeDailyLoginDao.kt                       # In-memory fake for DailyLoginDao
 fakes/FakeWeeklyChallengeDao.kt                  # In-memory fake for WeeklyChallengeDao
 fakes/FakeDailyStepDao.kt                        # In-memory fake for DailyStepDao with Flow support
+fakes/FakeTimeProvider.kt                        # Mutable TimeProvider with var fixedDate / fixedInstant (B.1)
 domain/usecase/CalculateUpgradeCostTest.kt        # Cost formula: baseCost × scaling^level, all 23 types
 domain/usecase/CanAffordUpgradeTest.kt            # Affordability checks against wallet
 domain/usecase/QuickInvestTest.kt                 # Cheapest affordable upgrade recommendation

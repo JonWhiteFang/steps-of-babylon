@@ -72,6 +72,7 @@ Hilt with KSP (not kapt). All modules in `di/`.
 - `HealthConnectModule` — Health Connect organizational module
 - `BillingModule` — binds BillingManager interface to stub implementation
 - `AdModule` — binds RewardAdManager interface to stub implementation
+- `TimeModule` — binds TimeProvider interface to SystemTimeProvider (B.1, RO-01: seam for midnight-boundary testability)
 
 ## Naming Conventions
 

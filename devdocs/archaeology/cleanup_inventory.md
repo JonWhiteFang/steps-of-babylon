@@ -300,6 +300,7 @@ These are code paths that **type-check, compile, and pass tests** but are not ac
 - **Risk level**: **Low** — fix is additive.
 - **Verification step**: `./run-gradle.sh :app:dependencies --configuration debugUnitTestRuntimeClasspath | grep -iE 'junit-vintage'` — confirm absence. Before/after test count check: today's 412 should rise to ~418–421 after the fix.
 - **Action**: **document** here (don't auto-fix in this phase). The one-line fix is `testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.11.4")` in `app/build.gradle.kts`. Alternatively: port all 3 files to JUnit 5 + `@ExtendWith(RobolectricExtension::class)` for uniformity — Phase 12 report §"Non-destructive fix path" covers both.
+- **Status (2026-05-07)**: **RESOLVED in Phase A.2** (commit `a336bce`). All 3 files recovered; medium-confidence DeepLinkRoutingTest inclusion was correct — test count rose from **412 to 421 (+9)**, matching the 3 × 3 estimate. One additional workaround beyond the one-line fix: each class needed `@Config(sdk = [34], application = android.app.Application::class)` to avoid (a) Robolectric 4.14.1 not supporting `compileSdk 36` and (b) the default Hilt test Application trying to load SQLCipher natively. JUnit 5 uniformity port is deferred.
 
 ### C2. `UltimateWeaponLoadoutTest.kt` — orphan if its class is removed
 

@@ -7,6 +7,17 @@ documentation syncs needed to prevent future drift. Every item
 cites its source in prior phases; nothing new is introduced here
 beyond ordering and per-item release-criticality classification.*
 
+**Progress status (2026-05-07).**
+
+- **Phase A — Foundation**: ✅ complete. All 9 tactical PRs merged on `main` (commits `a336bce..9f7f1d2`, plus memory update `8a730e6`). Test count rose 412 → 453. Exit criteria met per §A.10.
+- **Phase B — Core Refactoring**: in progress.
+  - **B.1 TimeProvider** ✅ complete. 3 commits (`85c53f0` interface, `d9a7b36` migration, `0eb5d26` FakeTimeProvider + tests). ADR-0004 FollowOnPipeline stub landed as `bcc35da`. Test count 453 → 455. Exit criteria met per §B.1.
+  - **B.2 @Transaction**, **B.3 endRound resilience**, **B.4 FollowOnPipeline**, **B.5 UpdateMissionProgress**: pending. Dependency graph in §B.6 still holds.
+- **Phase C — Gap Filling**: pending.
+- **Phase D — Integration & Polish**: pending.
+
+Code at HEAD now ahead of `a9d0386`; reconcile file-path citations against current `main` before executing any remaining item.
+
 **Source-of-truth.** Code at HEAD `a9d0386`. All file paths,
 dependencies, and risk labels are verifiable against code or
 against the prior phase write-ups.

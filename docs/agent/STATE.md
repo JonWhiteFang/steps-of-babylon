@@ -9,28 +9,30 @@
 - Battle Step Rewards (ADR-0003): per-enemy flat reward, 2k/day cap, partial credit, capped-kill FloatingText suppression (A.7).
 - DB version 8: 12 entities, first explicit Room Migration (v7→v8) registered. DB-file wipe recovery on decrypt failure (A.3).
 - Phase A foundation: junit-vintage-engine on classpath recovering 9 previously-hidden Robolectric tests (A.2); Season Pass bonus now paid from background ingestion (A.6); `Screen.fromRoute` + whitelist covers all 12 deep-link routes (A.5); `FakeBillingManager`/`FakeRewardAdManager` scriptable via `resultQueue` (A.4); dead `PlaceholderScreen` + `SupplyDropTrigger.STEP_BURST` removed (A.8, A.9); docs synced to schema v8 + 453-test state (A.1).
-- **453 JVM tests** green (+41 vs pre-Phase-A 412 baseline).
+- Phase B.1 foundation: `TimeProvider` abstraction landed with 3 narrow-migration sites (`AwardBattleSteps`, `BattleViewModel`, `MissionsViewModel`), `FakeTimeProvider` test double, and 2 midnight-boundary tests that were previously impossible against the real clock. ADR-0004 stub for FollowOnPipeline recorded.
+- **455 JVM tests** green (+43 vs pre-Phase-A 412 baseline).
 
 ## Known issues / debt
 - Billing/ads still use stub implementations — real SDK integration pending Phase C.5/C.6.
 - Cosmetic visual application not implemented (purchases disabled via R2-11 guard).
 - Sound assets are placeholder sine wave tones.
 - No app icon resources.
-- Phase B core refactors (TimeProvider, @Transaction for 5 multi-write sites, resilient endRound, FollowOnPipeline extraction, UpdateMissionProgress use case) are debt, not blockers.
+- Phase B core refactors (@Transaction for 5 multi-write sites, resilient endRound, FollowOnPipeline extraction, UpdateMissionProgress use case) are debt, not blockers. B.1 TimeProvider landed.
 
 ## Top priorities (next 5)
-1. Phase B.1 — TimeProvider abstraction (RO-01). Lowest risk, unblocks B.4 and future features.
-2. Phase B.2 PR 1 — `@Transaction` pattern proven on PurchaseUpgrade (RO-02).
-3. Phase C.2 — Cosmetic rendering pipeline PRs 1–2 (ship one cosmetic end-to-end).
+1. Phase B.2 PR 1 — `@Transaction` pattern proven on PurchaseUpgrade (RO-02). Pattern-proving PR for the other four multi-write sites.
+2. Phase B.3 — Resilient `BattleViewModel.endRound` (RO-03). Composes with B.2 PR 5.
+3. Phase C.2 — Cosmetic rendering pipeline PRs 1–2 (ship one cosmetic end-to-end). On the release critical path.
 4. Phase C.5 — Real Billing SDK swap (requires ADR-0005 first).
 5. Phase C.6 — Real Ad SDK swap (requires ADR-0006 first).
 
 ## Next actions (explicit order)
-1. Decide Phase B entry point: B.1 TimeProvider (cleanest) or jump straight to C.2 cosmetic pipeline (most user-facing).
-2. If B.1: write ADR-0004 for the narrow migration plan, then land PR 1 (new `TimeProvider` + `SystemTimeProvider` + Hilt binding).
-3. If C.2: pick the first cosmetic to ship (gap_analysis §5.2 proposes jade-ziggurat recolour) and wire its visual application path.
-4. When ready for release: Phase C.5 + C.6 SDK swaps gated by ADR-0005/0006.
-5. Finish with Phase D (Plan 31 Play Console setup, AAB upload, Firebase pre-launch).
+1. B.2 PR 1 — add an atomic @Transaction DAO method for PurchaseUpgrade (cost-check + deduct + increment in one call). Proves the pattern.
+2. B.3 PR 1 — extract `runEndRoundPersistence` from BattleViewModel and wrap each of the 3 writes in `runCatching { }.onFailure { Log.w }`. Composes with B.2 PR 5.
+3. B.2 PRs 2–4 (AwardBattleSteps, StepCrossValidator, ClaimMilestone @Transaction) — parallelisable once pattern lands.
+4. Open ADR-0005 (Billing SDK) and ADR-0006 (Ad SDK) stubs, then land C.5 + C.6.
+5. C.2 cosmetic pipeline can land anywhere after B.1 — pick first cosmetic (gap_analysis §5.2 proposes jade-ziggurat recolour).
+6. Finish with Phase D (Plan 31 Play Console setup, AAB upload, Firebase pre-launch).
 
 ## Do-not-touch / fragile zones
 - `domain/model/` — stable, all constants validated by balance tests.
@@ -67,4 +69,4 @@
 - Evolution (Phase 14, Part 1): devdocs/evolution/refactoring_opportunities.md — top-10 highest-ROI refactors (RO-01..RO-10) with current pattern, proposed abstraction, benefits, effort, risk+mitigation, ROI, first safe step, verification, rollback, non-goals
 - Evolution (Phase 14, Part 2): devdocs/evolution/implementation_roadmap.md — phased plan (A Foundation, B Core Refactoring, C Gap Filling, D Integration & Polish); each item has files / dependencies / success criteria / risk / verification / PR size / rollback / owner role
 - Critical path: 01→…→30→R→R2→ Battle Step Rewards → **Phase A done** → Phase B/C/D → 31
-- Last run: 2026-05-07 (Phase A Foundation — landed A.2/A.3/A.6/A.5/A.4/A.7/A.8/A.1/A.9 across 9 commits on main; test count 412 → 453, all green; see RUN_LOG entry dated 2026-05-07 for per-item details)
+- Last run: 2026-05-07 (Phase A Foundation + Phase B.1 TimeProvider — 10 Phase A commits pushed, 3 Phase B.1 commits + ADR-0004 stub pushed; test count 412 → 455, all green; Phase B.2 onwards pending)
