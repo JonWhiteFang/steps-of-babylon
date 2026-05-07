@@ -74,6 +74,79 @@ class StoreViewModelTest {
         assertEquals(150, playerRepo.profile.value.gems)
         assertTrue(vm.uiState.value.cosmetics.first().isOwned)
     }
+
+    // --- A.4: billing failure-mode coverage ---
+    // The ViewModel must forward every PurchaseResult variant without crashing
+    // and must always release the _purchasing spinner in a finally block so a
+    // failed purchase does not wedge the UI.
+
+    @Test
+    fun `purchaseGemPack Success calls billing with correct product`() = runTest(dispatcher) {
+        billingManager.nextResult = com.whitefang.stepsofbabylon.domain.model.PurchaseResult.Success
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.purchaseGemPack(com.whitefang.stepsofbabylon.domain.model.BillingProduct.GEM_PACK_SMALL)
+        advanceUntilIdle()
+
+        assertEquals(1, billingManager.purchases.size)
+        assertEquals(
+            com.whitefang.stepsofbabylon.domain.model.BillingProduct.GEM_PACK_SMALL,
+            billingManager.purchases.first(),
+        )
+        assertFalse(vm.uiState.value.isPurchasing, "spinner cleared after success")
+    }
+
+    @Test
+    fun `purchaseGemPack Error clears spinner without crashing`() = runTest(dispatcher) {
+        billingManager.nextResult = com.whitefang.stepsofbabylon.domain.model.PurchaseResult.Error("billing unavailable")
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.purchaseGemPack(com.whitefang.stepsofbabylon.domain.model.BillingProduct.GEM_PACK_SMALL)
+        advanceUntilIdle()
+
+        assertEquals(1, billingManager.purchases.size)
+        assertFalse(vm.uiState.value.isPurchasing, "spinner must release even on Error")
+    }
+
+    @Test
+    fun `purchaseAdRemoval Error does not toggle adRemoved`() = runTest(dispatcher) {
+        billingManager.nextResult = com.whitefang.stepsofbabylon.domain.model.PurchaseResult.Error("network")
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.purchaseAdRemoval()
+        advanceUntilIdle()
+
+        assertFalse(playerRepo.profile.value.adRemoved, "adRemoved should not flip on failed purchase")
+        assertEquals(
+            com.whitefang.stepsofbabylon.domain.model.BillingProduct.AD_REMOVAL,
+            billingManager.purchases.first(),
+        )
+    }
+
+    @Test
+    fun `sequential Error then Success invocations both reach billing`() = runTest(dispatcher) {
+        // Drives the resultQueue feature — first call consumes Error, second
+        // consumes Success. The in-flight guard must release between calls.
+        billingManager.resultQueue.add(com.whitefang.stepsofbabylon.domain.model.PurchaseResult.Error("retry"))
+        billingManager.resultQueue.add(com.whitefang.stepsofbabylon.domain.model.PurchaseResult.Success)
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.purchaseGemPack(com.whitefang.stepsofbabylon.domain.model.BillingProduct.GEM_PACK_SMALL)
+        advanceUntilIdle()
+        vm.purchaseGemPack(com.whitefang.stepsofbabylon.domain.model.BillingProduct.GEM_PACK_SMALL)
+        advanceUntilIdle()
+
+        assertEquals(2, billingManager.purchases.size)
+        assertFalse(vm.uiState.value.isPurchasing)
+    }
 }
 
 // Additional tests for R09 fixes

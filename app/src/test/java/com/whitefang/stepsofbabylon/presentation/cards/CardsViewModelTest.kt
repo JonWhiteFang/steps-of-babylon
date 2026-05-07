@@ -97,4 +97,67 @@ class CardsViewModelTest {
         assertEquals(2, card.level)
         assertTrue(playerRepo.profile.value.cardDust < 100)
     }
+
+    // --- A.4: ad failure-mode coverage for watchFreePackAd ---
+    // Each AdResult variant should route correctly: only Rewarded opens a pack
+    // and persists the day-stamp; Cancelled and Error must leave state
+    // unchanged so the user can retry tomorrow.
+
+    @Test
+    fun `watchFreePackAd Rewarded opens a free pack and records the day`() = runTest(dispatcher) {
+        adManager.nextResult = com.whitefang.stepsofbabylon.domain.model.AdResult.Rewarded
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.watchFreePackAd()
+        advanceUntilIdle()
+
+        assertEquals(
+            com.whitefang.stepsofbabylon.domain.model.AdPlacement.DAILY_FREE_CARD_PACK,
+            adManager.shown.first(),
+        )
+        assertEquals(
+            java.time.LocalDate.now().toString(),
+            playerRepo.profile.value.freeCardPackAdUsedToday,
+            "day-stamp should be recorded for Rewarded path",
+        )
+    }
+
+    @Test
+    fun `watchFreePackAd Cancelled does not record the day or open a pack`() = runTest(dispatcher) {
+        adManager.nextResult = com.whitefang.stepsofbabylon.domain.model.AdResult.Cancelled
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.watchFreePackAd()
+        advanceUntilIdle()
+
+        assertEquals(1, adManager.shown.size) // ad was shown
+        assertEquals(
+            "",
+            playerRepo.profile.value.freeCardPackAdUsedToday,
+            "day-stamp must remain empty on Cancelled",
+        )
+        assertNull(vm.uiState.value.lastPackResult, "no pack result on Cancelled")
+    }
+
+    @Test
+    fun `watchFreePackAd Error does not record the day or open a pack`() = runTest(dispatcher) {
+        adManager.nextResult = com.whitefang.stepsofbabylon.domain.model.AdResult.Error("load failed")
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.watchFreePackAd()
+        advanceUntilIdle()
+
+        assertEquals(
+            "",
+            playerRepo.profile.value.freeCardPackAdUsedToday,
+            "day-stamp must remain empty on Error",
+        )
+        assertNull(vm.uiState.value.lastPackResult, "no pack result on Error")
+    }
 }
