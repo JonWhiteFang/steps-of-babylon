@@ -193,7 +193,7 @@ class BattleViewModel @Inject constructor(
      */
     @androidx.annotation.VisibleForTesting
     internal fun wireStepRewardCallback(engine: GameEngine) {
-        engine.onStepReward = { amount ->
+        engine.onStepReward = { amount, x, y ->
             viewModelScope.launch {
                 val credited = awardBattleSteps(amount)
                 if (credited > 0L) {
@@ -203,6 +203,18 @@ class BattleViewModel @Inject constructor(
                             stepBalance = s.stepBalance + credited,
                         )
                     }
+                    // Spawn the floating "+N Step" indicator only when credit
+                    // actually went through. A capped kill (credited == 0) must
+                    // not show a misleading indicator; the frozen HUD counter
+                    // at DAILY_BATTLE_STEP_CAP already communicates the gate.
+                    engine.effectEngine?.addEffect(
+                        com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText(
+                            x = x,
+                            y = y,
+                            text = "+$credited Step",
+                            color = com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText.STEP_COLOR,
+                        ),
+                    )
                 }
             }
         }

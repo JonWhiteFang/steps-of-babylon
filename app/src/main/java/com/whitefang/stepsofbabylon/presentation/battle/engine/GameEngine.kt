@@ -80,9 +80,13 @@ class GameEngine {
     /**
      * Invoked on the game-loop thread every time a kill grants a non-zero
      * step reward. The listener must not block the loop — forward to a
-     * coroutine scope. Set to `null` to unsubscribe (e.g. in ViewModel.onCleared).
+     * coroutine scope. Arguments are `(amount, x, y)` — amount is the flat
+     * per-enemy-type reward before cap enforcement; x/y are the enemy's screen
+     * position so the listener can decide whether and where to spawn a
+     * floating indicator (e.g. suppress when the daily cap has been exhausted).
+     * Set to `null` to unsubscribe (e.g. in ViewModel.onCleared).
      */
-    @Volatile var onStepReward: ((Long) -> Unit)? = null
+    @Volatile var onStepReward: ((amount: Long, x: Float, y: Float) -> Unit)? = null
 
     data class UWState(val type: UltimateWeaponType, val level: Int, var cooldownRemaining: Float = 0f, var effectTimeRemaining: Float = 0f)
     val uwStates = mutableListOf<UWState>()
@@ -557,21 +561,13 @@ class GameEngine {
         }
 
         // Battle Step reward — flat per enemy type, independent of multipliers.
-        // Actual wallet credit and cap enforcement happens in the ViewModel via
-        // the onStepReward callback; the engine only emits the raw reward and
-        // spawns a floating '+N Step' indicator.
+        // Actual wallet credit, cap enforcement, and floating-text spawn all
+        // live in the listener (BattleViewModel) so a capped reward can be
+        // silently dropped without a misleading "+N Step" indicator.
         val stepReward = EnemyScaler.stepReward(enemy.enemyType)
         if (stepReward > 0L) {
             totalStepsEarned += stepReward
-            onStepReward?.invoke(stepReward)
-            fx?.addEffect(
-                FloatingText(
-                    x = enemy.x,
-                    y = enemy.y + 24f,
-                    text = "+$stepReward Step",
-                    color = FloatingText.STEP_COLOR,
-                )
-            )
+            onStepReward?.invoke(stepReward, enemy.x, enemy.y + 24f)
         }
 
         if (enemy.enemyType == EnemyType.SCATTER) {

@@ -162,7 +162,7 @@ class BattleViewModelTest {
         vm.wireStepRewardCallback(engine)
         val initialBalance = playerRepo.profile.value.stepBalance
 
-        repeat(5) { engine.onStepReward?.invoke(1L) }
+        repeat(5) { engine.onStepReward?.invoke(1L, 0f, 0f) }
         advanceUntilIdle()
 
         assertEquals(5L, vm.uiState.value.stepsEarnedThisRound)
@@ -184,11 +184,79 @@ class BattleViewModelTest {
         vm.wireStepRewardCallback(engine)
         val initialBalance = playerRepo.profile.value.stepBalance
 
-        engine.onStepReward?.invoke(10L)
+        engine.onStepReward?.invoke(10L, 0f, 0f)
         advanceUntilIdle()
 
         assertEquals(0L, vm.uiState.value.stepsEarnedThisRound)
         assertEquals(initialBalance, playerRepo.profile.value.stepBalance)
+    }
+
+    @Test
+    fun `A_7 - no floating text spawned when step reward is fully capped`() = runTest(dispatcher) {
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        dailyStepDao.incrementBattleSteps(
+            java.time.LocalDate.now().toString(),
+            AwardBattleSteps.DAILY_BATTLE_STEP_CAP,
+        )
+        val engine = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine()
+        // Wire up an EffectEngine we can inspect afterwards. The production
+        // path sets this inside GameEngine.initSurfaceView; here we reach in
+        // directly via reflection-free test setup.
+        val fx = com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine(reducedMotion = true)
+        val fxField = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine::class.java
+            .getDeclaredField("effectEngine")
+            .apply { isAccessible = true }
+        fxField.set(engine, fx)
+
+        vm.wireStepRewardCallback(engine)
+
+        engine.onStepReward?.invoke(10L, 100f, 200f)
+        advanceUntilIdle()
+
+        // credited == 0 path must not spawn a step-reward FloatingText.
+        // addEffect() writes to pendingEffects until the next update() tick,
+        // so we inspect both fields to be robust.
+        fun pendingAndActive(fxEngine: com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine): Int {
+            val cls = com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine::class.java
+            val pending = cls.getDeclaredField("pendingEffects").apply { isAccessible = true }.get(fxEngine) as List<*>
+            val active = cls.getDeclaredField("effects").apply { isAccessible = true }.get(fxEngine) as List<*>
+            return pending.size + active.size
+        }
+        assertEquals(0, pendingAndActive(fx),
+            "capped kill must not spawn FloatingText")
+    }
+
+    @Test
+    fun `A_7 - floating text spawned when step reward is partially credited`() = runTest(dispatcher) {
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        dailyStepDao.incrementBattleSteps(
+            java.time.LocalDate.now().toString(),
+            AwardBattleSteps.DAILY_BATTLE_STEP_CAP - 3L,
+        )
+        val engine = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine()
+        val fx = com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine(reducedMotion = true)
+        val fxField = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine::class.java
+            .getDeclaredField("effectEngine")
+            .apply { isAccessible = true }
+        fxField.set(engine, fx)
+
+        vm.wireStepRewardCallback(engine)
+
+        engine.onStepReward?.invoke(10L, 100f, 200f)
+        advanceUntilIdle()
+
+        fun pendingAndActive(fxEngine: com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine): Int {
+            val cls = com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine::class.java
+            val pending = cls.getDeclaredField("pendingEffects").apply { isAccessible = true }.get(fxEngine) as List<*>
+            val active = cls.getDeclaredField("effects").apply { isAccessible = true }.get(fxEngine) as List<*>
+            return pending.size + active.size
+        }
+        assertEquals(1, pendingAndActive(fx),
+            "partial-credit kill should still spawn exactly one FloatingText")
     }
 
     @Test
@@ -205,7 +273,8 @@ class BattleViewModelTest {
         vm.wireStepRewardCallback(engine)
         val initialBalance = playerRepo.profile.value.stepBalance
 
-        engine.onStepReward?.invoke(10L)
+        engine.onStepReward?.invoke(10L, 0f, 0f)
+
         advanceUntilIdle()
 
         assertEquals(3L, vm.uiState.value.stepsEarnedThisRound)
