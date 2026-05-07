@@ -3,6 +3,8 @@ package com.whitefang.stepsofbabylon.domain.usecase
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.fakes.FakeDailyStepDao
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
+import com.whitefang.stepsofbabylon.fakes.FakeTimeProvider
+import java.time.LocalDate
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -91,5 +93,33 @@ class AwardBattleStepsTest {
 
         assertEquals(2L, credited)
         assertEquals(AwardBattleSteps.DAILY_BATTLE_STEP_CAP, dao.getBattleStepsEarned(today))
+    }
+
+    @Test
+    fun `FakeTimeProvider drives the cap reset when caller omits today`() = runTest {
+        // Exercises the default `today` expression in invoke() — B.1 PR 2
+        // rewired that expression from LocalDate.now().toString() to
+        // timeProvider.today().toString(). A FakeTimeProvider fed to the
+        // constructor now deterministically drives the date bucket without the
+        // caller passing it explicitly.
+        val playerRepo = FakePlayerRepository(PlayerProfile(stepBalance = 0L))
+        val dao = FakeDailyStepDao()
+        val clock = FakeTimeProvider(fixedDate = LocalDate.parse(today))
+        val useCase = AwardBattleSteps(playerRepo, dao, clock)
+
+        // Exhaust today's cap using the default `today` parameter.
+        dao.incrementBattleSteps(today, AwardBattleSteps.DAILY_BATTLE_STEP_CAP)
+        val creditedBeforeRollover = useCase(10L)
+        assertEquals(0L, creditedBeforeRollover, "cap exhausted on day 1")
+
+        // Advance the fake clock across midnight. No caller code changes —
+        // the same invoke() call now writes to a different date bucket.
+        clock.fixedDate = LocalDate.parse(tomorrow)
+        val creditedAfterRollover = useCase(10L)
+
+        assertEquals(10L, creditedAfterRollover, "fresh cap on day 2")
+        assertEquals(10L, dao.getBattleStepsEarned(tomorrow))
+        assertEquals(AwardBattleSteps.DAILY_BATTLE_STEP_CAP, dao.getBattleStepsEarned(today),
+            "day 1 record untouched")
     }
 }

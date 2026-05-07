@@ -69,7 +69,7 @@ class BattleViewModel @Inject constructor(
     private val activateOverdriveUseCase = ActivateOverdrive()
     private val awardWaveMilestone = AwardWaveMilestone(playerRepository)
     private val applyCardEffects = ApplyCardEffects()
-    private val awardBattleSteps = AwardBattleSteps(playerRepository, dailyStepDao)
+    private val awardBattleSteps = AwardBattleSteps(playerRepository, dailyStepDao, timeProvider)
 
     var resolvedStats: ResolvedStats = ResolvedStats(); private set
     var workshopLevels: Map<UpgradeType, Int> = emptyMap(); private set

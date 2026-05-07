@@ -54,9 +54,10 @@ class BattleViewModelTest {
     @AfterEach
     fun tearDown() { Dispatchers.resetMain() }
 
-    private fun createVm() = BattleViewModel(
+    private fun createVm(timeProvider: com.whitefang.stepsofbabylon.domain.time.TimeProvider = com.whitefang.stepsofbabylon.data.time.SystemTimeProvider()) = BattleViewModel(
         workshopRepo, playerRepo, biomePreferences, uwRepo, cardRepo,
         dailyMissionDao, dailyStepDao, milestoneNotificationManager, adManager,
+        timeProvider,
     )
 
     @Test
@@ -279,5 +280,48 @@ class BattleViewModelTest {
 
         assertEquals(3L, vm.uiState.value.stepsEarnedThisRound)
         assertEquals(initialBalance + 3L, playerRepo.profile.value.stepBalance)
+    }
+
+    @Test
+    fun `timeProvider drives the battle-step date bucket`() = runTest(dispatcher) {
+        // Proves B.1 PR 2 + PR 3 wiring: the VM's TimeProvider is propagated
+        // into AwardBattleSteps, so the date bucket that receives the kill
+        // reward is the fake clock's date, not real today.
+        //
+        // Setup: exhaust real-today's cap in the DAO. If the VM were reading
+        // the real clock, the kill reward would see no cap space and credit
+        // 0. With a FakeTimeProvider one day ahead, the kill writes to that
+        // day's fresh bucket and credit goes through.
+        val fakeDate = java.time.LocalDate.now().plusDays(1)
+        val fakeClock = com.whitefang.stepsofbabylon.fakes.FakeTimeProvider(fixedDate = fakeDate)
+
+        dailyStepDao.incrementBattleSteps(
+            java.time.LocalDate.now().toString(),
+            com.whitefang.stepsofbabylon.domain.usecase.AwardBattleSteps.DAILY_BATTLE_STEP_CAP,
+        )
+
+        val vm = createVm(timeProvider = fakeClock)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        val initialBalance = playerRepo.profile.value.stepBalance
+        val engine = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine()
+        vm.wireStepRewardCallback(engine)
+
+        engine.onStepReward?.invoke(10L, 0f, 0f)
+        advanceUntilIdle()
+
+        // Real-today's bucket is still at cap; fake-tomorrow's bucket got 10.
+        assertEquals(
+            com.whitefang.stepsofbabylon.domain.usecase.AwardBattleSteps.DAILY_BATTLE_STEP_CAP,
+            dailyStepDao.getBattleStepsEarned(java.time.LocalDate.now().toString()),
+            "real-today bucket must stay exhausted — VM must not have written here",
+        )
+        assertEquals(
+            10L,
+            dailyStepDao.getBattleStepsEarned(fakeDate.toString()),
+            "fake-tomorrow bucket must receive the credit",
+        )
+        assertEquals(initialBalance + 10L, playerRepo.profile.value.stepBalance)
     }
 }
