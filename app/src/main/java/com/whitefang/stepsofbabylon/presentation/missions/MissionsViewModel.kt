@@ -11,6 +11,8 @@ import com.whitefang.stepsofbabylon.domain.model.MissionCategory
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestone
 import com.whitefang.stepsofbabylon.domain.usecase.GenerateDailyMissions
+import com.whitefang.stepsofbabylon.domain.time.TimeProvider
+import com.whitefang.stepsofbabylon.data.time.SystemTimeProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +21,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 import java.time.LocalTime
 import java.time.Duration
 import javax.inject.Inject
@@ -30,11 +31,12 @@ class MissionsViewModel @Inject constructor(
     private val milestoneDao: MilestoneDao,
     private val dailyStepDao: DailyStepDao,
     private val playerRepository: PlayerRepository,
+    private val timeProvider: TimeProvider = SystemTimeProvider(),
 ) : ViewModel() {
 
     private val generateMissions = GenerateDailyMissions(dailyMissionDao)
     private val claimMilestone = ClaimMilestone(milestoneDao, playerRepository)
-    private var today = LocalDate.now().toString()
+    private var today = timeProvider.today().toString()
     private val tick = MutableStateFlow(System.currentTimeMillis())
 
     init {
@@ -44,7 +46,7 @@ class MissionsViewModel @Inject constructor(
             while (true) {
                 delay(1000)
                 tick.value = System.currentTimeMillis()
-                val now = LocalDate.now().toString()
+                val now = timeProvider.today().toString()
                 if (now != today) {
                     today = now
                     generateMissions(today)

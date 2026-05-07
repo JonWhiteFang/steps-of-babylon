@@ -1,8 +1,9 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
 import com.whitefang.stepsofbabylon.data.local.DailyStepDao
+import com.whitefang.stepsofbabylon.data.time.SystemTimeProvider
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
-import java.time.LocalDate
+import com.whitefang.stepsofbabylon.domain.time.TimeProvider
 import kotlin.math.min
 
 /**
@@ -15,15 +16,22 @@ import kotlin.math.min
  * is distinct from the walking credit pipeline. Returns the amount that was
  * actually credited (0 when the daily cap is exhausted, a partial amount when
  * only part of the request fits under the cap).
+ *
+ * [timeProvider] is the B.1 (RO-01) seam for midnight-boundary testability.
+ * Callers may still override [invoke]'s `today` parameter directly for tests
+ * that seed a specific date; the default expression resolves through
+ * [timeProvider] so a [FakeTimeProvider] in the constructor reaches both the
+ * default path and any code that reads `today` internally.
  */
 class AwardBattleSteps(
     private val playerRepository: PlayerRepository,
     private val dailyStepDao: DailyStepDao,
+    private val timeProvider: TimeProvider = SystemTimeProvider(),
 ) {
 
     suspend operator fun invoke(
         amount: Long,
-        today: String = LocalDate.now().toString(),
+        today: String = timeProvider.today().toString(),
     ): Long {
         if (amount <= 0L) return 0L
         val alreadyEarned = dailyStepDao.getBattleStepsEarned(today)

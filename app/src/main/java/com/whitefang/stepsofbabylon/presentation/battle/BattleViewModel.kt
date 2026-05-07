@@ -19,6 +19,8 @@ import com.whitefang.stepsofbabylon.domain.repository.RewardAdManager
 import com.whitefang.stepsofbabylon.domain.repository.CardRepository
 import com.whitefang.stepsofbabylon.domain.repository.UltimateWeaponRepository
 import com.whitefang.stepsofbabylon.domain.repository.WorkshopRepository
+import com.whitefang.stepsofbabylon.domain.time.TimeProvider
+import com.whitefang.stepsofbabylon.data.time.SystemTimeProvider
 import com.whitefang.stepsofbabylon.domain.usecase.AwardBattleSteps
 import com.whitefang.stepsofbabylon.domain.usecase.AwardWaveMilestone
 import com.whitefang.stepsofbabylon.domain.usecase.ActivateOverdrive
@@ -42,7 +44,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.min
 import kotlin.random.Random
-import java.time.LocalDate
 
 @HiltViewModel
 class BattleViewModel @Inject constructor(
@@ -55,6 +56,7 @@ class BattleViewModel @Inject constructor(
     private val dailyStepDao: DailyStepDao,
     private val milestoneNotificationManager: MilestoneNotificationManager,
     private val rewardAdManager: RewardAdManager,
+    private val timeProvider: TimeProvider = SystemTimeProvider(),
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BattleUiState())
@@ -164,7 +166,7 @@ class BattleViewModel @Inject constructor(
                 playerRepository.incrementBattleStats(1, eng.totalEnemiesKilled.toLong(), eng.totalCashEarned)
             } catch (_: Exception) { /* best-effort */ }
             try {
-                val today = LocalDate.now().toString()
+                val today = timeProvider.today().toString()
                 val missions = dailyMissionDao.getByDateOnce(today)
                 for (m in missions) {
                     if (m.claimed || m.completed) continue
