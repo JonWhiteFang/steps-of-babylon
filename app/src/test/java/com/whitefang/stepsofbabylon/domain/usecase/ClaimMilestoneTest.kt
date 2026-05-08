@@ -2,10 +2,10 @@ package com.whitefang.stepsofbabylon.domain.usecase
 
 import com.whitefang.stepsofbabylon.data.local.MilestoneEntity
 import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
-import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
-import com.whitefang.stepsofbabylon.domain.model.CosmeticItem
+import com.whitefang.stepsofbabylon.data.repository.CosmeticRepositoryImpl
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
+import com.whitefang.stepsofbabylon.fakes.FakeCosmeticDao
 import com.whitefang.stepsofbabylon.fakes.FakeCosmeticRepository
 import com.whitefang.stepsofbabylon.fakes.FakeMilestoneDao
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
@@ -34,8 +34,10 @@ class ClaimMilestoneTest {
         cosmeticRepo = FakeCosmeticRepository()
         // Default: empty cosmetic catalogue. Tests that need a matching cosmetic id seed
         // `cosmeticRepo.items` themselves. Tests that expect UnknownCosmetic leave it empty,
-        // which matches prod: the 3 mismatched milestone cosmetic ids (garden_ziggurat_skin,
-        // lapis_lazuli_skin, sandals_of_gilgamesh) have no corresponding SEED_COSMETICS row.
+        // which matches prod for the 2 still-mismatched milestone cosmetic ids after C.2 PR 3
+        // (garden_ziggurat_skin on MARATHON_WALKER, sandals_of_gilgamesh on GLOBE_TROTTER).
+        // lapis_lazuli_skin was seeded in C.2 PR 3 and is covered by the end-to-end test
+        // below that uses the real CosmeticRepositoryImpl.
         useCase = ClaimMilestone(dao, playerRepo, playerProfileDao, cosmeticRepo)
     }
 
@@ -151,14 +153,6 @@ class ClaimMilestoneTest {
     }
 
     @Test
-    fun `UnknownCosmetic surfaces offending cosmetic id for IRON_SOLES`() = runTest {
-        // IRON_SOLES rewards 200 Gems + 50 PS + Cosmetic("lapis_lazuli_skin").
-        val result = useCase(Milestone.IRON_SOLES)
-        assertTrue(result is ClaimMilestoneResult.UnknownCosmetic)
-        assertEquals("lapis_lazuli_skin", (result as ClaimMilestoneResult.UnknownCosmetic).cosmeticId)
-    }
-
-    @Test
     fun `UnknownCosmetic surfaces offending cosmetic id for GLOBE_TROTTER`() = runTest {
         // GLOBE_TROTTER rewards 500 Gems + Cosmetic("sandals_of_gilgamesh").
         val result = useCase(Milestone.GLOBE_TROTTER)
@@ -171,37 +165,40 @@ class ClaimMilestoneTest {
         // Regression-guard: the pre-flight check MUST short-circuit before the atomic
         // transaction so the player doesn't get partial credit (gems + PS without the
         // cosmetic). Proves no wallet movement and no atomic call attempt.
-        val result = useCase(Milestone.IRON_SOLES)
+        //
+        // Post-C.2-PR-3: switched target from IRON_SOLES (lapis_lazuli_skin now seeded)
+        // to MARATHON_WALKER (garden_ziggurat_skin still unknown) so the test continues
+        // to reflect prod behaviour, not just synthetic mechanism behaviour against the
+        // empty fake.
+        val result = useCase(Milestone.MARATHON_WALKER)
         assertTrue(result is ClaimMilestoneResult.UnknownCosmetic)
         val wallet = playerRepo.observeWallet().first()
         assertEquals(0, wallet.gems)
         assertEquals(0, wallet.powerStones)
         assertEquals(0, dao.claimMilestoneAtomicCallCount)
-        assertNull(dao.getByIdOnce(Milestone.IRON_SOLES.name))
+        assertNull(dao.getByIdOnce(Milestone.MARATHON_WALKER.name))
     }
 
     @Test
-    fun `milestone with matching cosmetic id credits rewards via atomic path`() = runTest {
-        // Positive path proving the UnknownCosmetic check is selective, not blanket:
-        // when the cosmetic id IS in the catalogue, the atomic credit runs as normal.
-        // Emulates the post-C.2-PR-3 state where lapis_lazuli_skin has a matching seed
-        // row; once that lands, IRON_SOLES claims will succeed cleanly. The actual
-        // cosmetic is not equipped here \u2014 that is the renderer contract (C.2 PR 1 / 2),
-        // not the claim contract.
-        cosmeticRepo.items.value = listOf(
-            CosmeticItem(
-                cosmeticId = "lapis_lazuli_skin",
-                category = CosmeticCategory.ZIGGURAT_SKIN,
-                name = "Lapis Lazuli Ziggurat Skin",
-                description = "Test-only fixture emulating C.2 PR 3+ content.",
-                priceGems = 0L,
-                isOwned = false,
-                isEquipped = false,
-            ),
-        )
+    fun `IRON_SOLES claim succeeds end-to-end via real CosmeticRepositoryImpl`() = runTest {
+        // Positive path using the REAL CosmeticRepositoryImpl (not the FakeCosmeticRepository
+        // fixture) to prove the full C.2 PR 3 chain:
+        //   SEED_COSMETICS contains lapis_lazuli_skin
+        //     \u2192 ensureSeedData seeds it into the DAO
+        //     \u2192 idExists("lapis_lazuli_skin") returns true
+        //     \u2192 ClaimMilestone(IRON_SOLES) runs the atomic credit
+        //     \u2192 200 Gems + 50 PS land in the wallet
+        //
+        // Before C.2 PR 3, this test would have returned UnknownCosmetic for IRON_SOLES
+        // (the id wasn't in SEED_COSMETICS). After C.2 PR 3, the seed row + palette exist
+        // and the end-to-end claim succeeds. Same shape will cover MARATHON_WALKER and
+        // GLOBE_TROTTER once C.2 PR 3b/3c seed garden_ziggurat_skin and sandals_of_gilgamesh.
+        val realRepo = CosmeticRepositoryImpl(FakeCosmeticDao())
+        val uc = ClaimMilestone(dao, playerRepo, playerProfileDao, realRepo)
 
-        val result = useCase(Milestone.IRON_SOLES)
+        val result = uc(Milestone.IRON_SOLES)
         assertEquals(ClaimMilestoneResult.Success, result)
+
         val wallet = playerRepo.observeWallet().first()
         assertEquals(200, wallet.gems)
         assertEquals(50, wallet.powerStones)

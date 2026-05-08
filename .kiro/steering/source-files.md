@@ -59,7 +59,7 @@ data/repository/CardRepositoryImpl.kt            # Card inventory
 data/repository/UltimateWeaponRepositoryImpl.kt  # Ultimate weapon state
 data/repository/StepRepositoryImpl.kt            # Daily step records + escrow + getDailyRecord()
 data/repository/WalkingEncounterRepositoryImpl.kt # Walking encounters
-data/repository/CosmeticRepositoryImpl.kt        # Cosmetic store items + private ZIGGURAT_COLOR_LOOKUP table (C.2 PR 2: first entry `zig_jade` → 5-color jade palette; PR 3+ adds remaining 6 seeded + 3 milestone cosmetics); toDomain populates CosmeticItem.overrideColors from the lookup; SEED_COSMETICS: 8 rows (4 ZIGGURAT_SKIN incl. zig_jade @ 150 💎, 2 PROJECTILE_EFFECT, 2 ENEMY_SKIN); ensureSeedData uses per-cosmeticId filter (observes existing ids, upserts only missing rows) so content PRs land on already-seeded installs without a data clear and player `isOwned`/`isEquipped` state survives upgrades
+data/repository/CosmeticRepositoryImpl.kt        # Cosmetic store items + private ZIGGURAT_COLOR_LOOKUP table (C.2 PR 2: first entry `zig_jade` → 5-color jade palette; PR 3+ adds remaining 6 seeded + 3 milestone cosmetics); toDomain populates CosmeticItem.overrideColors from the lookup; SEED_COSMETICS: 9 rows (5 ZIGGURAT_SKIN incl. zig_jade @ 150 💎 + lapis_lazuli_skin @ 500 💎 (IRON_SOLES milestone reward), 2 PROJECTILE_EFFECT, 2 ENEMY_SKIN); ensureSeedData uses per-cosmeticId filter (observes existing ids, upserts only missing rows) so content PRs land on already-seeded installs without a data clear and player `isOwned`/`isEquipped` state survives upgrades
 ```
 
 ## Data Layer — Sensor
@@ -342,7 +342,7 @@ domain/usecase/GenerateSupplyDropTest.kt          # Drop generation: inbox cap, 
 domain/usecase/ClaimSupplyDropTest.kt             # Claim flow: reward crediting, already-claimed guard
 domain/usecase/AwardWaveMilestoneTest.kt          # Wave milestone PS: 1/2/5 at wave boundaries
 domain/usecase/CheckMilestonesTest.kt             # Milestone detection: threshold, claimed exclusion
-domain/usecase/ClaimMilestoneTest.kt              # Claim flow: reward crediting, idempotent guard, concurrent-claim atomicity (B.2 PR 4), UnknownCosmetic detection for MARATHON_WALKER / IRON_SOLES / GLOBE_TROTTER + rejection-before-atomic regression guard + positive-path with matching cosmetic fixture (C.4)
+domain/usecase/ClaimMilestoneTest.kt              # Claim flow: reward crediting, idempotent guard, concurrent-claim atomicity (B.2 PR 4), UnknownCosmetic detection for MARATHON_WALKER / GLOBE_TROTTER + rejection-before-atomic regression guard + end-to-end IRON_SOLES success via real CosmeticRepositoryImpl (C.4 + C.2 PR 3)
 domain/usecase/GenerateDailyMissionsTest.kt       # Mission generation: deterministic, one per category
 domain/usecase/PurchaseGemPackTest.kt             # Gem pack purchase: delegates to billing, error forwarding
 domain/model/MilestoneTest.kt                     # 6 milestones: thresholds, rewards, sorting
@@ -392,6 +392,6 @@ presentation/ux/UserFeedbackTest.kt                # Workshop purchase failure s
 presentation/DeepLinkRoutingTest.kt                # Deep-link intent extra extraction
 data/local/RoomSchemaTest.kt                       # Room v8 schema round-trip (profile, steps, workshop)
 data/integration/EscrowLifecycleTest.kt            # End-to-end escrow lifecycle (release + discard)
-data/repository/CosmeticRepositoryImplTest.kt      # Seed → ZIGGURAT_COLOR_LOOKUP → overrideColors mapping for zig_jade; non-jade seeds have null overrideColors; equipped zig_jade surfaces via observeEquipped with palette intact; ensureSeedData idempotent; partial-catalogue upgrade inserts missing rows without touching legacy 7; existing-row isOwned/isEquipped preserved across ensureSeedData (C.2 PR 2 + ensureSeedData fix)
+data/repository/CosmeticRepositoryImplTest.kt      # Seed → ZIGGURAT_COLOR_LOOKUP → overrideColors mapping for zig_jade + lapis_lazuli_skin (each with exact-palette assertions as content-as-code contracts); non-palette seeds have null overrideColors; equipped zig_jade surfaces via observeEquipped with palette intact; ensureSeedData idempotent; partial-catalogue upgrade inserts missing rows without touching legacy 7; existing-row isOwned/isEquipped preserved across ensureSeedData (C.2 PR 2 + PR 3 + ensureSeedData fix)
 service/StepWidgetProviderTest.kt                  # Widget SharedPreferences round-trip
 ```

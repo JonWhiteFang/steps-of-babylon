@@ -60,8 +60,8 @@ class CosmeticRepositoryImpl @Inject constructor(
     override suspend fun idExists(cosmeticId: String): Boolean {
         // Seed lazily so the check is reliable before the Store screen has ever been
         // opened (e.g. when ClaimMilestone fires from the Missions screen first).
-        // ensureSeedData short-circuits via `dao.count() > 0` so the amortised cost is
-        // one table-count query on steady-state.
+        // ensureSeedData is cheap in steady state — its per-cosmeticId filter produces
+        // `missing == emptyList()` once every id is present, so no DAO write happens.
         ensureSeedData()
         return dao.observeAll().first().any { it.cosmeticId == cosmeticId }
     }
@@ -89,9 +89,15 @@ class CosmeticRepositoryImpl @Inject constructor(
          * Each entry MUST be exactly 5 Ints (one per ziggurat layer, bottom to top) to match
          * [com.whitefang.stepsofbabylon.presentation.battle.entities.ZigguratEntity.DEFAULT_COLORS].
          *
-         * Current entries (C.2 PR 2):
-         *  - `zig_jade` — deep jade gradient, first end-to-end cosmetic. Remaining seed rows
-         *    ship their palettes in C.2 PR 3+ as content work.
+         * Current entries:
+         *  - `zig_jade` (C.2 PR 2) — deep jade gradient, first end-to-end cosmetic.
+         *  - `lapis_lazuli_skin` (C.2 PR 3) — deep lapis base → bright lapis → pyrite-gold
+         *    crown. Resolves the IRON_SOLES `MilestoneReward.Cosmetic` mismatch (C.4),
+         *    so after this PR `ClaimMilestone(IRON_SOLES)` returns `Success` instead of
+         *    `UnknownCosmetic`.
+         *
+         * Pending entries: `garden_ziggurat_skin` (MARATHON_WALKER, C.2 PR 3b),
+         * `sandals_of_gilgamesh` (GLOBE_TROTTER, C.2 PR 3c).
          */
         private val ZIGGURAT_COLOR_LOOKUP: Map<String, List<Int>> = mapOf(
             "zig_jade" to listOf(
@@ -101,10 +107,23 @@ class CosmeticRepositoryImpl @Inject constructor(
                 0xFF3CAB82.toInt(),
                 0xFF54C79A.toInt(), // layer 4 (top) — pale jade highlight
             ),
+            "lapis_lazuli_skin" to listOf(
+                0xFF1A1F5C.toInt(), // layer 0 (base) — deep lapis
+                0xFF2A3880.toInt(),
+                0xFF3B4FAB.toInt(),
+                0xFF4F68C8.toInt(), // layer 3 — bright lapis
+                0xFFD4A84A.toInt(), // layer 4 (top) — pyrite-gold crown (traditional lapis flecks)
+            ),
         )
 
         private val SEED_COSMETICS = listOf(
             CosmeticEntity(cosmeticId = "zig_jade", category = "ZIGGURAT_SKIN", name = "Jade Ziggurat", description = "Deep jade stone with pale highlights", priceGems = 150),
+            // Milestone-reward cosmetic (IRON_SOLES). Listed here so `CosmeticRepository.idExists`
+            // returns true and `ClaimMilestone(IRON_SOLES)` runs the atomic credit instead of
+            // returning `UnknownCosmetic`. Intentionally NOT in StoreScreen.ENABLED_COSMETIC_ID
+            // yet — appears as "Coming Soon" in the Store. Primary acquisition path remains
+            // the milestone; store pricing is a future UX decision. (C.2 PR 3)
+            CosmeticEntity(cosmeticId = "lapis_lazuli_skin", category = "ZIGGURAT_SKIN", name = "Lapis Lazuli Ziggurat Skin", description = "Deep lapis lazuli stone with pyrite-gold flecks", priceGems = 500),
             CosmeticEntity(cosmeticId = "zig_obsidian", category = "ZIGGURAT_SKIN", name = "Obsidian Ziggurat", description = "Dark volcanic stone", priceGems = 100),
             CosmeticEntity(cosmeticId = "zig_crystal", category = "ZIGGURAT_SKIN", name = "Crystal Ziggurat", description = "Translucent crystal layers", priceGems = 200),
             CosmeticEntity(cosmeticId = "zig_golden", category = "ZIGGURAT_SKIN", name = "Golden Ziggurat", description = "Pure gold plating", priceGems = 300),

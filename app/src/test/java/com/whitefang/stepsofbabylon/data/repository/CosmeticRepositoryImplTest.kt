@@ -71,12 +71,41 @@ class CosmeticRepositoryImplTest {
     }
 
     @Test
+    fun `C2PR3 - lapis_lazuli_skin propagates lapis palette via overrideColors from ZIGGURAT_COLOR_LOOKUP`() = runTest {
+        // C.2 PR 3: the second ZIGGURAT_COLOR_LOOKUP entry. Resolves the IRON_SOLES
+        // MilestoneReward.Cosmetic mismatch (see ClaimMilestoneTest end-to-end case).
+        // Palette: deep lapis base → bright lapis → pyrite-gold crown (traditional lapis
+        // with gold flecks). Exact-value assertions so any accidental palette mutation
+        // surfaces as a test failure (content-as-code contract, same pattern as zig_jade).
+        val dao = FakeCosmeticDao()
+        val repo = CosmeticRepositoryImpl(dao)
+        repo.ensureSeedData()
+
+        val lapis = repo.observeAll().first().single { it.cosmeticId == "lapis_lazuli_skin" }
+        assertEquals(CosmeticCategory.ZIGGURAT_SKIN, lapis.category)
+        assertEquals("Lapis Lazuli Ziggurat Skin", lapis.name)
+        assertEquals(500L, lapis.priceGems)
+        assertNotNull(lapis.overrideColors, "lapis_lazuli_skin must have overrideColors populated from ZIGGURAT_COLOR_LOOKUP")
+        assertEquals(
+            listOf(
+                0xFF1A1F5C.toInt(),
+                0xFF2A3880.toInt(),
+                0xFF3B4FAB.toInt(),
+                0xFF4F68C8.toInt(),
+                0xFFD4A84A.toInt(),
+            ),
+            lapis.overrideColors,
+        )
+    }
+
+    @Test
     fun `C2PR2 - other seeded ziggurat cosmetics have null overrideColors pending content PRs`() = runTest {
-        // Regression guard: only zig_jade ships a palette in C.2 PR 2. Remaining seeded
-        // ZIGGURAT_SKIN rows must continue to return null overrideColors so the renderer
-        // falls through to the biome default (and the StoreScreen keeps them under the
-        // R2-11 "Coming Soon" guard). The other category seeds (PROJECTILE_EFFECT,
-        // ENEMY_SKIN) are off the ZIGGURAT_COLOR_LOOKUP entirely — also null.
+        // Regression guard: only zig_jade (C.2 PR 2) and lapis_lazuli_skin (C.2 PR 3)
+        // ship palettes so far. Remaining seeded ZIGGURAT_SKIN rows must continue to
+        // return null overrideColors so the renderer falls through to the biome default
+        // (and the StoreScreen keeps them under the R2-11 "Coming Soon" guard). The
+        // other category seeds (PROJECTILE_EFFECT, ENEMY_SKIN) are off the
+        // ZIGGURAT_COLOR_LOOKUP entirely \u2014 also null.
         val dao = FakeCosmeticDao()
         val repo = CosmeticRepositoryImpl(dao)
         repo.ensureSeedData()
@@ -133,7 +162,7 @@ class CosmeticRepositoryImplTest {
         val countAfterSecond = dao.count()
 
         assertEquals(countAfterFirst, countAfterSecond, "repeat ensureSeedData must not duplicate rows")
-        assertEquals(8, countAfterFirst, "PR 2 ships 8 seed rows (4 ziggurat incl. zig_jade + 2 projectile + 2 enemy)")
+        assertEquals(9, countAfterFirst, "C.2 PR 3 ships 9 seed rows (5 ziggurat incl. zig_jade + lapis_lazuli_skin, 2 projectile, 2 enemy)")
     }
 
     @Test
@@ -163,11 +192,14 @@ class CosmeticRepositoryImplTest {
         val repo = CosmeticRepositoryImpl(dao)
         repo.ensureSeedData()
 
-        assertEquals(8, dao.count(), "after ensureSeedData: zig_jade added, legacy 7 preserved")
+        assertEquals(9, dao.count(), "after ensureSeedData: zig_jade + lapis_lazuli_skin added, legacy 7 preserved")
         val items = repo.observeAll().first()
         val jade = items.single { it.cosmeticId == "zig_jade" }
         assertNotNull(jade.overrideColors, "new zig_jade row must carry overrideColors from ZIGGURAT_COLOR_LOOKUP")
         assertEquals(5, jade.overrideColors!!.size)
+        val lapis = items.single { it.cosmeticId == "lapis_lazuli_skin" }
+        assertNotNull(lapis.overrideColors, "new lapis_lazuli_skin row must also carry overrideColors (C.2 PR 3)")
+        assertEquals(5, lapis.overrideColors!!.size)
         // Legacy ids still present \u2014 the upgrade is additive, not replacive.
         for (legacyId in legacySeed.map { it.cosmeticId }) {
             assertNotNull(items.find { it.cosmeticId == legacyId }, "legacy id `$legacyId` must survive the upgrade")
@@ -198,8 +230,8 @@ class CosmeticRepositoryImplTest {
         val repo = CosmeticRepositoryImpl(dao)
         repo.ensureSeedData()
 
-        // All 8 seed rows now present (7 new + the pre-existing zig_jade preserved).
-        assertEquals(8, dao.count())
+        // All 9 seed rows now present (8 new + the pre-existing zig_jade preserved).
+        assertEquals(9, dao.count())
         val jade = repo.observeAll().first().single { it.cosmeticId == "zig_jade" }
         assertTrue(jade.isOwned, "pre-existing player ownership must survive ensureSeedData")
         assertTrue(jade.isEquipped, "pre-existing equipped state must survive ensureSeedData")
