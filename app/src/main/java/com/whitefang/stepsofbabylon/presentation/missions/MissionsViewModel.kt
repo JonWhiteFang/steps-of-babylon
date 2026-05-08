@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
 import com.whitefang.stepsofbabylon.data.local.DailyStepDao
 import com.whitefang.stepsofbabylon.data.local.MilestoneDao
+import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.model.MissionCategory
@@ -31,11 +32,12 @@ class MissionsViewModel @Inject constructor(
     private val milestoneDao: MilestoneDao,
     private val dailyStepDao: DailyStepDao,
     private val playerRepository: PlayerRepository,
+    private val playerProfileDao: PlayerProfileDao,
     private val timeProvider: TimeProvider = SystemTimeProvider(),
 ) : ViewModel() {
 
     private val generateMissions = GenerateDailyMissions(dailyMissionDao)
-    private val claimMilestone = ClaimMilestone(milestoneDao, playerRepository)
+    private val claimMilestone = ClaimMilestone(milestoneDao, playerRepository, playerProfileDao)
     private var today = timeProvider.today().toString()
     private val tick = MutableStateFlow(System.currentTimeMillis())
 

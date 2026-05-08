@@ -1,5 +1,69 @@
 # Run Log
 
+## 2026-05-08 — Phase B.2 PR 4 (RO-02 site #4): atomic @Transaction for ClaimMilestone
+
+- **Goal:** Apply the B.2 PR 1–2 pattern to the fourth RO-02 multi-write site named in `devdocs/evolution/refactoring_opportunities.md` §RO-02: `ClaimMilestone`. The use case currently (a) reads `totalStepsEarned` for a step-threshold guard, (b) reads the existing `MilestoneEntity` for an already-claimed guard, (c) iterates rewards calling `playerRepository.addGems` / `addPowerStones`, and (d) finally `milestoneDao.upsert(... claimed = true)`. A crash between (c) and (d) credits the player but leaves the milestone unclaimed — enabling double-credit on retry. Two concurrent claim clicks can also both pass (b) and both run (c). Both windows close with a single SQLite transaction wrapping the check + mark-claimed + reward credits.
+- **Preflight:** read `START_HERE`, `STATE`, `CONSTRAINTS`, `RUN_LOG` head (B.2 PR 1, B.3 PR 1, B.2 PR 2, B.2 PR 3 entries). `git status` clean on `main`, up to date with origin (last commit `fd4e282 docs: sync current-state docs after B.2 PRs 1-3 + B.3 PR 1`). Read `ClaimMilestone`, `MilestoneDao`, `MilestoneEntity`, `Milestone`, `MilestoneReward`, `PlayerProfileDao`, `PlayerRepositoryImpl` (to learn `addGems` = `adjustGems` + `incrementGemsEarned` composite), `ClaimMilestoneTest` (5 cases), `FakeMilestoneDao`, `MissionsViewModel`, `MissionsViewModelTest`, `CheckMilestonesTest` (to confirm it won't be affected), `HomeViewModelTest` (to confirm `FakeMilestoneDao()` no-arg stays source-compatible). Grep-confirmed ClaimMilestone has exactly two construction sites: `MissionsViewModel` (prod) and `MissionsViewModelTest` (one test case) plus `ClaimMilestoneTest`'s sut.
+
+### Design
+
+Mirrored B.2 PR 2 exactly: cross-DAO `@Transaction` default method on a Room DAO interface. Chose read-modify-write (read `getByIdOnce` → bail if `claimed == true` → `upsert` → credit) over SQL-guarded single-statement (`INSERT ... ON CONFLICT DO UPDATE WHERE`) because the read-modify-write pattern matches `DailyStepDao.creditBattleStepsAtomic` identically (same idiom, same KDoc shape, same Mutex emulation in the fake) and leans on SQLite's SERIALIZABLE isolation inside `@Transaction` instead of a Room-specific return-type-of-INSERT edge case. Both approaches are correct; consistency with the established pattern won.
+
+- **`MilestoneDao`:** added `claimMilestoneAtomic(milestoneId, gems, powerStones, claimedAt, playerDao: PlayerProfileDao): Boolean` as a suspend `@Transaction` default method. Body does `getByIdOnce` → bail if `existing?.claimed == true` → `upsert(MilestoneEntity(id, claimed = true, claimedAt))` → if `gems > 0` then `playerDao.adjustGems(gems)` + `playerDao.incrementGemsEarned(gems)` → same for Power Stones → return `true`. Cross-DAO calls are safe inside the `@Transaction` because Room's transaction tracker is scoped to the underlying `RoomDatabase`. The wallet composite (`adjustGems` + `incrementGemsEarned`) matches `PlayerRepositoryImpl.addGems` exactly — dropping either would fail the `totalGemsEarned` lifetime-counter invariant that the Economy dashboard depends on.
+- **`ClaimMilestone` use case:** dep shape changed from `(milestoneDao, playerRepository)` to `(milestoneDao, playerRepository, playerProfileDao)`. The use case still reads `totalStepsEarned` through `PlayerRepository` for the step-threshold guard — this is intentional: `totalStepsEarned` is monotonic, so a stale read can only fail-closed (false-negative → user retries) and there is no correctness window to close. Body shrank from ~15 lines (profile read + claimed check + reward iteration loop + upsert) to a step-threshold guard + single `milestoneDao.claimMilestoneAtomic(...)` call. `MilestoneReward.Cosmetic` remains a no-op pending Phase C.2's cosmetic-rendering pipeline (documented in the new KDoc).
+- **`MissionsViewModel`:** gained a Hilt-injected `PlayerProfileDao` constructor param (6 params now); updated the internal `ClaimMilestone(...)` construction. DI graph unaffected — `DatabaseModule` already provides `PlayerProfileDao`.
+- **Fake emulation (`FakeMilestoneDao`):** added optional `linkedPlayer: FakePlayerRepository? = null` constructor arg matching `FakeDailyStepDao`'s pattern. Overrides `claimMilestoneAtomic` to emulate the SQL atomic contract under a `Mutex` — read-check-write-credit serialised so concurrent callers observe each other's mutations. The override takes `playerDao: PlayerProfileDao` for type satisfaction but ignores it; credits (gems + totalGemsEarned; powerStones + totalPowerStonesEarned) go through `linkedPlayer.profile` so existing tests can keep asserting on `FakePlayerRepository`. Added `claimMilestoneAtomicCallCount` counter for tests to prove the atomic path is live.
+
+### Files touched
+
+- `app/src/main/java/.../data/local/MilestoneDao.kt` (+`@Transaction claimMilestoneAtomic` default method, +`androidx.room.Transaction` import, comprehensive KDoc)
+- `app/src/main/java/.../domain/usecase/ClaimMilestone.kt` (+`PlayerProfileDao` constructor dep, body rewrite to delegation, class-level KDoc explaining the monotonic-read rationale for keeping `PlayerRepository`)
+- `app/src/main/java/.../presentation/missions/MissionsViewModel.kt` (+`PlayerProfileDao` import + constructor param, updated `ClaimMilestone` construction)
+- `app/src/test/java/.../fakes/FakeMilestoneDao.kt` (+`linkedPlayer` param, +Mutex-guarded `claimMilestoneAtomic` override, +`claimMilestoneAtomicCallCount`, KDoc)
+- `app/src/test/java/.../domain/usecase/ClaimMilestoneTest.kt` (sut helper rewritten: `FakeMilestoneDao(linkedPlayer = playerRepo)` + `mock<PlayerProfileDao>()`; 5 existing cases preserved; +3 new atomicity cases; existing `claiming milestone without reaching step threshold` strengthened with `claimMilestoneAtomicCallCount == 0` assertion to prove the fast-fail bypasses the atomic call)
+- `app/src/test/java/.../presentation/missions/MissionsViewModelTest.kt` (`FakeMilestoneDao(linkedPlayer = playerRepo)`; `ClaimMilestone(milestoneDao, playerRepo, mock<PlayerProfileDao>())`; all 4 existing test cases preserved)
+
+### Tests added (3 new cases in `ClaimMilestoneTest`, bringing it to 8 total)
+
+1. **`successful claim goes through atomic DAO method exactly once`** — asserts `dao.claimMilestoneAtomicCallCount == 1` after a successful claim and that the wallet was credited correctly (60 Gems for FIRST_STEPS). Regression-guard: if someone reintroduces the split `addGems` + `upsert` flow this test fails immediately.
+2. **`two concurrent claims on the same milestone - only one credits`** — `kotlinx.coroutines.async` + `awaitAll` pair racing on the atomic path against `Milestone.IRON_SOLES` (200 Gems + 50 Power Stones + Cosmetic no-op). Asserts exactly one `true` and one `false`, wallet credited exactly once (200 Gems + 50 PS — not 400/100), milestone marked claimed exactly once, and both callers reached the atomic method. Proves the Mutex-guarded fake models the SQL atomic guard correctly.
+3. **`already-claimed entity pre-existing in DAO causes invoke to short-circuit`** — seeds the DAO with a pre-claimed entity (emulates "claim committed in a previous process lifecycle") and calls `useCase(MORNING_JOGGER)`. Asserts result is `false`, no gems credited, and `claimMilestoneAtomicCallCount == 1` — proves the already-claimed guard lives *inside* the atomic method (where the race would matter), not outside. This is one more test than the two PR 1–2 predecessors added; kept it because it covers a semantically distinct path (persisted vs in-memory race loss) and follows B.2 PR 1's precedent of strengthening existing cases where it's cheap.
+
+All 5 existing cases preserved verbatim, with one strengthened: `claiming milestone without reaching step threshold returns false` gained `assertEquals(0, claimMilestoneAtomicCallCount)` to prove the step-threshold guard short-circuits *before* the atomic DAO call, avoiding an unnecessary DB round-trip for obviously-unqualified callers.
+
+### Verification
+
+- `./run-gradle.sh :app:compileDebugKotlin :app:testDebugUnitTest :app:lintDebug` — BUILD SUCCESSFUL. Room KSP compiled the third `@Transaction` default method with a cross-DAO parameter cleanly.
+- Test suite: **465 → 468 JVM tests** (+3, matches the 3 new atomicity cases exactly), 0 failures, 0 errors, 0 skipped. `ClaimMilestoneTest`: 5 → 8 cases. `MissionsViewModelTest`: 4 → 4 (only construction-arg update, no test changes).
+- Lint: clean, no new warnings.
+- `grep -c "@Transaction" app/src/main/java/com/whitefang/stepsofbabylon/data/local/*.kt` — **3 matches** (`WorkshopDao.kt`, `DailyStepDao.kt`, `MilestoneDao.kt`). RO-02 target is ≥5 atomic sites after all 5 PRs in the family land; 4/5 now (3 DAO-level `@Transaction` + 1 repo-level `withTransaction` in `StepCrossValidator`).
+- No mid-edit bugs this PR. The read-modify-write pattern from B.2 PR 2 translated cleanly to the gem/PS credit shape.
+
+### Surface changes
+
+- `ClaimMilestone` constructor: `(milestoneDao, playerRepository)` → `(milestoneDao, playerRepository, playerProfileDao)`. 3 call sites touched (`MissionsViewModel`, `ClaimMilestoneTest` sut + one direct construction, `MissionsViewModelTest` one direct construction); all updated in this PR.
+- `MissionsViewModel` constructor grew from 5 to 6 params. Hilt graph unaffected (PlayerProfileDao already `@Provides`-d). Test code that manually constructs `MissionsViewModel` — none; the test uses use-case-level assertions (matches existing precedent in the file header comment).
+- `FakeMilestoneDao` constructor: no-arg → optional `linkedPlayer` param. All 5 call sites (`ClaimMilestoneTest`, `CheckMilestonesTest`, `MissionsViewModelTest`, `HomeViewModelTest`, `FakeMilestoneDao` itself) remain source-compatible because the default is `null`. Only `ClaimMilestoneTest` and `MissionsViewModelTest` actively pass `linkedPlayer` — the other two don't credit through the fake and don't need the forwarding.
+- No new production dependencies. No ADR — RO-02 spec already covers this site; same rationale as B.2 PRs 1–3.
+
+### Open questions / blockers
+
+- None. Double-claim atomicity is proven at the fake/Mutex level; real Room transaction behaviour is a separate instrumented-test concern per RO-02 verification strategy.
+- 1 RO-02 site remains (B.2 PR 5 — wrap `runEndRoundPersistence` in a Room `@Transaction`). This is the smallest remaining unit: `runEndRoundPersistence` was extracted in B.3 PR 1 specifically to enable a single-call-site transaction wrap. Should be trivial.
+
+### Follow-ups
+
+- **B.2 PR 5 is the final RO-02 unit.** Should land next; completes the 5-site atomic-transaction family.
+- B.3 PR 2 (`onCleared` guard via `ProcessLifecycleOwner.lifecycleScope`) remains independent and can land any time after PR 5 to keep the B.2/B.3 ordering clean.
+- Doc drift: `AGENTS.md` still says "455 JVM tests" — now stale by four PRs (+3, +3, +2, +3). Bundle into the next A.1-style sweep rather than a one-line PR per change.
+- Phase C can begin in parallel with B.3 PR 2 once RO-02 closes.
+
+### Memory updated
+
+- `STATE.md` ✅ — current objective now "B.2 PR 4 complete"; B.2 PR 4 added to "what works"; priorities/next-actions reshuffled (B.2 PR 5 top); test count 465 → 468; critical-path line updated; last-run date 2026-05-08.
+- `RUN_LOG.md` ✅ — this entry.
+- ADR: not warranted — RO-02 spec already covers this site with full alternatives/rollback.
+
 ## 2026-05-07 — Phase B.2 PR 3 (RO-02 site #2): AppDatabase.withTransaction for StepCrossValidator
 
 - **Goal:** Apply RO-02 site #2 per `devdocs/evolution/refactoring_opportunities.md` §RO-02. `StepCrossValidator.validate` has multiple graduated-response branches that each pair a `playerRepository.spendSteps` / `addSteps` call with a `stepRepository.updateEscrow` / `releaseEscrow` call. A crash between the two writes leaves the wallet and escrow counter out of sync — either the player was charged without the escrow recording it (allowing double-spend on retry) or the reverse. RO-02 explicitly licenses the cross-layer `AppDatabase` import at this site (unlike PRs 1–2 where the transaction lives on the DAO) because the validator lives in `data/healthconnect/` and the graduated-response branches need parallel transaction scopes.

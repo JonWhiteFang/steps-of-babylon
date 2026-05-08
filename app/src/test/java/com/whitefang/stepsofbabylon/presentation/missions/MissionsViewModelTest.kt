@@ -2,6 +2,7 @@ package com.whitefang.stepsofbabylon.presentation.missions
 
 import com.whitefang.stepsofbabylon.data.local.DailyMissionEntity
 import com.whitefang.stepsofbabylon.data.local.MilestoneEntity
+import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -36,8 +38,8 @@ class MissionsViewModelTest {
     fun setup() {
         Dispatchers.setMain(dispatcher)
         missionDao = FakeDailyMissionDao()
-        milestoneDao = FakeMilestoneDao()
         playerRepo = FakePlayerRepository(PlayerProfile(gems = 50, powerStones = 10, totalStepsEarned = 5000))
+        milestoneDao = FakeMilestoneDao(linkedPlayer = playerRepo)
     }
 
     @AfterEach
@@ -65,7 +67,7 @@ class MissionsViewModelTest {
 
     @Test
     fun `claim milestone credits reward`() = runTest {
-        val claim = ClaimMilestone(milestoneDao, playerRepo)
+        val claim = ClaimMilestone(milestoneDao, playerRepo, mock<PlayerProfileDao>())
         claim(Milestone.FIRST_STEPS)
         // FIRST_STEPS rewards 60 Gems
         assertEquals(110, playerRepo.profile.value.gems)
