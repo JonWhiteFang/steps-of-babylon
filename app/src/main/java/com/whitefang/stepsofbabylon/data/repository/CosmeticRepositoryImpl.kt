@@ -55,17 +55,29 @@ class CosmeticRepositoryImpl @Inject constructor(
          * Ziggurat-skin color palette registry, keyed by [CosmeticEntity.cosmeticId].
          *
          * Populated in content PRs (C.2 PR 2+) as each cosmetic's visual override ships.
-         * Currently empty — the renderer pipeline (C.2 PR 1) is additive and no-op until the
-         * first palette lands. When a cosmetic's ID appears here, [toDomain] forwards the
-         * color list as [CosmeticItem.overrideColors] so the battle renderer can swap it in
-         * for the biome default when equipped.
+         * When a cosmetic's ID appears here, [toDomain] forwards the color list as
+         * [CosmeticItem.overrideColors] so the battle renderer can swap it in for the biome
+         * default when equipped (see `GameEngine.init` + `ZigguratEntity.layerColors`).
          *
          * Each entry MUST be exactly 5 Ints (one per ziggurat layer, bottom to top) to match
          * [com.whitefang.stepsofbabylon.presentation.battle.entities.ZigguratEntity.DEFAULT_COLORS].
+         *
+         * Current entries (C.2 PR 2):
+         *  - `zig_jade` — deep jade gradient, first end-to-end cosmetic. Remaining seed rows
+         *    ship their palettes in C.2 PR 3+ as content work.
          */
-        private val ZIGGURAT_COLOR_LOOKUP: Map<String, List<Int>> = emptyMap()
+        private val ZIGGURAT_COLOR_LOOKUP: Map<String, List<Int>> = mapOf(
+            "zig_jade" to listOf(
+                0xFF104E3C.toInt(), // layer 0 (base) — deep jade
+                0xFF1A6B52.toInt(),
+                0xFF2A8F6E.toInt(),
+                0xFF3CAB82.toInt(),
+                0xFF54C79A.toInt(), // layer 4 (top) — pale jade highlight
+            ),
+        )
 
         private val SEED_COSMETICS = listOf(
+            CosmeticEntity(cosmeticId = "zig_jade", category = "ZIGGURAT_SKIN", name = "Jade Ziggurat", description = "Deep jade stone with pale highlights", priceGems = 150),
             CosmeticEntity(cosmeticId = "zig_obsidian", category = "ZIGGURAT_SKIN", name = "Obsidian Ziggurat", description = "Dark volcanic stone", priceGems = 100),
             CosmeticEntity(cosmeticId = "zig_crystal", category = "ZIGGURAT_SKIN", name = "Crystal Ziggurat", description = "Translucent crystal layers", priceGems = 200),
             CosmeticEntity(cosmeticId = "zig_golden", category = "ZIGGURAT_SKIN", name = "Golden Ziggurat", description = "Pure gold plating", priceGems = 300),

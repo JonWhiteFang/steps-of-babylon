@@ -59,7 +59,7 @@ data/repository/CardRepositoryImpl.kt            # Card inventory
 data/repository/UltimateWeaponRepositoryImpl.kt  # Ultimate weapon state
 data/repository/StepRepositoryImpl.kt            # Daily step records + escrow + getDailyRecord()
 data/repository/WalkingEncounterRepositoryImpl.kt # Walking encounters
-data/repository/CosmeticRepositoryImpl.kt        # Cosmetic store items + private ZIGGURAT_COLOR_LOOKUP table (empty in C.2 PR 1; first entry ships with ZIG_JADE in PR 2); toDomain populates CosmeticItem.overrideColors from the lookup
+data/repository/CosmeticRepositoryImpl.kt        # Cosmetic store items + private ZIGGURAT_COLOR_LOOKUP table (C.2 PR 2: first entry `zig_jade` → 5-color jade palette; PR 3+ adds remaining 6 seeded + 3 milestone cosmetics); toDomain populates CosmeticItem.overrideColors from the lookup; SEED_COSMETICS: 8 rows (4 ZIGGURAT_SKIN incl. zig_jade @ 150 💎, 2 PROJECTILE_EFFECT, 2 ENEMY_SKIN)
 ```
 
 ## Data Layer — Sensor
@@ -313,6 +313,7 @@ fakes/FakeDailyMissionDao.kt                     # In-memory fake for DailyMissi
 fakes/FakeDailyLoginDao.kt                       # In-memory fake for DailyLoginDao
 fakes/FakeWeeklyChallengeDao.kt                  # In-memory fake for WeeklyChallengeDao
 fakes/FakeDailyStepDao.kt                        # In-memory fake for DailyStepDao with Flow support
+fakes/FakeCosmeticDao.kt                         # In-memory fake for CosmeticDao with auto-increment id simulation (C.2 PR 2)
 fakes/FakeTimeProvider.kt                        # Mutable TimeProvider with var fixedDate / fixedInstant (B.1)
 domain/usecase/CalculateUpgradeCostTest.kt        # Cost formula: baseCost × scaling^level, all 23 types
 domain/usecase/CanAffordUpgradeTest.kt            # Affordability checks against wallet
@@ -391,5 +392,6 @@ presentation/ux/UserFeedbackTest.kt                # Workshop purchase failure s
 presentation/DeepLinkRoutingTest.kt                # Deep-link intent extra extraction
 data/local/RoomSchemaTest.kt                       # Room v8 schema round-trip (profile, steps, workshop)
 data/integration/EscrowLifecycleTest.kt            # End-to-end escrow lifecycle (release + discard)
+data/repository/CosmeticRepositoryImplTest.kt      # Seed → ZIGGURAT_COLOR_LOOKUP → overrideColors mapping for zig_jade; non-jade seeds have null overrideColors; equipped zig_jade surfaces via observeEquipped with palette intact; ensureSeedData idempotent (C.2 PR 2)
 service/StepWidgetProviderTest.kt                  # Widget SharedPreferences round-trip
 ```

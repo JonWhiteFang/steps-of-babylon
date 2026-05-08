@@ -1,5 +1,83 @@
 # Run Log
 
+## 2026-05-08 — Phase C.2 PR 2 (RO-07): seed zig_jade as first end-to-end cosmetic
+
+- **Goal:** Land the first content slice of the C.2 cosmetic pipeline per `devdocs/evolution/implementation_roadmap.md` §C.2 PR 2. PR 1 shipped the renderer plumbing (dormant — `ZIGGURAT_COLOR_LOOKUP` empty). PR 2 seeds the first cosmetic (`zig_jade` — jade ziggurat recolour per gap_analysis §5.2), populates its palette, and lifts the R2-11 "Coming Soon" guard for that single ID so it's purchasable in the Store. Closes the "shipped but disabled" monetization gap for one end-to-end slice, unblocks the remaining 6 seeded + 3 milestone cosmetics as pure content work for PR 3+.
+- **Preflight:** read `START_HERE`, `STATE`, `CONSTRAINTS`, `RUN_LOG` head (doc-sweep + C.2 PR 1 + B.3 PR 2 + B.2 PRs 4-5 entries). `git status` clean on `main`, up to date with origin (last commit `d50cf9f docs(agent): mandate current-state doc sync before STATE/RUN_LOG in every PR task list`). Read `CosmeticRepositoryImpl` (SEED_COSMETICS + ZIGGURAT_COLOR_LOOKUP + toDomain), `CosmeticItem`, `StoreScreen`, `StoreViewModel` (purchaseCosmetic path), `CosmeticDao`, `CosmeticEntity`, `ZigguratEntity.DEFAULT_COLORS` (5 ints → content contract matches). Checked existing PR 1 `BattleViewModelTest` cosmetic fixtures for palette conventions — synthetic fixture uses `"ZIG_JADE"` uppercase, but existing seed rows (`zig_obsidian`, etc.) are snake_case lowercase. Chose `zig_jade` for consistency. Grep-confirmed no `CosmeticRepositoryImplTest` or `FakeCosmeticDao` existed.
+
+### Design
+
+**Cosmetic ID choice: `zig_jade` (lowercase).** The roadmap and gap_analysis §5.2 both write `ZIG_JADE` in prose, but existing `SEED_COSMETICS` rows (`zig_obsidian`, `zig_crystal`, `zig_golden`, `proj_fire`, etc.) all use snake_case. Treating the doc's uppercase as formatting emphasis not literal; lowercase matches the established ID convention. The PR 1 synthetic VM test fixture `"ZIG_JADE"` is a test-only string that injects through a fake repo — it doesn't collide with the real seed row.
+
+**Palette choice.** Reused the exact 5-color jade gradient from the PR 1 test fixture: `[0xFF104E3C, 0xFF1A6B52, 0xFF2A8F6E, 0xFF3CAB82, 0xFF54C79A]` (bottom layer → top highlight, deep jade to pale highlight). Tests lock in the exact values so any accidental palette mutation surfaces as a test failure (content-as-code contract). Matches the `ZigguratEntity.DEFAULT_COLORS` cardinality contract (exactly 5 Ints, one per layer).
+
+**StoreScreen allow-list idiom.** Introduced a file-level `private const val ENABLED_COSMETIC_ID = "zig_jade"` and gated the enable-branch on `cosmetic.cosmeticId == ENABLED_COSMETIC_ID`. Three alternatives rejected:
+1. Remove the guard entirely for all owned-but-not-equipped — wrong, purchase is still guarded by affordability only.
+2. Carry the allow-list in `CosmeticCategory` or as a list — premature abstraction; PR 3+ adds one ID at a time.
+3. Read `CosmeticItem.overrideColors != null` as the enable signal — couples the UI to the renderer contract, breaks the moment a category adds non-color overrides.
+
+The file-level const is the smallest step that scales monotonically with PR 3+ (add one ID to a list when the next palette lands).
+
+**Price point: 150 💎.** Between `zig_obsidian` (100) and `zig_crystal` (200). Matches the roadmap's implicit mid-tier positioning for the first cosmetic (150 is also the `proj_fire` / `proj_lightning` price — no collision, jade is a new category).
+
+**Disclaimer line update.** Was "Cosmetic visuals are being finalized. Purchases are disabled until ready." — now "Most cosmetic visuals are still being finalized. Jade Ziggurat is available now." Accurate signal to the player; doesn't overpromise.
+
+**Known debt explicitly not fixed in this PR.** `ensureSeedData` short-circuits when `dao.count() > 0`, so `zig_jade` only lands on fresh installs — existing dev installs need a data clear. Considered fixing in the same PR (one-line per-cosmeticId filter) but held scope tight per STATE.md's narrow phrasing ("seed ZIG_JADE + remove guard"). Flagged in the Known-issues section of STATE.md + CHANGELOG.md so it surfaces as explicit follow-up work before any further content PR. Low risk: pre-release app has no shipped installs; devs can clear data.
+
+### Files touched
+
+- `app/src/main/java/.../data/repository/CosmeticRepositoryImpl.kt` — `ZIGGURAT_COLOR_LOOKUP` gained the first entry (`"zig_jade" to [5-color jade palette]`); KDoc expanded to document the content-as-code contract and point at PR 3+ as the extension vehicle. `SEED_COSMETICS` gained a `zig_jade` row (ZIGGURAT_SKIN, 150 💎, placed first in the list so it surfaces at the top of the Store cosmetics section). Total seed count: 7 → 8.
+- `app/src/main/java/.../presentation/store/StoreScreen.kt` — file-level `private const val ENABLED_COSMETIC_ID = "zig_jade"` + KDoc explaining the allow-list contract + which other files must co-update when expanding (`CosmeticRepositoryImpl.SEED_COSMETICS` + `ZIGGURAT_COLOR_LOOKUP`). Enable-branch added to the `when` at the unowned-path of the cosmetic card: shows `💎 {priceGems}` on an enabled Button wired to `viewModel.purchaseCosmetic(cosmetic.cosmeticId)`, `enabled = !state.isPurchasing` (the existing double-tap guard). All non-`zig_jade` unowned cosmetics fall through to the pre-existing "Coming Soon" disabled Button. Disclaimer text updated.
+- `app/src/test/java/.../fakes/FakeCosmeticDao.kt` (new, 75 LOC) — in-memory `CosmeticDao` fake. Monotonic `nextId: Int` counter simulates Room's `@PrimaryKey(autoGenerate = true)`. Upsert resolves conflicts by `cosmeticId` (preserves id on update). KDoc explains the constraint: does NOT enforce cosmeticId uniqueness, caller's responsibility to drive via `ensureSeedData`.
+- `app/src/test/java/.../data/repository/CosmeticRepositoryImplTest.kt` (new, 134 LOC, 5 cases) — new test directory `app/src/test/java/.../data/repository/` matching the main-sources layout.
+
+### Tests added (5 new cases in new `CosmeticRepositoryImplTest`)
+
+1. **`C2PR2 - ensureSeedData inserts zig_jade as first end-to-end cosmetic`** — proves `ensureSeedData` on a fresh fake DAO creates the `zig_jade` row with the expected metadata (name = "Jade Ziggurat", category = ZIGGURAT_SKIN, priceGems = 150, isOwned = false, isEquipped = false).
+2. **`C2PR2 - zig_jade propagates jade palette via overrideColors from ZIGGURAT_COLOR_LOOKUP`** — proves the lookup table → `toDomain` chain: observed `zig_jade` has `overrideColors.size == 5` and matches the exact palette. Content-as-code contract; any accidental palette mutation fails this test.
+3. **`C2PR2 - other seeded ziggurat cosmetics have null overrideColors pending content PRs`** — regression guard: all 7 non-`zig_jade` seeds (`zig_obsidian`, `zig_crystal`, `zig_golden`, `proj_fire`, `proj_lightning`, `enemy_shadow`, `enemy_neon`) return `null` overrideColors. Proves the lookup is selective, not blanket.
+4. **`C2PR2 - equipped zig_jade surfaces via observeEquipped with overrideColors intact`** — repo-layer mirror of the PR 1 VM→engine test. Exercises the full equip path: `purchase("zig_jade")` → `equip("zig_jade")` → `observeEquipped().first()` returns jade with `isOwned = true`, `isEquipped = true`, `overrideColors.size == 5`. Together with PR 1's VM test, proves the end-to-end chain `CosmeticRepo → VM → engine.cosmeticOverrides → layer colors`.
+5. **`C2PR2 - ensureSeedData is idempotent on repeat call (count gate holds)`** — documents the current all-or-nothing contract. First call seeds 8 rows; second call returns early via `dao.count() > 0` gate. Locks in the known-debt behaviour so future content PRs that change `ensureSeedData` semantics surface as a test failure rather than silent double-seed.
+
+### Mid-edit bugs caught
+
+None. The fake construction, StoreScreen edit, and test suite landed on first try. The palette sync with the PR 1 test fixture was deliberate (reused the exact values to avoid a mismatch between the synthetic VM fixture and the real seed row).
+
+### Verification
+
+- `./run-gradle.sh test` — BUILD SUCCESSFUL in 20s, 36 actionable tasks. Test count: **475 → 480 JVM tests** (+5, matches exactly). 0 failures, 0 errors, 0 skipped.
+- Lint: clean (pre-existing warnings unchanged).
+- Grep sanity checks:
+  - `grep "zig_jade" app/src/main` — 3 hits (SEED_COSMETICS row + ZIGGURAT_COLOR_LOOKUP entry + StoreScreen ENABLED_COSMETIC_ID).
+  - `grep "Coming Soon" app/src/main` — 1 hit (the disabled Button text for all non-`zig_jade` unowned cosmetics; intentional).
+  - `grep "ENABLED_COSMETIC_ID" app/src/main` — 2 hits (declaration + one usage in the when-branch).
+- Behaviour preservation: the empty-`ZIGGURAT_COLOR_LOOKUP` default branch from PR 1 still short-circuits correctly for any cosmeticId not in the map (verified by test #3).
+
+### Surface changes
+
+- New content in `CosmeticRepositoryImpl` (1 seed row + 1 lookup entry + expanded KDoc). Additive — no other files need updating.
+- `StoreScreen` gained a file-level const + one additional branch in the `when` expression. No new imports. No API changes.
+- New test fake (`FakeCosmeticDao`) + new test file (`CosmeticRepositoryImplTest`). No existing tests modified.
+- No new production dependencies. No ADR — C.2 roadmap section fully covers this PR with alternatives/non-goals/rollback; ADR would duplicate content.
+
+### Open questions / blockers
+
+- **Known debt:** `ensureSeedData` count-gate prevents `zig_jade` (and all future content PR seed rows) from landing on existing dev installs. Fix is a one-line change (`val missing = SEED_COSMETICS.filter { it.cosmeticId !in existingIds }`) but I held it out of this PR to keep scope tight. Should land BEFORE C.2 PR 3 so content PRs don't each have to ship a data-clear workaround.
+- **Product decision for PR 3+:** which cosmetic is second? Roadmap / gap_analysis don't prescribe order. Proposed default: pick any one of the remaining 6 seeded ziggurat/projectile/enemy rows (my vote: `zig_obsidian` at 100 💎 — cheaper entry point, signals "affordable starter").
+
+### Follow-ups
+
+- **Immediate next PR (C.4):** `ClaimMilestone.Cosmetic` detection fix. Small, independent, surfaces the 3 mismatched milestone IDs as `Result.UnknownCosmetic` instead of silent drop. Promoted from #2 to #1 in STATE.md next-actions.
+- **Before C.2 PR 3:** fix `ensureSeedData` count-gate. Same file, one-line change, additive semantics (existing installs just gain the new row; no data loss).
+- **C.5 + C.6:** real Billing + Ad SDK swaps, each gated on ADR-0005 / ADR-0006 stubs. Independent of Phase C.2 progress.
+- **B.4 / B.5:** FollowOnPipeline + UpdateMissionProgress debt cleanup. Not blockers.
+
+### Memory updated
+
+- `STATE.md` ✅ — current objective now "Phase C.2 PR 2 landed"; C.2 PR 2 added to "what works"; known-debt line updated (`ensureSeedData` count-gate called out explicitly); priorities/next-actions reshuffled (C.4 top, seed-migration fix second, C.5/C.6 third); test count 475 → 480; critical-path updated to mark C.2 PRs 1+2 complete; last-run date 2026-05-08.
+- `RUN_LOG.md` ✅ — this entry.
+- ADR: not warranted — C.2 roadmap section fully covers the PR. The lowercase `zig_jade` vs roadmap's `ZIG_JADE` is a naming consistency choice, not an architectural decision.
+
 ## 2026-05-08 — Doc sweep: current-state sync after B.2 PRs 4-5 + B.3 PR 2 + C.2 PR 1
 
 - **Goal:** Close accumulated current-state doc drift. Last A.1-style sweep (2026-05-06) synced through Phase A; since then B.2 PRs 4-5, B.3 PR 2, and C.2 PR 1 have landed — 4 current-state docs were stale. Preflight grep confirmed 4 targets needed updates: `AGENTS.md`, `CHANGELOG.md`, `.kiro/steering/source-files.md`, `.kiro/steering/structure.md`. Historical artifacts (RUN_LOG, plan-R*, external-reviews, devdocs/archaeology, devdocs/evolution) intentionally left untouched per the A.1 precedent.

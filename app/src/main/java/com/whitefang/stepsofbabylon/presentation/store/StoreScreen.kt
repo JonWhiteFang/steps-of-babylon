@@ -110,7 +110,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
         item {
             Spacer(Modifier.height(8.dp))
             Text("Cosmetics", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text("Cosmetic visuals are being finalized. Purchases are disabled until ready.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text("Most cosmetic visuals are still being finalized. Jade Ziggurat is available now.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
         items(state.cosmetics) { cosmetic ->
             Card(Modifier.fillMaxWidth()) {
@@ -123,6 +123,13 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                     when {
                         cosmetic.isEquipped -> OutlinedButton(onClick = { viewModel.unequipCosmetic(cosmetic.cosmeticId) }) { Text("Unequip") }
                         cosmetic.isOwned -> Button(onClick = { viewModel.equipCosmetic(cosmetic.cosmeticId) }) { Text("Equip") }
+                        // C.2 PR 2: only zig_jade has a shipped renderer palette. Remaining
+                        // cosmetics stay behind the R2-11 "Coming Soon" guard until their
+                        // palette ships in C.2 PR 3+.
+                        cosmetic.cosmeticId == ENABLED_COSMETIC_ID -> Button(
+                            onClick = { viewModel.purchaseCosmetic(cosmetic.cosmeticId) },
+                            enabled = !state.isPurchasing,
+                        ) { Text("💎 ${cosmetic.priceGems}") }
                         else -> Button(
                             onClick = { },
                             enabled = false,
@@ -134,3 +141,11 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
     }
     }
 }
+
+/**
+ * Allow-list of cosmetic IDs whose renderer palette has shipped and whose purchase button is
+ * enabled in the store. Each entry here must have both a [data/repository/CosmeticRepositoryImpl]
+ * SEED_COSMETICS row and a ZIGGURAT_COLOR_LOOKUP / category-appropriate palette entry.
+ * See `docs/evolution/implementation_roadmap.md` §C.2 PR 2+.
+ */
+private const val ENABLED_COSMETIC_ID = "zig_jade"

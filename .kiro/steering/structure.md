@@ -40,7 +40,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 └── service/            # Foreground step-counting service, WorkManager workers, boot receiver
 
 app/src/test/java/com/whitefang/stepsofbabylon/
-├── fakes/              # In-memory fake repositories (FakePlayerRepository, FakeWorkshopRepository, FakeUltimateWeaponRepository, FakeLabRepository, FakeCardRepository, FakeWalkingEncounterRepository, FakeStepRepository, FakeCosmeticRepository, FakeBillingManager, FakeRewardAdManager, FakeMilestoneDao, FakeDailyMissionDao, FakeDailyLoginDao, FakeWeeklyChallengeDao, FakeDailyStepDao)
+├── fakes/              # In-memory fake repositories (FakePlayerRepository, FakeWorkshopRepository, FakeUltimateWeaponRepository, FakeLabRepository, FakeCardRepository, FakeWalkingEncounterRepository, FakeStepRepository, FakeCosmeticRepository, FakeBillingManager, FakeRewardAdManager, FakeMilestoneDao, FakeDailyMissionDao, FakeDailyLoginDao, FakeWeeklyChallengeDao, FakeDailyStepDao, FakeCosmeticDao, FakeTimeProvider)
 ├── domain/
 │   ├── model/          # Domain model invariant tests (TierConfig, Biome, Loadouts, UpgradeType, EnemyType, Milestone, DailyMissionType, BattleConditionEffects)
 │   └── usecase/        # All 32 use case tests
@@ -65,6 +65,7 @@ app/src/test/java/com/whitefang/stepsofbabylon/
 │   ├── sensor/         # StepRateLimiter, StepVelocityAnalyzer, StepIngestionPreferences, StepIngestion, DailyStepManager tests
 │   ├── healthconnect/  # StepCrossValidator, ActivityMinuteValidator tests
 │   ├── local/          # RoomSchema round-trip tests
+│   ├── repository/     # CosmeticRepositoryImpl tests (C.2 PR 2)
 │   └── integration/    # Escrow lifecycle tests
 ├── balance/            # Step economy, cost curves, enemy scaling, tier progression, cash, cards, UW, supply drops
 └── service/            # StepWidgetProvider tests
