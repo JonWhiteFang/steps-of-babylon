@@ -1,5 +1,84 @@
 # Run Log
 
+## 2026-05-08 — Phase C.2 PR 1 (RO-07): cosmetic renderer override pipeline (plumbing only)
+
+- **Goal:** Land PR 1 of the cosmetic rendering pipeline per `devdocs/evolution/refactoring_opportunities.md` §RO-07 and `implementation_roadmap.md` §C.2. The cosmetic system has three disconnected parts: **data** (`CosmeticEntity` / `CosmeticDao` / 7 seeded rows), **UI** (`StoreScreen` + `StoreViewModel` with the R2-11 "Coming Soon" guard disabling purchases), and **renderer** (`GameEngine` / `ZigguratEntity` with zero cosmetic awareness). This PR closes the *renderer* gap with pure-additive plumbing so PR 2 can seed one cosmetic (`ZIG_JADE`) end-to-end and remove the R2-11 guard for it.
+- **Preflight:** read `START_HERE`, `STATE`, `CONSTRAINTS`, `RUN_LOG` head (B.2/B.3 entries), `devdocs/evolution/refactoring_opportunities.md` §RO-07, `implementation_roadmap.md` §C.2. `git status` clean on `main`, up to date with origin (last commit `c083cb8 refactor: onCleared guard preserves mid-nav round progress (B.3 PR 2)`). Read `CosmeticItem`, `CosmeticEntity`, `CosmeticRepositoryImpl` (for SEED_COSMETICS and toDomain), `CosmeticCategory` enum, `CosmeticDao`, `domain/repository/CosmeticRepository` interface, `GameEngine.init` (ZigguratEntity construction site at line 142), `ZigguratEntity` (`layerColors: List<Int>` already a constructor param with `DEFAULT_COLORS` fallback), `BattleScreen` / `GameSurfaceView` / `BattleViewModel` for the engine lifecycle, `FakeCosmeticRepository`. Grep-confirmed `lifecycle-process` still not on classpath (N/A for C.2).
+
+### Design
+
+**Field placement on `CosmeticItem`.** The spec quote "BattleViewModel selects override.colors if ZIGGURAT category is present" suggests colors live on the cosmetic. Added `overrideColors: List<Int>? = null` as a nullable data-class field. `List<Int>` is pure Kotlin — no Android imports leak into `domain/`. Nullable default keeps every existing CosmeticItem construction site (tests + internal creations) source-compatible.
+
+**Color lookup table.** `CosmeticRepositoryImpl.companion object` gained `private val ZIGGURAT_COLOR_LOOKUP: Map<String, List<Int>> = emptyMap()`, consulted in `toDomain()` as `overrideColors = ZIGGURAT_COLOR_LOOKUP[cosmeticId]`. Empty in PR 1 — the first entry (`ZIG_JADE`) ships in PR 2. **No DB schema change.** Colors are content, stored in code; changing a palette is a one-line patch not a migration. KDoc calls out the contract: each entry MUST be exactly 5 Ints to match `ZigguratEntity.DEFAULT_COLORS`.
+
+**GameEngine contract.** New `@Volatile var cosmeticOverrides: Map<CosmeticCategory, CosmeticItem> = emptyMap()` public property on `GameEngine`. Default `emptyMap()` preserves today's rendering exactly. In `init()`, replaced the direct `layerColors = biomeTheme.zigguratColors` with:
+```kotlin
+val zigColors = cosmeticOverrides[CosmeticCategory.ZIGGURAT_SKIN]?.overrideColors
+    ?: biomeTheme.zigguratColors
+```
+Null-coalescing fallback — a player with no ziggurat cosmetic equipped, or an equipped cosmetic whose ID isn't in `ZIGGURAT_COLOR_LOOKUP`, gets the biome default. `@Volatile` is defensive — reads happen on the game-loop thread, writes happen on the UI/VM thread via Hilt-scoped coroutines.
+
+**BattleViewModel hydration.** `CosmeticRepository` added as a constructor dep (13 → 14 params). In the init-launch, after loading cards:
+```kotlin
+equippedCosmetics = cosmeticRepository.observeEquipped().first().associateBy { it.category }
+engine?.cosmeticOverrides = equippedCosmetics
+```
+**Two push sites, intentional.** The engine can be attached either *before* the init-launch completes (normal case — `startPollingEngine` fires from `BattleScreen`'s first composition, VM init launches a coroutine that completes later) or *after* (rare race). The init-launch pushes *if engine already attached*, and `startPollingEngine` also pushes `engine.cosmeticOverrides = equippedCosmetics` in case the init launch finishes first. Whichever fires last wins; both are idempotent writes to the same `@Volatile` field. The subsequent `engine.init()` (triggered by `surfaceView.configure()` when `isLoading=false`) reads the up-to-date map.
+
+**Non-goals in PR 1.** Per RO-07 non-goals: (a) no animated cosmetics; (b) only `ZIGGURAT_SKIN` category plumbed — `PROJECTILE_EFFECT` and `ENEMY_SKIN` follow in PR 3+ when content ships; (c) no R2-11 guard removal (that's PR 2, gated on content); (d) no `ClaimMilestone.Cosmetic` detection fix (that's C.4, independent).
+
+### Files touched
+
+- `app/src/main/java/.../domain/model/CosmeticItem.kt` (+`overrideColors: List<Int>? = null` field; class KDoc explaining the lookup-table relationship)
+- `app/src/main/java/.../data/repository/CosmeticRepositoryImpl.kt` (+`ZIGGURAT_COLOR_LOOKUP` empty map + KDoc; `toDomain` reads from it)
+- `app/src/main/java/.../presentation/battle/engine/GameEngine.kt` (+imports: `CosmeticCategory`, `CosmeticItem`; +`@Volatile var cosmeticOverrides` public property + KDoc; `init()` swaps `biomeTheme.zigguratColors` for null-coalesced lookup)
+- `app/src/main/java/.../presentation/battle/BattleViewModel.kt` (+imports: `CosmeticCategory`, `CosmeticItem`, `CosmeticRepository`; +`cosmeticRepository` constructor param (13 → 14); +`private var equippedCosmetics: Map<CosmeticCategory, CosmeticItem>` field; init-launch loads + pushes to `engine?.cosmeticOverrides`; `startPollingEngine` also pushes as defence against the load-vs-attach race)
+- `app/src/test/java/.../presentation/battle/BattleViewModelTest.kt` (+`cosmeticRepo` fixture; threaded through createVm + both RO-03 direct constructions; +2 new C.2 PR 1 tests)
+
+### Tests added (2 new cases in `BattleViewModelTest`, bringing it to 26 total)
+
+1. **`C2PR1 - no equipped cosmetics keeps engine cosmeticOverrides empty`** — regression guard. Empty `cosmeticRepo.items.value`, construct VM, install engine via `installEngineForEndRound` BEFORE `advanceUntilIdle` (so the VM's init-launch `engine?.cosmeticOverrides = equippedCosmetics` push lands on the test engine), advance. Assert `engine.cosmeticOverrides.isEmpty()`. Proves: players without equipped cosmetics see no change in engine state — the null-coalescing fallback in `engine.init()` returns the biome default.
+2. **`C2PR1 - equipped ziggurat cosmetic propagates to engine cosmeticOverrides`** — happy path. Seed an in-memory `CosmeticItem("ZIG_JADE", ZIGGURAT_SKIN, ..., overrideColors = jadeColors)` with `isEquipped = true`, install engine before advance, assert `engine.cosmeticOverrides[ZIGGURAT_SKIN]` matches the equipped item including `overrideColors`. Proves the end-to-end pipeline: `CosmeticRepository → VM → engine.cosmeticOverrides` is wired.
+
+### Mid-edit bugs caught
+
+1. **First build hung on test execution.** Gradle Test Executor at 100% CPU for several minutes; compilation and lint had already succeeded. Root cause: my initial tests called `vm.startPollingEngine(engine, mock())` to trigger the cosmetic push, but `startPollingEngine` launches an infinite `while(true) { delay(200); ziggurat ?: continue }` polling loop inside `viewModelScope`. Since `engine.init()` was never called in the test, `eng.ziggurat` stayed null, the `continue` branch fired every tick, and `advanceUntilIdle()` never returned — the test dispatcher kept seeing scheduled delays. Detected by checking `ps aux | grep gradle` and `tail /tmp/gradle_out.txt`. Fix: removed the `startPollingEngine` calls and installed the engine via `installEngineForEndRound(vm)` *before* the first `advanceUntilIdle`, so the VM's init-launch push (`engine?.cosmeticOverrides = equippedCosmetics`) lands on the engine when it runs. No polling loop, no hang. Stuck Gradle processes (test executor 24346, wrapper 24260, shell 24257) killed with `kill -9` before retry.
+2. **Import-line corruption from a two-edit batch.** My batch `edit_file` call inserted tests at the end *and* tried to normalise the imports block simultaneously; the imports got concatenated onto a single line (`fakes.*import com.whitefang...MilestoneNotificationManager`). Caught by the immediate follow-up diff and fixed with a one-line split. KSP didn't notice because the edit happened between compile and test runs.
+
+### Verification
+
+- First build: hung at `Task :app:testDebugUnitTest` (see Mid-edit bugs above). Compilation + lint succeeded.
+- Second build after fixing the hang and import corruption: `./run-gradle.sh :app:compileDebugKotlin :app:testDebugUnitTest :app:lintDebug` — BUILD SUCCESSFUL, zero warnings.
+- Test suite: **473 → 475 JVM tests** (+2, matches the 2 new pipeline tests exactly), 0 failures, 0 errors, 0 skipped. `BattleViewModelTest`: 24 → 26 cases.
+- Lint: clean.
+- Behavior preservation: existing tests unchanged; the null-coalescing `cosmeticOverrides[ZIGGURAT_SKIN]?.overrideColors ?: biomeTheme.zigguratColors` guarantees identical rendering when no cosmetic is equipped (the regression-guard test locks this in).
+
+### Surface changes
+
+- `CosmeticItem` gained a nullable field; all existing construction sites (test fakes, internal) stay source-compatible via default. 20 file hits, 0 required updates.
+- `GameEngine` gained a public `cosmeticOverrides` property — additive, no existing code consumes it yet.
+- `BattleViewModel` constructor grew 13 → 14 params. Hilt graph unaffected (`CosmeticRepository` already `@Binds`-ed in `RepositoryModule`). 3 test construction sites updated.
+- No new production dependencies. No ADR — RO-07 spec fully covers this PR with alternatives/non-goals/rollback; ADR would duplicate content.
+
+### Open questions / blockers
+
+- **None for PR 1.** The pipeline is live and dormant — waiting for PR 2's `ZIG_JADE` seed row + palette + R2-11 guard removal.
+- **Product decision for PR 2** is noted in the roadmap (gap_analysis §5.2 proposes jade ziggurat; any one-color-swap cosmetic works). Any other single-cosmetic choice just changes the ID string.
+
+### Follow-ups
+
+- **C.2 PR 2** is the next natural unit: +1 row in `SEED_COSMETICS`, +1 entry in `ZIGGURAT_COLOR_LOOKUP`, minus the R2-11 guard for that single ID in `StoreScreen` (existing logic at line 129). Zero changes needed in the pipeline itself.
+- **C.4** (`ClaimMilestone.Cosmetic` detection fix) is independent and can land in parallel; surfaces the 3 mismatched milestone cosmetic IDs as `Result.UnknownCosmetic` instead of silent drop.
+- **PR 3+** (remaining 6 seeded + 3 milestone cosmetics) is content work; each is +1 row / +1 palette / verify R2-11 removal. No pipeline changes.
+- Doc drift: `AGENTS.md` still says "455 JVM tests" — now stale by seven PRs (+20 total). Continue bundling into the next A.1-style sweep; post-Phase-C is the natural checkpoint.
+- `.kiro/steering/source-files.md` should add `di/CoroutineScopeModule.kt` (B.3 PR 2) on the next doc sweep; it's the only new file in `app/src/main/` since the last sweep that the index hasn't caught yet.
+
+### Memory updated
+
+- `STATE.md` ✅ — current objective now "C.2 PR 1 (plumbing only)"; C.2 PR 1 added to "what works"; priorities/next-actions reshuffled (C.2 PR 2 top, C.4 second); test count 473 → 475; critical-path line updated to mark C.2 PR 1 complete.
+- `RUN_LOG.md` ✅ — this entry.
+- ADR: not warranted — RO-07 spec + C.2 roadmap section already cover the PR with alternatives, risk, verification, rollback, non-goals. One-line deviation (color table location: code not DB) is documented in the `ZIGGURAT_COLOR_LOOKUP` KDoc, discoverable at the point of use.
+
 ## 2026-05-08 — Phase B.3 PR 2 (RO-03, FINAL): onCleared guard via @ApplicationScope CoroutineScope
 
 - **Goal:** Land the final RO-03 unit per `devdocs/evolution/refactoring_opportunities.md` §RO-03. `BattleViewModel.onCleared` currently nulls the step-reward callback and calls `super.onCleared()` — which cancels `viewModelScope`. If a deep-link navigation teardown fires mid-round (e.g. a supply-drop notification replaces the Battle route), any in-flight round-persistence work is silently discarded. The spec calls for a scope that outlives VM cancellation; we fill in that gap.

@@ -1,7 +1,7 @@
 # Project State
 
 ## Current objective
-- **RO-03 is COMPLETE.** Phase B.3 PR 2 landed — `BattleViewModel.onCleared` now launches the end-of-round persistence on an `@ApplicationScope`-provided `CoroutineScope` when the round is in progress, so mid-battle deep-link navigation no longer silently discards round state. Both B.3 PRs now done; both RO-02 and RO-03 families complete.
+- Phase C.2 PR 1 (cosmetic renderer override pipeline) landed — `GameEngine.cosmeticOverrides: Map<CosmeticCategory, CosmeticItem>` now plumbs through from `CosmeticRepository → BattleViewModel → GameEngine → ZigguratEntity.layerColors`. Pure additive plumbing; no visible change until C.2 PR 2 seeds the first cosmetic (`ZIG_JADE`) and removes the R2-11 guard for it.
 - Plan 31: Play Console & Store Publication — still the only release-blocker; Phase C.5/C.6 (real Billing/Ad SDKs) are its prerequisites.
 
 ## What works
@@ -17,7 +17,8 @@
 - Phase B.2 PR 4 (RO-02 site #4) landed: atomic `@Transaction` DAO method for milestone claims. `MilestoneDao.claimMilestoneAtomic` wraps the already-claimed check + `upsert(... claimed = true)` + wallet credits (`playerProfileDao.adjustGems` + `incrementGemsEarned`; equivalent for Power Stones) in one SQLite transaction. `ClaimMilestone` use case still reads `totalStepsEarned` through `PlayerRepository` (monotonic read, safe outside the tx) but drops the reward-iteration credit loop and delegates to the atomic DAO method. `MissionsViewModel` gained a Hilt-injected `PlayerProfileDao`. Closes the partial-failure window between the reward credits and the mark-claimed write (crash between them would enable double-credit on retry) and the double-claim race (two concurrent clicks could both see `claimed = false` and both credit the reward).
 - Phase B.2 PR 5 (RO-02 site #5, FINAL) landed: `BattleViewModel.runEndRoundPersistence` now commits its 5 SQLite writes inside a single `AppDatabase.withTransaction { }` block. Constructor grew to 12 params (added `AppDatabase`). Introduced `@VisibleForTesting internal var runInTransaction` seam matching `StepCrossValidator`'s B.2 PR 3 idiom so existing Mockito-based tests keep working without a real Room DB. Non-SQLite side effects (milestone notification, `_uiState.update`) deliberately moved to *after* the tx so the DB lock isn't held across Android system calls or UI pushes. Outer `runCatching { runInTransaction { ... } }` preserves RO-03 resilience — Room infrastructure failures (disk full, SQLCipher decrypt failure) still let the post-round overlay appear. **RO-02 family complete: 5/5 sites landed.**
 - Phase B.3 PR 2 (RO-03, FINAL) landed: `BattleViewModel.onCleared` now guards against mid-nav round loss. Introduced `@ApplicationScope` qualifier + `di/CoroutineScopeModule.kt` providing a singleton `CoroutineScope(SupervisorJob() + Dispatchers.Default)` that outlives VM cancellation. `BattleViewModel` constructor grew to 13 params; new `markEndedAndLaunchPersistence(scope, engine)` helper centralises the "claim guard + compute wave + launch" sequence so both `endRound()` (via `viewModelScope`) and the new `onCleared` guard (via `applicationScope`) stay in sync. Added `GameEngine.hasWaveProgress()` so `onCleared` skips persistence for no-progress bounce-throughs. Deviated from RO-03 spec's `ProcessLifecycleOwner.lifecycleScope` suggestion because `lifecycle-process` is not on the classpath, and Hilt-injected scope is more testable + uses `Dispatchers.Default` (DB-appropriate) over `Dispatchers.Main`. **RO-03 family complete.**
-- **473 JVM tests** green (+61 vs pre-Phase-A 412 baseline; +18 vs pre-B.2 455 baseline).
+- Phase C.2 PR 1 (cosmetic renderer override pipeline) landed: `CosmeticItem.overrideColors: List<Int>?` nullable field populated by `CosmeticRepositoryImpl` via a code-side `ZIGGURAT_COLOR_LOOKUP` table (empty in PR 1; first entry ships with `ZIG_JADE` in PR 2). `GameEngine.cosmeticOverrides: Map<CosmeticCategory, CosmeticItem>` `@Volatile var` read by `init()` to select ziggurat layer colors (`cosmeticOverrides[ZIGGURAT_SKIN]?.overrideColors ?: biomeTheme.zigguratColors` — no regression when no cosmetic equipped). `BattleViewModel` constructor grew to 14 params (added `CosmeticRepository`); loads equipped cosmetics in the init launch and pushes to `engine.cosmeticOverrides` both directly (init-launch completion) and via `startPollingEngine` — idempotent double-push handles the race. Plumbing only — no user-visible change until PR 2 seeds the first cosmetic and removes the R2-11 guard.
+- **475 JVM tests** green (+63 vs pre-Phase-A 412 baseline; +20 vs pre-B.2 455 baseline).
 
 ## Known issues / debt
 - Billing/ads still use stub implementations — real SDK integration pending Phase C.5/C.6.
@@ -27,18 +28,19 @@
 - Phase B core refactors (@Transaction for 5 multi-write sites, resilient endRound, FollowOnPipeline extraction, UpdateMissionProgress use case) are debt, not blockers. B.1 TimeProvider landed. **B.2 PRs 1–5 all landed — RO-02 complete.** **B.3 PRs 1–2 all landed — RO-03 complete.** B.4/B.5 (FollowOnPipeline + UpdateMissionProgress) remain.
 
 ## Top priorities (next 5)
-1. Phase C.2 — Cosmetic rendering pipeline PRs 1–2 (ship one cosmetic end-to-end). Release critical path.
-2. Phase C.5 + C.6 — Real Billing SDK and Ad SDK swaps (each gated on its ADR stub).
-3. Phase B.4 — FollowOnPipeline extraction from `DailyStepManager` (debt, not blocker).
-4. Phase B.5 — `UpdateMissionProgress` use case (debt, not blocker; removes 2 forbidden-direction imports).
+1. Phase C.2 PR 2 — seed `ZIG_JADE` in `SEED_COSMETICS` + `ZIGGURAT_COLOR_LOOKUP`; remove R2-11 "Coming Soon" guard for `ZIG_JADE` only in StoreScreen. First end-to-end cosmetic. Release critical.
+2. Phase C.4 — `ClaimMilestone.Cosmetic` detection fix (UnknownCosmetic result variant). Small, surfaces the 3 mismatched milestone IDs.
+3. Phase C.5 + C.6 — Real Billing SDK and Ad SDK swaps (each gated on its ADR stub).
+4. Phase B.4 — FollowOnPipeline extraction from `DailyStepManager` (debt, not blocker).
 5. Phase D — Plan 31 Play Console setup, AAB upload, Firebase pre-launch.
 
 ## Next actions (explicit order)
-1. Open ADR-0005 (Billing SDK) and ADR-0006 (Ad SDK) stubs, then land C.5 + C.6.
-2. C.2 cosmetic pipeline can land anywhere after B.1 — pick first cosmetic (gap_analysis §5.2 proposes jade-ziggurat recolour).
-3. B.4 FollowOnPipeline extraction from `DailyStepManager` — debt cleanup; removes 4 of the 12 forbidden-direction imports.
-4. B.5 `UpdateMissionProgress` use case — debt cleanup; removes 2 forbidden imports; composes with B.4.
-5. Finish with Phase D (Plan 31 Play Console setup, AAB upload, Firebase pre-launch).
+1. C.2 PR 2 — seed first cosmetic (`ZIG_JADE` per gap_analysis §5.2) + remove R2-11 guard for that ID only. Closes the "shipped but disabled" monetization gap for one end-to-end slice.
+2. C.4 — `ClaimMilestone.Cosmetic` detection fix. Surfaces UnknownCosmetic result variant so mismatched milestone IDs stop silently dropping.
+3. Open ADR-0005 (Billing SDK) and ADR-0006 (Ad SDK) stubs, then land C.5 + C.6.
+4. B.4 FollowOnPipeline extraction from `DailyStepManager` — debt cleanup; removes 4 of the 12 forbidden-direction imports.
+5. B.5 `UpdateMissionProgress` use case — debt cleanup; composes with B.4.
+6. Finish with Phase D (Plan 31 Play Console setup, AAB upload, Firebase pre-launch).
 
 ## Do-not-touch / fragile zones
 - `domain/model/` — stable, all constants validated by balance tests.
@@ -74,5 +76,5 @@
 - Codebase cleanup inventory (Phase 13): devdocs/archaeology/cleanup_inventory.md — removal/consolidation/quarantine candidates; Dynamic-risk register §F pins classes invisible to grep
 - Evolution (Phase 14, Part 1): devdocs/evolution/refactoring_opportunities.md — top-10 highest-ROI refactors (RO-01..RO-10) with current pattern, proposed abstraction, benefits, effort, risk+mitigation, ROI, first safe step, verification, rollback, non-goals
 - Evolution (Phase 14, Part 2): devdocs/evolution/implementation_roadmap.md — phased plan (A Foundation, B Core Refactoring, C Gap Filling, D Integration & Polish); each item has files / dependencies / success criteria / risk / verification / PR size / rollback / owner role
-- Critical path: 01→…→30→R→R2→ Battle Step Rewards → **Phase A done** → B.1 done → **B.2 done (RO-02 complete)** → **B.3 done (RO-03 complete)** → B.4–B.5 → C → D → 31
-- Last run: 2026-05-08 (Phase B.3 PR 2 — onCleared guard via @ApplicationScope CoroutineScope; 470 → 473 tests, all green; lintDebug green; **RO-03 COMPLETE**)
+- Critical path: 01→…→30→R→R2→ Battle Step Rewards → **Phase A done** → B.1 done → **B.2 done (RO-02 complete)** → **B.3 done (RO-03 complete)** → B.4–B.5 → **C.2 PR 1 done** → C.2 PR 2 + C.4 + C.5 + C.6 → D → 31
+- Last run: 2026-05-08 (Phase C.2 PR 1 — cosmetic renderer override pipeline, plumbing only; 473 → 475 tests, all green; lintDebug green; first release-critical cosmetic unblocked for PR 2)

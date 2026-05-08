@@ -34,6 +34,7 @@ class BattleViewModelTest {
     private lateinit var adManager: FakeRewardAdManager
     private lateinit var dailyStepDao: FakeDailyStepDao
     private lateinit var applicationScope: CoroutineScope
+    private lateinit var cosmeticRepo: FakeCosmeticRepository
     private val biomePreferences = mock<BiomePreferences>()
     private val dailyMissionDao = mock<com.whitefang.stepsofbabylon.data.local.DailyMissionDao>()
     private val playerProfileDao = mock<com.whitefang.stepsofbabylon.data.local.PlayerProfileDao>()
@@ -49,6 +50,7 @@ class BattleViewModelTest {
         uwRepo = FakeUltimateWeaponRepository()
         cardRepo = FakeCardRepository()
         adManager = FakeRewardAdManager()
+        cosmeticRepo = FakeCosmeticRepository()
         // Link the DAO to playerRepo so the VM's internal AwardBattleSteps (post-B.2 PR 2 goes
         // through DailyStepDao.creditBattleStepsAtomic) still surfaces wallet changes via the
         // existing FakePlayerRepository.profile flow.
@@ -65,7 +67,7 @@ class BattleViewModelTest {
     fun tearDown() { Dispatchers.resetMain() }
 
     private fun createVm(timeProvider: com.whitefang.stepsofbabylon.domain.time.TimeProvider = com.whitefang.stepsofbabylon.data.time.SystemTimeProvider()) = BattleViewModel(
-        workshopRepo, playerRepo, biomePreferences, uwRepo, cardRepo,
+        workshopRepo, playerRepo, biomePreferences, uwRepo, cardRepo, cosmeticRepo,
         dailyMissionDao, dailyStepDao, playerProfileDao, appDatabase, applicationScope, milestoneNotificationManager, adManager,
         timeProvider,
     ).apply {
@@ -366,7 +368,7 @@ class BattleViewModelTest {
             }
         }
         val vm = BattleViewModel(
-            workshopRepo, throwingPlayer, biomePreferences, uwRepo, cardRepo,
+            workshopRepo, throwingPlayer, biomePreferences, uwRepo, cardRepo, cosmeticRepo,
             dailyMissionDao, dailyStepDao, playerProfileDao, appDatabase, applicationScope, milestoneNotificationManager, adManager,
         ).apply { runInTransaction = { block -> block() } }
         backgroundScope.launch { vm.uiState.collect {} }
@@ -404,7 +406,7 @@ class BattleViewModelTest {
             }
         }
         val vm = BattleViewModel(
-            workshopRepo, brokenPlayer, biomePreferences, uwRepo, cardRepo,
+            workshopRepo, brokenPlayer, biomePreferences, uwRepo, cardRepo, cosmeticRepo,
             dailyMissionDao, dailyStepDao, playerProfileDao, appDatabase, applicationScope, milestoneNotificationManager, adManager,
         ).apply { runInTransaction = { block -> block() } }
         backgroundScope.launch { vm.uiState.collect {} }
@@ -626,5 +628,57 @@ class BattleViewModelTest {
             playerRepo.profile.value.totalRoundsPlayed,
             "onCleared after quitRound must be a no-op — roundEnded guard must hold",
         )
+    }
+
+    // -------- C.2 PR 1 cosmetic renderer override pipeline tests --------
+
+    @Test
+    fun `C2PR1 - no equipped cosmetics keeps engine cosmeticOverrides empty`() = runTest(dispatcher) {
+        // Regression guard: the pipeline is additive. Players with nothing equipped must see
+        // exactly the same engine state as before this PR — empty map propagated by the VM
+        // init-launch's `engine?.cosmeticOverrides = equippedCosmetics` write when engine is
+        // attached before the launch completes (same timing relationship as startPollingEngine
+        // in prod). engine.init() later uses the null-coalescing fallback to biome colors.
+        cosmeticRepo.items.value = emptyList()
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        // Install engine BEFORE letting the init launch complete, so the VM's push in the
+        // init block lands on this engine. Mirrors the prod ordering where startPollingEngine
+        // (which attaches the engine) fires first, then the init launch's cosmetic load pushes.
+        val engine = installEngineForEndRound(vm)
+        advanceUntilIdle()
+
+        assertTrue(
+            engine.cosmeticOverrides.isEmpty(),
+            "no cosmetics equipped → engine.cosmeticOverrides must stay empty (no-regression default)",
+        )
+    }
+
+    @Test
+    fun `C2PR1 - equipped ziggurat cosmetic propagates to engine cosmeticOverrides`() = runTest(dispatcher) {
+        // Seed an equipped ZIGGURAT_SKIN cosmetic with an override palette. After VM init
+        // completes the engine must see it in cosmeticOverrides keyed by category, so the
+        // subsequent engine.init() can apply it when constructing ZigguratEntity.
+        val jadeColors = listOf(0xFF104E3C.toInt(), 0xFF1A6B52.toInt(), 0xFF2A8F6E.toInt(), 0xFF3CAB82.toInt(), 0xFF54C79A.toInt())
+        val jade = CosmeticItem(
+            cosmeticId = "ZIG_JADE",
+            category = CosmeticCategory.ZIGGURAT_SKIN,
+            name = "Jade Ziggurat",
+            description = "Test-only jade palette",
+            priceGems = 100L,
+            isOwned = true,
+            isEquipped = true,
+            overrideColors = jadeColors,
+        )
+        cosmeticRepo.items.value = listOf(jade)
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        val engine = installEngineForEndRound(vm)
+        advanceUntilIdle()
+
+        val applied = engine.cosmeticOverrides[CosmeticCategory.ZIGGURAT_SKIN]
+        assertNotNull(applied, "equipped ziggurat cosmetic must propagate to engine.cosmeticOverrides")
+        assertEquals("ZIG_JADE", applied!!.cosmeticId)
+        assertEquals(jadeColors, applied.overrideColors)
     }
 }

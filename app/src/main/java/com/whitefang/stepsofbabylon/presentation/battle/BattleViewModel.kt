@@ -12,6 +12,8 @@ import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.domain.model.AdPlacement
 import com.whitefang.stepsofbabylon.domain.model.AdResult
 import com.whitefang.stepsofbabylon.domain.model.Biome
+import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
+import com.whitefang.stepsofbabylon.domain.model.CosmeticItem
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.data.BiomePreferences
 import com.whitefang.stepsofbabylon.domain.model.OwnedCard
@@ -22,6 +24,7 @@ import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.RewardAdManager
 import com.whitefang.stepsofbabylon.domain.repository.CardRepository
+import com.whitefang.stepsofbabylon.domain.repository.CosmeticRepository
 import com.whitefang.stepsofbabylon.domain.repository.UltimateWeaponRepository
 import com.whitefang.stepsofbabylon.domain.repository.WorkshopRepository
 import com.whitefang.stepsofbabylon.domain.time.TimeProvider
@@ -59,6 +62,7 @@ class BattleViewModel @Inject constructor(
     private val biomePreferences: BiomePreferences,
     private val uwRepository: UltimateWeaponRepository,
     private val cardRepository: CardRepository,
+    private val cosmeticRepository: CosmeticRepository,
     private val dailyMissionDao: DailyMissionDao,
     private val dailyStepDao: DailyStepDao,
     private val playerProfileDao: PlayerProfileDao,
@@ -103,6 +107,7 @@ class BattleViewModel @Inject constructor(
     var tier: Int = 1; private set
     private var equippedWeapons: List<OwnedWeapon> = emptyList()
     private var equippedCards: List<OwnedCard> = emptyList()
+    private var equippedCosmetics: Map<CosmeticCategory, CosmeticItem> = emptyMap()
     private var cardCashBonus: Double = 0.0
     private var cardSecondWind: Double = 0.0
     private var roundEnded = false
@@ -120,6 +125,14 @@ class BattleViewModel @Inject constructor(
             resolvedStats = cardResult.stats
             cardCashBonus = cardResult.cashBonusPercent
             cardSecondWind = cardResult.secondWindHpPercent
+
+            // RO-07 C.2 PR 1: hydrate the equipped-cosmetic override map. Stored on the VM so
+            // `startPollingEngine` (which may fire before or after this launch completes) can
+            // propagate the map to the engine; we also push directly to `engine` here if it's
+            // already attached — whichever write fires last wins and the subsequent
+            // `engine.init()` (gated on isLoading=false below) reads the up-to-date map.
+            equippedCosmetics = cosmeticRepository.observeEquipped().first().associateBy { it.category }
+            engine?.cosmeticOverrides = equippedCosmetics
 
             val biome = Biome.forTier(tier)
             val transition = if (!biomePreferences.hasSeenBiome(biome)) BiomeTransitionInfo(biome, profile.totalStepsEarned) else null
@@ -141,6 +154,11 @@ class BattleViewModel @Inject constructor(
         this.engine = engine; this.surfaceView = surfaceView
         engine.setStats(resolvedStats); engine.initUWs(equippedWeapons)
         engine.secondWindHpPercent = cardSecondWind; engine.cashBonusPercent = cardCashBonus
+        // RO-07 C.2 PR 1: propagate the cosmetic override map. May be empty if the VM init
+        // launch hasn't completed yet; the init path re-pushes on completion so the subsequent
+        // `engine.init()` (fired by the surfaceView when isLoading becomes false) reads the
+        // up-to-date set either way.
+        engine.cosmeticOverrides = equippedCosmetics
         wireStepRewardCallback(engine)
         roundEnded = false
         viewModelScope.launch {

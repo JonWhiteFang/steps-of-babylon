@@ -47,9 +47,24 @@ class CosmeticRepositoryImpl @Inject constructor(
         priceGems = priceGems,
         isOwned = isOwned,
         isEquipped = isEquipped,
+        overrideColors = ZIGGURAT_COLOR_LOOKUP[cosmeticId],
     )
 
     companion object {
+        /**
+         * Ziggurat-skin color palette registry, keyed by [CosmeticEntity.cosmeticId].
+         *
+         * Populated in content PRs (C.2 PR 2+) as each cosmetic's visual override ships.
+         * Currently empty — the renderer pipeline (C.2 PR 1) is additive and no-op until the
+         * first palette lands. When a cosmetic's ID appears here, [toDomain] forwards the
+         * color list as [CosmeticItem.overrideColors] so the battle renderer can swap it in
+         * for the biome default when equipped.
+         *
+         * Each entry MUST be exactly 5 Ints (one per ziggurat layer, bottom to top) to match
+         * [com.whitefang.stepsofbabylon.presentation.battle.entities.ZigguratEntity.DEFAULT_COLORS].
+         */
+        private val ZIGGURAT_COLOR_LOOKUP: Map<String, List<Int>> = emptyMap()
+
         private val SEED_COSMETICS = listOf(
             CosmeticEntity(cosmeticId = "zig_obsidian", category = "ZIGGURAT_SKIN", name = "Obsidian Ziggurat", description = "Dark volcanic stone", priceGems = 100),
             CosmeticEntity(cosmeticId = "zig_crystal", category = "ZIGGURAT_SKIN", name = "Crystal Ziggurat", description = "Translucent crystal layers", priceGems = 200),

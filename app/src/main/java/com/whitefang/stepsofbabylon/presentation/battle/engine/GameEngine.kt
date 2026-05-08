@@ -3,6 +3,8 @@ package com.whitefang.stepsofbabylon.presentation.battle.engine
 import android.graphics.Canvas
 import com.whitefang.stepsofbabylon.domain.model.BattleConditionEffects
 import com.whitefang.stepsofbabylon.domain.model.Biome
+import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
+import com.whitefang.stepsofbabylon.domain.model.CosmeticItem
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
 import com.whitefang.stepsofbabylon.domain.model.OverdriveType
@@ -101,6 +103,21 @@ class GameEngine {
      */
     fun hasWaveProgress(): Boolean = elapsedTimeSeconds > 0f || totalEnemiesKilled > 0
 
+    /**
+     * Equipped-cosmetic override map, indexed by category. Read by [init] when constructing
+     * entities whose visuals can be overridden by a cosmetic (currently only [ZigguratEntity]
+     * layer colors, via [CosmeticCategory.ZIGGURAT_SKIN]). Default `emptyMap()` means "use
+     * the biome theme" — no behaviour change when no cosmetic is equipped (RO-07 C.2 PR 1).
+     *
+     * Populated by [com.whitefang.stepsofbabylon.presentation.battle.BattleViewModel] after
+     * loading the player's equipped-cosmetic set from [com.whitefang.stepsofbabylon.domain.repository.CosmeticRepository].
+     * Assignment should happen BEFORE [init] runs; the ViewModel hydrates in both
+     * `startPollingEngine` (early) and the init-launch completion path (later), so whichever
+     * fires last wins — the subsequent [init] call reads the up-to-date map.
+     */
+    @Volatile var cosmeticOverrides: Map<CosmeticCategory, CosmeticItem> = emptyMap()
+
+
 
     data class UWState(val type: UltimateWeaponType, val level: Int, var cooldownRemaining: Float = 0f, var effectTimeRemaining: Float = 0f)
     val uwStates = mutableListOf<UWState>()
@@ -139,7 +156,9 @@ class GameEngine {
         overdriveAuraEffect = null
         lastWave = 0
 
-        val zig = ZigguratEntity(width, height, stats, ::findNearestEnemies, layerColors = biomeTheme.zigguratColors) { sx, sy, tx, ty ->
+        val zigColors = cosmeticOverrides[CosmeticCategory.ZIGGURAT_SKIN]?.overrideColors
+            ?: biomeTheme.zigguratColors
+        val zig = ZigguratEntity(width, height, stats, ::findNearestEnemies, layerColors = zigColors) { sx, sy, tx, ty ->
             pendingAdd.add(ProjectileEntity(sx, sy, tx, ty, ZigguratBaseStats.PROJECTILE_SPEED, bouncesRemaining = stats.bounceCount))
             soundManager?.play(SoundEffect.SHOOT)
         }
