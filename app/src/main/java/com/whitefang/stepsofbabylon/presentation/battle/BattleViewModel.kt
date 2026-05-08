@@ -1,8 +1,11 @@
 package com.whitefang.stepsofbabylon.presentation.battle
 
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.withTransaction
+import com.whitefang.stepsofbabylon.data.local.AppDatabase
 import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
 import com.whitefang.stepsofbabylon.data.local.DailyStepDao
 import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
@@ -57,6 +60,7 @@ class BattleViewModel @Inject constructor(
     private val dailyMissionDao: DailyMissionDao,
     private val dailyStepDao: DailyStepDao,
     private val playerProfileDao: PlayerProfileDao,
+    private val appDatabase: AppDatabase,
     private val milestoneNotificationManager: MilestoneNotificationManager,
     private val rewardAdManager: RewardAdManager,
     private val timeProvider: TimeProvider = SystemTimeProvider(),
@@ -64,6 +68,20 @@ class BattleViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(BattleUiState())
     val uiState: StateFlow<BattleUiState> = _uiState.asStateFlow()
+
+    /**
+     * Runs [block] inside a single Room transaction so the end-of-round write fan-out commits
+     * atomically. Exposed as `@VisibleForTesting internal var` because the tests construct this
+     * class with `mock<AppDatabase>()` — Mockito mocks of [AppDatabase] do not support Room's
+     * `withTransaction` extension. Tests override this with a pass-through lambda so the
+     * behaviour under test is the persistence logic, not Room's transaction machinery (which
+     * is validated by instrumented tests, not JVM). Matches the idiom established by
+     * [com.whitefang.stepsofbabylon.data.healthconnect.StepCrossValidator] (B.2 PR 3).
+     */
+    @VisibleForTesting
+    internal var runInTransaction: suspend (block: suspend () -> Unit) -> Unit = { block ->
+        appDatabase.withTransaction { block() }
+    }
 
     private val resolveStats = ResolveStats()
     private val calculateCost = CalculateUpgradeCost()
@@ -157,32 +175,96 @@ class BattleViewModel @Inject constructor(
     /**
      * Runs the end-of-round persistence fan-out and pushes the post-round UI state.
      *
-     * Each write / notification is isolated in its own `runCatching { }.onFailure { Log.w }`
-     * block so a single Room or notification-manager exception cannot leave the player on a
-     * frozen battle screen with no post-round overlay. Writes whose results feed the
-     * [RoundEndState] ([updateBestWave], [awardWaveMilestone], [playerRepository.updateHighestUnlockedTier])
-     * fall back to safe defaults on failure so the UI push always runs.
+     * **Resilience (RO-03, B.3 PR 1):** Each write / notification is isolated in its own
+     * `runCatching { }.onFailure { Log.w }` block so a single Room or notification-manager
+     * exception cannot leave the player on a frozen battle screen with no post-round overlay.
+     * Writes whose results feed the [RoundEndState] ([updateBestWave], [awardWaveMilestone],
+     * [playerRepository.updateHighestUnlockedTier]) fall back to safe defaults on failure so
+     * the UI push always runs.
      *
-     * Composes with future RO-02 PR 5 — wrapping the body in a Room `@Transaction` turns three
-     * atomicity gaps into one transactional boundary; this extraction makes that wrapper a
-     * single-call-site change.
+     * **Atomicity (RO-02, B.2 PR 5):** All 5 SQLite writes now commit inside a single Room
+     * transaction via [runInTransaction]. This gives external readers (e.g. Flow-based reactive
+     * reads in other ViewModels) "all-or-nothing" visibility of the end-of-round state instead
+     * of being able to observe a partially-applied fan-out. The outer [runCatching] around
+     * the transaction preserves the RO-03 guarantee even if Room's infrastructure itself
+     * throws (disk full, SQLCipher decrypt failure, etc.) — the UI push still runs.
+     *
+     * Non-SQLite side effects stay *outside* the transaction: the milestone notification
+     * ([MilestoneNotificationManager.notifyNewBestWave]) posts through the Android
+     * notification system, not Room, and the `_uiState.update` push is in-memory state.
+     * Holding the DB lock across these would serve no purpose.
      */
     private suspend fun runEndRoundPersistence(eng: GameEngine, wave: Int) {
-        // Write 1: best wave per tier. Result feeds the UI push below.
-        val bestWaveResult = runCatching { updateBestWave(tier, wave) }
-            .onFailure { Log.w(TAG, "endRound: updateBestWave failed", it) }
-            .getOrNull()
-        val isNewRecord = bestWaveResult?.isNewRecord == true
-        val previousBest = bestWaveResult?.previousBest ?: 0
+        // Locals captured by the transaction block so the post-transaction notification and
+        // UI push can read the computed values. Written under per-write runCatching inside
+        // the tx; safe-default on any failure so the UI push always produces a RoundEndState.
+        var isNewRecord = false
+        var previousBest = 0
+        var psAwarded = 0
+        var newTier: Int? = null
 
-        // Write 2: award wave-milestone power stones (only on a new record).
-        val psAwarded = if (isNewRecord) {
-            runCatching { awardWaveMilestone(wave) }
-                .onFailure { Log.w(TAG, "endRound: awardWaveMilestone failed", it) }
-                .getOrDefault(0)
-        } else 0
+        // All 5 SQLite writes commit atomically in a single Room transaction. The outer
+        // runCatching guards against Room infrastructure failures (e.g. withTransaction itself
+        // throwing) so the UI push below still runs — RO-03 preservation trumps RO-02 when they
+        // conflict. Per-write runCatching inside keeps individual failures from short-circuiting
+        // later writes (original B.3 PR 1 behaviour, preserved here).
+        runCatching {
+            runInTransaction {
+                // Write 1: best wave per tier. Result feeds the UI push below.
+                val bestWaveResult = runCatching { updateBestWave(tier, wave) }
+                    .onFailure { Log.w(TAG, "endRound: updateBestWave failed", it) }
+                    .getOrNull()
+                isNewRecord = bestWaveResult?.isNewRecord == true
+                previousBest = bestWaveResult?.previousBest ?: 0
 
-        // New-record notification — best-effort; failure must not abort the flow.
+                // Write 2: award wave-milestone power stones (only on a new record).
+                psAwarded = if (isNewRecord) {
+                    runCatching { awardWaveMilestone(wave) }
+                        .onFailure { Log.w(TAG, "endRound: awardWaveMilestone failed", it) }
+                        .getOrDefault(0)
+                } else 0
+
+                // Write 3: highest-unlocked-tier advance. Wrapped so a profile-read failure or a
+                // DB write failure on updateHighestUnlockedTier cannot skip the UI push below.
+                newTier = runCatching {
+                    val profile = playerRepository.observeProfile().first()
+                    val computed = checkTierUnlock(profile.bestWavePerTier, profile.highestUnlockedTier)
+                    if (computed != null) playerRepository.updateHighestUnlockedTier(computed)
+                    computed
+                }
+                    .onFailure { Log.w(TAG, "endRound: updateHighestUnlockedTier failed", it) }
+                    .getOrNull()
+
+                // Write 4: all-time battle stats. Previously wrapped in an ad-hoc try/catch
+                // swallow (pre-B.3 PR 1); normalised to runCatching + Log.w for consistency.
+                runCatching {
+                    playerRepository.incrementBattleStats(1, eng.totalEnemiesKilled.toLong(), eng.totalCashEarned)
+                }.onFailure { Log.w(TAG, "endRound: incrementBattleStats failed", it) }
+
+                // Write 5: daily-mission progress (battle missions). Same normalisation as #4.
+                runCatching {
+                    val today = timeProvider.today().toString()
+                    val missions = dailyMissionDao.getByDateOnce(today)
+                    for (m in missions) {
+                        if (m.claimed || m.completed) continue
+                        when (m.missionType) {
+                            DailyMissionType.REACH_WAVE_30.name -> {
+                                val newProgress = maxOf(m.progress, wave)
+                                dailyMissionDao.updateProgress(m.id, newProgress, newProgress >= m.target)
+                            }
+                            DailyMissionType.KILL_500_ENEMIES.name -> {
+                                val newProgress = m.progress + eng.totalEnemiesKilled
+                                dailyMissionDao.updateProgress(m.id, newProgress, newProgress >= m.target)
+                            }
+                        }
+                    }
+                }.onFailure { Log.w(TAG, "endRound: updateDailyMissionProgress failed", it) }
+            }
+        }.onFailure { Log.w(TAG, "endRound: transaction failed", it) }
+
+        // ---- Post-transaction side effects. SQLite locks released above. ----
+
+        // New-record notification — best-effort; Android notification system, not SQLite.
         if (isNewRecord) {
             runCatching {
                 milestoneNotificationManager.notifyNewBestWave(
@@ -191,17 +273,6 @@ class BattleViewModel @Inject constructor(
                 )
             }.onFailure { Log.w(TAG, "endRound: notifyNewBestWave failed", it) }
         }
-
-        // Write 3: highest-unlocked-tier advance. Wrapped so a profile-read failure or a DB
-        // write failure on updateHighestUnlockedTier cannot skip the UI push below.
-        val newTier = runCatching {
-            val profile = playerRepository.observeProfile().first()
-            val computed = checkTierUnlock(profile.bestWavePerTier, profile.highestUnlockedTier)
-            if (computed != null) playerRepository.updateHighestUnlockedTier(computed)
-            computed
-        }
-            .onFailure { Log.w(TAG, "endRound: updateHighestUnlockedTier failed", it) }
-            .getOrNull()
 
         // UI state push — MUST run regardless of the above writes so the post-round overlay
         // appears. This is the critical user-facing payoff of RO-03.
@@ -224,31 +295,6 @@ class BattleViewModel @Inject constructor(
                 ),
             )
         }
-
-        // Write 4: all-time battle stats. Previously wrapped in an ad-hoc try/catch swallow;
-        // now normalised to runCatching + Log.w for consistency with writes 1–3.
-        runCatching {
-            playerRepository.incrementBattleStats(1, eng.totalEnemiesKilled.toLong(), eng.totalCashEarned)
-        }.onFailure { Log.w(TAG, "endRound: incrementBattleStats failed", it) }
-
-        // Write 5: daily-mission progress (battle missions). Same normalisation as write 4.
-        runCatching {
-            val today = timeProvider.today().toString()
-            val missions = dailyMissionDao.getByDateOnce(today)
-            for (m in missions) {
-                if (m.claimed || m.completed) continue
-                when (m.missionType) {
-                    DailyMissionType.REACH_WAVE_30.name -> {
-                        val newProgress = maxOf(m.progress, wave)
-                        dailyMissionDao.updateProgress(m.id, newProgress, newProgress >= m.target)
-                    }
-                    DailyMissionType.KILL_500_ENEMIES.name -> {
-                        val newProgress = m.progress + eng.totalEnemiesKilled
-                        dailyMissionDao.updateProgress(m.id, newProgress, newProgress >= m.target)
-                    }
-                }
-            }
-        }.onFailure { Log.w(TAG, "endRound: updateDailyMissionProgress failed", it) }
     }
 
     fun quitRound() { val eng = engine ?: return; eng.roundOver = true; endRound() }

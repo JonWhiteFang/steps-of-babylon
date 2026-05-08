@@ -1,5 +1,80 @@
 # Run Log
 
+## 2026-05-08 — Phase B.2 PR 5 (RO-02 site #5, FINAL): AppDatabase.withTransaction for BattleViewModel.runEndRoundPersistence
+
+- **Goal:** Land the final RO-02 site per `devdocs/evolution/refactoring_opportunities.md` §RO-02. `BattleViewModel.runEndRoundPersistence` (extracted in B.3 PR 1 specifically to enable this wrap) has 5 SQLite writes in the end-of-round fan-out: `updateBestWave`, `awardWaveMilestone`, `updateHighestUnlockedTier` (behind a profile-read), `incrementBattleStats`, `dailyMissionDao.updateProgress`. Without a transaction boundary, external readers (other ViewModels observing reactive Flows) can observe a partially-applied end-of-round state; e.g. `totalRoundsPlayed` advances but `bestWavePerTier` hasn't yet, or vice versa. Wrapping the writes in a single Room transaction closes this window.
+- **Preflight:** read `START_HERE`, `STATE`, `CONSTRAINTS`, `RUN_LOG` head (B.2 PR 1–4, B.3 PR 1 entries). `git status` clean on `main`, up to date with origin (last commit `a9ebcde refactor: atomic @Transaction for ClaimMilestone (B.2 PR 4)`). Read `BattleViewModel`, `BattleViewModelTest` (19 cases including 3 RO-03 + 7 other A.7 / step-reward), `StepCrossValidator` (the B.2 PR 3 `withTransaction` precedent), `StepCrossValidatorTest` (seam test pattern). Grep-confirmed `BattleViewModel` has 3 construction sites (createVm + 2 RO-03 direct constructions); `runInTransaction =` appears only in StepCrossValidator / EscrowLifecycleTest tests (pattern-safe to reuse).
+
+### Design
+
+**Idiom choice.** Used `AppDatabase.withTransaction { }` (repo-level, same as B.2 PR 3) rather than a DAO-level `@Transaction` default method (B.2 PRs 1/2/4). Reasons:
+1. The writes span three layers — `PlayerRepository` (Room-backed, composite methods), direct `DailyMissionDao` calls, and a profile read. A DAO-level `@Transaction` default method would force either a giant composite DAO method or repo-level orchestration; neither fits cleanly.
+2. `BattleViewModel` already injects three DAOs (`DailyMissionDao`, `DailyStepDao`, `PlayerProfileDao`) as the B.2 PR 2 precedent. Adding `AppDatabase` is a marginal additional layering concession of the same flavour.
+3. RO-02 explicitly licenses this form: "different pattern but same spirit" per B.2 PR 3's RUN_LOG. `TransactionRunner` abstraction is an RO-02 non-goal; a `@VisibleForTesting internal var runInTransaction` seam is the sanctioned middle ground.
+
+**Transaction boundary decisions.** Only the 5 SQLite writes go inside the `runInTransaction { }` block. Two kinds of work are deliberately *outside*:
+1. **Milestone notification** (`MilestoneNotificationManager.notifyNewBestWave`) — posts through the Android notification system, not SQLite. Holding a DB lock across a system-service IPC is wasteful and risks ANR if the NotificationManager is slow to respond.
+2. **UI state push** (`_uiState.update`) — in-memory MutableStateFlow update. Observers are Compose collectors; they should see the post-round overlay ASAP once the transaction commits, not be blocked on DB work.
+
+This means the UI push moved from "between writes 3 and 4" (pre-PR 5) to "strictly after all 5 writes commit" (post-PR 5). Semantically equivalent for the user (the whole sequence still completes in a single coroutine tick from the poll loop), but guarantees the DB lock is released before any UI painting.
+
+**RO-02 + RO-03 composition.** The RO-03 per-write `runCatching { }.onFailure { Log.w }` pattern (B.3 PR 1) is *preserved inside* the transaction block. This doesn't give classical ACID rollback-on-failure — a caught exception doesn't propagate out of the transaction, so Room commits whatever was written before the throw. What the transaction *does* give:
+- **External-reader atomicity**: other connections (Flow-based reactive reads) see either the pre-PR state or the post-PR state, never a partial fan-out. SQLite's SERIALIZABLE isolation on commit provides this.
+- **Concurrent-writer serialization**: if another ViewModel / Worker tries to write while the tx is open, SQLite queues it — prevents interleaving.
+- **Reduced lock acquisition**: one `BEGIN TRANSACTION` instead of 5. Material on mobile where DB contention matters.
+
+The outer `runCatching { runInTransaction { ... } }.onFailure { Log.w }` guards against Room infrastructure failures (disk full, SQLCipher decrypt failure, Room throwing from `withTransaction` itself). RO-03's "UI must always appear" takes priority here — if the whole tx fails, we log and still fire the UI push with safe defaults (`isNewRecord = false`, `previousBest = 0`, etc. captured via the `var` locals).
+
+**Captured locals.** Because `isNewRecord`, `previousBest`, `psAwarded`, and `newTier` are computed inside the tx but read by the notification + UI push *after* the tx, they're hoisted to `var`s outside the `runInTransaction` call. The Kotlin closure captures `var`s by reference wrapper — safe here because we're in a sequential suspend context, not racing coroutines.
+
+**Test seam.** Matches `StepCrossValidator` (B.2 PR 3) verbatim: `@VisibleForTesting internal var runInTransaction: suspend (block: suspend () -> Unit) -> Unit = { block -> appDatabase.withTransaction { block() } }`. Tests construct with `mock<AppDatabase>()` and override the seam with a direct-invocation pass-through via `.apply { runInTransaction = { block -> block() } }`. Justified: Mockito can't mock Room's `withTransaction` extension on a bare mock, and instrumented tests (out of scope for JVM unit tests) validate the real transaction behaviour.
+
+### Files touched
+
+- `app/src/main/java/.../presentation/battle/BattleViewModel.kt` (+`androidx.room.withTransaction` + `androidx.annotation.VisibleForTesting` + `data.local.AppDatabase` imports; +`appDatabase: AppDatabase` constructor param (11 → 12); +`@VisibleForTesting internal var runInTransaction` seam; `runEndRoundPersistence` body restructured: 5 SQLite writes wrapped in `runInTransaction { }`, notification + UI push moved to after the tx block, outer `runCatching` preserves RO-03 resilience; KDoc rewritten to explain RO-02 + RO-03 composition and the outside-tx rationale)
+- `app/src/test/java/.../presentation/battle/BattleViewModelTest.kt` (+`appDatabase = mock<AppDatabase>()` fixture; `createVm()` now passes 12 args AND chains `.apply { runInTransaction = { block -> block() } }` to install the pass-through seam; both direct `BattleViewModel(...)` constructions in the RO-03 failure tests updated the same way; +2 new B.2 PR 5 atomicity tests)
+
+### Tests added (2 new cases in `BattleViewModelTest`, bringing it to 21 total)
+
+1. **`RO-02 B2PR5 - runEndRoundPersistence opens the transaction seam exactly once per round`** — counting wrapper replaces the default pass-through; `vm.quitRound() + advanceUntilIdle()` x 2; asserts `transactionCalls == 1` after the first call (exactly one tx) and still `== 1` after the second call (roundEnded guard short-circuits before reaching the tx). Mirrors the B.2 PR 3 counting-wrapper pattern for `StepCrossValidator`.
+2. **`RO-02 B2PR5 - UI push runs AFTER the transaction commits`** — captures `vm.uiState.value.roundEndState` *inside* the seam lambda immediately after `block()` returns; asserts it's still `null` there (UI push has NOT yet happened), then asserts it's non-null after the whole `quitRound()` call completes. Uses `lateinit var vm` so the seam lambda can reference the VM it's installed on. Proves the post-round overlay waits for the DB lock to release before appearing.
+
+All 19 existing cases preserved verbatim via the `createVm()` change — the default `runInTransaction` override is a pass-through, so the behaviour under test is identical to pre-PR 5.
+
+### Verification
+
+- `./run-gradle.sh :app:compileDebugKotlin :app:testDebugUnitTest :app:lintDebug` — BUILD SUCCESSFUL.
+- Test suite: **468 → 470 JVM tests** (+2, matches the 2 new atomicity cases exactly), 0 failures, 0 errors, 0 skipped. `BattleViewModelTest`: 19 → 21 cases.
+- Lint: clean, no new warnings.
+- RO-02 site count: **5/5 landed**. `grep -c "@Transaction" app/src/main/java/com/whitefang/stepsofbabylon/data/local/*.kt` — 3 matches (WorkshopDao, DailyStepDao, MilestoneDao); `grep -rn "withTransaction" app/src/main` — matches in StepCrossValidator + BattleViewModel for a total of 5 atomic sites.
+- No mid-edit bugs this PR.
+
+### Surface changes
+
+- `BattleViewModel` constructor grew 11 → 12 params. Hilt graph unaffected — `AppDatabase` is already `@Provides`-d by `DatabaseModule`. 3 test construction sites (createVm + 2 RO-03 direct) updated.
+- New public-ish API surface: `@VisibleForTesting internal var runInTransaction`. Test-only, not called from production except through the default lambda.
+- No changes to `BattleUiState`, `RoundEndState`, or any domain types.
+- No new production dependencies. room-ktx's `withTransaction` already on the classpath (used by `StepCrossValidator`).
+- No ADR — RO-02 spec already covers this site; same rationale as B.2 PR 3 for the repo-level idiom vs DAO-level, and same rationale as B.2 PRs 1–4 for not writing a PR-specific ADR.
+
+### Open questions / blockers
+
+- None. **RO-02 is complete.** Real Room transaction behaviour at runtime is validated on-device / via instrumented tests (explicitly out of scope for JVM unit tests per the RO-02 verification strategy).
+- B.3 PR 2 (`onCleared` guard via `ProcessLifecycleOwner.lifecycleScope`) remains as the last item in the B.3 family. Independent of RO-02; closes the mid-nav round-loss gap.
+
+### Follow-ups
+
+- **RO-02 milestone:** 5/5 atomic sites landed. The atomic-transaction PR family that started with B.2 PR 1 (2026-05-07) is now closed.
+- **B.3 PR 2** is the next natural unit in Phase B. Small scope: `onCleared()` currently just nulls `engine.onStepReward`; the fix moves the round-persistence launch to a scope that outlives VM cleanup, so mid-battle nav doesn't drop in-flight writes.
+- **Phase C** can begin in parallel with B.3 PR 2 now that RO-02 has closed its debt. C.2 (cosmetic rendering pipeline) is the release-critical path.
+- Doc drift: `AGENTS.md` still says "455 JVM tests" — now stale by five PRs. Continue bundling into the next A.1-style sweep.
+
+### Memory updated
+
+- `STATE.md` ✅ — current objective now "RO-02 is COMPLETE"; B.2 PR 5 added to "what works"; known-issues/debt line updated (RO-02 done); priorities/next-actions reshuffled (B.3 PR 2 top); test count 468 → 470; critical-path line updated to mark B.2 complete; last-run date 2026-05-08.
+- `RUN_LOG.md` ✅ — this entry.
+- ADR: not warranted — RO-02 spec already covers this site; no net-new decisions required a standalone record.
+
 ## 2026-05-08 — Phase B.2 PR 4 (RO-02 site #4): atomic @Transaction for ClaimMilestone
 
 - **Goal:** Apply the B.2 PR 1–2 pattern to the fourth RO-02 multi-write site named in `devdocs/evolution/refactoring_opportunities.md` §RO-02: `ClaimMilestone`. The use case currently (a) reads `totalStepsEarned` for a step-threshold guard, (b) reads the existing `MilestoneEntity` for an already-claimed guard, (c) iterates rewards calling `playerRepository.addGems` / `addPowerStones`, and (d) finally `milestoneDao.upsert(... claimed = true)`. A crash between (c) and (d) credits the player but leaves the milestone unclaimed — enabling double-credit on retry. Two concurrent claim clicks can also both pass (b) and both run (c). Both windows close with a single SQLite transaction wrapping the check + mark-claimed + reward credits.

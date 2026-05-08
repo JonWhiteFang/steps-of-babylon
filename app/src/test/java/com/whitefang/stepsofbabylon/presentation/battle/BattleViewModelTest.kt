@@ -34,6 +34,7 @@ class BattleViewModelTest {
     private val biomePreferences = mock<BiomePreferences>()
     private val dailyMissionDao = mock<com.whitefang.stepsofbabylon.data.local.DailyMissionDao>()
     private val playerProfileDao = mock<com.whitefang.stepsofbabylon.data.local.PlayerProfileDao>()
+    private val appDatabase = mock<com.whitefang.stepsofbabylon.data.local.AppDatabase>()
     private val milestoneNotificationManager = mock<MilestoneNotificationManager>()
 
     @BeforeEach
@@ -58,9 +59,14 @@ class BattleViewModelTest {
 
     private fun createVm(timeProvider: com.whitefang.stepsofbabylon.domain.time.TimeProvider = com.whitefang.stepsofbabylon.data.time.SystemTimeProvider()) = BattleViewModel(
         workshopRepo, playerRepo, biomePreferences, uwRepo, cardRepo,
-        dailyMissionDao, dailyStepDao, playerProfileDao, milestoneNotificationManager, adManager,
+        dailyMissionDao, dailyStepDao, playerProfileDao, appDatabase, milestoneNotificationManager, adManager,
         timeProvider,
-    )
+    ).apply {
+        // B.2 PR 5: override the transaction seam with a direct pass-through so tests exercise
+        // the persistence logic, not Room's withTransaction machinery (which can't run against
+        // a mock<AppDatabase>()).
+        runInTransaction = { block -> block() }
+    }
 
     @Test
     fun `init resolves stats from workshop levels`() = runTest(dispatcher) {
@@ -354,8 +360,8 @@ class BattleViewModelTest {
         }
         val vm = BattleViewModel(
             workshopRepo, throwingPlayer, biomePreferences, uwRepo, cardRepo,
-            dailyMissionDao, dailyStepDao, playerProfileDao, milestoneNotificationManager, adManager,
-        )
+            dailyMissionDao, dailyStepDao, playerProfileDao, appDatabase, milestoneNotificationManager, adManager,
+        ).apply { runInTransaction = { block -> block() } }
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -392,8 +398,8 @@ class BattleViewModelTest {
         }
         val vm = BattleViewModel(
             workshopRepo, brokenPlayer, biomePreferences, uwRepo, cardRepo,
-            dailyMissionDao, dailyStepDao, playerProfileDao, milestoneNotificationManager, adManager,
-        )
+            dailyMissionDao, dailyStepDao, playerProfileDao, appDatabase, milestoneNotificationManager, adManager,
+        ).apply { runInTransaction = { block -> block() } }
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -436,6 +442,72 @@ class BattleViewModelTest {
             roundsAfterFirst,
             roundsAfterSecond,
             "second quitRound must be a no-op — roundEnded guard must hold",
+        )
+    }
+
+    // -------- B.2 PR 5 atomicity tests --------
+
+    @Test
+    fun `RO-02 B2PR5 - runEndRoundPersistence opens the transaction seam exactly once per round`() = runTest(dispatcher) {
+        // One quitRound = one transaction opening. A second quitRound must not re-enter the
+        // transaction (roundEnded guard lives outside the tx, fires first). Before B.2 PR 5
+        // there was no transaction boundary at all; this test guards against accidental
+        // removal of the withTransaction wrap.
+        var transactionCalls = 0
+        val vm = createVm().apply {
+            runInTransaction = { block ->
+                transactionCalls++
+                block()
+            }
+        }
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        installEngineForEndRound(vm)
+
+        vm.quitRound()
+        advanceUntilIdle()
+        assertEquals(1, transactionCalls, "first quitRound must open exactly one transaction")
+
+        vm.quitRound()
+        advanceUntilIdle()
+        assertEquals(
+            1, transactionCalls,
+            "second quitRound must be short-circuited by roundEnded guard — no second transaction",
+        )
+    }
+
+    @Test
+    fun `RO-02 B2PR5 - UI push runs AFTER the transaction commits`() = runTest(dispatcher) {
+        // The post-round overlay push moved from the middle of runEndRoundPersistence (pre-PR 5)
+        // to strictly after the transaction block completes (post-PR 5). This protects the RO-03
+        // guarantee while ensuring the SQLite lock is released before any UI work happens.
+        //
+        // Assertion: capture uiState at the moment the transaction block returns. At that point
+        // the RoundEndState must still be null (UI push has not run yet). After the whole call
+        // completes, the RoundEndState must be populated.
+        var uiStateAtTxClose: RoundEndState? = null
+        lateinit var vm: BattleViewModel
+        vm = createVm().apply {
+            runInTransaction = { block ->
+                block()
+                uiStateAtTxClose = vm.uiState.value.roundEndState
+            }
+        }
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        installEngineForEndRound(vm)
+        vm.quitRound()
+        advanceUntilIdle()
+
+        assertNull(
+            uiStateAtTxClose,
+            "UI push must not run inside the transaction — SQLite lock must be released first",
+        )
+        assertNotNull(
+            vm.uiState.value.roundEndState,
+            "UI push must run after the transaction commits so the overlay appears",
         )
     }
 }
