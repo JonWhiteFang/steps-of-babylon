@@ -1,5 +1,102 @@
 # Run Log
 
+## 2026-05-08 — Phase C.2 PR 3b + 3c: seed remaining milestone cosmetics (closes milestone-cosmetic gap)
+
+- **Goal:** Batch the last two milestone-cosmetic content PRs (PR 3b for MARATHON_WALKER's `garden_ziggurat_skin`, PR 3c for GLOBE_TROTTER's `sandals_of_gilgamesh`) into a single PR since they share the same file, test-update pattern, and risk profile. After this lands, all 6 Milestone entries have `Success` end-to-end on `ClaimMilestone` — the RO-07 "shipped but disabled" monetization gap tracked since Plan R2-11 is fully resolved.
+- **Preflight:** read `START_HERE`, `STATE`, `CONSTRAINTS`, `RUN_LOG` head (C.2 PR 3 + ensureSeedData fix + C.4 + C.2 PR 2 entries). `git status` clean on `main`, up to date with origin (last commit `8c907c1 feat(cosmetics): seed lapis_lazuli_skin (C.2 PR 3, IRON_SOLES reward)`). Confirmed the PR 3 pattern: one seed row + one palette entry + one ClaimMilestoneTest rewire (remove UnknownCosmetic, add end-to-end Success) + one CosmeticRepositoryImplTest palette test. Batching doubles the content but keeps the pattern identical.
+
+### Design
+
+**Why batch 3b + 3c.** Evaluated three options:
+1. **Option A (chosen):** Single PR with both seed rows, both palettes, both test rewires. Same file (`CosmeticRepositoryImpl.kt`), same test files. Two narratively-distinct PRs would produce mechanically identical diffs + sync-doc churn for effectively zero risk difference. Merged PR size stays small (~120 insertions) — well under a reasonable review threshold.
+2. **Option B:** Two sequential PRs. Strictly cleaner git history but doubles doc-sync work (two CHANGELOG sections, two STATE.md edits, two RUN_LOG entries) for no functional benefit.
+3. **Option C:** Land PR 3b separately + defer PR 3c pending a category decision. The category decision is small enough to fold into this PR.
+
+**Palette choices.**
+- **`garden_ziggurat_skin` (MARATHON_WALKER):** Hanging Gardens biome-themed. Matches the Tier 1-2 Hanging Gardens biome in the GDD. `[0xFF8B4726, 0xFFAD7B4C, 0xFF5E7F47, 0xFF7BA85A, 0xFFE0C890]` — terracotta ziggurat base → sun-bleached sandstone → mossy vines begin → lush foliage → pale bloom canopy. The progression from stone at the base to greenery at the top captures the "ziggurat overtaken by gardens" vibe.
+- **`sandals_of_gilgamesh` (GLOBE_TROTTER):** Heroic bronze / ancient Sumerian theme. `[0xFF3B2A1A, 0xFF6B4A2A, 0xFF8B6B42, 0xFFB89152, 0xFFE8C068]` — dark weathered bronze → aged bronze → warm bronze → polished brass → gold crown. The gold crown echoes `lapis_lazuli_skin` and signals "legendary" status.
+
+**Category decision for `sandals_of_gilgamesh`.** The id literally means footwear but the cosmetic is implemented as `ZIGGURAT_SKIN`. Three options:
+1. **Option A (chosen):** Reframe via description. "Bronze ziggurat in honour of Gilgamesh, whose sandals walked the edges of the world." Keeps existing `CosmeticCategory` enum + pipeline intact. No schema change. The name stays `Sandals of Gilgamesh` because that's the milestone-reward name from `Milestone.GLOBE_TROTTER.rewards`.
+2. **Option B:** Add a `PLAYER_AVATAR` category + new rendering path. Architecturally cleaner but requires pipeline extension, new lookup table, new `BattleViewModel` hydration. Not justified for one cosmetic.
+3. **Option C:** Rename the milestone reward id. Would require a matching change in `Milestone.kt` enum. Breaks ADR-0003 / content-as-code contract; C.4 detection explicitly says "do not rename the 3 mismatched IDs" (content decision, deferred to this PR — now resolved via reframe).
+
+Option A wins because it's the smallest diff that works. If future milestones introduce *multiple* player-avatar cosmetics, revisit Option B as a RO-07 follow-up.
+
+**Synthetic rejection-before-atomic guard.** Post-PR, no prod Milestone returns `UnknownCosmetic` — all 3 milestone ids are seeded. The `UnknownCosmetic rejects claim before the atomic DAO call with no credit` test still uses MARATHON_WALKER against the empty `FakeCosmeticRepository`, but its narrative now says "synthetic mechanism-level regression guard against future content work that introduces a new Milestone with an unseeded Cosmetic reward." Kept because removing it loses mechanism coverage; the mechanism is non-trivial (iterate rewards, filter Cosmetic, call idExists, short-circuit return) and worth a dedicated test even in the absence of a prod trigger.
+
+**End-to-end success tests for all 3 milestone cosmetics.** Added `MARATHON_WALKER claim succeeds end-to-end via real CosmeticRepositoryImpl` + `GLOBE_TROTTER claim succeeds end-to-end via real CosmeticRepositoryImpl`, mirroring the `IRON_SOLES` test from PR 3. Each uses `CosmeticRepositoryImpl(FakeCosmeticDao())` directly so the whole chain (`SEED_COSMETICS → ensureSeedData → idExists → ClaimMilestone atomic credit → wallet`) is exercised, not just the `ClaimMilestone` layer. Every Milestone with a Cosmetic reward now has a dedicated end-to-end test — symmetric coverage.
+
+### Files touched
+
+- `app/src/main/java/.../data/repository/CosmeticRepositoryImpl.kt`:
+  - `ZIGGURAT_COLOR_LOOKUP` +2 entries (garden, sandals). KDoc expanded to document all 4 current palettes + the GLOBE_TROTTER reframe rationale.
+  - `SEED_COSMETICS` +2 rows (positioned directly after `lapis_lazuli_skin` so all 4 palette-shipping cosmetics cluster at the top). Inline comments explain each row's milestone reward link and the Store visibility policy (not in ENABLED_COSMETIC_ID — milestone-only acquisition for now).
+- `app/src/test/java/.../domain/usecase/ClaimMilestoneTest.kt`:
+  - Removed `UnknownCosmetic surfaces offending cosmetic id for MARATHON_WALKER` + `... for GLOBE_TROTTER`.
+  - Rewrote the rejection-before-atomic regression guard's comment to explain the synthetic-mechanism-level semantics.
+  - Added `MARATHON_WALKER claim succeeds end-to-end via real CosmeticRepositoryImpl` (600 Gems assertion) + `GLOBE_TROTTER claim succeeds end-to-end via real CosmeticRepositoryImpl` (500 Gems assertion).
+  - Updated the setup comment to reflect "no more prod mismatches."
+- `app/src/test/java/.../data/repository/CosmeticRepositoryImplTest.kt`:
+  - +2 palette tests (`C2PR3b - garden_ziggurat_skin propagates hanging-gardens palette`, `C2PR3c - sandals_of_gilgamesh propagates bronze-ziggurat palette`), each with exact 5-int assertions matching the `zig_jade` / `lapis_lazuli_skin` pattern.
+  - Updated 3 count assertions (9 → 11): idempotency, partial-catalogue upgrade, existing-row preservation.
+  - Partial-catalogue upgrade test now asserts all 4 palette-shipping cosmetics land correctly (was asserting 2).
+  - "Other seeded ziggurat cosmetics null overrideColors" comment updated to list all 4 palette cosmetics.
+
+### Test changes (+2 net: 486 → 488)
+
+- **ClaimMilestoneTest:** -2 (UnknownCosmetic MARATHON_WALKER + GLOBE_TROTTER) + 2 (end-to-end Success for both) = **net 0**.
+- **CosmeticRepositoryImplTest:** +2 new palette tests = **+2**.
+- Net: **+2** (486 → 488).
+
+### Verification
+
+- `./run-gradle.sh test` — BUILD SUCCESSFUL in 19s. 0 failures, 0 errors, 0 skipped.
+- Test count: **486 → 488** (matches net-+2 expectation).
+- Grep sanity checks:
+  - `grep -c "garden_ziggurat_skin\|sandals_of_gilgamesh" app/src/main/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImpl.kt` — 6 (each id appears 3 times: lookup entry + seed row + KDoc).
+  - `grep "UnknownCosmetic surfaces offending cosmetic id" app/src/test` — 0 (both stale tests removed).
+  - `grep -c "claim succeeds end-to-end" app/src/test/java/com/whitefang/stepsofbabylon/domain/usecase/ClaimMilestoneTest.kt` — 3 (one per milestone with Cosmetic reward: IRON_SOLES, MARATHON_WALKER, GLOBE_TROTTER).
+- All 4 palette-shipping cosmetics render correctly via the existing C.2 PR 1 pipeline (no renderer changes needed; pipeline is additive and data-driven).
+
+### Surface changes
+
+- 2 new `SEED_COSMETICS` rows + 2 new `ZIGGURAT_COLOR_LOOKUP` entries. Both land on any install via the `ensureSeedData` per-cosmeticId filter.
+- No public API changes. No DB schema changes. No Room migration. Still on v8.
+- No new production dependencies.
+- No ADR — content + narrative-reframe decision documented in the SEED_COSMETICS inline comments + the ZIGGURAT_COLOR_LOOKUP KDoc at point-of-use.
+
+### Milestone
+
+**RO-07 milestone-cosmetic gap fully closed.** All 6 Milestone entries claim cleanly end-to-end:
+| Milestone | Steps | Cosmetic | Result |
+|---|---|---|---|
+| FIRST_STEPS | 1K | *(none)* | ✅ Success |
+| MORNING_JOGGER | 10K | *(none)* | ✅ Success |
+| TRAIL_BLAZER | 100K | *(none)* | ✅ Success |
+| MARATHON_WALKER | 500K | `garden_ziggurat_skin` | ✅ Success (this PR) |
+| IRON_SOLES | 1M | `lapis_lazuli_skin` | ✅ Success (C.2 PR 3) |
+| GLOBE_TROTTER | 5M | `sandals_of_gilgamesh` | ✅ Success (this PR) |
+
+### Open questions / blockers
+
+- **None.** All cosmetic-related debt tracked since Plan R2-11 is closed. No prod Milestone currently returns `UnknownCosmetic`.
+- **Store visibility of milestone-reward cosmetics.** Currently all 3 milestone cosmetics show "Coming Soon" in the Store. Product decision deferred: enable them in `ENABLED_COSMETIC_ID` at higher store prices (500-600 Gems matches the current values), or keep milestone-only. Not blocking — game works either way.
+
+### Follow-ups
+
+- **Open ADR-0005 (Billing SDK) and ADR-0006 (Ad SDK) stubs.** Prerequisite for C.5 / C.6. These are now the top release-critical items.
+- **C.5 — Real Google Play Billing Library v7 swap.** High risk: real SDK failure paths have never run against prod code. A.4 fake tests provide the unit-test safety net; internal-track testing + Firebase pre-launch report complete the verification.
+- **C.6 — Real AdMob swap.** Same shape as C.5.
+- **B.4 FollowOnPipeline + B.5 UpdateMissionProgress.** Pure debt; land opportunistically.
+- **Phase D (Plan 31).** Play Console setup, AAB upload, Firebase pre-launch. Depends on C.5 + C.6 + public privacy policy URL.
+
+### Memory updated
+
+- `STATE.md` ✅ — current objective now "Phase C.2 PR 3b + 3c landed"; new bullet in "what works"; Known-issues list updated to reflect 4 plumbed palettes; priorities / next-actions rotated (ADR stubs + C.5/C.6 now top); test count 486 → 488; critical path marks PRs 1+2+3+3b+3c done; last-run updated.
+- `RUN_LOG.md` ✅ — this entry.
+- ADR: not warranted — content + narrative-reframe decision captured in KDoc at point-of-use.
+
 ## 2026-05-08 — Phase C.2 PR 3: seed lapis_lazuli_skin (resolves IRON_SOLES UnknownCosmetic)
 
 - **Goal:** Land the first of three milestone-cosmetic content PRs per STATE.md next-actions #1. Seeds `lapis_lazuli_skin` in `SEED_COSMETICS` + its palette in `ZIGGURAT_COLOR_LOOKUP`, which flips `ClaimMilestone(IRON_SOLES)` from returning `UnknownCosmetic("lapis_lazuli_skin")` (C.4 detection behaviour) to returning `Success` with a 200 Gems + 50 Power Stones atomic credit. Two more milestone cosmetics (`garden_ziggurat_skin` for MARATHON_WALKER, `sandals_of_gilgamesh` for GLOBE_TROTTER) remain for PR 3b/3c.

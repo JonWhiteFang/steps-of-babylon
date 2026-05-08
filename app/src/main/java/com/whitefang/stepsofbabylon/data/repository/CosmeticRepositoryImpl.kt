@@ -92,12 +92,14 @@ class CosmeticRepositoryImpl @Inject constructor(
          * Current entries:
          *  - `zig_jade` (C.2 PR 2) — deep jade gradient, first end-to-end cosmetic.
          *  - `lapis_lazuli_skin` (C.2 PR 3) — deep lapis base → bright lapis → pyrite-gold
-         *    crown. Resolves the IRON_SOLES `MilestoneReward.Cosmetic` mismatch (C.4),
-         *    so after this PR `ClaimMilestone(IRON_SOLES)` returns `Success` instead of
-         *    `UnknownCosmetic`.
-         *
-         * Pending entries: `garden_ziggurat_skin` (MARATHON_WALKER, C.2 PR 3b),
-         * `sandals_of_gilgamesh` (GLOBE_TROTTER, C.2 PR 3c).
+         *    crown. Resolves the IRON_SOLES `MilestoneReward.Cosmetic` mismatch (C.4).
+         *  - `garden_ziggurat_skin` (C.2 PR 3b) — terracotta base → cascading foliage →
+         *    pale bloom. Hanging Gardens biome-themed. Resolves the MARATHON_WALKER mismatch.
+         *  - `sandals_of_gilgamesh` (C.2 PR 3c) — weathered bronze → polished bronze → gold
+         *    crown. Heroic / Gilgamesh narrative reframes this as a bronze ziggurat variant
+         *    so the existing `ZIGGURAT_SKIN` category + palette pipeline still applies (no
+         *    schema change, no new `CosmeticCategory` value). Resolves the GLOBE_TROTTER
+         *    mismatch. After this PR, all 6 Milestone entries claim cleanly end-to-end.
          */
         private val ZIGGURAT_COLOR_LOOKUP: Map<String, List<Int>> = mapOf(
             "zig_jade" to listOf(
@@ -114,6 +116,20 @@ class CosmeticRepositoryImpl @Inject constructor(
                 0xFF4F68C8.toInt(), // layer 3 — bright lapis
                 0xFFD4A84A.toInt(), // layer 4 (top) — pyrite-gold crown (traditional lapis flecks)
             ),
+            "garden_ziggurat_skin" to listOf(
+                0xFF8B4726.toInt(), // layer 0 (base) — warm terracotta ziggurat stone
+                0xFFAD7B4C.toInt(), // layer 1 — sun-bleached sandstone
+                0xFF5E7F47.toInt(), // layer 2 — mossy greens (vines begin)
+                0xFF7BA85A.toInt(), // layer 3 — lush foliage
+                0xFFE0C890.toInt(), // layer 4 (top) — pale bloom / garden canopy
+            ),
+            "sandals_of_gilgamesh" to listOf(
+                0xFF3B2A1A.toInt(), // layer 0 (base) — dark weathered bronze
+                0xFF6B4A2A.toInt(), // layer 1 — aged bronze
+                0xFF8B6B42.toInt(), // layer 2 — warm bronze
+                0xFFB89152.toInt(), // layer 3 — polished bronze / brass
+                0xFFE8C068.toInt(), // layer 4 (top) — gold crown (heroic motif)
+            ),
         )
 
         private val SEED_COSMETICS = listOf(
@@ -124,6 +140,19 @@ class CosmeticRepositoryImpl @Inject constructor(
             // yet — appears as "Coming Soon" in the Store. Primary acquisition path remains
             // the milestone; store pricing is a future UX decision. (C.2 PR 3)
             CosmeticEntity(cosmeticId = "lapis_lazuli_skin", category = "ZIGGURAT_SKIN", name = "Lapis Lazuli Ziggurat Skin", description = "Deep lapis lazuli stone with pyrite-gold flecks", priceGems = 500),
+            // Milestone-reward cosmetic (MARATHON_WALKER). Hanging Gardens biome-themed —
+            // terracotta ziggurat wrapped in cascading greenery with a pale bloom canopy.
+            // Same rationale as `lapis_lazuli_skin`: milestone acquisition only, not in the
+            // Store allow-list. (C.2 PR 3b)
+            CosmeticEntity(cosmeticId = "garden_ziggurat_skin", category = "ZIGGURAT_SKIN", name = "Garden Ziggurat Skin", description = "Cascading hanging gardens draped over terracotta stone", priceGems = 600),
+            // Milestone-reward cosmetic (GLOBE_TROTTER). The id carries footwear semantics
+            // from the milestone narrative ("walking the edges of the world"), but the reward
+            // is implemented as a ziggurat skin: a bronze-themed Ziggurat of Gilgamesh variant.
+            // Keeps the existing `ZIGGURAT_SKIN` category + ZIGGURAT_COLOR_LOOKUP pipeline
+            // intact (no schema change, no new `CosmeticCategory` value). If a future
+            // milestone introduces multiple player-avatar cosmetics, revisit adding a
+            // `PLAYER_AVATAR` category then. For one instance, the reframe is cheaper. (C.2 PR 3c)
+            CosmeticEntity(cosmeticId = "sandals_of_gilgamesh", category = "ZIGGURAT_SKIN", name = "Sandals of Gilgamesh", description = "Bronze ziggurat in honour of Gilgamesh, whose sandals walked the edges of the world", priceGems = 500),
             CosmeticEntity(cosmeticId = "zig_obsidian", category = "ZIGGURAT_SKIN", name = "Obsidian Ziggurat", description = "Dark volcanic stone", priceGems = 100),
             CosmeticEntity(cosmeticId = "zig_crystal", category = "ZIGGURAT_SKIN", name = "Crystal Ziggurat", description = "Translucent crystal layers", priceGems = 200),
             CosmeticEntity(cosmeticId = "zig_golden", category = "ZIGGURAT_SKIN", name = "Golden Ziggurat", description = "Pure gold plating", priceGems = 300),
