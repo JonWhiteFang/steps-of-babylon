@@ -85,12 +85,25 @@ All notable changes to Steps of Babylon are documented here.
 - **MissionsViewModelTest**: direct `ClaimMilestone` construction updated to 4-arg (+`FakeCosmeticRepository()`); asserts `ClaimMilestoneResult.Success` on the FIRST_STEPS claim path.
 - **484 tests** (480 → 484 via +4 net). Zero balance-math changes.
 
+### Fix — `ensureSeedData` per-cosmeticId filter (2026-05-08)
+- **CosmeticRepositoryImpl.ensureSeedData**: replaced the all-or-nothing `if (dao.count() > 0) return` short-circuit with a per-`cosmeticId` filter. Reads existing ids once via `observeAll().first().mapTo(HashSet())`, computes `missing = SEED_COSMETICS.filter { it.cosmeticId !in existingIds }`, and `upsertAll(missing)` only when non-empty. Three behaviours:
+  - **Fresh install:** `existingIds` empty → every SEED_COSMETICS row inserted. Identical to pre-fix behaviour.
+  - **Partial-catalogue upgrade:** device already has the pre-`zig_jade` 7-row catalogue → only `zig_jade` inserted; 7 legacy rows untouched. Before the fix, this case was broken (count > 0 short-circuit skipped everything), so `zig_jade` never landed on already-installed devs without a data clear.
+  - **Steady state:** all ids present → `missing` empty → no DAO write. Same as before, different mechanism.
+- **Why the filter instead of a universal upsert:** `CosmeticEntity`'s primary key is `id` (auto-gen), not `cosmeticId`. Re-upserting a seed row with `id = 0` would insert a new auto-gen row alongside the existing one, not replace it. The explicit filter sidesteps that entirely by never handing already-present rows to the DAO.
+- **Unblocks C.2 PR 3+** (the 3 milestone cosmetic seed rows that resolve the C.4 UnknownCosmetic detections): content PRs can now land on any install regardless of its catalogue history. Also removes the "data clear required" friction for any dev who installed a pre-C.2-PR-2 debug build.
+- **Tests:** CosmeticRepositoryImplTest gained 2 regression-guard cases:
+  - `ensureSeedData inserts newly-added rows on partial catalogue upgrade` — pre-seeds 7 legacy rows manually (no `zig_jade`), asserts `ensureSeedData` inserts `zig_jade` with its `ZIGGURAT_COLOR_LOOKUP` palette and leaves the 7 legacy rows intact.
+  - `ensureSeedData preserves player state on existing rows (isOwned, isEquipped)` — pre-seeds `zig_jade` with `isOwned=true, isEquipped=true`, runs `ensureSeedData`, asserts the player state survives (never overwritten because the filter skips the row entirely).
+  Existing idempotency test renamed (removed "count gate holds" phrase); end-state assertion unchanged because the filter produces the same steady-state behaviour via a different mechanism.
+- **486 tests** (484 → 486). Zero balance-math changes.
+
 ### Current state
-- **484 JVM tests** green (412 baseline → 453 after Phase A → 455 after B.1 → 458 after B.2 PR 1 → 461 after B.3 PR 1 → 463 after B.2 PR 2 → 465 after B.2 PR 3 → 468 after B.2 PR 4 → 470 after B.2 PR 5 → 473 after B.3 PR 2 → 475 after C.2 PR 1 → 480 after C.2 PR 2 → 484 after C.4). Zero balance-math changes across all of Phase B and Phase C so far.
+- **486 JVM tests** green (412 baseline → 453 after Phase A → 455 after B.1 → 458 after B.2 PR 1 → 461 after B.3 PR 1 → 463 after B.2 PR 2 → 465 after B.2 PR 3 → 468 after B.2 PR 4 → 470 after B.2 PR 5 → 473 after B.3 PR 2 → 475 after C.2 PR 1 → 480 after C.2 PR 2 → 484 after C.4 → 486 after ensureSeedData fix). Zero balance-math changes across all of Phase B and Phase C so far.
 - Plan 31 (Play Console & Store Publication) remains the only release-blocker; unblocked since the end of Plan R2.
 - **RO-02 complete: 5/5 atomic sites landed** (`PurchaseUpgrade`, `AwardBattleSteps`, `StepCrossValidator`, `ClaimMilestone`, `runEndRoundPersistence`).
 - **RO-03 complete: 2/2 resilience sites landed** (extraction + `onCleared` guard).
-- **RO-07 in flight: C.2 PRs 1+2 + C.4 landed** (plumbing + first content slice `zig_jade` + UnknownCosmetic detection). PR 3+ adds remaining 6 seeded + 3 milestone cosmetics as content work; when the 3 milestone cosmetic ids land in SEED_COSMETICS, those claims stop returning `UnknownCosmetic` and start succeeding cleanly.
+- **RO-07 in flight: C.2 PRs 1+2 + C.4 + ensureSeedData fix landed.** C.2 PR 3+ now unblocked: each new seed row + palette lands cleanly on any install, and the C.4 UnknownCosmetic detections flip to successful claims as each milestone cosmetic id gets seeded.
 - Real Billing/Ad SDK swaps (Phase C.5/C.6) still gated on ADR-0005/ADR-0006.
 - B.4 (FollowOnPipeline extraction) + B.5 (UpdateMissionProgress use case) remain as pure debt, not release blockers.
 

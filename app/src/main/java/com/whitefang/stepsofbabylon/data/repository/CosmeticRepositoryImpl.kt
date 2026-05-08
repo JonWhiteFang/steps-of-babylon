@@ -35,8 +35,26 @@ class CosmeticRepositoryImpl @Inject constructor(
     override suspend fun unequip(cosmeticId: String) = dao.unequip(cosmeticId)
 
     override suspend fun ensureSeedData() {
-        if (dao.count() > 0) return
-        dao.upsertAll(SEED_COSMETICS)
+        // Per-cosmeticId filter rather than the previous all-or-nothing `dao.count() > 0`
+        // gate. The old gate meant new seed rows (e.g. `zig_jade` in C.2 PR 2 and the 3
+        // milestone cosmetic ids in C.2 PR 3+) would never land on already-installed
+        // devices without a data clear, because `count() > 0` is true the moment the
+        // first install ran `ensureSeedData` against the pre-`zig_jade` catalogue.
+        //
+        // The new shape:
+        //  - Fresh install \u2192 existingIds empty, every SEED_COSMETICS row inserted.
+        //  - Upgrade from an older catalogue \u2192 only the rows whose `cosmeticId` is not
+        //    yet in the DAO are upserted. Existing rows (including any player state
+        //    like `isOwned` / `isEquipped`) are left untouched.
+        //  - Repeat call in steady state \u2192 `missing` is empty, no-op.
+        //
+        // The primary key on [CosmeticEntity] is `id` (auto-gen), not `cosmeticId`, so
+        // Room's `upsert` on a seed row with `id = 0` would create a new row rather
+        // than replace an existing one with a matching `cosmeticId`. The explicit filter
+        // sidesteps that entirely by not passing already-present rows to the DAO.
+        val existingIds = dao.observeAll().first().mapTo(HashSet()) { it.cosmeticId }
+        val missing = SEED_COSMETICS.filter { it.cosmeticId !in existingIds }
+        if (missing.isNotEmpty()) dao.upsertAll(missing)
     }
 
     override suspend fun idExists(cosmeticId: String): Boolean {

@@ -1,5 +1,77 @@
 # Run Log
 
+## 2026-05-08 — Fix: ensureSeedData per-cosmeticId filter (unblocks C.2 PR 3+)
+
+- **Goal:** Close the known-debt item called out in STATE.md and the C.2 PR 2 CHANGELOG entry \u2014 `CosmeticRepositoryImpl.ensureSeedData` short-circuited on `dao.count() > 0`, which meant any new `SEED_COSMETICS` row added after a device's first install would never land without a data clear. That blocked the C.2 PR 3+ rolling content cadence (the 3 milestone cosmetic seed rows `lapis_lazuli_skin` / `garden_ziggurat_skin` / `sandals_of_gilgamesh` that flip the C.4 UnknownCosmetic detections to Success). One-line gate \u2192 5-line per-cosmeticId filter. Small, low-risk, prerequisite.
+- **Preflight:** read `START_HERE`, `STATE`, `CONSTRAINTS`, `RUN_LOG` head (C.4 + C.2 PR 2 + doc-sweep entries). `git status` clean on `main`, up to date with origin (last commit `c9e6033 feat(milestones): detect UnknownCosmetic in ClaimMilestone (C.4)`, pushed). Re-read `CosmeticEntity` (confirmed primary key is `id` auto-gen, not `cosmeticId`), `CosmeticDao` (upsert semantics from Room), `CosmeticRepositoryImpl` (current ensureSeedData), existing `CosmeticRepositoryImplTest` (5 C.2 PR 2 cases including the idempotency test that asserts "count gate holds"). Grep-confirmed `idExists` from C.4 already lazy-calls `ensureSeedData()` \u2014 so fixing the gate here also makes the C.4 pre-flight check behave correctly on partial-catalogue devices.
+
+### Design
+
+**Shape: filter + conditional upsertAll, not universal upsert.** Evaluated three options:
+1. **Option A (chosen):** Read existing ids once via `observeAll().first().mapTo(HashSet())`, compute `missing = SEED_COSMETICS.filter { it.cosmeticId !in existingIds }`, `upsertAll(missing)` only when non-empty.
+2. **Option B (rejected):** Drop the gate entirely and `upsertAll(SEED_COSMETICS)` on every call. Naive; `CosmeticEntity`'s `@PrimaryKey(autoGenerate = true)` means a seed row with `id = 0` would insert as a brand-new auto-gen row every time, creating duplicates by the second call. Would need either a schema change (make `cosmeticId` the PK) or a conflict-resolution strategy (Room's `@Upsert` is conflict-by-PK only).
+3. **Option C (rejected):** Schema migration to make `cosmeticId` the primary key. Bigger change; requires DB version bump (v8 \u2192 v9) + a migration that rekeys the table; not justified when Option A achieves the same end-state without touching schema.
+
+Option A wins because it's scoped, additive, and sidesteps the duplicate-row risk by never passing already-present rows to the DAO. Player state on existing rows (`isOwned`, `isEquipped`) is preserved simply because the filter skips those rows entirely \u2014 there's no re-upsert to overwrite.
+
+**Three behaviours, one contract.** Called out explicitly in the inline KDoc so future readers don't need to reason through it:
+- **Fresh install** (count == 0, existingIds empty): `missing == SEED_COSMETICS`, all 8 rows inserted. Identical to pre-fix behaviour.
+- **Partial-catalogue upgrade** (count == 7, the pre-`zig_jade` state): `missing == [zig_jade]`, one row inserted. Previously broken (the gate short-circuited because count > 0).
+- **Steady state** (count == 8, all ids present): `missing == emptyList()`, no DAO write. Same end-state as the old gate, arrived via a different mechanism.
+
+**HashSet + mapTo over List + contains.** Using `mapTo(HashSet()) { it.cosmeticId }` instead of `map { it.cosmeticId }` so the `in` check is O(1). Minor, but matters if the catalogue ever grows to dozens of items.
+
+**Chose not to touch `ensureSeedData` call-site contract.** Still returns `Unit`, still suspend, still idempotent. Callers (StoreViewModel init, CosmeticRepositoryImpl.idExists) don't need updates.
+
+### Files touched
+
+- `app/src/main/java/.../data/repository/CosmeticRepositoryImpl.kt` \u2014 rewrote `ensureSeedData` body (3 lines \u2192 3 lines of logic + extensive inline KDoc explaining the 3 behaviours and the auto-gen-PK rationale). No other changes in the file.
+- `app/src/test/java/.../data/repository/CosmeticRepositoryImplTest.kt` \u2014 +`CosmeticEntity` import (for direct test-side seeding); renamed the existing idempotency test (removed "count gate holds" phrase; updated comment to describe the filter-based mechanism \u2014 same end-state assertion); +2 new regression-guard cases.
+
+### Tests added (2 new cases in `CosmeticRepositoryImplTest`)
+
+1. **`ensureSeedData inserts newly-added rows on partial catalogue upgrade`** \u2014 pre-seeds 7 legacy rows manually (`zig_obsidian`, `zig_crystal`, `zig_golden`, `proj_fire`, `proj_lightning`, `enemy_shadow`, `enemy_neon`) via direct DAO upsert, asserts baseline count == 7, calls `repo.ensureSeedData()`, asserts count == 8 (only `zig_jade` added). Additionally asserts:
+   - `zig_jade.overrideColors` is non-null with 5 entries (proves ZIGGURAT_COLOR_LOOKUP still plumbs through for freshly-seeded rows).
+   - Every one of the 7 legacy ids still present (proves the upgrade is additive, not replacive).
+   
+   This case would have failed pre-fix: the count > 0 gate would short-circuit and `zig_jade` never inserted.
+
+2. **`ensureSeedData preserves player state on existing rows (isOwned, isEquipped)`** \u2014 the most player-visible risk of a naive re-upsert approach. Pre-seeds `zig_jade` with `isOwned = true, isEquipped = true`, calls `ensureSeedData`, asserts the jade row's player state survives and all 8 rows are present. Proves the filter skips already-present ids entirely so no overwrite occurs.
+
+### Test name renamed
+
+- `C2PR2 - ensureSeedData is idempotent on repeat call (count gate holds)` \u2192 `C2PR2 - ensureSeedData is idempotent on repeat call`. The `(count gate holds)` parenthetical was directly tied to the old `dao.count() > 0` short-circuit implementation \u2014 stale now. Updated the test's explanatory comment to say "filter produces `missing == emptyList()` on the second call" so future readers understand the new mechanism.
+
+### Verification
+
+- `./run-gradle.sh test` \u2014 BUILD SUCCESSFUL in 18s, 36 actionable tasks, 11 executed. Test count: **484 \u2192 486 JVM tests** (+2, matches the 2 new regression-guard cases exactly). 0 failures, 0 errors, 0 skipped.
+- Sanity check: `grep -c "dao.count()" app/src/main/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImpl.kt` \u2014 0 (the old gate is gone). `grep -c "missing" app/src/main/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImpl.kt` \u2014 3 (matches the variable + 2 references in the code + KDoc mentions).
+- No lint changes, no new warnings, no behaviour changes for fresh installs or steady-state.
+
+### Surface changes
+
+- No public API changes. `CosmeticRepository.ensureSeedData` signature unchanged. All callers (StoreViewModel init, the new C.4 `idExists` lazy-call) benefit automatically.
+- No DB schema changes. No Room migration. Still on v8.
+- No new production dependencies.
+- No ADR \u2014 this is bounded bug-fix work; the design decision (Option A vs B vs C) is documented in the inline KDoc at point-of-use.
+
+### Open questions / blockers
+
+- **None.** The count-gate debt flagged in STATE.md after C.2 PR 2 is closed. C.2 PR 3+ can now proceed as a rolling content cadence.
+- **Follow-up for C.2 PR 3+ authors:** when adding a new SEED_COSMETICS row, just add it. No ensureSeedData edits needed. The per-cosmeticId filter will pick it up on the next launch for every install, fresh or existing.
+
+### Follow-ups
+
+- **C.2 PR 3 is the natural next PR.** Proposed: `lapis_lazuli_skin` (IRON_SOLES reward). Why first: the existing C.4 positive-path test `milestone with matching cosmetic id credits rewards via atomic path` already uses `lapis_lazuli_skin` as a fixture; replacing the fixture with a real seed row is the smallest possible diff that converts a fixture-based test into a real end-to-end coverage. Side effect: the C.4 `UnknownCosmetic surfaces offending cosmetic id for IRON_SOLES` test will need to be updated to expect Success (the id becomes known).
+- Remaining milestone cosmetics (`garden_ziggurat_skin`, `sandals_of_gilgamesh`) land in PR 3b / PR 3c.
+- After all 3 milestone cosmetics land, all 6 Milestone enum entries are fully claimable end-to-end \u2014 closes the "shipped but disabled" monetization gap that has been tracked since Plan R2-11.
+
+### Memory updated
+
+- `STATE.md` \u2705 \u2014 current objective now "`ensureSeedData` count-gate fix landed"; new bullet in "what works"; the debt line about `ensureSeedData is all-or-nothing` removed; priorities/next-actions reshuffled (C.2 PR 3 now #1, 3b/3c split out, ADR-0005/0006 + C.5/C.6 shift to #4); test count 484 \u2192 486; critical path marks the fix done; last-run updated.
+- `RUN_LOG.md` \u2705 \u2014 this entry.
+- ADR: not warranted \u2014 this is a scoped bug-fix; design rationale (Option A vs B vs C) is captured in the inline KDoc at point-of-use, the most discoverable location for future readers.
+
 ## 2026-05-08 — Phase C.4: ClaimMilestone UnknownCosmetic detection (RO-07 follow-up)
 
 - **Goal:** Land the detection half of the `ClaimMilestone.Cosmetic` gap per `devdocs/evolution/implementation_roadmap.md` §C.4. Before this PR, `ClaimMilestone` silently dropped `MilestoneReward.Cosmetic` rewards whose ids didn't exist in `SEED_COSMETICS` — the 3 currently-mismatched milestone cosmetic ids (`garden_ziggurat_skin` on MARATHON_WALKER, `lapis_lazuli_skin` on IRON_SOLES, `sandals_of_gilgamesh` on GLOBE_TROTTER) would credit the Gems/PS rewards but never grant the cosmetic, with no observable error. This PR makes the mismatch surface loudly through a sealed-Result return type; resolution (seeding matching rows) stays as C.2 PR 3+ content work per the roadmap's explicit non-goal.

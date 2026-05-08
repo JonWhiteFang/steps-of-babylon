@@ -1,7 +1,7 @@
 # Project State
 
 ## Current objective
-- **Phase C.4 landed** — `ClaimMilestone` no longer silently drops `MilestoneReward.Cosmetic` with unknown ids. Return type `Boolean` → `ClaimMilestoneResult` sealed class (Success / InsufficientSteps / AlreadyClaimed / UnknownCosmetic). Pre-flight `CosmeticRepository.idExists` check rejects the claim BEFORE the atomic DAO call so there's no partial credit. MissionsViewModel surfaces non-Success outcomes as snackbar messages. The 3 currently-mismatched milestone cosmetic ids (`garden_ziggurat_skin` on MARATHON_WALKER, `lapis_lazuli_skin` on IRON_SOLES, `sandals_of_gilgamesh` on GLOBE_TROTTER) now produce `UnknownCosmetic(id)` and show an explanatory snackbar to the player. Tests 480 → 484 (+4 net).
+- **`ensureSeedData` count-gate fix landed** — `CosmeticRepositoryImpl.ensureSeedData` swapped from all-or-nothing `dao.count() > 0` gate to a per-`cosmeticId` missing-row filter. Content PRs that add new seed rows (e.g. the 3 milestone cosmetic ids that resolve C.4 UnknownCosmetic detections) now land cleanly on existing installs, and player state (`isOwned` / `isEquipped`) on existing rows is never overwritten. Unblocks C.2 PR 3+ as a rolling content cadence. Tests 484 → 486 (+2 regression guards).
 - Plan 31: Play Console & Store Publication — still the only release-blocker; Phase C.5/C.6 (real Billing/Ad SDKs) are its prerequisites.
 
 ## What works
@@ -20,30 +20,31 @@
 - Phase C.2 PR 1 (cosmetic renderer override pipeline) landed: `CosmeticItem.overrideColors: List<Int>?` nullable field populated by `CosmeticRepositoryImpl` via a code-side `ZIGGURAT_COLOR_LOOKUP` table (empty in PR 1; first entry shipped with `zig_jade` in PR 2). `GameEngine.cosmeticOverrides: Map<CosmeticCategory, CosmeticItem>` `@Volatile var` read by `init()` to select ziggurat layer colors (`cosmeticOverrides[ZIGGURAT_SKIN]?.overrideColors ?: biomeTheme.zigguratColors` — no regression when no cosmetic equipped). `BattleViewModel` constructor grew to 14 params (added `CosmeticRepository`); loads equipped cosmetics in the init launch and pushes to `engine.cosmeticOverrides` both directly (init-launch completion) and via `startPollingEngine` — idempotent double-push handles the race. Plumbing only — no user-visible change until PR 2 seeds the first cosmetic and removes the R2-11 guard.
 - Phase C.2 PR 2 (first end-to-end cosmetic) landed: `CosmeticRepositoryImpl.SEED_COSMETICS` gained `zig_jade` (ZIGGURAT_SKIN, 150 💎); `ZIGGURAT_COLOR_LOOKUP` gained the 5-color jade palette `[0xFF104E3C, 0xFF1A6B52, 0xFF2A8F6E, 0xFF3CAB82, 0xFF54C79A]` (bottom → top). `StoreScreen` added a file-level `ENABLED_COSMETIC_ID = "zig_jade"` allow-list: unowned jade shows `💎 {priceGems}` on an enabled Button (gated on `!isPurchasing` for the double-tap guard); all other unowned cosmetics stay behind the R2-11 "Coming Soon" disabled button until their palettes ship in PR 3+. Introduced `FakeCosmeticDao` (in-memory fake with monotonic auto-increment id simulation) + `CosmeticRepositoryImplTest` (5 cases) proving the `seed → lookup → CosmeticItem.overrideColors` chain on the real impl: `zig_jade` populates 5-color palette; non-jade seeds return null overrideColors; equipped jade surfaces via `observeEquipped` with palette intact; `ensureSeedData` idempotent on repeat call.
 - Phase C.4 (ClaimMilestone UnknownCosmetic detection) landed: sealed `ClaimMilestoneResult` replaces the previous `Boolean` return (Success / InsufficientSteps / AlreadyClaimed / UnknownCosmetic(cosmeticId)). Pre-flight `CosmeticRepository.idExists` check runs BEFORE the atomic DAO call, rejecting claims whose cosmetic ids don't exist in `SEED_COSMETICS` so no partial credit lands. Resolution of the 3 mismatched ids (`garden_ziggurat_skin`, `lapis_lazuli_skin`, `sandals_of_gilgamesh`) is explicit content work for C.2 PR 3+. `MissionsViewModel` grew to 7 constructor params (+`CosmeticRepository`), pattern-matches the Result and surfaces non-Success outcomes as snackbar messages via a new `userMessage: StateFlow<String?>` + `clearMessage()`. `MissionsScreen` wrapped in `Scaffold + SnackbarHost` with `LaunchedEffect(state.userMessage)`. Test additions: UnknownCosmetic x 3 (one per mismatched milestone asserting the exact id), rejection-before-atomic regression guard, positive path showing that seeding a matching `lapis_lazuli_skin` cosmetic lets IRON_SOLES claim through cleanly (emulates C.2 PR 3+ state).
-- **484 JVM tests** green (+72 vs pre-Phase-A 412 baseline; +29 vs pre-B.2 455 baseline).
+- `ensureSeedData` count-gate fix landed: `CosmeticRepositoryImpl.ensureSeedData` now reads existing ids once (`observeAll().first().mapTo(HashSet())`), computes `missing = SEED_COSMETICS.filter { it.cosmeticId !in existingIds }`, and `upsertAll(missing)` only when non-empty. Replaces the all-or-nothing `dao.count() > 0` short-circuit that prevented any new seed row from landing on already-installed devices. Fresh install behaviour unchanged (empty existingIds → all rows inserted). Partial-catalogue upgrade now works (only the missing ids get inserted; legacy rows + player state on them are untouched because the filter skips them entirely). CosmeticEntity's auto-gen primary key means a naive re-upsert would create duplicates — the filter sidesteps that by not passing existing rows to the DAO. 2 new CosmeticRepositoryImplTest cases: partial-catalogue upgrade inserts `zig_jade` alongside 7 legacy rows; existing `zig_jade` with `isOwned=true, isEquipped=true` survives ensureSeedData with player state intact.
+- **486 JVM tests** green (+74 vs pre-Phase-A 412 baseline; +31 vs pre-B.2 455 baseline).
 
 ## Known issues / debt
 - Billing/ads still use stub implementations — real SDK integration pending Phase C.5/C.6.
-- **`ensureSeedData` is all-or-nothing** (gated on `dao.count() > 0`). C.2 PR 2's new `zig_jade` row only lands on fresh installs; existing dev installs need a data clear. Must be replaced with per-`cosmeticId` upsert (or DB migration) before v1.0 content PRs land.
 - Cosmetic visual application plumbed end-to-end for `zig_jade` only; remaining 6 seeded + 3 milestone cosmetics still show "Coming Soon" pending their palettes (C.2 PR 3+).
 - Sound assets are placeholder sine wave tones.
 - No app icon resources.
 - Phase B core refactors (@Transaction for 5 multi-write sites, resilient endRound, FollowOnPipeline extraction, UpdateMissionProgress use case) are debt, not blockers. B.1 TimeProvider landed. **B.2 PRs 1–5 all landed — RO-02 complete.** **B.3 PRs 1–2 all landed — RO-03 complete.** B.4/B.5 (FollowOnPipeline + UpdateMissionProgress) remain.
 
 ## Top priorities (next 5)
-1. Fix `ensureSeedData` count-gate so C.2 PR 3+ content PRs (and the 3 milestone cosmetic seed rows that resolve the UnknownCosmetic detections) land on already-seeded installs. One-line change (per-`cosmeticId` filter), same file as C.2 PR 2. Must precede C.2 PR 3+.
-2. Phase C.2 PR 3+ — ship the 3 milestone cosmetic seed rows (`garden_ziggurat_skin`, `lapis_lazuli_skin`, `sandals_of_gilgamesh`) + their palettes. Each new row makes one milestone claim stop returning `UnknownCosmetic`.
+1. Phase C.2 PR 3 — ship the first milestone cosmetic seed row (proposed: `lapis_lazuli_skin` since C.4 positive-path test already uses it as a fixture). After it lands, IRON_SOLES claim starts returning `Success` and the C.4 UnknownCosmetic test for `lapis_lazuli_skin` flips to the success path.
+2. Phase C.2 PR 3b/3c — seed `garden_ziggurat_skin` (MARATHON_WALKER) and `sandals_of_gilgamesh` (GLOBE_TROTTER) with their palettes. Each flips one UnknownCosmetic detection to Success.
 3. Phase C.5 + C.6 — Real Billing SDK and Ad SDK swaps (each gated on its ADR stub).
 4. Phase B.4 — FollowOnPipeline extraction from `DailyStepManager` (debt, not blocker).
 5. Phase D — Plan 31 Play Console setup, AAB upload, Firebase pre-launch.
 
 ## Next actions (explicit order)
-1. Fix `ensureSeedData` count-gate. Small, same-file edit; prerequisite for all C.2 PR 3+ content PRs landing on existing installs.
-2. C.2 PR 3 — pick one milestone cosmetic id (proposed: `lapis_lazuli_skin` since C.4 positive-path test already uses it as a fixture) and add its seed row + palette. After it lands, IRON_SOLES claim succeeds atomically and the C.4 UnknownCosmetic test for that id continues to hold until the seed clears. Repeat for the other two ids.
-3. Open ADR-0005 (Billing SDK) and ADR-0006 (Ad SDK) stubs, then land C.5 + C.6.
-4. B.4 FollowOnPipeline extraction from `DailyStepManager` — debt cleanup; removes 4 of the 12 forbidden-direction imports.
-5. B.5 `UpdateMissionProgress` use case — debt cleanup; composes with B.4.
-6. Finish with Phase D (Plan 31 Play Console setup, AAB upload, Firebase pre-launch).
+1. C.2 PR 3 — pick `lapis_lazuli_skin` first: add the seed row to SEED_COSMETICS, add its palette to ZIGGURAT_COLOR_LOOKUP, update the matching C.4 test (UnknownCosmetic for IRON_SOLES → now returns Success because the id exists; positive-path test's fixture becomes a real seed row). Verify `MissionsViewModel.claimMilestone(IRON_SOLES)` credits 200 Gems + 50 PS cleanly end-to-end.
+2. C.2 PR 3b — same for `garden_ziggurat_skin` (MARATHON_WALKER, 600 Gems).
+3. C.2 PR 3c — same for `sandals_of_gilgamesh` (GLOBE_TROTTER, 500 Gems).
+4. Open ADR-0005 (Billing SDK) and ADR-0006 (Ad SDK) stubs, then land C.5 + C.6.
+5. B.4 FollowOnPipeline extraction from `DailyStepManager` — debt cleanup; removes 4 of the 12 forbidden-direction imports.
+6. B.5 `UpdateMissionProgress` use case — debt cleanup; composes with B.4.
+7. Finish with Phase D (Plan 31 Play Console setup, AAB upload, Firebase pre-launch).
 
 ## Do-not-touch / fragile zones
 - `domain/model/` — stable, all constants validated by balance tests.
@@ -79,5 +80,5 @@
 - Codebase cleanup inventory (Phase 13): devdocs/archaeology/cleanup_inventory.md — removal/consolidation/quarantine candidates; Dynamic-risk register §F pins classes invisible to grep
 - Evolution (Phase 14, Part 1): devdocs/evolution/refactoring_opportunities.md — top-10 highest-ROI refactors (RO-01..RO-10) with current pattern, proposed abstraction, benefits, effort, risk+mitigation, ROI, first safe step, verification, rollback, non-goals
 - Evolution (Phase 14, Part 2): devdocs/evolution/implementation_roadmap.md — phased plan (A Foundation, B Core Refactoring, C Gap Filling, D Integration & Polish); each item has files / dependencies / success criteria / risk / verification / PR size / rollback / owner role
-- Critical path: 01→…→30→R→R2→ Battle Step Rewards → **Phase A done** → B.1 done → **B.2 done (RO-02 complete)** → **B.3 done (RO-03 complete)** → B.4–B.5 → **C.2 PRs 1+2 + C.4 done** → ensureSeedData fix + C.2 PR 3+ + C.5 + C.6 → D → 31
-- Last run: 2026-05-08 (C.4 — `ClaimMilestoneResult` sealed class with UnknownCosmetic variant, `CosmeticRepository.idExists` pre-flight check, MissionsViewModel snackbar surfacing, 4 new tests + 1 existing case merged; 480 → 484 tests all green; current-state docs synced)
+- Critical path: 01→…→30→R→R2→ Battle Step Rewards → **Phase A done** → B.1 done → **B.2 done (RO-02 complete)** → **B.3 done (RO-03 complete)** → B.4–B.5 → **C.2 PRs 1+2 + C.4 + ensureSeedData fix done** → C.2 PR 3+ + C.5 + C.6 → D → 31
+- Last run: 2026-05-08 (`ensureSeedData` count-gate fix — per-`cosmeticId` filter replaces `dao.count() > 0` short-circuit; 2 new regression tests cover partial-catalogue upgrade + existing-row state preservation; 484 → 486 tests all green; current-state docs synced)

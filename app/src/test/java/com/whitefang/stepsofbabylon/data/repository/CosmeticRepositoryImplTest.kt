@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.data.repository
 
+import com.whitefang.stepsofbabylon.data.local.CosmeticEntity
 import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
 import com.whitefang.stepsofbabylon.fakes.FakeCosmeticDao
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -115,11 +116,14 @@ class CosmeticRepositoryImplTest {
     }
 
     @Test
-    fun `C2PR2 - ensureSeedData is idempotent on repeat call (count gate holds)`() = runTest {
-        // Regression: ensureSeedData short-circuits when dao.count() > 0 (all-or-nothing seed
-        // model). Asserting idempotency here documents the current contract so future content
-        // PRs that change seed semantics surface as a test failure rather than a silent
-        // double-seed.
+    fun `C2PR2 - ensureSeedData is idempotent on repeat call`() = runTest {
+        // Post-ensureSeedData-fix: idempotency now holds because the per-cosmeticId
+        // filter computes `missing = SEED_COSMETICS.filter { id !in existingIds }` and
+        // upserts only the missing set. Running twice on a steady-state catalogue
+        // yields `missing == emptyList()` on the second call, which no-ops at the DAO
+        // level \u2014 exactly the same end-state as the old `dao.count() > 0` gate, but
+        // arrived at via a different mechanism that also supports partial-catalogue
+        // upgrades (see the next test).
         val dao = FakeCosmeticDao()
         val repo = CosmeticRepositoryImpl(dao)
 
@@ -130,5 +134,77 @@ class CosmeticRepositoryImplTest {
 
         assertEquals(countAfterFirst, countAfterSecond, "repeat ensureSeedData must not duplicate rows")
         assertEquals(8, countAfterFirst, "PR 2 ships 8 seed rows (4 ziggurat incl. zig_jade + 2 projectile + 2 enemy)")
+    }
+
+    @Test
+    fun `ensureSeedData inserts newly-added rows on partial catalogue upgrade`() = runTest {
+        // Regression guard for the old `dao.count() > 0` gate bug: before the fix, a
+        // device that had already seeded the pre-`zig_jade` 7-row catalogue would NEVER
+        // receive `zig_jade` on upgrade (short-circuit fired because count was 7, not
+        // 0). After the fix, the per-cosmeticId filter sees `zig_jade` missing and
+        // inserts only that one row.
+        //
+        // Simulates the exact upgrade path: pre-seed the 7 legacy rows manually (no
+        // `zig_jade`), run ensureSeedData, assert `zig_jade` now present and the
+        // original 7 still intact.
+        val dao = FakeCosmeticDao()
+        val legacySeed = listOf(
+            CosmeticEntity(cosmeticId = "zig_obsidian", category = "ZIGGURAT_SKIN", name = "Obsidian Ziggurat", description = "Dark volcanic stone", priceGems = 100),
+            CosmeticEntity(cosmeticId = "zig_crystal", category = "ZIGGURAT_SKIN", name = "Crystal Ziggurat", description = "Translucent crystal layers", priceGems = 200),
+            CosmeticEntity(cosmeticId = "zig_golden", category = "ZIGGURAT_SKIN", name = "Golden Ziggurat", description = "Pure gold plating", priceGems = 300),
+            CosmeticEntity(cosmeticId = "proj_fire", category = "PROJECTILE_EFFECT", name = "Fire Trails", description = "Blazing projectile trails", priceGems = 150),
+            CosmeticEntity(cosmeticId = "proj_lightning", category = "PROJECTILE_EFFECT", name = "Lightning Arcs", description = "Electric projectile arcs", priceGems = 150),
+            CosmeticEntity(cosmeticId = "enemy_shadow", category = "ENEMY_SKIN", name = "Shadow Enemies", description = "Dark silhouette enemies", priceGems = 100),
+            CosmeticEntity(cosmeticId = "enemy_neon", category = "ENEMY_SKIN", name = "Neon Enemies", description = "Glowing neon outlines", priceGems = 100),
+        )
+        dao.upsertAll(legacySeed)
+        assertEquals(7, dao.count(), "baseline: legacy catalogue has 7 rows")
+
+        val repo = CosmeticRepositoryImpl(dao)
+        repo.ensureSeedData()
+
+        assertEquals(8, dao.count(), "after ensureSeedData: zig_jade added, legacy 7 preserved")
+        val items = repo.observeAll().first()
+        val jade = items.single { it.cosmeticId == "zig_jade" }
+        assertNotNull(jade.overrideColors, "new zig_jade row must carry overrideColors from ZIGGURAT_COLOR_LOOKUP")
+        assertEquals(5, jade.overrideColors!!.size)
+        // Legacy ids still present \u2014 the upgrade is additive, not replacive.
+        for (legacyId in legacySeed.map { it.cosmeticId }) {
+            assertNotNull(items.find { it.cosmeticId == legacyId }, "legacy id `$legacyId` must survive the upgrade")
+        }
+    }
+
+    @Test
+    fun `ensureSeedData preserves player state on existing rows (isOwned, isEquipped)`() = runTest {
+        // Regression guard for the most player-visible risk of a naive "re-upsert all
+        // seed rows" fix: a row with `isOwned = true` / `isEquipped = true` must NOT
+        // be reverted to the default `isOwned = false` / `isEquipped = false` when
+        // ensureSeedData runs on subsequent launches. The per-cosmeticId filter skips
+        // already-present ids entirely \u2014 the DAO never sees the seed row for those
+        // ids, so player state on them is untouched.
+        val dao = FakeCosmeticDao()
+        val ownedEquippedJade = CosmeticEntity(
+            cosmeticId = "zig_jade",
+            category = "ZIGGURAT_SKIN",
+            name = "Jade Ziggurat",
+            description = "Deep jade stone with pale highlights",
+            priceGems = 150,
+            isOwned = true,
+            isEquipped = true,
+        )
+        dao.upsert(ownedEquippedJade)
+        assertEquals(1, dao.count())
+
+        val repo = CosmeticRepositoryImpl(dao)
+        repo.ensureSeedData()
+
+        // All 8 seed rows now present (7 new + the pre-existing zig_jade preserved).
+        assertEquals(8, dao.count())
+        val jade = repo.observeAll().first().single { it.cosmeticId == "zig_jade" }
+        assertTrue(jade.isOwned, "pre-existing player ownership must survive ensureSeedData")
+        assertTrue(jade.isEquipped, "pre-existing equipped state must survive ensureSeedData")
+        // Palette still plumbs through (proves toDomain still applies ZIGGURAT_COLOR_LOOKUP
+        // to the already-persisted row, not just to freshly-seeded rows).
+        assertNotNull(jade.overrideColors)
     }
 }
