@@ -7,7 +7,9 @@ import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestone
+import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestoneResult
 import com.whitefang.stepsofbabylon.domain.usecase.GenerateDailyMissions
+import com.whitefang.stepsofbabylon.fakes.FakeCosmeticRepository
 import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
 import com.whitefang.stepsofbabylon.fakes.FakeMilestoneDao
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
@@ -67,8 +69,12 @@ class MissionsViewModelTest {
 
     @Test
     fun `claim milestone credits reward`() = runTest {
-        val claim = ClaimMilestone(milestoneDao, playerRepo, mock<PlayerProfileDao>())
-        claim(Milestone.FIRST_STEPS)
+        // FIRST_STEPS has no Cosmetic reward, so the empty FakeCosmeticRepository is
+        // sufficient (cosmetic-id pre-flight check in C.4 is vacuously true for zero
+        // Cosmetic rewards).
+        val claim = ClaimMilestone(milestoneDao, playerRepo, mock<PlayerProfileDao>(), FakeCosmeticRepository())
+        val result = claim(Milestone.FIRST_STEPS)
+        assertEquals(ClaimMilestoneResult.Success, result)
         // FIRST_STEPS rewards 60 Gems
         assertEquals(110, playerRepo.profile.value.gems)
         val entity = milestoneDao.getByIdOnce(Milestone.FIRST_STEPS.name)

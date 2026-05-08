@@ -163,7 +163,7 @@ domain/repository/StepRepository.kt             # Daily step records + escrow + 
 domain/repository/WalkingEncounterRepository.kt # Walking encounter interface
 domain/repository/BillingManager.kt             # Billing interface (purchase, query)
 domain/repository/RewardAdManager.kt            # Reward ad interface (show ad, availability)
-domain/repository/CosmeticRepository.kt         # Cosmetic store interface
+domain/repository/CosmeticRepository.kt         # Cosmetic store interface + `idExists(cosmeticId): Boolean` (C.4 — used by ClaimMilestone to pre-flight MilestoneReward.Cosmetic ids and surface UnknownCosmetic result variant for the 3 currently-mismatched milestone cosmetic ids)
 domain/usecase/CalculateUpgradeCost.kt          # Cost formula: baseCost * scaling^level
 domain/usecase/CanAffordUpgrade.kt              # Affordability check against wallet
 domain/usecase/PurchaseUpgrade.kt               # Delegates to WorkshopRepository.purchaseUpgradeAtomic — atomic deduct + level-set (B.2 PR 1)
@@ -193,7 +193,7 @@ domain/usecase/TrackWeeklyChallenge.kt           # Weekly step challenge PS awar
 domain/usecase/TrackDailyLogin.kt                # Daily login PS + Gem streak
 domain/usecase/AwardWaveMilestone.kt             # PS on new personal-best waves (1/2/5)
 domain/usecase/CheckMilestones.kt                # Detect newly achievable walking milestones
-domain/usecase/ClaimMilestone.kt                 # Credit milestone rewards via MilestoneDao.claimMilestoneAtomic (gems + power stones); Cosmetic reward no-op pending C.4 (B.2 PR 4)
+domain/usecase/ClaimMilestone.kt                 # Credit milestone rewards via MilestoneDao.claimMilestoneAtomic (gems + power stones) with pre-flight CosmeticRepository.idExists check; returns `ClaimMilestoneResult` sealed type (Success | InsufficientSteps | AlreadyClaimed | UnknownCosmetic(cosmeticId)) so the 3 mismatched milestone cosmetic ids surface explicitly instead of silently dropping (C.4)
 domain/usecase/GenerateDailyMissions.kt          # Generate 3 daily missions (date-seeded random)
 domain/usecase/PurchaseGemPack.kt                # Purchase Gem pack via BillingManager
 ```
@@ -342,7 +342,7 @@ domain/usecase/GenerateSupplyDropTest.kt          # Drop generation: inbox cap, 
 domain/usecase/ClaimSupplyDropTest.kt             # Claim flow: reward crediting, already-claimed guard
 domain/usecase/AwardWaveMilestoneTest.kt          # Wave milestone PS: 1/2/5 at wave boundaries
 domain/usecase/CheckMilestonesTest.kt             # Milestone detection: threshold, claimed exclusion
-domain/usecase/ClaimMilestoneTest.kt              # Claim flow: reward crediting, idempotent guard
+domain/usecase/ClaimMilestoneTest.kt              # Claim flow: reward crediting, idempotent guard, concurrent-claim atomicity (B.2 PR 4), UnknownCosmetic detection for MARATHON_WALKER / IRON_SOLES / GLOBE_TROTTER + rejection-before-atomic regression guard + positive-path with matching cosmetic fixture (C.4)
 domain/usecase/GenerateDailyMissionsTest.kt       # Mission generation: deterministic, one per category
 domain/usecase/PurchaseGemPackTest.kt             # Gem pack purchase: delegates to billing, error forwarding
 domain/model/MilestoneTest.kt                     # 6 milestones: thresholds, rewards, sorting

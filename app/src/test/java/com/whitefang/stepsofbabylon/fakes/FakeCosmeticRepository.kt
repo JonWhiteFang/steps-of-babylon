@@ -25,4 +25,7 @@ class FakeCosmeticRepository : CosmeticRepository {
         items.update { list -> list.map { if (it.cosmeticId == cosmeticId) it.copy(isEquipped = false) else it } }
     }
     override suspend fun ensureSeedData() {}
+
+    override suspend fun idExists(cosmeticId: String): Boolean =
+        items.value.any { it.cosmeticId == cosmeticId }
 }

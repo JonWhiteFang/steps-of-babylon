@@ -5,7 +5,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -20,34 +22,46 @@ import java.text.NumberFormat
 fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val fmt = NumberFormat.getNumberInstance()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        // Midnight countdown
-        item {
-            val hours = (state.timeUntilMidnightMs / 3_600_000).toInt()
-            val minutes = ((state.timeUntilMidnightMs % 3_600_000) / 60_000).toInt()
-            Text("Daily Missions", style = MaterialTheme.typography.headlineSmall)
-            Text("Resets in ${hours}h ${minutes}m", style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+    // C.4: surface non-Success ClaimMilestoneResult (InsufficientSteps, AlreadyClaimed,
+    // UnknownCosmetic) as snackbars so claim failures are visible instead of silent.
+    LaunchedEffect(state.userMessage) {
+        state.userMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessage()
         }
+    }
 
-        // Daily missions
-        items(state.missions, key = { it.id }) { mission ->
-            MissionCard(mission, onClaim = { viewModel.claimMission(mission.id) }, fmt = fmt)
-        }
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // Midnight countdown
+            item {
+                val hours = (state.timeUntilMidnightMs / 3_600_000).toInt()
+                val minutes = ((state.timeUntilMidnightMs % 3_600_000) / 60_000).toInt()
+                Text("Daily Missions", style = MaterialTheme.typography.headlineSmall)
+                Text("Resets in ${hours}h ${minutes}m", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
 
-        // Milestones header
-        item {
-            Spacer(Modifier.height(8.dp))
-            Text("Walking Milestones", style = MaterialTheme.typography.headlineSmall)
-        }
+            // Daily missions
+            items(state.missions, key = { it.id }) { mission ->
+                MissionCard(mission, onClaim = { viewModel.claimMission(mission.id) }, fmt = fmt)
+            }
 
-        // Milestones
-        items(state.milestones, key = { it.milestone.name }) { ms ->
-            MilestoneCard(ms, onClaim = { viewModel.claimMilestone(ms.milestone) }, fmt = fmt)
+            // Milestones header
+            item {
+                Spacer(Modifier.height(8.dp))
+                Text("Walking Milestones", style = MaterialTheme.typography.headlineSmall)
+            }
+
+            // Milestones
+            items(state.milestones, key = { it.milestone.name }) { ms ->
+                MilestoneCard(ms, onClaim = { viewModel.claimMilestone(ms.milestone) }, fmt = fmt)
+            }
         }
     }
 }

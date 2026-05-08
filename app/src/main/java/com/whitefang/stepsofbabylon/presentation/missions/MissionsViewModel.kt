@@ -9,8 +9,10 @@ import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.model.MissionCategory
+import com.whitefang.stepsofbabylon.domain.repository.CosmeticRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestone
+import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestoneResult
 import com.whitefang.stepsofbabylon.domain.usecase.GenerateDailyMissions
 import com.whitefang.stepsofbabylon.domain.time.TimeProvider
 import com.whitefang.stepsofbabylon.data.time.SystemTimeProvider
@@ -33,13 +35,20 @@ class MissionsViewModel @Inject constructor(
     private val dailyStepDao: DailyStepDao,
     private val playerRepository: PlayerRepository,
     private val playerProfileDao: PlayerProfileDao,
+    private val cosmeticRepository: CosmeticRepository,
     private val timeProvider: TimeProvider = SystemTimeProvider(),
 ) : ViewModel() {
 
     private val generateMissions = GenerateDailyMissions(dailyMissionDao)
-    private val claimMilestone = ClaimMilestone(milestoneDao, playerRepository, playerProfileDao)
+    private val claimMilestoneUseCase = ClaimMilestone(
+        milestoneDao,
+        playerRepository,
+        playerProfileDao,
+        cosmeticRepository,
+    )
     private var today = timeProvider.today().toString()
     private val tick = MutableStateFlow(System.currentTimeMillis())
+    private val userMessage = MutableStateFlow<String?>(null)
 
     init {
         viewModelScope.launch { generateMissions(today) }
@@ -63,7 +72,8 @@ class MissionsViewModel @Inject constructor(
         milestoneDao.getAll(),
         playerRepository.observeProfile(),
         tick,
-    ) { missions, claimedMilestones, profile, now ->
+        userMessage,
+    ) { missions, claimedMilestones, profile, _, message ->
         val claimedIds = claimedMilestones.filter { it.claimed }.map { it.milestoneId }.toSet()
         val midnight = Duration.between(LocalTime.now(), LocalTime.MIDNIGHT.minusNanos(1)).toMillis()
             .let { if (it < 0) it + 86_400_000 else it }
@@ -79,6 +89,7 @@ class MissionsViewModel @Inject constructor(
             },
             timeUntilMidnightMs = midnight,
             isLoading = false,
+            userMessage = message,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MissionsUiState())
 
@@ -93,8 +104,26 @@ class MissionsViewModel @Inject constructor(
     }
 
     fun claimMilestone(milestone: Milestone) {
-        viewModelScope.launch { claimMilestone.invoke(milestone) }
+        viewModelScope.launch {
+            // C.4: surface non-Success outcomes as snackbar messages. The UnknownCosmetic
+            // variant specifically exists to make the 3 currently-mismatched milestone
+            // cosmetic ids (garden_ziggurat_skin / lapis_lazuli_skin / sandals_of_gilgamesh)
+            // visible to the player instead of silently dropping. Resolution \u2014 matching those
+            // ids to seed rows \u2014 is C.2 PR 3+ content work; until then those 3 milestones
+            // cannot be claimed and the snackbar explains why.
+            when (val result = claimMilestoneUseCase.invoke(milestone)) {
+                ClaimMilestoneResult.Success -> Unit // claim state updates via flow
+                ClaimMilestoneResult.InsufficientSteps ->
+                    userMessage.value = "You haven't walked enough steps yet."
+                ClaimMilestoneResult.AlreadyClaimed ->
+                    userMessage.value = "Milestone already claimed."
+                is ClaimMilestoneResult.UnknownCosmetic ->
+                    userMessage.value = "Reward temporarily unavailable (cosmetic \u201c${result.cosmeticId}\u201d is being finalised). Try again after the next update."
+            }
+        }
     }
+
+    fun clearMessage() { userMessage.value = null }
 
     private suspend fun updateWalkingMissionProgress() {
         val missions = dailyMissionDao.getByDateOnce(today)

@@ -39,6 +39,15 @@ class CosmeticRepositoryImpl @Inject constructor(
         dao.upsertAll(SEED_COSMETICS)
     }
 
+    override suspend fun idExists(cosmeticId: String): Boolean {
+        // Seed lazily so the check is reliable before the Store screen has ever been
+        // opened (e.g. when ClaimMilestone fires from the Missions screen first).
+        // ensureSeedData short-circuits via `dao.count() > 0` so the amortised cost is
+        // one table-count query on steady-state.
+        ensureSeedData()
+        return dao.observeAll().first().any { it.cosmeticId == cosmeticId }
+    }
+
     private fun CosmeticEntity.toDomain() = CosmeticItem(
         cosmeticId = cosmeticId,
         category = CosmeticCategory.valueOf(category),

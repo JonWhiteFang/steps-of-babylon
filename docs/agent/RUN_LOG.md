@@ -1,5 +1,111 @@
 # Run Log
 
+## 2026-05-08 — Phase C.4: ClaimMilestone UnknownCosmetic detection (RO-07 follow-up)
+
+- **Goal:** Land the detection half of the `ClaimMilestone.Cosmetic` gap per `devdocs/evolution/implementation_roadmap.md` §C.4. Before this PR, `ClaimMilestone` silently dropped `MilestoneReward.Cosmetic` rewards whose ids didn't exist in `SEED_COSMETICS` — the 3 currently-mismatched milestone cosmetic ids (`garden_ziggurat_skin` on MARATHON_WALKER, `lapis_lazuli_skin` on IRON_SOLES, `sandals_of_gilgamesh` on GLOBE_TROTTER) would credit the Gems/PS rewards but never grant the cosmetic, with no observable error. This PR makes the mismatch surface loudly through a sealed-Result return type; resolution (seeding matching rows) stays as C.2 PR 3+ content work per the roadmap's explicit non-goal.
+- **Preflight:** read `START_HERE`, `STATE`, `CONSTRAINTS`, `RUN_LOG` head (C.2 PR 2 + doc-sweep + C.2 PR 1 + B.3 PR 2 + B.2 PRs 4-5 entries). `git status` clean on `main`, up to date with origin (last commit `f01d54c feat(cosmetics): seed zig_jade as first end-to-end cosmetic (C.2 PR 2)`, just pushed). Read `ClaimMilestone`, `Milestone` enum (6 entries; 3 with Cosmetic rewards), `MilestoneReward` (sealed: Gems / PowerStones / Cosmetic), `CosmeticRepository` interface, `CosmeticRepositoryImpl` (ensureSeedData + toDomain), `FakeCosmeticRepository`, `MissionsViewModel` (uses ClaimMilestone; existing snackbar infrastructure: none, unlike StoreScreen/WorkshopScreen which already have Scaffold+SnackbarHost), `MissionsScreen`, `MissionsUiState`, `MilestoneDao.claimMilestoneAtomic` (to confirm atomic invariant is preserved), `ClaimMilestoneTest` (8 cases including 3 atomicity tests from B.2 PR 4), `MissionsViewModelTest`. Grep-confirmed ClaimMilestone has exactly 3 construction sites: `MissionsViewModel` (prod), `ClaimMilestoneTest` sut, `MissionsViewModelTest` one direct construction.
+
+### Design
+
+**Result shape: sealed class with `data object` + one `data class`.** Four variants match the 4 distinct rejection/success paths. `Success`, `InsufficientSteps`, `AlreadyClaimed` are singletons (no data, rendered as `data object` per Kotlin 2.3 best practice). `UnknownCosmetic` carries the offending `cosmeticId: String` so consumers can surface the specific id — matters because a player hitting MARATHON_WALKER's cosmetic issue should see a different message than IRON_SOLES's. Named the class `ClaimMilestoneResult` (not `Result`) to avoid any confusion with `kotlin.Result` elsewhere in the codebase. Placed in the same file as `ClaimMilestone` so the two are read together — same pattern as `OpenCardPack.PackTier` / `ActivateOverdrive.Result`.
+
+**Pre-flight cosmetic-id check, not post-atomic recovery.** Two options evaluated:
+1. **Option A (chosen):** Before calling `claimMilestoneAtomic`, iterate `milestone.rewards`, and for each `MilestoneReward.Cosmetic` call `cosmeticRepository.idExists(id)`. First unknown wins; return `UnknownCosmetic(id)` immediately with zero wallet movement. Clean: no partial credit, claim stays atomic in the "transition" sense.
+2. **Option B (rejected):** Run `claimMilestoneAtomic` (credit Gems/PS + mark claimed), then check cosmetic ids afterwards, return `UnknownCosmetic` on miss. Would still credit the non-cosmetic rewards. Player-friendlier in a sense ("at least they got the Gems"), but contradicts "detection only" — marking the milestone claimed with unknown-cosmetic state couples detection to partial fulfilment and makes post-C.2-PR-3 resolution harder (the row is already `claimed=true` so re-granting the cosmetic when seed lands requires a separate mechanism).
+
+Option A wins because the roadmap is explicit: "Do not silently drop." The strictest reading is "reject the whole claim so nothing silent happens." It also means the test can assert "no wallet movement" as a regression guard — a cleaner invariant than "partial movement" which is hard to test without enumerating exactly what was credited.
+
+**Trade-off acknowledged:** Option A means the 3 affected milestones (MARATHON_WALKER, IRON_SOLES, GLOBE_TROTTER) are **currently un-claimable** until C.2 PR 3+ lands their cosmetic seed rows. A real player today who walks 500k steps and taps "Claim" on MARATHON_WALKER sees a snackbar, not a 600-Gem payout. This is a deliberate C.4 non-goal per the roadmap: "do not rename the 3 mismatched IDs in this PR (that is content work coupled to C.2 PR 3)." The alternative (silent drop) was worse — the player would never learn that they never got their cosmetic. An in-between state where they get the gems but not the cosmetic, and the milestone is marked claimed, would lock us out of fixing it later. So Option A is correct even if user-facing.
+
+**`idExists` on the repo, not on the use case.** Added `suspend fun idExists(cosmeticId: String): Boolean` to the `CosmeticRepository` interface. Real impl lazy-seeds via `ensureSeedData()` then queries `observeAll().first().any { it.cosmeticId == cosmeticId }`. The lazy seed is important: the cosmetic catalogue is otherwise seeded only when `StoreViewModel.init` runs, so a player claiming a milestone from the Missions screen without ever opening the Store would see false-negatives. `FakeCosmeticRepository` checks its `items` StateFlow directly (tests configure items explicitly; no seed behaviour to emulate).
+
+Considered exposing `SEED_COSMETICS` statically (e.g. a top-level constant or companion-object member) instead of going through the DAO round-trip, but that:
+- breaks the domain/data boundary (use case would import data-layer contents).
+- bypasses any runtime-added cosmetics (if future content PRs source cosmetics from a server or a pack, the static view is wrong).
+
+Going through the repo keeps the contract clean: "the catalogue is whatever the repo says it is, at the moment of the check." The `ensureSeedData` idempotency makes this cheap on steady-state.
+
+**First-unknown-wins semantics.** If a milestone has multiple Cosmetic rewards (none currently do, but the data model allows it), only the first unknown id is reported. Exhaustive reporting would require a `List<String>` on the result variant and complicate the common case. Since the roadmap's resolution plan is "one content PR per cosmetic," reporting the first unknown and iterating is enough — after the first seed lands, the same claim returns `UnknownCosmetic(next_id)` instead of the first one.
+
+**MissionsViewModel: pattern-match + surface via snackbar.** The consumer now pattern-matches the result:
+```kotlin
+when (val result = claimMilestoneUseCase.invoke(milestone)) {
+    ClaimMilestoneResult.Success -> Unit
+    ClaimMilestoneResult.InsufficientSteps -> userMessage.value = "You haven't walked enough steps yet."
+    ClaimMilestoneResult.AlreadyClaimed -> userMessage.value = "Milestone already claimed."
+    is ClaimMilestoneResult.UnknownCosmetic -> userMessage.value = "Reward temporarily unavailable (cosmetic \"${result.cosmeticId}\" is being finalised). Try again after the next update."
+}
+```
+The `userMessage: StateFlow<String?>` is nullable — non-null triggers the snackbar on the next render. `clearMessage()` resets after the snackbar dismisses. Matches the existing Store/Workshop/Cards/Labs pattern established in R10/R2-09.
+
+`MissionsScreen` previously had no `Scaffold` wrapper; wrapped the `LazyColumn` in `Scaffold(snackbarHost = { SnackbarHost(\u2026) })` and added a `LaunchedEffect(state.userMessage)` that shows + clears. First time the Missions screen has user-feedback plumbing. `@OptIn(ExperimentalMaterial3Api::class)` was already present on the composable (left unchanged).
+
+### Files touched
+
+- `app/src/main/java/.../domain/repository/CosmeticRepository.kt` — +`suspend fun idExists(cosmeticId: String): Boolean` with KDoc explaining C.4 rationale and flagging resolution as C.2 PR 3+ content work.
+- `app/src/main/java/.../data/repository/CosmeticRepositoryImpl.kt` — +`override suspend fun idExists(...)` that lazy-seeds via `ensureSeedData()` then queries `observeAll().first().any { it.cosmeticId == cosmeticId }`. Inline comment notes the amortised cost (one table-count query on steady-state).
+- `app/src/main/java/.../domain/usecase/ClaimMilestone.kt` — rewrite: +`ClaimMilestoneResult` sealed class (4 variants) in same file; constructor grew from 3 to 4 params (+`CosmeticRepository`); body now does step-threshold check \u2192 pre-flight cosmetic-id check \u2192 atomic DAO call \u2192 Success|AlreadyClaimed. KDoc expanded to document C.4 detection-only contract. `MilestoneReward.Cosmetic` import added for the pre-flight check.
+- `app/src/main/java/.../presentation/missions/MissionsUiState.kt` — +`userMessage: String? = null` field with KDoc.
+- `app/src/main/java/.../presentation/missions/MissionsViewModel.kt` — +`CosmeticRepository` injection (6 \u2192 7 constructor params); +`userMessage: MutableStateFlow<String?>` + `clearMessage()`; `claimMilestone(milestone)` now pattern-matches `ClaimMilestoneResult`; `combine()` grew from 4 to 5 flows (+userMessage).
+- `app/src/main/java/.../presentation/missions/MissionsScreen.kt` — wrapped `LazyColumn` in `Scaffold(snackbarHost = { SnackbarHost(\u2026) })`; added `LaunchedEffect(state.userMessage)` that shows + clears. New imports: `LaunchedEffect`, `remember`.
+- `app/src/test/java/.../fakes/FakeCosmeticRepository.kt` — +`override suspend fun idExists` that checks `items.value.any { it.cosmeticId == cosmeticId }`.
+- `app/src/test/java/.../domain/usecase/ClaimMilestoneTest.kt` — rewrite: 8 cases \u2192 12 cases (-1 merged into positive-path + 5 new C.4 cases). Constructor updated to 4-arg; sut now takes a `FakeCosmeticRepository` (empty by default to match prod-today state where the 3 ids don't exist). Test-name renames for Result-type clarity.
+- `app/src/test/java/.../presentation/missions/MissionsViewModelTest.kt` — direct `ClaimMilestone` construction updated to 4-arg (+`FakeCosmeticRepository()`). Asserts `ClaimMilestoneResult.Success` instead of the old Boolean.
+
+### Tests added (5 new cases in `ClaimMilestoneTest`, 1 existing case merged)
+
+New C.4 cases:
+1. **`UnknownCosmetic surfaces offending cosmetic id for MARATHON_WALKER`** \u2014 empty cosmetic catalogue; `useCase(MARATHON_WALKER)` returns `UnknownCosmetic("garden_ziggurat_skin")`. Asserts the exact id so renaming the reward in future content work surfaces as a test failure.
+2. **`UnknownCosmetic surfaces offending cosmetic id for IRON_SOLES`** \u2014 same, for `"lapis_lazuli_skin"`.
+3. **`UnknownCosmetic surfaces offending cosmetic id for GLOBE_TROTTER`** \u2014 same, for `"sandals_of_gilgamesh"`.
+4. **`UnknownCosmetic rejects claim before the atomic DAO call with no credit`** \u2014 regression guard on pre-flight ordering: uses IRON_SOLES, asserts zero wallet movement + `claimMilestoneAtomicCallCount == 0` + no milestone row written. Proves the check runs BEFORE the atomic, not as a post-atomic cleanup.
+5. **`milestone with matching cosmetic id credits rewards via atomic path`** \u2014 positive path emulating post-C.2-PR-3 state: seeds `cosmeticRepo.items` with a `lapis_lazuli_skin` CosmeticItem, then `useCase(IRON_SOLES)` succeeds atomically (200 Gems + 50 PS credited; atomic call count 1). Shows the check is selective: when the id is present, the rest of the flow runs normally. This test is the forward-looking compass for when C.2 PR 3 eventually seeds `lapis_lazuli_skin` \u2014 the test flips from "fixture-based" to "real seed row" without code changes.
+
+Existing test merged away: `credits Gems and Power Stones for IRON_SOLES` was a Boolean-success case against IRON_SOLES, which now returns `UnknownCosmetic` by default. Coverage preserved by (a) the new UnknownCosmetic IRON_SOLES test (confirms the rejection shape) + (b) the new positive-path test (confirms the credit runs when the id resolves). Net: 8 \u2192 12 cases (+4).
+
+Existing test adjusted in place:
+- `two concurrent claims on the same milestone - only one credits` \u2014 target switched from IRON_SOLES (unknown cosmetic) to MORNING_JOGGER (Gems-only, no Cosmetic reward). The atomicity invariant being tested is independent of the cosmetic-id pre-flight check, so the target change keeps the coverage focused. Assertions updated to `ClaimMilestoneResult.Success` / `ClaimMilestoneResult.AlreadyClaimed` counts.
+- `credits Gems correctly` \u2192 `credits Gems correctly on Success`, `marks milestone as claimed` \u2192 `marks milestone as claimed on Success`, `claiming twice is no-op` \u2192 `claiming twice returns AlreadyClaimed on second call`, `claiming milestone without reaching step threshold returns false` \u2192 `\u2026 returns InsufficientSteps`, `already-claimed entity pre-existing in DAO causes invoke to short-circuit` \u2192 `\u2026 causes invoke to return AlreadyClaimed`. Rename for Result-type clarity.
+
+### Mid-edit bugs caught
+
+**Em-dash in backtick test name.** Initially wrote `UnknownCosmetic rejects claim before the atomic DAO call \u2014 no credit` (em-dash separator). Kotlin compiler rejected with "Name contains illegal characters: ." \u2014 the em-dash character trips the Kotlin 2.3 backtick-identifier validator. Replaced with "with no credit" prose. Lesson: keep test names to ASCII.
+
+### Verification
+
+- `./run-gradle.sh test` \u2014 first run: compile error on em-dash test name (above). After fix, **BUILD SUCCESSFUL in 14s**, 36 actionable tasks. 0 failures, 0 errors, 0 skipped.
+- Test count: **480 \u2192 484 JVM tests** (+4 net). Breakdown: -1 case merged (old IRON_SOLES success-path) + 5 new cases = +4. Matches expectations exactly.
+- Grep sanity checks:
+  - `grep -rn "ClaimMilestoneResult" app/src` \u2014 6 hits across the file pair + 3 test files.
+  - `grep -rn "idExists" app/src` \u2014 7 hits (interface + 2 impls + use case + 3 tests).
+  - `grep -rn "cosmeticId silently" app/src` \u2014 0 hits (no stale comments referring to the pre-C.4 silent-drop behaviour).
+- Behaviour preservation: milestones without Cosmetic rewards (FIRST_STEPS, MORNING_JOGGER, TRAIL_BLAZER) claim identically to pre-C.4 \u2014 verified by the 7 preserved test cases.
+
+### Surface changes
+
+- `CosmeticRepository` gained one `suspend fun`. All implementations (real + fake) updated.
+- `ClaimMilestone` constructor grew from 3 to 4 params; return type changed from `Boolean` to `ClaimMilestoneResult`. 3 call sites touched (MissionsViewModel, ClaimMilestoneTest sut, MissionsViewModelTest direct construction) \u2014 all updated in this PR.
+- `MissionsViewModel` constructor grew from 6 to 7 params. Hilt graph picks up `CosmeticRepository` via the existing `@Binds` in `RepositoryModule`.
+- `MissionsScreen` wrapped in `Scaffold` \u2014 backwards-compatible (no Hilt / nav changes). First user-feedback surface on the Missions screen.
+- No new production dependencies. No ADR \u2014 C.4 roadmap section fully covers the decision with alternatives and non-goals.
+
+### Open questions / blockers
+
+- **3 milestones currently un-claimable by design.** MARATHON_WALKER / IRON_SOLES / GLOBE_TROTTER each carry an unknown-cosmetic reward; until C.2 PR 3+ seeds the matching rows, the claim snackbar is the only outcome. This is a known trade-off, documented in CHANGELOG, STATE.md, and the use case's KDoc.
+- **Known seed-data debt** \u2014 `ensureSeedData` still short-circuits on `dao.count() > 0`. If a dev installs the app before C.2 PR 2 (no `zig_jade`) and before C.2 PR 3+ (no milestone cosmetics), subsequent upgrades won't seed the new rows. Fix is still queued as #1 in next-actions; must precede any C.2 PR 3+ content PR.
+
+### Follow-ups
+
+- **Immediate next (priority #1):** fix `ensureSeedData` count-gate. One-line change (per-`cosmeticId` filter) in `CosmeticRepositoryImpl.kt`. Small, additive, low risk.
+- **C.2 PR 3:** ship the first milestone cosmetic seed row. Proposed: `lapis_lazuli_skin` because the positive-path test in C.4 already uses it as a fixture \u2014 replacing the fixture with real data is the smallest diff. The C.4 UnknownCosmetic IRON_SOLES test will break when this lands (the id will be known), and the replacement assertion \u2014 that IRON_SOLES now claims successfully \u2014 will be trivial.
+- **C.5 + C.6:** Billing + Ad SDK swaps, each gated on ADR-0005 / ADR-0006. Independent of C.2 PR 3+ cadence.
+
+### Memory updated
+
+- `STATE.md` \u2705 \u2014 current objective now "Phase C.4 landed"; C.4 added to "what works"; test count 480 \u2192 484; priorities/next-actions reshuffled (ensureSeedData fix #1, C.2 PR 3 #2, C.5/C.6 #3); C.4 removed from debt list; critical path marks PRs 1+2 + C.4 done; last-run date updated.
+- `RUN_LOG.md` \u2705 \u2014 this entry.
+- ADR: not warranted \u2014 C.4 roadmap section fully covers the decision. The pre-flight-vs-post-atomic design choice is documented in the use case's KDoc (Option A vs Option B rationale) and in this entry, discoverable at the point of use.
+
 ## 2026-05-08 — Phase C.2 PR 2 (RO-07): seed zig_jade as first end-to-end cosmetic
 
 - **Goal:** Land the first content slice of the C.2 cosmetic pipeline per `devdocs/evolution/implementation_roadmap.md` §C.2 PR 2. PR 1 shipped the renderer plumbing (dormant — `ZIGGURAT_COLOR_LOOKUP` empty). PR 2 seeds the first cosmetic (`zig_jade` — jade ziggurat recolour per gap_analysis §5.2), populates its palette, and lifts the R2-11 "Coming Soon" guard for that single ID so it's purchasable in the Store. Closes the "shipped but disabled" monetization gap for one end-to-end slice, unblocks the remaining 6 seeded + 3 milestone cosmetics as pure content work for PR 3+.
