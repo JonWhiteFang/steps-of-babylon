@@ -24,6 +24,13 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
+
+        // Default USE_REAL_BILLING value for any build type that doesn't override it
+        // (e.g. custom flavours). Debug overrides to `false` for local iteration without a
+        // Play Store account; release overrides to `true` so production builds bind the
+        // real BillingManagerImpl. See di/BillingModule.kt for the Provider-based switch.
+        // C.5 PR 2 / ADR-0005.
+        buildConfigField("boolean", "USE_REAL_BILLING", "false")
     }
 
     signingConfigs {
@@ -38,6 +45,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Explicit false to keep grep-friendly symmetry with the release override.
+            // Debug builds bind StubBillingManager so running on a device without a Play
+            // Store account (e.g. emulator cold-start) still exercises the Store UI.
+            buildConfigField("boolean", "USE_REAL_BILLING", "false")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -45,7 +58,15 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
+            // Release builds bind BillingManagerImpl (real Play Billing v8). C.5 PR 2.
+            buildConfigField("boolean", "USE_REAL_BILLING", "true")
         }
+    }
+
+    buildFeatures {
+        // Required because we read BuildConfig.USE_REAL_BILLING in di/BillingModule.kt.
+        // AGP 9 disables BuildConfig by default; opt in explicitly. C.5 PR 2.
+        buildConfig = true
     }
 
     compileOptions {

@@ -20,7 +20,7 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | Compose BOM | 2026.02.00 | Jetpack Compose UI |
 | Hilt | 2.59.2 | Dependency injection |
 | Room | 2.8.4 | Local SQLite database |
-| Google Play Billing | 8.3.0 | IAP via `billing-ktx` (C.5 PR 1 — impl present, `@Binds` still stub until C.5 PR 2) |
+| Google Play Billing | 8.3.0 | IAP via `billing-ktx` (C.5 PR 2 — flag-gated `@Binds` via `BuildConfig.USE_REAL_BILLING`; debug=stub, release=real) |
 | Navigation Compose | 2.9.7 | Compose navigation |
 | Lifecycle | 2.9.0 | ViewModel, StateFlow integration |
 | WorkManager | 2.11.0 | Background step sync |

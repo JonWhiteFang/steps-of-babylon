@@ -25,7 +25,15 @@ class StoreViewModel @Inject constructor(
     private val _purchasing = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<String?>(null)
 
-    init { viewModelScope.launch { cosmeticRepository.ensureSeedData() } }
+    init {
+        viewModelScope.launch { cosmeticRepository.ensureSeedData() }
+        // Sweep any pending/unresolved Play Billing purchases on Store entry so that
+        // purchases completed asynchronously (PENDING → PURCHASED) or while the app was
+        // killed mid-flow are granted exactly once. StubBillingManager + FakeBillingManager
+        // inherit the no-op default from BillingManager, so this is a no-op outside
+        // release builds with USE_REAL_BILLING. C.5 PR 2.
+        viewModelScope.launch { billingManager.reconcilePendingPurchases() }
+    }
 
     val uiState: StateFlow<StoreUiState> = combine(
         playerRepository.observeProfile(),

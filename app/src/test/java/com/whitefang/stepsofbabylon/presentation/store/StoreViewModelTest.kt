@@ -147,6 +147,19 @@ class StoreViewModelTest {
         assertEquals(2, billingManager.purchases.size)
         assertFalse(vm.uiState.value.isPurchasing)
     }
+
+    // --- C.5 PR 2: reconcile hook fires on Store entry ---
+
+    @Test
+    fun `init reconciles pending purchases exactly once`() = runTest(dispatcher) {
+        // Store entry should trigger BillingManager.reconcilePendingPurchases so that
+        // PENDING → PURCHASED promotions and unresolved consume/ack retries sweep
+        // without requiring a purchase action. C.5 PR 2 / ADR-0005.
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        assertEquals(1, billingManager.reconcileCallCount)
+    }
 }
 
 // Additional tests for R09 fixes

@@ -1,5 +1,70 @@
 # Run Log
 
+## 2026-05-11 — C.5 PR 2: flag-gated binding swap + MainActivity lifecycle wiring + reconcile hook
+
+- **Goal:** Land the second of three PRs swapping `StubBillingManager` for `BillingManagerImpl`. C.5 PR 1 landed the real impl behind a still-stub `@Binds`; PR 2 introduces `BuildConfig.USE_REAL_BILLING`, flips the Hilt binding based on that flag, wires `MainActivity.onResume/onPause` into `ActivityProvider`, and calls `billingManager.reconcilePendingPurchases()` on Store entry. PR 3 deletes the stub after internal-track confirmation.
+- **Preflight:** read `STATE`, `RUN_LOG` head (2026-05-11 C.5 PR 1 entry), `CONSTRAINTS`, then the 6 files touched by this PR to establish baseline: `di/BillingModule.kt` (current `abstract class @Binds StubBillingManager`), `presentation/MainActivity.kt` (has `@Inject` for `HealthConnectClientWrapper` + `PlayerRepository`; `onResume` exists, `onPause` absent), `presentation/store/StoreViewModel.kt` (one-launch init), `data/billing/internal/ActivityProvider.kt` (WeakReference, `internal` class), `data/billing/BillingManagerImpl.kt` (internal, reconcile implemented), `data/billing/StubBillingManager.kt`. Also read `BillingManagerImplTest` for testing patterns + `StoreViewModelTest` + `FakeBillingManager` for the existing coverage shape. `git status` clean on `main`, up to date with origin (last commit `0a9b73f feat(billing): real Play Billing v8 BillingManagerImpl (C.5 PR 1)`).
+
+### Design decisions
+
+- **Why `@Provides` + `Provider<T>` instead of `@Binds`.** Hilt's `@Binds` is resolved at compile time; it cannot branch on a runtime value like `BuildConfig.USE_REAL_BILLING`. Two `@Binds` methods with the same return type would collide. Injecting both candidates as `Provider<T>` and calling `.get()` on the selected one defers construction — whichever branch is not selected never instantiates. The stub's `PlayerRepository` observer never attaches in release; the real impl's Play Billing client never starts in debug.
+- **Why a sibling `BillingInternalModule` for `@Binds BillingClientAdapter → RealBillingClientAdapter`.** Without this binding, Dagger fails at compile time with `[Dagger/MissingBinding] com.whitefang.stepsofbabylon.data.billing.internal.BillingClientAdapter cannot be provided without an @Provides-annotated method`. Dagger resolves the full graph ahead of time, so even though the debug `Provider<BillingManagerImpl>` is never invoked at runtime, the generated factory still needs a route for the impl's constructor dependencies. First attempt without this binding failed with that exact error; adding the binding fixed it.
+- **Why the whole `BillingModule` is `internal`.** `BillingManagerImpl` and `RealBillingClientAdapter` are both `internal` (they expose `internal` adapter types through their constructors), so a `public` provider method cannot legally reference them. Making the module `internal` is simpler than annotating every member and matches Hilt's single-Gradle-module assumption for this app. Hilt's KSP-generated code lives in the same module and can see the internals.
+- **Why `buildConfigField` is set in both `defaultConfig` AND each build type.** Sets a safe baseline in `defaultConfig(false)` for any future flavour that forgets to override, plus explicit overrides in `debug {}` (false) and `release {}` (true) for grep-friendly symmetry. Zero-cost belt-and-suspenders.
+- **Why `buildFeatures.buildConfig = true` is required.** AGP 9 disables `BuildConfig` class generation by default as part of its build-time reduction push. We need to read the flag in `BillingModule`, so the opt-in is mandatory. First local test-run compile failed without it; adding the block fixed it.
+- **Why `MainActivity.onPause` clears the Activity reference BEFORE `super.onPause()`.** The `WeakReference` in `ActivityProvider` is the belt — a garbage-collected Activity would auto-null. The explicit `clear()` is the suspenders: a paused-but-not-yet-GC'd Activity could otherwise race with a purchase attempt arriving on a different code path. Cost is one line; downside is zero.
+- **Why `StoreViewModel.init` launches the reconcile hook in a separate coroutine (not sequentially after `ensureSeedData`).** The two are independent: reconcile doesn't need seed data, seed data doesn't need billing. Running them in parallel halves the init-flight latency on Store entry. The default no-op in `BillingManager.reconcilePendingPurchases` keeps the reconcile a no-op for Stub/Fake, so this change doesn't alter any existing test's Store-init timing.
+- **Why `FakeBillingManager.reconcileCallCount` uses `private set`.** Tests write into `resultQueue`, `nextResult`, `adRemoved`, etc., but `reconcileCallCount` is an observed signal from the ViewModel, not a test-configured input. `private set` prevents a future test from accidentally writing to the counter and masking a broken production-side assertion.
+- **Parity test: two independent DBs + 60s tolerance on subscription expiry.** Stub uses `System.currentTimeMillis()` at call-time; Real uses `purchase.purchaseTime` from the mocked adapter. A byte-equal assertion on the subscription expiry would couple the test to the synchronisation between those two clocks, which is test-brittle. 60-second tolerance is mathematically exhaustive for "computed from the same 30-day window within the same test run".
+
+### Files touched
+
+New:
+- `app/src/test/java/…/data/billing/BillingManagerParityTest.kt` (253 lines, 3 tests). Robolectric + two independent in-memory `AppDatabase` instances + real `PlayerRepositoryImpl` on both sides + mocked `BillingClientAdapter` on the real side. One test per product shape (consumable / non-consumable / subscription).
+
+Modified:
+- `app/build.gradle.kts` — `buildFeatures.buildConfig = true` added; `defaultConfig` gained `buildConfigField("boolean", "USE_REAL_BILLING", "false")` baseline; new `debug { buildConfigField("boolean", "USE_REAL_BILLING", "false") }` block; `release {}` gained `buildConfigField("boolean", "USE_REAL_BILLING", "true")`.
+- `app/src/main/java/…/di/BillingModule.kt` — full rewrite. `abstract class BillingModule { @Binds StubBillingManager }` → `internal object BillingModule { @Provides Provider<Stub> + Provider<Real> picking via flag }` + sibling `internal abstract class BillingInternalModule { @Binds BillingClientAdapter → RealBillingClientAdapter }`. KDoc explains the `@Provides`-over-`@Binds` rationale and the `internal` visibility choice.
+- `app/src/main/java/…/presentation/MainActivity.kt` — +`import ActivityProvider`, +`@Inject internal lateinit var activityProvider`, `onResume` gained `activityProvider.set(this)` line before the existing `updateLastActiveAt` launch, new `onPause()` override clears the ref before `super.onPause()`.
+- `app/src/main/java/…/presentation/store/StoreViewModel.kt` — `init` block expanded from one-line single-launch to two-line double-launch (ensureSeedData + reconcilePendingPurchases).
+- `app/src/test/java/…/fakes/FakeBillingManager.kt` — +`var reconcileCallCount: Int = 0; private set` + `override suspend fun reconcilePendingPurchases() { reconcileCallCount++ }`.
+- `app/src/test/java/…/presentation/store/StoreViewModelTest.kt` — +1 test case asserting `reconcileCallCount == 1` after VM init. Placed at the end of the first test class, after the billing failure-mode coverage.
+- `AGENTS.md` — test count 510 → 514; Fakes list updated to call out `reconcileCallCount` on FakeBillingManager.
+- `CHANGELOG.md` — new "Phase C.5 PR 2" section added at the top of Unreleased (7 bullets).
+- `.kiro/steering/source-files.md` — BillingModule description rewritten; ActivityProvider description says "set/cleared by MainActivity lifecycle (C.5 PR 2)"; MainActivity entry mentions onResume/onPause for Play Billing; StoreViewModel entry mentions the reconcile hook; FakeBillingManager entry mentions `reconcileCallCount`; new BillingManagerParityTest row added after BillingManagerImplTest.
+- `.kiro/steering/structure.md` — `data/billing/` + `data/billing/internal/` subdirectory descriptions updated; BillingModule "Key Files" entry rewritten to describe the Provider-based switch + sibling BillingInternalModule.
+- `.kiro/steering/tech.md` — Play Billing row's reference updated from "C.5 PR 1 — impl present, @Binds still stub until C.5 PR 2" to "C.5 PR 2 — flag-gated @Binds via BuildConfig.USE_REAL_BILLING; debug=stub, release=real".
+
+### Test changes (+4 net: 510 → 514)
+
+- `BillingManagerParityTest`: **+3 tests**. `GEM_PACK_SMALL parity`: both impls credit 50 gems + totalGemsEarned. `AD_REMOVAL parity`: both impls flip adRemoved to true, neither touches gem wallet. `SEASON_PASS parity`: both impls activate the pass + land within 60s of `now + 30 days`. Each test sets up two separate in-memory `AppDatabase` instances so neither side observes the other's Room writes. Real side stubs the mocked `BillingClientAdapter` for a happy-path flow via `stubAdapterHappyPath(...)` helper.
+- `StoreViewModelTest`: **+1 test**. `init reconciles pending purchases exactly once` constructs a fresh VM, collects uiState, advances idle, asserts `billingManager.reconcileCallCount == 1`. Colocated with the existing billing-failure-mode tests.
+
+### Verification
+
+- `./run-gradle.sh test` — first run failed with `[Dagger/MissingBinding] com.whitefang.stepsofbabylon.data.billing.internal.BillingClientAdapter cannot be provided without an @Provides-annotated method`. Diagnosed as Dagger's compile-time graph resolution seeing that `BillingManagerImpl` needs a `BillingClientAdapter` and having no way to provide it. Added `BillingInternalModule` with `@Binds BillingClientAdapter → RealBillingClientAdapter` to `BillingModule.kt`. Re-ran: `BUILD SUCCESSFUL in 23s`, 514 tests completed, 0 failures, 0 errors.
+- Test count verified via `find app/build/test-results -name "*.xml" -exec grep -h "<testsuite " {} \; | awk -F'tests="' '{split($2, a, "\""); sum += a[1]} END {print sum}'` = 514. Failures = 0, errors = 0. Parity test XML shows 3 cases passing in 0.102s total.
+- Two pre-existing Kotlin KT-73255 forward-compat warnings on `BillingManagerImpl:79` and `RealBillingClientAdapter:54` are from C.5 PR 1 (Hilt `@ApplicationContext` param-vs-field targeting); no new warnings introduced by this PR.
+
+### Open questions / blockers
+
+- None for PR 2.
+- **Internal test track verification is the gate for C.5 PR 3.** That is device-only work — install a release build signed with the release keystore, test the GEM_PACK_SMALL happy path + at least one failure path (user-cancel) via a Play Billing test account. Unit-test coverage stops short of real Play Services.
+- C.5 PR 3 will be a single-file deletion of `StubBillingManager` + the Provider branch in `BillingModule` that routes to it, after ~1 week of internal-track confirmation.
+
+### Follow-ups
+
+- **C.6 PR 1 is now the top code-facing task.** Shape is the mirror of C.5 PR 1: real `RewardAdManagerImpl` + `AdClientAdapter` seam + unit tests; `@Binds` stays at stub until C.6 PR 2. Answering ADR-0006's 6 open questions in the PR description promotes it Proposed → Accepted.
+- **Internal-track device verification** of C.5 PR 2.
+- **C.5 PR 3** stub deletion after device-track confirmation.
+- **C.6 PRs 2–3** following the C.5 rollout shape.
+- B.4 FollowOnPipeline + B.5 UpdateMissionProgress stay as opportunistic debt cleanup.
+
+### Memory updated
+
+- `STATE.md` ✅ — current objective now "C.5 PR 2 landed"; What-works gained a C.5 PR 2 bullet (C.5 PR 1 bullet retained; both will fold into a single summary when PR 3 lands); Known-issues swapped the stub-still-bound line for a stub-still-ships-pending-deletion line + added a note that the USE_REAL_BILLING runtime branch is not covered by JVM tests (that's internal-track work); test count 510 → 514; priorities rotated (PR 2 removed, C.6 PR 1 moved to #1); Next actions rotated; last-run line updated; critical path gained "C.5 PRs 1+2 done" marker.
+- `RUN_LOG.md` ✅ — this entry.
+
 ## 2026-05-11 — C.5 PR 1: real Play Billing v8 `BillingManagerImpl`
 
 - **Goal:** Land the first of three PRs swapping `StubBillingManager` for a real Google Play Billing implementation, per ADR-0005 and implementation-roadmap §C.5. PR 1 introduces the real impl + receipt table + migration + unit tests without flipping the DI binding; PR 2 adds the `BuildConfig.USE_REAL_BILLING` flag + binding swap + MainActivity lifecycle wiring; PR 3 deletes the stub once the closed-track confirms. PR 1 must also promote ADR-0005 from Proposed → Accepted with concrete answers to the 5 open questions.

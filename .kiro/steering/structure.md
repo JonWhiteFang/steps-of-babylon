@@ -9,8 +9,8 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── repository/     # Repository implementations (Room-backed, @Inject constructors)
 │   ├── sensor/         # Step sensor data source, rate limiter, velocity analyzer, ingestion preferences, daily step manager
 │   ├── healthconnect/  # Health Connect client, step reader, cross-validator, gap filler, activity minutes
-│   ├── billing/        # StubBillingManager (stub) + BillingManagerImpl (real, C.5 PR 1, @Binds still stub until PR 2)
-│   │   └── internal/   # BillingClientAdapter (SDK-neutral seam) + RealBillingClientAdapter (concrete v8 glue) + ActivityProvider (C.5 PR 1)
+│   ├── billing/        # StubBillingManager (stub, still bound when USE_REAL_BILLING=false) + BillingManagerImpl (real, bound when USE_REAL_BILLING=true; C.5 PR 2 flag-gated)
+│   │   └── internal/   # BillingClientAdapter (SDK-neutral seam) + RealBillingClientAdapter (concrete v8 glue) + ActivityProvider (set/cleared by MainActivity lifecycle, C.5 PR 2)
 │   └── ads/            # StubRewardAdManager (simulated reward ads)
 ├── domain/             # Pure Kotlin — no Android imports
 │   ├── model/          # Data classes and enums
@@ -133,7 +133,7 @@ All in `domain/model/`:
 | `di/RepositoryModule.kt` | Hilt module: binds all 8 repository interfaces to impls |
 | `di/StepModule.kt` | Hilt module: provides SensorManager |
 | `di/HealthConnectModule.kt` | Hilt module: Health Connect organizational module |
-| `di/BillingModule.kt` | Hilt module: binds BillingManager to stub (flag-gated swap to BillingManagerImpl lands in C.5 PR 2) |
+| `di/BillingModule.kt` | Hilt module: flag-gated `@Provides` that picks between `StubBillingManager` (debug, `BuildConfig.USE_REAL_BILLING=false`) and `BillingManagerImpl` (release, `BuildConfig.USE_REAL_BILLING=true`). Sibling `BillingInternalModule` `@Binds` `BillingClientAdapter` → `RealBillingClientAdapter`. Both `internal` so they can reference the internal adapter/impl types (C.5 PR 2) |
 | `di/AdModule.kt` | Hilt module: binds RewardAdManager to stub |
 | `di/TimeModule.kt` | Hilt module: binds TimeProvider to SystemTimeProvider (B.1, RO-01) |
 | `di/CoroutineScopeModule.kt` | Hilt module: provides @ApplicationScope CoroutineScope(SupervisorJob + Dispatchers.Default) that outlives VM cancellation (B.3 PR 2, RO-03) |

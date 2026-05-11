@@ -29,6 +29,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.whitefang.stepsofbabylon.data.billing.internal.ActivityProvider
 import com.whitefang.stepsofbabylon.data.healthconnect.HealthConnectClientWrapper
 import com.whitefang.stepsofbabylon.presentation.battle.BattleScreen
 import com.whitefang.stepsofbabylon.presentation.cards.CardsScreen
@@ -61,6 +62,7 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var healthConnectWrapper: HealthConnectClientWrapper
     @Inject lateinit var playerRepository: PlayerRepository
+    @Inject internal lateinit var activityProvider: ActivityProvider
 
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val pendingNavigation = MutableStateFlow<String?>(null)
@@ -215,9 +217,22 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Register this Activity with ActivityProvider so BillingManagerImpl can launch
+        // Play Billing purchase flows (BillingClient.launchBillingFlow requires an
+        // Activity, not a Context). C.5 PR 2 / ADR-0005.
+        activityProvider.set(this)
         activityScope.launch(Dispatchers.IO) {
             playerRepository.updateLastActiveAt(System.currentTimeMillis())
         }
+    }
+
+    override fun onPause() {
+        // Clear before super so nothing observes a stale Activity reference mid-teardown.
+        // The WeakReference in ActivityProvider would also let the ref die, but an explicit
+        // clear avoids purchase attempts racing with a paused-but-not-yet-GC'd Activity.
+        // C.5 PR 2.
+        activityProvider.clear()
+        super.onPause()
     }
 
     override fun onNewIntent(intent: Intent) {

@@ -10,7 +10,7 @@ di/DatabaseModule.kt               # Hilt: Room DB (SQLCipher) + 12 DAO provider
 di/RepositoryModule.kt             # Hilt: 8 repository interface → impl bindings (@Singleton)
 di/StepModule.kt                   # Hilt: SensorManager provider
 di/HealthConnectModule.kt          # Hilt: Health Connect organizational module
-di/BillingModule.kt                # Hilt: BillingManager stub binding
+di/BillingModule.kt                # Hilt: flag-gated BillingManager binding — StubBillingManager when BuildConfig.USE_REAL_BILLING=false, BillingManagerImpl when true (C.5 PR 2); sibling BillingInternalModule @Binds BillingClientAdapter → RealBillingClientAdapter
 di/AdModule.kt                     # Hilt: RewardAdManager stub binding
 di/TimeModule.kt                   # Hilt: TimeProvider → SystemTimeProvider (B.1)
 di/CoroutineScopeModule.kt         # Hilt: @ApplicationScope qualifier + app-lifetime CoroutineScope(SupervisorJob + Dispatchers.Default) for work that outlives VM cancellation (B.3 PR 2)
@@ -81,7 +81,7 @@ data/billing/StubBillingManager.kt             # Stub billing: simulates purchas
 data/billing/BillingManagerImpl.kt             # Real Play Billing v8 impl (C.5 PR 1 / ADR-0005): adapter + receipt DAO + wallet credits + SHA-256 obfuscatedAccountId anti-fraud; `internal`; wallet side-effects run inside `BillingReceiptDao.grantOnceAtomic`; consume/ack runs after tx commits; `reconcilePendingPurchases` overrides the BillingManager default no-op to sweep PENDING→PURCHASED transitions + retry unresolved consume/ack. @Binds still points at Stub — flag swap lands in C.5 PR 2.
 data/billing/internal/BillingClientAdapter.kt  # SDK-neutral seam for `BillingManagerImpl` (C.5 PR 1). Interface + sealed result types (SdkBillingResult / SdkPurchase / SdkProductDetails / QueryProductDetailsResult / StartPurchaseResult / QueryPurchasesResult); `internal`; tests mock this directly so no `com.android.billingclient.*` imports leak into unit tests.
 data/billing/internal/RealBillingClientAdapter.kt # Concrete BillingClientAdapter backed by Google Play Billing Library v8 (C.5 PR 1). Uses `enableAutoServiceReconnection()`, `PendingPurchasesParams.enableOneTimeProducts`, Mutex-guarded `launchPurchase` with CompletableDeferred bridging PurchasesUpdatedListener. Device-only testable — the only file in the app that imports `com.android.billingclient.*`.
-data/billing/internal/ActivityProvider.kt      # WeakReference-backed Singleton Activity holder (C.5 PR 1). MainActivity lifecycle wiring is deferred to C.5 PR 2.
+data/billing/internal/ActivityProvider.kt      # WeakReference-backed Singleton Activity holder. MainActivity.onResume sets + onPause clears (C.5 PR 2).
 data/ads/StubRewardAdManager.kt                # Stub ads: simulates ad view with 1s delay, always rewards
 ```
 
@@ -207,7 +207,7 @@ domain/usecase/PurchaseGemPack.kt                # Purchase Gem pack via Billing
 ## Presentation Layer
 
 ```
-presentation/MainActivity.kt                      # Single Activity, Scaffold + NavHost + BottomNavBar, permissions
+presentation/MainActivity.kt                      # Single Activity, Scaffold + NavHost + BottomNavBar, permissions; onResume/onPause drive ActivityProvider.set/clear for Play Billing purchase flow (C.5 PR 2)
 presentation/HealthConnectPermissionActivity.kt    # Scrollable privacy policy for Health Connect permissions
 presentation/navigation/Screen.kt                 # Sealed class: 12 routes (Home, Workshop, Battle, Labs, Stats, Weapons, Cards, Supplies, Economy, Missions, Settings, Store)
 presentation/navigation/BottomNavBar.kt            # Bottom navigation bar with 5 items
@@ -279,7 +279,7 @@ presentation/stats/StatsScreen.kt                    # Stats screen: chart, toda
 presentation/stats/WalkingHistoryChart.kt            # Canvas-drawn bar chart with period toggle
 presentation/settings/NotificationSettingsViewModel.kt # @HiltViewModel: notification preference toggles
 presentation/settings/NotificationSettingsScreen.kt    # Settings screen: 4 notification toggles
-presentation/store/StoreViewModel.kt                   # @HiltViewModel: billing + cosmetic purchase actions
+presentation/store/StoreViewModel.kt                   # @HiltViewModel: billing + cosmetic purchase actions; init calls billingManager.reconcilePendingPurchases() on Store entry (C.5 PR 2)
 presentation/store/StoreUiState.kt                     # UI state: gems, adRemoved, seasonPass, cosmetics
 presentation/store/StoreScreen.kt                      # Store screen: Gem packs, Ad Removal, Season Pass, Cosmetics
 ```
@@ -312,7 +312,7 @@ fakes/FakeCardRepository.kt                      # In-memory StateFlow-backed fa
 fakes/FakeWalkingEncounterRepository.kt          # In-memory StateFlow-backed fake for WalkingEncounterRepository
 fakes/FakeStepRepository.kt                      # In-memory StateFlow-backed fake for StepRepository
 fakes/FakeCosmeticRepository.kt                  # In-memory fake for CosmeticRepository
-fakes/FakeBillingManager.kt                      # Configurable fake for BillingManager
+fakes/FakeBillingManager.kt                      # Configurable fake for BillingManager (+reconcileCallCount for C.5 PR 2 hook assertion; private set)
 fakes/FakeRewardAdManager.kt                     # Configurable fake for RewardAdManager
 fakes/FakeMilestoneDao.kt                        # In-memory fake for MilestoneDao
 fakes/FakeDailyMissionDao.kt                     # In-memory fake for DailyMissionDao
@@ -399,6 +399,7 @@ presentation/DeepLinkRoutingTest.kt                # Deep-link intent extra extr
 data/local/RoomSchemaTest.kt                       # Room v9 schema round-trip (profile, steps, workshop, billing_receipt) — billing_receipt round-trip added in C.5 PR 1 exercises every column
 data/local/BillingReceiptDaoTest.kt                # 7 tests for BillingReceiptDao: upsert/get round-trip, grantOnceAtomic flip + runs walletCredit, idempotency (second call returns false + walletCredit skipped), markConsumed/markAcknowledged target-only, getGrantedButUnresolved filter, getAll DESC order (C.5 PR 1)
 data/billing/BillingManagerImplTest.kt             # 14 tests for BillingManagerImpl (C.5 PR 1): 3 happy paths (GEM_PACK_SMALL consume + AD_REMOVAL ack + SEASON_PASS sub with 30-day expiry), 5 failure paths (user-cancel, product-unavailable, no-activity, connect-fails, pending purchase), idempotency (same purchaseToken does not double-credit), 2 reconciliation cases (PENDING→PURCHASED transition + retryUnresolvedConsumeOrAck without re-credit), isAdRemoved / isSeasonPassActive delegation. Robolectric + real in-memory Room DB for @Transaction semantics + mockito-kotlin for adapter.
+data/billing/BillingManagerParityTest.kt           # 3 tests for C.5 PR 2 — asserts StubBillingManager and BillingManagerImpl produce equivalent wallet/flag state on the golden path for each of the 3 product shapes (GEM_PACK_SMALL consumable, AD_REMOVAL non-consumable, SEASON_PASS subscription). Two independent in-memory Room DBs + real PlayerRepositoryImpl on both sides + mocked BillingClientAdapter on real side. Subscription expiry compared within 60s tolerance (stub uses now-at-call-time, real uses purchaseTime).
 data/integration/EscrowLifecycleTest.kt            # End-to-end escrow lifecycle (release + discard)
 data/repository/CosmeticRepositoryImplTest.kt      # Seed → ZIGGURAT_COLOR_LOOKUP → overrideColors mapping for all 4 palette-shipping cosmetics (zig_jade, lapis_lazuli_skin, garden_ziggurat_skin, sandals_of_gilgamesh) with exact-value assertions as content-as-code contracts; non-palette seeds have null overrideColors; equipped zig_jade surfaces via observeEquipped with palette intact; ensureSeedData idempotent; partial-catalogue upgrade inserts 4 missing milestone cosmetics without touching legacy 7; existing-row isOwned/isEquipped preserved across ensureSeedData (C.2 PR 2 + PR 3 + PR 3b + PR 3c + ensureSeedData fix)
 service/StepWidgetProviderTest.kt                  # Widget SharedPreferences round-trip

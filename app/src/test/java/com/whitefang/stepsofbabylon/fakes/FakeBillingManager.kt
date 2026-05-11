@@ -24,10 +24,23 @@ class FakeBillingManager : BillingManager {
     var seasonPassActive: Boolean = false
     val purchases = mutableListOf<BillingProduct>()
 
+    /**
+     * Number of times [reconcilePendingPurchases] has been invoked. Used by
+     * `StoreViewModelTest` to assert the C.5 PR 2 reconciliation hook fires on
+     * Store entry. The underlying call is still a no-op (inherited default from
+     * the interface); the counter simply records attendance.
+     */
+    var reconcileCallCount: Int = 0
+        private set
+
     override suspend fun purchase(product: BillingProduct): PurchaseResult {
         purchases += product
         return if (resultQueue.isNotEmpty()) resultQueue.removeFirst() else nextResult
     }
     override suspend fun isAdRemoved(): Boolean = adRemoved
     override suspend fun isSeasonPassActive(): Boolean = seasonPassActive
+
+    override suspend fun reconcilePendingPurchases() {
+        reconcileCallCount++
+    }
 }
