@@ -1,7 +1,7 @@
 # Project State
 
 ## Current objective
-- **Phase C.2 PR 3b + 3c landed** — seeded the final 2 milestone cosmetics (`garden_ziggurat_skin` for MARATHON_WALKER, `sandals_of_gilgamesh` for GLOBE_TROTTER) with their palettes. **All 6 Milestone entries now claim cleanly end-to-end** — closes the RO-07 "shipped but disabled" monetization gap tracked since Plan R2-11. Tests 486 → 488 (+2 palette assertions; ClaimMilestoneTest net 0 with 2 UnknownCosmetic removed and 2 end-to-end success tests added for MARATHON_WALKER + GLOBE_TROTTER).
+- **ADR-0005 (Billing SDK) + ADR-0006 (Ad SDK) stubs landed** — prerequisites for Phase C.5 + C.6 real-SDK swaps. Both use a matching 3-PR rollout shape (impl + BuildConfig-flagged binding swap + stub deletion after closed-track confirmation). 5 open questions for Billing PR 1 scoping, 6 for Ad PR 1 scoping. Doc-only PR; test count unchanged at 488.
 - Plan 31: Play Console & Store Publication — still the only release-blocker; Phase C.5/C.6 (real Billing/Ad SDKs) are its prerequisites.
 
 ## What works
@@ -40,14 +40,12 @@
 5. Phase D — Plan 31 Play Console setup, AAB upload, Firebase pre-launch. Depends on real SDKs + public privacy policy URL.
 
 ## Next actions (explicit order)
-1. Open ADR-0005 (Billing SDK) stub as a fresh file under `docs/agent/DECISIONS/`. Status: Proposed until C.5 PR 1 lands.
-2. Open ADR-0006 (Ad SDK) stub. Status: Proposed until C.6 PR 1 lands.
-3. C.5 PR 1 — new `BillingManagerImpl` in `data/billing/`. Full Play Billing SDK integration. `BillingModule` binding stays on `StubBillingManager` for this PR; C.5 PR 2 flips to `BillingManagerImpl` behind a `BuildConfig.USE_REAL_BILLING` flag.
-4. C.5 PR 2 — binding swap. Verify on internal test track.
-5. C.5 PR 3 — delete `StubBillingManager` after internal + closed-track confirmation.
-6. C.6 same 3-PR shape for AdMob.
-7. B.4 FollowOnPipeline extraction + B.5 UpdateMissionProgress use case — debt cleanup, can land opportunistically in parallel.
-8. Finish with Phase D (Plan 31 Play Console setup, AAB upload, Firebase pre-launch).
+1. C.5 PR 1 — new `BillingManagerImpl` in `data/billing/` per ADR-0005. Room `billing_receipts` entity + `Migration 8→9`. Unit tests against mocked `BillingClient` for every `PurchaseResult` variant. `@Binds` still points at `StubBillingManager`; flag swap in PR 2. Answer the 5 open questions in the PR description (promotes ADR-0005 from Proposed → Accepted).
+2. C.6 PR 1 — new `RewardAdManagerImpl` in `data/ads/` per ADR-0006. UMP consent glue. Unit tests against mocked `RewardedAd` for every `AdResult` variant. `@Binds` still points at `StubRewardAdManager`; flag swap in PR 2. Answer the 6 open questions in the PR description (promotes ADR-0006 from Proposed → Accepted).
+3. C.5 PR 2 / C.6 PR 2 — flag-gated binding swaps. Internal test track verification.
+4. C.5 PR 3 / C.6 PR 3 — stub deletions after ~1 week of closed-track confirmation.
+5. B.4 FollowOnPipeline extraction + B.5 UpdateMissionProgress use case — debt cleanup; can land opportunistically in parallel with C.5/C.6.
+6. Finish with Phase D (Plan 31 Play Console setup, AAB upload, Firebase pre-launch).
 
 ## Do-not-touch / fragile zones
 - `domain/model/` — stable, all constants validated by balance tests.
@@ -61,6 +59,8 @@
 
 ## References
 - ADR-0003 (Battle Step Rewards): docs/agent/DECISIONS/ADR-0003-battle-step-rewards.md
+- ADR-0005 (Billing SDK, Proposed stub): docs/agent/DECISIONS/ADR-0005-billing-sdk.md
+- ADR-0006 (Ad SDK, Proposed stub): docs/agent/DECISIONS/ADR-0006-ad-sdk.md
 - Remediation plan (1st review): docs/plans/plan-R-remediation.md
 - Remediation plan (2nd review): docs/plans/plan-R2-remediation.md
 - External review (1st): docs/external-reviews/REPO_ANALYSIS_BUGS_AND_UX.md
@@ -84,4 +84,4 @@
 - Evolution (Phase 14, Part 1): devdocs/evolution/refactoring_opportunities.md — top-10 highest-ROI refactors (RO-01..RO-10) with current pattern, proposed abstraction, benefits, effort, risk+mitigation, ROI, first safe step, verification, rollback, non-goals
 - Evolution (Phase 14, Part 2): devdocs/evolution/implementation_roadmap.md — phased plan (A Foundation, B Core Refactoring, C Gap Filling, D Integration & Polish); each item has files / dependencies / success criteria / risk / verification / PR size / rollback / owner role
 - Critical path: 01→…→30→R→R2→ Battle Step Rewards → **Phase A done** → B.1 done → **B.2 done (RO-02 complete)** → **B.3 done (RO-03 complete)** → B.4–B.5 → **C.2 PRs 1+2+3+3b+3c + C.4 + ensureSeedData fix done** → C.5 + C.6 → D → 31
-- Last run: 2026-05-08 (C.2 PR 3b + 3c combined — seeded `garden_ziggurat_skin` + `sandals_of_gilgamesh` with palettes; ClaimMilestoneTest flipped from UnknownCosmetic to end-to-end Success for both; milestone-cosmetic gap fully closed; 486 → 488 tests all green; current-state docs synced)
+- Last run: 2026-05-08 (ADR-0005 Billing SDK + ADR-0006 Ad SDK stubs drafted as prerequisites for C.5/C.6 — Play Billing v7 with Room receipt-idempotency + BuildConfig flag rollout; AdMob direct + UMP consent + preload-on-trigger; both use matching 3-PR rollout shape; doc-only, 488 tests unchanged)

@@ -1,5 +1,98 @@
 # Run Log
 
+## 2026-05-08 — ADR-0005 (Billing SDK) + ADR-0006 (Ad SDK) stubs
+
+- **Goal:** Draft both ADR stubs named as prerequisites for Phase C.5 / C.6 in the implementation roadmap, so C.5 PR 1 and C.6 PR 1 can cite a recorded architectural commitment instead of discovering the shape in-PR. Matches the pattern of ADR-0004 (FollowOnPipeline stub written before B.4 PR 1) — record the commitment now, promote Proposed → Accepted when the concrete decisions are made in the first real PR of each family.
+- **Preflight:** read `START_HERE`, `STATE`, `CONSTRAINTS`, `RUN_LOG` head (C.2 PR 3b+3c entry and below). `git status` clean on `main`, up to date with origin (last commit `280edf5 feat(cosmetics): seed garden_ziggurat_skin + sandals_of_gilgamesh (C.2 PR 3b+3c)`). Read ADR-0003 + ADR-0004 for shape, `docs/monetization.md` for product + placement tables, `CONSTRAINTS.md` for the no-server invariant, current stubs (`StubBillingManager`, `StubRewardAdManager`), domain contracts (`BillingManager` + `BillingProduct`, `RewardAdManager` + `AdPlacement`), and the implementation-roadmap §C.5 + §C.6 entries (files / success criteria / risk / PR-size / rollback breakdowns already written). No code, no test changes — this is a decision-record commit.
+
+### Shape of both ADRs
+
+Both ADRs use a matching structure so C.5 and C.6 stay trivially comparable:
+
+1. **Context** — current stub, surface area, release-critical status, risk profile.
+2. **Decision (stub)** — numbered commitments a through N that are non-negotiable even before PR 1 concrete scoping.
+3. **Rationale** — why each commitment, with alternatives explicitly rejected.
+4. **Consequences** — dependencies, ProGuard rules, BuildConfig fields, schema changes, manifest changes.
+5. **Non-goals / future work** — bounded list of things that are explicitly out of v1.0 scope.
+6. **Open questions** — 5 for Billing, 6 for Ads. Each flagged as "resolved in PR 1 description", promoting the ADR from Proposed → Accepted.
+7. **References** — roadmap section, plan references, related ADR (each cites the other).
+
+### ADR-0005 (Billing SDK) key commitments
+
+- **Library: Google Play Billing Library v7** (or most-recent stable at C.5 PR 1 landing). Pinned version, never ranged.
+- **Impl location:** `data/billing/BillingManagerImpl.kt`. Coexists with `StubBillingManager` under `BuildConfig.USE_REAL_BILLING` flag during internal/closed-track rollout.
+- **Listener-to-suspend adaptation** via `suspendCancellableCoroutine`. No `BillingManager` interface change — the swap is pure impl.
+- **Receipt-idempotency in Room.** New `billing_receipts` entity keyed by `orderId` with `granted: Boolean`. Every purchase writes the receipt + flips `granted = true` atomically in one `@Transaction`. Prevents double-credit on pending-purchase resolution. **DB schema bump v8 → v9** with an explicit `Migration` object per `CONSTRAINTS.md`.
+- **`onResume` pending-purchase sweep.** `BillingClient.queryPurchasesAsync()` on every app resume / Store enter, reconciled against the receipt table.
+- **SKU drift mitigation.** `BillingProduct` enum stays source-of-truth. Startup sanity check via `queryProductDetailsAsync()` logs + disables affected Store cards for missing products.
+- **3-PR rollout** (matching C.5 roadmap): PR 1 impl + tests (stub binding unchanged), PR 2 flag-gated binding swap, PR 3 stub deletion ~1 week post-closed-track.
+
+5 open questions flagged for PR 1 scoping: reconnection policy, acknowledgment timing for consumables, test-SKU strategy for debug builds, subscription proration (future tier), anti-fraud obfuscated IDs.
+
+### ADR-0006 (Ad SDK) key commitments
+
+- **Library: Google AdMob SDK direct.** No mediation in v1.0 (AppLovin MAX / Unity LevelPlay / Meta Audience Network) — each adds its own consent + compliance surface, and the app's ad surface (3 opt-in reward placements) is too small to justify the compounded testing matrix.
+- **Impl location:** `data/ads/RewardAdManagerImpl.kt`. Coexists with `StubRewardAdManager` under `BuildConfig.USE_REAL_ADS` flag.
+- **Preload-on-trigger, not upfront.** Ad loads happen inside `showRewardAd()`, not at app startup. Reasons: ads expire after 1 hour; the app's opt-in surface means upfront preload is frequently wasted; simpler failure semantics.
+- **`OnUserEarnedRewardListener.onUserEarnedReward()` is the single source of truth** for reward crediting. Never reward on dismiss, never on impression. Matches AdMob's documented contract for `RewardedAd`.
+- **Test-ad IDs in debug builds** (Google's documented `ca-app-pub-3940256099942544/5224354917`). Release builds use real IDs from `local.properties` → `BuildConfig.<PLACEMENT>_AD_UNIT_ID`. Production IDs never in git.
+- **UMP for GDPR / DSA consent.** Google's User Messaging Platform handles the legal nuance. No custom in-app consent screen.
+- **Code-side frequency capping** — once per round + once per day, already enforced by existing `RoundEndState` + `PlayerProfileEntity.freeCardPackAdUsedToday` flags. No AdMob-side caps.
+- **3-PR rollout** matching C.5 shape.
+
+6 open questions flagged for PR 1 scoping: consent-denied reward policy, ad load timeout + progress UX, per-session impression caps, mediation-readiness abstraction, COPPA / child-directed flag, test-ad policy on internal-track.
+
+### Why two stubs, not one
+
+Considered a single "external SDKs" ADR. Rejected:
+
+1. Billing and ads have very different risk profiles (high vs. medium-high) and the ADRs should capture that separately. Billing correctness directly affects revenue; ad failure is graceful degradation (no reward, no blocker).
+2. Each subsystem has its own external-prerequisite dependencies (Play Console SKU setup vs. AdMob + CMP provisioning). Merging them would couple unrelated external timelines.
+3. Alternatives explored per subsystem are genuinely different (PBL version pin vs. mediation-library choice). Merging would obscure the distinct rationale.
+
+### Why stubs, not accepted
+
+Each ADR's "Decision" section lists concrete commitments, but the sections carry specific open questions that can only be resolved when the real SDK implementation is actually written (e.g. AdMob's `RewardedAd.load()` timeout default, PBL's `onPurchasesUpdated` response-code enum against our `PurchaseResult.Error` shape). Marking "Proposed (stub)" records the commitment without pretending decisions that haven't been made. Matches the ADR-0004 (FollowOnPipeline) precedent. Each ADR will be upgraded to "Accepted" in the PR description of its corresponding C.5 PR 1 / C.6 PR 1.
+
+### Files touched
+
+- `docs/agent/DECISIONS/ADR-0005-billing-sdk.md` (new, 83 lines).
+- `docs/agent/DECISIONS/ADR-0006-ad-sdk.md` (new, 107 lines).
+- `docs/agent/STATE.md` — current objective rewritten; next-actions rotated (C.5 PR 1 and C.6 PR 1 now top, with explicit instruction to promote each ADR to Accepted in the PR description); 2 new ADR references added; last-run line updated.
+- `docs/agent/RUN_LOG.md` — this entry.
+
+### Verification
+
+- No code changes. No tests run — previous commit's 488-test green state still holds.
+- Grep sanity: `ls docs/agent/DECISIONS/` shows ADR-0001 through ADR-0006 present; ADR-0004 + ADR-0005 + ADR-0006 all have `Status: Proposed` (stub contract).
+- Cross-reference check: both ADRs reference each other in the Rationale / References sections; both reference `docs/monetization.md`, `CONSTRAINTS.md`, `devdocs/evolution/implementation_roadmap.md` §C.5 / §C.6, and their corresponding `domain/model/` + `domain/repository/` + `data/billing|ads/` files.
+
+### Surface changes
+
+- No code changes. No interface changes. No tests. No dependencies.
+- 2 new markdown files under `docs/agent/DECISIONS/`.
+- `STATE.md` priorities reshuffled.
+
+### Open questions / blockers
+
+- None for this PR (it's a decision record).
+- For C.5 PR 1 / C.6 PR 1 scoping: answer the 5 + 6 open questions flagged in each ADR. PR descriptions must upgrade the respective ADR from Proposed → Accepted with concrete answers.
+- External prerequisites tracked in Plan 31 flow (Play Console SKU setup, AdMob provisioning, CMP evaluation, production privacy-policy URL).
+
+### Follow-ups
+
+- **C.5 PR 1 is now the top code-facing task.** Play Billing v7 impl + `billing_receipts` Room table + migration. All 5 open questions need concrete answers in the PR description.
+- **C.6 PR 1 can land in parallel** with C.5 PR 1 — different files, no coupling. AdMob + UMP + 6 open questions.
+- **C.5 PR 2 / C.6 PR 2** land flag swap after PR 1. Internal-track verification between PR 2 and PR 3.
+- **C.5 PR 3 / C.6 PR 3** delete stubs ~1 week after closed-track confirmation.
+- After all 6 PRs land, Phase D (Plan 31 Play Console setup) is unblocked — the last release-critical phase.
+
+### Memory updated
+
+- `STATE.md` ✅ — current objective now "ADR-0005 + ADR-0006 stubs landed"; references list gained 2 entries; next-actions rotated to C.5 PR 1 + C.6 PR 1 as the top code-facing items; last-run line updated; critical path line unchanged (still says "C.2 PRs 1+2+3+3b+3c + C.4 + ensureSeedData fix done → C.5 + C.6 → D → 31", which is already correct).
+- `RUN_LOG.md` ✅ — this entry.
+- ADRs: ADR-0005 + ADR-0006 are the decision records themselves. `Status: Proposed (stub)` until C.5 PR 1 / C.6 PR 1 promote to Accepted.
+
 ## 2026-05-08 — Phase C.2 PR 3b + 3c: seed remaining milestone cosmetics (closes milestone-cosmetic gap)
 
 - **Goal:** Batch the last two milestone-cosmetic content PRs (PR 3b for MARATHON_WALKER's `garden_ziggurat_skin`, PR 3c for GLOBE_TROTTER's `sandals_of_gilgamesh`) into a single PR since they share the same file, test-update pattern, and risk profile. After this lands, all 6 Milestone entries have `Success` end-to-end on `ClaimMilestone` — the RO-07 "shipped but disabled" monetization gap tracked since Plan R2-11 is fully resolved.
