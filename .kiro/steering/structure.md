@@ -168,6 +168,9 @@ All in `domain/model/`:
 | `presentation/battle/engine/EnemyScaler.kt` | Wave-based stat scaling (1.05^wave), cash rewards per type |
 | `presentation/battle/engine/CollisionSystem.kt` | Projectile↔enemy and enemy projectile↔ziggurat collision |
 | `presentation/battle/BattleViewModel.kt` | Loads tier, polls engine state, exposes BattleUiState + BattleEvent |
+| `res/drawable/ic_launcher_background.xml` | Solid #0E2247 deep-lapis vector background for the adaptive launcher icon |
+| `res/drawable/ic_launcher_foreground.xml` | 5-tier stepped-ziggurat silhouette with Gold → SandStone → lightened-DeepBronze vertical gradient |
+| `res/mipmap-anydpi-v26/ic_launcher.xml` + `ic_launcher_round.xml` | Adaptive-icon XML wrappers referencing the two drawables above. minSdk=34 means these are the sole icon source — no raster density fallbacks needed |
 | `gradle/libs.versions.toml` | All dependency versions |
 | `app/schemas/` | Room schema exports (commit these) |
 | `docs/plans/` | Numbered implementation plans (01–30) |

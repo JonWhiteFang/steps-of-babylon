@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Adaptive icon background for Steps of Babylon.
+
+    Solid deep-lapis (#0E2247). Echoes the `LapisLazuli` brand color from
+    presentation/ui/theme/Color.kt (darkened from #26619C for contrast against
+    the Gold/SandStone ziggurat foreground) and the Celestial Gate biome's
+    night-sky palette from presentation/battle/biome/BiomeTheme.kt.
+
+    Solid over gradient deliberately — gradients in adaptive-icon backgrounds
+    can flatten or mis-render on certain OEM launchers that composite their
+    own mask shape over the background. Solid color is the defensive choice
+    and renders identically across round / squircle / teardrop / square masks.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M0,0 H108 V108 H0 Z"
+        android:fillColor="#FF0E2247" />
+</vector>

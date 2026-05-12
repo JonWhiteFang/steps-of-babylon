@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Adaptive icon foreground for Steps of Babylon.
+
+    5-tier stepped ziggurat silhouette — echoes the 5-layer ziggurat entity in
+    presentation/battle/entities/ZigguratEntity.kt, the 5-entry zigguratColors
+    list per biome in presentation/battle/biome/BiomeTheme.kt, and the core
+    "Every Step Builds the Tower" narrative.
+
+    Geometry:
+    - Canvas: 108 × 108 (adaptive-icon standard).
+    - Safe zone: center 72 × 72 (x=18..90, y=18..90). All tower geometry
+      sits inside x=22..86, y=29..79 so no tier clips on any launcher mask.
+    - Tower visual center: (54, 54) — matches canvas center for even mask crop.
+    - Each tier is 10dp tall and steps in 6dp on each side:
+        Tier 1 (base):  x=22..86, y=69..79 (width 64)
+        Tier 2:         x=28..80, y=59..69 (width 52)
+        Tier 3:         x=34..74, y=49..59 (width 40)
+        Tier 4:         x=40..68, y=39..49 (width 28)
+        Tier 5 (top):   x=46..62, y=29..39 (width 16)
+
+    Fill:
+    - Single compound path traced as one closed silhouette (bottom-left
+      clockwise around the steps and back), then filled with a vertical
+      3-stop linear gradient:
+        y=29 top:    Gold       #D4A843   (brand Gold from Color.kt)
+        y=54 mid:    SandStone  #C2B280   (brand SandStone from Color.kt)
+        y=79 bottom: #8B5A3A              (DeepBronze #6B3A2A lightened by
+                                           ~25% so the base tier still reads
+                                           against the #0E2247 background —
+                                           pure DeepBronze against deep lapis
+                                           is tonally too close and loses the
+                                           silhouette at 24dp renderings)
+    - Gold top → earthy base evokes the "ascend the ziggurat to the gold
+      crown" gameplay arc; harmonizes with the Hanging Gardens biome base
+      palette and the Celestial Gate biome's FFD700 crown color.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M 22,79 L 86,79 L 86,69 L 80,69 L 80,59 L 74,59 L 74,49 L 68,49 L 68,39 L 62,39 L 62,29 L 46,29 L 46,39 L 40,39 L 40,49 L 34,49 L 34,59 L 28,59 L 28,69 L 22,69 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="54"
+                android:startY="29"
+                android:endX="54"
+                android:endY="79">
+                <item android:offset="0.0" android:color="#FFD4A843" />
+                <item android:offset="0.5" android:color="#FFC2B280" />
+                <item android:offset="1.0" android:color="#FF8B5A3A" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

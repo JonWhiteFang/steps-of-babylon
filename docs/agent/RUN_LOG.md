@@ -1,5 +1,44 @@
 # Run Log
 
+## 2026-05-12 — App launcher icon: vector adaptive icon
+
+- **Goal:** Close the "No app icon resources" debt item tracked in STATE.md since Plan 30. User asked whether I could create art assets for Plan 31; I was upfront about the capability split — I can produce vector XML (Android adaptive icons, drawables) but not raster PNGs (no image-gen tool access). User approved proceeding with the vector adaptive launcher icon; the 512×512 hi-res PNG / 1024×500 feature graphic / screenshots remain external work.
+- **Preflight:** read `presentation/battle/biome/BiomeTheme.kt` (5 biome palettes, 5-entry `zigguratColors` per biome) + `presentation/ui/theme/Color.kt` (brand palette: Gold #D4A843, LapisLazuli #26619C, SandStone #C2B280, DeepBronze #6B3A2A, Ivory #FFF8E7). `values/strings.xml` has `app_name`. Confirmed there are no existing `mipmap-*` or `drawable/` directories, and no `android:icon` / `android:roundIcon` attributes on the manifest's `<application>` — so the app was shipping with the default Android placeholder icon.
+- **Design decisions:**
+  - **Adaptive-icon-only, no raster fallbacks.** `minSdk=34` means every target device supports adaptive icons; the vector XML in `mipmap-anydpi-v26/` is the single source of truth. No `mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}` bitmaps needed.
+  - **Solid background over gradient.** Some OEM launchers composite their own mask shape over the adaptive background; radial gradients can flatten or mis-render. Chose `#0E2247` (deep-lapis-darkened-for-contrast) over a radial gradient — renders identically across round / squircle / teardrop / square masks.
+  - **5 tiers echoing the game.** The in-game ziggurat entity has 5 layers (`ZigguratEntity.kt`) and every biome ships a 5-entry `zigguratColors` list. Matching the icon to that is narrative. Each tier 10dp tall, 6dp step-in per side, all inside the 72dp safe zone.
+  - **Lightened bronze at base.** Pure brand `DeepBronze #6B3A2A` against the `#0E2247` background is tonally too close — the silhouette loses definition at 24dp. Lightened to `#8B5A3A` (~25% brighter) for the gradient's bottom stop. Top stays brand `Gold #D4A843`, mid stays brand `SandStone #C2B280`. Full brand palette preserved in the icon.
+  - **Tower visual center at (54, 54).** Matches adaptive-icon canvas center so every launcher mask crops evenly.
+
+### Execution
+
+- **Created** `app/src/main/res/drawable/ic_launcher_background.xml` — solid `#0E2247` vector fill with inline rationale for the solid-over-gradient choice.
+- **Created** `app/src/main/res/drawable/ic_launcher_foreground.xml` — single compound path traced as a closed silhouette (`M 22,79 L 86,79 … Z`), filled with a vertical 3-stop `<aapt:attr>` linear gradient. Header comment documents the tier geometry (widths / y-ranges / center point) so future edits know the constraint budget.
+- **Created** `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` + `ic_launcher_round.xml` — `<adaptive-icon>` wrappers pointing at the two drawables. Both files identical; Android handles round masking from the adaptive source.
+- **Updated** `app/src/main/AndroidManifest.xml` — added `android:icon="@mipmap/ic_launcher"` + `android:roundIcon="@mipmap/ic_launcher_round"` attributes to the `<application>` tag.
+
+### Verification
+
+- `./run-gradle.sh assembleDebug` — BUILD SUCCESSFUL on first run (processed the new manifest + the new drawables + the new mipmap XML), followed by second run all UP-TO-DATE confirming the build state is stable. No missing-resource errors from AAPT2, no manifest-merge conflicts.
+- Files on disk verified via `ls -la`: `ic_launcher_background.xml` (1002 B), `ic_launcher_foreground.xml` (2975 B), both mipmap XMLs (273 B each).
+
+### Current-state doc sync
+
+- **`STATE.md`** — removed the `No app icon resources` line from Known issues; added a new Current-objective bullet documenting the landing + flagging the still-pending raster assets for Play Store upload.
+- **`CHANGELOG.md`** — prepended an `App launcher icon — vector adaptive icon (2026-05-12)` section under `[Unreleased]` above the C.6 PR 3 entry.
+- **`.kiro/steering/source-files.md`** — added a new `## Resources` section documenting the 4 new XML files + the pre-existing resource inventory (strings, network_security_config, step_widget_info, raw, layout) for completeness.
+- **`.kiro/steering/structure.md`** — added 3 rows in the Key Files table for the 3 icon resources with descriptions.
+
+### What remains next (Plan 31)
+
+- **Plan 31 blockers that vector XML does NOT resolve:**
+  - 512×512 hi-res Play Store icon PNG — can be exported from the vector source via Android Studio's asset studio in ~5 minutes, but requires human tooling.
+  - 1024×500 feature graphic — different composition problem, needs illustration or photo-composite.
+  - Screenshots (≥2, recommended 8) — need to be captured from the running app on a device/emulator, preferably once the real app icon shows on the launcher in the screenshots.
+  - Release upload keystore generation, AdMob account, Play Console account — all external work.
+- **What this unblocks:** anyone opening the debug build or a future release install now sees the branded Babylonian-ziggurat icon instead of the generic Android placeholder, which matters for internal-track testing screenshots, Firebase pre-launch report visuals, and the perceived-polish of any pre-production build.
+
 ## 2026-05-12 — C.6 PR 3: delete StubRewardAdManager, collapse AdModule to @Binds RewardAdManagerImpl
 
 - **Goal:** Land the final PR in the C.6 ad-SDK series: remove `StubRewardAdManager` now that C.6 PR 2 device-track verification passed earlier this session, collapse the flag-gated Provider-switch in `AdModule` back to a plain `@Binds RewardAdManagerImpl`, drop `RewardAdManagerParityTest` (nothing left to compare), sweep stale stub references from KDoc / build comments, sync current-state docs. Expected shape: single-file-ish deletion PR, mechanically simpler than C.6 PRs 1–2.
