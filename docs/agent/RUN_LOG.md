@@ -1,5 +1,75 @@
 # Run Log
 
+## 2026-05-12 — C.6 PR 2: flag-gated ad manager binding + MainActivity consent prefetch
+
+- **Goal:** Land the second of three PRs swapping `StubRewardAdManager` for `RewardAdManagerImpl`. C.6 PR 1 landed the real impl behind a still-stub `@Binds`; PR 2 introduces the runtime read of `BuildConfig.USE_REAL_ADS`, flips the Hilt binding based on that flag, adds the sibling `AdInternalModule` bindings Dagger needs for `RewardedAdAdapter` + `ConsentManager`, and wires a flag-gated one-shot UMP consent prefetch into `MainActivity.onResume`. PR 3 deletes the stub after internal-track confirmation.
+- **Preflight:** read `STATE`, `RUN_LOG` head (2026-05-11 C.6 PR 1 entry and C.5 PR 2 entry for the pattern to mirror), `CONSTRAINTS`, ADR-0006 (Accepted as of C.6 PR 1). Read `di/AdModule.kt` (current stub `@Binds`), `di/BillingModule.kt` (the C.5 PR 2 Provider-switch shape to mirror), `presentation/MainActivity.kt` (has `@Inject internal lateinit var activityProvider` + `activityScope = CoroutineScope(SupervisorJob() + Main.immediate)` from C.5 PR 2; no consent wiring yet), `app/build.gradle.kts` (confirmed `BuildConfig.USE_REAL_ADS` already present from C.6 PR 1 + `buildConfig = true` opt-in + 3 `AD_UNIT_*` BuildConfigFields + `admobAppId` manifestPlaceholder — no build.gradle changes needed for PR 2), `data/ads/RewardAdManagerImpl.kt` (consumes `ConsentManager` inside `showRewardAd` for lazy init), `data/ads/internal/RealConsentManager.kt` (Mutex-guarded once-per-session `ensureInitialized`, errors logged non-throwing), `data/ads/internal/RealRewardedAdAdapter.kt` (the target of the new `@Binds`), `data/ads/StubRewardAdManager.kt` (unchanged), `fakes/FakeRewardAdManager.kt` (no mod needed — domain interface has no reconcile-equivalent). `git status` clean on `main`, up to date with origin (last commit `31805fe feat(ads): real AdMob RewardAdManagerImpl + UMP consent (C.6 PR 1)`).
+
+### Design decisions
+
+- **Why Provider-switch in `@Provides`, not `@Binds`.** Mirrors C.5 PR 2 rationale: `@Binds` is compile-time so cannot branch on a runtime `BuildConfig` value. Lazy `Provider<T>` injection means the unselected branch never constructs — the stub's `delay(1000)` never fires in release, and the real impl's `MobileAds.initialize` + UMP `requestConsentInfoUpdate` never run in debug. The `@Provides` method picks between `Provider<StubRewardAdManager>.get()` and `Provider<RewardAdManagerImpl>.get()` based on `BuildConfig.USE_REAL_ADS`.
+- **Why the sibling `AdInternalModule` shipped in the same PR.** C.5 PR 2 hit a `[Dagger/MissingBinding]` error on first run because `BillingManagerImpl.adapter: BillingClientAdapter` had no `@Provides`/`@Binds` route. Having the same failure mode documented in the C.5 PR 2 RUN_LOG, I preemptively added `AdInternalModule` with `@Binds RewardedAdAdapter → RealRewardedAdAdapter` and `@Binds ConsentManager → RealConsentManager` in the initial cut. Dagger resolved on first build — no second-pass fix required.
+- **Why `AdInternalModule` also binds `ConsentManager`, not just `RewardedAdAdapter`.** `MainActivity` now `@Inject`s `ConsentManager` directly for the consent prefetch. That injection point also needs a route to `RealConsentManager`. Collapsing both bindings into one sibling module keeps the "real SDK glue lives in one place" invariant; splitting them across two modules would obscure the shared "internal adapter layer" purpose.
+- **Why both modules are `internal`.** `RewardAdManagerImpl`, `RealRewardedAdAdapter`, `RealConsentManager` are all `internal` because they expose internal adapter types through their constructors. A `public` provider method would leak those types through Hilt's generated factory. Making the whole module `internal` matches the C.5 PR 2 precedent and Hilt's single-Gradle-module assumption for this app.
+- **Consent prefetch: yes, flag-gated, one-shot, on activityScope.** Weighed four alternatives and picked the one that matches the RUN_LOG C.6 PR 1 follow-up recommendation ("prefetch on first resume after a successful UMP init short-circuits subsequent calls anyway"):
+  1. **Do nothing — lazy-on-first-ad** (status quo from the `ensureInitialized` call inside `RewardAdManagerImpl.showRewardAd`). Simplest. Pays ~200-500ms UMP latency on first reward-ad tap. **Rejected** because the recommended pattern exists and the cost is low.
+  2. **Prefetch on first resume, flag-gated, one-shot via AtomicBoolean** (chosen). Zero cost in debug (flag false), amortised latency in release. Errors swallowed + logged by `RealConsentManager` internally, so no try/catch wrapper here.
+  3. **Prefetch on every resume** with UMP's own idempotency as the guard. Spammier coroutine launches even though the UMP call short-circuits. **Rejected** — launching a coroutine that immediately no-ops is wasteful.
+  4. **Prefetch in `StepsOfBabylonApp.onCreate`**. Runs before any Activity exists. UMP's `loadAndShowConsentFormIfRequired` needs an Activity, so this would stall the form until first Activity. **Rejected** — defeats the purpose of prefetching.
+- **Why `activityScope` not `applicationScope`.** The prefetch passes `this@MainActivity` to `ensureInitialized`. If the Activity is destroyed mid-flow, the right behaviour is to cancel the prefetch — UMP's form-display will then fail on a destroyed Activity anyway, and the next `onResume` will naturally retry via the AtomicBoolean being re-evaluated on a new Activity instance. `activityScope` (Main.immediate, `cancel()` on `onDestroy`) gives this lifecycle tie for free; `applicationScope` (RO-03 / B.3 PR 2) would keep running with a stale Activity ref and log a UMP error. `applicationScope` is for work that *must* outlive the Activity (end-of-round persistence); consent prefetch is not that.
+- **Why flag-gated on `BuildConfig.USE_REAL_ADS`.** In debug builds, `AdModule` binds the stub — no UMP is ever called by the ad path. Firing the prefetch in debug would hit UMP / Play Services for no runtime benefit, and would fail on emulators without Play Services (logged but alarming in dev noise). Gating the prefetch on the same flag that chooses the binding keeps the two in lockstep.
+- **Why `@Inject internal lateinit var` + explicit `AtomicBoolean`, not `by lazy`.** Hilt requires field-injection for Activity dependencies (no constructor injection). `internal` visibility on the injected field matches the existing `activityProvider` precedent. `AtomicBoolean.compareAndSet(false, true)` is simpler and explicitly concurrency-safe compared to a Kotlin `by lazy { launch(...) }` which would have weird initialisation semantics (the lazy value is Unit-returning; it's the side effect that matters).
+- **No new test for MainActivity prefetch hook.** Unit-testing Activity lifecycle requires Robolectric + Hilt testing rule territory — same rationale C.5 PR 2 applied to its MainActivity lifecycle wiring. Coverage for the hook is device-track + lint (AtomicBoolean usage + flag-gate would surface as a Kotlin compile error if miswired). `RewardAdManagerParityTest` gives the behavioural coverage equivalent to `BillingManagerParityTest` from C.5 PR 2.
+- **Parity test shape: 3 per-placement + 1 isAdAvailable.** C.5 PR 2's parity test has 3 tests because Gem pack / Ad Removal / Season Pass have distinctly different wallet side effects (credit gems / flip flag / subscription expiry window). For ads, every `AdPlacement` goes through the same manager code path with only the `BuildConfig.AD_UNIT_*` lookup differing — so per-placement parity is arguably redundant. Kept 3 separate tests anyway for structural symmetry with the billing parity test and to guard against a future regression where one placement accidentally gets a different code path. Added a 4th `isAdAvailable` parity test because ADR-0006 decision #4 moved the availability check into `showRewardAd` — meaning both impls now return `true` from `isAdAvailable` for all placements, which is non-obvious and worth locking in.
+
+### Files touched
+
+New:
+- `app/src/test/java/.../data/ads/RewardAdManagerParityTest.kt` (143 lines, 4 tests). Plain-Kotlin mockito-kotlin on the adapter + ConsentManager + Activity via `ActivityProvider`. `runTest` for coroutine-suspending calls. No Robolectric.
+
+Modified:
+- `app/src/main/java/.../di/AdModule.kt` — full rewrite. `abstract class AdModule { @Binds StubRewardAdManager }` (18 lines) → `internal object AdModule { @Provides Provider-switch }` + sibling `internal abstract class AdInternalModule { @Binds adapter; @Binds consent }` (89 lines total, ~60 lines of KDoc explaining the Provider-over-`@Binds` rationale + sibling-module rationale + `internal` visibility rationale + MainActivity consent-injection note). Mirrors `BillingModule` + `BillingInternalModule` KDoc shape.
+- `app/src/main/java/.../presentation/MainActivity.kt` — +`import BuildConfig`, +`import ConsentManager`, +`import AtomicBoolean`; +`@Inject internal lateinit var consentManager: ConsentManager`; +`private val consentPrefetchAttempted = AtomicBoolean(false)` with KDoc; `onResume()` gained a trailing `if (BuildConfig.USE_REAL_ADS && consentPrefetchAttempted.compareAndSet(false, true)) { activityScope.launch { consentManager.ensureInitialized(this@MainActivity) } }` block with inline comment explaining flag rationale + one-shot rationale + error policy.
+
+Current-state doc sweep (5 files, all per 11-agent-protocol):
+- `AGENTS.md` — test count 522 → 526.
+- `CHANGELOG.md` — new "Phase C.6 PR 2" section at the top of Unreleased (7 bullets: module rewrite, MainActivity prefetch, Dagger graph, no new deps, test count, device-only gate, KT-73255 warnings).
+- `.kiro/steering/source-files.md` — `AdModule` entry rewritten to flag-gated description + AdInternalModule; `MainActivity` entry gains the consent-prefetch note; new `RewardAdManagerParityTest` row in Test Layer section.
+- `.kiro/steering/structure.md` — `data/ads/` subdirectory comment updated to flag-gated language; Key Files `AdModule` entry rewritten to mirror the `BillingModule` entry shape.
+- `.kiro/steering/tech.md` — Google Mobile Ads SDK row reference updated from `C.6 PR 1 — real impl landed, @Binds still stub until C.6 PR 2` to `C.6 PR 2 — flag-gated @Binds via BuildConfig.USE_REAL_ADS; debug=stub, release=real` (matches the Play Billing row's post-C.5-PR-2 shape).
+
+### Test changes (+4 net: 522 → 526)
+
+- `RewardAdManagerParityTest`: **+4 tests**. `POST_ROUND_GEM parity` / `POST_ROUND_DOUBLE_PS parity` / `DAILY_FREE_CARD_PACK parity`: all three assert `stub.showRewardAd(placement)` and `real.showRewardAd(placement)` both return `AdResult.Rewarded` when the real side's mocked consent + adapter produce happy responses (`canRequestAds() = true`, `loadAd() = Success(SdkRewardedAd)`, `showAd() = Rewarded`). `isAdAvailable parity`: asserts `stub.isAdAvailable(p) == true == real.isAdAvailable(p)` for all 3 placements, locking in the ADR-0006 decision-4 contract that the real availability check moves into `showRewardAd`. All 4 tests complete in 20ms.
+
+### Verification
+
+- `./run-gradle.sh :app:compileDebugKotlin :app:testDebugUnitTest :app:lintDebug` — BUILD SUCCESSFUL in 45s. **526 tests, 0 failures, 0 errors, 0 skipped.**
+- Test count verified via `find app/build/test-results -name "*.xml" -exec grep -h "<testsuite " {} \;` + awk aggregation — 526.
+- `RewardAdManagerParityTest` XML shows 4 tests passing in 0.02s total.
+- Dagger graph resolved on the first build attempt. The sibling `AdInternalModule` bindings for `RewardedAdAdapter` + `ConsentManager` preempted the missing-binding error that C.5 PR 2 hit on its first run.
+- 4 pre-existing Kotlin KT-73255 forward-compat warnings on `RealConsentManager:55`, `RealRewardedAdAdapter:56`, `BillingManagerImpl:79`, `RealBillingClientAdapter:54` (all `@ApplicationContext` param-vs-field annotation targeting) — not introduced by this PR. Would land as a batch fix via `-Xannotation-default-target=param-property`.
+- Lint clean, no new warnings.
+
+### Open questions / blockers
+
+- None for PR 2.
+- **Internal test track verification is the combined gate for C.5 PR 3 + C.6 PR 3.** Device-only work — install a release build signed with the release keystore, test (a) the `GEM_PACK_SMALL` happy path via Play Billing test account and (b) each of the 3 reward-ad placements by checking that a real AdMob test ad renders and `onUserEarnedReward` credits the wallet / opens the pack / doubles the PS. Unit-test coverage stops short of real Play Services + AdMob.
+- C.5 PR 3 + C.6 PR 3 can each be a single-file deletion PR OR batched into a single deletion PR if the device-track confirms both simultaneously — the two stubs have no shared dependencies and delete independently.
+
+### Follow-ups
+
+- **Internal-track device verification** of C.5 PR 2 + C.6 PR 2 is now the top task. Both can be verified from the same release-build install.
+- **C.5 PR 3 / C.6 PR 3** stub deletions after device-track confirmation.
+- After the stub deletions, Phase D (Plan 31 Play Console setup, AAB upload, Firebase pre-launch) is the last item on the release-critical path.
+- B.4 FollowOnPipeline + B.5 UpdateMissionProgress remain as opportunistic debt cleanup. No longer gated on anything.
+
+### Memory updated
+
+- `STATE.md` ✅ — current objective now "C.6 PR 2 landed"; What-works gained a C.6 PR 2 bullet (C.6 PR 1 bullet retained; both will fold into a single summary when PR 3 lands); Known-issues swapped the "flag swap + MainActivity consent wiring land in PR 2" line for a stub-still-ships-pending-deletion line + merged the two runtime-branch notes (billing + ads) into a single consolidated line; test count 522 → 526; priorities rotated (C.6 PR 2 removed, C.6 PR 3 moved up, B.4/B.5 promoted to #4, internal-track verification now covers both billing + ads); Next actions rotated; last-run line updated; critical path gained "C.6 PR 2 done" marker.
+- `RUN_LOG.md` ✅ — this entry.
+- ADR: not warranted — ADR-0006 already covers C.6 PR 2 under decision #9 (3-PR rollout). No new architectural decisions were made.
+
 ## 2026-05-11 — C.6 PR 1: real AdMob `RewardAdManagerImpl` + UMP consent glue + adapter seam
 
 - **Goal:** Land the first of three PRs swapping `StubRewardAdManager` for a real Google Mobile Ads integration, per ADR-0006 and implementation-roadmap §C.6. PR 1 introduces the real impl + adapter seam + UMP consent + unit tests without flipping the DI binding; PR 2 adds the `BuildConfig.USE_REAL_ADS` flag + binding swap + MainActivity consent-flow wiring; PR 3 deletes the stub. PR 1 must also promote ADR-0006 from Proposed → Accepted with concrete answers to the 6 open questions, mirroring the ADR-0005 shape from C.5 PR 1.

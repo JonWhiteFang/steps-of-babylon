@@ -11,7 +11,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── healthconnect/  # Health Connect client, step reader, cross-validator, gap filler, activity minutes
 │   ├── billing/        # StubBillingManager (stub, still bound when USE_REAL_BILLING=false) + BillingManagerImpl (real, bound when USE_REAL_BILLING=true; C.5 PR 2 flag-gated)
 │   │   └── internal/   # BillingClientAdapter (SDK-neutral seam) + RealBillingClientAdapter (concrete v8 glue) + ActivityProvider (set/cleared by MainActivity lifecycle, C.5 PR 2; also consumed by data/ads/RewardAdManagerImpl from C.6 PR 1)
-│   └── ads/            # StubRewardAdManager (stub, still bound pending C.6 PR 2) + RewardAdManagerImpl (real AdMob v25 + UMP, C.6 PR 1)
+│   └── ads/            # StubRewardAdManager (stub, bound when USE_REAL_ADS=false) + RewardAdManagerImpl (real, bound when USE_REAL_ADS=true; C.6 PR 2 flag-gated)
 │       └── internal/   # RewardedAdAdapter (SDK-neutral seam) + RealRewardedAdAdapter (concrete AdMob glue) + ConsentManager (UMP seam) + RealConsentManager (concrete UMP glue)
 ├── domain/             # Pure Kotlin — no Android imports
 │   ├── model/          # Data classes and enums
@@ -135,7 +135,7 @@ All in `domain/model/`:
 | `di/StepModule.kt` | Hilt module: provides SensorManager |
 | `di/HealthConnectModule.kt` | Hilt module: Health Connect organizational module |
 | `di/BillingModule.kt` | Hilt module: flag-gated `@Provides` that picks between `StubBillingManager` (debug, `BuildConfig.USE_REAL_BILLING=false`) and `BillingManagerImpl` (release, `BuildConfig.USE_REAL_BILLING=true`). Sibling `BillingInternalModule` `@Binds` `BillingClientAdapter` → `RealBillingClientAdapter`. Both `internal` so they can reference the internal adapter/impl types (C.5 PR 2) |
-| `di/AdModule.kt` | Hilt module: binds RewardAdManager to stub |
+| `di/AdModule.kt` | Hilt module: flag-gated `@Provides` that picks between `StubRewardAdManager` (debug, `BuildConfig.USE_REAL_ADS=false`) and `RewardAdManagerImpl` (release, `BuildConfig.USE_REAL_ADS=true`). Sibling `AdInternalModule` `@Binds` `RewardedAdAdapter` → `RealRewardedAdAdapter` and `ConsentManager` → `RealConsentManager`. Both `internal` so they can reference the internal adapter/impl types (C.6 PR 2). Mirrors the `BillingModule` shape from C.5 PR 2 |
 | `di/TimeModule.kt` | Hilt module: binds TimeProvider to SystemTimeProvider (B.1, RO-01) |
 | `di/CoroutineScopeModule.kt` | Hilt module: provides @ApplicationScope CoroutineScope(SupervisorJob + Dispatchers.Default) that outlives VM cancellation (B.3 PR 2, RO-03) |
 | `domain/time/TimeProvider.kt` | Pure-Kotlin seam for wall-clock access; migrated 3 sites in B.1 PR 2 |

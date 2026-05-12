@@ -29,6 +29,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.whitefang.stepsofbabylon.BuildConfig
+import com.whitefang.stepsofbabylon.data.ads.internal.ConsentManager
 import com.whitefang.stepsofbabylon.data.billing.internal.ActivityProvider
 import com.whitefang.stepsofbabylon.data.healthconnect.HealthConnectClientWrapper
 import com.whitefang.stepsofbabylon.presentation.battle.BattleScreen
@@ -55,6 +57,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -63,9 +66,18 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var healthConnectWrapper: HealthConnectClientWrapper
     @Inject lateinit var playerRepository: PlayerRepository
     @Inject internal lateinit var activityProvider: ActivityProvider
+    @Inject internal lateinit var consentManager: ConsentManager
 
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val pendingNavigation = MutableStateFlow<String?>(null)
+
+    /**
+     * Ensures the UMP consent prefetch fires at most once per Activity lifecycle, even
+     * across multiple [onResume] calls during a session. UMP's own [ConsentManager.ensureInitialized]
+     * is already idempotent, but guarding here avoids launching a coroutine that would immediately
+     * no-op on every resume. Reset in [onDestroy] along with [activityScope] cancellation.
+     */
+    private val consentPrefetchAttempted = AtomicBoolean(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -223,6 +235,18 @@ class MainActivity : ComponentActivity() {
         activityProvider.set(this)
         activityScope.launch(Dispatchers.IO) {
             playerRepository.updateLastActiveAt(System.currentTimeMillis())
+        }
+        // Prefetch UMP consent so the first reward-ad tap doesn't pay the
+        // ~200-500ms UMP init latency. Flag-gated on BuildConfig.USE_REAL_ADS so debug
+        // builds (stub binding) don't hit UMP / Play Services — emulator-friendly.
+        // One-shot per Activity lifecycle via [consentPrefetchAttempted]; UMP itself is
+        // idempotent across calls, so a stray second invocation is harmless but wasteful.
+        // RealConsentManager catches errors internally and logs them, so no try/catch here.
+        // C.6 PR 2 / ADR-0006.
+        if (BuildConfig.USE_REAL_ADS && consentPrefetchAttempted.compareAndSet(false, true)) {
+            activityScope.launch {
+                consentManager.ensureInitialized(this@MainActivity)
+            }
         }
     }
 
