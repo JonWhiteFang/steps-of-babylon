@@ -10,8 +10,9 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── sensor/         # Step sensor data source, rate limiter, velocity analyzer, ingestion preferences, daily step manager
 │   ├── healthconnect/  # Health Connect client, step reader, cross-validator, gap filler, activity minutes
 │   ├── billing/        # StubBillingManager (stub, still bound when USE_REAL_BILLING=false) + BillingManagerImpl (real, bound when USE_REAL_BILLING=true; C.5 PR 2 flag-gated)
-│   │   └── internal/   # BillingClientAdapter (SDK-neutral seam) + RealBillingClientAdapter (concrete v8 glue) + ActivityProvider (set/cleared by MainActivity lifecycle, C.5 PR 2)
-│   └── ads/            # StubRewardAdManager (simulated reward ads)
+│   │   └── internal/   # BillingClientAdapter (SDK-neutral seam) + RealBillingClientAdapter (concrete v8 glue) + ActivityProvider (set/cleared by MainActivity lifecycle, C.5 PR 2; also consumed by data/ads/RewardAdManagerImpl from C.6 PR 1)
+│   └── ads/            # StubRewardAdManager (stub, still bound pending C.6 PR 2) + RewardAdManagerImpl (real AdMob v25 + UMP, C.6 PR 1)
+│       └── internal/   # RewardedAdAdapter (SDK-neutral seam) + RealRewardedAdAdapter (concrete AdMob glue) + ConsentManager (UMP seam) + RealConsentManager (concrete UMP glue)
 ├── domain/             # Pure Kotlin — no Android imports
 │   ├── model/          # Data classes and enums
 │   ├── repository/     # Repository interfaces (Flow-based)

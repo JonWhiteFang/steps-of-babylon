@@ -17,6 +17,17 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true">
 
+        <!--
+            AdMob APPLICATION_ID — required by the Google Mobile Ads SDK at init time.
+            Missing or malformed => SDK throws RuntimeException on first request.
+            Value is supplied via the `admobAppId` manifestPlaceholder in app/build.gradle.kts
+            (debug uses Google's documented test app ID; release uses the real ID once
+            C.6 PR 2 wires local.properties). C.6 PR 1 / ADR-0006.
+        -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}" />
+
         <!-- Disable default WorkManager initializer (using Hilt factory) -->
         <provider
             android:name="androidx.startup.InitializationProvider"

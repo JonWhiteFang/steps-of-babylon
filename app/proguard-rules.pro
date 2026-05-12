@@ -27,6 +27,18 @@
 -keep interface com.android.billingclient.** { *; }
 -dontwarn com.android.billingclient.**
 
+# --- Google Mobile Ads SDK + UMP (C.6 PR 1 / ADR-0006) ---
+# AdMob's SDK relies on reflection for its ad-format parsing + listener callbacks, and UMP
+# loads its privacy-form HTML via reflection-bound interfaces. Both SDKs ship with a -keep
+# manifest bundled in their AARs, but we keep explicit rules here so R8 doesn't strip any
+# of the callback/listener surfaces even when the bundled rules change between versions.
+-keep class com.google.android.gms.ads.** { *; }
+-keep interface com.google.android.gms.ads.** { *; }
+-dontwarn com.google.android.gms.ads.**
+-keep class com.google.android.ump.** { *; }
+-keep interface com.google.android.ump.** { *; }
+-dontwarn com.google.android.ump.**
+
 # --- Health Connect SDK (uses reflection internally) ---
 -keep class androidx.health.connect.** { *; }
 

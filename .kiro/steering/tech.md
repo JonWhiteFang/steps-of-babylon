@@ -21,6 +21,8 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | Hilt | 2.59.2 | Dependency injection |
 | Room | 2.8.4 | Local SQLite database |
 | Google Play Billing | 8.3.0 | IAP via `billing-ktx` (C.5 PR 2 — flag-gated `@Binds` via `BuildConfig.USE_REAL_BILLING`; debug=stub, release=real) |
+| Google Mobile Ads SDK | 25.0.0 | Reward ads via `play-services-ads` (C.6 PR 1 — real impl landed, `@Binds` still stub until C.6 PR 2) |
+| User Messaging Platform | 4.0.0 | GDPR/DSA consent via `user-messaging-platform`; paired with AdMob (C.6 PR 1) |
 | Navigation Compose | 2.9.7 | Compose navigation |
 | Lifecycle | 2.9.0 | ViewModel, StateFlow integration |
 | WorkManager | 2.11.0 | Background step sync |

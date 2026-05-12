@@ -15,6 +15,8 @@ sqlcipher = "4.13.0"
 sqliteKtx = "2.4.0"
 healthConnect = "1.2.0-alpha02"
 billingPlay = "8.3.0"
+playServicesAds = "25.0.0"
+userMessagingPlatform = "4.0.0"
 junit5 = "5.11.4"
 coroutinesTest = "1.10.1"
 mockitoKotlin = "5.4.0"
@@ -64,6 +66,11 @@ sqlite = { group = "androidx.sqlite", name = "sqlite-ktx", version.ref = "sqlite
 
 # Google Play Billing (C.5 PR 1 / ADR-0005). Pinned exact version; v7 sunsets 2026-08-31.
 billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billingPlay" }
+
+# Google Mobile Ads SDK (C.6 PR 1 / ADR-0006). Pinned exact version; 25.0.0 is current line.
+# user-messaging-platform is Google's UMP SDK, required for GDPR/DSA consent on ad requests.
+play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }
+user-messaging-platform = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "userMessagingPlatform" }
 
 # Testing
 junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit5" }

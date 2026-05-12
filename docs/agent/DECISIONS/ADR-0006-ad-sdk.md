@@ -1,7 +1,7 @@
 # ADR-0006: Real reward-ad SDK integration
 
-**Date:** 2026-05-08
-**Status:** Proposed (stub — concrete decision deferred to C.6 PR 1 scoping)
+**Date:** 2026-05-08 (Proposed), 2026-05-11 (Accepted)
+**Status:** Accepted
 
 ## Context
 
@@ -25,28 +25,76 @@ Shipping v1.0 requires replacing the stub with a real integration. Unlike billin
 - Consent management platform (CMP) evaluation for GDPR / DSA compliance — needed before production release in EU.
 - Play Store app signing certificate SHA-1 registered in AdMob for ad-serving.
 
-## Decision (stub)
+## Decision
 
-**TBD.** The concrete design — exact AdMob library version pin, test-ad strategy, CMP choice, frequency-capping policy — will be finalised when C.6 PR 1 is scoped. The decision recorded here is the commitment to:
+Implemented in C.6 PR 1 on 2026-05-11. Commitments:
 
-1. **Library: Google AdMob SDK** (`com.google.android.gms:play-services-ads:<pinned>`). Most-recent stable at C.6 PR 1 landing date. No third-party ad mediation in v1.0.
-2. **Impl location:** `data/ads/RewardAdManagerImpl.kt` alongside `StubRewardAdManager`. Both coexist under a `BuildConfig.USE_REAL_ADS` flag mirroring the C.5 / ADR-0005 billing swap.
-3. **Preload-on-trigger, not upfront.** Load the `RewardedAd` when the `ViewModel.watchX()` method fires, not at app startup. Reasons:
-   - Ads expire after 1 hour; preloading at app open wastes the load if the player doesn't trigger within the window.
-   - Reduces startup latency + initial data usage.
-   - Simpler failure semantics — no need to reconcile "stale preload".
-4. **`isAdAvailable()` returns true** by default. The real check happens inside `showRewardAd()` via `RewardedAd.load()`; if load fails the method returns `AdResult.Error`. Pre-load availability is an optimisation left for post-v1.0.
-5. **User-earned-reward callback is the single source of truth.** Only increment the reward on `OnUserEarnedRewardListener.onUserEarnedReward()` — not on dismiss, not on impression. Matches AdMob's documented reward-ad contract.
-6. **Test-ad IDs in debug builds.** Debug builds use Google's documented reward-ad test unit (`ca-app-pub-3940256099942544/5224354917`) so a dev can exercise the real SDK path without a production AdMob account. Release builds use real IDs provisioned via `local.properties` → `BuildConfig.<PLACEMENT>_AD_UNIT_ID`. Production IDs never in git.
-7. **Privacy: opt-in CMP, not a hardcoded geo check.** Use AdMob's User Messaging Platform (UMP) for GDPR/DSA consent. Consent status cached on-device; refresh daily. Fall back to non-personalised ads if consent is denied.
-8. **Frequency capping: enforce in code, not in AdMob.**
-   - `POST_ROUND_GEM` + `POST_ROUND_DOUBLE_PS`: once per round (already enforced by `RoundEndState.gemAdWatched` / `psAdWatched` flags).
-   - `DAILY_FREE_CARD_PACK`: once per day, tracked on `PlayerProfileEntity.freeCardPackAdUsedToday` (already shipped). Resets at midnight via existing date-rollover logic.
-   - No additional AdMob-side frequency caps.
-9. **3-PR rollout** mirroring C.5:
-   - **PR 1:** New `RewardAdManagerImpl` + UMP consent glue + unit tests with mocked `RewardedAd`. `@Binds` still points at `StubRewardAdManager`. Zero runtime behaviour change.
-   - **PR 2:** Flip `@Binds` to `RewardAdManagerImpl` behind `BuildConfig.USE_REAL_ADS`. Flag defaults to false in debug, true in release.
-   - **PR 3:** Delete `StubRewardAdManager` after internal + closed-track confirmation.
+1. **Library: Google Mobile Ads SDK v25.0.0** pinned exact
+   (`com.google.android.gms:play-services-ads:25.0.0`) plus UMP
+   (`com.google.android.ump:user-messaging-platform:4.0.0`). Version
+   pinned, never ranged. v25 is the current stable line as of
+   2026-05-11 per Google's Android SDK release notes.
+2. **Impl location:** `data/ads/RewardAdManagerImpl.kt` alongside
+   `StubRewardAdManager`. SDK-neutral adapter seam at
+   `data/ads/internal/RewardedAdAdapter.kt` with the only concrete
+   (and `com.google.android.gms.ads.*`-importing) implementation in
+   `data/ads/internal/RealRewardedAdAdapter.kt`. Consent via
+   `data/ads/internal/ConsentManager.kt` → `RealConsentManager` (the
+   only file that imports `com.google.android.ump.*`). Both coexist
+   under a future `BuildConfig.USE_REAL_ADS` flag introduced in
+   PR 1 but only read from Hilt in PR 2.
+3. **Preload-on-trigger** kept as the default; no startup preload.
+   Rationale: 1-hour ad expiry + opt-in placement shape means any
+   preload is usually wasted.
+4. **`isAdAvailable()` returns `true`.** Real check happens inside
+   `showRewardAd()` via `adapter.loadAd(adUnitId)`; a load failure
+   surfaces as `AdResult.Error`.
+5. **`OnUserEarnedRewardListener` is the single reward source.**
+   `RealRewardedAdAdapter` flips an `AtomicBoolean` in
+   `OnUserEarnedRewardListener.onUserEarnedReward`; the outer
+   suspend-point resumes in `onAdDismissedFullScreenContent`, at
+   which point the flag is final. The adapter maps to
+   `SdkAdShowResult.Rewarded` only when the flag is true.
+6. **Test-ad IDs in debug.** `BuildConfig.AD_UNIT_POST_ROUND_GEM`,
+   `AD_UNIT_POST_ROUND_DOUBLE_PS`, and `AD_UNIT_DAILY_FREE_CARD_PACK`
+   default to Google's documented rewarded-ad test unit
+   (`ca-app-pub-3940256099942544/5224354917`) in debug. The AdMob
+   APPLICATION_ID in `AndroidManifest.xml` is substituted via the
+   `admobAppId` manifestPlaceholder; debug uses
+   `ca-app-pub-3940256099942544~3347511713` (test app ID). Release
+   builds override both from `local.properties` once C.6 PR 2
+   wires that path; the defaults remain the safe test IDs so a
+   misconfigured release build cannot mint revenue.
+7. **UMP for consent.** `RealConsentManager` runs
+   `requestConsentInfoUpdate` + `loadAndShowConsentFormIfRequired`
+   on first ad attempt; result cached via UMP's own on-device
+   store. Non-EU users see no form. Debug geography parameter left
+   at UMP default (decide-by-IP); we do not force a debug override.
+8. **Code-side frequency capping.** Caps remain in `BattleViewModel`
+   (`RoundEndState.gemAdWatched`, `psAdWatched`) and
+   `PlayerProfileEntity.freeCardPackAdUsedToday`. `RewardAdManagerImpl`
+   does NOT consult these — the cap is a caller concern.
+9. **3-PR rollout** as planned:
+   - **PR 1 (this one, landed):** real impl + adapter seam + UMP
+     glue + 6 unit tests covering every `AdResult` variant.
+     `@Binds` still points at `StubRewardAdManager`.
+   - **PR 2 (future):** flip `@Binds` behind `BuildConfig.USE_REAL_ADS`
+     (mirroring C.5 PR 2's Provider-based switch in `BillingModule`).
+     Add sibling `AdInternalModule` with `@Binds` for the adapter +
+     consent manager. MainActivity consent-flow wiring.
+   - **PR 3 (future):** delete `StubRewardAdManager` after internal +
+     closed-track confirmation.
+
+## Resolved open questions
+
+| # | Question | Decision (2026-05-11, C.6 PR 1) |
+|---|----------|----------------------------------|
+| Q1 | **Consent-denied reward policy.** When UMP returns consent denied and AdMob serves non-personalised ads, do we still grant the reward? | **Yes.** The user watched the ad — the reward contract is fulfilled. `RewardAdManagerImpl` does not branch on personalisation; it credits on `SdkAdShowResult.Rewarded` regardless. |
+| Q2 | **Ad load timeout.** Custom coroutine-level timeout wrapping `RewardedAd.load` (10 s) or defer to AdMob's internal ~60 s? | **Defer to AdMob.** A shorter wrapper would collapse distinct AdMob error codes (no-fill, network-error, timeout) into an undifferentiated "timed out" message, harming UX. The impl's `toUserMessage` helper translates AdMob codes to precise user-visible strings. |
+| Q3 | **Per-session impression cap.** Combined cap across all 3 placements to prevent back-to-back ad watching? | **No.** Ads are opt-in and each placement is capped once-per-meaningful-event (once per round / once per day). A session cap is solving a hypothetical. |
+| Q4 | **Mediation readiness.** Should PR 1's `RewardAdManagerImpl` be written for drop-in mediation swap later? | **No upfront abstraction.** YAGNI — the existing adapter seam (`RewardedAdAdapter`) already lets a future mediation layer plug in via a new concrete impl without touching `RewardAdManagerImpl`. Adding mediation structure now would invent abstractions for a future we may never build. |
+| Q5 | **COPPA / child-directed flag.** Mark the AdMob app as child-directed to stay COPPA-safe? | **No.** The game targets adults. Play Store age rating + `minSdk 34` (Android 14) handle the kid-safety surface. Marking child-directed would suppress personalised ads for all users, reducing eCPM for no compliance benefit. |
+| Q6 | **Test-ad render on release debug builds.** Internal-track testers: real ads or test ads? | **Test IDs persist across debug builds; release uses real IDs once PR 2 wires them.** Internal-track testers installing the release build will see real ads — that is the point of internal-track (verify the real ad surface). Minting a small amount of real-test revenue during QA is acceptable. |
 
 ## Rationale
 
@@ -80,16 +128,10 @@ Shipping v1.0 requires replacing the stub with a real integration. Unlike billin
 - **No A/B tests on ad placement or reward amount.** Hardcoded in `AdPlacement` + the caller VMs.
 - **Do not refactor `RewardAdManager` interface.** Stays stable through the swap. A future `reloadAll()` method for startup preload would be a separate PR.
 
-## Open questions (to be resolved in C.6 PR 1 scoping)
+## Open questions
 
-- **Consent-denied reward policy.** If UMP returns "consent denied" (user rejects tracking), AdMob still serves non-personalised ads. Do we still grant the reward when a non-personalised ad is watched? (Default: yes — the ad was watched, the reward contract is fulfilled. Documented here for explicit review.)
-- **Ad load timeout.** AdMob's default is ~60 s for the `RewardedAd.load()` call. Do we surface a progress indicator, or `AdResult.Error` after a shorter timeout (say 10 s)? UX question; defaults to AdMob.
-- **Ad impression-capping per placement.** The game has 3 placements with different expected frequencies. Do we want a combined per-session cap to prevent an over-enthusiastic player from watching 20 ads back-to-back? Default: no, but flag for review.
-- **Mediation readiness.** Should the PR 1 `RewardAdManagerImpl` be written to allow a drop-in mediation layer later? Trade-off: more abstraction now vs. easier later swap.
-- **COPPA / child-directed flag.** The game targets adults but steps + walking are a common kid-friendly category. Do we mark the AdMob app as child-directed to keep COPPA-safe? (Default: no, minSdk + Play Store age rating handle this.)
-- **Test-ad render on release debug builds?** During the internal-track rollout window, is it safe to serve real ads to debug-build testers, or should internal-track also use test IDs? Trade-off between testing the real ad surface and not minting real revenue during QA.
-
-All six will be decided in the PR description for C.6 PR 1 (which will upgrade this ADR from "Proposed (stub)" to "Accepted" with concrete answers).
+All six open questions answered on 2026-05-11 in the "Resolved open questions" table above.
+See PR description of commit for C.6 PR 1 for the reasoning trail on each.
 
 ## References
 
