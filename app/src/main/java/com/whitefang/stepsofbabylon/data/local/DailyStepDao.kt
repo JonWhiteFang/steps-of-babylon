@@ -36,13 +36,31 @@ interface DailyStepDao {
     suspend fun getBattleStepsEarned(date: String): Long
 
     /**
-     * Adds [delta] to the [DailyStepRecordEntity.battleStepsEarned] counter for
-     * [date], creating the row (with all other fields defaulted) if it does
-     * not yet exist. Uses an UPSERT so it is safe to call before any walking
-     * step has been recorded on a given day.
+     * Adds [delta] to the [DailyStepRecordEntity.battleStepsEarned] counter for [date],
+     * creating the row (with all other NOT NULL fields defaulted to zero / `'{}'`) if it
+     * does not yet exist. The INSERT half supplies every column explicitly so SQLite's
+     * NOT NULL checks pass regardless of whether the row already exists; if the row does
+     * exist, the `ON CONFLICT(date)` clause switches to an UPDATE that touches only
+     * `battleStepsEarned`, preserving any existing sensor / HC / escrow data.
+     *
+     * Safe to call before any walking step has been recorded on a given day — this is the
+     * hot path when the first battle of a fresh install lands before the step sensor has
+     * ticked in today's row. (An earlier implementation omitted the other columns from the
+     * INSERT list and crashed with `SQLiteConstraintException: NOT NULL constraint failed:
+     * daily_step_record.sensorSteps` in that scenario, because SQLite evaluates NOT NULL
+     * before the ON CONFLICT clause; `ON CONFLICT(date)` only catches UNIQUE violations,
+     * not NOT NULL violations. See `DailyStepDaoTest.\`incrementBattleSteps succeeds on
+     * empty table\`` for the regression guard.)
+     *
+     * The `activityMinutes` column stores a JSON-encoded `Map<String, Int>` via
+     * [Converters.fromStringIntMap]; `'{}'` is the round-trip representation of an empty
+     * map and matches the [DailyStepRecordEntity.activityMinutes] Kotlin default.
      */
     @Query(
-        "INSERT INTO daily_step_record (date, battleStepsEarned) VALUES (:date, :delta) " +
+        "INSERT INTO daily_step_record " +
+            "(date, sensorSteps, healthConnectSteps, creditedSteps, escrowSteps, " +
+            "escrowSyncCount, activityMinutes, stepEquivalents, battleStepsEarned) " +
+            "VALUES (:date, 0, 0, 0, 0, 0, '{}', 0, :delta) " +
             "ON CONFLICT(date) DO UPDATE SET battleStepsEarned = battleStepsEarned + :delta",
     )
     suspend fun incrementBattleSteps(date: String, delta: Long)
