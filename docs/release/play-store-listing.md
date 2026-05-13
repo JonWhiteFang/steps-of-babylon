@@ -81,7 +81,7 @@ Recommended rating: **Everyone (E)** / **PEGI 3**
 
 ## Contact Email
 
-`support@whitefanggames.com`
+`jonwhitefang@gmail.com`
 
 ## Visual Assets (Deferred to Plan 31)
 
