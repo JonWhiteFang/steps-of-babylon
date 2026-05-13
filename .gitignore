@@ -13,6 +13,10 @@ local.properties
 run-gradle.sh
 
 # Release signing
+release/
 keystore.properties
 *.jks
 *.keystore
+
+# Android Developer Verification proof-of-ownership snippet (account-specific, one-time use).
+app/src/main/assets/adi-registration.properties

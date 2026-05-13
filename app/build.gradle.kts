@@ -14,6 +14,19 @@ val keystoreProperties = Properties().apply {
     if (keystorePropertiesFile.exists()) load(keystorePropertiesFile.inputStream())
 }
 
+// Load AdMob production IDs from gitignored local.properties. Loaded once at
+// configure-time and consumed by the `release { }` block below. Debug build
+// keeps Google's documented test IDs from defaultConfig. C.6 PR 2.
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties().apply {
+    if (localPropertiesFile.exists()) load(localPropertiesFile.inputStream())
+}
+// Test-ad fallback constants. If local.properties is missing the AdMob keys
+// (e.g. a CI build, a fresh clone), the release build falls back to these so
+// it never mints revenue from accidental impressions on a misconfigured build.
+val ADMOB_TEST_APP_ID = "ca-app-pub-3940256099942544~3347511713"
+val ADMOB_TEST_REWARDED_AD_UNIT = "ca-app-pub-3940256099942544/5224354917"
+
 android {
     namespace = "com.whitefang.stepsofbabylon"
     compileSdk = 36
@@ -61,7 +74,7 @@ android {
     signingConfigs {
         if (keystorePropertiesFile.exists()) {
             create("release") {
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
                 storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
@@ -93,6 +106,19 @@ android {
             // Release enables the MainActivity UMP consent prefetch on first resume so
             // the first reward-ad tap doesn't pay the ~200-500ms UMP init latency. C.6 PR 3.
             buildConfigField("boolean", "USE_REAL_ADS", "true")
+
+            // AdMob production IDs sourced from gitignored local.properties. Falls back
+            // to Google's documented test IDs if local.properties is absent or missing
+            // a key (e.g. CI build, fresh clone) so a misconfigured release still
+            // doesn't mint revenue from accidental impressions. C.6 PR 2.
+            val realAppId = localProperties.getProperty("admob.appId") ?: ADMOB_TEST_APP_ID
+            val realPostRoundGem = localProperties.getProperty("admob.adUnit.postRoundGem") ?: ADMOB_TEST_REWARDED_AD_UNIT
+            val realPostRoundDoublePs = localProperties.getProperty("admob.adUnit.postRoundDoublePs") ?: ADMOB_TEST_REWARDED_AD_UNIT
+            val realDailyFreeCardPack = localProperties.getProperty("admob.adUnit.dailyFreeCardPack") ?: ADMOB_TEST_REWARDED_AD_UNIT
+            buildConfigField("String", "AD_UNIT_POST_ROUND_GEM", "\"$realPostRoundGem\"")
+            buildConfigField("String", "AD_UNIT_POST_ROUND_DOUBLE_PS", "\"$realPostRoundDoublePs\"")
+            buildConfigField("String", "AD_UNIT_DAILY_FREE_CARD_PACK", "\"$realDailyFreeCardPack\"")
+            manifestPlaceholders["admobAppId"] = realAppId
         }
     }
 

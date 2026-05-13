@@ -10,6 +10,13 @@
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
 
+    <!--
+        Play Billing permission. Required for in-app purchases via Google Play Billing.
+        Play Console gates SKU creation on the uploaded APK declaring this. Play Billing
+        Library v8 does NOT auto-merge it (older versions did); we declare it explicitly.
+    -->
+    <uses-permission android:name="com.android.vending.BILLING" />
+
     <application
         android:name=".StepsOfBabylonApp"
         android:allowBackup="false"
