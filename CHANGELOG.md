@@ -4,6 +4,10 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### versionCode bump 1 → 2 (2026-05-14)
+
+Play Console retains every uploaded AAB's versionCode forever (even from withdrawn drafts), so an earlier `bundleRelease` smoke-test upload during the Plan 31 walk-through session permanently consumed `versionCode = 1`. Internal-track upload of the lowercase-SKU AAB rejected with "Version code 1 has already been used. Try another version code." One-line bump in `app/build.gradle.kts` (`versionCode = 1` → `versionCode = 2`); `versionName` stays `1.0.0` because nothing user-visible changed. Re-built signed AAB at `app/build/outputs/bundle/release/app-release.aab` (~18 MB), merged manifest confirms `versionCode="2"`. No test impact.
+
 ### Phase F unblocker — lowercase SKU wire format (2026-05-14)
 
 Unblocks Play Console SKU creation. Play Console rejects product IDs that don't match `[a-z0-9._]`; our wire format previously sent `BillingProduct.name` (UPPER_SNAKE_CASE) byte-for-byte (per ADR-0005 decision #6), which Play Console refused.

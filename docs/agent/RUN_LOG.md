@@ -1,5 +1,13 @@
 # Run Log
 
+## 2026-05-14 (morning, mid-session) — versionCode 1 → 2 bump after Play Console rejected first internal-track upload
+
+- **Goal:** User attempted to upload `app/build/outputs/bundle/release/app-release.aab` to Play Console Internal testing as Step 1 of the Phase G plan. Play Console rejected with "Version code 1 has already been used. Try another version code." Cause: Play Console permanently retains every uploaded AAB's versionCode (even from withdrawn drafts), and an earlier `bundleRelease` smoke-test during the Plan 31 walk-through session permanently consumed versionCode 1 even though no track ever held a release with it.
+- **Fix:** One-line bump in `app/build.gradle.kts` (`versionCode = 1` → `versionCode = 2`). `versionName` stays `1.0.0` because nothing user-visible changed — this is a Play-Console-bookkeeping bump, not a release.
+- **Rebuild:** `./run-gradle.sh bundleRelease` — BUILD SUCCESSFUL. Lint vital + R8 + signing all clean. New AAB at `app/build/outputs/bundle/release/app-release.aab`, ~18 MB. Verified `versionCode="2"` in `app/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml` via `grep`.
+- **Docs synced:** CHANGELOG.md gets a "versionCode bump 1 → 2" section under [Unreleased] above the Phase F unblocker entry. AGENTS.md "Version: 1.0.0 (versionCode 1)" line updated to "versionCode 2 — bumped 2026-05-14 because Play Console retained `versionCode 1` from an earlier walk-through smoke-test upload". STATE.md current-objective + last-run line updated.
+- **Pattern note:** Future Play Console rejected-upload bumps should always increment `versionCode` (never reset / decrease). Walk-through doc `docs/release/plan-31-walkthrough.md` doesn't currently mention the "any failed upload still consumes the versionCode" pitfall — worth a one-line note next time the doc gets a refresh pass.
+
 ## 2026-05-14 (morning) — Plan 31 Phase F unblocker: `feat(billing): lowercase SKU wire format`
 
 - **Goal:** User asked "what's next?" and I pointed to STATE.md's #1 priority — the lowercase SKU code change that blocks Plan 31 Phase F SKU creation in Play Console. User said "yes", so I drove the PR end-to-end: 3 source files + 4 test files + 4 current-state docs + this RUN_LOG entry. Single, focused PR.

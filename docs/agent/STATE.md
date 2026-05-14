@@ -1,9 +1,9 @@
 # Project State
 
 ## Current objective
-- **Plan 31 Phase F unblocker landed (2026-05-14).** `feat(billing): lowercase SKU wire format` — `BillingProduct.skuId()` is now a public method returning `name.lowercase()` (`gem_pack_small`, `ad_removal`, `season_pass`, …) so Play Console's `[a-z0-9._]` product-id rule no longer blocks SKU creation. Refines ADR-0005 decision #6 from uppercase to lowercase wire format. 4 test files updated; 527 tests still green; signed AAB rebuilt at `app/build/outputs/bundle/release/app-release.aab` (~18 MB).
-- **Code-side: `feat(billing): lowercase SKU wire format` to commit this session.** 7 files changed: `BillingProduct.kt` (new public `skuId()` method), `BillingManagerImpl.kt` (private extension deleted, KDoc invariant #4 updated, `fromSkuIdOrNull` now compares `it.skuId()`), `BillingReceiptEntity.kt` (productId KDoc cites the lowercase format), `BillingManagerImplTest.kt` + `BillingManagerParityTest.kt` + `BillingReceiptDaoTest.kt` + `RoomSchemaTest.kt` (hardcoded SKU strings + helpers switched to lowercase / `product.skuId()`).
-- **Next external step (no code):** Play Console Phase G — upload the freshly-built AAB to Internal testing → save release → create 5 lowercase SKUs → license testers → on-device verification of a real Play Billing test purchase.
+- **Plan 31 Phase F unblocker landed (2026-05-14).** `feat(billing): lowercase SKU wire format` — `BillingProduct.skuId()` is now a public method returning `name.lowercase()` (`gem_pack_small`, `ad_removal`, `season_pass`, …) so Play Console's `[a-z0-9._]` product-id rule no longer blocks SKU creation. Refines ADR-0005 decision #6 from uppercase to lowercase wire format. 4 test files updated; 527 tests still green.
+- **versionCode bumped 1 → 2 (2026-05-14).** Play Console rejected the first internal-track AAB upload with "Version code 1 has already been used. Try another version code" — an earlier `bundleRelease` smoke-test during the Plan 31 walk-through permanently consumed versionCode 1 (Play Console keeps every uploaded versionCode forever). One-line bump in `app/build.gradle.kts`; `versionName` stays `1.0.0`. Signed AAB rebuilt at `app/build/outputs/bundle/release/app-release.aab` (~18 MB), merged manifest confirms `versionCode="2"`.
+- **Next external step:** Re-upload the rebuilt AAB to Play Console Internal testing, then continue with Phase G (5 lowercase SKUs → license testers → on-device Play Billing test purchase).
 
 ## What works
 - Plans 01–30 + 10b + R (R01–R12) + R2 (R2-01–R2-12) complete.
@@ -67,4 +67,4 @@
 - Play Store listing copy: docs/release/play-store-listing.md
 - Master plan: docs/plans/master-plan.md
 - Critical path: 01→…→30→R→R2→ Battle Step Rewards → Phase A done → B.1 done → B.2 done (RO-02 complete) → B.3 done (RO-03 complete) → B.4–B.5 → C.2 PRs done → C.4 done → C.5 PRs 1+2 done → C.6 PRs 1+2+3 done → battle-step-credit hotfix done → Plan 31 (Phases A–F + ADV done; Phase F unblocker `feat(billing): lowercase SKU wire format` lands 2026-05-14) → Phase G internal track + SKUs → C.5 PR 3 → Phase G2 closed track → Phases H+I production → D
-- Last run: 2026-05-14 (Phase F unblocker session — `feat(billing): lowercase SKU wire format`. `BillingProduct.skuId()` promoted to a public lowercase-returning method; 7 files updated; 527 tests green; signed AAB rebuilt; current-state docs synced; ready to commit and resume Phase G).
+- Last run: 2026-05-14 (Phase F unblocker session — `feat(billing): lowercase SKU wire format` + versionCode 1 → 2 bump after Play Console rejected the first internal-track upload. AAB rebuilt; ready to re-upload).
