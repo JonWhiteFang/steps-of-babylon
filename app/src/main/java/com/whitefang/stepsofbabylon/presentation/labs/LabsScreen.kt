@@ -103,7 +103,6 @@ private fun ResearchCard(
             when {
                 info.isMaxed -> {} // no actions
                 info.isActive -> {
-                    val total = info.remainingMs + (System.currentTimeMillis() - (System.currentTimeMillis() - info.remainingMs))
                     // Progress based on remaining vs time to complete
                     val totalMs = (info.timeToCompleteHours * 3_600_000).toLong()
                     val elapsed = totalMs - info.remainingMs
