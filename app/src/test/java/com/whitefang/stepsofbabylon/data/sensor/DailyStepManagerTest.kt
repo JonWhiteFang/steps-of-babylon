@@ -6,6 +6,7 @@ import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.fakes.FakeDailyLoginDao
 import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
 import com.whitefang.stepsofbabylon.fakes.FakeDailyStepDao
+import com.whitefang.stepsofbabylon.fakes.FakeLabRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeStepRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWalkingEncounterRepository
@@ -31,6 +32,7 @@ class DailyStepManagerTest {
     private lateinit var dailyMissionDao: FakeDailyMissionDao
     private lateinit var widgetHelper: WidgetUpdateHelper
     private lateinit var workshopRepo: FakeWorkshopRepository
+    private lateinit var labRepo: FakeLabRepository
     private lateinit var manager: DailyStepManager
 
     private val baseTime = 1_710_000_000_000L
@@ -44,6 +46,7 @@ class DailyStepManagerTest {
         dailyMissionDao = FakeDailyMissionDao()
         widgetHelper = mock<WidgetUpdateHelper>()
         workshopRepo = FakeWorkshopRepository()
+        labRepo = FakeLabRepository()
 
         manager = DailyStepManager(
             stepRepository = stepRepo,
@@ -59,6 +62,7 @@ class DailyStepManagerTest {
             dailyMissionDao = dailyMissionDao,
             widgetUpdateHelper = widgetHelper,
             workshopRepository = workshopRepo,
+            labRepository = labRepo,
         )
     }
 
@@ -204,6 +208,7 @@ class DailyStepManagerTest {
             dailyMissionDao = FakeDailyMissionDao(),
             widgetUpdateHelper = mock<WidgetUpdateHelper>(),
             workshopRepository = workshopRepo,
+            labRepository = labRepo,
         )
         manager2.recordActivityMinutes(minutes, 500)
         assertEquals(500L, playerRepo.getStepBalance())
@@ -396,6 +401,65 @@ class DailyStepManagerTest {
             500L,
             playerRepo.getStepBalance(),
             "Activity minutes must not receive the STEP_MULTIPLIER walking bonus",
+        )
+    }
+
+    // ---- RO-11 #A.3: STEP_EFFICIENCY Lab research applies to walking step credit ----
+    // Pre-RO-11 the STEP_EFFICIENCY enum was dead despite costing 5 000 Steps + 8 hours
+    // research time per level. RO-11 #A.3 wires it into the same applyStepMultiplier path
+    // as the workshop STEP_MULTIPLIER (RO-08 #1a), with both bonuses sharing the +100 % cap
+    // per GDD §4.3.
+
+    @Test
+    fun `RO11 STEP_EFFICIENCY level 5 grants a 10 percent walking bonus on its own`() = runTest {
+        // 5 levels × 0.02 per level = 0.10 bonus. 100 sensor steps → 110 credited.
+        labRepo.levels.value =
+            mapOf(com.whitefang.stepsofbabylon.domain.model.ResearchType.STEP_EFFICIENCY to 5)
+
+        manager.recordSteps(100, baseTime)
+
+        assertEquals(
+            110L,
+            playerRepo.getStepBalance(),
+            "STEP_EFFICIENCY L5 alone must grant +10 % bonus (100 sensor → 110 credited)",
+        )
+    }
+
+    @Test
+    fun `RO11 STEP_MULTIPLIER and STEP_EFFICIENCY stack additively under the cap`() = runTest {
+        // Workshop STEP_MULTIPLIER L10 → +10 %; Lab STEP_EFFICIENCY L5 → +10 %; combined +20 %.
+        // 100 sensor steps → 120 credited. Both levels well under their respective caps and
+        // the combined sum (0.20) is well under the +100 % cap.
+        workshopRepo.upgrades.value =
+            mapOf(com.whitefang.stepsofbabylon.domain.model.UpgradeType.STEP_MULTIPLIER to 10)
+        labRepo.levels.value =
+            mapOf(com.whitefang.stepsofbabylon.domain.model.ResearchType.STEP_EFFICIENCY to 5)
+
+        manager.recordSteps(100, baseTime)
+
+        assertEquals(
+            120L,
+            playerRepo.getStepBalance(),
+            "STEP_MULTIPLIER L10 + STEP_EFFICIENCY L5 must add to +20 % bonus (100 → 120)",
+        )
+    }
+
+    @Test
+    fun `RO11 combined STEP_MULTIPLIER plus STEP_EFFICIENCY caps at +100 percent`() = runTest {
+        // Workshop L100 → +100 % alone; adding Lab STEP_EFFICIENCY L10 → +20 % would push to
+        // +120 % uncapped. The shared cap holds at +100 % → 100 sensor steps → 200 credited
+        // (max 2× credited).
+        workshopRepo.upgrades.value =
+            mapOf(com.whitefang.stepsofbabylon.domain.model.UpgradeType.STEP_MULTIPLIER to 100)
+        labRepo.levels.value =
+            mapOf(com.whitefang.stepsofbabylon.domain.model.ResearchType.STEP_EFFICIENCY to 10)
+
+        manager.recordSteps(100, baseTime)
+
+        assertEquals(
+            200L,
+            playerRepo.getStepBalance(),
+            "Combined STEP_MULTIPLIER + STEP_EFFICIENCY must respect the shared +100 % cap",
         )
     }
 }

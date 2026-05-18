@@ -8,8 +8,10 @@ import com.whitefang.stepsofbabylon.data.local.WeeklyChallengeDao
 import com.whitefang.stepsofbabylon.domain.model.DropGeneratorState
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.MissionCategory
+import com.whitefang.stepsofbabylon.domain.model.ResearchType
 import com.whitefang.stepsofbabylon.domain.model.SupplyDropTrigger
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
+import com.whitefang.stepsofbabylon.domain.repository.LabRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.StepRepository
 import com.whitefang.stepsofbabylon.domain.repository.WalkingEncounterRepository
@@ -43,6 +45,7 @@ class DailyStepManager @Inject constructor(
     private val dailyMissionDao: DailyMissionDao,
     private val widgetUpdateHelper: WidgetUpdateHelper,
     private val workshopRepository: WorkshopRepository,
+    private val labRepository: LabRepository,
 ) {
     companion object {
         const val DAILY_CEILING = 50_000L
@@ -50,7 +53,14 @@ class DailyStepManager @Inject constructor(
         /** Per-level effect of the STEP_MULTIPLIER Workshop upgrade: +1 % bonus credited steps. */
         const val STEP_MULTIPLIER_PER_LEVEL = 0.01
 
-        /** Cap on the STEP_MULTIPLIER bonus: +100 % (i.e. up to 2× credited steps). */
+        /**
+         * Per-level effect of the STEP_EFFICIENCY Lab research: +2 % bonus credited steps
+         * (RO-11 #A.3). Stacks additively with [STEP_MULTIPLIER_PER_LEVEL] under the shared
+         * [STEP_MULTIPLIER_CAP] of +100 %.
+         */
+        const val STEP_EFFICIENCY_PER_LEVEL = 0.02
+
+        /** Cap on the combined walking-credit bonus: +100 % (i.e. up to 2× credited steps). */
         const val STEP_MULTIPLIER_CAP = 1.0
 
         private val DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE
@@ -237,25 +247,35 @@ class DailyStepManager @Inject constructor(
     }
 
     /**
-     * Applies the STEP_MULTIPLIER Workshop upgrade bonus to a base step credit (RO-08).
+     * Applies the combined Workshop STEP_MULTIPLIER + Lab STEP_EFFICIENCY bonus to a base
+     * step credit (RO-08 + RO-11 #A.3).
      *
-     * Reads the player's current STEP_MULTIPLIER level fresh on every credit so the bonus
-     * reflects level-ups immediately. The multiplier is `(1 + level × 0.01)` capped at
-     * `1 + STEP_MULTIPLIER_CAP` (i.e. up to 2.0×) per GDD §4.3.
+     * Reads both levels fresh on every credit so any level-up takes effect immediately.
+     * The per-level effects are additive (`ws × 0.01 + lab × 0.02`) and the combined sum
+     * is capped at [STEP_MULTIPLIER_CAP] = 1.0 (i.e. up to 2× credited steps total) per the
+     * GDD §4.3 "Cap 100 %" wording. STEP_EFFICIENCY caps at L10 = +20 %; STEP_MULTIPLIER caps
+     * at the workshop max level. Combined max bonus is therefore +100 %, not +120 %.
      *
-     * Returns the input unchanged when the level is 0 (no STEP_MULTIPLIER purchased) or when
-     * the workshop lookup fails — defensive null-handling so a transient DB issue never
-     * silently penalises the player by zeroing out their credit.
+     * Returns the input unchanged when both levels are 0 or when either lookup fails —
+     * defensive null-handling so a transient DB issue never silently penalises the player
+     * by zeroing out their credit. Pre-RO-11 only the Workshop side was wired; the lab
+     * STEP_EFFICIENCY enum was dead despite costing 5 000 Steps + 8 hours research time.
      */
     private suspend fun applyStepMultiplier(baseCredit: Long): Long {
         if (baseCredit <= 0) return baseCredit
-        val level = try {
+        val wsLevel = try {
             workshopRepository.observeAllUpgrades().first()[UpgradeType.STEP_MULTIPLIER] ?: 0
         } catch (_: Exception) {
             0
         }
-        if (level <= 0) return baseCredit
-        val bonus = (level * STEP_MULTIPLIER_PER_LEVEL).coerceAtMost(STEP_MULTIPLIER_CAP)
+        val labLevel = try {
+            labRepository.observeAllResearch().first()[ResearchType.STEP_EFFICIENCY] ?: 0
+        } catch (_: Exception) {
+            0
+        }
+        if (wsLevel <= 0 && labLevel <= 0) return baseCredit
+        val bonus = (wsLevel * STEP_MULTIPLIER_PER_LEVEL + labLevel * STEP_EFFICIENCY_PER_LEVEL)
+            .coerceAtMost(STEP_MULTIPLIER_CAP)
         return (baseCredit * (1.0 + bonus)).toLong()
     }
 }
