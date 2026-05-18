@@ -434,15 +434,39 @@ class BattleViewModel @Inject constructor(
         val maxLevel = type.config.maxLevel
         if (maxLevel != null && currentLevel >= maxLevel) return
         val cost = calculateCost(type, currentLevel)
-        val freeLevel = workshopLevels[UpgradeType.FREE_UPGRADES] ?: 0
+        // FREE_UPGRADES rolls against the combined Workshop + in-round level (RO-08): a
+        // mid-round FREE_UPGRADES purchase contributes to its own subsequent free-roll chance.
+        val freeLevel = (workshopLevels[UpgradeType.FREE_UPGRADES] ?: 0) +
+            (inRoundLevels[UpgradeType.FREE_UPGRADES] ?: 0)
         val freeChance = min(freeLevel * 0.01, 0.25)
         val isFree = freeChance > 0 && Random.nextDouble() < freeChance
         if (!isFree && !eng.spendCash(cost)) return
         inRoundLevels[type] = currentLevel + 1
         resolvedStats = resolveStats(workshopLevels, inRoundLevels)
         eng.updateZigguratStats(resolvedStats)
+        // Push combined effective levels for cash-utility upgrades (CASH_BONUS, CASH_PER_WAVE,
+        // INTEREST, FREE_UPGRADES). The engine uses these for subsequent kill cash, wave-end
+        // bonuses, and between-wave interest. Pre-RO-08 in-round purchases of these were dead
+        // cash because the engine only ever read the workshop-level snapshot from init.
+        eng.updateEffectiveLevels(combinedLevelsForCash())
         eng.soundManager?.play(com.whitefang.stepsofbabylon.presentation.audio.SoundEffect.UPGRADE_PURCHASE)
         _uiState.update { it.copy(inRoundLevels = inRoundLevels.toMap(), lastPurchaseFree = isFree) }
+    }
+
+    /**
+     * Sums Workshop + in-round levels per upgrade type for the engine's cash-utility lookup.
+     * Additive merge matches the documented stacking semantics ("All Workshop stats have
+     * corresponding in-round upgrades"; for non-stat utilities this means level + level
+     * additively). Stat-bearing upgrades go through [resolveStats] instead — this map is
+     * consulted only by `GameEngine.wsLevel` for the four cash-related utilities.
+     */
+    private fun combinedLevelsForCash(): Map<UpgradeType, Int> {
+        if (inRoundLevels.isEmpty()) return workshopLevels
+        val combined = workshopLevels.toMutableMap()
+        for ((type, level) in inRoundLevels) {
+            combined[type] = (combined[type] ?: 0) + level
+        }
+        return combined
     }
 
     fun toggleUpgradeMenu() { _uiState.update { it.copy(showUpgradeMenu = !it.showUpgradeMenu, showOverdriveMenu = false) } }

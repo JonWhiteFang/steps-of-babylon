@@ -53,7 +53,18 @@ class GameEngine {
     private var stats: ResolvedStats = ResolvedStats()
     private var tier: Int = 1
     private var conditions: BattleConditionEffects = BattleConditionEffects()
-    private var workshopLevels: Map<UpgradeType, Int> = emptyMap()
+    /**
+     * Effective level lookup for cash-utility computations (`CASH_BONUS`, `CASH_PER_WAVE`,
+     * `INTEREST`, `FREE_UPGRADES`). Initially seeded from the player's Workshop levels at
+     * [init], then updated by [updateEffectiveLevels] on every in-round upgrade purchase
+     * so that mid-round cash-utility purchases actually take effect (RO-08). Pre-RO-08
+     * the field was named `workshopLevels` and was set once at battle start, which made
+     * in-round purchases of these four utilities silently no-op.
+     *
+     * Stat-bearing upgrades (damage, attack speed, etc.) propagate via [stats] /
+     * [applyStats] — they don't read from this map.
+     */
+    private var effectiveLevels: Map<UpgradeType, Int> = emptyMap()
     private var backgroundRenderer: BackgroundRenderer? = null
     private var biomeTheme: BiomeTheme = BiomeTheme.forBiome(Biome.HANGING_GARDENS)
 
@@ -144,7 +155,7 @@ class GameEngine {
         activeOverdrive = null; overdriveTimeRemaining = 0f; preOverdriveStats = null; fortuneMultiplier = 1.0
         secondWindUsed = false
         uwStates.clear(); chronoActive = false; goldenZigActive = false; preGoldenStats = null
-        stats = resolvedStats; tier = playerTier; workshopLevels = wsLevels
+        stats = resolvedStats; tier = playerTier; effectiveLevels = wsLevels
         reducedMotion = isReducedMotion
         conditions = BattleConditionEffects.fromTier(tier)
         biomeTheme = BiomeTheme.forBiome(Biome.forTier(tier))
@@ -499,7 +510,22 @@ class GameEngine {
 
     // --- Cash economy ---
 
-    private fun wsLevel(type: UpgradeType): Int = workshopLevels[type] ?: 0
+    private fun wsLevel(type: UpgradeType): Int = effectiveLevels[type] ?: 0
+
+    /**
+     * Replaces the engine's effective cash-utility level map. Called by
+     * [com.whitefang.stepsofbabylon.presentation.battle.BattleViewModel] after every
+     * in-round upgrade purchase with `workshopLevels + inRoundLevels` summed per type, so
+     * `CASH_BONUS` / `CASH_PER_WAVE` / `INTEREST` / `FREE_UPGRADES` purchases made mid-round
+     * affect subsequent kill rewards, wave-end bonuses, interest payouts, and free-upgrade
+     * rolls (RO-08).
+     *
+     * No-op for stat-bearing upgrades — those propagate through [applyStats] /
+     * [updateZigguratStats] which are the canonical stats-mutation channels.
+     */
+    fun updateEffectiveLevels(combined: Map<UpgradeType, Int>) {
+        effectiveLevels = combined
+    }
 
     private fun handleWaveComplete(wave: Int) {
         val waveCash = ((BASE_CASH_PER_WAVE + wsLevel(UpgradeType.CASH_PER_WAVE) * FLAT_BONUS_PER_WAVE_LEVEL) * fortuneMultiplier).toLong()

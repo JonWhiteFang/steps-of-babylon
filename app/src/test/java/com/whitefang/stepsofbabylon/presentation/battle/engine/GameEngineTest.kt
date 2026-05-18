@@ -2,6 +2,7 @@ package com.whitefang.stepsofbabylon.presentation.battle.engine
 
 import com.whitefang.stepsofbabylon.domain.model.OverdriveType
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
+import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -84,6 +85,22 @@ class GameEngineTest {
         )
     }
 
+    // ---- RO-08 #3c: in-round cash-utility purchases reach the engine ----
+
+    @Test
+    fun `RO08 updateEffectiveLevels propagates CASH_BONUS to subsequent kill rewards`() {
+        val eng = freshEngine()
+        // Workshop CASH_BONUS level 0 baseline. Then push an in-round level into the engine
+        // via updateEffectiveLevels — equivalent to BattleViewModel's combinedLevelsForCash.
+        eng.updateEffectiveLevels(mapOf(UpgradeType.CASH_BONUS to 50))
+        val readLevel = readEffectiveLevel(eng, UpgradeType.CASH_BONUS)
+        assertEquals(
+            50,
+            readLevel,
+            "updateEffectiveLevels must replace the engine's effective level lookup",
+        )
+    }
+
     // ---- Helpers: reach into private state via reflection ----
 
     /** Reads the engine's `ziggurat` and returns a snapshot of its live stats reference. */
@@ -97,6 +114,15 @@ class GameEngineTest {
     private fun readAttackInterval(eng: GameEngine): Float {
         val zig = eng.ziggurat!!
         return (1.0 / zig.stats.attackSpeed).toFloat()
+    }
+
+    /** Reflectively reads the engine's private `effectiveLevels` map for the given type. */
+    private fun readEffectiveLevel(eng: GameEngine, type: UpgradeType): Int {
+        val field = GameEngine::class.java.getDeclaredField("effectiveLevels")
+            .apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        val map = field.get(eng) as Map<UpgradeType, Int>
+        return map[type] ?: 0
     }
 
     /** Reflectively invokes the private `expireOverdrive()` helper. */

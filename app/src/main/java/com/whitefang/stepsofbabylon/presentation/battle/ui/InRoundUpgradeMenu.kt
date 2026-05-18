@@ -42,7 +42,12 @@ fun InRoundUpgradeMenu(
     val tabs = UpgradeCategory.entries
     var selectedTab by remember { mutableIntStateOf(0) }
     val category = tabs[selectedTab]
-    val upgrades = UpgradeType.entries.filter { it.category == category }
+    // Mirror the WorkshopViewModel hidden-set: STEP_MULTIPLIER affects walking outside
+    // battles and RECOVERY_PACKAGES is a passive periodic-heal effect — neither makes
+    // sense as a cash-fed in-round purchase. Hiding them here closes the dead-cash gap
+    // identified in RO-08.
+    val hiddenInRound = setOf(UpgradeType.STEP_MULTIPLIER, UpgradeType.RECOVERY_PACKAGES)
+    val upgrades = UpgradeType.entries.filter { it.category == category && it !in hiddenInRound }
 
     Column(
         modifier = Modifier
