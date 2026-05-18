@@ -91,6 +91,14 @@ class GameEngine {
     private var fortuneMultiplier: Double = 1.0
 
     /**
+     * Recovery Packages periodic-heal timer (RO-08). Accumulates during the SPAWNING wave
+     * phase only (not during cooldown — heals between waves with no enemies on screen would
+     * feel disconnected from the upgrade's "during waves" framing). Fires when the timer
+     * crosses [RECOVERY_INTERVAL_SECONDS]; reset to zero on each fire and on round init.
+     */
+    private var recoveryTimer: Float = 0f
+
+    /**
      * Invoked on the game-loop thread every time a kill grants a non-zero
      * step reward. The listener must not block the loop — forward to a
      * coroutine scope. Arguments are `(amount, x, y)` — amount is the flat
@@ -139,6 +147,19 @@ class GameEngine {
     companion object {
         const val BASE_CASH_PER_WAVE = 20L
         const val FLAT_BONUS_PER_WAVE_LEVEL = 5L
+
+        /**
+         * Recovery Packages constants (RO-08). Each [RECOVERY_INTERVAL_SECONDS] of active
+         * SPAWNING phase grants `level × RECOVERY_PERCENT_PER_LEVEL` of max HP, capped per
+         * pulse at [RECOVERY_PERCENT_PER_PULSE_CAP] so very high levels can't one-shot the
+         * tower to full from low HP (preserves the in-round upgrade decisions for HEALTH /
+         * HEALTH_REGEN / DEFENSE_PERCENT). Cumulative healing across multiple pulses is
+         * unbounded — players who stockpile RECOVERY_PACKAGES levels see frequent partial
+         * heals throughout each wave.
+         */
+        const val RECOVERY_INTERVAL_SECONDS = 30f
+        const val RECOVERY_PERCENT_PER_LEVEL = 0.01
+        const val RECOVERY_PERCENT_PER_PULSE_CAP = 0.50
     }
 
     fun init(
@@ -155,6 +176,7 @@ class GameEngine {
         activeOverdrive = null; overdriveTimeRemaining = 0f; preOverdriveStats = null; fortuneMultiplier = 1.0
         secondWindUsed = false
         uwStates.clear(); chronoActive = false; goldenZigActive = false; preGoldenStats = null
+        recoveryTimer = 0f
         stats = resolvedStats; tier = playerTier; effectiveLevels = wsLevels
         reducedMotion = isReducedMotion
         conditions = BattleConditionEffects.fromTier(tier)
@@ -291,6 +313,7 @@ class GameEngine {
             if (overdriveTimeRemaining <= 0f) expireOverdrive()
         }
         updateUWs(deltaTime)
+        tickRecoveryPackages(deltaTime)
 
         // Check for new wave to trigger announcement
         val currentWave = waveSpawner?.currentWave ?: 1
@@ -525,6 +548,43 @@ class GameEngine {
      */
     fun updateEffectiveLevels(combined: Map<UpgradeType, Int>) {
         effectiveLevels = combined
+    }
+
+    /**
+     * RECOVERY_PACKAGES periodic-heal pulse (RO-08). Runs every game-loop tick during the
+     * SPAWNING phase only; resets the accumulated timer between waves so the first pulse of
+     * a new wave waits a full [RECOVERY_INTERVAL_SECONDS]. Pulses are no-ops at full HP, but
+     * the timer still advances so HP that drops mid-wave doesn't immediately trigger a fresh
+     * pulse from a stale timer.
+     *
+     * Heal amount: `min(level × 1 %, 50 %)` of `maxHp` per pulse, capped to prevent godmode
+     * at high levels. Floors at 1 HP healed (so any non-zero level produces visible feedback).
+     * Spawns a green floating-text indicator above the ziggurat for visual feedback.
+     */
+    private fun tickRecoveryPackages(deltaTime: Float) {
+        val zig = ziggurat ?: return
+        val spawner = waveSpawner ?: return
+        if (spawner.phase != WavePhase.SPAWNING) {
+            recoveryTimer = 0f
+            return
+        }
+        val level = wsLevel(UpgradeType.RECOVERY_PACKAGES)
+        if (level <= 0) return
+        recoveryTimer += deltaTime
+        if (recoveryTimer < RECOVERY_INTERVAL_SECONDS) return
+        recoveryTimer = 0f
+        if (zig.currentHp >= zig.maxHp) return
+        val percent = (level * RECOVERY_PERCENT_PER_LEVEL).coerceAtMost(RECOVERY_PERCENT_PER_PULSE_CAP)
+        val healAmount = (zig.maxHp * percent).coerceAtLeast(1.0)
+        zig.currentHp = (zig.currentHp + healAmount).coerceAtMost(zig.maxHp)
+        effectEngine?.addEffect(
+            FloatingText(
+                x = zig.x,
+                y = zig.originY - 30f,
+                text = "+${healAmount.toInt()} HP",
+                color = FloatingText.STEP_COLOR,
+            ),
+        )
     }
 
     private fun handleWaveComplete(wave: Int) {

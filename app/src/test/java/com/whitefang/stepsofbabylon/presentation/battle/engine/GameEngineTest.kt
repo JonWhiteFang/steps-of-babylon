@@ -101,6 +101,88 @@ class GameEngineTest {
         )
     }
 
+    // ---- RO-08 #1b: RECOVERY_PACKAGES periodic heal ----
+
+    @Test
+    fun `RO08 RECOVERY_PACKAGES heals the ziggurat once per interval during SPAWNING phase`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        // Damage the ziggurat to 10% so the heal has room.
+        zig.currentHp = zig.maxHp * 0.10
+        val hpBefore = zig.currentHp
+
+        // Level 5 → 5 % per pulse; expected heal = 5 % of maxHp.
+        eng.updateEffectiveLevels(mapOf(UpgradeType.RECOVERY_PACKAGES to 5))
+
+        // Direct invocation of the private heal helper avoids the full game-loop side
+        // effects (enemy spawning, melee hits) that would otherwise contaminate the HP
+        // delta. The wave is in SPAWNING phase by construction immediately after init.
+        invokeTickRecovery(eng, deltaTime = 31f)
+
+        val expectedHeal = zig.maxHp * 0.05
+        val actualDelta = zig.currentHp - hpBefore
+        org.junit.jupiter.api.Assertions.assertTrue(
+            actualDelta >= expectedHeal - 0.5,
+            "RECOVERY_PACKAGES Lv5 must heal ≥ 5 % of maxHp on a single 30 s pulse " +
+                "(before=$hpBefore, after=${zig.currentHp}, expectedDelta=$expectedHeal, " +
+                "actualDelta=$actualDelta)",
+        )
+    }
+
+    @Test
+    fun `RO08 RECOVERY_PACKAGES does not heal at full HP`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        // Tower starts at full HP by construction.
+        val hpBefore = zig.currentHp
+
+        eng.updateEffectiveLevels(mapOf(UpgradeType.RECOVERY_PACKAGES to 5))
+        invokeTickRecovery(eng, deltaTime = 31f)
+
+        assertEquals(
+            hpBefore,
+            zig.currentHp,
+            0.001,
+            "RECOVERY_PACKAGES must not heal beyond max HP",
+        )
+    }
+
+    @Test
+    fun `RO08 RECOVERY_PACKAGES level 0 produces no heal`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        zig.currentHp = zig.maxHp * 0.10
+        val hpBefore = zig.currentHp
+
+        // No RECOVERY_PACKAGES level set → effective level 0.
+        invokeTickRecovery(eng, deltaTime = 31f)
+
+        assertEquals(
+            hpBefore,
+            zig.currentHp,
+            0.001,
+            "Level 0 RECOVERY_PACKAGES must not heal",
+        )
+    }
+
+    @Test
+    fun `RO08 RECOVERY_PACKAGES heal pulse caps at 50 percent of max HP per pulse`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        zig.currentHp = 1.0 // near death
+        eng.updateEffectiveLevels(mapOf(UpgradeType.RECOVERY_PACKAGES to 200))
+
+        invokeTickRecovery(eng, deltaTime = 31f)
+
+        // Lv 200 unclamped → 200 %; clamp at 50 %. Heal = 0.5 × maxHp from currentHp = 1.
+        val expectedMax = 1.0 + zig.maxHp * 0.50
+        org.junit.jupiter.api.Assertions.assertTrue(
+            zig.currentHp <= expectedMax + 0.5,
+            "Heal pulse must cap at 50 % of maxHp; got currentHp=${zig.currentHp}, " +
+                "max=${zig.maxHp}, expectedMax=$expectedMax",
+        )
+    }
+
     // ---- Helpers: reach into private state via reflection ----
 
     /** Reads the engine's `ziggurat` and returns a snapshot of its live stats reference. */
@@ -130,5 +212,17 @@ class GameEngineTest {
         val method = GameEngine::class.java.getDeclaredMethod("expireOverdrive")
             .apply { isAccessible = true }
         method.invoke(eng)
+    }
+
+    /**
+     * Reflectively invokes the private `tickRecoveryPackages(deltaTime: Float)` helper.
+     * Bypasses the full game-loop side effects (enemy spawn, melee hits, projectile
+     * collisions) so the heal-only assertions stay deterministic.
+     */
+    private fun invokeTickRecovery(eng: GameEngine, deltaTime: Float) {
+        val method = GameEngine::class.java
+            .getDeclaredMethod("tickRecoveryPackages", Float::class.javaPrimitiveType)
+            .apply { isAccessible = true }
+        method.invoke(eng, deltaTime)
     }
 }
