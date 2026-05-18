@@ -4,6 +4,34 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### C.5 PR 3 — Delete `StubBillingManager`, collapse `BillingModule` to `@Binds BillingManagerImpl` (2026-05-18)
+
+Mechanical follow-up to the Phase G internal-track on-device smoke-test PASS earlier the same day. With real Play Billing v8 verified end-to-end on a real device, the second `BillingManager` implementation has no remaining purpose.
+
+- **`StubBillingManager` deleted** (`data/billing/StubBillingManager.kt`, 36 lines). The class simulated purchases with a 500 ms delay and credited gems / set flags directly on `PlayerRepository` — useful while real Play Billing was unwired, redundant now.
+- **`BillingModule` collapsed** from a flag-gated `@Provides` Provider-switch to two plain `@Binds` abstract classes. `BillingModule` now binds `BillingManager → BillingManagerImpl`; sibling `BillingInternalModule` keeps the existing `BillingClientAdapter → RealBillingClientAdapter` binding. KDoc rewritten to capture the C.5 PR 1–3 history. Mirrors the C.6 PR 3 collapse of `AdModule`.
+- **`BuildConfig.USE_REAL_BILLING` removed.** No code reads it anymore. Removed from `app/build.gradle.kts` defaultConfig + debug + release blocks; the `buildFeatures.buildConfig` opt-in comment now references `USE_REAL_ADS` (the surviving flag) only. `AdModule.kt` KDoc lost its "symmetric with USE_REAL_BILLING" line. The `app/build.gradle.kts` Play Billing dependency comment was also refreshed to note `BillingManagerImpl` is the sole binding.
+- **KDoc cleanup across 5 production files.** `BillingManagerImpl.kt` lost its "PR 1 wiring status" block; `BillingManager.kt` interface lost its `@link` to `StubBillingManager`; `ActivityProvider.kt` lost its "binding still points at Stub" line; `StoreViewModel.kt` lost its mention of Stub + `USE_REAL_BILLING`; `AdModule.kt` lost the "symmetric flag" reference. All replaced with present-tense descriptions.
+- **`BillingManagerParityTest` deleted** (3 tests). It existed to assert that Stub and Real produce equivalent wallet/flag effects on the golden path during the C.5 PR 2 transition. With Stub gone, the only remaining side is Real, and that's already exhaustively covered by `BillingManagerImplTest` (14 tests — 3 happy paths + 5 failure paths + idempotency + 2 reconciliation cases + delegation).
+- **`docs/monetization.md` Implementation Status block fully refreshed.** The doc had been stale since pre-C.5/C.6: still described stubs, said real SDK integration was "deferred," listed Play Billing v7 as the target. Now it lists Real-SDK reality (Play Billing v8 + AdMob v25 + UMP v4 wired end-to-end), the atomic idempotency guarantees, and an honest "What's Out-of-Scope for v1" section (no server-side verification, no real-time subscription notifications, no ad mediation, no live formatted-price display from `ProductDetails.priceDisplay`).
+
+#### Verification
+
+- `./run-gradle.sh test` — BUILD SUCCESSFUL, **524 JVM tests** pass (down from 527 — the 3 BillingManagerParityTest tests were removed, no others changed).
+- `./run-gradle.sh bundleRelease` — BUILD SUCCESSFUL. Lint vital + R8 minify + signing all clean. Signed AAB at `app/build/outputs/bundle/release/app-release.aab` (~18 MB) at versionCode 4. Not uploaded — v3 is the live internal-track AAB and there's no functional reason to bump it. v4 stays reserved for the next legitimate upload (e.g. closed-track promotion or post-closed-test bug fix).
+
+#### Phase G internal-track smoke test PASS (2026-05-18)
+
+Required context for this PR landing. User installed the v3 internal-track AAB on a real device via the opt-in URL; full smoke checklist passed:
+
+- Launcher icon, walking-tracked step accumulation, battle round flow.
+- All 3 Gem packs purchased on real Play Billing with the test card and credited the wallet correctly: `gem_pack_small` → +50 Gems; `gem_pack_medium` → +300 Gems; `gem_pack_large` → +700 Gems.
+- `ad_removal` purchased on real Play Billing; `adRemoved` flag set; reward-ad UI hidden across the app.
+- `season_pass` subscription purchased; `seasonPassActive = true` with `purchaseTime + 30-day` expiry; +10 Gems/day daily-login bonus active.
+- AdMob test ad served on the post-round reward path.
+
+This closes the device-verification gate for C.5 PR 2 (real Play Billing + receipt-table idempotency works end-to-end on a real device with the rolled-out internal-track AAB) and unblocks this PR.
+
 ### v3 rolled out to internal track + versionCode 3 → 4 (2026-05-15)
 
 User uploaded the v3 AAB (with the new `ndk { debugSymbolLevel = "FULL" }` config landed in the previous commit) and rolled it out to the internal-testing track instead of rolling out the earlier v2 draft. v3 is functionally equivalent to v2 — the symbol-warning is structurally unfixable for any AAB containing SQLCipher's pre-stripped .so prebuilts — but v3 is the cleaner build to ship.

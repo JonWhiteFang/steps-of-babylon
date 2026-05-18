@@ -87,30 +87,30 @@ No gameplay advantages beyond convenience. A non-subscriber can earn everything 
 
 ### Architecture
 
-All billing and ad functionality uses interface-based abstractions in the domain layer (pure Kotlin), with stub implementations in the data layer:
+Billing and ad functionality use interface-based abstractions in the domain layer (pure Kotlin), with concrete real-SDK implementations in the data layer behind SDK-neutral adapter seams so unit tests never import `com.android.billingclient.*` or `com.google.android.gms.ads.*`.
 
-| Interface | Stub Implementation | Location |
+| Interface | Implementation | Location |
 |---|---|---|
-| `BillingManager` | `StubBillingManager` | `data/billing/` |
-| `RewardAdManager` | `StubRewardAdManager` | `data/ads/` |
+| `BillingManager` | `BillingManagerImpl` (Google Play Billing v8) | `data/billing/` |
+| `RewardAdManager` | `RewardAdManagerImpl` (Google Mobile Ads v25 + UMP v4) | `data/ads/` |
 
-DI bindings in `di/BillingModule.kt` and `di/AdModule.kt` wire stubs to interfaces. To integrate real SDKs, create new implementations and swap the DI bindings — no other code changes needed.
+DI bindings in `di/BillingModule.kt` and `di/AdModule.kt` are plain `@Binds` (post-C.5 PR 3 / C.6 PR 3 — the `StubBillingManager` and `StubRewardAdManager` were deleted after on-device verification on the internal track).
 
-### What's Implemented (Stub)
+Adapter seams (`data/billing/internal/BillingClientAdapter` + `data/ads/internal/RewardedAdAdapter` + `data/ads/internal/ConsentManager`) keep SDK imports out of unit tests; tests mock the adapter interfaces directly.
 
-- Gem Pack purchases (3 tiers) — simulated with 500ms delay, credits Gems immediately
-- Ad Removal — sets flag, hides all ad UI across the app
-- Season Pass — sets flag + 30-day expiry, awards 10 bonus Gems/day via TrackDailyLogin, 1 free Lab rush/day
-- Post-round reward ads — +1 Gem and double PS buttons (simulated with 1s delay)
-- Daily free Card Pack ad — once per day, opens Common pack without Gem cost
-- Cosmetic store — 7 placeholder items (3 ziggurat skins, 2 projectile effects, 2 enemy skins), purchase/equip/unequip
+### What's Implemented (Real SDK)
 
-### What's Deferred (Real SDK Integration)
+- Gem Pack purchases (3 tiers) — real Play Billing v8 consumable purchases; wallet credit + receipt grant happen atomically inside `BillingReceiptDao.grantOnceAtomic`; `consumeAsync` runs after the transaction commits with retry on the next reconciliation sweep
+- Ad Removal — real Play Billing v8 non-consumable; `acknowledgePurchaseAsync` finalizes the purchase
+- Season Pass — real Play Billing v8 monthly subscription; `purchaseTime + 30 days` expiry rule; reconciliation sweep refreshes expiry on Play Store re-delivery; awards 10 bonus Gems/day via TrackDailyLogin, 1 free Lab rush/day
+- Idempotency — `BillingReceiptDao` table keyed by `purchaseToken`; `granted = true` row guarantees the wallet is credited at most once even across crashes / `PENDING → PURCHASED` transitions / repeat reconciliation sweeps
+- Post-round reward ads — real AdMob rewarded ads with UMP consent gating; placement-aware ad-unit routing (`POST_ROUND_GEM` / `POST_ROUND_DOUBLE_PS` / `DAILY_FREE_CARD_PACK`)
+- UMP consent — prefetched on `MainActivity.onResume` in release builds (gated by `BuildConfig.USE_REAL_ADS`) so the first reward-ad tap doesn't pay the ~200–500 ms UMP init latency
+- Cosmetic store — 4 cosmetics with full visual application end-to-end (`zig_jade`, `lapis_lazuli_skin`, `garden_ziggurat_skin`, `sandals_of_gilgamesh`); 7 additional seeds with placeholder visuals pending content
 
-- Google Play Billing Library v7 (replace StubBillingManager)
-- AdMob SDK (replace StubRewardAdManager)
-- Purchase verification and receipt validation
-- Subscription renewal, grace periods, billing retries
-- Real cosmetic content and visual application in battle
-- Play Console product configuration and test tracks
-- Ad mediation for fill rate optimization
+### What's Out-of-Scope for v1
+
+- Server-side receipt verification (forbidden by `CONSTRAINTS.md` for v1.0 — no backend).
+- Real-time subscription renewal notifications (would require Real-time Developer Notifications + a backend; Season Pass relies on the reconciliation sweep refreshing expiry on Play Store re-delivery instead).
+- Ad mediation for fill rate optimization (deferred until live AdMob fill data justifies the integration cost).
+- Live formatted-price display from `ProductDetails.priceDisplay` (currently the Store screen uses static `BillingProduct.<X>.priceDisplay` constants that have to be kept in sync with Play Console pricing manually — a v1.x candidate refactor).

@@ -9,7 +9,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── repository/     # Repository implementations (Room-backed, @Inject constructors)
 │   ├── sensor/         # Step sensor data source, rate limiter, velocity analyzer, ingestion preferences, daily step manager
 │   ├── healthconnect/  # Health Connect client, step reader, cross-validator, gap filler, activity minutes
-│   ├── billing/        # StubBillingManager (stub, still bound when USE_REAL_BILLING=false) + BillingManagerImpl (real, bound when USE_REAL_BILLING=true; C.5 PR 2 flag-gated)
+│   ├── billing/        # BillingManagerImpl (real Play Billing v8, sole binding for both debug + release as of C.5 PR 3; StubBillingManager deleted after Phase G internal-track on-device verification PASSED 2026-05-18)
 │   │   └── internal/   # BillingClientAdapter (SDK-neutral seam) + RealBillingClientAdapter (concrete v8 glue) + ActivityProvider (set/cleared by MainActivity lifecycle, C.5 PR 2; also consumed by data/ads/RewardAdManagerImpl from C.6 PR 1)
 │   └── ads/            # RewardAdManagerImpl (real, sole binding for both debug + release as of C.6 PR 3; StubRewardAdManager deleted)
 │       └── internal/   # RewardedAdAdapter (SDK-neutral seam) + RealRewardedAdAdapter (concrete AdMob glue) + ConsentManager (UMP seam) + RealConsentManager (concrete UMP glue)
@@ -134,7 +134,7 @@ All in `domain/model/`:
 | `di/RepositoryModule.kt` | Hilt module: binds all 8 repository interfaces to impls |
 | `di/StepModule.kt` | Hilt module: provides SensorManager |
 | `di/HealthConnectModule.kt` | Hilt module: Health Connect organizational module |
-| `di/BillingModule.kt` | Hilt module: flag-gated `@Provides` that picks between `StubBillingManager` (debug, `BuildConfig.USE_REAL_BILLING=false`) and `BillingManagerImpl` (release, `BuildConfig.USE_REAL_BILLING=true`). Sibling `BillingInternalModule` `@Binds` `BillingClientAdapter` → `RealBillingClientAdapter`. Both `internal` so they can reference the internal adapter/impl types (C.5 PR 2) |
+| `di/BillingModule.kt` | Hilt module: `@Binds BillingManager → BillingManagerImpl` (C.5 PR 3 collapsed the flag-gated Provider switch after `StubBillingManager` deletion). Sibling `BillingInternalModule` `@Binds` `BillingClientAdapter` → `RealBillingClientAdapter`. Both `internal` so they can reference the internal adapter/impl types. `BuildConfig.USE_REAL_BILLING` was removed in C.5 PR 3 (no remaining readers) |
 | `di/AdModule.kt` | Hilt module: `@Binds RewardAdManager → RewardAdManagerImpl` (C.6 PR 3 collapsed the flag-gated Provider switch after `StubRewardAdManager` deletion). Sibling `AdInternalModule` `@Binds` `RewardedAdAdapter` → `RealRewardedAdAdapter` and `ConsentManager` → `RealConsentManager`. Both `internal` so they can reference the internal adapter/impl types. `BuildConfig.USE_REAL_ADS` is no longer read by this module but is still consumed by `MainActivity` to gate the UMP consent prefetch on debug emulators |
 | `di/TimeModule.kt` | Hilt module: binds TimeProvider to SystemTimeProvider (B.1, RO-01) |
 | `di/CoroutineScopeModule.kt` | Hilt module: provides @ApplicationScope CoroutineScope(SupervisorJob + Dispatchers.Default) that outlives VM cancellation (B.3 PR 2, RO-03) |

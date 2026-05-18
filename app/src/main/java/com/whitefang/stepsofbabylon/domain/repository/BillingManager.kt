@@ -14,8 +14,9 @@ interface BillingManager {
      * purchases completed while the app was killed mid-flow (or delivered asynchronously as
      * `PENDING → PURCHASED`) are granted exactly once.
      *
-     * Default implementation is a no-op so [com.whitefang.stepsofbabylon.data.billing.StubBillingManager]
-     * and test fakes inherit a do-nothing contract. The real
+     * Default implementation is a no-op so test fakes inherit a do-nothing contract
+     * (`StubBillingManager` was deleted in C.5 PR 3, so the only remaining inheritor is
+     * the test [com.whitefang.stepsofbabylon.fakes.FakeBillingManager]). The real
      * [com.whitefang.stepsofbabylon.data.billing.BillingManagerImpl] overrides this to drive
      * the Play Billing `queryPurchasesAsync` + receipt-table reconciliation loop defined in
      * ADR-0005.

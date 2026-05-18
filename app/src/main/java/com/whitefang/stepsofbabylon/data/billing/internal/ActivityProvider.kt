@@ -11,18 +11,18 @@ import javax.inject.Singleton
  * reference for `BillingClient.launchBillingFlow()` — which requires an Activity and cannot
  * accept a Context.
  *
- * **Lifecycle wiring (deferred to C.5 PR 2):** `MainActivity.onResume()` will call
- * [set] and `onPause()` will call [clear]. PR 1 leaves this class wired into DI but no
- * caller registers into it — `@Binds` still points at `StubBillingManager`, which does not
- * consult this holder, so the class stays dormant in PR 1. The seam exists here to make the
- * C.5 PR 2 diff a pure binding + lifecycle-observer change.
+ * **Lifecycle wiring.** `MainActivity.onResume()` calls [set] and `onPause()` calls [clear]
+ * (landed in C.5 PR 2). The provider is consulted by [BillingManagerImpl.purchase] just
+ * before `BillingClient.launchBillingFlow()` so the user always launches a purchase against
+ * the foregrounded Activity.
  *
  * **Memory safety.** Uses a [WeakReference] so a missed [clear] cannot leak the Activity
  * past its finalizer. Callers of [current] MUST handle the `null` case gracefully —
  * purchases attempted while no Activity is foregrounded return
  * [com.whitefang.stepsofbabylon.data.billing.internal.StartPurchaseResult.NotCompleted].
  *
- * Introduced by C.5 PR 1 / ADR-0005.
+ * Introduced by C.5 PR 1 / ADR-0005. Also reused by `data/ads/RewardAdManagerImpl` from
+ * C.6 PR 1 onwards.
  */
 @Singleton
 internal class ActivityProvider @Inject constructor() {

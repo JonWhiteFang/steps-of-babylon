@@ -29,9 +29,8 @@ class StoreViewModel @Inject constructor(
         viewModelScope.launch { cosmeticRepository.ensureSeedData() }
         // Sweep any pending/unresolved Play Billing purchases on Store entry so that
         // purchases completed asynchronously (PENDING → PURCHASED) or while the app was
-        // killed mid-flow are granted exactly once. StubBillingManager + FakeBillingManager
-        // inherit the no-op default from BillingManager, so this is a no-op outside
-        // release builds with USE_REAL_BILLING. C.5 PR 2.
+        // killed mid-flow are granted exactly once. FakeBillingManager (test) inherits the
+        // no-op default from BillingManager. C.5 PR 2.
         viewModelScope.launch { billingManager.reconcilePendingPurchases() }
     }
 

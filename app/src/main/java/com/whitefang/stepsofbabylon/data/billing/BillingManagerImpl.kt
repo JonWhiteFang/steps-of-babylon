@@ -29,13 +29,9 @@ import javax.inject.Singleton
 
 /**
  * Real [BillingManager] implementation wiring Google Play Billing Library v8 to the app's
- * Room-backed wallet. Introduced by C.5 PR 1 / ADR-0005.
- *
- * **PR 1 wiring status.** The Hilt `@Binds` in
- * [com.whitefang.stepsofbabylon.di.BillingModule] still points at [StubBillingManager]. This
- * class exists as the target for C.5 PR 2's flag-gated binding swap
- * (`BuildConfig.USE_REAL_BILLING`). Until PR 2 flips the flag, nothing constructs this class
- * in a release build.
+ * Room-backed wallet. Sole [BillingManager] binding post-C.5 PR 3 — the previous
+ * `StubBillingManager` was deleted after the C.5 PR 2 internal-track verification
+ * confirmed real-device wallet credit end-to-end. Introduced by C.5 PR 1 / ADR-0005.
  *
  * **Design invariants.**
  *

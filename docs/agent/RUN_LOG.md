@@ -1,5 +1,86 @@
 # Run Log
 
+## 2026-05-18 — Phase G internal-track smoke test PASS + C.5 PR 3 (delete `StubBillingManager`)
+
+- **Goal:** User: "All internal tests run successfully". That message closed the device-verification gate for C.5 PR 2 (real Play Billing v8 + receipt-table idempotency works end-to-end on a real device with the rolled-out v3 internal-track AAB) and unblocked C.5 PR 3. I drove the C.5 PR 3 deletion + collapse + doc sync in a single PR.
+- **Preflight:** read STATE.md (Plan 31 Phase G in progress, smoke-test pending; C.5 PR 3 was top priority once it passed). `git status` clean on `main`, last commit `57d98f3 chore(release): bump versionCode 3 -> 4 after v3 rolled out to internal track`.
+
+### Phase G smoke-test outcome (user-reported)
+
+User installed v3 (versionCode 3) internal-track AAB on a real device via the opt-in URL and ran the full smoke checklist. PASS:
+
+- Launcher icon visible (ziggurat, not Android default).
+- Step counting works on real walking.
+- Battle round flow works end-to-end.
+- All 3 Gem packs purchased on real Play Billing with the test card and credited the wallet correctly: `gem_pack_small` → +50 Gems; `gem_pack_medium` → +300 Gems; `gem_pack_large` → +700 Gems.
+- `ad_removal` purchased; `adRemoved` flag set; reward-ad UI hidden across the app.
+- `season_pass` subscription purchased; `seasonPassActive = true` with 30-day expiry; +10 Gems/day daily-login bonus active.
+- AdMob test ad served on the post-round reward path.
+
+This is the first time the full real-Play-Billing pipeline has been exercised end-to-end on a real device against real Play Console SKU configuration. Receipt-table idempotency, atomic `BillingReceiptDao.grantOnceAtomic`, consume/ack post-transaction, and the lowercase wire format from C.5 PR 2 all worked first try.
+
+### C.5 PR 3 deletion + collapse
+
+Mechanically identical to the C.6 PR 3 ad-stub deletion landed earlier this session series.
+
+- **`data/billing/StubBillingManager.kt` deleted** (36 lines). The class simulated purchases with a 500 ms delay and called `PlayerRepository.addGems` / `updateAdRemoved` / `updateSeasonPass` directly. With real Play Billing v8 verified working, the simulator has no remaining purpose.
+- **`di/BillingModule.kt` collapsed** from a flag-gated `@Provides` Provider-switch (Stub vs Real based on `BuildConfig.USE_REAL_BILLING`) to two plain `@Binds` abstract classes: `BillingModule` binds `BillingManager → BillingManagerImpl` (the only impl); `BillingInternalModule` keeps the existing `BillingClientAdapter → RealBillingClientAdapter` binding. KDoc rewritten to capture the C.5 PR 1–3 history. Mirrors the C.6 PR 3 collapse of `AdModule`.
+- **`BuildConfig.USE_REAL_BILLING` removed** from `app/build.gradle.kts` defaultConfig + debug + release blocks. No code reads it anymore. Updated `buildFeatures.buildConfig` opt-in comment to reference `USE_REAL_ADS` (the surviving flag) only. Refreshed the Play Billing dependency comment to note `BillingManagerImpl` is the sole binding post-PR 3.
+- **KDoc cleanup across 5 production files.**
+  - `data/billing/BillingManagerImpl.kt` — dropped the "PR 1 wiring status" block; opening line now says "Sole `BillingManager` binding post-C.5 PR 3 — the previous `StubBillingManager` was deleted after the C.5 PR 2 internal-track verification confirmed real-device wallet credit end-to-end."
+  - `domain/repository/BillingManager.kt` — `reconcilePendingPurchases` default-no-op KDoc previously linked to `StubBillingManager` and `FakeBillingManager` as inheritors; updated to mention `FakeBillingManager` only with a note that Stub was deleted in C.5 PR 3.
+  - `data/billing/internal/ActivityProvider.kt` — KDoc previously said "Lifecycle wiring (deferred to C.5 PR 2)" with "PR 1 leaves this class wired into DI but no caller registers into it — `@Binds` still points at `StubBillingManager`". Rewritten to present-tense: "MainActivity.onResume() calls set() and onPause() calls clear() (landed in C.5 PR 2). The provider is consulted by BillingManagerImpl.purchase just before BillingClient.launchBillingFlow()." Also added a note about C.6 PR 1 onwards reusing the provider for AdMob.
+  - `presentation/store/StoreViewModel.kt` — comment on the `reconcilePendingPurchases` init-block call previously said "StubBillingManager + FakeBillingManager inherit the no-op default from BillingManager, so this is a no-op outside release builds with USE_REAL_BILLING." Updated to "FakeBillingManager (test) inherits the no-op default from BillingManager. C.5 PR 2."
+  - `di/AdModule.kt` — KDoc for `USE_REAL_ADS` previously said "The flag stays symmetric with `USE_REAL_BILLING`." Updated to "(The previously-symmetrical `USE_REAL_BILLING` flag was removed in C.5 PR 3 once `StubBillingManager` was deleted.)"
+
+### Test cleanup
+
+- **`app/src/test/java/com/whitefang/stepsofbabylon/data/billing/BillingManagerParityTest.kt` deleted** (3 tests). It existed to assert that Stub and Real produce equivalent wallet/flag effects on the golden path during the C.5 PR 2 transition. With Stub gone, the only remaining side is Real, and that's already exhaustively covered by `BillingManagerImplTest` (14 tests — 3 happy paths + 5 failure paths + idempotency + 2 reconciliation cases + delegation). Test count 527 → 524.
+- `FakeBillingManager.reconcileCallCount` and `resultQueue` retained — still used by `StoreViewModelTest` (the reconcile-on-Store-init assertion, hook count = 1).
+
+### Doc sync (per agent protocol "PR Task-List Convention")
+
+Touched only what this PR actually invalidates. Did NOT touch ADR-0005 (per protocol "Individual ADRs are amended only when the PR explicitly warrants it"; the lowercase wire format refinement got a comment noting decision #6 was refined, which is enough), prior RUN_LOG entries, plan-26/plan-31 docs (historical at authoring date), or `devdocs/archaeology/*` and `smoke_tests/*` (historical per HEAD pin).
+
+- `AGENTS.md` — Plan 31 status line updated to "Phases A–G landed; smoke test PASSED 2026-05-18; C.5 PR 3 landed". Test count 527 → 524 in the coverage line. Fakes blurb unchanged (FakeBillingManager + FakeRewardAdManager retained).
+- `CHANGELOG.md` — new "C.5 PR 3 — Delete `StubBillingManager`, collapse `BillingModule` to `@Binds BillingManagerImpl`" section under [Unreleased] above the prior versionCode-3-rollout entry. Includes the verification block, the smoke-test PASS recap, and the explicit "not uploaded" note (versionCode 4 sits locally; v3 stays live in internal track since there's no functional reason to bump it).
+- `.kiro/steering/source-files.md` — `data/billing/StubBillingManager.kt` line removed; `data/billing/BillingManagerImpl.kt` line updated to "Sole `BillingManager` binding post-C.5 PR 3"; `di/BillingModule.kt` line updated to `@Binds` shape; `BillingManagerParityTest.kt` line removed from the test section.
+- `.kiro/steering/structure.md` — `data/billing/` directory entry refreshed; `di/BillingModule.kt` row in the key-files table updated to `@Binds` shape with note that `USE_REAL_BILLING` was removed.
+- `docs/monetization.md` — full Implementation Status block refresh (the doc had been stale since pre-C.5/C.6, still describing stubs as the target). Now lists Real-SDK reality with concrete invariants (atomic idempotency, post-tx consume/ack, reconciliation sweep), and an honest "What's Out-of-Scope for v1" section listing the four real limitations (no server-side verification, no real-time subscription notifications, no ad mediation, no live formatted-price display).
+- `STATE.md` — current-objective + what-works + priorities rewritten. Phase G PASS noted; C.5 PR 3 noted; "next external step is closed-track recruitment" called out as priority #1; critical path string extended to "Phase G2 closed track → Phases H+I production".
+
+### Verification
+
+- `./run-gradle.sh test` — BUILD SUCCESSFUL. Test count `find app/build/test-results/testDebugUnitTest -name "*.xml" -exec grep -h "<testsuite " {} \; | sed -E 's/.*tests="([0-9]+)".*/\1/' | awk '{s+=$1} END {print s}'` = **524**, exactly 527 − 3 (the parity tests deleted, all others unchanged).
+- `./run-gradle.sh bundleRelease` — BUILD SUCCESSFUL. Lint vital + R8 minify + signing all clean. Same one pre-existing Kotlin warning about `@ApplicationContext` parameter target carries over (KT-73255 follow-up; unrelated). Signed AAB at `app/build/outputs/bundle/release/app-release.aab` ~18 MB, versionCode 4. **Not uploaded** — v3 is the live internal-track AAB, smoke test passed, no functional reason to bump. v4 stays the local forward-only counter for the next legitimate upload (e.g. closed-track promotion, or post-closed-test bug fix).
+- LSP `get_diagnostics` was not consulted — workspace was throwing every-import-unresolved errors all session series; Gradle is the source of truth.
+
+### What's left for next session
+
+The bottleneck shifts entirely to the **closed-testing 14-day clock**. Code-side, the Plan 31 critical path is unblocked end-to-end; the next agent task is whatever the closed-track tester feedback surfaces (most likely small UX bugs, or none).
+
+User's plan from here:
+
+1. Promote internal v3 → closed testing in Play Console.
+2. Recruit ≥12 testers (Gmail addresses, opt-in URL distribution).
+3. Wait ≥14 calendar days while collecting feedback / crash reports / pre-launch report findings.
+4. Apply for production access (after the 14-day clock).
+5. Promote closed → production with staged rollout (5–10 % → 100 % over a few days).
+6. Tag v1.0.0 in git post-rollout. Update STATE + RUN_LOG.
+
+Optional / opportunistic agent work that can land any time during the 14-day window:
+
+- Ad-error UX snackbar fix (3 call sites: `CardsViewModel.watchFreePackAd`, `BattleViewModel.watchGemAd`, `BattleViewModel.watchPsAd`). Mirror `MissionsViewModel.userMessage` pattern.
+- Live formatted price from Play Billing's `ProductDetails.priceDisplay` instead of the static `BillingProduct.priceDisplay` constants. Removes the manual sync requirement when Play Console prices change. v1.x-flavoured but small.
+- Walkthrough doc (`docs/release/plan-31-walkthrough.md`) revision pass to fix the four out-of-date assumptions (uppercase SKUs, ADV not anticipated, closed-testing-before-production policy not anticipated, native-debug-symbol unfixability not documented).
+- B.4 FollowOnPipeline extraction + B.5 UpdateMissionProgress use case — Phase B leftover debt.
+
+### Decision footprint
+
+- **No new ADR.** This PR is a mechanical follow-up to C.5 PR 2's "C.5 PR 3 is gated on real-device verification" plan; no new architectural choice. ADR-0005 reference in STATE.md mentions decision #6 was refined to lowercase wire format 2026-05-14 (separate PR) — that note stays.
+- **Did NOT amend ADR-0005 file directly.** Per `.kiro/steering/11-agent-protocol.md` "Historical artifacts — NEVER modify as part of a current-PR doc sweep". The lowercase wire format note is documented in the BillingManagerImpl class KDoc and BillingReceiptEntity productId KDoc; the C.5 PR 3 deletion is documented in the BillingModule class KDoc plus this RUN_LOG plus the changelog.
+- **Did NOT bump versionCode locally.** It already bumped 3 → 4 in the previous session for the v3 rollout. v4 stays in `app/build.gradle.kts` for the next upload. C.5 PR 3 produces no AAB upload.
+
 ## 2026-05-15 (later) — v3 rolled out to internal track, versionCode 3 → 4 forward-only bump
 
 - **Goal:** User said "I uploaded version 3 and released that" — they decided to ship v3 (with the `ndk { debugSymbolLevel = "FULL" }` config) instead of the v2 draft they originally uploaded. Functionally equivalent — the symbol warning is unfixable either way — but v3 is the cleaner build with the documented config intent.

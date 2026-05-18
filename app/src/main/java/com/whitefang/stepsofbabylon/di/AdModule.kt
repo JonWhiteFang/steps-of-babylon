@@ -40,7 +40,8 @@ import javax.inject.Singleton
  * but still gates the UMP consent prefetch in
  * [com.whitefang.stepsofbabylon.presentation.MainActivity.onResume]: debug emulators
  * without Play Services don't pay the UMP init cost, and release builds prefetch consent
- * before the first reward-ad tap. The flag stays symmetric with `USE_REAL_BILLING`.
+ * before the first reward-ad tap. (The previously-symmetrical `USE_REAL_BILLING` flag was
+ * removed in C.5 PR 3 once `StubBillingManager` was deleted.)
  *
  * C.6 PR 3 / ADR-0006.
  */

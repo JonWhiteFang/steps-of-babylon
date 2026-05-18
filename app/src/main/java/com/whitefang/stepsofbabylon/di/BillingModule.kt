@@ -1,67 +1,61 @@
 package com.whitefang.stepsofbabylon.di
 
-import com.whitefang.stepsofbabylon.BuildConfig
 import com.whitefang.stepsofbabylon.data.billing.BillingManagerImpl
-import com.whitefang.stepsofbabylon.data.billing.StubBillingManager
 import com.whitefang.stepsofbabylon.data.billing.internal.BillingClientAdapter
 import com.whitefang.stepsofbabylon.data.billing.internal.RealBillingClientAdapter
 import com.whitefang.stepsofbabylon.domain.repository.BillingManager
 import dagger.Binds
 import dagger.Module
-import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Provider
 import javax.inject.Singleton
 
 /**
- * Hilt wiring for [BillingManager]. C.5 PR 2 introduced the
- * [BuildConfig.USE_REAL_BILLING] flag and the runtime switch between
- * [StubBillingManager] (debug + any build type without a Play Store account)
- * and [BillingManagerImpl] (release, real Play Billing v8).
+ * Hilt wiring for [BillingManager].
  *
- * **Why `@Provides` + [Provider] instead of `@Binds`.** Hilt's `@Binds` is
- * resolved at compile time and cannot branch on a runtime value like
- * `BuildConfig.USE_REAL_BILLING`. Two `@Provides` methods marked with the same
- * return type would collide. Injecting both candidates as [Provider]s defers
- * construction — whichever branch is not selected is never instantiated, so the
- * stub's `PlayerRepository` observer never attaches in a release build and the
- * real impl's Play Billing client never starts in a debug build.
+ * **History.**
  *
- * **Why `internal`.** [BillingManagerImpl] and [RealBillingClientAdapter] are
- * `internal` (they expose internal adapter types through their constructors), so
- * a `public` provider method cannot legally reference them. Making the whole
- * module `internal` is simpler than annotating every member and matches Hilt's
- * "single Gradle module" assumption for this app.
+ * - **Plan 26** introduced the seam with a stub (`StubBillingManager`) so the Store UI
+ *   could be built without real Play Billing provisioning.
+ * - **C.5 PR 1** landed the real [BillingManagerImpl] + adapter + receipt-table
+ *   idempotency + reconciliation. `@Binds` still pointed at the stub pending PR 2.
+ * - **C.5 PR 2** introduced a runtime [com.whitefang.stepsofbabylon.BuildConfig.USE_REAL_BILLING]
+ *   switch between stub (debug) and real (release) via a `@Provides` + [javax.inject.Provider]
+ *   pair. That shape was required only while two implementations coexisted.
+ * - **C.5 PR 3 (this file)** deleted `StubBillingManager` after the C.5 PR 2 internal-track
+ *   verification passed on a real device (`gem_pack_small/medium/large`, `ad_removal`, and
+ *   `season_pass` all credited the wallet correctly through real Play Billing v8 with the
+ *   test card on the rolled-out v3 internal-track AAB). With only one implementation left,
+ *   the Provider-switch is unnecessary, the `USE_REAL_BILLING` flag is dead, and this
+ *   module collapses back to a plain `@Binds`. Mirrors the C.6 PR 3 collapse of `AdModule`.
+ *
+ * **Why `internal`.** [BillingManagerImpl] and [RealBillingClientAdapter] are `internal`
+ * (they expose internal adapter types through their constructors), so a `public` binding
+ * method cannot legally reference them. Matching the module visibility to the impl
+ * visibility is simpler than annotating every member.
+ *
+ * C.5 PR 3 / ADR-0005.
  */
 @Module
 @InstallIn(SingletonComponent::class)
-internal object BillingModule {
+internal abstract class BillingModule {
 
-    @Provides
+    @Binds
     @Singleton
-    fun provideBillingManager(
-        stub: Provider<StubBillingManager>,
-        real: Provider<BillingManagerImpl>,
-    ): BillingManager = if (BuildConfig.USE_REAL_BILLING) real.get() else stub.get()
+    abstract fun bindBillingManager(impl: BillingManagerImpl): BillingManager
 }
 
 /**
- * Internal binding for the SDK adapter layer. Separate module from [BillingModule]
- * because [BillingModule] is an `object` (for `@Provides`) and this uses `@Binds`
- * (which requires an abstract class). Both are `internal` so they can reference
- * [RealBillingClientAdapter], which is itself `internal`.
+ * Internal binding for the SDK adapter layer. Unchanged by C.5 PR 3.
  *
  * Flow:
- * - The `@Provides provideBillingManager` method in [BillingModule] asks Hilt for
- *   `Provider<BillingManagerImpl>` even in debug builds (where the Provider is
- *   never invoked). Dagger therefore needs a route from
- *   `BillingManagerImpl.adapter: BillingClientAdapter` to a concrete type, which
- *   this binding supplies.
- * - Unit tests mock [BillingClientAdapter] directly and construct
- *   [BillingManagerImpl] by hand — this module is not consulted there.
  *
- * C.5 PR 2 / ADR-0005.
+ * - [BillingManagerImpl]'s constructor takes [BillingClientAdapter]; this binding supplies
+ *   the concrete [RealBillingClientAdapter].
+ * - Unit tests mock [BillingClientAdapter] directly and construct [BillingManagerImpl] by
+ *   hand — this module is not consulted there.
+ *
+ * C.5 PR 1 / C.5 PR 2 / C.5 PR 3 / ADR-0005.
  */
 @Module
 @InstallIn(SingletonComponent::class)
