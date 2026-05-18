@@ -134,6 +134,23 @@ internal class BillingManagerImpl @Inject constructor(
         return profile.seasonPassActive
     }
 
+    override suspend fun getPriceDisplay(product: BillingProduct): String? = sessionMutex.withLock {
+        val connect = ensureConnected()
+        if (connect !is SdkBillingResult.Ok) {
+            Log.w(TAG, "getPriceDisplay(${product.skuId()}): connect failed; falling back to null. $connect")
+            return@withLock null
+        }
+        val productType = product.sdkProductType()
+        val result = adapter.queryProductDetails(listOf(product.skuId()), productType)
+        when (result) {
+            is QueryProductDetailsResult.Success -> result.products.firstOrNull()?.priceDisplay
+            is QueryProductDetailsResult.Error -> {
+                Log.w(TAG, "getPriceDisplay(${product.skuId()}): query failed; falling back to null. ${result.result}")
+                null
+            }
+        }
+    }
+
     override suspend fun reconcilePendingPurchases() = sessionMutex.withLock {
         val connect = ensureConnected()
         if (connect !is SdkBillingResult.Ok) {

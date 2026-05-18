@@ -4,6 +4,71 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### PR B — Live formatted price from Play Billing's `ProductDetails.priceDisplay` (2026-05-18)
+
+Pre-closed-testing UX/footgun fix. The Store screen previously read
+`BillingProduct.priceDisplay` static constants directly (`"$0.99"`, `"$3.99"`, etc.).
+If a Play Console price ever drifted from the constant — e.g. as briefly happened
+earlier this Plan 31 cycle when `ad_removal` was almost set to $9.99 with the in-app
+label still saying $3.99 — testers would see one price in-app and be charged a
+different price by the Play Billing dialog. Bait-and-switch territory and a Play Store
+policy concern even on test cards.
+
+Now Play Console is the source of truth for the user-visible price, with the static
+constants kept as a build-time fallback for offline / pre-query.
+
+- **`BillingManager.getPriceDisplay(product): String?`** — new interface method with a
+  default no-op (`null`) so test fakes inherit a do-nothing contract. KDoc cites locale
+  examples (`"£0.79"`, `"€0,99"`) and explicitly tells callers to handle the `null`
+  case by falling back to `BillingProduct.priceDisplay`.
+- **`BillingManagerImpl` override** — `sessionMutex.withLock { ensureConnected() →
+  queryProductDetails(listOf(skuId), productType) → firstOrNull()?.priceDisplay }`.
+  Failure paths (`connect` error, `QueryProductDetailsResult.Error`, empty result list)
+  all return `null` with a `Log.w` for diagnosability. Mutex shared with `purchase()` and
+  `reconcilePendingPurchases()` so the live-price refresh on Store entry can't race a
+  purchase-in-progress.
+- **`StoreViewModel.refreshPriceDisplays()`** — launched once on init alongside the
+  existing `reconcilePendingPurchases` hook. Iterates `BillingProduct.entries`,
+  populating `_priceDisplays: MutableStateFlow<Map<BillingProduct, String>>` progressively
+  as each query completes. Failures (null) are skipped — the missing key signals the UI
+  to fall back. Marked `@VisibleForTesting internal` so unit tests can drive a
+  deterministic refresh.
+- **`StoreUiState.priceDisplays: Map<BillingProduct, String>`** — new field combining
+  the 5th flow argument into the existing `combine` chain. Default empty map; missing
+  keys are the explicit fallback signal at the UI layer.
+- **`StoreScreen`** — every price label changed from
+  `BillingProduct.X.priceDisplay` to `state.priceDisplays[X] ?: BillingProduct.X.priceDisplay`.
+  3 sites: Gem packs, Ad Removal, Season Pass. Inline comment cites Plan 31 PR B.
+- **`FakeBillingManager.priceDisplayOverrides: MutableMap<BillingProduct, String?>`** —
+  test knob. Empty map (default) → `getPriceDisplay` returns `null` for every product,
+  matching the production behaviour when Play Billing is unavailable. Tests opt in by
+  populating the map.
+
+#### Tests (+5, 530 → 535)
+
+- **`BillingManagerImplTest`** (+3): `getPriceDisplay returns adapter priceDisplay on success`
+  (asserts `"£0.79"` surfaces verbatim, locale-formatted by Play Billing); `... returns
+  null when product details query fails` (`QueryProductDetailsResult.Error` → null);
+  `... returns null when adapter cannot connect` (`SdkBillingResult.BillingUnavailable`
+  → null).
+- **`StoreViewModelTest`** (+2): `priceDisplays starts empty so the UI falls back to
+  static priceDisplay` (no overrides set → `state.priceDisplays.isEmpty()`);
+  `priceDisplays populates from getPriceDisplay results on init` (3 of 5 products
+  override-mapped to non-null values, 2 deliberately omitted to assert that missing
+  keys remain absent rather than landing as empty strings).
+
+#### Out-of-scope (intentional v1.x deferrals)
+
+- **No price refresh on app resume / locale change.** Prices are queried once on Store
+  entry. If the device locale changes mid-session, the user has to re-enter the Store
+  to see localized prices. Acceptable for v1.
+- **No retry on transient network failure.** A single null sticks for the whole Store
+  session. Acceptable because the static fallback is a known-good price baked into the
+  AAB at build time — the user always sees something sensible. Revisit if support
+  surfaces "my prices look weird" tickets post-launch.
+
+No DB schema change. No new dependencies.
+
 ### PR A — Surface ad-error feedback as snackbar in Battle + Cards screens (2026-05-18)
 
 Pre-closed-testing UX polish. Three call sites (`CardsViewModel.watchFreePackAd`, `BattleViewModel.watchGemAd`, `BattleViewModel.watchPsAd`) previously swallowed `AdResult.Cancelled` and `AdResult.Error` silently, so a tester tapping "Watch ad for Gems" on a device that returned `NO_FILL` got no feedback at all. Now they get a clear snackbar message — mirrors the `userMessage: StateFlow<String?>` pattern already used by `MissionsViewModel` / `WorkshopViewModel` / `LabsViewModel` / `CardsViewModel.upgradeCard`.

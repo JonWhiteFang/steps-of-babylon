@@ -408,6 +408,57 @@ class BillingManagerImplTest {
             .updateSeasonPass(org.mockito.kotlin.any(), org.mockito.kotlin.any())
     }
 
+    // --- Plan 31 PR B: getPriceDisplay live-price wiring ---
+
+    @Test
+    fun `getPriceDisplay returns adapter priceDisplay on success`() = runTest {
+        adapter.stub {
+            onBlocking { connect() } doReturn SdkBillingResult.Ok
+            onBlocking { queryProductDetails(any(), any()) } doReturn QueryProductDetailsResult.Success(
+                listOf(SdkProductDetails("gem_pack_small", SdkProductType.INAPP, "£0.79")),
+            )
+        }
+
+        val result = impl.getPriceDisplay(BillingProduct.GEM_PACK_SMALL)
+
+        assertEquals(
+            "getPriceDisplay must surface ProductDetails.priceDisplay verbatim (locale-formatted by Play Billing)",
+            "£0.79",
+            result,
+        )
+    }
+
+    @Test
+    fun `getPriceDisplay returns null when product details query fails`() = runTest {
+        adapter.stub {
+            onBlocking { connect() } doReturn SdkBillingResult.Ok
+            onBlocking { queryProductDetails(any(), any()) } doReturn QueryProductDetailsResult.Error(
+                SdkBillingResult.NetworkError(null),
+            )
+        }
+
+        val result = impl.getPriceDisplay(BillingProduct.GEM_PACK_SMALL)
+
+        assertNull(
+            "failed product-details query must surface as null so the UI falls back to the static priceDisplay constant",
+            result,
+        )
+    }
+
+    @Test
+    fun `getPriceDisplay returns null when adapter cannot connect`() = runTest {
+        adapter.stub {
+            onBlocking { connect() } doReturn SdkBillingResult.BillingUnavailable(null)
+        }
+
+        val result = impl.getPriceDisplay(BillingProduct.GEM_PACK_SMALL)
+
+        assertNull(
+            "failed connect must surface as null so the UI falls back to the static priceDisplay constant",
+            result,
+        )
+    }
+
     // --- helpers ------------------------------------------------------------------------
 
     /**

@@ -59,7 +59,9 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                 Row(Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
                         Text("${product.gemAmount} 💎 Gems", fontWeight = FontWeight.Bold)
-                        Text(product.priceDisplay, color = Color.Gray)
+                        // Live Play Billing price; fall back to the static constant if the
+                        // ProductDetails query hasn't completed yet (or failed). Plan 31 PR B.
+                        Text(state.priceDisplays[product] ?: product.priceDisplay, color = Color.Gray)
                     }
                     Button(onClick = { viewModel.purchaseGemPack(product) }) { Text("Buy") }
                 }
@@ -76,7 +78,11 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                 Row(Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
                         Text("Ad Removal", fontWeight = FontWeight.Bold)
-                        Text(if (state.adRemoved) "✅ Purchased" else BillingProduct.AD_REMOVAL.priceDisplay, color = Color.Gray)
+                        Text(
+                            if (state.adRemoved) "✅ Purchased"
+                            else state.priceDisplays[BillingProduct.AD_REMOVAL] ?: BillingProduct.AD_REMOVAL.priceDisplay,
+                            color = Color.Gray,
+                        )
                     }
                     if (!state.adRemoved) {
                         Button(onClick = { viewModel.purchaseAdRemoval() }) { Text("Buy") }
@@ -92,7 +98,11 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
                             Text("⭐ Season Pass", fontWeight = FontWeight.Bold)
-                            Text(if (state.seasonPassActive) "✅ Active" else BillingProduct.SEASON_PASS.priceDisplay, color = Color.Gray)
+                            Text(
+                                if (state.seasonPassActive) "✅ Active"
+                                else state.priceDisplays[BillingProduct.SEASON_PASS] ?: BillingProduct.SEASON_PASS.priceDisplay,
+                                color = Color.Gray,
+                            )
                         }
                         if (!state.seasonPassActive) {
                             Button(onClick = { viewModel.purchaseSeasonPass() }) { Text("Subscribe") }

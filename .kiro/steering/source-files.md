@@ -170,7 +170,7 @@ domain/repository/CardRepository.kt             # Card inventory interface
 domain/repository/UltimateWeaponRepository.kt   # Ultimate weapon interface
 domain/repository/StepRepository.kt             # Daily step records + escrow + Health Connect methods
 domain/repository/WalkingEncounterRepository.kt # Walking encounter interface
-domain/repository/BillingManager.kt             # Billing interface (purchase, query, reconcilePendingPurchases with default no-op so Stub + fakes inherit do-nothing contract; C.5 PR 1)
+domain/repository/BillingManager.kt             # Billing interface (purchase, query, reconcilePendingPurchases with default no-op so fakes inherit do-nothing contract; C.5 PR 1). Plan 31 PR B added `getPriceDisplay(product): String?` (default null) so the Store screen can read live formatted prices from Play Billing's ProductDetails.priceDisplay instead of the static BillingProduct.priceDisplay constants.
 domain/repository/RewardAdManager.kt            # Reward ad interface (show ad, availability)
 domain/repository/CosmeticRepository.kt         # Cosmetic store interface + `idExists(cosmeticId): Boolean` (C.4 — used by ClaimMilestone to pre-flight MilestoneReward.Cosmetic ids and surface UnknownCosmetic result variant for the 3 currently-mismatched milestone cosmetic ids)
 domain/usecase/CalculateUpgradeCost.kt          # Cost formula: baseCost * scaling^level
@@ -283,7 +283,7 @@ presentation/stats/WalkingHistoryChart.kt            # Canvas-drawn bar chart wi
 presentation/settings/NotificationSettingsViewModel.kt # @HiltViewModel: notification preference toggles
 presentation/settings/NotificationSettingsScreen.kt    # Settings screen: 4 notification toggles
 presentation/store/StoreViewModel.kt                   # @HiltViewModel: billing + cosmetic purchase actions; init calls billingManager.reconcilePendingPurchases() on Store entry (C.5 PR 2)
-presentation/store/StoreUiState.kt                     # UI state: gems, adRemoved, seasonPass, cosmetics
+presentation/store/StoreUiState.kt                     # UI state: gems, adRemoved, seasonPass, cosmetics, priceDisplays (Map<BillingProduct, String> populated from BillingManager.getPriceDisplay; missing keys signal UI fallback to BillingProduct.priceDisplay constant; Plan 31 PR B)
 presentation/store/StoreScreen.kt                      # Store screen: Gem packs, Ad Removal, Season Pass, Cosmetics
 ```
 
@@ -340,7 +340,7 @@ fakes/FakeCardRepository.kt                      # In-memory StateFlow-backed fa
 fakes/FakeWalkingEncounterRepository.kt          # In-memory StateFlow-backed fake for WalkingEncounterRepository
 fakes/FakeStepRepository.kt                      # In-memory StateFlow-backed fake for StepRepository
 fakes/FakeCosmeticRepository.kt                  # In-memory fake for CosmeticRepository
-fakes/FakeBillingManager.kt                      # Configurable fake for BillingManager (+reconcileCallCount for C.5 PR 2 hook assertion; private set)
+fakes/FakeBillingManager.kt                      # Configurable fake for BillingManager (+reconcileCallCount for C.5 PR 2 hook assertion + priceDisplayOverrides Map for Plan 31 PR B getPriceDisplay; private set on counter)
 fakes/FakeRewardAdManager.kt                     # Configurable fake for RewardAdManager
 fakes/FakeMilestoneDao.kt                        # In-memory fake for MilestoneDao
 fakes/FakeDailyMissionDao.kt                     # In-memory fake for DailyMissionDao

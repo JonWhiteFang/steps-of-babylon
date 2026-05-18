@@ -160,6 +160,47 @@ class StoreViewModelTest {
         advanceUntilIdle()
         assertEquals(1, billingManager.reconcileCallCount)
     }
+
+    // --- Plan 31 PR B: live formatted-price wiring from Play Billing ---
+
+    @Test
+    fun `priceDisplays starts empty so the UI falls back to static priceDisplay`() = runTest(dispatcher) {
+        // FakeBillingManager has no priceDisplayOverrides set, so getPriceDisplay returns
+        // null for every product. The map should never gain a key under those conditions,
+        // matching the production behaviour when Play Billing is offline / unconfigured /
+        // SKU not yet released.
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        assertTrue(
+            vm.uiState.value.priceDisplays.isEmpty(),
+            "missing live prices must leave the map empty so the UI falls back to BillingProduct.priceDisplay",
+        )
+    }
+
+    @Test
+    fun `priceDisplays populates from getPriceDisplay results on init`() = runTest(dispatcher) {
+        val billing = FakeBillingManager().apply {
+            priceDisplayOverrides[com.whitefang.stepsofbabylon.domain.model.BillingProduct.GEM_PACK_SMALL] = "£0.79"
+            priceDisplayOverrides[com.whitefang.stepsofbabylon.domain.model.BillingProduct.AD_REMOVAL] = "£3.49"
+            priceDisplayOverrides[com.whitefang.stepsofbabylon.domain.model.BillingProduct.SEASON_PASS] = "£4.49/mo"
+            // GEM_PACK_MEDIUM and GEM_PACK_LARGE deliberately omitted to assert that
+            // the map only contains the keys whose live query succeeded.
+        }
+        val vm = StoreViewModel(playerRepo, billing, cosmeticRepo)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        val displays = vm.uiState.value.priceDisplays
+        assertEquals("£0.79", displays[com.whitefang.stepsofbabylon.domain.model.BillingProduct.GEM_PACK_SMALL])
+        assertEquals("£3.49", displays[com.whitefang.stepsofbabylon.domain.model.BillingProduct.AD_REMOVAL])
+        assertEquals("£4.49/mo", displays[com.whitefang.stepsofbabylon.domain.model.BillingProduct.SEASON_PASS])
+        assertNull(
+            displays[com.whitefang.stepsofbabylon.domain.model.BillingProduct.GEM_PACK_MEDIUM],
+            "missing live price must NOT have a map entry (UI uses ?: fallback)",
+        )
+        assertNull(displays[com.whitefang.stepsofbabylon.domain.model.BillingProduct.GEM_PACK_LARGE])
+    }
 }
 
 // Additional tests for R09 fixes

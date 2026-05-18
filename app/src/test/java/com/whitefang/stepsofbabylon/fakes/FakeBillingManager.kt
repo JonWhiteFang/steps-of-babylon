@@ -33,12 +33,22 @@ class FakeBillingManager : BillingManager {
     var reconcileCallCount: Int = 0
         private set
 
+    /**
+     * Per-[BillingProduct] override for [getPriceDisplay]. Missing keys return `null` from
+     * [getPriceDisplay] (matching the production behaviour when Play Billing's product-details
+     * query fails, so the UI layer falls back to [BillingProduct.priceDisplay]). Plan 31 PR B.
+     */
+    val priceDisplayOverrides: MutableMap<BillingProduct, String?> = mutableMapOf()
+
     override suspend fun purchase(product: BillingProduct): PurchaseResult {
         purchases += product
         return if (resultQueue.isNotEmpty()) resultQueue.removeFirst() else nextResult
     }
     override suspend fun isAdRemoved(): Boolean = adRemoved
     override suspend fun isSeasonPassActive(): Boolean = seasonPassActive
+
+    override suspend fun getPriceDisplay(product: BillingProduct): String? =
+        priceDisplayOverrides[product]
 
     override suspend fun reconcilePendingPurchases() {
         reconcileCallCount++
