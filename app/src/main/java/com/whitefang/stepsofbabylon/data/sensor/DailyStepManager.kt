@@ -9,9 +9,11 @@ import com.whitefang.stepsofbabylon.domain.model.DropGeneratorState
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.MissionCategory
 import com.whitefang.stepsofbabylon.domain.model.SupplyDropTrigger
+import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.StepRepository
 import com.whitefang.stepsofbabylon.domain.repository.WalkingEncounterRepository
+import com.whitefang.stepsofbabylon.domain.repository.WorkshopRepository
 import com.whitefang.stepsofbabylon.domain.usecase.GenerateSupplyDrop
 import com.whitefang.stepsofbabylon.domain.usecase.TrackDailyLogin
 import com.whitefang.stepsofbabylon.domain.usecase.TrackWeeklyChallenge
@@ -40,9 +42,17 @@ class DailyStepManager @Inject constructor(
     private val dailyStepDao: DailyStepDao,
     private val dailyMissionDao: DailyMissionDao,
     private val widgetUpdateHelper: WidgetUpdateHelper,
+    private val workshopRepository: WorkshopRepository,
 ) {
     companion object {
         const val DAILY_CEILING = 50_000L
+
+        /** Per-level effect of the STEP_MULTIPLIER Workshop upgrade: +1 % bonus credited steps. */
+        const val STEP_MULTIPLIER_PER_LEVEL = 0.01
+
+        /** Cap on the STEP_MULTIPLIER bonus: +100 % (i.e. up to 2× credited steps). */
+        const val STEP_MULTIPLIER_CAP = 1.0
+
         private val DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE
     }
 
@@ -111,8 +121,14 @@ class DailyStepManager @Inject constructor(
         if (velocityPenalized > 0) antiCheatPrefs.incrementVelocityPenalized(velocityPenalized)
         if (velocityAdjusted <= 0) return
 
+        // STEP_MULTIPLIER Workshop upgrade applies AFTER anti-cheat (so the bonus only ever
+        // multiplies legitimately-walked steps that already passed rate-limit + velocity
+        // analysis) and BEFORE the 50k daily ceiling (so the absolute cap remains absolute).
+        // The cap on the multiplier itself is +100 %, matching the GDD §4.3 "Cap 100 %".
+        val multiplied = applyStepMultiplier(velocityAdjusted)
+
         val remainingCeiling = (DAILY_CEILING - dailyCreditedTotal).coerceAtLeast(0)
-        val credited = velocityAdjusted.coerceAtMost(remainingCeiling)
+        val credited = multiplied.coerceAtMost(remainingCeiling)
         if (credited <= 0) return
 
         dailySensorTotal += rawDelta
@@ -144,6 +160,14 @@ class DailyStepManager @Inject constructor(
 
         val delta = stepEquivalents - dailyActivityMinuteTotal
         if (delta <= 0) return
+
+        // STEP_MULTIPLIER intentionally does NOT apply here. The GDD §4.3 wording is
+        // "+1 % bonus steps earned from walking" — sensor steps are walking; activity
+        // minutes are converted from cycling / swimming / treadmill exercise sessions
+        // via Health Connect's exercise-session aggregation. Restricting the multiplier
+        // to the sensor path also keeps the existing `dailyActivityMinuteTotal +=
+        // credited` source-tracking semantics intact (a multiplier > 1 would inflate
+        // the source-side counter and under-credit subsequent HC deltas).
 
         val remainingCeiling = (DAILY_CEILING - dailyCreditedTotal).coerceAtLeast(0)
         val credited = delta.coerceAtMost(remainingCeiling)
@@ -210,5 +234,28 @@ class DailyStepManager @Inject constructor(
             val progress = dailyCreditedTotal.toInt().coerceAtMost(m.target)
             dailyMissionDao.updateProgress(m.id, progress, progress >= m.target)
         }
+    }
+
+    /**
+     * Applies the STEP_MULTIPLIER Workshop upgrade bonus to a base step credit (RO-08).
+     *
+     * Reads the player's current STEP_MULTIPLIER level fresh on every credit so the bonus
+     * reflects level-ups immediately. The multiplier is `(1 + level × 0.01)` capped at
+     * `1 + STEP_MULTIPLIER_CAP` (i.e. up to 2.0×) per GDD §4.3.
+     *
+     * Returns the input unchanged when the level is 0 (no STEP_MULTIPLIER purchased) or when
+     * the workshop lookup fails — defensive null-handling so a transient DB issue never
+     * silently penalises the player by zeroing out their credit.
+     */
+    private suspend fun applyStepMultiplier(baseCredit: Long): Long {
+        if (baseCredit <= 0) return baseCredit
+        val level = try {
+            workshopRepository.observeAllUpgrades().first()[UpgradeType.STEP_MULTIPLIER] ?: 0
+        } catch (_: Exception) {
+            0
+        }
+        if (level <= 0) return baseCredit
+        val bonus = (level * STEP_MULTIPLIER_PER_LEVEL).coerceAtMost(STEP_MULTIPLIER_CAP)
+        return (baseCredit * (1.0 + bonus)).toLong()
     }
 }

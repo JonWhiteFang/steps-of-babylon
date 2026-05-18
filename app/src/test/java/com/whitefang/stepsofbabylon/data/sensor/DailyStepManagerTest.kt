@@ -10,6 +10,7 @@ import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeStepRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWalkingEncounterRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWeeklyChallengeDao
+import com.whitefang.stepsofbabylon.fakes.FakeWorkshopRepository
 import com.whitefang.stepsofbabylon.service.SupplyDropNotificationManager
 import com.whitefang.stepsofbabylon.service.WidgetUpdateHelper
 import kotlinx.coroutines.test.runTest
@@ -29,6 +30,7 @@ class DailyStepManagerTest {
     private lateinit var stepRepo: FakeStepRepository
     private lateinit var dailyMissionDao: FakeDailyMissionDao
     private lateinit var widgetHelper: WidgetUpdateHelper
+    private lateinit var workshopRepo: FakeWorkshopRepository
     private lateinit var manager: DailyStepManager
 
     private val baseTime = 1_710_000_000_000L
@@ -41,6 +43,7 @@ class DailyStepManagerTest {
         stepRepo = FakeStepRepository()
         dailyMissionDao = FakeDailyMissionDao()
         widgetHelper = mock<WidgetUpdateHelper>()
+        workshopRepo = FakeWorkshopRepository()
 
         manager = DailyStepManager(
             stepRepository = stepRepo,
@@ -55,6 +58,7 @@ class DailyStepManagerTest {
             dailyStepDao = FakeDailyStepDao(),
             dailyMissionDao = dailyMissionDao,
             widgetUpdateHelper = widgetHelper,
+            workshopRepository = workshopRepo,
         )
     }
 
@@ -199,6 +203,7 @@ class DailyStepManagerTest {
             dailyStepDao = FakeDailyStepDao(),
             dailyMissionDao = FakeDailyMissionDao(),
             widgetUpdateHelper = mock<WidgetUpdateHelper>(),
+            workshopRepository = workshopRepo,
         )
         manager2.recordActivityMinutes(minutes, 500)
         assertEquals(500L, playerRepo.getStepBalance())
@@ -305,5 +310,92 @@ class DailyStepManagerTest {
         val gemsAfter = playerRepo.profile.value.gems
         assertEquals(1L, gemsAfter - gemsBefore,
             "Expired Season Pass should fall back to baseline streak Gem only")
+    }
+
+    // ---- RO-08 #1a: STEP_MULTIPLIER Workshop upgrade applies to walking step credit ----
+
+    @Test
+    fun `RO08 STEP_MULTIPLIER level 0 leaves credited steps unchanged`() = runTest {
+        // Default upgrades map is empty in FakeWorkshopRepository, level 0 → multiplier 1.0×.
+        manager.recordSteps(100, baseTime)
+        // 150 step rate-limiter and velocity rules pass exactly 100 through; balance == 100.
+        assertEquals(100L, playerRepo.getStepBalance())
+    }
+
+    @Test
+    fun `RO08 STEP_MULTIPLIER level 50 grants a 50 percent walking bonus`() = runTest {
+        // 50 levels × 0.01 per level = 0.50 bonus. 100 sensor steps → 150 credited.
+        com.whitefang.stepsofbabylon.fakes.FakeWorkshopRepository::class.java // unused import suppress
+        workshopRepo.upgrades.value =
+            mapOf(com.whitefang.stepsofbabylon.domain.model.UpgradeType.STEP_MULTIPLIER to 50)
+
+        manager.recordSteps(100, baseTime)
+
+        assertEquals(
+            150L,
+            playerRepo.getStepBalance(),
+            "STEP_MULTIPLIER level 50 must grant +50 % bonus (100 sensor → 150 credited)",
+        )
+    }
+
+    @Test
+    fun `RO08 STEP_MULTIPLIER caps at +100 percent regardless of level`() = runTest {
+        // 200 levels × 0.01 = 2.0 → clamped to 1.0 cap → 2.0× total. 100 sensor → 200 credited.
+        workshopRepo.upgrades.value =
+            mapOf(com.whitefang.stepsofbabylon.domain.model.UpgradeType.STEP_MULTIPLIER to 200)
+
+        manager.recordSteps(100, baseTime)
+
+        assertEquals(
+            200L,
+            playerRepo.getStepBalance(),
+            "STEP_MULTIPLIER must cap the bonus at +100 % (max 2.0× credited)",
+        )
+    }
+
+    @Test
+    fun `RO08 STEP_MULTIPLIER bonus is capped by the 50k daily ceiling`() = runTest {
+        // Walk to within 100 of the cap. Then with a 1.5× multiplier, the bonus would push us
+        // to 49,900 + 150 = 50,050 — but the ceiling clamps to exactly 50,000.
+        var total = 0L
+        var i = 0
+        while (total < 49_900) {
+            val delta = if (i % 2 == 0) 150L else 250L
+            manager.recordSteps(delta, baseTime + i * minuteGap)
+            total += delta
+            i++
+        }
+        val balanceBeforeMultiplier = playerRepo.getStepBalance()
+
+        workshopRepo.upgrades.value =
+            mapOf(com.whitefang.stepsofbabylon.domain.model.UpgradeType.STEP_MULTIPLIER to 50)
+        manager.recordSteps(100, baseTime + i * minuteGap)
+
+        assertEquals(
+            DailyStepManager.DAILY_CEILING,
+            playerRepo.getStepBalance(),
+            "STEP_MULTIPLIER bonus must respect the 50 k absolute daily ceiling",
+        )
+        assertTrue(
+            playerRepo.getStepBalance() - balanceBeforeMultiplier <= 100,
+            "ceiling cap must clamp the credit including the multiplier bonus",
+        )
+    }
+
+    @Test
+    fun `RO08 STEP_MULTIPLIER does NOT apply to activity minutes`() = runTest {
+        // GDD §4.3 wording: "+1 % bonus steps earned from walking". Activity minutes are
+        // converted from cycling / swimming / treadmill exercise sessions, not walking.
+        // The multiplier path is intentionally restricted to recordSteps.
+        workshopRepo.upgrades.value =
+            mapOf(com.whitefang.stepsofbabylon.domain.model.UpgradeType.STEP_MULTIPLIER to 50)
+
+        manager.recordActivityMinutes(mapOf("cycling" to 10), 500)
+
+        assertEquals(
+            500L,
+            playerRepo.getStepBalance(),
+            "Activity minutes must not receive the STEP_MULTIPLIER walking bonus",
+        )
     }
 }
