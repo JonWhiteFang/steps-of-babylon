@@ -57,6 +57,7 @@ Now: 12.5 dmg → Next: 13.0 dmg                          ← new
 
 - `./run-gradle.sh test --rerun-tasks` — BUILD SUCCESSFUL, 609 tests pass (was 572, +37). Zero failures across all suites.
 - `./run-gradle.sh bundleRelease` — BUILD SUCCESSFUL, clean R8 minify + lint vital + signing.
+- **Internal track release (2026-05-19 morning):** versionCode bumped 4 → 5 (commit `734beaa`); signed AAB ~18 MB uploaded to Play Console internal track; v5 release notes for Play Console + closed-track tester recruitment landed in `docs/release/` (commit `d9f48e3`). Awaiting on-device smoke test of the 8 RO-11 acceptance checks before closed-track promotion.
 
 **Out of scope / deferred to v1.x backlog.**
 

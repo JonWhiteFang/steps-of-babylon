@@ -1,5 +1,24 @@
 # Run Log
 
+## 2026-05-19 (morning) — v5 build + internal-track upload milestone
+
+- **Goal:** package the RO-11 work into a release AAB and ship it to the Play Console internal track so the 8 RO-11 acceptance smoke checks can be run on a real device.
+- **Outcome:** done. versionCode bumped 4 → 5 in `app/build.gradle.kts` (commit `734beaa`), `./run-gradle.sh bundleRelease` BUILD SUCCESSFUL (clean R8 minify + lint vital + signing, signed AAB ~18 MB at `app/build/outputs/bundle/release/app-release.aab`), AAB uploaded to Play Console internal track. v5 release notes (Play Console "What's new" copy + internal communications + closed-track tester recruitment text) landed in `docs/release/` (commit `d9f48e3`). The Play Console "no debug symbols" warning surfaced as expected — informational, not a blocker (SQLCipher + androidx.graphics.path .so files ship pre-stripped; documented in walkthrough).
+- **What changes for testers vs internal-track v3 (last on-device-verified build):**
+  - **Labs research now actually does something.** All 8 wired ResearchType enums (DAMAGE / HEALTH / CRITICAL / REGEN / CASH / STEP_EFFICIENCY / UW_COOLDOWN / WAVE_SKIP) consumed by combat-path / step-credit / cash-economy / UW-cooldown classes; 2 explicitly gated as v1.x deferred via "COMING SOON" UI.
+  - **In-round upgrade menu shows numerical effect of each purchase before commit** — every visible upgrade row renders a Gold "Now: X → Next: Y" line below the description (or "Now: X (MAX)" when max-level).
+  - All RO-08 + RO-09 fixes from internal v4 (CHRONO_FIELD enemy-slow propagation, GOLDEN_ZIGGURAT × overdrive `fortuneMultiplier` stacking, STEP_MULTIPLIER + RECOVERY_PACKAGES + ZigguratEntity stale-stats, 4-fix upgrade-wiring bundle).
+- **Test posture:** 609 JVM tests green at upload time (572 pre-RO-11 → 609 post-Phase-C). Zero balance-math regressions.
+- **Doc-sync (this commit):** STATE.md current objective flipped from "build + upload v5" to "smoke-test v5"; previous-objectives ladder gained v5 upload entry; top priorities renumbered to 5 (smoke-test → closed track → pre-launch report → production rollout → v1.x backlog); next-actions renumbered to 6; critical-path appended with v5 upload milestone; last-run line refreshed to 2026-05-19 morning. AGENTS.md line 30 versionCode bullet flipped ready → uploaded. CHANGELOG.md RO-11 entry verification block gained an upload-milestone note. RUN_LOG.md (this entry).
+
+### Next session
+
+1. **(Smoke test, immediate)** Install v5 from Play Console internal track on a physical device. Run the 8 RO-11 acceptance checks per `docs/plans/plan-RO-11-labs-wiring.md` § 8. Plus RO-08 + RO-09 regression spot-checks.
+2. **(External, conditional)** If smoke green, promote internal v5 → closed testing in Play Console. Recruit ≥12 testers (Gmail addresses), distribute opt-in URL.
+3. **(External)** Wait ≥14 calendar days while collecting feedback. Address any critical Pre-launch report findings via versionCode → bundleRelease → re-upload to closed track.
+
+---
+
 ## 2026-05-19 (early hours) — RO-11 Labs wiring + in-round readout landed (Phases A + B + C)
 
 - **Goal:** implement plan-RO-11 in full (3 phases, 6 implementation commits + this doc-sync). Pre-fix all 10 `ResearchType` enums were dead — declared with effect descriptions, costing Steps + real-time + Gems, but never consumed by any combat-path / step-credit / cash-economy / UW-cooldown class. Same shape as RO-08 #1 / RO-09 #1 dead-enum gaps, system-wide. User report on top of that: in-round upgrade menu doesn't show numerical effect of each purchase (originally tracked as RO-10, absorbed as Phase C of RO-11 because the readout is meaningful only once stat resolution is correct).
