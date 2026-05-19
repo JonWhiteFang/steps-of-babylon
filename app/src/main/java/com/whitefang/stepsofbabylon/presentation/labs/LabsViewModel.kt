@@ -102,6 +102,15 @@ class LabsViewModel @Inject constructor(
 
     fun startResearch(type: ResearchType) {
         if (_processing.value) return
+        // RO-11 #B.2: defensive belt-and-braces guard. The Labs UI already suppresses the
+        // Start Research button when [ResearchType.isComingSoon] is true, but this block
+        // protects against any future entry point (e.g. quick-research flow, deep-link)
+        // accidentally bypassing the UI gate while AUTO_UPGRADE_AI + ENEMY_INTEL are still
+        // deferred. Both layers read the same content-as-code flag so they cannot drift.
+        if (type.isComingSoon) {
+            _userMessage.value = "Coming soon \u2014 reserved for v1.x"
+            return
+        }
         viewModelScope.launch {
             _processing.value = true
             try {

@@ -91,16 +91,34 @@ private fun ResearchCard(
         Column(Modifier.padding(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(formatName(info.type), style = MaterialTheme.typography.titleSmall)
-                if (info.isMaxed) {
-                    Text("MAX", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                } else {
-                    Text("Lv ${info.level}/${info.type.maxLevel}", style = MaterialTheme.typography.labelMedium)
+                when {
+                    // RO-11 #B.2: AUTO_UPGRADE_AI + ENEMY_INTEL gated as Coming Soon while their
+                    // real implementations are deferred to v1.x. Badge takes priority over the
+                    // MAX / level chip so testers see the deferral state immediately.
+                    info.type.isComingSoon -> Text(
+                        "COMING SOON",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
+                    info.isMaxed -> Text(
+                        "MAX",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    else -> Text("Lv ${info.level}/${info.type.maxLevel}", style = MaterialTheme.typography.labelMedium)
                 }
             }
             Text(info.type.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
 
             when {
+                info.type.isComingSoon -> {
+                    // RO-11 #B.2: no Start / Rush / progress UI for deferred research types.
+                    // Existing levels (if any landed before the deferral gate) display via the
+                    // "Lv N" chip path is suppressed in favour of the COMING SOON badge above,
+                    // but the underlying level value is preserved in LabRepository so the v1.x
+                    // implementation picks up where the player left off.
+                }
                 info.isMaxed -> {} // no actions
                 info.isActive -> {
                     // Progress based on remaining vs time to complete
