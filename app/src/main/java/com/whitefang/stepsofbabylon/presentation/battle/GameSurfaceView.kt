@@ -64,26 +64,48 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
     /**
      * Initialise the engine for a new round when called by [surfaceCreated] / [surfaceChanged].
      *
-     * Pre-fix (R3-01 / issue #2): unconditional [GameEngine.init] call — wipes wave / cash /
-     * kills / elapsedTime when the user backgrounds + resumes mid-round. The post-fix variant
-     * (next commit on this branch) gates this on [GameEngine.hasWaveProgress] so an in-flight
-     * round survives the surface lifecycle. Extracted as `@VisibleForTesting internal` so the
-     * regression test can drive it without spinning up a real game-loop thread.
+     * Gated on [GameEngine.hasWaveProgress] so a background-and-resume cycle does not wipe an
+     * in-flight round (R3-01 / issue #2). Pre-fix every Android lifecycle event (surfaceCreated
+     * + surfaceChanged) unconditionally called [GameEngine.init], resetting `cash`,
+     * `totalEnemiesKilled`, `elapsedTimeSeconds`, [WaveSpawner.currentWave], and every UW /
+     * overdrive flag. The guard reuses the [GameEngine.hasWaveProgress] helper added by RO-03
+     * (B.3 PR 2) for [com.whitefang.stepsofbabylon.presentation.battle.BattleViewModel.onCleared] —
+     * exactly the right signal at the wrong call site, now wired in.
+     *
+     * Fresh-battle path (engine never ticked) and replay-after-end (round-end clears progress
+     * via the engine's `roundOver` reset) both still hit the [GameEngine.init] branch and
+     * receive a correctly-initialised engine. Extracted as `@VisibleForTesting internal` so
+     * the regression test in [GameSurfaceViewTest] can drive it without spinning up a real
+     * game-loop thread.
      */
     @VisibleForTesting
     internal fun initEngineIfNeeded() {
-        engine.init(width.toFloat(), height.toFloat(), currentStats, currentTier, currentWsLevels, isReducedMotion, currentStartWave)
+        if (!engine.hasWaveProgress()) {
+            engine.init(width.toFloat(), height.toFloat(), currentStats, currentTier, currentWsLevels, isReducedMotion, currentStartWave)
+        }
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         surfaceReady = true
-        engine.init(width.toFloat(), height.toFloat(), currentStats, currentTier, currentWsLevels, isReducedMotion, currentStartWave)
-        val thread = GameLoopThread(holder, engine)
-        thread.isRunning = true; thread.start(); gameThread = thread
+        // Guarded init: a background-and-resume cycle must not wipe an in-flight round.
+        // initEngineIfNeeded short-circuits via engine.hasWaveProgress() in that case.
+        initEngineIfNeeded()
+        // Seed the new thread from [pendingSpeed] / [pendingPaused] so a recreated game loop
+        // inherits the player's UI selections — setSpeedMultiplier / setPaused calls made
+        // while gameThread was null (between surfaceDestroyed and this surfaceCreated) would
+        // otherwise be lost (R3-01 / issue #2 sub-bug 2b).
+        val thread = GameLoopThread(holder, engine).apply {
+            speedMultiplier = pendingSpeed
+            isPaused = pendingPaused
+            isRunning = true
+        }
+        thread.start(); gameThread = thread
     }
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-        engine.init(width.toFloat(), height.toFloat(), currentStats, currentTier, currentWsLevels, isReducedMotion, currentStartWave)
+        // Same guarded-init contract as surfaceCreated: a re-layout (e.g. orientation change)
+        // must not destroy in-flight round state.
+        initEngineIfNeeded()
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
@@ -95,7 +117,17 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
         soundManager.release()
     }
 
-    fun setSpeedMultiplier(speed: Float) { gameThread?.speedMultiplier = speed }
-    fun setPaused(paused: Boolean) { gameThread?.isPaused = paused }
+    fun setSpeedMultiplier(speed: Float) {
+        // Capture into [pendingSpeed] so the next thread spun up by surfaceCreated picks up
+        // the latest value even if the current gameThread is null (R3-01 / issue #2).
+        pendingSpeed = speed
+        gameThread?.speedMultiplier = speed
+    }
+    fun setPaused(paused: Boolean) {
+        // Same shape as setSpeedMultiplier — [pendingPaused] survives surface lifecycle gaps
+        // so the new thread starts in the player's intended pause state.
+        pendingPaused = paused
+        gameThread?.isPaused = paused
+    }
     fun updateSoundMuted(muted: Boolean) { soundManager.setMuted(muted) }
 }
