@@ -4,6 +4,32 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### R3-03: COMPLETE_RESEARCH mission false-trigger fix (2026-05-19)
+
+Fixes [GitHub issue #1](https://github.com/JonWhiteFang/steps-of-babylon/issues/1). Opening the Labs screen with no in-flight research previously advanced the daily COMPLETE_RESEARCH mission to progress=1, completed=true regardless of whether anything actually completed.
+
+**Bug shape.** `LabsViewModel.init` ran a coroutine that called `labRepository.ensureResearchExists()`, then `checkCompletion()`, then `updateResearchMission()` unconditionally. The private `updateResearchMission()` helper looked up today's COMPLETE_RESEARCH mission row and called `dailyMissionDao.updateProgress(m.id, 1, true)` whenever a row was found and not already completed — ignoring the actual return value of `CheckResearchCompletion`. Players reasonably interpreted this as the daily mission silently auto-completing the moment they opened Labs.
+
+**Fix.** Extracted the mission-tick logic into a new `domain/usecase/UpdateCompleteResearchMissionProgress.kt` use case (matches the existing project convention for cross-layer use cases like `TrackDailyLogin`, `GenerateDailyMissions`). The new use case:
+
+- Takes `DailyMissionDao` and exposes `invoke(completedCount: Int, today: String = LocalDate.now().toString())`.
+- Gates the DAO write on `completedCount >= 1` (early return otherwise) — the entire R3-03 fix.
+- Replaces the historical "always set to target, completed=true" write with an additive-with-cap increment: `newProgress = (m.progress + completedCount).coerceAtMost(m.target)`. For COMPLETE_RESEARCH the target is 1, so the clamp degenerates to the historical single-completion behaviour while gracefully handling multi-completion auto-batches (e.g. 3 expired research projects all auto-completing on app launch correctly count as one completed mission, not three increments overshooting the target).
+- Preserves the prior fail-open contract: missing today's row, already-claimed, already-completed, and DAO exceptions are all silent no-ops.
+
+All 3 LabsViewModel call sites updated to use the new use case with explicit counts: `init` passes `completed.size` from `CheckResearchCompletion`, `rushResearch` passes 1 on `Result.Rushed`, `freeRush` passes 1 after `labRepository.completeResearch(type)`. The now-redundant private `updateResearchMission()` helper and the `DailyMissionType` import were removed.
+
+5 new tests in `app/src/test/java/com/whitefang/stepsofbabylon/domain/usecase/UpdateCompleteResearchMissionProgressTest.kt`:
+- `R303 does NOT tick when completedCount is 0` (R3-03 acceptance — the negative case from issue #1)
+- `R303 does NOT tick when completedCount is negative` (defensive guard against caller bugs)
+- `R303 ticks to 1 when completedCount is 1` (positive: the auto-completion path on Labs entry)
+- `R303 caps progress at target when multiple research complete in one batch` (regression guard against the additive math overshooting)
+- `R303 is a no-op when no mission row exists for the given date` (defensive: idempotency)
+
+Why a separate use case rather than inlining `if (completed.isNotEmpty())` in `LabsViewModel.init`? Three reasons. First, it keeps the gating in one testable place — anyone calling the use case (current 3 call sites + any future entry point) gets the gating for free, so the bug shape can't reappear at a different call site. Second, it avoids a hard test problem: `LabsViewModel.init` runs a `while(true) { delay(1000) }` ticker on `viewModelScope` (a separate `SupervisorJob` not reachable from the test scope), which makes any in-VM regression test that doesn't carefully cancel the scope hang `runTest`'s scheduler-drain forever. Third, it matches the project convention (`TrackDailyLogin(dailyLoginDao, playerRepository)`, `GenerateDailyMissions(dailyMissionDao)` etc. live as use cases that take DAOs).
+
+Test count: 622 → 627 (+5). `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh bundleRelease` both BUILD SUCCESSFUL.
+
 ### R3-02: THORN_DAMAGE wiring + LIFESTEAL visibility (2026-05-19)
 
 Fixes [GitHub issue #4](https://github.com/JonWhiteFang/steps-of-babylon/issues/4). Two related defects in the THORN_DAMAGE / LIFESTEAL Defense upgrades surfaced during the v5 internal-track on-device smoke test.

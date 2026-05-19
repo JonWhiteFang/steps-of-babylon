@@ -1,5 +1,83 @@
 # Run Log
 
+## 2026-05-19 (mid-afternoon, after R3-02 merge) — R3-03 COMPLETE_RESEARCH mission false-trigger fix
+
+- **Goal:** implement R3-03 (GitHub issue #1, `severity:major` + `area:missions` in the `v1.0.0 closed-test gate` milestone). Opening the Labs screen with no in-flight research falsely advances the daily COMPLETE_RESEARCH mission to progress=1, completed=true.
+- **Outcome:** done in a single session on branch `fix/1-complete-research-false-trigger`. Two commits per the failing-test-first protocol; both `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh bundleRelease` BUILD SUCCESSFUL; test count 622 → 627.
+
+### Diagnosis
+
+Matched the plan's working hypothesis exactly. `LabsViewModel.init` runs:
+
+```kotlin
+viewModelScope.launch {
+    labRepository.ensureResearchExists()
+    checkCompletion()
+    updateResearchMission()  // BUG: always called
+}
+```
+
+The private `updateResearchMission()` helper looks up today's COMPLETE_RESEARCH mission row and unconditionally writes `dailyMissionDao.updateProgress(m.id, 1, true)` whenever a row is found and not already completed. `CheckResearchCompletion` already returned `List<ResearchType>` of actually-completed research — the call site just ignored the return value.
+
+`rushResearch` (line 145) and `freeRush` (line 165) DO correctly gate `updateResearchMission()` on a successful completion path, so the bug only manifested via the `init` call site.
+
+### Strategy chosen — use-case extraction (not minimal in-VM gating)
+
+First-attempt approach was the minimal in-VM fix: just `if (completed.isNotEmpty()) updateResearchMission()` in `LabsViewModel.init`, with a corresponding regression test that constructs the VM and asserts via `FakeDailyMissionDao` state. This burned 7+ minutes of CPU on a hung Gradle worker because:
+
+1. `LabsViewModel.init` launches a second coroutine: `viewModelScope.launch { while(true) { delay(1000); tick.value = ... } }`. This ticker drives the rush-research countdown UI.
+2. `viewModelScope` is a separate `SupervisorJob` rooted at `Dispatchers.Main.immediate`, NOT a child of the test scope. `coroutineContext.cancelChildren()` from inside `runTest` doesn't reach it.
+3. After the test body returns, `runTest` advances the virtual scheduler to drain pending tasks. The parked `delay(1000)` resumes, schedules another `delay(1000)`, runs forever in virtual time.
+
+Killed the stuck `GradleWorkerMain` (PID 73802 spinning at 95 % CPU) and pivoted to use-case extraction. The new strategy:
+
+- New `domain/usecase/UpdateCompleteResearchMissionProgress.kt` encapsulates the DAO lookup + count gating + progress update. Takes `DailyMissionDao`, exposes `invoke(completedCount: Int, today: String = LocalDate.now().toString())`. Tests target the use case directly with a real `FakeDailyMissionDao` — no VM construction = no ticker drama.
+- LabsViewModel call sites updated: init passes `completed.size` from CheckResearchCompletion; rushResearch passes 1 on Result.Rushed; freeRush passes 1 after the manual completeResearch call. The private `updateResearchMission()` helper deleted; the `DailyMissionType` import dropped.
+
+This matches the project convention (`TrackDailyLogin(dailyLoginDao, playerRepository)`, `GenerateDailyMissions(dailyMissionDao)` etc. live as use cases that take DAOs) and puts the gating in one testable place — anyone calling the use case from any future entry point gets the same gating semantics for free, so the bug shape can't reappear at a different call site.
+
+### Commit 1 — `57b5aa3` test(R3-03): failing regression tests + use-case extraction seam
+
+Production seams (compile-only changes; pre-fix runtime behaviour preserved):
+
+- `domain/usecase/UpdateCompleteResearchMissionProgress.kt` (new, 48 lines): staging shape that always sets `progress=m.target, completed=true` regardless of `completedCount`. Mirrors the prior `LabsViewModel.updateResearchMission` behaviour exactly so the existing 622 tests stay green; the `if (completedCount <= 0) return` guard lands in commit 2.
+- `presentation/labs/LabsViewModel.kt`: replaced the private `updateResearchMission()` helper with a `private val updateMissionProgress = UpdateCompleteResearchMissionProgress(dailyMissionDao)` field; rewired all 3 call sites to pass an explicit count. Removed unused `DailyMissionType` import.
+
+New tests in `domain/usecase/UpdateCompleteResearchMissionProgressTest.kt` (5 tests):
+
+- `R303 does NOT tick when completedCount is 0` — RED on staging.
+- `R303 does NOT tick when completedCount is negative` — RED on staging (defensive guard against caller bugs).
+- `R303 ticks to 1 when completedCount is 1` — GREEN.
+- `R303 caps progress at target when multiple research complete in one batch` — GREEN (regression guard against the additive math overshooting).
+- `R303 is a no-op when no mission row exists for the given date` — GREEN (idempotency).
+
+Verified via `./run-gradle.sh testDebugUnitTest --tests "*UpdateCompleteResearchMissionProgressTest*"` → "5 tests completed, 2 failed". Verified via `./run-gradle.sh testDebugUnitTest` → "627 tests completed, 2 failed" — the 622 pre-existing tests stay green.
+
+### Commit 2 — `f45014b` fix(labs): gate COMPLETE_RESEARCH mission tick on actual completion (#1)
+
+- `domain/usecase/UpdateCompleteResearchMissionProgress.kt`: added the `if (completedCount <= 0) return` guard at the top of `invoke` (the entire bug fix). Replaced the staging "always set to target, completed=true" write with `(m.progress + completedCount).coerceAtMost(m.target)` so multi-completion auto-batches correctly reflect all completions while clamping at the mission target.
+- `presentation/labs/LabsViewModel.kt`: refreshed the init-block comment to describe the call-site contract ("every call site gets the same gating semantics for free") instead of the staging caveat.
+
+Verified via `./run-gradle.sh testDebugUnitTest` → BUILD SUCCESSFUL (627 tests, all green).
+Verified via `./run-gradle.sh bundleRelease` → BUILD SUCCESSFUL (clean R8 + lintVital + sign).
+
+### Doc-sync (this commit)
+
+- `AGENTS.md`: version-status line gets R3-03 entry + `622 → 627 tests` delta; current-coverage line gains the R3-03 paragraph; status-checklist Plan R3 line updated to mark R3-02 as merged + R3-03 as fix-landed-pending-merge; the use-case enumeration in the Architecture block adds `UpdateCompleteResearchMissionProgress`.
+- `.kiro/steering/source-files.md`: `domain/usecase/UpdateCompleteResearchMissionProgress.kt` entry added under Lab use cases; `domain/usecase/UpdateCompleteResearchMissionProgressTest.kt` entry added under tests; `presentation/labs/LabsViewModel.kt` entry extended with the R3-03 use-case-extraction note.
+- `CHANGELOG.md`: new R3-03 section under `[Unreleased]` above the prior R3-02 section.
+- `docs/agent/STATE.md`: current-objective flipped to "R3-03 fix landed on branch, awaiting merge"; previous-objective ladder gained R3-02-merged entry; what-works gained 622 → 627 line + R3-03 summary; top-priorities renumbered with R3-03 PR / merge as #1 + R3-04 reporter window as #5; last-run line refreshed; previous-run cascade gains the R3-02-merged entry.
+- `docs/agent/RUN_LOG.md`: this entry prepended above the prior R3-02 entry.
+
+### Next session
+
+1. **(Immediate, awaiting user go-ahead)** Push branch + open PR `Fixes #1`. Review + merge to `main`.
+2. **(After merge)** Build v6: `./run-gradle.sh bundleRelease` + sign + upload AAB to Play Console internal track.
+3. **(Smoke test)** Install v6 on a physical device. Run 8 RO-11 + 5 RO-12 + 3× R3 per-issue acceptance checks. Then promote internal v6 → closed track.
+4. **(R3-04 watch)** Monitor issue #3 for reporter reply. Close as `needs-more-info-stale` if no reply by 2026-05-26.
+
+---
+
 ## 2026-05-19 (mid-afternoon, after R3-01 merge) — R3-02 THORN_DAMAGE wiring + LIFESTEAL visibility
 
 - **Goal:** implement R3-02 (GitHub issue #4, `severity:major` + `area:battle` in the `v1.0.0 closed-test gate` milestone). THORN_DAMAGE never reflects damage on melee hits regardless of upgrade level. LIFESTEAL works mathematically but the heal is invisible at low levels.

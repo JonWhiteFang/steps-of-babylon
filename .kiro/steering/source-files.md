@@ -192,6 +192,7 @@ domain/usecase/CompleteResearch.kt               # Completes research when timer
 domain/usecase/RushResearch.kt                   # Instant complete via Gems (50–200 linear cost)
 domain/usecase/UnlockLabSlot.kt                  # Unlock lab slot (200 Gems, max 4)
 domain/usecase/CheckResearchCompletion.kt        # Auto-completes all expired research on app launch
+domain/usecase/UpdateCompleteResearchMissionProgress.kt # R3-03 (#1): COMPLETE_RESEARCH daily-mission tick. Encapsulates the DAO lookup + progress update + count gating in one place; takes `DailyMissionDao`, exposes `invoke(completedCount: Int, today: String = LocalDate.now().toString())`. Early returns on `completedCount <= 0` (closes the false-trigger). Additive-with-cap progress increment so a multi-completion auto-batch on app launch correctly reflects all completions while clamping at `m.target`. Idempotent: missing row / already-claimed / already-completed / DAO exceptions are silent no-ops (matches the prior `LabsViewModel.updateResearchMission` fail-open contract).
 domain/usecase/OpenCardPack.kt                   # Opens card pack: 3 tiers, rarity rolling, duplicate→dust
 domain/usecase/UpgradeCard.kt                    # Card upgrade: Card Dust cost by rarity × level
 domain/usecase/ApplyCardEffects.kt               # Post-process ResolvedStats with equipped card effects
@@ -262,7 +263,7 @@ presentation/ui/theme/Color.kt                     # Compose color definitions
 presentation/ui/theme/Theme.kt                     # Compose theme setup (Material3)
 presentation/weapons/UltimateWeaponViewModel.kt    # @HiltViewModel: UW unlock/upgrade/equip state
 presentation/weapons/UltimateWeaponScreen.kt       # UW management: 6 cards with lock/unlock/equip/upgrade
-presentation/labs/LabsViewModel.kt                  # @HiltViewModel: research state + wallet + countdown ticker
+presentation/labs/LabsViewModel.kt                  # @HiltViewModel: research state + wallet + countdown ticker. R3-03: replaced the private `updateResearchMission()` helper with `private val updateMissionProgress = UpdateCompleteResearchMissionProgress(dailyMissionDao)`; all 3 call sites (init / rushResearch / freeRush) pass an explicit count (init: `completed.size` from CheckResearchCompletion; rush: 1 on Result.Rushed; freeRush: 1 after manual completeResearch). The DailyMissionType import was removed.
 presentation/labs/LabsUiState.kt                    # UI state: research list, slots, balances
 presentation/labs/LabsScreen.kt                     # Labs screen: research cards, start/rush/unlock slot
 presentation/cards/CardsViewModel.kt                # @HiltViewModel: card collection + wallet + pack/upgrade/loadout
@@ -369,6 +370,7 @@ domain/usecase/CompleteResearchTest.kt            # Complete research: timer gat
 domain/usecase/RushResearchTest.kt                # Rush research: linear Gem cost (50–200), deducts Gems
 domain/usecase/UnlockLabSlotTest.kt               # Unlock slot: 200 Gems, max 4
 domain/usecase/CheckResearchCompletionTest.kt     # Auto-complete: expired research, skip not-ready
+domain/usecase/UpdateCompleteResearchMissionProgressTest.kt # 5 R3-03 tests covering count gating + multi-completion cap-at-target + no-row defensive path. Negative cases (count=0, count=-1) prove the gating; positive cases (count=1, count=5 capped at target=1) prove the additive-with-cap math; the missing-row case asserts idempotency.
 domain/usecase/OpenCardPackTest.kt                # Pack opening: gem deduction, rarity rolling, duplicates→dust
 domain/usecase/UpgradeCardTest.kt                 # Card upgrade: dust cost by rarity, max level
 domain/usecase/ApplyCardEffectsTest.kt            # All 9 card effects, level scaling, buff+debuff combos
