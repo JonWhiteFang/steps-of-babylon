@@ -1,0 +1,238 @@
+package com.whitefang.stepsofbabylon.domain.usecase
+
+import com.whitefang.stepsofbabylon.domain.model.ResearchType
+import com.whitefang.stepsofbabylon.domain.model.UpgradeType
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+/**
+ * Per-row Now → Next readout for the in-round upgrade menu (RO-11 #C, originally RO-10).
+ *
+ * One test per visible upgrade type so that a regression in [DescribeUpgradeEffect.format]
+ * (or in [ResolveStats] for the stat-bearing rows) surfaces with a helpful message naming
+ * the specific upgrade that broke. Each test asserts both the current readout and the
+ * next-purchase readout because the player-facing value is the *delta* between them.
+ *
+ * Format strings are pinned to [java.util.Locale.ROOT] inside the use case so the tests
+ * run identically on locales that use `,` as the decimal separator (e.g. de-DE).
+ */
+class DescribeUpgradeEffectTest {
+
+    private val describe = DescribeUpgradeEffect()
+
+    // ---- Multiplicative stats ----
+
+    @Test
+    fun `DAMAGE multiplicative outer formula`() {
+        // ws=10, ir=0 -> base 10 * (1 + 10*0.02) = 12.0 dmg.
+        // next ir=1 -> 10 * 1.20 * 1.02 = 12.24 -> 12.2 dmg.
+        val r = describe(mapOf(UpgradeType.DAMAGE to 10), emptyMap(), emptyMap(), UpgradeType.DAMAGE)
+        assertEquals("12.0 dmg", r.current)
+        assertEquals("12.2 dmg", r.next)
+    }
+
+    @Test
+    fun `ATTACK_SPEED uses per-second suffix and 2-decimal format`() {
+        // ws=10 -> 1.0 * (1 + 10*0.015) = 1.15 -> "1.15/s".
+        val r = describe(mapOf(UpgradeType.ATTACK_SPEED to 10), emptyMap(), emptyMap(), UpgradeType.ATTACK_SPEED)
+        assertEquals("1.15/s", r.current)
+        assertNotEquals(r.current, r.next)
+    }
+
+    @Test
+    fun `RANGE uses pixel suffix and 0-decimal format`() {
+        val r = describe(mapOf(UpgradeType.RANGE to 5), emptyMap(), emptyMap(), UpgradeType.RANGE)
+        // BASE_RANGE 300 * (1 + 5*0.02) = 330 -> "330 px".
+        assertEquals("330 px", r.current)
+    }
+
+    @Test
+    fun `HEALTH uses HP suffix and 0-decimal format`() {
+        // ws=5 -> 1000 * (1 + 5*0.03) = 1150 -> "1150 HP".
+        val r = describe(mapOf(UpgradeType.HEALTH to 5), emptyMap(), emptyMap(), UpgradeType.HEALTH)
+        assertEquals("1150 HP", r.current)
+    }
+
+    @Test
+    fun `HEALTH_REGEN uses per-second suffix and 1-decimal format`() {
+        val r = describe(mapOf(UpgradeType.HEALTH_REGEN to 10), emptyMap(), emptyMap(), UpgradeType.HEALTH_REGEN)
+        // BASE_REGEN 1.0 * (1 + 10*0.02) = 1.2 -> "1.2/s".
+        assertEquals("1.2/s", r.current)
+    }
+
+    @Test
+    fun `KNOCKBACK uses pixel suffix and 1-decimal format`() {
+        val r = describe(mapOf(UpgradeType.KNOCKBACK to 5), emptyMap(), emptyMap(), UpgradeType.KNOCKBACK)
+        // BASE_KNOCKBACK 5f * (1 + 5*0.02) = 5.5 -> "5.5 px".
+        assertEquals("5.5 px", r.current)
+    }
+
+    // ---- Additive percentage stats ----
+
+    @Test
+    fun `CRITICAL_CHANCE displays as percentage with 1-decimal`() {
+        val r = describe(mapOf(UpgradeType.CRITICAL_CHANCE to 20), emptyMap(), emptyMap(), UpgradeType.CRITICAL_CHANCE)
+        // 20 * 0.005 = 0.10 -> "10.0%".
+        assertEquals("10.0%", r.current)
+        // Next purchase: 21 * 0.005 = 0.105 -> "10.5%".
+        assertEquals("10.5%", r.next)
+    }
+
+    @Test
+    fun `CRITICAL_FACTOR uses multiplier prefix`() {
+        val r = describe(mapOf(UpgradeType.CRITICAL_FACTOR to 5), emptyMap(), emptyMap(), UpgradeType.CRITICAL_FACTOR)
+        // base 2.0 + 5*0.1 = 2.5 -> "×2.50".
+        assertEquals("\u00d72.50", r.current)
+    }
+
+    @Test
+    fun `DEFENSE_PERCENT displays as percentage`() {
+        val r = describe(mapOf(UpgradeType.DEFENSE_PERCENT to 50), emptyMap(), emptyMap(), UpgradeType.DEFENSE_PERCENT)
+        // 50 * 0.003 = 0.15 -> "15.0%".
+        assertEquals("15.0%", r.current)
+    }
+
+    @Test
+    fun `DEFENSE_ABSOLUTE displays as plus-N-blocked`() {
+        val r = describe(mapOf(UpgradeType.DEFENSE_ABSOLUTE to 8), emptyMap(), emptyMap(), UpgradeType.DEFENSE_ABSOLUTE)
+        assertEquals("+8 blocked", r.current)
+    }
+
+    @Test
+    fun `THORN_DAMAGE shows reflect suffix`() {
+        val r = describe(mapOf(UpgradeType.THORN_DAMAGE to 5), emptyMap(), emptyMap(), UpgradeType.THORN_DAMAGE)
+        assertEquals("5.0% reflect", r.current)
+    }
+
+    @Test
+    fun `LIFESTEAL clamps to 15 percent cap`() {
+        // 100 * 0.002 = 0.20 -> would be 20 % uncapped; ResolveStats clamps to 0.15.
+        val r = describe(mapOf(UpgradeType.LIFESTEAL to 100), emptyMap(), emptyMap(), UpgradeType.LIFESTEAL)
+        assertEquals("15.0%", r.current)
+    }
+
+    @Test
+    fun `DAMAGE_PER_METER uses per-meter suffix`() {
+        val r = describe(mapOf(UpgradeType.DAMAGE_PER_METER to 5), emptyMap(), emptyMap(), UpgradeType.DAMAGE_PER_METER)
+        assertEquals("+5.0%/m", r.current)
+    }
+
+    @Test
+    fun `DEATH_DEFY clamps to 50 percent cap`() {
+        // 100 * 0.01 = 1.0 -> would be 100 % uncapped; ResolveStats clamps to 0.50.
+        val r = describe(mapOf(UpgradeType.DEATH_DEFY to 100), emptyMap(), emptyMap(), UpgradeType.DEATH_DEFY)
+        assertEquals("50%", r.current)
+    }
+
+    // ---- Discrete-step upgrades ----
+
+    @Test
+    fun `MULTISHOT shows targets with threshold pluralisation`() {
+        // L0 baseline = 1 target; cross to 2 targets at level 20.
+        val baseline = describe(emptyMap(), emptyMap(), emptyMap(), UpgradeType.MULTISHOT)
+        assertEquals("1 target", baseline.current)
+        // ws=20, ir=0 -> 1 + 1 = 2 targets.
+        val crossed = describe(mapOf(UpgradeType.MULTISHOT to 20), emptyMap(), emptyMap(), UpgradeType.MULTISHOT)
+        assertEquals("2 targets", crossed.current)
+    }
+
+    @Test
+    fun `BOUNCE_SHOT shows bounces with threshold pluralisation`() {
+        // ws=15, ir=0 -> floor(15/15) = 1 bounce.
+        val r = describe(mapOf(UpgradeType.BOUNCE_SHOT to 15), emptyMap(), emptyMap(), UpgradeType.BOUNCE_SHOT)
+        assertEquals("1 bounce", r.current)
+        // Next ir=1 -> floor(16/15) = 1 bounce still.
+        assertEquals("1 bounce", r.next)
+    }
+
+    @Test
+    fun `ORBS counts with pluralisation`() {
+        val r = describe(mapOf(UpgradeType.ORBS to 2), emptyMap(), emptyMap(), UpgradeType.ORBS)
+        assertEquals("2 orbs", r.current)
+        // Next ir=1 -> 3 orbs.
+        assertEquals("3 orbs", r.next)
+    }
+
+    // ---- Cash-utility upgrades ----
+
+    @Test
+    fun `CASH_BONUS shows percent cash bonus`() {
+        // L3 -> 3 * 3 % = +9 % cash.
+        val r = describe(mapOf(UpgradeType.CASH_BONUS to 3), emptyMap(), emptyMap(), UpgradeType.CASH_BONUS)
+        assertEquals("+9% cash", r.current)
+        // Next ir=1 -> +12 % cash.
+        assertEquals("+12% cash", r.next)
+    }
+
+    @Test
+    fun `CASH_PER_WAVE shows flat cash per wave`() {
+        // effectPerLevel=1, L15 -> +15 cash/wave.
+        val r = describe(mapOf(UpgradeType.CASH_PER_WAVE to 15), emptyMap(), emptyMap(), UpgradeType.CASH_PER_WAVE)
+        assertEquals("+15 cash/wave", r.current)
+    }
+
+    @Test
+    fun `INTEREST clamps to 10 percent cap`() {
+        // L20 (max) -> 20 * 0.5 = 10.0 % capped.
+        val r = describe(mapOf(UpgradeType.INTEREST to 20), emptyMap(), emptyMap(), UpgradeType.INTEREST)
+        assertEquals("10.0% interest", r.current)
+        // L20 is the max level so next is null.
+        assertNull(r.next)
+    }
+
+    @Test
+    fun `FREE_UPGRADES clamps to 25 percent cap`() {
+        // L25 (max) -> 25 * 1 = 25 % capped.
+        val r = describe(mapOf(UpgradeType.FREE_UPGRADES to 25), emptyMap(), emptyMap(), UpgradeType.FREE_UPGRADES)
+        assertEquals("25% free", r.current)
+        assertNull(r.next)
+    }
+
+    // ---- Hidden-from-in-round upgrades (kept testable for Workshop reuse) ----
+
+    @Test
+    fun `STEP_MULTIPLIER clamps to 100 percent cap`() {
+        // L50 -> 50 * 1 = +50 % steps.
+        val r = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 50), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)
+        assertEquals("+50% steps", r.current)
+    }
+
+    @Test
+    fun `RECOVERY_PACKAGES clamps to 50 percent cap`() {
+        // L75 -> 75 * 1 = +75 % uncapped, clamped to +50 %.
+        val r = describe(mapOf(UpgradeType.RECOVERY_PACKAGES to 75), emptyMap(), emptyMap(), UpgradeType.RECOVERY_PACKAGES)
+        assertEquals("+50% heal", r.current)
+    }
+
+    // ---- Lab research stacks via the third multiplicative tier ----
+
+    @Test
+    fun `DAMAGE_RESEARCH outer multiplier stacks with DAMAGE`() {
+        // ws=10 -> 12.0 baseline. With DAMAGE_RESEARCH L5 -> 12.0 * (1 + 5*0.05) = 15.0.
+        val r = describe(
+            workshopLevels = mapOf(UpgradeType.DAMAGE to 10),
+            inRoundLevels = emptyMap(),
+            labLevels = mapOf(ResearchType.DAMAGE_RESEARCH to 5),
+            type = UpgradeType.DAMAGE,
+        )
+        assertEquals("15.0 dmg", r.current)
+        // Next ir=1 -> 10 * 1.20 * 1.02 * 1.25 = 15.30 -> "15.3 dmg".
+        assertEquals("15.3 dmg", r.next)
+    }
+
+    // ---- Smoke test: every visible upgrade produces a non-empty current readout ----
+
+    @Test
+    fun `every visible upgrade type produces a non-empty current readout at L0`() {
+        // Guards against a future enum addition silently falling through to a missing case.
+        // Phase A wired all 14 stat-bearing entries plus the 4 cash utilities; Phase B
+        // hidden-but-tested entries are STEP_MULTIPLIER + RECOVERY_PACKAGES.
+        UpgradeType.entries.forEach { type ->
+            val r = describe(emptyMap(), emptyMap(), emptyMap(), type)
+            assertTrue(r.current.isNotEmpty(), "$type produced an empty current readout")
+        }
+    }
+}

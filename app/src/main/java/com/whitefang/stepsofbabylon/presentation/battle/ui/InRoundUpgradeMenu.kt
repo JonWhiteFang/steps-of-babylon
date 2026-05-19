@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
+import com.whitefang.stepsofbabylon.domain.usecase.UpgradeEffectReadout
 import kotlin.math.ceil
 import kotlin.math.pow
 
@@ -38,6 +39,14 @@ fun InRoundUpgradeMenu(
     inRoundLevels: Map<UpgradeType, Int>,
     onPurchase: (UpgradeType) -> Unit,
     onDismiss: () -> Unit,
+    /**
+     * RO-11 #C / RO-10: per-row "Now → Next" readout. Default is a no-readout fallback
+     * (current = empty, next = null) so the existing `BattleScreen` invocation that hasn't
+     * yet wired the BVM accessor still compiles — the UI suppresses the readout line
+     * entirely when the lambda returns an empty current. Production callers pass
+     * `viewModel::describeEffect` and the readout renders below the description text.
+     */
+    describeEffect: (UpgradeType) -> UpgradeEffectReadout = { UpgradeEffectReadout("", null) },
 ) {
     val tabs = UpgradeCategory.entries
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -90,6 +99,23 @@ fun InRoundUpgradeMenu(
                     Column(Modifier.weight(1f)) {
                         Text(type.name.replace("_", " "), color = Color.White, fontSize = 13.sp)
                         Text("Lv $level · ${type.config.description}", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                        // RO-11 #C / RO-10: live "Now → Next" readout.
+                        // Skip when describeEffect returns an empty current string — keeps
+                        // unit-test / preview call sites (which pass the default no-op
+                        // lambda) visually identical to the pre-RO-11 layout.
+                        val readout = describeEffect(type)
+                        if (readout.current.isNotEmpty()) {
+                            val line = if (readout.next != null) {
+                                "Now: ${readout.current} → ${readout.next}"
+                            } else {
+                                "Now: ${readout.current} (MAX)"
+                            }
+                            Text(
+                                line,
+                                color = Color(0xFFD4A843),
+                                fontSize = 10.sp,
+                            )
+                        }
                     }
                     if (maxed) {
                         Text("MAX", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(end = 8.dp))

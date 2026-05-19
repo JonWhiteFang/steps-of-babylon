@@ -37,6 +37,8 @@ import com.whitefang.stepsofbabylon.domain.usecase.AwardWaveMilestone
 import com.whitefang.stepsofbabylon.domain.usecase.ActivateOverdrive
 import com.whitefang.stepsofbabylon.domain.usecase.ApplyCardEffects
 import com.whitefang.stepsofbabylon.domain.usecase.CalculateUpgradeCost
+import com.whitefang.stepsofbabylon.domain.usecase.DescribeUpgradeEffect
+import com.whitefang.stepsofbabylon.domain.usecase.UpgradeEffectReadout
 import com.whitefang.stepsofbabylon.domain.usecase.CheckTierUnlock
 import com.whitefang.stepsofbabylon.domain.usecase.ResolveStats
 import com.whitefang.stepsofbabylon.domain.usecase.UpdateBestWave
@@ -94,6 +96,13 @@ class BattleViewModel @Inject constructor(
     }
 
     private val resolveStats = ResolveStats()
+    /**
+     * Use case for the in-round upgrade-menu "Now → Next" readout (RO-11 #C, originally
+     * tracked as RO-10). Shares [resolveStats] so the readout stays in sync with the
+     * actual stats applied to the engine — no risk of the displayed preview drifting
+     * from the post-purchase reality.
+     */
+    private val describeUpgradeEffect = DescribeUpgradeEffect(resolveStats)
     private val calculateCost = CalculateUpgradeCost()
     private val updateBestWave = UpdateBestWave(playerRepository)
     private val checkTierUnlock = CheckTierUnlock()
@@ -548,6 +557,18 @@ class BattleViewModel @Inject constructor(
         val level = labLevels[ResearchType.WAVE_SKIP] ?: 0
         return (1 + level).coerceAtLeast(1)
     }
+
+    /**
+     * Per-row "Now → Next" readout for the in-round upgrade menu (RO-11 #C, originally
+     * tracked as RO-10). Reads the live workshop / in-round / lab snapshot so the preview
+     * always reflects the player's current state — a mid-round purchase that progresses
+     * the upgrade by one level is reflected on the next render via the standard
+     * `inRoundLevels` Flow that backs `BattleUiState.inRoundLevels`. Sharing the
+     * [DescribeUpgradeEffect] instance with [resolveStats] guarantees the readout cannot
+     * drift from the actual post-purchase stats.
+     */
+    fun describeEffect(type: UpgradeType): UpgradeEffectReadout =
+        describeUpgradeEffect(workshopLevels, inRoundLevels, labLevels, type)
 
     fun toggleUpgradeMenu() { _uiState.update { it.copy(showUpgradeMenu = !it.showUpgradeMenu, showOverdriveMenu = false) } }
     fun toggleOverdriveMenu() { _uiState.update { it.copy(showOverdriveMenu = !it.showOverdriveMenu, showUpgradeMenu = false) } }
