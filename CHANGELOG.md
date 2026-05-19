@@ -4,6 +4,36 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### README audit + LICENSE creation (2026-05-19)
+
+Follow-up to the docs-sweep PR earlier the same day. The user requested an audit of `README.md` for fitness-for-function. Audit found 10 gaps across P0–P3 severities; this PR lands all of them in a single pass plus a new `LICENSE` file. Pure-docs PR — no source / test / schema impact.
+
+#### New file
+
+- **`LICENSE`** (17 lines) — proprietary, all rights reserved. Copyright © 2026 Jon White Fang. Source code is proprietary; the compiled app is distributed via Google Play under the standard user license. Third-party libraries retain their own licenses. Contact: jonwhitefang@gmail.com. Closes the P0 "no license declaration" finding which would have flagged on any external read of the repo (closed-track recruitment, GitHub-via-Play-Store-listing visibility, etc.).
+
+#### `README.md` rewrite (75 → 127 lines)
+
+| Pri | Fix |
+|---|---|
+| P0 | New `## Status` section: "Version 1.0.0 (versionCode 6) — pre-launch. Internal-track build verified on a real device 2026-05-18… 615 JVM unit tests green." Links `STATE.md` + `CHANGELOG.md`. Closes the "silent on current phase" finding. |
+| P0 | New `## Privacy` section with 3 links: hosted privacy policy URL, hosted data-deletion URL, canonical `docs/release/privacy-policy.md`. Names SQLCipher encryption-at-rest and the Play Billing / AdMob exception explicitly. Closes the privacy-link omission. |
+| P0 | New `## License` section pointing at the new `LICENSE` file. |
+| P1 | `## Tech Stack` one-liner expanded from 6 items to 11: added SQLCipher (database encryption), Health Connect (paired with the existing Android Sensor API mention), Google Play Billing v8, Google Mobile Ads SDK v25, UMP v4 (consent). Now mentions the canonical `tech.md` version table alongside `AGENTS.md`. |
+| P1 | `## Key Documentation` table gained 3 rows: `AGENTS.md`, `CHANGELOG.md`, and `Privacy Policy`. Reordered to put `AGENTS.md` and `CHANGELOG.md` near the top since they're the most-referenced live docs. |
+| P1 | `## Project Structure` block went one level deeper under `data/` (previously a single `# Room entities, DAOs, repositories impl` line, now broken out into `local/`, `repository/`, `sensor/`, `healthconnect/`, `billing/`, `ads/` with brief descriptions including the C.5 PR 3 / C.6 PR 3 "sole binding" status). `di/` row now lists all 8 modules; `service/` row now mentions the widget. |
+| P2 | New `## Where to start` 1-line pointer: read `START_HERE.md` → `STATE.md` → the relevant plan in `docs/plans/`. |
+| P2 | The "Note: Instrumented tests…" comment-on-a-comment moved out of the code block into a proper sentence below it. |
+| P2 | `## Setup` gained a keystore prerequisite callout: `assembleRelease` / `bundleRelease` need `release/upload-keystore.jks` + `keystore.properties` (both gitignored). Points at `plan-31-walkthrough.md`. The bare `./gradlew assembleRelease` line was dropped from `## Build & Run`; replaced with `./gradlew bundleRelease` (the actual production task) marked with the keystore caveat. |
+| P3 | Feature graphic embedded at the top of the README via `![Steps of Babylon](docs/release/store-assets/play-store-feature-graphic-1024x500.png)`. Lifts perceived quality on GitHub. The image already shipped in commit history from 2026-05-13. |
+
+#### Verification
+
+- All 10 cited document links resolve (`StepsOfBabylon_GDD.md`, `architecture.md`, `AGENTS.md`, `CHANGELOG.md`, `master-plan.md`, `battle-formulas.md`, `database-schema.md`, `step-tracking.md`, `monetization.md`, `privacy-policy.md`).
+- All build commands match `tech.md` and the on-disk `gradle/libs.versions.toml`.
+- `run-gradle.sh` recreation snippet now includes the comment line that ships in the actual on-disk file (was a small drift previously).
+- No source / test / schema impact. Test count stays at 615.
+
 ### Docs sweep — 12 stale live-docs fixed post-RO-12 + versionCode bump (2026-05-19)
 
 Pure-docs PR. Sweep across every live current-state doc (per agent protocol PR Task-List Convention) found 12 drift items left over from the RO-08 / RO-09 / RO-11 / RO-12 / C.5 PR 3 / C.6 PR 3 / Plan 31 PR B sequence and the `1796b4c` versionCode bump. No source / test / schema impact. Historical artifacts (`devdocs/**`, `smoke_tests/**`, `docs/external-reviews/**`, `plan-R*.md`, prior `RUN_LOG` / `CHANGELOG` entries) deliberately left frozen per `.kiro/steering/11-agent-protocol.md`.

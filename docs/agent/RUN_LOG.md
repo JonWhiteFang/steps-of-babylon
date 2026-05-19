@@ -4352,4 +4352,28 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Memory updated: STATE ✅ / RUN_LOG ✅
 - ADR: not warranted — docs-only PR.
 
+## 2026-05-19 late morning — README audit + LICENSE creation
+- Goal: complete audit of `README.md` per user request, then apply all findings in a single pass. Pure docs PR.
+- Preflight: `git status` shows the prior docs-sweep PR's 14 files staged but not committed (sweep finished but not yet committed by user); `git log -n 1` HEAD still at `1796b4c`. Re-read README.md fresh + spot-checked all cited paths + ran `ls LICENSE*` (no such file) + `cat run-gradle.sh` (verified the README's recreation block matches modulo one comment line).
+- Audit produced and reported to user: 10 findings, ranked P0–P3:
+  - P0: no LICENSE file, no Status section, no Privacy link.
+  - P1: thin Tech Stack one-liner (missing SQLCipher / Health Connect / Play Billing / AdMob); CHANGELOG + AGENTS not in doc table; Project Structure one level too shallow (data/ subdirs hidden).
+  - P2: no "Where to start" pointer; "Note: instrumented tests" comment-in-code-block awkward; `assembleRelease` invites confusing failure without keystore.
+  - P3: no visual asset embedded.
+- User ack: "do it all in a single pass".
+- Changes made:
+  - `LICENSE` (NEW, 17 lines): proprietary all-rights-reserved with Google Play user-license carve-out + third-party-libraries clause + contact email `jonwhitefang@gmail.com`. Most appropriate default for a pre-launch commercial Play Store app; user can swap to MIT / Apache later if they decide to open-source.
+  - `README.md` (75 → 127 lines): full rewrite. Added feature graphic at top, Status / Privacy / License sections; expanded Tech Stack one-liner from 6 → 11 items; added 3 rows to Key Documentation table (AGENTS / CHANGELOG / Privacy Policy); expanded Project Structure under `data/` to show all 6 subdirs; added Where-to-start pointer to START_HERE.md; moved instrumented-tests note out of code block; replaced raw `assembleRelease` with `bundleRelease` + keystore-prereq callout in Setup; `run-gradle.sh` recreation block now includes the on-disk comment line (previously omitted).
+  - `CHANGELOG.md`: new "README audit + LICENSE creation" section inserted at top of `[Unreleased]` above the docs-sweep entry, with full per-fix table grouped by P0–P3 severity.
+  - `STATE.md`: Last-run line updated.
+  - This RUN_LOG entry.
+- Code changes: none.
+- Commands/tests run: `ls -la README.md LICENSE* CHANGELOG.md run-gradle.sh AGENTS.md` + `ls docs/release/store-assets/` + `grep -oh jonwhitefang@gmail.com\|support@whitefanggames.com` to confirm canonical contact email + `git diff --stat` at the end. No build, no tests — docs-only.
+- Verification: all 10 cited document links resolve; feature graphic 636 KB exists at `docs/release/store-assets/play-store-feature-graphic-1024x500.png`; all build commands match `tech.md`. No source / test / schema impact — test count stays at 615.
+- Open questions: none. License choice (proprietary vs MIT / Apache) is reversible; chose proprietary as the safest default for a commercial Play Store app pre-launch.
+- Follow-ups created: none new. Next external action remains `./run-gradle.sh bundleRelease` + sign + upload AAB v6 to Play Console internal track.
+- Memory updated: STATE ✅ / RUN_LOG ✅
+- ADR: not warranted — docs / license-declaration only, no architectural decision.
+
+
 

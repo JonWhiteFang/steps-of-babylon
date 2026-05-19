@@ -1,0 +1,17 @@
+Copyright (c) 2026 Jon White Fang. All rights reserved.
+
+This source code is proprietary. No part of this software, including but not
+limited to the source code, design documents, game assets, and accompanying
+documentation, may be copied, modified, distributed, or used in derivative
+works without the express prior written permission of the copyright holder.
+
+The compiled application is distributed via Google Play under the terms of
+the standard Google Play user license. End users obtaining the app through
+Google Play receive a license to use the compiled application only; this
+license does not extend to the source code in this repository.
+
+Third-party libraries used by this project retain their own licenses and
+attributions. See `gradle/libs.versions.toml` for the dependency manifest;
+each library's license is published by its respective maintainer.
+
+For licensing inquiries, contact: jonwhitefang@gmail.com
