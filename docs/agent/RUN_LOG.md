@@ -1,5 +1,71 @@
 # Run Log
 
+## 2026-05-19 (early afternoon, after R3 scaffolding) — R3-01 battle backgrounding state preservation
+
+- **Goal:** implement R3-01 (GitHub issue #2, the lone `severity:blocker` in the `v1.0.0 closed-test gate` milestone). Backgrounding the app mid-round destroys all in-progress round state, and the new game-loop thread spun up on resume defaults to `speed = 1f / paused = false` regardless of the UI's selection.
+- **Outcome:** done in a single session on branch `fix/2-battle-backgrounding-state-loss`. Two commits per the failing-test-first protocol; both `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh bundleRelease` BUILD SUCCESSFUL; test count 615 → 619.
+
+### Diagnosis (confirmed against issue #2 body + on-disk code)
+
+Two compounding bugs in `presentation/battle/`:
+
+1. **Engine state cleared on surface recreation.** `GameSurfaceView.surfaceCreated` (lines 42–45) and `surfaceChanged` (line 49) both unconditionally called `engine.init(...)`. `GameEngine.init` (line 199 onwards) clears `entities`, `cash`, `totalEnemiesKilled`, `elapsedTimeSeconds`, all UW / overdrive / second-wind state, and reconstructs `WaveSpawner` with `currentWave = startWave (= 1)`. The engine instance itself survives — it lives on the `remember`'d `GameSurfaceView` in `BattleScreen`, which survives recomposition — but every Android lifecycle event blew away the round.
+
+2. **Speed / pause UI / loop sync.** `GameLoopThread` defaults `speedMultiplier = 1f` and `isPaused = false`. A new thread is constructed in every `surfaceCreated`. `setSpeedMultiplier` / `setPaused` wrote only to `gameThread`, which is null between `surfaceDestroyed` and the next `surfaceCreated`. The two `LaunchedEffect`s in `BattleScreen` (`LaunchedEffect(state.speedMultiplier)` and `LaunchedEffect(state.isPaused)`) only re-fire when the value *changes*; returning from background, UI state is unchanged so neither effect runs against the freshly-defaulted thread.
+
+3. **`engine.hasWaveProgress()` already exists** (line 146 of `GameEngine.kt`, added by RO-03 / B.3 PR 2 for `BattleViewModel.onCleared` mid-nav persistence). Right signal at the wrong call site — RO-03 wired it into one consumer, but missed the surface lifecycle.
+
+### Strategy chosen
+
+Collapsed the three-option choice from `plan-R3-remediation-3.md` (lift engine ownership / snapshot UiState / Room persist) into a minimal version of option (a). The engine is *already* ownership-lifted (it's held by the surviving `GameSurfaceView`); we just need to stop wiping it on every `surfaceCreated`. No `BattleViewModel` constructor change, no new Room migration, no UiState snapshot field. Two narrow GameSurfaceView edits cover the entire bug class.
+
+Deliberately deferred: `BattleScreen` `ON_RESUME` re-apply handler (the issue body's fix #2). Described as "defence in depth"; with the GameSurfaceView fix the new thread always inherits correct state, so the secondary handler would only matter if Compose dropped state across recomposition. Hard to unit-test without a Compose harness; if v6 on-device smoke testing reveals a gap, add as a follow-up.
+
+### Commit 1 — `0e33a3b` test(R3-01): failing regression test + seam stubs
+
+GameSurfaceView seams (no behaviour change yet):
+- `@VisibleForTesting internal fun initEngineIfNeeded()` — declared but currently calls `engine.init` unconditionally (modelling the pre-fix behaviour).
+- `@Volatile internal var pendingSpeed: Float = 1f` and `pendingPaused: Boolean = false` — declared but not yet written by setters.
+
+New test file `app/src/test/java/com/whitefang/stepsofbabylon/presentation/battle/GameSurfaceViewTest.kt` (JUnit 4 + Robolectric, mirrors `DailyStepDaoTest`):
+- `R3-01 surface recreation preserves engine progress mid-round` — RED.
+- `R3-01 setSpeedMultiplier persists pendingSpeed for next thread` — RED.
+- `R3-01 setPaused persists pendingPaused for next thread` — RED.
+- `R3-01 initEngineIfNeeded does run engine init when no progress yet` — GREEN (inverse / no-regression guard).
+
+Verified via `./run-gradle.sh testDebugUnitTest --tests GameSurfaceViewTest` → "4 tests completed, 3 failed".
+
+### Commit 2 — `bad1d01` fix(battle): preserve engine state across surface recreation (#2)
+
+- `initEngineIfNeeded` now wraps `engine.init` in `if (!engine.hasWaveProgress())`.
+- `surfaceCreated` calls `initEngineIfNeeded()` instead of inline `engine.init` AND seeds the new thread from `pendingSpeed` / `pendingPaused`.
+- `surfaceChanged` calls `initEngineIfNeeded()` instead of inline `engine.init`.
+- `setSpeedMultiplier` writes to `pendingSpeed` first, then `gameThread?.speedMultiplier`. `setPaused` mirrors the shape.
+
+Verified via `./run-gradle.sh testDebugUnitTest --tests GameSurfaceViewTest` → BUILD SUCCESSFUL (4/4 green).
+
+### Verification (full suite)
+
+- `./run-gradle.sh testDebugUnitTest` — BUILD SUCCESSFUL. 619 tests pass (615 pre-R3-01 + 4 new). Zero failures across all suites.
+- `./run-gradle.sh bundleRelease` — BUILD SUCCESSFUL. Clean R8 minify + lint vital + signing.
+
+### Doc-sync (this commit)
+
+- `AGENTS.md`: version-status line gets R3-01 entry + `615 → 619 tests` delta; current-coverage line gains the R3-01 paragraph; status-checklist Plan R3 line updated to call out R3-01 as fix-landed-pending-merge.
+- `.kiro/steering/source-files.md`: `GameSurfaceView.kt` entry extended with the R3-01 changes (`initEngineIfNeeded`, `pendingSpeed`, `pendingPaused`); new `GameSurfaceViewTest.kt` test entry inserted between `BattleViewModelTest` and `MissionsViewModelTest`.
+- `CHANGELOG.md`: new R3-01 section under `[Unreleased]`.
+- `docs/agent/STATE.md`: current-objective flipped to "R3-01 fix landed on branch, awaiting merge"; previous-objective ladder gained R3 scaffolding + RO-12 entries; what-works gained 615 → 619 line + R3-01 summary; top-priorities renumbered with R3-01 PR / merge as #1; last-run line refreshed; previous-run cascade gains the R3-scaffolding entry.
+- `docs/agent/RUN_LOG.md`: this entry prepended above the prior R3-scaffolding entry.
+
+### Next session
+
+1. **(Immediate, awaiting user go-ahead)** Push branch + open PR `Fixes #2`. Review + merge to `main`.
+2. **(After merge)** Start R3-02 (issue #4, THORN_DAMAGE wiring + LIFESTEAL visibility, major) on `fix/4-thorn-damage-lifesteal`.
+3. **(Parallel-ok)** R3-03 (issue #1, COMPLETE_RESEARCH false trigger, major) on `fix/1-complete-research-false-trigger`.
+4. **(After R3 Tier 1 fully merges)** v6 `bundleRelease` + upload + smoke test + closed-track promotion.
+
+---
+
 ## 2026-05-19 (early afternoon) — Plan R3 scaffolding: GitHub-issue triage + R3 plan write
 
 - **Goal:** the user asked for the *best* way to handle the GitHub issues recorded after the v5 internal-track smoke test. Web research surfaced industry-standard practice (VSCode triage wiki, GitHub Docs on PR↔issue linking, Rewind best-practices guide). Mapped the consensus onto this repo's existing R / R2 / RO remediation cadence and decided to formalize the 4 open issues as **Plan R3 (Remediation 3)** — the GitHub-issue-driven analog of the external-review-driven R and R2 plans.
