@@ -122,6 +122,18 @@ class GameEngine {
     private var recoveryTimer: Float = 0f
 
     /**
+     * LIFESTEAL fractional-heal accumulator (R3-02 / GitHub issue #4). Each projectile-hit
+     * and orb-hit applies the mathematically-correct heal directly to `zig.currentHp` (a
+     * `Double`, so sub-1-HP heals are conserved); this counter accumulates the same
+     * fractional amount in parallel and emits a `+X HP` floating-text indicator each time
+     * the accumulated amount crosses an integer HP threshold. Pre-R3-02 LIFESTEAL was
+     * mathematically correct but visually invisible at low levels (Lv 1 = 0.2 % lifesteal
+     * × base damage 10 → 0.02 HP per shot — a sub-pixel HP-bar nudge users could not
+     * perceive). Reset to 0.0 in [init] so accumulator state never leaks across rounds.
+     */
+    private var lifestealAccumulator: Double = 0.0
+
+    /**
      * Invoked on the game-loop thread every time a kill grants a non-zero
      * step reward. The listener must not block the loop — forward to a
      * coroutine scope. Arguments are `(amount, x, y)` — amount is the flat
@@ -220,6 +232,7 @@ class GameEngine {
         secondWindUsed = false
         uwStates.clear(); chronoActive = false; goldenZigActive = false; preGoldenStats = null
         recoveryTimer = 0f
+        lifestealAccumulator = 0.0
         stats = resolvedStats; tier = playerTier; effectiveLevels = wsLevels
         reducedMotion = isReducedMotion
         conditions = BattleConditionEffects.fromTier(tier)
@@ -249,7 +262,7 @@ class GameEngine {
             onSpawnEnemy = { pendingAdd.add(it) },
             zigguratX = zig.originX, zigguratY = zig.originY,
             onEnemyDeath = ::handleEnemyDeath,
-            onMeleeHit = { dmg -> applyDamageToZiggurat(dmg, null) },
+            onMeleeHit = { _, dmg -> applyDamageToZiggurat(dmg, null) },
             onEnemyFireProjectile = { sx, sy, tx, ty, dmg ->
                 pendingAdd.add(EnemyProjectileEntity(sx, sy, tx, ty, damage = dmg))
             },
@@ -797,7 +810,7 @@ class GameEngine {
                     damage = enemy.damage * 0.5,
                     targetX = zig.originX, targetY = zig.originY,
                     onDeath = ::handleEnemyDeath,
-                    onMeleeHit = { dmg -> applyDamageToZiggurat(dmg, null) },
+                    onMeleeHit = { _, dmg -> applyDamageToZiggurat(dmg, null) },
                 ).apply {
                     x = enemy.x + (i - childCount / 2f) * 15f; y = enemy.y; initDistance()
                 }

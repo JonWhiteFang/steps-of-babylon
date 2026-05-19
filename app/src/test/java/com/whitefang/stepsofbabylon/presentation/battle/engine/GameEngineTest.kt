@@ -6,9 +6,13 @@ import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
+import com.whitefang.stepsofbabylon.presentation.battle.effects.Effect
+import com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine
+import com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText
 import com.whitefang.stepsofbabylon.presentation.battle.entities.EnemyEntity
 import com.whitefang.stepsofbabylon.presentation.battle.entities.ProjectileEntity
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
@@ -550,5 +554,168 @@ class GameEngineTest {
             .apply { isAccessible = true }
         method.invoke(eng, enemy)
         return eng.cash - cashBefore
+    }
+
+    // ---- R3-02: THORN_DAMAGE reflection on melee + LIFESTEAL visible-heal feedback ----
+    // Pre-R3-02:
+    // - THORN_DAMAGE was plumbed through `ResolvedStats.thornPercent` and consumed by
+    //   `GameEngine.applyThorn`, but every call site of `applyDamageToZiggurat` passed
+    //   `attacker = null`. The `EnemyEntity.onMeleeHit` -> `WaveSpawner.onMeleeHit` ->
+    //   `GameEngine` callback chain was typed `(Double) -> Unit` and dropped the enemy
+    //   reference, so `applyThorn` early-returned for every melee hit. Player saw zero
+    //   reflected damage regardless of THORN_DAMAGE upgrade level.
+    // - LIFESTEAL math was correct (`zig.currentHp += damage * stats.lifestealPercent`),
+    //   but at low levels the heal was sub-pixel. Lv 1 (0.2 % lifesteal) on base damage 10
+    //   produced 0.02 HP per shot — invisible HP-bar nudge. The fix accumulates the
+    //   fractional heal in a parallel `lifestealAccumulator` field and emits a `+X HP`
+    //   `FloatingText` indicator each time the accumulator crosses an integer threshold,
+    //   mirroring the existing RECOVERY_PACKAGES feedback pattern.
+
+    @Test
+    fun `R302 THORN_DAMAGE reflects damage on melee hit via plumbed attacker reference`() {
+        val eng = freshEngineWithStats(ResolvedStats(thornPercent = 0.5))
+        // Make the ziggurat unkillable so wave-spawner's continuous melee ticks can't end
+        // the round before the assertion fires.
+        eng.ziggurat!!.currentHp = 1_000_000.0
+        val attacker = createDummyAttacker(eng, hp = 1000.0)
+
+        // Invoke the engine's wired onMeleeHit callback (the one WaveSpawner gives to each
+        // EnemyEntity). Pre-R3-02 the callback shape was `{ dmg -> applyDamageToZiggurat(dmg, null) }`
+        // and we updated it to `{ _, dmg -> applyDamageToZiggurat(dmg, null) }` in the seam
+        // commit so it still discards the attacker. Post-fix it forwards the attacker through
+        // as `{ atk, dmg -> applyDamageToZiggurat(dmg, atk) }` so `applyThorn` actually fires.
+        invokeOnMeleeHit(eng, attacker, rawDamage = 20.0)
+
+        val expectedReflect = 20.0 * 0.5  // damage × thornPercent
+        assertEquals(
+            1000.0 - expectedReflect,
+            attacker.currentHp,
+            0.5,
+            "THORN_DAMAGE 50 % must reflect 50 % of melee damage back to the attacker via " +
+                "the plumbed-through EnemyEntity reference",
+        )
+    }
+
+    @Test
+    fun `R302 THORN_DAMAGE scales linearly with thornPercent`() {
+        val eng10 = freshEngineWithStats(ResolvedStats(thornPercent = 0.10))
+        eng10.ziggurat!!.currentHp = 1_000_000.0
+        val a10 = createDummyAttacker(eng10, hp = 1000.0)
+        invokeOnMeleeHit(eng10, a10, rawDamage = 100.0)
+        val reflectAt10 = 1000.0 - a10.currentHp
+
+        val eng50 = freshEngineWithStats(ResolvedStats(thornPercent = 0.50))
+        eng50.ziggurat!!.currentHp = 1_000_000.0
+        val a50 = createDummyAttacker(eng50, hp = 1000.0)
+        invokeOnMeleeHit(eng50, a50, rawDamage = 100.0)
+        val reflectAt50 = 1000.0 - a50.currentHp
+
+        // Direct value assertions (rather than `reflectAt10 * 5.0 == reflectAt50`) catch
+        // the pre-fix degenerate case where both reflects are zero — 0 × 5 == 0 passes a
+        // ratio check trivially. Post-fix reflectAt10 == 10.0 and reflectAt50 == 50.0,
+        // confirming both non-zero AND linear scaling.
+        assertEquals(10.0, reflectAt10, 0.5, "thornPercent 0.10 must reflect 10 HP from 100 raw damage")
+        assertEquals(50.0, reflectAt50, 0.5, "thornPercent 0.50 must reflect 50 HP from 100 raw damage")
+    }
+
+    @Test
+    fun `R302 LIFESTEAL emits visible floating text when accumulated heal crosses 1 HP`() {
+        // 15 % lifesteal on base damage 10 → 1.5 HP heal per hit, well above the +1 HP
+        // floating-text threshold; the first hit must emit a `+1 HP` indicator.
+        val eng = freshEngineWithStats(ResolvedStats(lifestealPercent = 0.15))
+        val zig = eng.ziggurat!!
+        // Drop ziggurat to half HP so the heal isn't capped at maxHp.
+        zig.currentHp = zig.maxHp * 0.5
+
+        val target = EnemyEntity(
+            enemyType = EnemyType.BASIC,
+            currentHp = 100.0, maxHp = 100.0,
+            speed = 0f, damage = 0.0,
+            targetX = zig.originX, targetY = zig.originY,
+            onDeath = { },
+        ).apply { x = zig.originX; y = zig.originY + 50f }
+
+        val proj = ProjectileEntity(
+            startX = zig.originX, startY = zig.originY,
+            targetX = target.x, targetY = target.y,
+            speed = 100f,
+        )
+
+        invokeOnProjectileHitEnemy(eng, proj, target)
+
+        // Pre-R3-02: lifestealAccumulator is declared but unused; no FloatingText emitted.
+        // Post-fix: accumulator grows to 1.5, floor=1 emitted as `+1 HP` indicator.
+        val floats = readPendingFloatingTextSnippets(eng)
+        assertTrue(
+            floats.any { it.startsWith("+") && it.endsWith("HP") },
+            "LIFESTEAL must emit a `+X HP` floating text when accumulated heal crosses 1 HP " +
+                "(found floats=$floats)",
+        )
+    }
+
+    // ---- R3-02 helpers ----
+
+    private fun freshEngineWithStats(stats: ResolvedStats): GameEngine {
+        val eng = GameEngine()
+        eng.init(width = 1080f, height = 1920f, resolvedStats = stats, playerTier = 1)
+        return eng
+    }
+
+    /**
+     * Reflectively invokes the engine's wired `WaveSpawner.onMeleeHit` callback. After the
+     * R3-02 signature change this is a `(EnemyEntity, Double) -> Unit` lambda; the engine
+     * constructs it once in [GameEngine.init] when the WaveSpawner is wired up. Tests
+     * reach in directly so they don't have to drive a full wave-spawn / enemy-tick cycle
+     * (which would also tick the spawner, accumulate enemies, and otherwise contaminate
+     * the assertion).
+     */
+    private fun invokeOnMeleeHit(eng: GameEngine, attacker: EnemyEntity, rawDamage: Double) {
+        val spawner = eng.waveSpawner!!
+        val field = WaveSpawner::class.java.getDeclaredField("onMeleeHit")
+            .apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        val callback = field.get(spawner) as (EnemyEntity, Double) -> Unit
+        callback(attacker, rawDamage)
+    }
+
+    private fun createDummyAttacker(eng: GameEngine, hp: Double): EnemyEntity = EnemyEntity(
+        enemyType = EnemyType.BASIC,
+        currentHp = hp,
+        maxHp = hp,
+        speed = 0f,
+        damage = 0.0,
+        targetX = eng.ziggurat!!.originX,
+        targetY = eng.ziggurat!!.originY,
+        onDeath = { },
+    )
+
+    /** Reflectively invokes the private `onProjectileHitEnemy(ProjectileEntity, EnemyEntity)`
+     *  helper so tests can exercise the lifesteal heal path without driving a full
+     *  collision cycle (which would also queue bounce-shot projectiles into pendingAdd). */
+    private fun invokeOnProjectileHitEnemy(
+        eng: GameEngine,
+        proj: ProjectileEntity,
+        enemy: EnemyEntity,
+    ) {
+        val method = GameEngine::class.java.getDeclaredMethod(
+            "onProjectileHitEnemy",
+            ProjectileEntity::class.java,
+            EnemyEntity::class.java,
+        ).apply { isAccessible = true }
+        method.invoke(eng, proj, enemy)
+    }
+
+    /** Reflectively reads the engine's `EffectEngine.pendingEffects` list and returns the
+     *  text content of any [FloatingText] entries (regardless of color — callers can filter
+     *  by prefix/suffix as needed). Used to assert visual feedback was queued. */
+    private fun readPendingFloatingTextSnippets(eng: GameEngine): List<String> {
+        val fx = eng.effectEngine ?: return emptyList()
+        val pendingField = EffectEngine::class.java.getDeclaredField("pendingEffects")
+            .apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        val pending = pendingField.get(fx) as MutableList<Effect>
+        val textField = FloatingText::class.java.getDeclaredField("text")
+            .apply { isAccessible = true }
+        return pending.filterIsInstance<FloatingText>().map { textField.get(it) as String }
     }
 }

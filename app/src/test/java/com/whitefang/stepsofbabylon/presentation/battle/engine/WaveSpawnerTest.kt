@@ -17,7 +17,7 @@ class WaveSpawnerTest {
         zigguratX = 0f,
         zigguratY = 0f,
         onEnemyDeath = { _: EnemyEntity -> },
-        onMeleeHit = { _: Double -> },
+        onMeleeHit = { _: EnemyEntity, _: Double -> },
         onEnemyFireProjectile = { _: Float, _: Float, _: Float, _: Float, _: Double -> },
         startWave = startWave,
     )

@@ -17,7 +17,16 @@ class EnemyEntity(
     private val targetX: Float,
     private val targetY: Float,
     private val onDeath: (EnemyEntity) -> Unit,
-    private val onMeleeHit: ((Double) -> Unit)? = null,
+    /**
+     * Invoked once per [attackInterval] when this enemy is at melee range of its target.
+     * The first argument is `this` — the attacker reference — so consumers can react to
+     * the attacker (e.g. apply THORN_DAMAGE reflection back at the source). Pre-R3-02 the
+     * callback shape was `(Double) -> Unit` and dropped the attacker reference, which is
+     * why THORN_DAMAGE silently never reflected damage despite being plumbed through
+     * `ResolvedStats.thornPercent` and consumed by `GameEngine.applyThorn` — every call
+     * site simply passed `attacker = null`. (R3-02 / GitHub issue #4)
+     */
+    private val onMeleeHit: ((EnemyEntity, Double) -> Unit)? = null,
     private val onFireProjectile: ((Float, Float, Float, Float, Double) -> Unit)? = null,
     private val attackInterval: Float = 1f,
     armorHits: Int = 0,
@@ -53,7 +62,7 @@ class EnemyEntity(
             if (attackCooldown <= 0f) {
                 attackCooldown = attackInterval
                 if (enemyType == EnemyType.RANGED) onFireProjectile?.invoke(x, y, targetX, targetY, damage)
-                else onMeleeHit?.invoke(damage)
+                else onMeleeHit?.invoke(this, damage)
             }
         }
     }

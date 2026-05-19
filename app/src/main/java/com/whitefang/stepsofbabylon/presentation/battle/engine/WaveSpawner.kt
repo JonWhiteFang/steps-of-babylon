@@ -13,7 +13,7 @@ class WaveSpawner(
     private val zigguratX: Float,
     private val zigguratY: Float,
     private val onEnemyDeath: (EnemyEntity) -> Unit,
-    private val onMeleeHit: (Double) -> Unit,
+    private val onMeleeHit: (EnemyEntity, Double) -> Unit,
     private val onEnemyFireProjectile: (Float, Float, Float, Float, Double) -> Unit,
     private val onWaveComplete: (waveNumber: Int) -> Unit = {},
     private val conditions: BattleConditionEffects = BattleConditionEffects(),
