@@ -4,6 +4,40 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### R3-01: battle backgrounding state preservation (2026-05-19)
+
+Fixes [GitHub issue #2](https://github.com/JonWhiteFang/steps-of-babylon/issues/2). Backgrounding the app mid-round (Recents, screen lock, incoming notification) previously wiped wave / cash / kills / `elapsedTimeSeconds` because `GameSurfaceView.surfaceCreated` and `surfaceChanged` unconditionally called `engine.init` on every Android lifecycle event, and the new `GameLoopThread` started with default `speedMultiplier = 1f` / `isPaused = false` because `setSpeedMultiplier` / `setPaused` wrote only to `gameThread` which was null between `surfaceDestroyed` and the next `surfaceCreated`.
+
+Fix:
+- Extracted `@VisibleForTesting internal fun GameSurfaceView.initEngineIfNeeded()` that gates `engine.init` on `!engine.hasWaveProgress()`. The `hasWaveProgress()` helper already existed (added by RO-03 / B.3 PR 2 for `BattleViewModel.onCleared` mid-nav persistence) — exactly the right signal at the wrong call site, now wired in.
+- Added `@Volatile internal var pendingSpeed: Float = 1f` and `pendingPaused: Boolean = false` written by `setSpeedMultiplier` / `setPaused` alongside the live thread; `surfaceCreated` reads them when constructing the new thread so a recreated game loop inherits the player's UI selections.
+
+4 new tests in `app/src/test/java/com/whitefang/stepsofbabylon/presentation/battle/GameSurfaceViewTest.kt` (Robolectric):
+- `R3-01 surface recreation preserves engine progress mid-round`
+- `R3-01 setSpeedMultiplier persists pendingSpeed for next thread`
+- `R3-01 setPaused persists pendingPaused for next thread`
+- `R3-01 initEngineIfNeeded does run engine init when no progress yet` (inverse / no-regression guard)
+
+Deliberately deferred: `BattleScreen` `ON_RESUME` re-apply handler (defence in depth). With the `GameSurfaceView` fix the new thread always inherits correct state; the secondary handler would only matter if Compose dropped state across recomposition, which is hard to unit-test without a Compose harness.
+
+Test count: 615 → 619 (+4). `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh bundleRelease` both BUILD SUCCESSFUL.
+
+### Plan R3 scaffolding (2026-05-19)
+
+The v5 internal-track on-device smoke test (2026-05-19 morning) surfaced 4 gameplay bugs filed as GitHub issues #1–#4 on `JonWhiteFang/steps-of-babylon`. This PR formalises the response as Plan R3 (Remediation 3) — the GitHub-issue-driven analog of the external-review-driven Plan R and Plan R2.
+
+GitHub-side scaffolding (already live on the remote at the time of this commit):
+- 11 new labels: `severity:blocker`, `severity:major`, `severity:minor`, `area:battle`, `area:missions`, `area:economy`, `area:billing`, `area:ui`, `needs-more-info`, `in-progress`, `regression-guard-needed`.
+- New milestone `v1.0.0 closed-test gate` (#1) with all 4 open issues attached.
+- `needs-more-info` clarification comment posted on issue #3 (7-day window).
+
+Repo-side:
+- New plan file `docs/plans/plan-R3-remediation-3.md` (182 lines, 4 sub-plans mirroring the R2 shape: Sub-Plan Index → Dependency Graph → per-sub-plan detail block → Execution Notes → Priority Tiers → Open Questions).
+- `docs/plans/master-plan.md` and `AGENTS.md` updated to register R3 in the Plan Index, dependency graph, critical path, and Status checklist (master plan entry count 34 → 35).
+- `docs/agent/STATE.md` and `docs/agent/RUN_LOG.md` updated.
+
+No source / test / schema impact. Test count remains 615 at this commit.
+
 ### README audit + LICENSE creation (2026-05-19)
 
 Follow-up to the docs-sweep PR earlier the same day. The user requested an audit of `README.md` for fitness-for-function. Audit found 10 gaps across P0–P3 severities; this PR lands all of them in a single pass plus a new `LICENSE` file. Pure-docs PR — no source / test / schema impact.
