@@ -49,10 +49,11 @@ class LabsViewModel @Inject constructor(
         viewModelScope.launch {
             labRepository.ensureResearchExists()
             val completed = checkCompletion()
-            // R3-03: pass the actual completion count to the use case. The use case is
-            // responsible for gating the mission tick on completedCount >= 1 (commit 2 of
-            // fix/1-complete-research-false-trigger lands the gating; the staging commit
-            // deliberately ignores the count to keep the regression tests RED).
+            // R3-03: only tick the COMPLETE_RESEARCH daily mission when something
+            // actually completed. The use case applies the count gating internally so
+            // every call site (init / rushResearch / freeRush) gets the same semantics
+            // for free — closes the false-trigger that previously fired every time the
+            // Labs screen was opened with nothing in flight.
             updateMissionProgress(completedCount = completed.size)
         }
         viewModelScope.launch {

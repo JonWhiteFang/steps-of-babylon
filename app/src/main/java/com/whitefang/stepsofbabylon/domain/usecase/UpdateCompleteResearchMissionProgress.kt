@@ -19,9 +19,9 @@ import java.time.LocalDate
  * transient DAO outage must not crash the Labs screen).
  *
  * R3-03 / GitHub #1: this use case must NOT advance the mission counter when
- * [completedCount] is zero or negative. The gating guard is added in the second commit
- * of the fix branch; the staging commit deliberately omits it so the regression tests
- * fail RED against the historical bug shape.
+ * [completedCount] is zero or negative. The gating guard below (the early `return` on
+ * `completedCount <= 0`) closes the false-trigger that previously fired every time the
+ * Labs screen was opened, even with no in-flight research.
  */
 class UpdateCompleteResearchMissionProgress(
     private val dailyMissionDao: DailyMissionDao,
@@ -30,9 +30,11 @@ class UpdateCompleteResearchMissionProgress(
         completedCount: Int,
         today: String = LocalDate.now().toString(),
     ) {
-        // STAGING SHAPE — matches the pre-fix `LabsViewModel.updateResearchMission`
-        // behaviour: always sets the mission to (target, completed=true) regardless of
-        // [completedCount]. The fix in commit 2 replaces this with proper gating.
+        // R3-03 gating: caller reports zero (or negative) completions => no mission tick.
+        // This is the entire bug fix — opening Labs with nothing in flight previously
+        // ticked COMPLETE_RESEARCH unconditionally because the historical helper ignored
+        // its caller's signal of "how much actually finished".
+        if (completedCount <= 0) return
         try {
             val missions = dailyMissionDao.getByDateOnce(today)
             val m = missions.find {
@@ -40,7 +42,14 @@ class UpdateCompleteResearchMissionProgress(
                     !it.claimed &&
                     !it.completed
             } ?: return
-            dailyMissionDao.updateProgress(m.id, m.target, true)
+            // Additive progress with cap: a single auto-complete batch can finish more
+            // than one research project at once, so we sum the count into the existing
+            // progress and clamp to the mission target. For COMPLETE_RESEARCH the target
+            // is 1, so the clamp degenerates to the historical "set to 1, completed=true"
+            // behaviour for the common single-completion path.
+            val newProgress = (m.progress + completedCount).coerceAtMost(m.target)
+            val isComplete = newProgress >= m.target
+            dailyMissionDao.updateProgress(m.id, newProgress, isComplete)
         } catch (_: Exception) {
             // Swallowed: matches the prior LabsViewModel.updateResearchMission contract.
         }
