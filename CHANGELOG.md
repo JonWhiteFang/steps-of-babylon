@@ -4,6 +4,46 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### RO-12 — In-round stat drift bugfix bundle (2026-05-19)
+
+Discovered during v5 internal-track on-device smoke test (Wave 4 screenshot, 06:21 BST 2026-05-19): the `RO-11 #C` "Now → Next" readout rendered correctly on the DEFENSE tab but **the HEALTH "Now" value disagreed with the live ziggurat HP bar by ~5 %** — a drift consistent with `HEALTH_RESEARCH` Lv 1 being included in the readout but stripped from the engine after the player's first in-round purchase.
+
+Root-cause investigation surfaced **3 real stat-resolution bugs plus 1 display-precision bug**, all in the in-round upgrade pipeline:
+
+| # | Bug | RO-11-introduced? |
+|---|---|---|
+| 1 | `BattleViewModel.purchaseInRoundUpgrade` called `resolveStats(workshopLevels, inRoundLevels)` without `labLevels` — stripped lab research bonuses on every in-round purchase. | **Yes** — `labLevels` arg added to `ResolveStats` in RO-11 #A.1; one call site missed during the wiring pass. |
+| 2 | Same site did not re-apply `ApplyCardEffects` after recomputing stats — stripped card effects (WALKING_FORTRESS, GLASS_CANNON, IRON_SKIN, SHARP_SHOOTER, VAMPIRIC_TOUCH, CHAIN_REACTION) on every in-round purchase. | **No** — pre-existing since cards landed (Plan 17), but unmasked by RO-11 making the drift visible by stacking lab on top. |
+| 3 | `DescribeUpgradeEffect` did not apply card effects either, so the readout drifted from the live engine when any stat-modifying card was equipped. | **Yes** — introduced by RO-11 #C alongside the use case. |
+| 4 | `HEALTH_REGEN` readout used `%.1f/s` format. At base ~1.3/s with +2 %/level, per-level delta is ~0.026/s and rounds away — readout showed "Now: 1.3/s → 1.3/s" for a real upgrade, making it look like a no-op. | **Yes** — display-precision oversight in RO-11 #C format string. |
+
+All 4 are closed-test blockers in different ways: Bugs 1 + 2 directly defeat RO-11 acceptance check #1 ("DAMAGE_RESEARCH L5 visibly hits harder") any time a player buys an in-round upgrade; Bug 3 shows the same kind of drift to the player visually; Bug 4 makes a real upgrade look broken. Discovered + fixed in a single morning before promoting v5 → closed.
+
+**Fix (single PR, no schema / DI / public-API changes).**
+
+- **`BattleViewModel.kt`:** new private helper `resolveCurrentStats(inRound: Map<UpgradeType, Int>): ResolvedStats` that runs the full live-engine pipeline `resolveStats(workshop, inRound, lab) → applyCardEffects(stats, equippedCards).stats`. `purchaseInRoundUpgrade` now routes through this helper, so lab + card multipliers survive every in-round purchase. The card-effect *side outputs* (`cashBonusPercent`, `secondWindHpPercent`, `gemMultiplier`) are static for the round and remain computed once in `init` / `playAgain`. `describeEffect` now threads `equippedCards` through to `DescribeUpgradeEffect` so the readout stays in lockstep with the engine.
+- **`DescribeUpgradeEffect.kt`:** constructor gains optional `applyCardEffects: ApplyCardEffects = ApplyCardEffects()`; `invoke` gains optional `equippedCards: List<OwnedCard> = emptyList()`. `format` now post-applies `applyCardEffects(raw, equippedCards).stats` before formatting so the readout mirrors the engine pipeline. Default `emptyList()` preserves pre-RO-12 behaviour for the 25 existing test call sites and any future Workshop-screen call site that doesn't have card context.
+- **`HEALTH_REGEN` format:** `%.1f/s` → `%.2f/s`. One character. Other format strings unchanged because they have larger per-level magnitudes (e.g., `KNOCKBACK` per-level delta is +0.1 px which is visible at 1 decimal).
+
+**Test coverage: 609 → 615 (+6 net).**
+
+- `BattleViewModelTest` +3 with new `installEngineForPurchase` reflective helper:
+  - `RO12 in-round HEALTH purchase preserves HEALTH_RESEARCH lab bonus` — Bug 1 direct guard. Post-purchase `maxHealth = BASE × 1.20 (lab L4) × 1.03 (in-round L1)` instead of pre-fix `BASE × 1.03`.
+  - `RO12 in-round HEALTH purchase preserves WALKING_FORTRESS card bonus` — Bug 2 direct guard. Post-purchase `maxHealth = BASE × 1.50 (WF L1) × 1.03` instead of pre-fix `BASE × 1.03`.
+  - `RO12 in-round HEALTH purchase preserves both lab AND card bonuses stacked` — combined regression matching the screenshot scenario (`BASE × 1.20 × 1.03 × 1.50 = 1854 HP` post-fix vs `1030 HP` pre-fix — 824 HP drift in a single screen).
+- `DescribeUpgradeEffectTest` +3:
+  - Existing `HEALTH_REGEN` test renamed to `"2-decimal format"` with expected value `"1.20/s"`.
+  - `RO12 HEALTH_REGEN Lv 0 to Lv 1 produces a visibly different readout` — Bug 4 direct guard. Asserts `"1.00/s" → "1.02/s"` with `assertNotEquals` for clarity.
+  - `RO12 HEALTH readout reflects equipped WALKING_FORTRESS card multiplier` — Bug 3 direct guard. ws=5 HEALTH + WALKING_FORTRESS Lv 1 → `"1725 HP"` (pre-fix would have been `"1150 HP"`).
+  - `RO12 HEALTH readout with no cards equipped is unchanged from pre-RO12 baseline` — default-arg behaviour preserved for the 25 existing tests.
+
+**Verification.**
+
+- `./run-gradle.sh testDebugUnitTest` — BUILD SUCCESSFUL, **615 tests pass (609 → 615, +6)**, zero failures.
+- versionCode bump (5 → 6) deferred to the upload PR so this PR is reviewable in isolation.
+
+**On-device verification (post-merge).** Once v6 hits the internal track, repeat the v5 smoke test plus 5 RO-12-specific checks per `docs/plans/plan-RO-12-in-round-stat-drift.md` § 8: HP bar matches HEALTH "Now" with HEALTH_RESEARCH owned, HP bar still matches after any in-round purchase, HP bar matches with WALKING_FORTRESS equipped, HEALTH_REGEN row shows 2-decimal readout that visibly changes Lv 0 → Lv 1, and RO-11 acceptance check #1 still passes after multiple in-round purchases.
+
 ### RO-11 — Labs research wiring + in-round upgrade-effect readout (2026-05-19)
 
 Pre-RO-11 all 10 `ResearchType` enums were dead — declared with effect descriptions, costing Steps + real-time + Gems (rush) to complete, displayed correctly on the Labs screen, but never consumed by any combat-path / step-credit / cash-economy / UW-cooldown class. Same shape as RO-08 #1 (`STEP_MULTIPLIER` + `RECOVERY_PACKAGES`) and RO-09 #1 (`CHRONO_FIELD`), wider blast radius (entire Labs system instead of single enum). Closes the dead-enum gap that would have surfaced as "research does nothing" closed-test feedback within the first round of any tester at level 3+ `DAMAGE_RESEARCH`. Discovery context: user reported on top of the Labs gap that the in-round upgrade menu didn't show numerical effect of each purchase (originally tracked as RO-10, absorbed as Phase C of RO-11).

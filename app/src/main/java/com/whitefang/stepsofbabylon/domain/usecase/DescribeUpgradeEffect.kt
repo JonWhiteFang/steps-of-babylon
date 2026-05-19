@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
+import com.whitefang.stepsofbabylon.domain.model.OwnedCard
 import com.whitefang.stepsofbabylon.domain.model.ResearchType
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import java.util.Locale
@@ -33,6 +34,15 @@ data class UpgradeEffectReadout(
  * field. This keeps the readout in sync with the multiplicative formula in [ResolveStats]
  * (workshop × in-round × lab) without duplicating the math.
  *
+ * **Card effects** ([ApplyCardEffects]) are post-applied to the resolved stats before
+ * formatting (RO-12). The live engine pipeline runs `resolveStats → applyCardEffects →
+ * engine.setStats(...)`; mirroring that order here keeps the readout in lockstep with the
+ * actual ziggurat values. Without this step a player with WALKING_FORTRESS or GLASS_CANNON
+ * equipped would see a HEALTH "Now" value that disagreed with the top HP bar by the
+ * card's percentage. Cards have no effect on the four cash-utility upgrades or the two
+ * hidden-from-in-round upgrades, so those branches read the level map directly and the
+ * card-effects pass is a no-op for them.
+ *
  * **Cash-utility upgrades** (CASH_BONUS / CASH_PER_WAVE / INTEREST / FREE_UPGRADES) and
  * the two hidden-from-in-round upgrades (STEP_MULTIPLIER / RECOVERY_PACKAGES) compute
  * directly from [UpgradeConfig.effectPerLevel] because they don't pass through
@@ -44,6 +54,7 @@ data class UpgradeEffectReadout(
  */
 class DescribeUpgradeEffect(
     private val resolveStats: ResolveStats = ResolveStats(),
+    private val applyCardEffects: ApplyCardEffects = ApplyCardEffects(),
 ) {
 
     operator fun invoke(
@@ -51,20 +62,22 @@ class DescribeUpgradeEffect(
         inRoundLevels: Map<UpgradeType, Int>,
         labLevels: Map<ResearchType, Int>,
         type: UpgradeType,
+        equippedCards: List<OwnedCard> = emptyList(),
     ): UpgradeEffectReadout {
         val current = inRoundLevels[type] ?: 0
         val maxLevel = type.config.maxLevel
         val isAtMax = maxLevel != null && (workshopLevels[type] ?: 0) + current >= maxLevel
         val nextInRound = if (isAtMax) inRoundLevels else inRoundLevels + (type to current + 1)
 
-        val currentReadout = format(workshopLevels, inRoundLevels, labLevels, type)
-        val nextReadout = if (isAtMax) null else format(workshopLevels, nextInRound, labLevels, type)
+        val currentReadout = format(workshopLevels, inRoundLevels, labLevels, equippedCards, type)
+        val nextReadout = if (isAtMax) null else format(workshopLevels, nextInRound, labLevels, equippedCards, type)
         return UpgradeEffectReadout(currentReadout, nextReadout)
     }
 
     /**
      * Formats a single point in upgrade-level space. For stat-bearing upgrades this calls
-     * [ResolveStats] and reads the relevant [com.whitefang.stepsofbabylon.domain.model.ResolvedStats]
+     * [ResolveStats], post-applies [ApplyCardEffects] to mirror the live engine pipeline
+     * (RO-12), and reads the relevant [com.whitefang.stepsofbabylon.domain.model.ResolvedStats]
      * field; for cash utilities + hidden upgrades it reads [UpgradeConfig.effectPerLevel]
      * directly. The two paths intentionally don't share format strings — utility upgrades
      * have semantic prefixes ("+X%", "+X cash/wave") while stat upgrades use unit suffixes
@@ -74,16 +87,27 @@ class DescribeUpgradeEffect(
         workshopLevels: Map<UpgradeType, Int>,
         inRoundLevels: Map<UpgradeType, Int>,
         labLevels: Map<ResearchType, Int>,
+        equippedCards: List<OwnedCard>,
         type: UpgradeType,
     ): String {
-        val stats = resolveStats(workshopLevels, inRoundLevels, labLevels)
+        val raw = resolveStats(workshopLevels, inRoundLevels, labLevels)
+        // Mirror BattleViewModel's resolve → applyCardEffects pipeline so the readout shows
+        // the same ResolvedStats values the engine and ziggurat see. Card effects modify
+        // damage / attackSpeed / maxHealth / defenseAbsolute / critChance / lifestealPercent /
+        // bounceCount fields used by the stat-bearing branches below; non-stat fields
+        // (cashBonusPercent, secondWindHpPercent, gemMultiplier) are returned via
+        // CardEffectResult and are not consumed by this formatter.
+        val stats = applyCardEffects(raw, equippedCards).stats
         return when (type) {
             // Multiplicative stats (workshop × in-round × lab outer multipliers).
             UpgradeType.DAMAGE -> fmt("%.1f dmg", stats.damage)
             UpgradeType.ATTACK_SPEED -> fmt("%.2f/s", stats.attackSpeed)
             UpgradeType.RANGE -> fmt("%.0f px", stats.range.toDouble())
             UpgradeType.HEALTH -> fmt("%.0f HP", stats.maxHealth)
-            UpgradeType.HEALTH_REGEN -> fmt("%.1f/s", stats.healthRegen)
+            // 2-decimal precision needed at HEALTH_REGEN's small magnitude (RO-12). +2 %/lvl
+            // on a base ~1.3/s is +0.026/s, which rounds away under %.1f and produces a
+            // misleading "Now: 1.3/s → 1.3/s" readout for a real upgrade.
+            UpgradeType.HEALTH_REGEN -> fmt("%.2f/s", stats.healthRegen)
             UpgradeType.KNOCKBACK -> fmt("%.1f px", stats.knockbackForce.toDouble())
 
             // Additive percentage caps (capped within ResolveStats already).

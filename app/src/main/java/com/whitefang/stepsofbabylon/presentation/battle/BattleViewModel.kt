@@ -493,7 +493,13 @@ class BattleViewModel @Inject constructor(
         val isFree = freeChance > 0 && Random.nextDouble() < freeChance
         if (!isFree && !eng.spendCash(cost)) return
         inRoundLevels[type] = currentLevel + 1
-        resolvedStats = resolveStats(workshopLevels, inRoundLevels)
+        // RO-12: route through resolveCurrentStats so lab research multipliers (DAMAGE / HEALTH /
+        // CRITICAL / REGEN _RESEARCH) and card effects (WALKING_FORTRESS, GLASS_CANNON, etc.)
+        // survive the in-round purchase. Pre-RO-12 this site called
+        // `resolveStats(workshopLevels, inRoundLevels)` directly, dropping both the labLevels
+        // arg and the post-resolve `applyCardEffects` step — every in-round purchase silently
+        // stripped lab + card bonuses from the engine for the rest of the round.
+        resolvedStats = resolveCurrentStats(inRoundLevels)
         eng.updateZigguratStats(resolvedStats)
         // Push combined effective levels for cash-utility upgrades (CASH_BONUS, CASH_PER_WAVE,
         // INTEREST, FREE_UPGRADES). The engine uses these for subsequent kill cash, wave-end
@@ -502,6 +508,23 @@ class BattleViewModel @Inject constructor(
         eng.updateEffectiveLevels(combinedLevelsForCash())
         eng.soundManager?.play(com.whitefang.stepsofbabylon.presentation.audio.SoundEffect.UPGRADE_PURCHASE)
         _uiState.update { it.copy(inRoundLevels = inRoundLevels.toMap(), lastPurchaseFree = isFree) }
+    }
+
+    /**
+     * Resolves the current ziggurat stats by running the full live-engine pipeline:
+     * `resolveStats(workshop, inRound, lab) → applyCardEffects(stats, equippedCards).stats`
+     * (RO-12). Used by [purchaseInRoundUpgrade] so the engine ziggurat stays in lock-step with
+     * the round-start lab + card multipliers across mid-round upgrades.
+     *
+     * The card-effect *side outputs* ([CardEffectResult.cashBonusPercent],
+     * [CardEffectResult.secondWindHpPercent], [CardEffectResult.gemMultiplier]) are static for
+     * the round — they depend only on `equippedCards`, which the player can't change mid-round.
+     * They are computed once in [init] / [playAgain] and not refreshed here, so this helper
+     * intentionally drops them and returns only the stats.
+     */
+    private fun resolveCurrentStats(inRound: Map<UpgradeType, Int>): ResolvedStats {
+        val raw = resolveStats(workshopLevels, inRound, labLevels)
+        return applyCardEffects(raw, equippedCards).stats
     }
 
     /**
@@ -560,15 +583,17 @@ class BattleViewModel @Inject constructor(
 
     /**
      * Per-row "Now → Next" readout for the in-round upgrade menu (RO-11 #C, originally
-     * tracked as RO-10). Reads the live workshop / in-round / lab snapshot so the preview
-     * always reflects the player's current state — a mid-round purchase that progresses
-     * the upgrade by one level is reflected on the next render via the standard
-     * `inRoundLevels` Flow that backs `BattleUiState.inRoundLevels`. Sharing the
-     * [DescribeUpgradeEffect] instance with [resolveStats] guarantees the readout cannot
-     * drift from the actual post-purchase stats.
+     * tracked as RO-10). Reads the live workshop / in-round / lab snapshot AND the
+     * round-start `equippedCards` (RO-12) so the preview always reflects the player's
+     * current state — a mid-round purchase that progresses the upgrade by one level is
+     * reflected on the next render via the standard `inRoundLevels` Flow that backs
+     * `BattleUiState.inRoundLevels`. Sharing the [DescribeUpgradeEffect] instance with
+     * [resolveStats] AND threading `equippedCards` through to mirror
+     * [purchaseInRoundUpgrade]'s `resolveCurrentStats` pipeline guarantees the readout
+     * cannot drift from the actual post-purchase stats.
      */
     fun describeEffect(type: UpgradeType): UpgradeEffectReadout =
-        describeUpgradeEffect(workshopLevels, inRoundLevels, labLevels, type)
+        describeUpgradeEffect(workshopLevels, inRoundLevels, labLevels, type, equippedCards)
 
     fun toggleUpgradeMenu() { _uiState.update { it.copy(showUpgradeMenu = !it.showUpgradeMenu, showOverdriveMenu = false) } }
     fun toggleOverdriveMenu() { _uiState.update { it.copy(showOverdriveMenu = !it.showOverdriveMenu, showUpgradeMenu = false) } }

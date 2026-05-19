@@ -849,4 +849,124 @@ class BattleViewModelTest {
         assertEquals("ZIG_JADE", applied!!.cosmeticId)
         assertEquals(jadeColors, applied.overrideColors)
     }
+
+    // -------- RO-12: in-round purchase preserves lab research + card stats --------
+
+    /**
+     * Variant of [installEngineForEndRound] that also seeds the engine's cash so an in-round
+     * purchase actually executes (otherwise [BattleViewModel.purchaseInRoundUpgrade] returns
+     * early on the `eng.spendCash(cost)` check). Reflectively writes both the private `engine`
+     * field on the VM and the private-set `cash` field on the GameEngine.
+     */
+    private fun installEngineForPurchase(
+        vm: BattleViewModel,
+        seedCash: Long = 1_000_000L,
+    ): com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine {
+        val engine = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine()
+        val engineField = BattleViewModel::class.java.getDeclaredField("engine").apply { isAccessible = true }
+        engineField.set(vm, engine)
+        val cashField = engine.javaClass.getDeclaredField("cash").apply { isAccessible = true }
+        cashField.set(engine, seedCash)
+        return engine
+    }
+
+    @Test
+    fun `RO12 in-round HEALTH purchase preserves HEALTH_RESEARCH lab bonus`() = runTest(dispatcher) {
+        // Direct regression for Bug 1 (RO-11-introduced). Pre-RO-12 the purchase site called
+        // `resolveStats(workshopLevels, inRoundLevels)` without `labLevels`, so HEALTH_RESEARCH
+        // L4's +20 % multiplier was silently dropped on the first in-round HEALTH purchase.
+        // Post-fix the multiplier survives across the purchase: 1000 * 1.20 * 1.03 = 1236.
+        workshopRepo.upgrades.value = mapOf(UpgradeType.HEALTH to 0)
+        labRepo.levels.value = ResearchType.entries.associateWith { 0 } +
+            (ResearchType.HEALTH_RESEARCH to 4)
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        // Sanity at round-start: BASE * 1.20 (lab L4 +20 %), no in-round purchases yet.
+        assertEquals(
+            ZigguratBaseStats.BASE_HEALTH * 1.20,
+            vm.resolvedStats.maxHealth,
+            0.01,
+            "round-start lab bonus must already be applied (RO-11 #A.1)",
+        )
+
+        installEngineForPurchase(vm)
+        vm.purchaseInRoundUpgrade(UpgradeType.HEALTH)
+        advanceUntilIdle()
+
+        // Post-purchase: BASE * 1.20 (lab) * 1.03 (in-round HEALTH L1 +3 %).
+        // Pre-fix this would have been BASE * 1.03 (lab dropped) = ~1030.
+        assertEquals(
+            ZigguratBaseStats.BASE_HEALTH * 1.20 * 1.03,
+            vm.resolvedStats.maxHealth,
+            0.01,
+            "RO-12 Bug 1: in-round purchase must preserve HEALTH_RESEARCH lab bonus. " +
+                "Pre-fix the labLevels arg was missing, dropping the lab multiplier mid-round.",
+        )
+    }
+
+    @Test
+    fun `RO12 in-round HEALTH purchase preserves WALKING_FORTRESS card bonus`() = runTest(dispatcher) {
+        // Direct regression for Bug 2 (pre-existing, unmasked by RO-11). Pre-RO-12 the purchase
+        // site called `resolveStats(...)` without re-applying `applyCardEffects`, so
+        // WALKING_FORTRESS Lv 1's +50 % maxHealth multiplier was silently dropped on the first
+        // in-round HEALTH purchase. Post-fix the multiplier survives: 1000 * 1.50 * 1.03 = 1545.
+        cardRepo.cards.value = listOf(OwnedCard(1, CardType.WALKING_FORTRESS, 1, true))
+        workshopRepo.upgrades.value = mapOf(UpgradeType.HEALTH to 0)
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        // Sanity at round-start: BASE * 1.50 (WALKING_FORTRESS Lv 1 +50 %).
+        assertEquals(
+            ZigguratBaseStats.BASE_HEALTH * 1.50,
+            vm.resolvedStats.maxHealth,
+            0.01,
+            "round-start card effect must already be applied",
+        )
+
+        installEngineForPurchase(vm)
+        vm.purchaseInRoundUpgrade(UpgradeType.HEALTH)
+        advanceUntilIdle()
+
+        // Post-purchase: BASE * 1.50 (card) * 1.03 (in-round HEALTH L1 +3 %).
+        // Pre-fix this would have been BASE * 1.03 (card dropped) = ~1030.
+        assertEquals(
+            ZigguratBaseStats.BASE_HEALTH * 1.50 * 1.03,
+            vm.resolvedStats.maxHealth,
+            0.01,
+            "RO-12 Bug 2: in-round purchase must preserve WALKING_FORTRESS card bonus. " +
+                "Pre-fix applyCardEffects was not re-applied after resolveStats, dropping the " +
+                "card multiplier mid-round.",
+        )
+    }
+
+    @Test
+    fun `RO12 in-round HEALTH purchase preserves both lab AND card bonuses stacked`() = runTest(dispatcher) {
+        // Combined regression: HEALTH_RESEARCH L4 (+20 %) AND WALKING_FORTRESS Lv 1 (+50 %)
+        // both survive the in-round purchase. This is the screenshot scenario where the
+        // ziggurat HP drift was a multiplicative compound of the two missing multipliers.
+        cardRepo.cards.value = listOf(OwnedCard(1, CardType.WALKING_FORTRESS, 1, true))
+        workshopRepo.upgrades.value = mapOf(UpgradeType.HEALTH to 0)
+        labRepo.levels.value = ResearchType.entries.associateWith { 0 } +
+            (ResearchType.HEALTH_RESEARCH to 4)
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        installEngineForPurchase(vm)
+        vm.purchaseInRoundUpgrade(UpgradeType.HEALTH)
+        advanceUntilIdle()
+
+        // Expected: BASE * 1.20 (lab) * 1.03 (in-round) * 1.50 (card) = 1854.
+        // Pre-fix: BASE * 1.03 (only in-round) = 1030 -- a 824 HP drift in a single screen.
+        assertEquals(
+            ZigguratBaseStats.BASE_HEALTH * 1.20 * 1.03 * 1.50,
+            vm.resolvedStats.maxHealth,
+            0.01,
+            "RO-12: in-round purchase must preserve both lab + card bonuses simultaneously. " +
+                "This is the closed-test-blocker drift the v5 screenshot captured.",
+        )
+    }
 }

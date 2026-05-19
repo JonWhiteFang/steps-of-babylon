@@ -1,5 +1,7 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
+import com.whitefang.stepsofbabylon.domain.model.CardType
+import com.whitefang.stepsofbabylon.domain.model.OwnedCard
 import com.whitefang.stepsofbabylon.domain.model.ResearchType
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -57,10 +59,29 @@ class DescribeUpgradeEffectTest {
     }
 
     @Test
-    fun `HEALTH_REGEN uses per-second suffix and 1-decimal format`() {
+    fun `HEALTH_REGEN uses per-second suffix and 2-decimal format`() {
         val r = describe(mapOf(UpgradeType.HEALTH_REGEN to 10), emptyMap(), emptyMap(), UpgradeType.HEALTH_REGEN)
-        // BASE_REGEN 1.0 * (1 + 10*0.02) = 1.2 -> "1.2/s".
-        assertEquals("1.2/s", r.current)
+        // BASE_REGEN 1.0 * (1 + 10*0.02) = 1.2 -> "1.20/s".
+        // RO-12: 2-decimal precision needed because +2 %/level on a base ~1.3/s rounds away
+        // under %.1f. Pre-RO-12 the readout showed "Now: 1.3/s -> 1.3/s" for a real Lv 0 -> Lv 1
+        // upgrade, making the upgrade look like a no-op.
+        assertEquals("1.20/s", r.current)
+    }
+
+    @Test
+    fun `RO12 HEALTH_REGEN Lv 0 to Lv 1 produces a visibly different readout`() {
+        // Direct regression for the screenshot-driven RO-12 finding: HEALTH_REGEN at L0 -> L1
+        // must change the displayed string. BASE 1.0 * (1 + 0*0.02) = 1.00 -> "1.00/s";
+        // BASE 1.0 * (1 + 1*0.02) = 1.02 -> "1.02/s".
+        val r = describe(emptyMap(), emptyMap(), emptyMap(), UpgradeType.HEALTH_REGEN)
+        assertEquals("1.00/s", r.current)
+        assertEquals("1.02/s", r.next)
+        assertNotEquals(
+            r.current,
+            r.next,
+            "RO-12 Bug 4: HEALTH_REGEN L0 -> L1 must produce a visibly different readout. " +
+                "Pre-fix the %.1f format collapsed both to \"1.0/s\".",
+        )
     }
 
     @Test
@@ -221,6 +242,45 @@ class DescribeUpgradeEffectTest {
         assertEquals("15.0 dmg", r.current)
         // Next ir=1 -> 10 * 1.20 * 1.02 * 1.25 = 15.30 -> "15.3 dmg".
         assertEquals("15.3 dmg", r.next)
+    }
+
+    // ---- Card effects post-applied to mirror the live engine pipeline (RO-12) ----
+
+    @Test
+    fun `RO12 HEALTH readout reflects equipped WALKING_FORTRESS card multiplier`() {
+        // WALKING_FORTRESS Lv 1: +50 % maxHealth. Without cards, ws=5 HEALTH -> 1000 * 1.15 = 1150.
+        // With WALKING_FORTRESS Lv 1: 1150 * 1.50 = 1725 -> "1725 HP".
+        // Pre-RO-12 the readout returned the pre-card value (1150 HP) while the live engine
+        // ziggurat showed the post-card value (1725 HP) -- a 575 HP drift visible to the player.
+        val cards = listOf(OwnedCard(1, CardType.WALKING_FORTRESS, 1, true))
+        val r = describe(
+            workshopLevels = mapOf(UpgradeType.HEALTH to 5),
+            inRoundLevels = emptyMap(),
+            labLevels = emptyMap(),
+            type = UpgradeType.HEALTH,
+            equippedCards = cards,
+        )
+        assertEquals(
+            "1725 HP",
+            r.current,
+            "RO-12 Bug 3: HEALTH \"Now\" readout must include WALKING_FORTRESS +50 % multiplier " +
+                "so the preview matches the engine ziggurat's post-card max HP.",
+        )
+        // Next purchase ir=1: 1000 * 1.15 * 1.03 = 1184.5. With WF +50 %: 1776.75 -> "1777 HP".
+        assertEquals("1777 HP", r.next)
+    }
+
+    @Test
+    fun `RO12 HEALTH readout with no cards equipped is unchanged from pre-RO12 baseline`() {
+        // Default equippedCards = emptyList() must preserve pre-RO-12 behaviour for the 25
+        // existing tests below + every Workshop-screen call site that doesn't pass cards.
+        val r = describe(
+            workshopLevels = mapOf(UpgradeType.HEALTH to 5),
+            inRoundLevels = emptyMap(),
+            labLevels = emptyMap(),
+            type = UpgradeType.HEALTH,
+        )
+        assertEquals("1150 HP", r.current)
     }
 
     // ---- Smoke test: every visible upgrade produces a non-empty current readout ----

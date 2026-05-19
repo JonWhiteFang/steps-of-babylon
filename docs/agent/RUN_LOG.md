@@ -4297,3 +4297,31 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Memory updated: STATE ✅ / RUN_LOG ✅
 - ADR: not warranted — no architectural decision made; inventory surfaces existing code state plus gaps already documented elsewhere.
 
+## 2026-05-19 morning — RO-12 in-round stat drift bugfix bundle (discovery + fix + tests + doc sync)
+- Goal: investigate the v5 internal-track on-device smoke-test screenshot the user shared (Wave 4, DEFENSE tab, 06:21 BST) and fix anything that surfaced before promoting v5 → closed.
+- Discovery:
+  - The screenshot shows the RO-11 #C "Now → Next" readout rendering correctly on the DEFENSE tab — partial pass on acceptance check #8.
+  - But the HEALTH "Now" value (1647 HP) disagrees with the live ziggurat top HP bar (1568 HP) by ~5 %. `1568 / 1.06 ≈ 1479` (matches `BASE × workshop HEALTH Lv 2 +6 %`); `1647 / 1.06 / 1.05 ≈ 1479` (matches `BASE × workshop × lab HEALTH_RESEARCH Lv 1 +5 %`). The readout includes lab; the live ziggurat doesn't.
+  - HEALTH_REGEN row shows "Now: 1.3/s → 1.3/s" — visible no-op for a real upgrade. `+2 %` of `1.3` is `+0.026/s`, which rounds away under `%.1f`.
+- Investigation: `grep 'resolveStats(workshopLevels, inRoundLevels)' app/src/main` → 1 match at `BattleViewModel.kt:496` inside `purchaseInRoundUpgrade`. Compare with `init` and `playAgain` which both pass `labLevels` AND post-apply `applyCardEffects`. Confirmed two real bugs in that one site (Bug 1: lab dropped on every in-round purchase, RO-11 wiring miss; Bug 2: cards dropped on every in-round purchase, pre-existing since Plan 17 but unmasked by RO-11 stacking lab on top). Read `DescribeUpgradeEffect.kt::format` — no path consults `equippedCards` either, so the readout drifts from the engine when stat-modifying cards are equipped (Bug 3, RO-11 introduced). Read `HEALTH_REGEN -> fmt("%.1f/s", stats.healthRegen)` — confirmed Bug 4.
+- Plan written: `docs/plans/plan-RO-12-in-round-stat-drift.md` (224 lines) — exec summary, screenshot evidence, severity matrix per bug, decision matrix, fix sketches, test plan, risk register, on-device verification checklist.
+- Changes made (4 production edits + 2 test files):
+  - `domain/usecase/DescribeUpgradeEffect.kt`: + `applyCardEffects: ApplyCardEffects = ApplyCardEffects()` constructor param; + `equippedCards: List<OwnedCard> = emptyList()` optional invoke param; `format` post-applies `applyCardEffects(raw, equippedCards).stats` so the readout mirrors the engine pipeline. `HEALTH_REGEN` format `%.1f/s` → `%.2f/s`.
+  - `presentation/battle/BattleViewModel.kt`: extracted private `resolveCurrentStats(inRound)` helper running `resolveStats(workshop, inRound, lab) → applyCardEffects(stats, equippedCards).stats`; `purchaseInRoundUpgrade` now routes through it. `describeEffect(type)` threads `equippedCards` through to `DescribeUpgradeEffect.invoke`. KDoc on `describeEffect` updated to reflect RO-12 card threading.
+  - `domain/usecase/DescribeUpgradeEffectTest.kt`: existing `HEALTH_REGEN` test renamed to "2-decimal format" with expected `"1.20/s"`; +3 RO-12 tests (`Lv 0 → Lv 1 produces a visibly different readout` precision direct guard, `HEALTH readout reflects equipped WALKING_FORTRESS card multiplier` Bug 3 direct guard, `HEALTH readout with no cards equipped is unchanged from pre-RO12 baseline` default-arg behaviour). Imports added for `CardType` + `OwnedCard`.
+  - `presentation/battle/BattleViewModelTest.kt`: +3 RO-12 tests + new `installEngineForPurchase` reflective helper that seeds `engine.cash` so `purchaseInRoundUpgrade` actually executes. Tests cover Bug 1 (lab bonus survives in-round purchase), Bug 2 (card bonus survives), and stacked combined regression matching the screenshot scenario.
+- Code changes: 4 source files modified (2 production + 2 test), 1 plan added. No schema / DI / public-API changes. versionCode bump deferred to upload PR.
+- Commands/tests run:
+  - `./run-gradle.sh testDebugUnitTest` → BUILD SUCCESSFUL, 615 tests, 0 failures, 0 errors. Test count delta 609 → 615 (+6 net regression tests).
+  - JUnit XML aggregation confirmed: `find app/build/test-results/testDebugUnitTest -name "*.xml" -exec grep -h 'tests='` summed to 615.
+- Doc sync (per agent protocol PR Task-List Convention):
+  - `AGENTS.md`: test count 609→615; RO-12 entry appended to coverage summary; Version line extended with RO-12 mention + "awaiting v6 build" status.
+  - `.kiro/steering/source-files.md`: 4 entries updated (`DescribeUpgradeEffect`, `BattleViewModel`, `DescribeUpgradeEffectTest`, `BattleViewModelTest`) with RO-12 detail.
+  - `CHANGELOG.md`: new RO-12 section at top of `[Unreleased]` above RO-11 with full root-cause table + fix description + test breakdown + verification.
+  - `STATE.md`: current objective flipped from "smoke-test v5" to "build v6 + re-upload"; previous-objective added for the v5 smoke-test discovery; What works updated to 615 tests + RO-12 line; Top priorities + Next actions reordered around v6 path; Critical path extended; Last run line replaced.
+  - `RUN_LOG.md`: this entry.
+- Open questions: none. All four bugs have direct regression tests; the fix surface area is small (3 files); the on-device verification checklist is documented in plan-RO-12 § 8.
+- Follow-ups created: versionCode bump 5 → 6 + bundleRelease + Play Console internal-track upload (next session, gated on user direction since it's a manual external action).
+- Memory updated: STATE ✅ / RUN_LOG ✅
+- ADR: not warranted — bug-fix bundle, no architectural decision. Pattern of "extracted helper to eliminate duplicate-by-omission failure mode" is consistent with RO-08's `applyStats` extraction.
+
