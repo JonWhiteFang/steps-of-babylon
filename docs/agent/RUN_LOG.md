@@ -1,5 +1,33 @@
 # Run Log
 
+## 2026-05-20 (morning) — Documentation sweep: fix stale references across live current-state docs
+
+- **Goal:** Complete sweep of all documentation to find and fix anything outdated.
+- **Outcome:** 4 stale references fixed across 3 files. README.md verified correct (no changes needed).
+
+### Issues found and fixed
+
+| # | File | Drift fixed |
+|---|---|---|
+| 1 | `AGENTS.md` | Key Documents table said `Master Plan (34 entries)` → corrected to `35 entries`. |
+| 2 | `AGENTS.md` | Plan R3 status checklist still showed R3-04 as "awaiting PR review + merge" → updated to show all 4 issues closed, R3-04 merged via PR #8, versionCode bumped 6 → 7, AAB v7 signed + built. |
+| 3 | `AGENTS.md` | Plan 31 status block still said "smoke-test v5 / v5 uploaded" → updated to reflect v7 built (v5 smoke surfaced RO-12 + R3 bugs; all fixed; v7 is the first full-bundle AAB). |
+| 4 | `CHANGELOG.md` | README audit section P0 Status fix description said "versionCode 6" and "615 JVM unit tests" → corrected to versionCode 7 and 627 JVM unit tests. |
+| 5 | `docs/agent/STATE.md` | Critical path still said "v6 build pending" → updated to "v6 built + uploaded to internal track 2026-05-19; v7 built + signed 2026-05-20 (first AAB with full R3 bundle)"; next step updated from "smoke-test v6" to "upload v7 + smoke-test v7". |
+
+### Verified correct (no changes needed)
+
+- `README.md` — versionCode 7, 627 JVM unit tests in both the Status section and the build command comment. ✓
+- `master-plan.md` — no Plan R3 checkbox in Current Status section; the stale R3-04 reference was only in AGENTS.md. ✓
+
+### Next session
+
+1. **(Immediate, hand-off)** Upload `app/build/outputs/bundle/release/app-release.aab` to Play Console > Internal testing > Create new release.
+2. **(Smoke test)** Install v7 from internal track on a physical device. Run the combined 8+5+4 acceptance check list.
+3. **(Closed track)** If v7 smoke green, promote internal v7 → closed. Recruit ≥12 testers, distribute opt-in URL, wait ≥14 calendar days.
+
+---
+
 ## 2026-05-20 (early hours, after R3-04 merge) — versionCode 6 → 7 + AAB v7 build + sign
 
 - **Goal:** bump versionCode and produce a signed AAB for upload to the Play Console internal track. v7 is the first AAB intended to ship the full {RO-12 + R3-01 + R3-02 + R3-03 + R3-04} bundle — v6 was uploaded to internal track 2026-05-19 with only RO-12 and is superseded by v7 before closed-track promotion.

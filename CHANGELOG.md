@@ -120,7 +120,7 @@ Follow-up to the docs-sweep PR earlier the same day. The user requested an audit
 
 | Pri | Fix |
 |---|---|
-| P0 | New `## Status` section: "Version 1.0.0 (versionCode 6) — pre-launch. Internal-track build verified on a real device 2026-05-18… 615 JVM unit tests green." Links `STATE.md` + `CHANGELOG.md`. Closes the "silent on current phase" finding. |
+| P0 | New `## Status` section: "Version 1.0.0 (versionCode 7) — pre-launch. Internal-track build verified on a real device 2026-05-18… 627 JVM unit tests green." Links `STATE.md` + `CHANGELOG.md`. Closes the "silent on current phase" finding. |
 | P0 | New `## Privacy` section with 3 links: hosted privacy policy URL, hosted data-deletion URL, canonical `docs/release/privacy-policy.md`. Names SQLCipher encryption-at-rest and the Play Billing / AdMob exception explicitly. Closes the privacy-link omission. |
 | P0 | New `## License` section pointing at the new `LICENSE` file. |
 | P1 | `## Tech Stack` one-liner expanded from 6 items to 11: added SQLCipher (database encryption), Health Connect (paired with the existing Android Sensor API mention), Google Play Billing v8, Google Mobile Ads SDK v25, UMP v4 (consent). Now mentions the canonical `tech.md` version table alongside `AGENTS.md`. |
