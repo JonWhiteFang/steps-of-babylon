@@ -2,19 +2,19 @@
 
 ## 2026-05-20 (early hours, after R3-04 merge) — versionCode 6 → 7 + AAB v7 build + sign
 
-- **Goal:** bump versionCode and produce a signed AAB for upload to the Play Console internal track. v7 is the first AAB intended to ship the full {RO-12 + R3-01 + R3-02 + R3-03 + R3-04} bundle — v6 was bumped 5 → 6 in commit `1796b4c` alongside RO-12 but never actually built because we deferred until R3 fully landed.
+- **Goal:** bump versionCode and produce a signed AAB for upload to the Play Console internal track. v7 is the first AAB intended to ship the full {RO-12 + R3-01 + R3-02 + R3-03 + R3-04} bundle — v6 was uploaded to internal track 2026-05-19 with only RO-12 and is superseded by v7 before closed-track promotion.
 - **Outcome:** done. Single source edit in `app/build.gradle.kts` (`versionCode = 6` → `versionCode = 7`); `versionName` stays at `"1.0.0"` (same release content, just an iteration of the AAB). `./run-gradle.sh clean bundleRelease` BUILD SUCCESSFUL in 1m 19s. AAB at `app/build/outputs/bundle/release/app-release.aab` (~19 MB), signed with the upload keystore from `keystore.properties`. `jarsigner -verify` confirms the signature; the warnings (self-signed, no timestamp, certificate chain) are expected for an upload key (Play App Signing re-signs with Google's key after upload; cert expiry 2053 is well past v1.0.0's lifecycle).
 
 ### What was NOT built before this run
 
-Worth recording explicitly: versionCode 6 was bumped on `main` in commit `1796b4c` alongside the RO-12 fix bundle (2026-05-19 morning), but no AAB was ever produced for it. The deferral was deliberate — the v5 internal-track smoke test had also surfaced 4 GitHub-tracked bugs (R3-01 through R3-04), so building v6 with only RO-12 fixed would have shipped a build a tester had already filed bugs against. Instead, we waited for all of R3 to land on `main` (PRs #5, #6, #7, #8 across 2026-05-19) and then bumped 6 → 7 + built. Net effect: there is no v6 AAB anywhere; v7 is the next public artifact after v5.
+Worth recording explicitly: versionCode 6 was bumped on `main` in commit `1796b4c` alongside the RO-12 fix bundle (2026-05-19 morning), built, and uploaded to the internal track the same day. However, the v5 smoke test had also surfaced 4 GitHub-tracked bugs (R3-01 through R3-04), so v6 shipped with only RO-12 fixed. Rather than promoting v6 to closed testing with known R3 bugs outstanding, we waited for all of R3 to land on `main` (PRs #5, #6, #7, #8 across 2026-05-19) and then bumped 6 → 7 + built. Net effect: v6 exists on the internal track but was superseded by v7 before closed-track promotion; v7 is the build that will be promoted.
 
 ### Doc-sync (this commit)
 
 Applied **only** to live current-state docs per the agent protocol's PR Task-List Convention:
 
 - `app/build.gradle.kts`: `versionCode = 7`.
-- `AGENTS.md`: version-status line — `versionCode 6` → `versionCode 7`; reframed the historical "versionCode bumped 5 → 6 in commit `1796b4c`" line to add "but v6 was never built (deferred until R3 fully landed)"; added the R3-04-merged + R3 fully closes wording; added the v7 build event sentence.
+- `AGENTS.md`: version-status line — `versionCode 6` → `versionCode 7`; reframed the historical "versionCode bumped 5 → 6 in commit `1796b4c`" line to note v6 was built and uploaded to internal track 2026-05-19; added the R3-04-merged + R3 fully closes wording; added the v7 build event sentence.
 - `README.md`: Status block — `versionCode 6` → `versionCode 7`, `615 JVM unit tests` → `627 JVM unit tests`, plus the Build & Run code block's test-count comment.
 - `docs/agent/STATE.md`: current-objective flipped to "versionCode bumped 6 → 7 and AAB v7 signed for upload"; previous-objective ladder gained R3-04-merged entry; top-priorities renumbered with v7 upload + smoke test as #1–#2; next-actions renumbered (now starts with the upload step); last-run line refreshed; previous-run cascade gains the R3-04-merged entry.
 - `docs/agent/RUN_LOG.md`: this entry prepended above R3-04.
