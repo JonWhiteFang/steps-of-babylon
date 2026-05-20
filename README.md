@@ -8,7 +8,7 @@ An Android idle tower defense game where real-world walking drives all progressi
 
 ## Status
 
-Version 1.0.0 (versionCode 6) — pre-launch. Internal-track build verified on a real device 2026-05-18; awaiting closed-track promotion plus Google's ≥14-day / ≥12-tester gate before applying for production access. 615 JVM unit tests green.
+Version 1.0.0 (versionCode 7) — pre-launch. Internal-track build verified on a real device 2026-05-18; awaiting closed-track promotion plus Google's ≥14-day / ≥12-tester gate before applying for production access. 627 JVM unit tests green.
 
 For the live current state see [docs/agent/STATE.md](docs/agent/STATE.md). For recent changes see [CHANGELOG.md](CHANGELOG.md).
 
@@ -41,7 +41,7 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 # Debug APK
 ./gradlew assembleDebug
 
-# Unit tests (615 JVM tests)
+# Unit tests (627 JVM tests)
 ./gradlew test
 
 # Lint
