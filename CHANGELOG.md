@@ -4,6 +4,45 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### R4-02: Multishot/Bounce 4-level scaling (2026-05-23)
+
+Second Wave 1 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Replaces the per-20-levels / per-15-levels grind formulas for `MULTISHOT` / `BOUNCE_SHOT` with flat 4-level upgrades that grant +1 target / +1 bounce per level. Source feedback: "Multishot and bounce shot shouldn't be multiple levels for no benefit, make 1 level give 1 bonus but make it an expensive upgrade."
+
+**Spec change:**
+
+| Upgrade | Pre-R4-02 | Post-R4-02 |
+|---|---|---|
+| `MULTISHOT` | maxLevel=100, baseCost=500, scaling=1.25, +1 target per 20 levels (cap 5) | **maxLevel=4, baseCost=5,000, scaling=1.5, +1 target per level (cap 5)** |
+| `BOUNCE_SHOT` | maxLevel=60, baseCost=1,000, scaling=1.30, +1 bounce per 15 levels (cap 4) | **maxLevel=4, baseCost=8,000, scaling=1.5, +1 bounce per level (cap 4)** |
+
+Resulting cost curve to max each upgrade is exactly 4 purchases:
+
+| Upgrade | L1 (cost 0) | L2 (cost 1) | L3 (cost 2) | L4 (cost 3) | Total |
+|---|---|---|---|---|---|
+| `MULTISHOT` | 5,000 | 7,500 | 11,250 | 16,875 | **40,625 Steps** |
+| `BOUNCE_SHOT` | 8,000 | 12,000 | 18,000 | 27,000 | **65,000 Steps** |
+
+**Files changed:**
+
+- `domain/model/UpgradeType.kt` — `MULTISHOT` / `BOUNCE_SHOT` `UpgradeConfig` rows replaced with the new 4-level shape.
+- `domain/usecase/ResolveStats.kt` — `multishotTargets` formula simplified from `min(1 + floor(total(MULTISHOT)/20.0).toInt(), 5)` to `min(1 + total(MULTISHOT), 5)`; `bounceCount` from `min(floor(total(BOUNCE_SHOT)/15.0).toInt(), 4)` to `min(total(BOUNCE_SHOT), 4)`. The `min(…)` caps stay in place defensively in case a legacy install has a pre-R4-02 level value above the new `maxLevel`. Unused `kotlin.math.floor` import dropped.
+- `domain/usecase/DescribeUpgradeEffect.kt` — unchanged. The existing `formatTargets` / `formatBounces` helpers handle any integer; the call sites read `stats.multishotTargets` / `stats.bounceCount` which are now driven by the simpler formula automatically.
+- `domain/usecase/ApplyCardEffects.kt` — unchanged. `CHAIN_REACTION` card's `bounceCount += value` stacks additively *after* the `min(…, 4)` cap in `ResolveStats`, so a max-level `CHAIN_REACTION` (+4 bounces) on top of max-level `BOUNCE_SHOT` (4) still produces the documented 8 total bounces.
+
+**Files edited (test):**
+- `domain/usecase/ResolveStatsTest.kt` — 4 tests rewritten: `multishot thresholds` → `R402 multishot per-level scaling` (asserts 1→5 targets at levels 0–4, plus the legacy-level-100 defensive cap); `bounce thresholds` → `R402 bounce per-level scaling` (asserts 0→4 bounces at levels 0–4, plus the legacy-level-60 defensive cap); `RO08 in-round multishot sums levels for the per-20 threshold` → `R402 in-round multishot sums workshop and in-round levels` (additive ws + ir, cap at 5); `RO08 in-round bounce sums levels for the per-15 threshold` → `R402 in-round bounce sums workshop and in-round levels` (additive ws + ir, cap at 4).
+- `domain/usecase/DescribeUpgradeEffectTest.kt` — 2 tests rewritten: `MULTISHOT shows targets with threshold pluralisation` and `BOUNCE_SHOT shows bounces with threshold pluralisation` updated to the per-level scaling (level 1 → level 2 transitions, not level 20 → level 21).
+- `balance/CostCurveTest.kt` — unchanged. Its `premium upgrades are expensive but not unreachable at level 10` test uses `if (maxLevel != null && maxLevel < 10) maxLevel - 1 else 10` so the test level for both `MULTISHOT` and `BOUNCE_SHOT` is now 3 (=maxLevel-1). At level 3, MULTISHOT costs 16,875 and BOUNCE_SHOT costs 27,000 — both well under the 100,000 ceiling.
+
+**Test count:** 615 → 615 (unchanged — 6 tests rewritten in place, no net additions). `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh assembleDebug` both BUILD SUCCESSFUL.
+
+**Acceptance criteria (from `plan-R4-feedback-bundle.md` § R4-02):**
+- [x] L1 of `MULTISHOT` visibly fires at 2 enemies (test asserts `multishotTargets == 2` at MULTISHOT=1).
+- [x] L1 of `BOUNCE_SHOT` visibly bounces once (test asserts `bounceCount == 1` at BOUNCE_SHOT=1).
+- [x] Costs reach 5,000 / 8,000 Steps at L1 (formula: `ceil(baseCost × scaling^0) = baseCost`).
+- [x] Costs reach ~16,875 / ~27,000 at L4 (formula: `ceil(baseCost × 1.5^3) = ceil(baseCost × 3.375)`).
+- [x] `CHAIN_REACTION` card stacks additively on top of upgrade levels (unchanged behaviour, `ApplyCardEffects` runs after `ResolveStats`).
+
 ### R4-01: remove Step Overdrive (2026-05-23)
 
 First Wave 1 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Deletes the entire Step Overdrive feature — 4 enums, 4 standalone files, ~600 LOC, ~50 references across the battle stack — in response to user-soak feedback that the mechanic was "not fun and wastes steps for not a lot of benefit". R4-06 (Wave 2) will redesign the Ultimate Weapon system with auto-trigger + per-path upgrades; the visual feedback hooks Overdrive used (`overdriveColor` / `overdriveProgress`) are removed here and will be replaced as part of that redesign.

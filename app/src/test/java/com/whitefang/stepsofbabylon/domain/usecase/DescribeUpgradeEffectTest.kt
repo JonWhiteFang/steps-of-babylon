@@ -152,21 +152,24 @@ class DescribeUpgradeEffectTest {
 
     @Test
     fun `MULTISHOT shows targets with threshold pluralisation`() {
-        // L0 baseline = 1 target; cross to 2 targets at level 20.
+        // Post-R4-02: per-level +1 target, baseline 1.
         val baseline = describe(emptyMap(), emptyMap(), emptyMap(), UpgradeType.MULTISHOT)
         assertEquals("1 target", baseline.current)
-        // ws=20, ir=0 -> 1 + 1 = 2 targets.
-        val crossed = describe(mapOf(UpgradeType.MULTISHOT to 20), emptyMap(), emptyMap(), UpgradeType.MULTISHOT)
-        assertEquals("2 targets", crossed.current)
+        assertEquals("2 targets", baseline.next)
+        // ws=1, ir=0 -> 1 + 1 = 2 targets; next ir=1 -> 1 + 2 = 3 targets.
+        val one = describe(mapOf(UpgradeType.MULTISHOT to 1), emptyMap(), emptyMap(), UpgradeType.MULTISHOT)
+        assertEquals("2 targets", one.current)
+        assertEquals("3 targets", one.next)
     }
 
     @Test
     fun `BOUNCE_SHOT shows bounces with threshold pluralisation`() {
-        // ws=15, ir=0 -> floor(15/15) = 1 bounce.
-        val r = describe(mapOf(UpgradeType.BOUNCE_SHOT to 15), emptyMap(), emptyMap(), UpgradeType.BOUNCE_SHOT)
+        // Post-R4-02: per-level +1 bounce, baseline 0.
+        // ws=1, ir=0 -> 1 bounce.
+        val r = describe(mapOf(UpgradeType.BOUNCE_SHOT to 1), emptyMap(), emptyMap(), UpgradeType.BOUNCE_SHOT)
         assertEquals("1 bounce", r.current)
-        // Next ir=1 -> floor(16/15) = 1 bounce still.
-        assertEquals("1 bounce", r.next)
+        // Next ir=1 -> 2 bounces.
+        assertEquals("2 bounces", r.next)
     }
 
     @Test
