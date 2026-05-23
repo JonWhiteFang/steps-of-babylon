@@ -27,7 +27,7 @@ Operating rules:
 - **Package:** `com.whitefang.stepsofbabylon`
 - **Min SDK:** 34 (Android 14)
 - **Target/Compile SDK:** 36
-- **Version:** 1.0.0 (versionCode 7 — v3 was uploaded + rolled out to internal track 2026-05-15, on-device smoke test PASSED 2026-05-18; v4 (RO-08 + RO-09 fix bundles) was uploaded to the internal track 2026-05-18 then superseded by v5 before closed-track promotion; v5 (RO-11 Labs wiring + in-round upgrade-effect readout, 572 → 609 tests) uploaded to Play Console internal track 2026-05-19 — v5 on-device smoke test 2026-05-19 morning surfaced an in-round stat-drift bug bundle (RO-12: lab + card multipliers stripped on every in-round upgrade purchase + DescribeUpgradeEffect drift + HEALTH_REGEN precision); fixes landed on `main` 2026-05-19 (609 → 615 tests); versionCode bumped 5 → 6 in commit `1796b4c`; v6 built and uploaded to internal track 2026-05-19. v5 smoke also surfaced 4 GitHub-tracked bugs (issues #1–#4) — R3 (Remediation 3) plan written 2026-05-19 early afternoon; **R3-01 (#2 backgrounding mid-round state loss, blocker)** fix landed on branch `fix/2-battle-backgrounding-state-loss` 2026-05-19 afternoon (615 → 619 tests) and merged to `main` (PR #5); **R3-02 (#4 THORN_DAMAGE wiring + LIFESTEAL visibility, major)** fix landed on branch `fix/4-thorn-damage-lifesteal` 2026-05-19 afternoon (619 → 622 tests) and merged to `main` (PR #6); **R3-03 (#1 COMPLETE_RESEARCH mission false trigger, major)** fix landed on branch `fix/1-complete-research-false-trigger` 2026-05-19 mid-afternoon (622 → 627 tests) and merged to `main` (PR #7); **R3-04 (#3 battle bottom control-bar overflow, minor)** fix landed on branch `fix/3-bottom-bar-overflow` 2026-05-19 evening (test count unchanged at 627 — pure Compose UI change; on-device verification only) and merged to `main` (PR #8). versionCode bumped 6 → 7 on 2026-05-20 and AAB v7 signed for upload — first AAB to ship the full {RO-12 + R3-01 + R3-02 + R3-03 + R3-04} bundle. Awaiting on-device smoke test of v7 before closed-track promotion.)
+- **Version:** 1.0.0 (versionCode 7 — v3 was uploaded + rolled out to internal track 2026-05-15, on-device smoke test PASSED 2026-05-18; v4 (RO-08 + RO-09 fix bundles) was uploaded to the internal track 2026-05-18 then superseded by v5 before closed-track promotion; v5 (RO-11 Labs wiring + in-round upgrade-effect readout, 572 → 609 tests) uploaded to Play Console internal track 2026-05-19 — v5 on-device smoke test 2026-05-19 morning surfaced an in-round stat-drift bug bundle (RO-12: lab + card multipliers stripped on every in-round upgrade purchase + DescribeUpgradeEffect drift + HEALTH_REGEN precision); fixes landed on `main` 2026-05-19 (609 → 615 tests); versionCode bumped 5 → 6 in commit `1796b4c`; v6 built and uploaded to internal track 2026-05-19. v5 smoke also surfaced 4 GitHub-tracked bugs (issues #1–#4) — R3 (Remediation 3) plan written 2026-05-19 early afternoon; **R3-01 (#2 backgrounding mid-round state loss, blocker)** fix landed on branch `fix/2-battle-backgrounding-state-loss` 2026-05-19 afternoon (615 → 619 tests) and merged to `main` (PR #5); **R3-02 (#4 THORN_DAMAGE wiring + LIFESTEAL visibility, major)** fix landed on branch `fix/4-thorn-damage-lifesteal` 2026-05-19 afternoon (619 → 622 tests) and merged to `main` (PR #6); **R3-03 (#1 COMPLETE_RESEARCH mission false trigger, major)** fix landed on branch `fix/1-complete-research-false-trigger` 2026-05-19 mid-afternoon (622 → 627 tests) and merged to `main` (PR #7); **R3-04 (#3 battle bottom control-bar overflow, minor)** fix landed on branch `fix/3-bottom-bar-overflow` 2026-05-19 evening (test count unchanged at 627 — pure Compose UI change; on-device verification only) and merged to `main` (PR #8). versionCode bumped 6 → 7 on 2026-05-20 and AAB v7 signed for upload — first AAB to ship the full {RO-12 + R3-01 + R3-02 + R3-03 + R3-04} bundle. AAB v7 uploaded + on-device smoke test PASSED 2026-05-21. **Plan R4 (Internal Soak Feedback Bundle) approved 2026-05-22 evening; gameplay redesign (8 sub-plans / 4 waves / 2 schema migrations / 3 ADRs) replaces internal-soak as the gate before closed-track promotion.**)
 - **Architecture:** MVVM + Clean Architecture
 - **UI:** Jetpack Compose (menus/screens) + SurfaceView (battle renderer)
 - **DI:** Hilt (with KSP)
@@ -79,14 +79,14 @@ See `.kiro/steering/source-files.md` for the full source file index.
 
 ## Plans & Roadmap
 
-Development follows a master plan with 35 entries (Plans 01–31, 10b, R, R2, and R3). See `docs/plans/master-plan.md` for the full index, dependency graph, and status tracker.
+Development follows a master plan with 36 entries (Plans 01–31, 10b, R, R2, R3, and R4). See `docs/plans/master-plan.md` for the full index, dependency graph, and status tracker.
 
 ### Key Documents
 
 | Document | Path |
 |---|---|
 | Game Design Document | `docs/StepsOfBabylon_GDD.md` |
-| Master Plan (35 entries) | `docs/plans/master-plan.md` |
+| Master Plan (36 entries) | `docs/plans/master-plan.md` |
 | Plan 01: Domain Models | `docs/plans/plan-01-domain-models.md` |
 | Plan 02: Database & DAOs | `docs/plans/plan-02-database.md` |
 | Battle Formulas | `docs/battle-formulas.md` |
@@ -133,6 +133,7 @@ Development follows a master plan with 35 entries (Plans 01–31, 10b, R, R2, an
 | R | Remediation | Bug and UX fixes from external code review. 12 sub-plans (R01–R12), 3 priority tiers. | Plan 30 |
 | R2 | Remediation 2 | Bug and UX fixes from second external review. 12 sub-plans (R2-01–R2-12), 3 priority tiers. | Plan R |
 | R3 | Remediation 3 | Bug fixes from v5 internal-track on-device smoke test (2026-05-19). 4 sub-plans (R3-01–R3-04) tracked as GitHub issues #1–#4. Tier 1 blocks closed-track promotion. | Plan R2 |
+| R4 | Remediation 4 — Feedback Bundle | Gameplay-redesign bundle from internal-soak feedback (2026-05-22). 8 sub-plans across 4 waves: removes Overdrive, simplifies Multishot/Bounce, adds Rapid Fire + Help screen, redesigns UWs (auto-trigger + 3-path upgrades), adds boss-drop Power Stones, scraps card dust for copy-based progression. Two Room migrations (v9→v10, v10→v11). 3 new ADRs. | Plan R3 |
 
 ### Dependency Graph
 
@@ -171,12 +172,13 @@ graph TD
     P30 --> PR[R: Remediation]
     PR --> PR2[R2: Remediation 2]
     PR2 --> PR3[R3: Remediation 3]
-    PR3 --> P31[31: Play Console]
+    PR3 --> PR4[R4: Feedback Bundle]
+    PR4 --> P31[31: Play Console]
 ```
 
 ### Critical Path
 
-01 → 02 → 03 → 06 → 08 → 09 → 10 → 11 → 12 → 13 → 18 → 27 → 28 → 29 → 30 → R (Tier 1) → R2 (Tier 1) → R3 (Tier 1) → 31
+01 → 02 → 03 → 06 → 08 → 09 → 10 → 11 → 12 → 13 → 18 → 27 → 28 → 29 → 30 → R (Tier 1) → R2 (Tier 1) → R3 (Tier 1) → R4 (Tier 1) → 31
 
 ### Current Status
 
@@ -215,7 +217,8 @@ graph TD
 - [x] **Plan R: Remediation** (R01–R12 complete)
 - [x] **Plan R2: Remediation 2** (R2-01–R2-12) ✓
 - [x] **Plan R3: Remediation 3** ✓ *(all 4 GitHub issues closed. R3-01 (#2 backgrounding state loss, blocker) merged to `main` via PR #5 (615 → 619 tests). R3-02 (#4 THORN_DAMAGE wiring + LIFESTEAL visibility, major) merged to `main` via PR #6 (619 → 622 tests). R3-03 (#1 COMPLETE_RESEARCH mission false trigger, major) merged to `main` via PR #7 (622 → 627 tests). R3-04 (#3 battle bottom control-bar overflow, minor) merged to `main` via PR #8 (627 tests unchanged — pure Compose UI change). versionCode bumped 6 → 7 on 2026-05-20; AAB v7 signed + built — first AAB to ship the full {RO-12 + R3-01 + R3-02 + R3-03 + R3-04} bundle.)*
-- [ ] **Plan 31: Play Console & Store Publication** *(in progress — Phases A–G landed: developer account verified, AdMob ad units created + wired, privacy policy hosted, upload keystore + Play App Signing enrolled, package registered via Android Developer Verification (debug keystore path, see ADR-0007), main store listing populated, content rating + data safety + target audience submitted, Phase F unblocker `feat(billing): lowercase SKU wire format` landed 2026-05-14, Phase G internal-track AAB v3 (versionCode 3) uploaded + rolled out 2026-05-15, on-device smoke test PASSED 2026-05-18 (real Play Billing test purchase credited the wallet end-to-end across all 5 SKUs). C.5 PR 3 landed 2026-05-18 — `StubBillingManager` deleted, `BillingModule` collapsed to `@Binds BillingManagerImpl`, `BuildConfig.USE_REAL_BILLING` flag removed; test count 527 → 524 (parity test obsoleted). RO-08 (4-fix upgrade-wiring bundle, 535 → 565 tests) + RO-09 (3-fix pre-closed-test bundle, 565 → 572 tests) landed 2026-05-18; AAB v4 (versionCode 4) uploaded to internal track 2026-05-18 then superseded by v5 before closed-track promotion. RO-11 (3-phase Labs wiring + in-round upgrade-effect readout, 572 → 609 tests) landed 2026-05-19; AAB v5 (versionCode 5) uploaded to internal track 2026-05-19 — v5 smoke test surfaced RO-12 + 4 GitHub-tracked R3 bugs. RO-12 + R3 (all 4 issues) fixed and merged; versionCode bumped 6 → 7 on 2026-05-20; AAB v7 signed + built. Next: upload v7 to Play Console internal track + on-device smoke test, then promote internal v7 → closed; closed-track recruitment (≥12 testers, ≥14 days) before production access can be applied for.)*
+- [ ] **Plan R4: Remediation 4 — Internal Soak Feedback Bundle** *(approved 2026-05-22 evening, ready to start Wave 1. 8 sub-plans across 4 waves locked via 1-by-1 user decision walk-through; plan document at `docs/plans/plan-R4-feedback-bundle.md`. **Wave 1** R4-01/02/04 (no schema, ~1–2 days, AAB v8). **Wave 2** R4-03/06/07 (schema v9→v10, ~1.5 weeks, AAB v9, 2 new ADRs). **Wave 3** R4-08 (schema v10→v11, ~3–4 days, AAB v10, 1 new ADR). **Wave 4** R4-05 (no schema, ~1 day, AAB v11). Internal-soak window pauses while R4 ships; closed-track ≥14-day clock starts only after R4 fully lands and the post-R4 internal AAB is promoted.)*
+- [ ] **Plan 31: Play Console & Store Publication** *(in progress — Phases A–G landed: developer account verified, AdMob ad units created + wired, privacy policy hosted, upload keystore + Play App Signing enrolled, package registered via Android Developer Verification (debug keystore path, see ADR-0007), main store listing populated, content rating + data safety + target audience submitted, Phase F unblocker `feat(billing): lowercase SKU wire format` landed 2026-05-14, Phase G internal-track AAB v3 (versionCode 3) uploaded + rolled out 2026-05-15, on-device smoke test PASSED 2026-05-18 (real Play Billing test purchase credited the wallet end-to-end across all 5 SKUs). C.5 PR 3 landed 2026-05-18 — `StubBillingManager` deleted, `BillingModule` collapsed to `@Binds BillingManagerImpl`, `BuildConfig.USE_REAL_BILLING` flag removed; test count 527 → 524 (parity test obsoleted). RO-08 (4-fix upgrade-wiring bundle, 535 → 565 tests) + RO-09 (3-fix pre-closed-test bundle, 565 → 572 tests) landed 2026-05-18; AAB v4 (versionCode 4) uploaded to internal track 2026-05-18 then superseded by v5 before closed-track promotion. RO-11 (3-phase Labs wiring + in-round upgrade-effect readout, 572 → 609 tests) landed 2026-05-19; AAB v5 (versionCode 5) uploaded to internal track 2026-05-19 — v5 smoke test surfaced RO-12 + 4 GitHub-tracked R3 bugs. RO-12 + R3 (all 4 issues) fixed and merged; versionCode bumped 6 → 7 on 2026-05-20; AAB v7 signed + built. AAB v7 uploaded + on-device smoke test PASSED 2026-05-21. Internal-soak feedback collected 2026-05-22 evening surfaced 8 gameplay-design issues now tracked as Plan R4. **Next: ship Plan R4 (4 waves, ~3 weeks); promote latest post-R4 internal AAB to closed track only after R4 fully lands.** Closed-track ≥14-day / ≥12-tester gate then production access application.)*
 
 ### Parallelizable Branches (after dependencies met)
 

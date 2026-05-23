@@ -45,6 +45,7 @@ See `docs/StepsOfBabylon_GDD.md` for the full game design document.
 | R | [Remediation](./plan-R-remediation.md) | Bug and UX fixes from external code review. 12 sub-plans (R01–R12) across 3 priority tiers. Tier 1 blocks release. | Plan 30 |
 | R2 | [Remediation 2](./plan-R2-remediation.md) | Bug and UX fixes from second external review. 12 sub-plans (R2-01–R2-12) across 3 priority tiers. Tier 1 blocks release. | Plan R |
 | R3 | [Remediation 3](./plan-R3-remediation-3.md) | Bug fixes from the v5 internal-track on-device smoke test (2026-05-19). 4 sub-plans (R3-01–R3-04) tracked as GitHub issues #1–#4. Tier 1 (R3-01/02/03) blocks closed-track promotion. | Plan R2 |
+| R4 | [Remediation 4 — Feedback Bundle](./plan-R4-feedback-bundle.md) | Gameplay-redesign bundle from internal-soak feedback (2026-05-22). 8 sub-plans across 4 waves. Removes Overdrive, simplifies Multishot/Bounce, adds Rapid Fire + Help screen, redesigns UWs with auto-trigger + 3-path upgrades, adds boss-drop Power Stones, scraps card dust for copy-based progression. Two Room migrations (v9→v10, v10→v11). 3 new ADRs. | Plan R3 |
 
 ---
 
@@ -85,7 +86,8 @@ graph TD
     P30 --> PR[R: Remediation]
     PR --> PR2[R2: Remediation 2]
     PR2 --> PR3[R3: Remediation 3]
-    PR3 --> P31[31: Play Console]
+    PR3 --> PR4[R4: Feedback Bundle]
+    PR4 --> P31[31: Play Console]
 ```
 
 ---
@@ -94,10 +96,11 @@ graph TD
 
 - Each plan will have its own detailed markdown file (e.g., `plan-01-domain-models.md`) created when that plan is ready to be worked on.
 - Plans can be worked on in parallel where dependencies allow (e.g., Plans 14, 15 can run in parallel since both depend on Plan 12).
-- The critical path runs: 01 → 02 → 03 → 06 → 08 → 09 → 10 → 11 → 12 → 13 → 18 → 27 → 28 → 29 → 30 → R (Tier 1) → R2 (Tier 1) → R3 (Tier 1) → 31.
+- The critical path runs: 01 → 02 → 03 → 06 → 08 → 09 → 10 → 11 → 12 → 13 → 18 → 27 → 28 → 29 → 30 → R (Tier 1) → R2 (Tier 1) → R3 (Tier 1) → R4 (Tier 1) → 31.
 - Plan R (Remediation) was added after an external code review. Tier 1 sub-plans (R01–R05) block production release. Tier 2 (R06–R09) should complete before release. Tier 3 (R10–R12) can follow shortly after.
 - Plan R2 (Remediation 2) was added after a second external code review. Tier 1 sub-plans (R2-01, R2-02, R2-06) block production release.
 - Plan R3 (Remediation 3) was added after the v5 internal-track on-device smoke test surfaced 4 closed-test-blocking bugs filed as GitHub issues #1–#4. Tier 1 (R3-01 / R3-02 / R3-03) blocks the internal → closed-track promotion in Plan 31 Phase G2.
+- Plan R4 (Remediation 4 — Internal Soak Feedback Bundle) was added after the AAB v7 internal-soak surfaced 8 gameplay-design issues. All 8 sub-plans are Tier 1 — R4 fully gates the closed-track promotion. The internal-soak window pauses while R4 ships across 4 waves; the closed-track ≥14-day clock starts only after R4 fully lands and the post-R4 internal AAB is promoted.
 - Plans 04/05, 16/17, 19/20/21, 22, 23 are feature branches that can be parallelized after their dependencies are met.
 
 ---
@@ -139,4 +142,6 @@ graph TD
 - [x] Plan 30: Release Prep
 - [x] Plan R: Remediation (R01–R12 complete)
 - [x] Plan R2: Remediation 2 (R2-01–R2-12)
+- [x] Plan R3: Remediation 3 (R3-01–R3-04 all merged)
+- [ ] Plan R4: Remediation 4 — Internal Soak Feedback Bundle (8 sub-plans, 4 waves; approved 2026-05-22, Wave 1 pending)
 - [ ] Plan 31: Play Console & Store Publication

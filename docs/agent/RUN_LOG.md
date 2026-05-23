@@ -1,5 +1,129 @@
 # Run Log
 
+## 2026-05-22 (evening) — Plan R4 (Internal Soak Feedback Bundle) authored end-to-end
+
+- **Goal:** investigate user-supplied feedback from internal soak testing of AAB v7 and turn it into a concrete plan with all design decisions locked.
+- **Outcome:** 8-item gameplay-redesign bundle fully specced via 1-by-1 user decision walk-through. New plan file `docs/plans/plan-R4-feedback-bundle.md` (517 lines). Master plan and STATE.md updated to register R4 and reframe priorities + next-actions for the implementation work. Memory entity `Plan-R4-Feedback-Bundle` records every locked decision with UTC+1 BST timestamps. **No code changes this session — planning only.** Implementation starts next session with R4-01 (Overdrive removal).
+
+### What the user reported
+
+Following a stretch of v7 internal-track soak play, the user supplied 8 items of feedback in one message:
+1. Completely remove the Step Overdrive feature ("not fun and wastes steps for not a lot of benefit").
+2. Multishot and Bounce Shot shouldn't be multiple levels for no benefit — each level should grant +1 of the relevant bonus, with expensive cost per level.
+3. Add a new "Rapid Fire" Workshop upgrade: auto-triggers at intervals, upgradable interval/duration/speed, max upgrade should make it permanent.
+4. The in-round upgrade button needs a more obvious icon.
+5. Add a Help section describing important parts of the game.
+6. UWs are confusing ("how to trigger them?") — they should auto-trigger on cooldown, with per-UW upgrade paths instead of a single linear level. CHAIN_LIGHTNING explicitly called out: should always happen, with bounces and damage as upgrade paths.
+7. Boss kills should drop Power Stones (1 PS at Tier 1, 2 PS at Tier 2, ...) capped at maybe 20 PS/day.
+8. Cards should scrap the dust mechanic. Duplicates should grant copies. 5(?) copies upgrades to next level. Max level should be ~7.
+
+All 8 are gameplay-redesign requests, not bug reports. The combined scope is ~3 weeks of dev work, two Room migrations, three new ADRs, and substantial test churn (627 → ~700 tests).
+
+### How the session went — 1-by-1 walk-through
+
+The user explicitly chose to walk through items one at a time and confirm decisions before any plan write. Each item ran:
+1. I summarised the current state from the codebase (file references, existing data flow, blast radius).
+2. I proposed a spec with 1–3 explicit decision points.
+3. The user replied with a tight confirmation or override.
+4. I locked the spec into the `Plan-R4-Feedback-Bundle` memory entity with a timestamp.
+
+Key decision-locks:
+
+- **Item 1 (Overdrive removal)** locked 20:23 BST as full delete.
+- **Item 2 (Multishot/Bounce)** locked 20:25 BST: Interpretation B (per-level +1 bonus). MULTISHOT maxLevel 4 baseCost 5k scaling 1.5x. BOUNCE_SHOT maxLevel 4 baseCost 8k scaling 1.5x. CHAIN_REACTION card stacks additively.
+- **Item 3 (Rapid Fire)** locked 20:27 BST: ATTACK category, maxLevel 10, L1 60s/5s/2.0x → L10 permanent/3.0x. baseCost 2k Steps, scaling 1.18x. Engine pattern mirrors RECOVERY_PACKAGES periodic-pulse.
+- **Item 4 (icon)** locked 21:24 BST: `Icons.Filled.Upgrade`.
+- **Item 5 (Help)** locked 21:25 BST: top-right Home icon + Settings entry, on-demand only, warm-explainer tone, 9 sections, scheduled LAST in the bundle.
+- **Item 6 (UWs)** locked across 21:26–21:31 BST in two layers:
+  - **6A (cross-cutting):** auto-trigger gates on enemies present, UltimateWeaponBar stays as passive cooldown indicator, 3 paths per UW, symmetric maxLevel 10. Per-path cost = unlockCost × 2 × currentPathLevel. Total to fully max all 6 UWs: ~145,640 PS.
+  - **6B–6G (per-UW):** all 6 weapons specced one at a time. CHAIN_LIGHTNING (damage 500→2000, chain 3→12, cooldown 30s→6s). DEATH_WAVE (damage 500→3000, radius 50%→100%, cooldown 60s→20s). BLACK_HOLE (damage 50→250 DPS, pull 30→200 px/sec, cooldown 90s→30s). CHRONO_FIELD (slow 50%→5%, duration 5s→14s, cooldown 75s→25s). POISON_SWAMP (DoT 1%→8% MaxHP/sec, area 50%→100%, cooldown 60s→20s). GOLDEN_ZIGGURAT (cash 2x→8x, damage 1.2x→3x, cooldown 90s→30s).
+- **Item 7 (Boss-drop PS)** locked 21:32 BST. **User's original 20/day cap was revised UP to 100/day** after I put the PS-economy math on the table: at 20/day plus existing PS sources, maxing 2 favourite UWs at the new R4-06 cost curve takes ~3.2 years; at 100/day it takes ~12 months which matches the design target. Per-tier reward = `tier` PS. Cap is total daily across tiers. Schema: new `bossPsEarnedToday: Long` column on `DailyStepRecordEntity`. Atomic DAO + new use case `AwardBossPowerStones` mirror RO-02's `creditBattleStepsAtomic` shape. New ADR-0009 (sibling of ADR-0003).
+- **Item 8 (Cards)** locked 21:33 BST: 8A rarity-scaled copies (3 COMMON / 4 RARE / 5 EPIC). 8B effect scaling extrapolated linearly L1→L7. 8C silent zero of cardDust on migration. 8D replace SupplyDropReward.CARD_DUST with CARD_COPY (random card, 1 copy). 8E pack guarantees 1 of pack-tier rarity, other 2 still independent rolls. Schema: CardInventoryEntity gets copyCount Int DEFAULT 1, cardType becomes unique. Migration v10→v11 collapses pre-existing duplicate rows by cardType. CardType.maxLevel 5→7.
+- **Sequencing** locked 21:34 BST as **Option C** (hybrid 4-wave): Wave 1 quick UX wins (R4-01/02/04, no schema, AAB v8). Wave 2 combat depth + PS economy (R4-03/06/07, single migration v9→v10, AAB v9). Wave 3 cards (R4-08, migration v10→v11, AAB v10). Wave 4 Help screen (R4-05, no schema, AAB v11).
+
+### Plan document structure
+
+`docs/plans/plan-R4-feedback-bundle.md` follows the project's R3-style structure:
+- Sub-plan index table with severity and dependency notes.
+- Wave-by-wave structure with schema migration ownership.
+- Mermaid dependency graph.
+- Per-sub-plan detail block: source-feedback quote, locked decisions with timestamps, files affected (production + test), per-test counts, schema specifics where applicable, acceptance criteria.
+- 4 open questions flagged for in-flight balance review (CHRONO_FIELD uptime concern, SECOND_WIND L7 cap, cardDust deletion timing, cosmetic visual hooks scope).
+- Priority Tiers section: all 8 sub-plans are Tier 1 — R4 fully gates closed-track promotion.
+
+### Internal soak window implications
+
+The internal-soak window (target 2026-05-21 → ~2026-06-04 per the previous run) **pauses while R4 ships**. STATE.md previously framed soak as the current objective; it now frames R4 implementation as the current objective and lists the closed-track promotion as a downstream step that happens AFTER R4 fully lands. The closed-track ≥14-day mandatory window has NOT started; it starts only when the post-R4 internal AAB is promoted to closed track.
+
+Net timeline impact: ~3 weeks of R4 implementation pushes closed-track promotion from ~2026-06-04 to ~2026-06-12 to ~2026-06-25 ish (Wave 4 signing + smoke test included), then ≥14 days closed-track → production-access application → 1–3 day Google review → staged rollout. Production launch shifts roughly 3 weeks later than the 2026-05-21 plan implied. The user implicitly accepted this when they chose to redesign rather than ship the v7 build into closed track.
+
+### Doc-sync (this commit)
+
+Applied **only** to live current-state docs per the agent protocol's PR Task-List Convention:
+
+- New file: `docs/plans/plan-R4-feedback-bundle.md` (517 lines).
+- `docs/plans/master-plan.md`: Plan Index gains R4 row.
+- `docs/agent/STATE.md`: current-objective rewritten as R4 implementation; previous-objective ladder gains the AAB-v7-soak entry above the R3-04 line; top-priorities renumbered with R4 waves as #1–#5; next-actions renumbered to start with R4 Wave 1; last-run line refreshed; previous-run cascade gains the R4-planning entry above the v7-build entry.
+- `docs/agent/RUN_LOG.md`: this entry prepended above the prior 2026-05-21 status entry.
+
+Deliberately **not** touched (historical artifacts per the protocol): prior `RUN_LOG.md` entries (2026-05-21 status, 2026-05-20 v7 build, R3-04, R3-03, R3-02, R3-01); past `CHANGELOG.md` sections; `docs/plans/plan-R3-remediation-3.md` and `plan-RO-12-in-round-stat-drift.md` (historical at authoring date); `devdocs/*` snapshots; `docs/database-schema.md` (will need updates when Wave 2 lands the v9→v10 migration, not before); `plan-31-play-console.md` (historical phase-state). AGENTS.md test count + README.md test count are still accurate at 627 — they only become stale once Wave 1 lands code, at which point they get updated alongside the wave's last commit.
+
+### Memory entity created
+
+MCP `memory` tool entity `Plan-R4-Feedback-Bundle` (entityType: `PlanInProgress`) records every locked decision with timestamp + numeric specifics. Future sessions starting an R4 wave can `open_nodes` this entity to load the full design without re-reading the plan file.
+
+### Next session
+
+Start Wave 1 with R4-01 (Overdrive removal). Branch `feat/R4-01-remove-overdrive`. Failing-test-first protocol where applicable (most of R4-01 is deletes — no failing test needed for delete-only paths; the GameEngineTest collapse from 4 → 2 fortuneMultiplier guards needs careful test rewriting rather than a new failing test). Doc-sync per the PR Task-List Convention at end of wave: AGENTS.md test count, CHANGELOG.md section, source-files.md (drop OverdriveType / OverdriveMenu / OverdriveAuraEffect / ActivateOverdrive entries), structure.md (drop Overdrive references), STATE.md, RUN_LOG.md, ADR-0003 amendment.
+
+---
+
+## 2026-05-21 — Status update: v7 smoke tests PASSED; extending internal-track soak testing ~2 more weeks
+
+- **Goal:** record user-supplied status update.
+- **Outcome:** memory-only update. No code, test, or schema changes. STATE.md current-objective + top-priorities + next-actions reframed to reflect the soak window; this RUN_LOG entry appended.
+
+### What the user reported
+
+- Internal testing still in progress.
+- Smoke tests have all passed (the combined 8 RO-11 + 5 RO-12 + 4× R3 acceptance check list against AAB v7 on a real device).
+- User is electing to continue with **internal** testing for **~2 more weeks** to surface long-term playability issues and any other latent bugs before promoting to closed testing.
+
+### Implication for the launch timeline (flagged for the user)
+
+Google's pre-production-access mandate is **≥14 calendar days on the closed-testing track with ≥12 opted-in testers**. Time spent on the *internal* track does **not** count toward that 14-day window — the clock starts only when the build is promoted to the closed track. Practical effect on the timeline:
+
+- Internal soak window: 2026-05-21 → ~2026-06-04 (about 14 days).
+- Earliest closed-track promotion: ~2026-06-04 (assuming no blocker bugs).
+- Earliest production-access application: ~2026-06-18 (closed-track day-14 + Google review request).
+- Earliest Google production-access approval: ~2026-06-19 to 2026-06-21 (1–3 day Google review).
+- Earliest production rollout start: same week as approval.
+
+Net: the 2-week internal soak adds ~2 weeks to the launch timeline. That is a fully reasonable trade-off for v1.0.0 quality, and the user has explicitly chosen it. The closed-track ≥14-day clock starts whenever the soak window closes; it cannot be shortened by overlapping with internal-track time.
+
+### Soak-mode operating posture (no work to schedule unless a bug surfaces)
+
+- Keep playing v7 on the internal track on a real device.
+- File any bug found into the existing `v1.0.0 closed-test gate` GitHub milestone using the existing 11-label taxonomy (created during Plan R3 scaffolding 2026-05-19).
+- For severity-blocker findings: branch off `main` → fix + tests → PR + merge → versionCode bump → `bundleRelease` → re-upload to internal track → re-test.
+- For severity-minor findings: defer to the v1.x patch backlog if the bug doesn't impair core gameplay or progression.
+- For severity-major findings: judgement call — fix on internal before closed promotion if the symptom is likely to be hit by a casual closed-track tester within their first session.
+
+### Doc-sync (this commit)
+
+Applied **only** to live current-state docs per the agent protocol's PR Task-List Convention:
+
+- `docs/agent/STATE.md`: current-objective rewritten as the soak-mode summary; previous-objective ladder gained an explicit "v7 build/sign + upload, complete" entry above the R3-04 line; top-priorities renumbered with soak-test continuation as #1 + bug-triage as #2 + closed-track promotion as #3; next-actions renumbered to start with the (Soak) entries; last-run line refreshed; previous-run cascade gains the v7-build entry.
+- `docs/agent/RUN_LOG.md`: this entry prepended.
+
+Deliberately **not** touched (historical artifacts per the protocol): prior `RUN_LOG.md` entries (2026-05-20 versionCode bump + R3-04, R3-03, R3-02, R3-01); past `CHANGELOG.md` sections; `docs/plans/plan-R3-remediation-3.md` and `plan-RO-12-in-round-stat-drift.md` (historical at authoring date); `devdocs/*` snapshots; `docs/database-schema.md`; `plan-31-play-console.md` (historical phase-state); AGENTS.md (already accurate at versionCode 7 + 627 tests + soak-pending — only stale once the soak window resolves); README.md (already accurate at versionCode 7 + 627 tests).
+
+### Next session
+
+No specific scheduled work. Next session is event-driven: either (a) a bug is filed during soak and needs triage, or (b) the soak window closes (~2026-06-04) and the closed-track promotion needs to happen.
+
+---
+
 ## 2026-05-20 (morning) — Documentation sweep: fix stale references across live current-state docs
 
 - **Goal:** Complete sweep of all documentation to find and fix anything outdated.

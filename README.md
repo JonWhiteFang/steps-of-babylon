@@ -8,7 +8,7 @@ An Android idle tower defense game where real-world walking drives all progressi
 
 ## Status
 
-Version 1.0.0 (versionCode 7) — pre-launch. Internal-track build verified on a real device 2026-05-18; awaiting closed-track promotion plus Google's ≥14-day / ≥12-tester gate before applying for production access. 627 JVM unit tests green.
+Version 1.0.0 (versionCode 7) — pre-launch. AAB v7 internal-track smoke testing PASSED 2026-05-21. **Plan R4 (Internal Soak Feedback Bundle) approved 2026-05-22** for gameplay redesign before closed-track promotion: removes Step Overdrive, simplifies Multishot/Bounce, adds Rapid Fire + Help screen, redesigns UWs (auto-trigger + 3-path upgrades), adds boss-drop Power Stones, scraps card dust for copy-based progression. Wave 1 implementation pending. 627 JVM unit tests green.
 
 For the live current state see [docs/agent/STATE.md](docs/agent/STATE.md). For recent changes see [CHANGELOG.md](CHANGELOG.md).
 
