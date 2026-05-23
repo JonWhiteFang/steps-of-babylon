@@ -24,6 +24,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Upgrade
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -161,7 +162,7 @@ fun BattleScreen(
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = if (state.showUpgradeMenu) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)),
                     modifier = Modifier.semantics { contentDescription = "Upgrades" },
-                ) { Text("⬆", color = Color.White) }
+                ) { Icon(Icons.Filled.Upgrade, contentDescription = null, tint = Color.White) }
             }
         }
 
