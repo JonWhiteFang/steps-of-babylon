@@ -7,13 +7,13 @@ import org.junit.jupiter.api.Test
 class UpgradeTypeTest {
 
     @Test
-    fun `23 entries exist`() {
-        assertEquals(23, UpgradeType.entries.size)
+    fun `24 entries exist`() {
+        assertEquals(24, UpgradeType.entries.size)
     }
 
     @Test
-    fun `category counts are 8 attack 9 defense 6 utility`() {
-        assertEquals(8, UpgradeType.entries.count { it.category == UpgradeCategory.ATTACK })
+    fun `category counts are 9 attack 9 defense 6 utility`() {
+        assertEquals(9, UpgradeType.entries.count { it.category == UpgradeCategory.ATTACK })
         assertEquals(9, UpgradeType.entries.count { it.category == UpgradeCategory.DEFENSE })
         assertEquals(6, UpgradeType.entries.count { it.category == UpgradeCategory.UTILITY })
     }
