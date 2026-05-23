@@ -47,7 +47,18 @@ class ZigguratEntity(
      * `stats`. R4-01 dropped the Overdrive ASSAULT 2× attack speed reference; the invariant
      * is unchanged.
      */
-    private val attackInterval: Float get() = (1.0 / stats.attackSpeed).toFloat()
+    private val attackInterval: Float get() = (1.0 / (stats.attackSpeed * rapidFireMultiplier)).toFloat()
+
+    /**
+     * Transient attack-speed multiplier driven by the RAPID_FIRE upgrade (R4-03). Set
+     * to the level's burst multiplier (2.0× at L1, scaling to 3.0× at L10) by
+     * `GameEngine.tickRapidFire` while a burst is active, and reset to `1f` when the
+     * burst expires or the wave enters cooldown phase. Default `1f` means "no Rapid
+     * Fire active" — attack-speed reads pass through unchanged. `@Volatile` because the
+     * game-loop thread reads it every tick while the engine writes it from the same
+     * thread; the annotation documents the cross-method contract.
+     */
+    @Volatile var rapidFireMultiplier: Float = 1f
 
     private val layerCount = 5
     private val totalHeight: Float = screenHeight * 0.25f

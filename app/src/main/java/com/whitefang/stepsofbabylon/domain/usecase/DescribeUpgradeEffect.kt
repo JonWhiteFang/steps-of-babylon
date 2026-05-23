@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
 import com.whitefang.stepsofbabylon.domain.model.OwnedCard
+import com.whitefang.stepsofbabylon.domain.model.RapidFireSchedule
 import com.whitefang.stepsofbabylon.domain.model.ResearchType
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import java.util.Locale
@@ -159,12 +160,42 @@ class DescribeUpgradeEffect(
                 val pct = min(total * type.config.effectPerLevel, 50.0)
                 fmt("+%.0f%% heal", pct)
             }
+
+            // Rapid Fire (R4-03) — Workshop-only, periodic attack-speed burst. Reads the
+            // workshop level only because RAPID_FIRE is hidden from the in-round menu (see
+            // `InRoundUpgradeMenu.hiddenInRound`). The readout shape mirrors the upgrade's
+            // description: "60s/5s/2.0\u00d7" at L1, scaling to "permanent/3.0\u00d7" at L10.
+            UpgradeType.RAPID_FIRE -> {
+                val total = (workshopLevels[type] ?: 0) + (inRoundLevels[type] ?: 0)
+                formatRapidFire(total)
+            }
         }
     }
 
     private fun formatTargets(n: Int): String = if (n == 1) "1 target" else "$n targets"
     private fun formatBounces(n: Int): String = if (n == 1) "1 bounce" else "$n bounces"
     private fun formatOrbs(n: Int): String = if (n == 1) "1 orb" else "$n orbs"
+
+    /**
+     * Renders the RAPID_FIRE Now / Next readout (R4-03). At L0 the upgrade is unpurchased
+     * and produces no burst, so the readout shows "inactive" — contrasts visibly with the
+     * L1 "60s/5s/2.0\u00d7" preview so the player can see what the first purchase unlocks.
+     * At L10 the duration matches the interval and the buff is permanent, so the format
+     * collapses to "permanent/3.0\u00d7". Intermediate levels show the full
+     * (interval, duration, multiplier) triple. All three values are linearly interpolated
+     * by [RapidFireSchedule] so this formatter and [GameEngine.tickRapidFire] always agree.
+     */
+    private fun formatRapidFire(level: Int): String {
+        if (level <= 0) return "inactive"
+        val interval = RapidFireSchedule.interval(level)
+        val duration = RapidFireSchedule.duration(level)
+        val multiplier = RapidFireSchedule.multiplier(level)
+        return if (RapidFireSchedule.isPermanent(level)) {
+            fmt("permanent/%.1f\u00d7", multiplier.toDouble())
+        } else {
+            "${fmt("%.0fs", interval.toDouble())}/${fmt("%.0fs", duration.toDouble())}/${fmt("%.1f\u00d7", multiplier.toDouble())}"
+        }
+    }
 
     /**
      * Locale-independent number formatter. Pinning to [Locale.ROOT] guarantees the readout

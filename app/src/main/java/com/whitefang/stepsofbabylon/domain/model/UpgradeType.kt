@@ -23,6 +23,7 @@ enum class UpgradeType(
     MULTISHOT(UpgradeCategory.ATTACK, isWorkshopVisible = false),
     BOUNCE_SHOT(UpgradeCategory.ATTACK, isWorkshopVisible = false),
     DAMAGE_PER_METER(UpgradeCategory.ATTACK),
+    RAPID_FIRE(UpgradeCategory.ATTACK),
 
     // Defense (9)
     HEALTH(UpgradeCategory.DEFENSE),
@@ -55,6 +56,7 @@ enum class UpgradeType(
             MULTISHOT to UpgradeConfig(5_000, 1.5, 10, 1.0, "+1 additional target per level (in-round Cash purchase or Labs research; cap 11 incl. baseline)"),
             BOUNCE_SHOT to UpgradeConfig(8_000, 1.5, 10, 1.0, "+1 bounce per level (in-round Cash purchase or Labs research; cap 10)"),
             DAMAGE_PER_METER to UpgradeConfig(200, 1.16, null, 1.0, "+1% bonus damage based on enemy distance"),
+            RAPID_FIRE to UpgradeConfig(2_000, 1.18, 10, 1.0, "Periodic attack-speed burst (60s/5s/2.0\u00d7 \u2192 permanent/3.0\u00d7 at max)"),
 
             // Defense
             HEALTH to UpgradeConfig(50, 1.12, null, 3.0, "+3% max ziggurat health"),

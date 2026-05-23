@@ -71,12 +71,12 @@ class WorkshopViewModelTest {
             UpgradeType.BOUNCE_SHOT !in attackTypes,
             "BOUNCE_SHOT must not appear in Workshop ATTACK list (R4-02b: in-round Cash + Labs research only)",
         )
-        // Sanity: the other 6 ATTACK upgrades still appear (DAMAGE / ATTACK_SPEED /
-        // CRITICAL_CHANCE / CRITICAL_FACTOR / RANGE / DAMAGE_PER_METER).
+        // Sanity: the other 7 ATTACK upgrades still appear (DAMAGE / ATTACK_SPEED /
+        // CRITICAL_CHANCE / CRITICAL_FACTOR / RANGE / DAMAGE_PER_METER / RAPID_FIRE).
         assertEquals(
-            6,
+            7,
             attackTypes.size,
-            "Workshop ATTACK list should contain 6 upgrades post-R4-02b (was 8 in R4-02)",
+            "Workshop ATTACK list should contain 7 upgrades post-R4-03 (was 6 in R4-02b, 8 in R4-02)",
         )
     }
 

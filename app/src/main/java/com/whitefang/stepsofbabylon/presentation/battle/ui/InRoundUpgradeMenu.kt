@@ -53,9 +53,11 @@ fun InRoundUpgradeMenu(
     val category = tabs[selectedTab]
     // Mirror the WorkshopViewModel hidden-set: STEP_MULTIPLIER affects walking outside
     // battles and RECOVERY_PACKAGES is a passive periodic-heal effect — neither makes
-    // sense as a cash-fed in-round purchase. Hiding them here closes the dead-cash gap
-    // identified in RO-08.
-    val hiddenInRound = setOf(UpgradeType.STEP_MULTIPLIER, UpgradeType.RECOVERY_PACKAGES)
+    // sense as an in-round Cash purchase. RAPID_FIRE (R4-03) is also a passive periodic
+    // effect — the upgrade fires on its own timer during a wave; an in-round Cash entry
+    // would imply per-round purchases of the burst trigger, which doesn't match the
+    // "persistent attack-speed burst" feature design.
+    val hiddenInRound = setOf(UpgradeType.STEP_MULTIPLIER, UpgradeType.RECOVERY_PACKAGES, UpgradeType.RAPID_FIRE)
     val upgrades = UpgradeType.entries.filter { it.category == category && it !in hiddenInRound }
 
     Column(

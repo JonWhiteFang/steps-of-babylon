@@ -286,6 +286,61 @@ class DescribeUpgradeEffectTest {
         assertEquals("1150 HP", r.current)
     }
 
+    // ---- R4-03: RAPID_FIRE periodic-burst readout ----
+    // The Workshop ATTACK upgrade is hidden from the in-round menu but the use case still
+    // formats its readout (so the same code can power a future Workshop-screen preview).
+    // Readout shape: "inactive" at L0; "{i}s/{d}s/{m}\u00d7" between L1 and L9; "permanent/{m}\u00d7"
+    // at L10 where duration matches interval.
+
+    @Test
+    fun `R403 RAPID_FIRE shows inactive at L0`() {
+        val r = describe(emptyMap(), emptyMap(), emptyMap(), UpgradeType.RAPID_FIRE)
+        assertEquals("inactive", r.current)
+        // L1 preview = "60s/5s/2.0\u00d7" so the player can see what the first purchase unlocks.
+        assertEquals("60s/5s/2.0\u00d7", r.next)
+    }
+
+    @Test
+    fun `R403 RAPID_FIRE L1 shows full triple readout`() {
+        val r = describe(
+            workshopLevels = mapOf(UpgradeType.RAPID_FIRE to 1),
+            inRoundLevels = emptyMap(),
+            labLevels = emptyMap(),
+            type = UpgradeType.RAPID_FIRE,
+        )
+        assertEquals("60s/5s/2.0\u00d7", r.current)
+        // L2 interval = 60 - 30/9 \u2248 56.67 \u2192 "57s" rounded; duration = 5 + 25/9 \u2248 7.78 \u2192 "8s";
+        // multiplier = 2 + 1/9 \u2248 2.11 \u2192 "2.1\u00d7".
+        assertEquals("57s/8s/2.1\u00d7", r.next)
+    }
+
+    @Test
+    fun `R403 RAPID_FIRE L9 still shows finite triple readout`() {
+        val r = describe(
+            workshopLevels = mapOf(UpgradeType.RAPID_FIRE to 9),
+            inRoundLevels = emptyMap(),
+            labLevels = emptyMap(),
+            type = UpgradeType.RAPID_FIRE,
+        )
+        // L9 interval = 60 - 30 * 8/9 \u2248 33.33 \u2192 "33s"; duration = 5 + 25 * 8/9 \u2248 27.22 \u2192 "27s";
+        // multiplier = 2 + 8/9 \u2248 2.89 \u2192 "2.9\u00d7". Below the convergence point, so non-permanent.
+        assertEquals("33s/27s/2.9\u00d7", r.current)
+        // L10 \u2192 permanent.
+        assertEquals("permanent/3.0\u00d7", r.next)
+    }
+
+    @Test
+    fun `R403 RAPID_FIRE L10 collapses to permanent readout with next null`() {
+        val r = describe(
+            workshopLevels = mapOf(UpgradeType.RAPID_FIRE to 10),
+            inRoundLevels = emptyMap(),
+            labLevels = emptyMap(),
+            type = UpgradeType.RAPID_FIRE,
+        )
+        assertEquals("permanent/3.0\u00d7", r.current)
+        assertNull(r.next, "At maxLevel = 10, next-purchase readout must be null (renders as MAX)")
+    }
+
     // ---- Smoke test: every visible upgrade produces a non-empty current readout ----
 
     @Test

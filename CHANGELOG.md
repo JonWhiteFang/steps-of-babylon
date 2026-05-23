@@ -4,6 +4,63 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### R4-03: Rapid Fire upgrade (2026-05-23)
+
+First Wave 2 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Adds a new `RAPID_FIRE` Workshop upgrade in the ATTACK category that fires a periodic attack-speed burst during a wave's SPAWNING phase. Source feedback: *"Add 'Rapid Fire', upgradable duration and speed, auto triggers at time interval (max upgrade should be constant)."* Locked decision (2026-05-22T20:27 BST): periodic-pulse engine pattern mirroring `RECOVERY_PACKAGES`.
+
+**Spec:**
+
+| Parameter | L1 | L10 |
+|---|---|---|
+| Cost (Steps) | 2,000 (baseCost) | scaling 1.18× per level |
+| maxLevel | 10 | — |
+| Interval (s between bursts) | 60 | 30 (matches duration → permanent) |
+| Burst duration (s) | 5 | 30 (matches interval → permanent) |
+| Attack-speed multiplier during burst | 2.0× | 3.0× |
+
+Linear interpolation between L1 and L10 for all three burst parameters. At L10 duration matches interval (both 30 s), so the next burst fires before the previous one expires — the player gets an effectively permanent +3.0× attack-speed buff.
+
+**Files added:**
+
+- `domain/model/RapidFireSchedule.kt` — NEW interpolation helper. Centralises the (interval, duration, multiplier) per-level math so `GameEngine.tickRapidFire` and `DescribeUpgradeEffect.formatRapidFire` always agree on the same numbers. Pure Kotlin, JVM-test-friendly.
+
+**Files changed (source, 4):**
+
+- `domain/model/UpgradeType.kt` — added `RAPID_FIRE(UpgradeCategory.ATTACK)` enum entry + `UpgradeConfig(2_000, 1.18, 10, 1.0, "Periodic attack-speed burst (60s/5s/2.0× → permanent/3.0× at max)")` row in the configs map. ATTACK group is now 9 entries (was 8); total enum is 24 entries (was 23). MULTISHOT / BOUNCE_SHOT remain `isWorkshopVisible = false` from R4-02b; RAPID_FIRE keeps the default `true`.
+- `presentation/battle/entities/ZigguratEntity.kt` — new `@Volatile var rapidFireMultiplier: Float = 1f` field; `attackInterval` becomes `(1.0 / (stats.attackSpeed * rapidFireMultiplier)).toFloat()`. The multiplier is set by `GameEngine.tickRapidFire` while a burst is active and reset to `1f` when the burst expires or the wave enters cooldown phase.
+- `presentation/battle/engine/GameEngine.kt` — added `RapidFireSchedule` import, two new private fields (`rapidFireTimer`, `rapidFireActiveRemaining`), reset of both fields in `init()`, new `tickRapidFire(deltaTime)` private method called from `update()` immediately after `tickRecoveryPackages`. Mirrors `tickRecoveryPackages` shape: SPAWNING-phase only, level-0 no-op, COOLDOWN phase resets all state. Order inside the method matters — active-decrement runs *before* the timer-fire check so at L10 (interval == duration) the multiplier transitions from one burst to the next within a single tick with no observable 1-frame gap. On burst-fire emits a yellow-gold `"RAPID FIRE!"` `FloatingText` above the ziggurat for visual feedback.
+- `domain/usecase/DescribeUpgradeEffect.kt` — new `RAPID_FIRE` branch in the `format` `when` reads the workshop level only (RAPID_FIRE is not an in-round purchase). New `formatRapidFire(level)` private helper renders the readout shape: `"inactive"` at L0; `"{i}s/{d}s/{m}×"` between L1 and L9 (e.g. `"60s/5s/2.0×"` at L1, `"33s/27s/2.9×"` at L9); `"permanent/{m}×"` at L10 once `RapidFireSchedule.isPermanent` returns true.
+- `presentation/battle/ui/InRoundUpgradeMenu.kt` — added `UpgradeType.RAPID_FIRE` to the `hiddenInRound` set alongside `STEP_MULTIPLIER` and `RECOVERY_PACKAGES`. RAPID_FIRE is a passive periodic effect like RECOVERY_PACKAGES; an in-round Cash entry would imply per-round purchases of the burst trigger which doesn't match the "persistent attack-speed burst" feature design.
+
+**Files changed (test, 4):**
+
+- `presentation/battle/engine/GameEngineTest.kt` — 6 new R4-03 tests + 2 new reflective helpers (`invokeTickRapidFire(eng, deltaTime)` mirrors `invokeTickRecovery`; `setWavePhase(eng, phase)` flips the engine's private `WaveSpawner.phase` for the cooldown-reset test). Tests cover: level-0 no-op, L1 fires after 60 s, L1 burst expires after 5 s, L5 multiplier interpolation produces 2.444× (×0.001 tolerance), L10 produces permanent buff across burst boundaries, COOLDOWN phase resets the timer.
+- `domain/usecase/DescribeUpgradeEffectTest.kt` — 4 new R4-03 readout tests covering L0 "inactive" with L1 next-preview, L1 "60s/5s/2.0×" with L2 next, L9 finite triple readout with L10 next as permanent, L10 collapses to `"permanent/3.0×"` with `next == null`. The existing smoke test ("every visible upgrade type produces a non-empty current readout at L0") implicitly covers RAPID_FIRE since the new `formatRapidFire(0)` returns `"inactive"`.
+- `domain/model/UpgradeTypeTest.kt` — entry-count assertion 23 → 24; ATTACK count assertion 8 → 9.
+- `presentation/workshop/WorkshopViewModelTest.kt` — R4-02b filter test bumped 6 → 7 ATTACK upgrades (sanity assertion).
+
+**Test count:** 616 → 626 (+10). `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh assembleDebug` both BUILD SUCCESSFUL on first run.
+
+**Acceptance:**
+
+- Purchasing RAPID_FIRE L1 produces a visible 5-second yellow-gold `"RAPID FIRE!"` floating text above the ziggurat every 60 s of SPAWNING-phase, with a clearly-visible ≈2× projectile rate during the burst. → Engine math regression-guarded; on-device check pending Wave 2 AAB.
+- L10 produces continuous `"RAPID FIRE!"` re-emission every 30 s and a sustained ≈3× projectile rate. → Regression-guarded by the L10-permanent-buff GameEngineTest.
+- `"Now → Next"` readout in DescribeUpgradeEffect shows clear progression from L0 inactive → L1 "60s/5s/2.0×" → L9 "33s/27s/2.9×" → L10 "permanent/3.0×". → 4 readout tests guard the format.
+- ATTACK is now 9-entry total in the enum, but the in-round upgrade menu still only shows the 6 stat-bearing ATTACK upgrades (DAMAGE / ATTACK_SPEED / CRITICAL_CHANCE / CRITICAL_FACTOR / RANGE / DAMAGE_PER_METER) plus MULTISHOT and BOUNCE_SHOT (still in-round-Cash purchasable from R4-02b). RAPID_FIRE is hidden from in-round.
+
+**ADR:** not warranted — Rapid Fire is an additive Workshop upgrade with a centralised interpolation helper. The pattern (`tickRapidFire` mirrors `tickRecoveryPackages`) is established; no new architectural decision.
+
+### Plan R4 Wave 1 — AAB v9 verified on internal track (2026-05-23)
+
+Milestone: end-of-Wave-1 build/upload/verify cycle complete. AAB v9 (versionCode 9, commit `cbbb525`) bundles all four Wave 1 sub-plans:
+
+- **R4-01** Remove Step Overdrive (PR #9, commit `e375d14`, 627 → 615 tests)
+- **R4-02** Multishot/Bounce 4-level scaling (PR #10, commit `b2f7cd5`, 615 tests unchanged — 6 rewritten in place)
+- **R4-02b** Multishot/Bounce Labs research path amendment (PR #12, 615 → 616 tests)
+- **R4-04** `Icons.Filled.Upgrade` button icon swap (PR #11, 616 tests unchanged)
+
+Uploaded to Play Console internal track 2026-05-23; on-device smoke test PASSED 2026-05-23. AAB v8 (versionCode 8, built earlier 2026-05-23 ahead of the R4-02b amendment) was discarded without upload. Wave 2 (R4-03 Rapid Fire + R4-06 UW auto-trigger + per-path upgrades + R4-07 boss-drop Power Stones; combined Room migration v9→v10; ADR-0008 + ADR-0009) starts next.
+
 ### R4-02b: Multishot/Bounce Labs research path (2026-05-23)
 
 Amendment to R4-02 in response to user request: *"multishot and bounce shot should be upgraded via labs (same cost but steps instead of cash)"*. Adds a Labs research path for both upgrades and bumps the in-round Cash purchase max level from 4 to 10. Removes both upgrades from the Workshop screen (they're now Labs-research / in-round-Cash only). Final stat caps bumped to keep both 10-level paths economically meaningful.

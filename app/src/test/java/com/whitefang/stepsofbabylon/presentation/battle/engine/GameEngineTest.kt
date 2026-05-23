@@ -297,6 +297,142 @@ class GameEngineTest {
         )
     }
 
+    // ---- R4-03: RAPID_FIRE periodic attack-speed burst ----
+    // The Workshop ATTACK upgrade fires a periodic attack-speed burst during a wave's
+    // SPAWNING phase. Pre-R4-03 the upgrade did not exist; these tests guard the engine-
+    // side wiring (timer fires after interval, multiplier set + reset, level-0 no-op,
+    // L10 permanent-buff convergence, cooldown-phase reset).
+
+    @Test
+    fun `R403 RAPID_FIRE level 0 produces no burst`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        // No RAPID_FIRE level set → effective level 0. A 60 s tick should produce no
+        // burst, no multiplier change.
+        invokeTickRapidFire(eng, deltaTime = 60f)
+        assertEquals(
+            1f,
+            zig.rapidFireMultiplier,
+            0.0001f,
+            "RAPID_FIRE level 0 must leave rapidFireMultiplier at the 1f baseline",
+        )
+    }
+
+    @Test
+    fun `R403 RAPID_FIRE L1 fires after 60s and sets multiplier to 2x`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        eng.updateEffectiveLevels(mapOf(UpgradeType.RAPID_FIRE to 1))
+        // L1 interval = 60 s; first tick of 60 s should cross the threshold and arm a
+        // burst. Pre-R4-03 the upgrade enum did not exist and this would have been a
+        // dead path.
+        invokeTickRapidFire(eng, deltaTime = 60f)
+        assertEquals(
+            2f,
+            zig.rapidFireMultiplier,
+            0.0001f,
+            "RAPID_FIRE L1 first burst must set rapidFireMultiplier to 2.0×",
+        )
+    }
+
+    @Test
+    fun `R403 RAPID_FIRE L1 burst expires after 5s duration and resets multiplier`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        eng.updateEffectiveLevels(mapOf(UpgradeType.RAPID_FIRE to 1))
+        // Fire the first burst.
+        invokeTickRapidFire(eng, deltaTime = 60f)
+        assertEquals(
+            2f,
+            zig.rapidFireMultiplier,
+            0.0001f,
+            "Sanity: burst should be active after the first 60 s tick",
+        )
+        // Tick another 6 s (> 5 s duration) — still well below the next 60 s interval, so
+        // the burst expires and no new burst arms.
+        invokeTickRapidFire(eng, deltaTime = 6f)
+        assertEquals(
+            1f,
+            zig.rapidFireMultiplier,
+            0.0001f,
+            "RAPID_FIRE L1 burst expires after 5 s; multiplier must reset to 1f",
+        )
+    }
+
+    @Test
+    fun `R403 RAPID_FIRE L5 interpolation produces correct intermediate burst params`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        eng.updateEffectiveLevels(mapOf(UpgradeType.RAPID_FIRE to 5))
+        // L5 interval ≈ 46.67 s. A 47 s tick crosses the threshold; multiplier should be
+        // ~2.444× (linear: 2.0 + 1.0 × 4 / 9). RapidFireSchedule centralises the math —
+        // this test guards the engine reads the same numbers as DescribeUpgradeEffect.
+        invokeTickRapidFire(eng, deltaTime = 47f)
+        assertEquals(
+            2f + 4f / 9f,
+            zig.rapidFireMultiplier,
+            0.001f,
+            "RAPID_FIRE L5 burst multiplier must be 2.0 + (3.0–2.0) × 4/9 ≈ 2.444×",
+        )
+    }
+
+    @Test
+    fun `R403 RAPID_FIRE L10 produces permanent buff via duration matching interval`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        eng.updateEffectiveLevels(mapOf(UpgradeType.RAPID_FIRE to 10))
+        // L10 interval = duration = 30 s. After firing the first burst (single 30 s tick),
+        // a second 30 s tick should fire the next burst before the active window expires —
+        // multiplier stays at 3.0× across the boundary because tickRapidFire decrements the
+        // active counter BEFORE testing the timer-fire condition (see method KDoc).
+        invokeTickRapidFire(eng, deltaTime = 30f)
+        assertEquals(
+            3f,
+            zig.rapidFireMultiplier,
+            0.0001f,
+            "Sanity: L10 first burst sets multiplier to 3.0×",
+        )
+        invokeTickRapidFire(eng, deltaTime = 30f)
+        assertEquals(
+            3f,
+            zig.rapidFireMultiplier,
+            0.0001f,
+            "L10 RAPID_FIRE must produce a permanent 3.0× buff across burst boundaries",
+        )
+    }
+
+    @Test
+    fun `R403 RAPID_FIRE timer resets when wave enters cooldown phase`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        eng.updateEffectiveLevels(mapOf(UpgradeType.RAPID_FIRE to 1))
+        // Build up partial timer in SPAWNING phase — not yet enough to fire.
+        invokeTickRapidFire(eng, deltaTime = 30f)
+        assertEquals(
+            1f,
+            zig.rapidFireMultiplier,
+            0.0001f,
+            "Sanity: 30 s < 60 s interval, no burst should have fired yet",
+        )
+        // Flip phase to COOLDOWN and tick again — the partial timer must reset (matches
+        // RECOVERY_PACKAGES behaviour) so the next wave starts fresh.
+        setWavePhase(eng, WavePhase.COOLDOWN)
+        invokeTickRapidFire(eng, deltaTime = 1f)
+        // Restore SPAWNING phase and tick another 30 s. If the timer reset correctly, no
+        // burst should fire (only 30 s of fresh SPAWNING-phase ticks accumulated). Pre-fix
+        // (no reset on cooldown) the timer would still hold 30 s + 30 s = 60 s and the
+        // burst would fire spuriously at the start of the next wave.
+        setWavePhase(eng, WavePhase.SPAWNING)
+        invokeTickRapidFire(eng, deltaTime = 30f)
+        assertEquals(
+            1f,
+            zig.rapidFireMultiplier,
+            0.0001f,
+            "COOLDOWN phase must reset the rapid-fire timer; the next SPAWNING phase " +
+                "must accumulate from zero, not carry over the previous wave's partial timer",
+        )
+    }
+
     // ---- Helpers: reach into private state via reflection ----
 
     /** Reflectively reads the engine's private `effectiveLevels` map for the given type. */
@@ -318,6 +454,31 @@ class GameEngineTest {
             .getDeclaredMethod("tickRecoveryPackages", Float::class.javaPrimitiveType)
             .apply { isAccessible = true }
         method.invoke(eng, deltaTime)
+    }
+
+    /**
+     * Reflectively invokes the private `tickRapidFire(deltaTime: Float)` helper (R4-03).
+     * Same shape as [invokeTickRecovery] — deliberately bypasses the full update loop so
+     * the burst-state assertions don't see drift from incidental enemy spawns or projectile
+     * collisions.
+     */
+    private fun invokeTickRapidFire(eng: GameEngine, deltaTime: Float) {
+        val method = GameEngine::class.java
+            .getDeclaredMethod("tickRapidFire", Float::class.javaPrimitiveType)
+            .apply { isAccessible = true }
+        method.invoke(eng, deltaTime)
+    }
+
+    /**
+     * Reflectively flips the engine's [com.whitefang.stepsofbabylon.presentation.battle.engine.WaveSpawner.phase]
+     * (private set) without ticking through the full 26 + 9 s wave cycle. Used by the R4-03
+     * cooldown-phase-reset test.
+     */
+    private fun setWavePhase(eng: GameEngine, phase: WavePhase) {
+        val spawner = eng.waveSpawner ?: return
+        val field = WaveSpawner::class.java.getDeclaredField("phase")
+            .apply { isAccessible = true }
+        field.set(spawner, phase)
     }
 
     /** Reflectively flips the engine's private `chronoActive` flag without going through

@@ -139,7 +139,8 @@ domain/model/BillingProduct.kt           # 5 billing products + PurchaseResult s
 domain/model/AdPlacement.kt              # 3 ad placements + AdResult sealed class
 domain/model/CosmeticCategory.kt         # 3 cosmetic categories (ziggurat, projectile, enemy)
 domain/model/CosmeticItem.kt             # Cosmetic item domain model (+ optional overrideColors: List<Int>? for renderer override, C.2 PR 1)
-domain/model/UpgradeType.kt           # 23 Workshop upgrade types with configs
+domain/model/UpgradeType.kt           # 24 Workshop upgrade types with configs (R4-03 added RAPID_FIRE in ATTACK)
+domain/model/RapidFireSchedule.kt     # R4-03 helper: per-level (interval, duration, multiplier) interpolation table for the RAPID_FIRE upgrade. L1 60s/5s/2.0× → L10 30s/30s/3.0× (duration matches interval = permanent buff). Centralises math so GameEngine.tickRapidFire and DescribeUpgradeEffect.formatRapidFire read identical numbers.
 domain/model/UpgradeCategory.kt       # Attack, Defense, Utility categories
 domain/model/UpgradeConfig.kt         # Upgrade configuration (baseCost, scaling, maxLevel)
 domain/model/Tier.kt                  # Tier data class

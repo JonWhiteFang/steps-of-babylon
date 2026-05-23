@@ -7,6 +7,7 @@ import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
 import com.whitefang.stepsofbabylon.domain.model.CosmeticItem
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
+import com.whitefang.stepsofbabylon.domain.model.RapidFireSchedule
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.TierConfig
@@ -126,6 +127,26 @@ class GameEngine {
     private var recoveryTimer: Float = 0f
 
     /**
+     * Rapid Fire timer (R4-03). Accumulates during the SPAWNING wave phase only — mirrors
+     * the [recoveryTimer] / [tickRecoveryPackages] pattern, including the "reset to zero
+     * during cooldown phase" behaviour so a player who survives a wave doesn't carry over
+     * a partial cooldown into the next wave's first 0–60 s window. Fires when the timer
+     * crosses [RapidFireSchedule.interval] for the player's RAPID_FIRE level. Reset to
+     * zero on each fire and on round init.
+     */
+    private var rapidFireTimer: Float = 0f
+
+    /**
+     * Rapid Fire active-burst countdown (R4-03). When [rapidFireTimer] crosses interval,
+     * this is set to [RapidFireSchedule.duration] for the level and the ziggurat's
+     * [com.whitefang.stepsofbabylon.presentation.battle.entities.ZigguratEntity.rapidFireMultiplier]
+     * is set to the level's multiplier; both reset when the countdown reaches zero. At
+     * L10 duration == interval (30 s) so the next burst fires before the previous one
+     * expires — effectively a permanent +3.0× attack-speed buff.
+     */
+    private var rapidFireActiveRemaining: Float = 0f
+
+    /**
      * LIFESTEAL fractional-heal accumulator (R3-02 / GitHub issue #4). Each projectile-hit
      * and orb-hit applies the mathematically-correct heal directly to `zig.currentHp` (a
      * `Double`, so sub-1-HP heals are conserved); this counter accumulates the same
@@ -236,6 +257,8 @@ class GameEngine {
         secondWindUsed = false
         uwStates.clear(); chronoActive = false; goldenZigActive = false; preGoldenStats = null
         recoveryTimer = 0f
+        rapidFireTimer = 0f
+        rapidFireActiveRemaining = 0f
         lifestealAccumulator = 0.0
         stats = resolvedStats; tier = playerTier; effectiveLevels = wsLevels
         reducedMotion = isReducedMotion
@@ -333,6 +356,7 @@ class GameEngine {
 
         updateUWs(deltaTime)
         tickRecoveryPackages(deltaTime)
+        tickRapidFire(deltaTime)
 
         // Check for new wave to trigger announcement
         val currentWave = waveSpawner?.currentWave ?: 1
@@ -617,6 +641,72 @@ class GameEngine {
                 color = FloatingText.STEP_COLOR,
             ),
         )
+    }
+
+    /**
+     * Rapid Fire periodic-burst tick (R4-03). Mirrors [tickRecoveryPackages]: only fires
+     * during the SPAWNING wave phase; resets state on cooldown phase so a partial timer
+     * doesn't leak across the wave boundary; level 0 (no purchase) is a no-op. Reads the
+     * player's RAPID_FIRE level via [wsLevel] (which the engine seeds in [init] and
+     * keeps in sync via [updateEffectiveLevels] for in-round purchases of cash utilities;
+     * RAPID_FIRE is purchased only via the Workshop / DAO, so the level here is whatever
+     * was loaded at battle start).
+     *
+     * State machine each tick:
+     *  1. If a burst is active, decrement [rapidFireActiveRemaining] by `deltaTime`. When
+     *     it reaches zero, reset the ziggurat's [com.whitefang.stepsofbabylon.presentation.battle.entities.ZigguratEntity.rapidFireMultiplier]
+     *     to `1f` so attack-speed reads return to baseline.
+     *  2. Increment [rapidFireTimer] by `deltaTime`. When it crosses the level's interval,
+     *     reset the timer, kick off a new burst (set the ziggurat multiplier and arm the
+     *     active countdown), and emit a yellow-gold `"RAPID FIRE!"` floating text above
+     *     the ziggurat for visual feedback.
+     *
+     * Order matters: the active-decrement step runs *before* the timer-fire step so that
+     * at L10 (interval == duration) the multiplier transitions from one burst to the next
+     * within a single tick, with no observable 1-frame gap of `1f`.
+     */
+    private fun tickRapidFire(deltaTime: Float) {
+        val zig = ziggurat ?: return
+        val spawner = waveSpawner ?: return
+        if (spawner.phase != WavePhase.SPAWNING) {
+            // Wave-cooldown reset matches RECOVERY_PACKAGES semantics: a survived wave
+            // shouldn't grant a head-start on the next wave's first burst.
+            rapidFireTimer = 0f
+            rapidFireActiveRemaining = 0f
+            zig.rapidFireMultiplier = 1f
+            return
+        }
+        val level = wsLevel(UpgradeType.RAPID_FIRE)
+        if (level <= 0) return
+
+        val interval = RapidFireSchedule.interval(level)
+        val duration = RapidFireSchedule.duration(level)
+        val multiplier = RapidFireSchedule.multiplier(level)
+
+        // 1. Tick down the active burst countdown.
+        if (rapidFireActiveRemaining > 0f) {
+            rapidFireActiveRemaining -= deltaTime
+            if (rapidFireActiveRemaining <= 0f) {
+                rapidFireActiveRemaining = 0f
+                zig.rapidFireMultiplier = 1f
+            }
+        }
+
+        // 2. Tick up the inter-burst timer; fire when it crosses interval.
+        rapidFireTimer += deltaTime
+        if (rapidFireTimer >= interval) {
+            rapidFireTimer = 0f
+            rapidFireActiveRemaining = duration
+            zig.rapidFireMultiplier = multiplier
+            effectEngine?.addEffect(
+                FloatingText(
+                    x = zig.x,
+                    y = zig.originY - 30f,
+                    text = "RAPID FIRE!",
+                    color = FloatingText.DEFAULT_COLOR,
+                ),
+            )
+        }
     }
 
     private fun handleWaveComplete(wave: Int) {
