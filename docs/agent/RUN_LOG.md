@@ -4963,3 +4963,34 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Memory updated: STATE ✅ / RUN_LOG ✅
 - ADR: not warranted — R4-02 is config + formula change only, no architectural shift. ADR-0003 already covers the broader Plan R4 framing via the R4-01 amendment.
 
+## 2026-05-23 (evening) — R4-04 (in-round upgrade button icon swap) implementation
+
+- Goal: ship the third and final Wave 1 sub-plan of Plan R4 — replace the Unicode glyph `⬆` on the in-round upgrade button with the Material `Icons.Filled.Upgrade` vector icon. User feedback: "Make round upgrade button have a more obvious icon." Locked decision (2026-05-22T21:24 BST): `Icons.Filled.Upgrade`.
+- Context preflight: synced `main` (`e9ad5fb` Merge PR #10 R4-02); cut branch `feat/R4-04-upgrade-button-icon`. Read existing imports in `BattleScreen.kt` + located the `Text("⬆")` button at line 164.
+- Source changes:
+  - `presentation/battle/BattleScreen.kt`:
+    - Added `import androidx.compose.material.icons.filled.Upgrade`.
+    - Swapped `Text("⬆", color = Color.White)` for `Icon(Icons.Filled.Upgrade, contentDescription = null, tint = Color.White)` inside the existing `FilledTonalButton`.
+    - Used `contentDescription = null` because the button's outer `Modifier.semantics { contentDescription = "Upgrades" }` already declares the accessible label; nesting both would cause TalkBack to read it twice.
+  - `gradle/libs.versions.toml`: added `compose-material-icons-extended` library entry (group `androidx.compose.material`, name `material-icons-extended`).
+  - `app/build.gradle.kts`: added `implementation(libs.compose.material.icons.extended)` next to the existing core dep.
+- Why the new dep: `Icons.Filled.Upgrade` is in `material-icons-extended`, not the small `material-icons-core` set the project had. The plan locked `Icons.Filled.Upgrade` and R4-05 will need `Icons.Filled.Help` from the same package, so adding the extended catalogue is the right architectural call. R8 minification effectively tree-shakes unused extended icons in release builds — release APK size still 30 MB (no measurable bloat).
+- First build attempt failed with `Unresolved reference 'Upgrade'`; recognised the missing dep and added it; second attempt all green.
+- Verification:
+  - `./run-gradle.sh testDebugUnitTest` — BUILD SUCCESSFUL with **615 tests** (unchanged: pure Compose UI change, no JVM-testable surface).
+  - `./run-gradle.sh assembleDebug` — BUILD SUCCESSFUL.
+  - `./run-gradle.sh assembleRelease` — BUILD SUCCESSFUL (R8 release pipeline; release APK 30 MB, no size regression vs pre-R4-04).
+- Acceptance criteria (plan-R4-feedback-bundle.md § R4-04):
+  - In-round upgrade button shows the Material upgrade icon → confirmed in source; on-device check pending Wave 1 AAB.
+- Doc-sync per agent protocol PR Task-List Convention:
+  - `AGENTS.md`: Plan R4 status entry updated to "Wave 1 complete; Wave 2 next" with R4-04 details (Material icon swap + new extended-icons dep).
+  - `CHANGELOG.md`: new `### R4-04: in-round upgrade button icon (2026-05-23)` section at top of `[Unreleased]` above R4-02.
+  - `.kiro/steering/tech.md`: Compose Material Icons row expanded to note both `core` and `extended` packages are now included, with R8 tree-shaking note + R4-04/R4-05 attribution.
+  - `.kiro/steering/source-files.md`: no changes — `BattleScreen.kt` entry already covers the file's responsibility shape; the icon swap is a presentation detail.
+  - `.kiro/steering/structure.md`: no changes (no architectural shift).
+  - `STATE.md`: Current objective + What works + Top priorities + Next actions + Last run all reframed for "Wave 1 complete; end-of-Wave-1 AAB build next".
+- Open questions: none.
+- Follow-ups created: commit R4-04 + open PR `feat(battle): in-round upgrade button icon (R4-04)` against `main`. Once merged, end-of-Wave-1 AAB build (versionCode 7 → 8, `clean bundleRelease`, sign, upload to internal track, on-device verify).
+- Memory updated: STATE ✅ / RUN_LOG ✅
+- ADR: not warranted — single-icon swap + library dep addition.
+

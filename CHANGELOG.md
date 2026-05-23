@@ -4,6 +4,23 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### R4-04: in-round upgrade button icon (2026-05-23)
+
+Third and final Wave 1 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Replaces the Unicode glyph `⬆` on the in-round upgrade button with the Material `Icons.Filled.Upgrade` vector icon for clearer affordance. Source feedback: "Make round upgrade button have a more obvious icon."
+
+**Files changed:**
+- `gradle/libs.versions.toml` — added `compose-material-icons-extended` library entry. The existing `compose-material-icons` covers `material-icons-core` (small built-in set, used for `ArrowBack`); the extended package supplies the full Material catalogue. R8 minification effectively tree-shakes unused icons in release builds, so the runtime cost in the shipped AAB is bounded.
+- `app/build.gradle.kts` — added `implementation(libs.compose.material.icons.extended)` next to the existing core dep.
+- `presentation/battle/BattleScreen.kt` — added `import androidx.compose.material.icons.filled.Upgrade`; swapped `Text("⬆", color = Color.White)` for `Icon(Icons.Filled.Upgrade, contentDescription = null, tint = Color.White)`. The button's outer `Modifier.semantics { contentDescription = "Upgrades" }` already declares the accessible label, so the inner `Icon` uses `contentDescription = null` to avoid TalkBack reading the label twice.
+
+**Tests affected:** none. Pure Compose UI surface, no JVM-testable change. Verification is build clean (`testDebugUnitTest` + `assembleDebug` + `assembleRelease` all BUILD SUCCESSFUL) plus on-device check on the next AAB.
+
+**Test count:** 615 → 615 (unchanged).
+
+**Acceptance:** in-round upgrade button shows the Material upgrade icon. On-device check pending Wave 1 AAB.
+
+**Wave 1 complete.** All three Wave 1 sub-plans (R4-01 / R4-02 / R4-04) have landed on `main`. End-of-Wave-1 AAB build (versionCode 7 → 8) is the next step before Wave 2 (R4-03 + R4-06 + R4-07) begins.
+
 ### R4-02: Multishot/Bounce 4-level scaling (2026-05-23)
 
 Second Wave 1 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Replaces the per-20-levels / per-15-levels grind formulas for `MULTISHOT` / `BOUNCE_SHOT` with flat 4-level upgrades that grant +1 target / +1 bounce per level. Source feedback: "Multishot and bounce shot shouldn't be multiple levels for no benefit, make 1 level give 1 bonus but make it an expensive upgrade."

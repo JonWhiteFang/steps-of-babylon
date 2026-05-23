@@ -34,7 +34,7 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | Core KTX | 1.17.0 | Kotlin extensions for Android |
 | Activity Compose | 1.12.3 | Compose Activity integration |
 | Hilt Work | 1.3.0 | Hilt WorkManager + Navigation Compose integration |
-| Compose Material Icons | (BOM) | Material icon set for Compose |
+| Compose Material Icons | (BOM) | Material icon set for Compose. Both `material-icons-core` (small built-in set) and `material-icons-extended` (full Material catalogue) are included; R8 shrinks unused icons in release builds. Extended set added in R4-04 for `Icons.Filled.Upgrade`; R4-05 will use `Icons.Filled.Help`. |
 | Mockito Kotlin | 5.4.0 | Kotlin-friendly mocking for tests |
 | Robolectric | 4.14.1 | Android framework simulation for JVM tests |
 | AndroidX Test Core | 1.6.1 | Test utilities for Android components |
