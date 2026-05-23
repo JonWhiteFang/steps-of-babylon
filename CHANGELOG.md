@@ -4,6 +4,48 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### R4-02b: Multishot/Bounce Labs research path (2026-05-23)
+
+Amendment to R4-02 in response to user request: *"multishot and bounce shot should be upgraded via labs (same cost but steps instead of cash)"*. Adds a Labs research path for both upgrades and bumps the in-round Cash purchase max level from 4 to 10. Removes both upgrades from the Workshop screen (they're now Labs-research / in-round-Cash only). Final stat caps bumped to keep both 10-level paths economically meaningful.
+
+**Spec change:**
+
+| Field | Pre-R4-02b | Post-R4-02b |
+|---|---|---|
+| `UpgradeType.MULTISHOT.maxLevel` | 4 (in-round Cash) | **10 (in-round Cash)** |
+| `UpgradeType.BOUNCE_SHOT.maxLevel` | 4 (in-round Cash) | **10 (in-round Cash)** |
+| Workshop visibility | yes (Workshop ATTACK list) | **no (`isWorkshopVisible = false`)** |
+| `multishotTargets` cap | 5 (1 base + 4 max) | **11 (1 base + 10 max)** |
+| `bounceCount` cap | 4 | **10** |
+| `ResearchType.MULTISHOT_RESEARCH` | did not exist | **NEW: 5,000 Steps base × 1.5×, 6 h base × 1.10×, 10 levels, +1 target/lvl** |
+| `ResearchType.BOUNCE_RESEARCH` | did not exist | **NEW: 8,000 Steps base × 1.5×, 6 h base × 1.10×, 10 levels, +1 bounce/lvl** |
+
+**Effective progression paths post-R4-02b:**
+- *Quick (Cash, mid-round)*: in-round upgrade menu, +1 target/bounce per level, up to 10 levels per round, resets at round end.
+- *Permanent (Steps + real-time, Labs)*: Labs research, +1 target/bounce per level, up to 10 levels, persists across rounds.
+- Both stack additively. Final cap of 11 multishot / 10 bounces means once the Labs path is fully maxed, the in-round path becomes overflow ("insurance" if Labs hasn't reached 10 yet) but still useful for mid-progression players.
+
+**Files changed (source, 4):**
+- `domain/model/UpgradeType.kt` — added `isWorkshopVisible: Boolean = true` constructor flag (defaults true for the 21 standard upgrades); set `false` for `MULTISHOT` and `BOUNCE_SHOT`. Bumped both `UpgradeConfig.maxLevel` from 4 to 10. Updated descriptions to mention the dual-path nature.
+- `domain/model/ResearchType.kt` — added 2 new entries: `MULTISHOT_RESEARCH` (5,000 Steps base, 6 h base, 10 levels, `costScaling = 1.5`, `timeScaling` default 1.10), `BOUNCE_RESEARCH` (8,000 Steps base, otherwise identical). Class KDoc updated to reflect 12 total enums (was 10).
+- `domain/usecase/ResolveStats.kt` — cap formulas updated:
+  ```kotlin
+  multishotTargets = min(1 + total(MULTISHOT) + (labLevels[MULTISHOT_RESEARCH] ?: 0), 11)
+  bounceCount = min(total(BOUNCE_SHOT) + (labLevels[BOUNCE_RESEARCH] ?: 0), 10)
+  ```
+- `presentation/workshop/WorkshopViewModel.kt` — added `&& type.isWorkshopVisible` predicate to the existing category filter. MULTISHOT/BOUNCE_SHOT disappear from the Workshop screen; the existing `hiddenUpgrades` set (STEP_MULTIPLIER, RECOVERY_PACKAGES) stays untouched. The DAO continues to seed Workshop rows for all `UpgradeType.entries` so `ResolveStats.total(MULTISHOT)` keeps reading 0 from the unpurchasable Workshop side.
+
+**Files changed (test, 4):**
+- `domain/usecase/ResolveStatsTest.kt` — 4 tests rewritten in place. Two pairs: cap-coverage (`R402b multishot per-level scaling stacks in-round + Labs with cap 11` / `R402b bounce ... cap 10`) covering Labs-alone, in-round-alone, and both-stacked paths plus the legacy-level defensive clamp; in-round-vs-workshop sum (`R402b in-round multishot sums workshop and in-round levels` / `R402b in-round bounce ...`) updated for the new caps.
+- `domain/usecase/DescribeUpgradeEffectTest.kt` — unchanged (existing tests check L0/L1/L2, all well below the new 11/10 cap).
+- `domain/model/ResearchTypeTest.kt` — set-equality contract still holds (only AUTO_UPGRADE_AI + ENEMY_INTEL flagged `isComingSoon`); comment updated to note 10 wired enums (was 8) including the new MULTISHOT_RESEARCH + BOUNCE_RESEARCH.
+- `balance/CostCurveTest.kt` — dropped MULTISHOT and BOUNCE_SHOT from `premiumUpgrades` set (they're no longer Workshop upgrades); `standard upgrades` test now skips `!isWorkshopVisible`; `cheapest upgrades` filter pre-applied. The two upgrades' Cash and Steps cost curves are exercised by the in-round/Labs balance contracts respectively.
+- `presentation/workshop/WorkshopViewModelTest.kt` — new test `R402b MULTISHOT and BOUNCE_SHOT are filtered out of Workshop UI` verifies neither appears in the ATTACK list and that the remaining 6 ATTACK upgrades still surface.
+
+**Test count:** 615 → 616 (+1; the new WorkshopViewModelTest filter test). `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh assembleDebug` both BUILD SUCCESSFUL.
+
+**AAB strategy:** v8 (built earlier today, not yet uploaded) is discarded. After R4-02b merges, versionCode bumps 8 → 9 and a fresh end-of-Wave-1 AAB v9 will bundle R4-01 + R4-02 + R4-02b + R4-04 for the internal-track upload + on-device smoke test.
+
 ### R4-04: in-round upgrade button icon (2026-05-23)
 
 Third and final Wave 1 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Replaces the Unicode glyph `⬆` on the in-round upgrade button with the Material `Icons.Filled.Upgrade` vector icon for clearer affordance. Source feedback: "Make round upgrade button have a more obvious icon."

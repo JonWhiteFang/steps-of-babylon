@@ -57,24 +57,77 @@ class ResolveStatsTest {
     }
 
     @Test
-    fun `R402 multishot per-level scaling`() {
-        // Post-R4-02: maxLevel=4, +1 target per level, baseline 1 + cap 5.
+    fun `R402b multishot per-level scaling stacks in-round + Labs with cap 11`() {
+        // Post-R4-02b: maxLevel=10 (in-round Cash) + maxLevel=10 (Labs research) + 1 baseline,
+        // capped at 11 multishot targets. Workshop levels are always 0 because MULTISHOT is
+        // `isWorkshopVisible = false`, but the formula still reads `total(MULTISHOT)` = ws + ir
+        // for defensive correctness.
         assertEquals(1, sut(emptyMap()).multishotTargets)
         assertEquals(2, sut(mapOf(UpgradeType.MULTISHOT to 1)).multishotTargets)
-        assertEquals(3, sut(mapOf(UpgradeType.MULTISHOT to 2)).multishotTargets)
-        assertEquals(5, sut(mapOf(UpgradeType.MULTISHOT to 4)).multishotTargets)
-        // Defensive cap: legacy install with level > maxLevel still clamps at 5.
-        assertEquals(5, sut(mapOf(UpgradeType.MULTISHOT to 100)).multishotTargets)
+        assertEquals(
+            6,
+            sut(
+                workshopLevels = emptyMap(),
+                inRoundLevels = mapOf(UpgradeType.MULTISHOT to 5),
+                labLevels = emptyMap(),
+            ).multishotTargets,
+        )
+        // Labs alone (no in-round): 1 + 0 + 5 = 6 targets.
+        assertEquals(
+            6,
+            sut(
+                workshopLevels = emptyMap(),
+                inRoundLevels = emptyMap(),
+                labLevels = mapOf(ResearchType.MULTISHOT_RESEARCH to 5),
+            ).multishotTargets,
+        )
+        // ir=10 + Labs=10 = 20 raw, capped at 11.
+        assertEquals(
+            11,
+            sut(
+                workshopLevels = emptyMap(),
+                inRoundLevels = mapOf(UpgradeType.MULTISHOT to 10),
+                labLevels = mapOf(ResearchType.MULTISHOT_RESEARCH to 10),
+            ).multishotTargets,
+        )
+        // Defensive: legacy install with level > maxLevel still clamps at 11.
+        assertEquals(11, sut(mapOf(UpgradeType.MULTISHOT to 100)).multishotTargets)
     }
 
     @Test
-    fun `R402 bounce per-level scaling`() {
-        // Post-R4-02: maxLevel=4, +1 bounce per level, baseline 0 + cap 4.
+    fun `R402b bounce per-level scaling stacks in-round + Labs with cap 10`() {
+        // Post-R4-02b: maxLevel=10 (in-round Cash) + maxLevel=10 (Labs research), capped at
+        // 10 bounces. Baseline 0 (no extra +1 like multishot has).
         assertEquals(0, sut(emptyMap()).bounceCount)
         assertEquals(1, sut(mapOf(UpgradeType.BOUNCE_SHOT to 1)).bounceCount)
-        assertEquals(4, sut(mapOf(UpgradeType.BOUNCE_SHOT to 4)).bounceCount)
-        // Defensive cap: legacy install with level > maxLevel still clamps at 4.
-        assertEquals(4, sut(mapOf(UpgradeType.BOUNCE_SHOT to 60)).bounceCount)
+        assertEquals(
+            5,
+            sut(
+                workshopLevels = emptyMap(),
+                inRoundLevels = mapOf(UpgradeType.BOUNCE_SHOT to 5),
+                labLevels = emptyMap(),
+            ).bounceCount,
+        )
+        // Labs alone: 0 + 5 = 5 bounces.
+        assertEquals(
+            5,
+            sut(
+                workshopLevels = emptyMap(),
+                inRoundLevels = emptyMap(),
+                labLevels = mapOf(ResearchType.BOUNCE_RESEARCH to 5),
+            ).bounceCount,
+        )
+        // ir=10 + Labs=10 = 20 raw, capped at 10.
+        assertEquals(
+            10,
+            sut(
+                workshopLevels = emptyMap(),
+                inRoundLevels = mapOf(UpgradeType.BOUNCE_SHOT to 10),
+                labLevels = mapOf(ResearchType.BOUNCE_RESEARCH to 10),
+            ).bounceCount,
+        )
+        // Defensive: legacy install with level > maxLevel still clamps at 10.
+        assertEquals(10, sut(mapOf(UpgradeType.BOUNCE_SHOT to 60)).bounceCount)
     }
 
     @Test
@@ -232,8 +285,10 @@ class ResolveStatsTest {
     }
 
     @Test
-    fun `R402 in-round multishot sums workshop and in-round levels`() {
-        // Post-R4-02: ws + ir totals additively, +1 target each, baseline 1.
+    fun `R402b in-round multishot sums workshop and in-round levels`() {
+        // Post-R4-02b: ws + ir totals additively, +1 target each, baseline 1, cap 11.
+        // Workshop levels for MULTISHOT will always be 0 in production (isWorkshopVisible=false)
+        // but the formula must still tolerate non-zero values for legacy/test inputs.
         // ws=2 + ir=1 = 3 levels → 1 + 3 = 4 targets.
         val combined = sut(
             mapOf(UpgradeType.MULTISHOT to 2),
@@ -241,17 +296,17 @@ class ResolveStatsTest {
         )
         assertEquals(4, combined.multishotTargets)
 
-        // ws=4 + ir=4 = 8, but cap holds at 5 (1 baseline + 4 max).
+        // ws=10 + ir=10 = 20, capped at 11.
         val capped = sut(
-            mapOf(UpgradeType.MULTISHOT to 4),
-            mapOf(UpgradeType.MULTISHOT to 4),
+            mapOf(UpgradeType.MULTISHOT to 10),
+            mapOf(UpgradeType.MULTISHOT to 10),
         )
-        assertEquals(5, capped.multishotTargets)
+        assertEquals(11, capped.multishotTargets)
     }
 
     @Test
-    fun `R402 in-round bounce sums workshop and in-round levels`() {
-        // Post-R4-02: ws + ir totals additively, +1 bounce each, baseline 0.
+    fun `R402b in-round bounce sums workshop and in-round levels`() {
+        // Post-R4-02b: ws + ir totals additively, +1 bounce each, baseline 0, cap 10.
         // ws=2 + ir=1 = 3 → 3 bounces.
         val combined = sut(
             mapOf(UpgradeType.BOUNCE_SHOT to 2),
@@ -259,12 +314,12 @@ class ResolveStatsTest {
         )
         assertEquals(3, combined.bounceCount)
 
-        // ws=4 + ir=4 = 8, but cap holds at 4.
+        // ws=10 + ir=10 = 20, capped at 10.
         val capped = sut(
-            mapOf(UpgradeType.BOUNCE_SHOT to 4),
-            mapOf(UpgradeType.BOUNCE_SHOT to 4),
+            mapOf(UpgradeType.BOUNCE_SHOT to 10),
+            mapOf(UpgradeType.BOUNCE_SHOT to 10),
         )
-        assertEquals(4, capped.bounceCount)
+        assertEquals(10, capped.bounceCount)
     }
 
     @Test

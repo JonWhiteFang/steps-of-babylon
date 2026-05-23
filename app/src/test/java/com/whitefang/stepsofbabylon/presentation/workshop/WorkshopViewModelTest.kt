@@ -54,6 +54,33 @@ class WorkshopViewModelTest {
     }
 
     @Test
+    fun `R402b MULTISHOT and BOUNCE_SHOT are filtered out of Workshop UI`() = runTest(dispatcher) {
+        // Post-R4-02b: MULTISHOT and BOUNCE_SHOT are `isWorkshopVisible = false`. They remain
+        // in the in-round upgrade menu (Cash) and in Labs (Steps research) but must not appear
+        // on the permanent-Steps Workshop screen. WorkshopViewModel filters by the flag in
+        // addition to the legacy `hiddenUpgrades` set.
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val attackTypes = vm.uiState.value.upgrades.map { it.type }.toSet()
+        assertTrue(
+            UpgradeType.MULTISHOT !in attackTypes,
+            "MULTISHOT must not appear in Workshop ATTACK list (R4-02b: in-round Cash + Labs research only)",
+        )
+        assertTrue(
+            UpgradeType.BOUNCE_SHOT !in attackTypes,
+            "BOUNCE_SHOT must not appear in Workshop ATTACK list (R4-02b: in-round Cash + Labs research only)",
+        )
+        // Sanity: the other 6 ATTACK upgrades still appear (DAMAGE / ATTACK_SPEED /
+        // CRITICAL_CHANCE / CRITICAL_FACTOR / RANGE / DAMAGE_PER_METER).
+        assertEquals(
+            6,
+            attackTypes.size,
+            "Workshop ATTACK list should contain 6 upgrades post-R4-02b (was 8 in R4-02)",
+        )
+    }
+
+    @Test
     fun `category switching filters correctly`() = runTest(dispatcher) {
         val vm = createVm()
         backgroundScope.launch { vm.uiState.collect {} }

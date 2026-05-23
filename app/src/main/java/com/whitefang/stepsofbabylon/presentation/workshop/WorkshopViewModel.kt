@@ -51,7 +51,14 @@ class WorkshopViewModel @Inject constructor(
     ) { upgrades, wallet, category, processing, message ->
         allUpgrades = upgrades
         val stats = resolveStats(upgrades)
-        val filtered = upgrades.filter { (type, _) -> type.category == category && type !in hiddenUpgrades }
+        // R4-02b: filter by `isWorkshopVisible` flag in addition to the legacy `hiddenUpgrades`
+        // set so MULTISHOT/BOUNCE_SHOT (now Labs-research / in-round-Cash only) disappear from
+        // the Workshop screen. The DAO still seeds Workshop rows for these upgrade types so the
+        // ResolveStats `total(MULTISHOT/BOUNCE_SHOT)` lookup keeps reading 0 from Workshop +
+        // any in-round levels.
+        val filtered = upgrades.filter { (type, _) ->
+            type.category == category && type !in hiddenUpgrades && type.isWorkshopVisible
+        }
         WorkshopUiState(
             upgrades = filtered.map { (type, level) ->
                 val maxLevel = type.config.maxLevel
