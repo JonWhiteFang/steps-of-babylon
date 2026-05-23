@@ -57,17 +57,23 @@ class ResolveStatsTest {
     }
 
     @Test
-    fun `multishot thresholds`() {
+    fun `R402 multishot per-level scaling`() {
+        // Post-R4-02: maxLevel=4, +1 target per level, baseline 1 + cap 5.
         assertEquals(1, sut(emptyMap()).multishotTargets)
-        assertEquals(2, sut(mapOf(UpgradeType.MULTISHOT to 20)).multishotTargets)
-        assertEquals(3, sut(mapOf(UpgradeType.MULTISHOT to 40)).multishotTargets)
+        assertEquals(2, sut(mapOf(UpgradeType.MULTISHOT to 1)).multishotTargets)
+        assertEquals(3, sut(mapOf(UpgradeType.MULTISHOT to 2)).multishotTargets)
+        assertEquals(5, sut(mapOf(UpgradeType.MULTISHOT to 4)).multishotTargets)
+        // Defensive cap: legacy install with level > maxLevel still clamps at 5.
         assertEquals(5, sut(mapOf(UpgradeType.MULTISHOT to 100)).multishotTargets)
     }
 
     @Test
-    fun `bounce thresholds`() {
+    fun `R402 bounce per-level scaling`() {
+        // Post-R4-02: maxLevel=4, +1 bounce per level, baseline 0 + cap 4.
         assertEquals(0, sut(emptyMap()).bounceCount)
-        assertEquals(1, sut(mapOf(UpgradeType.BOUNCE_SHOT to 15)).bounceCount)
+        assertEquals(1, sut(mapOf(UpgradeType.BOUNCE_SHOT to 1)).bounceCount)
+        assertEquals(4, sut(mapOf(UpgradeType.BOUNCE_SHOT to 4)).bounceCount)
+        // Defensive cap: legacy install with level > maxLevel still clamps at 4.
         assertEquals(4, sut(mapOf(UpgradeType.BOUNCE_SHOT to 60)).bounceCount)
     }
 
@@ -226,30 +232,39 @@ class ResolveStatsTest {
     }
 
     @Test
-    fun `RO08 in-round multishot sums levels for the per-20 threshold`() {
-        // Workshop 10 + in-round 10 = 20 → +1 target = 2 total
+    fun `R402 in-round multishot sums workshop and in-round levels`() {
+        // Post-R4-02: ws + ir totals additively, +1 target each, baseline 1.
+        // ws=2 + ir=1 = 3 levels → 1 + 3 = 4 targets.
         val combined = sut(
-            mapOf(UpgradeType.MULTISHOT to 10),
-            mapOf(UpgradeType.MULTISHOT to 10),
+            mapOf(UpgradeType.MULTISHOT to 2),
+            mapOf(UpgradeType.MULTISHOT to 1),
         )
-        assertEquals(2, combined.multishotTargets)
+        assertEquals(4, combined.multishotTargets)
 
-        // Combined 100 → +5 targets, cap at 5 total
+        // ws=4 + ir=4 = 8, but cap holds at 5 (1 baseline + 4 max).
         val capped = sut(
-            mapOf(UpgradeType.MULTISHOT to 50),
-            mapOf(UpgradeType.MULTISHOT to 50),
+            mapOf(UpgradeType.MULTISHOT to 4),
+            mapOf(UpgradeType.MULTISHOT to 4),
         )
         assertEquals(5, capped.multishotTargets)
     }
 
     @Test
-    fun `RO08 in-round bounce sums levels for the per-15 threshold`() {
-        // Workshop 8 + in-round 7 = 15 → 1 bounce
+    fun `R402 in-round bounce sums workshop and in-round levels`() {
+        // Post-R4-02: ws + ir totals additively, +1 bounce each, baseline 0.
+        // ws=2 + ir=1 = 3 → 3 bounces.
         val combined = sut(
-            mapOf(UpgradeType.BOUNCE_SHOT to 8),
-            mapOf(UpgradeType.BOUNCE_SHOT to 7),
+            mapOf(UpgradeType.BOUNCE_SHOT to 2),
+            mapOf(UpgradeType.BOUNCE_SHOT to 1),
         )
-        assertEquals(1, combined.bounceCount)
+        assertEquals(3, combined.bounceCount)
+
+        // ws=4 + ir=4 = 8, but cap holds at 4.
+        val capped = sut(
+            mapOf(UpgradeType.BOUNCE_SHOT to 4),
+            mapOf(UpgradeType.BOUNCE_SHOT to 4),
+        )
+        assertEquals(4, capped.bounceCount)
     }
 
     @Test

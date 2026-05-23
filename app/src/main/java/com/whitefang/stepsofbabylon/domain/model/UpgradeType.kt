@@ -39,8 +39,8 @@ enum class UpgradeType(val category: UpgradeCategory) {
             CRITICAL_CHANCE to UpgradeConfig(100, 1.18, 160, 0.5, "+0.5% crit chance per level (cap 80%)"),
             CRITICAL_FACTOR to UpgradeConfig(120, 1.18, null, 0.1, "+0.1x crit multiplier per level"),
             RANGE to UpgradeConfig(80, 1.14, 150, 2.0, "+2% attack radius (cap 300%)"),
-            MULTISHOT to UpgradeConfig(500, 1.25, 100, 0.05, "+1 additional target per 20 levels (cap 5)"),
-            BOUNCE_SHOT to UpgradeConfig(1_000, 1.30, 60, 1.0 / 15.0, "+1 bounce per 15 levels (cap 4)"),
+            MULTISHOT to UpgradeConfig(5_000, 1.5, 4, 1.0, "+1 additional target per level (cap 5)"),
+            BOUNCE_SHOT to UpgradeConfig(8_000, 1.5, 4, 1.0, "+1 bounce per level (cap 4)"),
             DAMAGE_PER_METER to UpgradeConfig(200, 1.16, null, 1.0, "+1% bonus damage based on enemy distance"),
 
             // Defense

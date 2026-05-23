@@ -4916,3 +4916,50 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Memory updated: STATE ✅ / RUN_LOG ✅
 - ADR: ADR-0003 amended (new `## Amendments` section, 2026-05-23 entry).
 
+## 2026-05-23 (later) — R4-02 (Multishot/Bounce 4-level scaling) implementation
+
+- Goal: ship the second sub-plan of Plan R4 Wave 1 — replace the per-20-levels / per-15-levels grind for `MULTISHOT` / `BOUNCE_SHOT` with flat 4-level upgrades that grant +1 target / +1 bounce per level. User feedback: "Multishot and bounce shot shouldn't be multiple levels for no benefit, make 1 level give 1 bonus but make it an expensive upgrade." Locked decision (2026-05-22T20:25 BST): Interpretation B (per-level +1 bonus), 5k/8k baseCost × 1.5× scaling.
+- Context preflight: synced `main` (`f8c10cf` Merge PR #9 R4-01); cut branch `feat/R4-02-multishot-bounce-4-level`. Read `UpgradeType.kt` config map; `ResolveStats.kt` formulas; `DescribeUpgradeEffect.kt` formatters (`formatTargets`/`formatBounces`); `CostCurveTest.kt` premium-upgrade test logic; `ApplyCardEffects.kt` CHAIN_REACTION path. Inventoried tests touching MULTISHOT/BOUNCE_SHOT/multishotTargets/bounceCount via grep (6 test files, 31 references).
+- Source changes:
+  - `domain/model/UpgradeType.kt`: 2 config rows replaced.
+    - `MULTISHOT`: `(500, 1.25, 100, 0.05, "+1 additional target per 20 levels (cap 5)")` → `(5_000, 1.5, 4, 1.0, "+1 additional target per level (cap 5)")`.
+    - `BOUNCE_SHOT`: `(1_000, 1.30, 60, 1.0 / 15.0, "+1 bounce per 15 levels (cap 4)")` → `(8_000, 1.5, 4, 1.0, "+1 bounce per level (cap 4)")`.
+  - `domain/usecase/ResolveStats.kt`: 2 formulas simplified.
+    - `multishotTargets = min(1 + floor(total(UpgradeType.MULTISHOT) / 20.0).toInt(), 5)` → `min(1 + total(UpgradeType.MULTISHOT), 5)`.
+    - `bounceCount = min(floor(total(UpgradeType.BOUNCE_SHOT) / 15.0).toInt(), 4)` → `min(total(UpgradeType.BOUNCE_SHOT), 4)`.
+    - The `min(…)` caps stay defensively in case a legacy install has a level value above the new `maxLevel` (no migration; "auto-cap on read" approach per plan).
+    - Unused `kotlin.math.floor` import dropped.
+  - `domain/usecase/DescribeUpgradeEffect.kt`: unchanged. `formatTargets(n)` and `formatBounces(n)` work with any integer; `stats.multishotTargets` / `stats.bounceCount` propagate the simpler formula automatically.
+  - `domain/usecase/ApplyCardEffects.kt`: unchanged. `CardType.CHAIN_REACTION → s = s.copy(bounceCount = s.bounceCount + v.toInt())` runs *after* the `min(…, 4)` cap in `ResolveStats`, so a max-level CHAIN_REACTION (+4) on top of max-level BOUNCE_SHOT (4) still produces the documented 8 total bounces. Cap behaviour matches pre-R4-02 spec.
+- Test changes:
+  - `domain/usecase/ResolveStatsTest.kt` (4 tests rewritten in place):
+    - `multishot thresholds` → `R402 multishot per-level scaling`: asserts 1→5 targets at MULTISHOT levels 0/1/2/4 + legacy-level-100 defensive clamp at 5.
+    - `bounce thresholds` → `R402 bounce per-level scaling`: asserts 0→4 bounces at BOUNCE_SHOT levels 0/1/4 + legacy-level-60 defensive clamp at 4.
+    - `RO08 in-round multishot sums levels for the per-20 threshold` → `R402 in-round multishot sums workshop and in-round levels`: asserts ws=2 + ir=1 = 4 targets, ws=4 + ir=4 caps at 5.
+    - `RO08 in-round bounce sums levels for the per-15 threshold` → `R402 in-round bounce sums workshop and in-round levels`: asserts ws=2 + ir=1 = 3 bounces, ws=4 + ir=4 caps at 4.
+  - `domain/usecase/DescribeUpgradeEffectTest.kt` (2 tests rewritten in place):
+    - `MULTISHOT shows targets with threshold pluralisation`: now asserts L0 baseline `"1 target"` → `"2 targets"` (next), and ws=1 → `"2 targets"` current / `"3 targets"` next.
+    - `BOUNCE_SHOT shows bounces with threshold pluralisation`: now asserts ws=1 → `"1 bounce"` current / `"2 bounces"` next.
+  - `balance/CostCurveTest.kt`: unchanged. The premium-upgrade test logic uses `if (maxLevel != null && maxLevel < 10) maxLevel - 1 else 10`, so the test level for both MULTISHOT and BOUNCE_SHOT becomes 3 (= maxLevel-1). MULTISHOT level 3 cost = ceil(5000 × 1.5^3) = 16,875; BOUNCE_SHOT level 3 cost = ceil(8000 × 1.5^3) = 27,000. Both well under the 100,000 ceiling.
+  - `balance/ApplyCardEffectsTest.kt`: unchanged. Tests pass card-effect math against `baseStats.bounceCount + 2` regardless of how `bounceCount` was computed upstream.
+- Verification:
+  - First `./run-gradle.sh testDebugUnitTest` failed with 2 stale RO-08 in-round tests still asserting old per-20 / per-15 threshold behaviour (`ResolveStatsTest.kt:241` and `:258`). Updated both → all green.
+  - Second `./run-gradle.sh testDebugUnitTest` — BUILD SUCCESSFUL with **615 tests** (unchanged: 6 tests rewritten in place, no net additions).
+  - `./run-gradle.sh assembleDebug` — BUILD SUCCESSFUL.
+- Acceptance criteria (plan-R4-feedback-bundle.md § R4-02):
+  - L1 of MULTISHOT visibly fires at 2 enemies → asserted (`multishotTargets == 2` at MULTISHOT=1).
+  - L1 of BOUNCE_SHOT visibly bounces once → asserted (`bounceCount == 1` at BOUNCE_SHOT=1).
+  - Costs reach 5,000 / 8,000 Steps at L1 → formula confirms (baseCost × 1.5^0).
+  - Costs reach ~16,875 / ~27,000 at L4 → formula confirms (baseCost × 1.5^3).
+  - CHAIN_REACTION stacks additively → unchanged ApplyCardEffects path verified.
+- Doc-sync per agent protocol PR Task-List Convention:
+  - `AGENTS.md`: Plan R4 status entry updated to note R4-01 merged + R4-02 landed on branch (test count unchanged at 615).
+  - `CHANGELOG.md`: new `### R4-02: Multishot/Bounce 4-level scaling (2026-05-23)` section at top of `[Unreleased]` above R4-01 — full spec table, cost curve table, file inventory, acceptance checklist, test-count breakdown.
+  - `.kiro/steering/source-files.md`: no changes — `UpgradeType.kt` and `ResolveStats.kt` are listed without per-upgrade detail; the existing entries remain accurate. `DescribeUpgradeEffect.kt` source unchanged.
+  - `.kiro/steering/structure.md`: no changes (no new modules/files/architectural elements).
+  - `STATE.md`: Current objective + What works + Top priorities + Next actions + Last run all reframed for R4-02 landed and R4-04 next.
+- Open questions: none. R4-04 (`Icons.Filled.Upgrade` icon swap) is the last Wave 1 sub-plan and is ~5 minutes — single 1-line Compose icon swap in `BattleScreen.kt` plus Material icons import. After R4-04 merges, end-of-Wave-1 AAB build (versionCode 7 → 8) → upload → on-device verify → Wave 2 starts.
+- Follow-ups created: commit R4-02 + open PR `feat(workshop): Multishot/Bounce 4-level scaling (R4-02)` against `main`.
+- Memory updated: STATE ✅ / RUN_LOG ✅
+- ADR: not warranted — R4-02 is config + formula change only, no architectural shift. ADR-0003 already covers the broader Plan R4 framing via the R4-01 amendment.
+

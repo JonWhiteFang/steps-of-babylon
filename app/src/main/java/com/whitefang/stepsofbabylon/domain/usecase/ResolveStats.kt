@@ -4,7 +4,6 @@ import com.whitefang.stepsofbabylon.domain.model.ResearchType
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.model.ZigguratBaseStats
-import kotlin.math.floor
 import kotlin.math.min
 
 /**
@@ -88,8 +87,8 @@ class ResolveStats {
             lifestealPercent = min(total(UpgradeType.LIFESTEAL) * 0.002, 0.15),
             damagePerMeterBonus = total(UpgradeType.DAMAGE_PER_METER) * 0.01,
             deathDefyChance = min(total(UpgradeType.DEATH_DEFY) * 0.01, 0.50),
-            multishotTargets = min(1 + floor(total(UpgradeType.MULTISHOT) / 20.0).toInt(), 5),
-            bounceCount = min(floor(total(UpgradeType.BOUNCE_SHOT) / 15.0).toInt(), 4),
+            multishotTargets = min(1 + total(UpgradeType.MULTISHOT), 5),
+            bounceCount = min(total(UpgradeType.BOUNCE_SHOT), 4),
             orbCount = min(total(UpgradeType.ORBS), 6),
         )
     }
