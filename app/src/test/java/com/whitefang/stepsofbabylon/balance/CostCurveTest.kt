@@ -12,9 +12,12 @@ class CostCurveTest {
 
     private val calcCost = CalculateUpgradeCost()
 
-    // Premium upgrades with intentionally steep scaling (gated progression)
+    // Premium upgrades with intentionally steep scaling (gated progression). MULTISHOT and
+    // BOUNCE_SHOT moved out of this set in R4-02b: they are no longer Workshop-purchasable
+    // (they're in-round Cash purchases or Labs Steps research instead). The remaining 3
+    // entries are the genuine Workshop premium upgrades.
     private val premiumUpgrades = setOf(
-        UpgradeType.MULTISHOT, UpgradeType.BOUNCE_SHOT, UpgradeType.STEP_MULTIPLIER,
+        UpgradeType.STEP_MULTIPLIER,
         UpgradeType.ORBS, UpgradeType.DEATH_DEFY,
     )
 
@@ -22,6 +25,10 @@ class CostCurveTest {
     fun `standard upgrades do not exceed 50000 steps at level 25`() {
         for (type in UpgradeType.entries) {
             if (type in premiumUpgrades) continue
+            // R4-02b: skip upgrades that aren't on the Workshop screen — their cost curves
+            // are exercised by the in-round Cash menu (already balance-tested by
+            // CashEconomyTest) or Labs research (different progression model).
+            if (!type.isWorkshopVisible) continue
             val maxLevel = type.config.maxLevel
             val testLevel = if (maxLevel != null && maxLevel < 25) maxLevel - 1 else 25
             val cost = calcCost(type, testLevel)
@@ -61,7 +68,9 @@ class CostCurveTest {
 
     @Test
     fun `cheapest upgrades start under 100 steps`() {
-        val cheapest = UpgradeType.entries.minOf { calcCost(it, 0) }
+        val cheapest = UpgradeType.entries
+            .filter { it.isWorkshopVisible }
+            .minOf { calcCost(it, 0) }
         assertTrue(cheapest <= 100, "Cheapest upgrade at level 0 costs $cheapest (should be ≤100)")
     }
 }

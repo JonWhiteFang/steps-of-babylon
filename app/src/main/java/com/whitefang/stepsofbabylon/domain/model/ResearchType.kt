@@ -1,15 +1,17 @@
 package com.whitefang.stepsofbabylon.domain.model
 
 /**
- * Lab research types. 10 enums, all consumed by combat-path / step-credit / cash-economy /
- * UW-cooldown wiring as of RO-11 (pre-RO-11 the entire system was dead — declared with
- * effect descriptions and costing Steps + real-time + Gems but never read by any gameplay
- * class). Phase A wired the 7 simple multipliers; Phase B wired [WAVE_SKIP]; the remaining
- * two ([AUTO_UPGRADE_AI], [ENEMY_INTEL]) are gated as [isComingSoon] = true and deferred
- * to v1.x — their descriptions are updated to surface the deferral and the Labs screen
- * disables the Start Research button so testers don't spend Steps on something that won't
- * land before production rollout. Research progress on the deferred two is preserved so
- * any pre-deferral research carries over once v1.x ships.
+ * Lab research types. 12 enums, all consumed by combat-path / step-credit / cash-economy /
+ * UW-cooldown wiring as of RO-11 + R4-02b (pre-RO-11 the entire system was dead — declared
+ * with effect descriptions and costing Steps + real-time + Gems but never read by any
+ * gameplay class). Phase A wired the 7 simple multipliers; Phase B wired [WAVE_SKIP];
+ * R4-02b adds [MULTISHOT_RESEARCH] / [BOUNCE_RESEARCH] as the per-level Steps+time path
+ * complementing the in-round Cash purchases for the same two upgrades. The remaining two
+ * ([AUTO_UPGRADE_AI], [ENEMY_INTEL]) stay gated as [isComingSoon] = true and deferred to
+ * v1.x — their descriptions are updated to surface the deferral and the Labs screen disables
+ * the Start Research button so testers don't spend Steps on something that won't land
+ * before production rollout. Research progress on the deferred two is preserved so any
+ * pre-deferral research carries over once v1.x ships.
  */
 enum class ResearchType(
     val baseCostSteps: Long,
@@ -48,4 +50,24 @@ enum class ResearchType(
         "Reserved for v1.x — research progress preserved",
         isComingSoon = true,
     ),
+    /**
+     * Permanent +1 multishot target per level. Stacks with the in-round Cash purchase of
+     * [UpgradeType.MULTISHOT] and the baseline 1 target; the final stat is capped at 11
+     * targets in [com.whitefang.stepsofbabylon.domain.usecase.ResolveStats]. Cost curve
+     * (5,000 Steps base × 1.5× scaling) matches the in-round MULTISHOT Cash curve so the
+     * two paths are directly comparable. Time at 6 h base / 1.10× scaling matches
+     * [UW_COOLDOWN]'s tempo — a moderately impactful research that takes ~95 hours
+     * cumulative to max from L0 → L10. (R4-02b, 2026-05-23.)
+     */
+    MULTISHOT_RESEARCH(5_000, 6.0, 10, 1.0, "+1 multishot target", costScaling = 1.5),
+    /**
+     * Permanent +1 projectile bounce per level. Stacks with the in-round Cash purchase of
+     * [UpgradeType.BOUNCE_SHOT]; the final stat is capped at 10 bounces in
+     * [com.whitefang.stepsofbabylon.domain.usecase.ResolveStats]. Cost curve and time match
+     * [MULTISHOT_RESEARCH]; base cost differs (8,000 Steps) to mirror the in-round BOUNCE_SHOT
+     * Cash curve. Card [com.whitefang.stepsofbabylon.domain.model.CardType.CHAIN_REACTION]
+     * still stacks additively post-cap, so a fully-maxed combination produces the documented
+     * extended bounces. (R4-02b, 2026-05-23.)
+     */
+    BOUNCE_RESEARCH(8_000, 6.0, 10, 1.0, "+1 projectile bounce", costScaling = 1.5),
 }

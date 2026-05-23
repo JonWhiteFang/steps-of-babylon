@@ -23,9 +23,10 @@ class ResearchTypeTest {
         // Set-equality contract: catches both directions of regression —
         //   (a) one of the deferred enums silently flipping back to wired (would re-introduce
         //       a dead-enum gap because the gameplay code is still missing), and
-        //   (b) one of the 8 wired enums (DAMAGE / HEALTH / CASH / CRITICAL / REGEN /
-        //       STEP_EFFICIENCY / UW_COOLDOWN / WAVE_SKIP) silently getting marked Coming Soon
-        //       (would suppress its UI — a player-visible regression to pre-RO-11 behaviour).
+        //   (b) one of the 10 wired enums (DAMAGE / HEALTH / CASH / CRITICAL / REGEN /
+        //       STEP_EFFICIENCY / UW_COOLDOWN / WAVE_SKIP / MULTISHOT_RESEARCH /
+        //       BOUNCE_RESEARCH) silently getting marked Coming Soon (would suppress its UI —
+        //       a player-visible regression to pre-RO-11/-R4-02b behaviour).
         // Both layers (LabsScreen Coming Soon badge + LabsViewModel.startResearch defensive
         // guard) read the same flag, so this test transitively guards both.
         val deferred = ResearchType.entries.filter { it.isComingSoon }.toSet()

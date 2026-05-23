@@ -4994,3 +4994,36 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Memory updated: STATE ✅ / RUN_LOG ✅
 - ADR: not warranted — single-icon swap + library dep addition.
 
+## 2026-05-23 (later, post-Wave-1) — R4-02b (Multishot/Bounce Labs research path) — amendment to R4-02
+
+- Goal: implement user-driven amendment to R4-02 — *"multishot and bounce shot should be upgraded via labs (same cost but steps instead of cash)"*. After clarification: user chose Option 1 (Labs research path added; in-round Cash purchase max bumped 4 → 10; Workshop entries removed) with bumped final stat caps (5/4 → 11/10).
+- Context preflight: synced `main` (`1610154` Merge PR #11 R4-04); cut branch `feat/R4-02b-multishot-bounce-labs`. Read `WorkshopViewModel` + `WorkshopScreen` + `InRoundUpgradeMenu` + `ResearchType` to plan the flag filter. AAB v8 (built earlier 2026-05-23 with versionCode 8) was on disk but **not yet uploaded** to Play Console — v8 will be discarded; v9 replaces.
+- Source changes (4 production files):
+  - `domain/model/UpgradeType.kt` — added `isWorkshopVisible: Boolean = true` flag to the enum constructor with KDoc explaining its purpose. Set to `false` for `MULTISHOT` and `BOUNCE_SHOT` only. Bumped both `UpgradeConfig.maxLevel` from 4 to 10. Updated descriptions to mention the dual-path nature.
+  - `domain/model/ResearchType.kt` — added 2 new entries: `MULTISHOT_RESEARCH(5_000, 6.0, 10, 1.0, "+1 multishot target", costScaling = 1.5)` and `BOUNCE_RESEARCH(8_000, 6.0, 10, 1.0, "+1 projectile bounce", costScaling = 1.5)`. Default `timeScaling = 1.10` matches existing pattern. Class KDoc updated to reflect 12 enums total (was 10).
+  - `domain/usecase/ResolveStats.kt` — cap formulas updated:
+    ```kotlin
+    multishotTargets = min(1 + total(MULTISHOT) + (labLevels[MULTISHOT_RESEARCH] ?: 0), 11)
+    bounceCount = min(total(BOUNCE_SHOT) + (labLevels[BOUNCE_RESEARCH] ?: 0), 10)
+    ```
+  - `presentation/workshop/WorkshopViewModel.kt` — added `&& type.isWorkshopVisible` to the existing category filter. The legacy `hiddenUpgrades` set (STEP_MULTIPLIER, RECOVERY_PACKAGES) remains unchanged.
+- Test changes (4 test files):
+  - `domain/usecase/ResolveStatsTest.kt` — 4 R4-02 tests rewritten in place to R4-02b shape. Two pairs: cap-coverage tests now exercise Labs-alone, in-round-alone, and both-stacked paths plus the legacy-level defensive clamp; in-round-vs-workshop sum tests updated for new 11/10 caps.
+  - `domain/model/ResearchTypeTest.kt` — set-equality contract still holds (only AUTO_UPGRADE_AI + ENEMY_INTEL are `isComingSoon`); comment updated from "8 wired enums" → "10 wired enums" listing the new MULTISHOT_RESEARCH + BOUNCE_RESEARCH.
+  - `balance/CostCurveTest.kt` — dropped MULTISHOT and BOUNCE_SHOT from `premiumUpgrades` set (they're no longer Workshop upgrades, so the premium-curve assertion doesn't apply); added `if (!type.isWorkshopVisible) continue` to the standard-upgrades test; added `.filter { it.isWorkshopVisible }` to the cheapest-upgrade test. Both upgrade types' Cash and Steps cost curves are exercised by the in-round/Labs balance contracts respectively.
+  - `presentation/workshop/WorkshopViewModelTest.kt` — new test `R402b MULTISHOT and BOUNCE_SHOT are filtered out of Workshop UI` verifies neither appears in the Workshop ATTACK list and that the remaining 6 ATTACK upgrades still surface.
+  - `domain/usecase/DescribeUpgradeEffectTest.kt` — unchanged (existing tests check L0/L1/L2, all well below the new 11/10 cap).
+- Verification:
+  - `./run-gradle.sh testDebugUnitTest` — BUILD SUCCESSFUL with **616 tests** (was 615, +1 new WorkshopViewModelTest filter test). The 4 ResolveStatsTest test rewrites were in-place renames + body changes, no net delta.
+  - `./run-gradle.sh assembleDebug` — BUILD SUCCESSFUL.
+- Doc-sync per agent protocol PR Task-List Convention:
+  - `AGENTS.md`: R4 status updated for R4-02b — Wave 1 status `Wave 1 complete; Wave 2 next` (R4-02b counts as part of Wave 1 since it amends R4-02 from the same wave); test count 615 → 616.
+  - `CHANGELOG.md`: new `### R4-02b: Multishot/Bounce Labs research path (2026-05-23)` section at top of `[Unreleased]` above R4-04. Full spec change table, files-changed inventory, test-count breakdown, AAB strategy note (v8 discarded).
+  - `.kiro/steering/source-files.md`: no changes — `UpgradeType.kt` and `ResearchType.kt` are listed without per-entry detail; the existing entries remain accurate at the file-responsibility level.
+  - `.kiro/steering/structure.md`: no changes (no architectural shift).
+  - `STATE.md`: Current objective + What works + Top priorities + Next actions + Last run all reframed for "R4-02b landed; AAB v9 next".
+- Open questions: none.
+- Follow-ups created: commit R4-02b + open PR `feat(workshop+labs): Multishot/Bounce Labs research path (R4-02b)` against `main`. Once merged, bump versionCode 8 → 9, build/sign AAB v9, upload to internal track replacing the discarded v8.
+- Memory updated: STATE ✅ / RUN_LOG ✅ / Plan-R4-Feedback-Bundle entity ✅
+- ADR: not warranted — the per-upgrade routing change (Workshop vs in-round vs Labs) is a refinement of the existing UpgradeType / ResearchType architecture rather than a new decision worth a standalone ADR. The `isWorkshopVisible` flag is documented inline.
+
