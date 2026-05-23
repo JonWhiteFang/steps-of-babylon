@@ -29,8 +29,8 @@ object EnemyScaler {
 
     /**
      * Flat per-enemy-type Step reward awarded on kill. Independent of wave,
-     * Fortune overdrive, Cash Bonus upgrades, and Golden Ziggurat UW.
-     * Subject to a 2,000 battle-Steps/day cap (see AwardBattleSteps).
+     * Cash Bonus upgrades, and Golden Ziggurat UW. Subject to a 2,000
+     * battle-Steps/day cap (see AwardBattleSteps).
      */
     fun stepReward(type: EnemyType): Long = when (type) {
         EnemyType.BASIC -> 1

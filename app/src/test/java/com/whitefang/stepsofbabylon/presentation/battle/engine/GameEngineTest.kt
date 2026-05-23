@@ -1,7 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.battle.engine
 
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
-import com.whitefang.stepsofbabylon.domain.model.OverdriveType
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
@@ -16,11 +15,10 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * RO-08 + RO-09 regression guards for the engine-side stats / cash / recovery / chrono / fortune wiring.
+ * RO-08 + RO-09 + R4-01 regression guards for the engine-side stats / cash / recovery /
+ * chrono / fortune wiring.
  *
  * Pre-RO-08:
- * - [ZigguratEntity] captured `attackInterval` and `attackRange` at construction; Overdrive
- *   ASSAULT's 2× attack speed was silently dropped.
  * - The engine stored `workshopLevels` once at init; in-round CASH_BONUS / CASH_PER_WAVE /
  *   INTEREST / FREE_UPGRADES purchases never reached the cash math.
  * - RECOVERY_PACKAGES had no implementation.
@@ -28,11 +26,11 @@ import org.junit.jupiter.api.Test
  * Pre-RO-09:
  * - CHRONO_FIELD UW activation only set a render-overlay flag; raw `deltaTime` reached every
  *   entity, so the description's "Slows all enemies to 10 % speed" had no gameplay effect.
- * - GOLDEN_ZIGGURAT's `fortuneMultiplier = 5.0` leaked across ASSAULT / FORTRESS / SURGE
- *   expiries, and conversely a FORTUNE activation while GOLDEN was active downgraded the
- *   buff from 5.0 to 3.0. The fortune buff is shared between a Step Overdrive (FORTUNE,
- *   3.0×) and an Ultimate Weapon (GOLDEN_ZIGGURAT, 5.0×); the higher of the two should
- *   always win, and the lower should restore cleanly when one ends.
+ *
+ * Pre-R4-01: `fortuneMultiplier` was shared between Step Overdrive (FORTUNE, 3.0×) and the
+ * Ultimate Weapon (GOLDEN_ZIGGURAT, 5.0×) with a 4-test cross-overdrive coerceAtLeast
+ * lifecycle. R4-01 deletes Step Overdrive entirely; GOLDEN is the sole writer and the
+ * coverage collapses to 2 simple tests — activation sets 5.0×, expiry resets to 1.0×.
  */
 class GameEngineTest {
 
@@ -40,67 +38,6 @@ class GameEngineTest {
         val eng = GameEngine()
         eng.init(width = 1080f, height = 1920f, resolvedStats = ResolvedStats(), playerTier = 1)
         return eng
-    }
-
-    // ---- RO-08 #2: ZigguratEntity stale-stats propagation fix ----
-
-    @Test
-    fun `RO08 activateOverdrive ASSAULT propagates 2x attackSpeed to ziggurat`() {
-        val eng = freshEngine()
-        val baselineInterval = readAttackInterval(eng)
-
-        eng.activateOverdrive(OverdriveType.ASSAULT, baseStats = eng.zigStatsForTest())
-        val boostedInterval = readAttackInterval(eng)
-
-        // Pre-fix: boostedInterval == baselineInterval (zig.attackInterval was a captured val).
-        // Post-fix: attackInterval is computed each tick from the live stats.attackSpeed,
-        // so 2× attackSpeed → ½ attackInterval.
-        assertEquals(
-            baselineInterval / 2.0f,
-            boostedInterval,
-            0.001f,
-            "ASSAULT must halve the ziggurat's attack interval (2× attack speed)",
-        )
-    }
-
-    @Test
-    fun `RO08 activateOverdrive FORTRESS propagates healthRegen to ziggurat`() {
-        val eng = freshEngine()
-        val baselineRegen = eng.zigStatsForTest().healthRegen
-
-        eng.activateOverdrive(OverdriveType.FORTRESS, baseStats = eng.zigStatsForTest())
-        val boostedRegen = eng.ziggurat!!.stats.healthRegen
-
-        // Pre-fix: zig.stats was captured at construction; FORTRESS only mutated engine.stats.
-        // Post-fix: applyStats() pushes the new ResolvedStats onto the ziggurat too.
-        assertEquals(
-            baselineRegen * 2.0,
-            boostedRegen,
-            0.001,
-            "FORTRESS must double the ziggurat's healthRegen via the live stats reference",
-        )
-    }
-
-    @Test
-    fun `RO08 expireOverdrive restores baseline stats on the ziggurat`() {
-        val eng = freshEngine()
-        val baselineInterval = readAttackInterval(eng)
-        val baseline = eng.zigStatsForTest()
-
-        eng.activateOverdrive(OverdriveType.ASSAULT, baseStats = baseline)
-        // Direct invocation of expireOverdrive bypasses the 60 s game-loop drain (which
-        // would otherwise spawn enemies + damage the tower + flip roundOver before the
-        // overdrive timer ran out). The expiry path is what we care about for this
-        // regression — that the restored stats reach the ziggurat too.
-        invokeExpireOverdrive(eng)
-
-        val restoredInterval = readAttackInterval(eng)
-        assertEquals(
-            baselineInterval,
-            restoredInterval,
-            0.001f,
-            "Overdrive expiry must restore the ziggurat's pre-Overdrive attack interval",
-        )
     }
 
     // ---- RO-08 #3c: in-round cash-utility purchases reach the engine ----
@@ -130,7 +67,7 @@ class GameEngineTest {
         // Spawn a basic enemy and kill it twice via the private handleEnemyDeath helper:
         // once at the default 1.0× multiplier (baseline) and once at 2.0× (max-research-level
         // simulation). Cash deltas are deterministic because TierConfig.tier(1).cashMultiplier
-        // and EnemyScaler.cashReward(BASIC) are constants and no FORTUNE/GOLDEN buff is active.
+        // and EnemyScaler.cashReward(BASIC) are constants and no GOLDEN_ZIGGURAT buff is active.
         val cashBaseline = simulateBasicKillCash(eng)
 
         // Reset engine, push the +100 % multiplier, kill the same enemy.
@@ -317,115 +254,50 @@ class GameEngineTest {
         )
     }
 
-    // ---- RO-09 #2: GOLDEN_ZIGGURAT × overdrive fortuneMultiplier stacking ----
+    // ---- RO-09 #2 / R4-01: GOLDEN_ZIGGURAT fortuneMultiplier lifecycle ----
+    // Pre-R4-01 there were 4 cross-overdrive guards covering Step Overdrive (FORTUNE 3.0×) ×
+    // GOLDEN (5.0×) interactions — see git history for the original tests. R4-01 deletes
+    // Step Overdrive entirely so GOLDEN is the sole writer and the 4 tests collapse to a
+    // simple activate-sets-5× / expiry-resets-1× pair.
 
     @Test
-    fun `RO09 GOLDEN_ZIGGURAT expiry preserves FORTUNE multiplier when FORTUNE active`() {
+    fun `R401 GOLDEN_ZIGGURAT activation sets fortuneMultiplier to 5x`() {
         val eng = freshEngine()
-        // FORTUNE first → fortuneMultiplier = 3.0.
-        eng.activateOverdrive(OverdriveType.FORTUNE, baseStats = eng.zigStatsForTest())
-        // GOLDEN second → fortuneMultiplier = coerceAtLeast(5.0) = 5.0.
-        activateGoldenZigForTest(eng)
-        assertEquals(
-            5.0,
-            readFortuneMultiplier(eng),
-            0.001,
-            "Sanity: GOLDEN activation must raise fortuneMultiplier to 5.0 even with FORTUNE active",
-        )
-
-        // Expire GOLDEN via a long updateUWs tick (effectDuration is 10 s).
-        invokeUpdateUWs(eng, deltaTime = 20f)
-
-        // Post-fix: branch reads `if (activeOverdrive == FORTUNE) 3.0 else 1.0` →
-        // FORTUNE still active, restore 3.0.
-        assertEquals(
-            3.0,
-            readFortuneMultiplier(eng),
-            0.001,
-            "GOLDEN_ZIGGURAT expiry must restore FORTUNE's 3.0× when FORTUNE is still active",
-        )
-    }
-
-    @Test
-    fun `RO09 GOLDEN_ZIGGURAT expiry resets fortuneMultiplier when ASSAULT active`() {
-        val eng = freshEngine()
-        // ASSAULT does not own a fortuneMultiplier value.
-        eng.activateOverdrive(OverdriveType.ASSAULT, baseStats = eng.zigStatsForTest())
-        // GOLDEN raises fortuneMultiplier to 5.0.
-        activateGoldenZigForTest(eng)
-        assertEquals(5.0, readFortuneMultiplier(eng), 0.001, "Sanity: GOLDEN sets 5.0×")
-
-        // Expire GOLDEN.
-        invokeUpdateUWs(eng, deltaTime = 20f)
-
-        // Pre-fix: `if (activeOverdrive == null) fortuneMultiplier = 1.0` skipped the reset
-        // because activeOverdrive == ASSAULT, leaking the 5.0× across the rest of the
-        // ~50 s ASSAULT window.
-        // Post-fix: only FORTUNE preserves a non-default value; ASSAULT resets to 1.0.
         assertEquals(
             1.0,
             readFortuneMultiplier(eng),
             0.001,
-            "GOLDEN_ZIGGURAT expiry must reset fortuneMultiplier to 1.0 when overdrive is " +
-                "ASSAULT (regression guard: pre-fix leaked 5.0× across ASSAULT/FORTRESS/SURGE)",
+            "Sanity: fresh engine has fortuneMultiplier = 1.0×",
         )
-    }
 
-    @Test
-    fun `RO09 FORTUNE activation does not downgrade GOLDEN_ZIGGURAT multiplier`() {
-        val eng = freshEngine()
-        // GOLDEN first → fortuneMultiplier = 5.0.
         activateGoldenZigForTest(eng)
-        assertEquals(5.0, readFortuneMultiplier(eng), 0.001, "Sanity: GOLDEN sets 5.0×")
-
-        // FORTUNE activation while GOLDEN is still running. Pre-fix this hard-wrote 3.0,
-        // downgrading the player's active 5.0× buff. Post-fix: coerceAtLeast(3.0) keeps 5.0.
-        eng.activateOverdrive(OverdriveType.FORTUNE, baseStats = eng.zigStatsForTest())
 
         assertEquals(
             5.0,
             readFortuneMultiplier(eng),
             0.001,
-            "FORTUNE activation must coerceAtLeast(3.0) so GOLDEN_ZIGGURAT's 5.0× isn't downgraded",
+            "GOLDEN_ZIGGURAT activation must set fortuneMultiplier to 5.0× (sole writer post-R4-01)",
         )
     }
 
     @Test
-    fun `RO09 expireOverdrive preserves GOLDEN_ZIGGURAT multiplier when GOLDEN active`() {
+    fun `R401 GOLDEN_ZIGGURAT expiry resets fortuneMultiplier to 1x`() {
         val eng = freshEngine()
-        // ASSAULT (no fortune effect) running first.
-        eng.activateOverdrive(OverdriveType.ASSAULT, baseStats = eng.zigStatsForTest())
-        // GOLDEN raises fortuneMultiplier to 5.0.
         activateGoldenZigForTest(eng)
         assertEquals(5.0, readFortuneMultiplier(eng), 0.001, "Sanity: GOLDEN sets 5.0×")
 
-        // Expire ASSAULT (the overdrive). Pre-fix: `fortuneMultiplier = 1.0` unconditionally,
-        // collapsing GOLDEN's 5.0× buff for the remainder of GOLDEN's effect window.
-        // Post-fix: `if (goldenZigActive) 5.0 else 1.0` preserves the active GOLDEN buff.
-        invokeExpireOverdrive(eng)
+        // Expire GOLDEN via a long updateUWs tick (effectDuration is 10 s).
+        invokeUpdateUWs(eng, deltaTime = 20f)
 
         assertEquals(
-            5.0,
+            1.0,
             readFortuneMultiplier(eng),
             0.001,
-            "expireOverdrive must preserve GOLDEN_ZIGGURAT's 5.0× when GOLDEN is still active",
+            "GOLDEN_ZIGGURAT expiry must reset fortuneMultiplier to 1.0× (sole writer post-R4-01)",
         )
     }
 
     // ---- Helpers: reach into private state via reflection ----
-
-    /** Reads the engine's `ziggurat` and returns a snapshot of its live stats reference. */
-    private fun GameEngine.zigStatsForTest(): ResolvedStats =
-        ziggurat?.stats ?: ResolvedStats()
-
-    /**
-     * Mirrors the live `ZigguratEntity.attackInterval` formula. Equivalent to what the entity
-     * computes each tick — used to assert the formula reads the up-to-date stats reference.
-     */
-    private fun readAttackInterval(eng: GameEngine): Float {
-        val zig = eng.ziggurat!!
-        return (1.0 / zig.stats.attackSpeed).toFloat()
-    }
 
     /** Reflectively reads the engine's private `effectiveLevels` map for the given type. */
     private fun readEffectiveLevel(eng: GameEngine, type: UpgradeType): Int {
@@ -434,13 +306,6 @@ class GameEngineTest {
         @Suppress("UNCHECKED_CAST")
         val map = field.get(eng) as Map<UpgradeType, Int>
         return map[type] ?: 0
-    }
-
-    /** Reflectively invokes the private `expireOverdrive()` helper. */
-    private fun invokeExpireOverdrive(eng: GameEngine) {
-        val method = GameEngine::class.java.getDeclaredMethod("expireOverdrive")
-            .apply { isAccessible = true }
-        method.invoke(eng)
     }
 
     /**
@@ -519,7 +384,7 @@ class GameEngineTest {
      * Reflectively invokes the private `updateUWs(deltaTime: Float)` helper. Used to
      * deterministically expire a UW (by passing a `deltaTime` larger than its
      * `effectDurationSeconds`) without running the full game-loop update path, which
-     * would also tick the overdrive timer / spawn enemies / run collisions.
+     * would also spawn enemies / run collisions / drive other engine subsystems.
      */
     private fun invokeUpdateUWs(eng: GameEngine, deltaTime: Float) {
         val method = GameEngine::class.java
@@ -533,7 +398,7 @@ class GameEngineTest {
      * constructed BASIC enemy and returns the resulting kill-cash delta. Used by the RO-11
      * cash-research test to assert the engine-side multiplier is applied without going
      * through the full collision system. Engine-tier defaults to 1 (`freshEngine()`), and
-     * no FORTUNE/GOLDEN/CASH_BONUS_GAIN buff is active so the only multiplier in the
+     * no GOLDEN_ZIGGURAT/CASH_BONUS_GAIN buff is active so the only multiplier in the
      * formula that varies is the one under test.
      */
     private fun simulateBasicKillCash(eng: GameEngine): Long {

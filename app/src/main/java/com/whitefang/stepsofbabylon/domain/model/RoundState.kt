@@ -6,8 +6,6 @@ data class RoundState(
     val tempUpgrades: Map<UpgradeType, Int>,
     val towerCurrentHp: Double,
     val towerMaxHp: Double,
-    val overdriveUsed: Boolean,
-    val overdriveType: OverdriveType?,
     val tier: Int,
 ) {
     companion object {
@@ -17,8 +15,6 @@ data class RoundState(
             tempUpgrades = emptyMap(),
             towerCurrentHp = towerMaxHp,
             towerMaxHp = towerMaxHp,
-            overdriveUsed = false,
-            overdriveType = null,
             tier = tier,
         )
     }

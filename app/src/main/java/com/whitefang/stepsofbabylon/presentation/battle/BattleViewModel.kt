@@ -18,7 +18,6 @@ import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.data.BiomePreferences
 import com.whitefang.stepsofbabylon.domain.model.OwnedCard
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
-import com.whitefang.stepsofbabylon.domain.model.OverdriveType
 import com.whitefang.stepsofbabylon.domain.model.ResearchType
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
@@ -34,7 +33,6 @@ import com.whitefang.stepsofbabylon.data.time.SystemTimeProvider
 import com.whitefang.stepsofbabylon.di.ApplicationScope
 import com.whitefang.stepsofbabylon.domain.usecase.AwardBattleSteps
 import com.whitefang.stepsofbabylon.domain.usecase.AwardWaveMilestone
-import com.whitefang.stepsofbabylon.domain.usecase.ActivateOverdrive
 import com.whitefang.stepsofbabylon.domain.usecase.ApplyCardEffects
 import com.whitefang.stepsofbabylon.domain.usecase.CalculateUpgradeCost
 import com.whitefang.stepsofbabylon.domain.usecase.DescribeUpgradeEffect
@@ -106,7 +104,6 @@ class BattleViewModel @Inject constructor(
     private val calculateCost = CalculateUpgradeCost()
     private val updateBestWave = UpdateBestWave(playerRepository)
     private val checkTierUnlock = CheckTierUnlock()
-    private val activateOverdriveUseCase = ActivateOverdrive()
     private val awardWaveMilestone = AwardWaveMilestone(playerRepository)
     private val applyCardEffects = ApplyCardEffects()
     private val awardBattleSteps = AwardBattleSteps(dailyStepDao, playerProfileDao, timeProvider)
@@ -231,8 +228,6 @@ class BattleViewModel @Inject constructor(
                                 uw.cooldownRemaining <= 0f,
                             )
                         },
-                        activeOverdriveType = eng.activeOverdrive,
-                        overdriveTimeRemaining = eng.overdriveTimeRemaining,
                     )
                 }
                 if (eng.roundOver && !roundEnded) { endRound(); break }
@@ -372,7 +367,6 @@ class BattleViewModel @Inject constructor(
             it.copy(
                 isPaused = false,
                 showUpgradeMenu = false,
-                showOverdriveMenu = false,
                 roundEndState = RoundEndState(
                     wave,
                     eng.totalEnemiesKilled,
@@ -464,17 +458,6 @@ class BattleViewModel @Inject constructor(
         }
         eng?.onStepReward = null
         super.onCleared()
-    }
-
-    fun activateOverdrive(type: OverdriveType) {
-        val state = _uiState.value
-        val result = activateOverdriveUseCase(type, state.stepBalance, state.overdriveUsed)
-        if (result !is ActivateOverdrive.Result.Success) return
-        viewModelScope.launch {
-            playerRepository.spendSteps(type.stepCost)
-            engine?.activateOverdrive(type, resolvedStats)
-            _uiState.update { it.copy(overdriveUsed = true, showOverdriveMenu = false, stepBalance = it.stepBalance - type.stepCost) }
-        }
     }
 
     fun activateUW(index: Int) { engine?.activateUW(index) }
@@ -595,8 +578,7 @@ class BattleViewModel @Inject constructor(
     fun describeEffect(type: UpgradeType): UpgradeEffectReadout =
         describeUpgradeEffect(workshopLevels, inRoundLevels, labLevels, type, equippedCards)
 
-    fun toggleUpgradeMenu() { _uiState.update { it.copy(showUpgradeMenu = !it.showUpgradeMenu, showOverdriveMenu = false) } }
-    fun toggleOverdriveMenu() { _uiState.update { it.copy(showOverdriveMenu = !it.showOverdriveMenu, showUpgradeMenu = false) } }
+    fun toggleUpgradeMenu() { _uiState.update { it.copy(showUpgradeMenu = !it.showUpgradeMenu) } }
 
     fun watchGemAd() {
         if (_uiState.value.roundEndState?.gemAdWatched == true) return

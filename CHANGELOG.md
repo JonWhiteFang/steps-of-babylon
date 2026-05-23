@@ -4,6 +4,38 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### R4-01: remove Step Overdrive (2026-05-23)
+
+First Wave 1 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Deletes the entire Step Overdrive feature — 4 enums, 4 standalone files, ~600 LOC, ~50 references across the battle stack — in response to user-soak feedback that the mechanic was "not fun and wastes steps for not a lot of benefit". R4-06 (Wave 2) will redesign the Ultimate Weapon system with auto-trigger + per-path upgrades; the visual feedback hooks Overdrive used (`overdriveColor` / `overdriveProgress`) are removed here and will be replaced as part of that redesign.
+
+**Files deleted:**
+- `domain/model/OverdriveType.kt` (4-entry enum: ASSAULT/FORTRESS/FORTUNE/SURGE)
+- `domain/usecase/ActivateOverdrive.kt` (validation use case + sealed `Result` type)
+- `presentation/battle/effects/OverdriveAuraEffect.kt` (4-color particle aura)
+- `presentation/battle/ui/OverdriveMenu.kt` (Compose 4-card selection menu)
+- `app/src/test/java/com/whitefang/stepsofbabylon/domain/usecase/ActivateOverdriveTest.kt` (-4 tests)
+
+**Files edited (production):**
+- `domain/model/RoundState.kt` — dropped `overdriveUsed` and `overdriveType` fields (transient, no DB schema impact)
+- `presentation/battle/engine/GameEngine.kt` — removed `OverdriveType` + `OverdriveAuraEffect` imports, `activeOverdrive` / `overdriveTimeRemaining` / `preOverdriveStats` / `overdriveAuraEffect` fields, the `activateOverdrive(type, baseStats)` method (4-branch when), the `expireOverdrive()` method, the `update()` block that ticked the overdrive timer, and the `init()` reset block's overdrive lines. **GOLDEN_ZIGGURAT simplified:** activation now writes `fortuneMultiplier = 5.0` unconditionally (was `coerceAtLeast(5.0)` to coexist with FORTUNE); expiry writes `fortuneMultiplier = 1.0` unconditionally (was the 4-state `if (activeOverdrive == FORTUNE) 3.0 else 1.0` cross-overdrive guard from RO-09 #2). Also dropped the `zig.overdriveColor / overdriveProgress` side effects from GOLDEN activation/expiry.
+- `presentation/battle/BattleViewModel.kt` — removed `OverdriveType` + `ActivateOverdrive` imports, `activateOverdriveUseCase` field, `activateOverdrive(type)` method, `toggleOverdriveMenu()` method, `activeOverdriveType` / `overdriveTimeRemaining` reads in the polling loop, `showOverdriveMenu = false` from `runEndRoundPersistence` UI state push, and the `showOverdriveMenu = false` cross-clear in `toggleUpgradeMenu()`.
+- `presentation/battle/BattleScreen.kt` — removed `OverdriveMenu` import, the `state.activeOverdriveType?.let { ... }` status line in the top-left HUD, the Overdrive button in the bottom control row (now 5 buttons: 3× speed + Pause + Upgrade, was 6 with Overdrive), and the `OverdriveMenu` invocation block. Updated the R3-04 horizontal-scroll comment to reflect the new 5-button reality while keeping the scroll safety net for future R4 additions (e.g. R4-03 Rapid Fire).
+- `presentation/battle/BattleUiState.kt` — dropped `overdriveUsed`, `activeOverdriveType`, `overdriveTimeRemaining`, `showOverdriveMenu` fields and the `OverdriveType` import.
+- `presentation/battle/entities/ZigguratEntity.kt` — dropped `overdriveColor` / `overdriveProgress` fields, the timer-bar render block, and the `timerBgPaint` / `timerFillPaint` paints (used only by the timer bar). Updated 2 KDoc comments to reflect post-R4-01 reality.
+- `presentation/battle/GameSurfaceView.kt` + `presentation/battle/engine/EnemyScaler.kt` — comment-only updates to drop "overdrive" / "Fortune overdrive" references.
+
+**Files edited (test):**
+- `presentation/battle/engine/GameEngineTest.kt` — removed `OverdriveType` import; deleted 3 RO-08 Overdrive-propagation tests (`ASSAULT propagates 2x attackSpeed`, `FORTRESS propagates healthRegen`, `expireOverdrive restores baseline stats`); collapsed 4 RO-09 #2 cross-overdrive guards into 2 simpler GOLDEN-only tests (`R401 GOLDEN_ZIGGURAT activation sets fortuneMultiplier to 5x`, `R401 GOLDEN_ZIGGURAT expiry resets fortuneMultiplier to 1x`); dropped `invokeExpireOverdrive` / `readAttackInterval` / `zigStatsForTest` helpers (only used by the removed tests). Net: −5 tests in this file.
+- `balance/UWOverdriveBalanceTest.kt` → renamed `UWBalanceTest.kt` via `git mv`; rewrote with KDoc explaining the rename; dropped `overdrive costs represent 3 to 10 minutes of walking` and `surge overdrive value scales with equipped UW count` (−2 tests). 3 surviving tests cover UW cooldown spacing, Death Wave Lv 5 vs wave 50 boss, and GOLDEN 5× cash bounding.
+- `balance/CashEconomyTest.kt` — dropped `fortune overdrive 3x cash for one wave is strong but not game-breaking` (−1 test).
+- `presentation/battle/GameSurfaceViewTest.kt` — comment-only update to drop "UW / overdrive state" reference.
+
+**ADR-0003 amendment.** Appended a new `## Amendments` section noting that the Rationale's "no Fortune-overdrive multiplier" constraint became vacuously true post-R4-01. The flat-rate invariant for battle Steps is unchanged — GOLDEN_ZIGGURAT's `fortuneMultiplier` still doesn't multiply battle Steps, even though R4-06 will redesign GOLDEN's per-path upgrades.
+
+**Test count:** 627 → 615 (−12 net: −4 ActivateOverdriveTest, −5 GameEngineTest (−7 then +2 collapsed GOLDEN-only), −2 UWBalanceTest, −1 CashEconomyTest). `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh assembleDebug` both BUILD SUCCESSFUL.
+
+**Zero behaviour change for any non-Overdrive feature.** The bottom control row is now 5 buttons; the in-flight ziggurat no longer shows an overdrive timer bar. The 5 surviving R4 sub-plans (R4-02 Multishot/Bounce 4-level, R4-03 Rapid Fire, R4-04 Upgrade icon, R4-05 Help screen, R4-06 UW per-path, R4-07 boss-drop PS, R4-08 Card copy progression) will land in subsequent waves; this PR is the first and largest deletion of the bundle.
+
 ### R3-04: battle bottom control-bar overflow fix (2026-05-19)
 
 Fixes [GitHub issue #3](https://github.com/JonWhiteFang/steps-of-babylon/issues/3). On a Pixel 6 (411dp wide) the 6th button (Overdrive) of the bottom control row in `BattleScreen` was cut off by the right edge of the screen.
