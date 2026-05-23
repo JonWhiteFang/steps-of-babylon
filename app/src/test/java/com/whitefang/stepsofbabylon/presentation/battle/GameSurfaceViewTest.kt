@@ -20,8 +20,8 @@ import org.robolectric.annotation.Config
  * The pre-fix code path:
  *   1. [GameSurfaceView.surfaceCreated] / [GameSurfaceView.surfaceChanged] unconditionally call
  *      [GameEngine.init], which resets `cash`, `totalEnemiesKilled`, `elapsedTimeSeconds`,
- *      [WaveSpawner.currentWave], all UW / overdrive state, and the entity list. Each Android
- *      lifecycle event therefore wipes the round.
+ *      [WaveSpawner.currentWave], all UW cooldown / effect state, and the entity list. Each
+ *      Android lifecycle event therefore wipes the round.
  *   2. [GameSurfaceView.setSpeedMultiplier] / [GameSurfaceView.setPaused] write only to the
  *      live [GameLoopThread]. After [GameSurfaceView.surfaceDestroyed] sets `gameThread = null`
  *      these setters become silent no-ops, so the next thread (created by `surfaceCreated`)

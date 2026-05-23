@@ -1,6 +1,5 @@
 package com.whitefang.stepsofbabylon.presentation.battle
 
-import com.whitefang.stepsofbabylon.domain.model.OverdriveType
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BiomeTransitionInfo
 
@@ -41,12 +40,8 @@ data class BattleUiState(
     val lastPurchaseFree: Boolean = false,
     val roundEndState: RoundEndState? = null,
     val biomeTransition: BiomeTransitionInfo? = null,
-    val overdriveUsed: Boolean = false,
-    val activeOverdriveType: OverdriveType? = null,
-    val overdriveTimeRemaining: Float = 0f,
     val stepBalance: Long = 0,
     val stepsEarnedThisRound: Long = 0,
-    val showOverdriveMenu: Boolean = false,
     val uwSlots: List<UWSlotInfo> = emptyList(),
     val adRemoved: Boolean = false,
     /**

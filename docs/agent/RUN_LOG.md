@@ -4877,3 +4877,42 @@ After the fix, tests pass on first try and assembleDebug is clean.
 
 
 
+## 2026-05-23 — R4-01 (remove Step Overdrive) implementation
+
+- Goal: ship the first sub-plan of Plan R4 Wave 1 — delete the entire Step Overdrive feature (4 enums, ~600 LOC, ~50 references) per user-soak feedback that the mechanic was "not fun and wastes steps for not a lot of benefit".
+- Context preflight: read `STATE.md` (Plan R4 approved, Wave 1 ready to start) + `docs/plans/plan-R4-feedback-bundle.md` (R4-01 spec); checked `git status` (clean `main`, last commit `5157138 docs(R4): plan Internal Soak Feedback Bundle`); inventoried Overdrive references via `grep` — 12 main files (112 references) + 5 test files (49 references). Branch `feat/R4-01-remove-overdrive` cut off `main`.
+- Files deleted (`git rm`):
+  - `domain/model/OverdriveType.kt` (4-entry enum: ASSAULT/FORTRESS/FORTUNE/SURGE)
+  - `domain/usecase/ActivateOverdrive.kt` (validation use case + sealed `Result` type)
+  - `presentation/battle/effects/OverdriveAuraEffect.kt` (4-color particle aura)
+  - `presentation/battle/ui/OverdriveMenu.kt` (Compose 4-card selection menu)
+  - `app/src/test/java/com/whitefang/stepsofbabylon/domain/usecase/ActivateOverdriveTest.kt` (−4 tests)
+- Files edited (production, 9):
+  - `domain/model/RoundState.kt` — dropped `overdriveUsed` and `overdriveType` fields (transient, no DB schema impact).
+  - `presentation/battle/engine/GameEngine.kt` — removed `OverdriveType` + `OverdriveAuraEffect` imports, `activeOverdrive` / `overdriveTimeRemaining` / `preOverdriveStats` / `overdriveAuraEffect` fields, the `activateOverdrive(type, baseStats)` method (4-branch when), the `expireOverdrive()` method, the `update()` block that ticked the overdrive timer, and the `init()` reset block's overdrive lines. **GOLDEN_ZIGGURAT simplified**: activation now writes `fortuneMultiplier = 5.0` unconditionally (was `coerceAtLeast(5.0)` to coexist with FORTUNE); expiry writes `fortuneMultiplier = 1.0` unconditionally (was the 4-state `if (activeOverdrive == FORTUNE) 3.0 else 1.0` cross-overdrive guard from RO-09 #2). Also dropped the `zig.overdriveColor / overdriveProgress` side effects from GOLDEN activation/expiry. Updated the stale `FORTUNE/GOLDEN buffs` comment in `handleEnemyDeath` to `GOLDEN_ZIGGURAT UW` only.
+  - `presentation/battle/BattleViewModel.kt` — removed `OverdriveType` + `ActivateOverdrive` imports, `activateOverdriveUseCase` field, `activateOverdrive(type)` method, `toggleOverdriveMenu()` method, `activeOverdriveType` / `overdriveTimeRemaining` reads in the polling loop, `showOverdriveMenu = false` from `runEndRoundPersistence` UI state push, and the `showOverdriveMenu = false` cross-clear in `toggleUpgradeMenu()`.
+  - `presentation/battle/BattleScreen.kt` — removed `OverdriveMenu` import, the `state.activeOverdriveType?.let { ... }` status line in the top-left HUD, the Overdrive button in the bottom control row (now 5 buttons: 3× speed + Pause + Upgrade, was 6 with Overdrive), and the `OverdriveMenu` invocation block. Updated the R3-04 horizontal-scroll comment to reflect the new 5-button reality. Caught a regression where `edit_file` consumed one of the literal `$` chars in `Text("$${state.cash}")` and restored it.
+  - `presentation/battle/BattleUiState.kt` — dropped `overdriveUsed`, `activeOverdriveType`, `overdriveTimeRemaining`, `showOverdriveMenu` fields and the `OverdriveType` import.
+  - `presentation/battle/entities/ZigguratEntity.kt` — dropped `overdriveColor` / `overdriveProgress` fields, the timer-bar render block, and the `timerBgPaint` / `timerFillPaint` paints (used only by the timer bar). Updated 2 KDoc comments to reflect post-R4-01 reality.
+  - `presentation/battle/GameSurfaceView.kt` + `presentation/battle/engine/EnemyScaler.kt` — comment-only updates to drop "overdrive" / "Fortune overdrive" references.
+- Files edited (test, 4):
+  - `presentation/battle/engine/GameEngineTest.kt` — removed `OverdriveType` import; deleted 3 RO-08 Overdrive-propagation tests (ASSAULT propagates 2x attackSpeed, FORTRESS propagates healthRegen, expireOverdrive restores baseline stats); collapsed 4 RO-09 #2 cross-overdrive guards into 2 simpler GOLDEN-only tests (`R401 GOLDEN_ZIGGURAT activation sets fortuneMultiplier to 5x`, `R401 GOLDEN_ZIGGURAT expiry resets fortuneMultiplier to 1x`); dropped `invokeExpireOverdrive` / `readAttackInterval` / `zigStatsForTest` helpers (only used by the removed tests). Net: −5 tests in this file (3 + 4 = 7 dropped, 2 added).
+  - `balance/UWOverdriveBalanceTest.kt` → renamed `UWBalanceTest.kt` via `git mv`; rewrote with KDoc explaining the rename; dropped `overdrive costs represent 3 to 10 minutes of walking` and `surge overdrive value scales with equipped UW count` (−2 tests). 3 surviving tests cover UW cooldown spacing, Death Wave Lv 5 vs wave 50 boss, and GOLDEN 5× cash bounding.
+  - `balance/CashEconomyTest.kt` — dropped `fortune overdrive 3x cash for one wave is strong but not game-breaking` (−1 test).
+  - `presentation/battle/GameSurfaceViewTest.kt` — comment-only update to drop "UW / overdrive state" reference.
+- ADR-0003 amendment: appended a new `## Amendments` section noting that the Rationale's "no Fortune-overdrive multiplier" constraint became vacuously true post-R4-01. The flat-rate invariant for battle Steps is unchanged — GOLDEN_ZIGGURAT's `fortuneMultiplier` still doesn't multiply battle Steps, even though R4-06 will redesign GOLDEN's per-path upgrades.
+- Verification:
+  - `./run-gradle.sh testDebugUnitTest` — BUILD SUCCESSFUL. Test count 627 → 615 (−12 net: ActivateOverdriveTest −4, GameEngineTest −5, UWBalanceTest −2, CashEconomyTest −1).
+  - `./run-gradle.sh assembleDebug` — BUILD SUCCESSFUL.
+  - All 16 remaining "overdrive" references in source/tests are intentional historical comments documenting code evolution (e.g. "R4-01: Step Overdrive deleted entirely…", "Pre-R4-01 there were 4 cross-overdrive guards…"). None are active code.
+- Doc-sync per agent protocol PR Task-List Convention:
+  - `AGENTS.md`: test count 627 → 615; Plan 14 status flipped from `✓` to `*(deleted by R4-01, 2026-05-23 — user-soak feedback rejected the mechanic; superseded by R4-03 Rapid Fire as the in-round step-spend equivalent)*`; Plan R4 status updated to "Wave 1 in progress" with R4-01 landed.
+  - `CHANGELOG.md`: new R4-01 section at top of `[Unreleased]` with full file inventory + ADR amendment note + test-count breakdown + zero-behaviour-change-for-non-Overdrive-feature acceptance.
+  - `.kiro/steering/source-files.md`: 4 deleted entries removed (OverdriveType, ActivateOverdrive, OverdriveAuraEffect, OverdriveMenu); GameEngine entry rewritten to swap RO-09 #2 stacking-invariant doc for the post-R4 sole-writer doc; BattleScreen entry updated for 5 buttons; ZigguratEntity entry updated; ActivateOverdriveTest dropped; UWOverdriveBalanceTest entry replaced with UWBalanceTest entry + rename note; one accidental duplicate `CheckTierUnlock.kt` line introduced and removed in the same edit batch.
+  - `.kiro/steering/structure.md`: `effects/` line dropped OverdriveAuraEffect; `ui/` line dropped OverdriveMenu; OverdriveType domain-model bullet dropped; ActivateOverdrive Key Files table row dropped.
+- STATE.md updated: Current objective + What works + Top priorities + Next actions + Last run all reframed for R4-01 landed + R4-02 next.
+- Open questions: none. R4-02 (Multishot/Bounce 4-level scaling at 5k/8k base × 1.5×) and R4-04 (`Icons.Filled.Upgrade` icon swap) are the remaining Wave 1 sub-plans; R4-04 is ~5 minutes, R4-02 is ~half a day. Then end-of-Wave-1 AAB.
+- Follow-ups created: commit R4-01 + open PR `feat(battle): remove Step Overdrive (R4-01)` against `main`. Don't merge until user reviews.
+- Memory updated: STATE ✅ / RUN_LOG ✅
+- ADR: ADR-0003 amended (new `## Amendments` section, 2026-05-23 entry).
+

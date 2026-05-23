@@ -67,15 +67,4 @@ class CashEconomyTest {
         val interestRatio = totalInterest.toDouble() / totalKillCash
         assertTrue(interestRatio < 0.65, "Interest ratio: $interestRatio (should be <0.65, interest shouldn't dominate)")
     }
-
-    @Test
-    fun `fortune overdrive 3x cash for one wave is strong but not game-breaking`() {
-        // Normal cash from wave 10
-        val normalCash = cashFromWave(10)
-        val fortuneCash = normalCash * 3
-        // Compare to total cash from waves 11-15 (next 5 waves)
-        var next5Cash = 0L
-        for (w in 11..15) next5Cash += cashFromWave(w)
-        assertTrue(fortuneCash < next5Cash, "Fortune wave 10 ($fortuneCash) should be < next 5 waves ($next5Cash)")
-    }
 }

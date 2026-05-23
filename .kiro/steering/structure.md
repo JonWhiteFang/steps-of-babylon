@@ -24,9 +24,9 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── battle/         # Battle renderer (SurfaceView, game loop, entities)
 │   │   ├── engine/     # GameEngine, Entity, WaveSpawner, EnemyScaler, CollisionSystem
 │   │   ├── entities/   # ZigguratEntity, ProjectileEntity, EnemyEntity, EnemyProjectileEntity, OrbEntity
-│   │   ├── effects/   # ParticlePool, EffectEngine, ScreenShake, DeathEffect, UWVisualEffect, OverdriveAuraEffect, WaveAnnouncement, FloatingText, ProjectileTrailEffect, ReducedMotionCheck
+│   │   ├── effects/   # ParticlePool, EffectEngine, ScreenShake, DeathEffect, UWVisualEffect, WaveAnnouncement, FloatingText, ProjectileTrailEffect, ReducedMotionCheck
 │   │   ├── biome/      # BiomeTheme, BackgroundRenderer (gradient sky + ambient particles)
-│   │   └── ui/         # HealthBarRenderer, InRoundUpgradeMenu, PostRoundOverlay, PauseOverlay, BiomeTransitionOverlay, OverdriveMenu, UltimateWeaponBar
+│   │   └── ui/         # HealthBarRenderer, InRoundUpgradeMenu, PostRoundOverlay, PauseOverlay, BiomeTransitionOverlay, UltimateWeaponBar
 │   ├── weapons/        # UltimateWeaponScreen, UltimateWeaponViewModel
 │   ├── labs/           # LabsScreen, LabsViewModel
 │   ├── cards/          # CardsScreen, CardsViewModel
@@ -108,7 +108,7 @@ All in `domain/model/`:
 - `EnemyType`, `BattleCondition`, `RoundState` — Battle system
 - `ZigguratBaseStats` — Base stat constants for the ziggurat
 - `ResolvedStats` — Computed combat stats from workshop + in-round upgrades
-- `OverdriveType`, `UltimateWeaponType`, `UltimateWeaponLoadout` — Special abilities
+- `UltimateWeaponType`, `UltimateWeaponLoadout` — Special abilities
 - `OwnedWeapon` — player-owned ultimate weapon
 - `Biome`, `ResearchType`, `ActiveResearch` — Progression systems
 - `DailyStepSummary` — daily step record domain model
@@ -155,7 +155,6 @@ All in `domain/model/`:
 | `domain/usecase/CalculateDefense.kt` | Damage reduction (cap 75%) + flat block |
 | `domain/usecase/UpdateBestWave.kt` | Compares wave to stored best, persists if new record |
 | `domain/usecase/CheckTierUnlock.kt` | Checks wave milestones for tier unlock eligibility |
-| `domain/usecase/ActivateOverdrive.kt` | Validates overdrive activation (balance + once-per-round) |
 | `domain/usecase/UnlockUltimateWeapon.kt` | Checks Power Stone balance, deducts, unlocks UW |
 | `domain/usecase/UpgradeUltimateWeapon.kt` | Cost scaling per level, max level 10 |
 | `presentation/MainActivity.kt` | Single Activity, Scaffold + NavHost + BottomNavBar (hidden during battle), permissions |

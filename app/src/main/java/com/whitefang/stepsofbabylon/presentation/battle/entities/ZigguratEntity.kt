@@ -16,11 +16,12 @@ class ZigguratEntity(
 ) : Entity() {
 
     /**
-     * Live combat stats. Mutable so the engine can propagate Overdrive / in-round upgrade /
-     * UW changes mid-round (RO-08). Pre-RO-08 this was a `val` captured at construction,
-     * which silently dropped Overdrive ASSAULT's 2× attack speed, FORTRESS's 2× health
-     * regen, and any in-round ATTACK_SPEED purchase. Updated via [updateStats], called by
-     * `GameEngine.applyStats`.
+     * Live combat stats. Mutable so the engine can propagate in-round upgrade / UW changes
+     * mid-round (RO-08, R4-01). Pre-RO-08 this was a `val` captured at construction, which
+     * silently dropped Overdrive ASSAULT's 2× attack speed, FORTRESS's 2× health regen, and
+     * any in-round ATTACK_SPEED purchase. R4-01 deletes Overdrive entirely; the live-stats
+     * propagation invariant remains for in-round purchases and the GOLDEN_ZIGGURAT UW.
+     * Updated via [updateStats], called by `GameEngine.applyStats`.
      */
     var stats: ResolvedStats = initialStats
         private set
@@ -34,17 +35,17 @@ class ZigguratEntity(
      * field. Pre-RO-08 this was `val attackRange = stats.range` (frozen at construction).
      */
     val attackRange: Float get() = stats.range
-    var overdriveColor: Int = 0
-    var overdriveProgress: Float = 0f
 
     private var attackCooldown: Float = 0f
 
     /**
      * Computed each shot from the current `stats.attackSpeed`. Pre-RO-08 this was a captured
-     * `val` so attack-speed updates (Overdrive ASSAULT, in-round ATTACK_SPEED purchases) were
-     * silently dropped — the cooldown reset in `update` always used the construction-time
-     * value. Recomputing per-tick is cheap (one float divide) and matches how every other
-     * stat (damage, defense, knockback, lifesteal, …) is read live from `stats`.
+     * `val` so attack-speed updates (in-round ATTACK_SPEED purchases, GOLDEN_ZIGGURAT damage
+     * buff) were silently dropped — the cooldown reset in `update` always used the
+     * construction-time value. Recomputing per-tick is cheap (one float divide) and matches
+     * how every other stat (damage, defense, knockback, lifesteal, …) is read live from
+     * `stats`. R4-01 dropped the Overdrive ASSAULT 2× attack speed reference; the invariant
+     * is unchanged.
      */
     private val attackInterval: Float get() = (1.0 / stats.attackSpeed).toFloat()
 
@@ -57,8 +58,6 @@ class ZigguratEntity(
     private val originPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFD700.toInt() }
     private val rangePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x22FFFFFF; style = Paint.Style.FILL }
     private val rangeStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x44FFFFFF; style = Paint.Style.STROKE; strokeWidth = 1.5f }
-    private val timerBgPaint = Paint().apply { color = 0x66000000 }
-    private val timerFillPaint = Paint()
 
     init {
         width = baseWidth; height = totalHeight
@@ -70,12 +69,12 @@ class ZigguratEntity(
     val centerY: Float get() = y - totalHeight / 2f
 
     /**
-     * Replaces the live stats reference. Called by `GameEngine.applyStats` whenever any
-     * Overdrive, in-round upgrade, or Ultimate Weapon mutates the engine's resolved stats
-     * (RO-08). The engine separately reconciles `maxHp` / `currentHp` / orb count to keep
-     * those side effects centralised; this entry point exists purely to redirect every
-     * subsequent stat read on the entity (attack speed, range, health regen, multishot
-     * targets, knockback, lifesteal, …) at the new instance.
+     * Replaces the live stats reference. Called by `GameEngine.applyStats` whenever an
+     * in-round upgrade or Ultimate Weapon mutates the engine's resolved stats (RO-08). The
+     * engine separately reconciles `maxHp` / `currentHp` / orb count to keep those side
+     * effects centralised; this entry point exists purely to redirect every subsequent stat
+     * read on the entity (attack speed, range, health regen, multishot targets, knockback,
+     * lifesteal, …) at the new instance.
      */
     fun updateStats(newStats: ResolvedStats) { stats = newStats }
 
@@ -102,13 +101,6 @@ class ZigguratEntity(
             canvas.drawRect(x - lw / 2f, ly, x + lw / 2f, ly + layerHeight, layerPaints[i])
         }
         canvas.drawCircle(originX, originY, 6f, originPaint)
-        // Overdrive timer bar (informational — kept here)
-        if (overdriveColor != 0 && overdriveProgress > 0f) {
-            val barW = baseWidth * 0.8f; val barH = 4f; val barY = y + 8f
-            canvas.drawRect(x - barW / 2, barY, x + barW / 2, barY + barH, timerBgPaint)
-            timerFillPaint.color = overdriveColor
-            canvas.drawRect(x - barW / 2, barY, x - barW / 2 + barW * overdriveProgress, barY + barH, timerFillPaint)
-        }
     }
 
     companion object {

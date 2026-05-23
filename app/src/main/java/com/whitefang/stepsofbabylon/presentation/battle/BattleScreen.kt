@@ -45,7 +45,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BiomeTransitionOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.InRoundUpgradeMenu
-import com.whitefang.stepsofbabylon.presentation.battle.ui.OverdriveMenu
 import com.whitefang.stepsofbabylon.presentation.battle.ui.UltimateWeaponBar
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PauseOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PostRoundOverlay
@@ -87,7 +86,7 @@ fun BattleScreen(
     Box(Modifier.fillMaxSize()) {
         AndroidView(factory = { surfaceView }, modifier = Modifier.fillMaxSize())
 
-        // Top-left: wave info + cash + overdrive status
+        // Top-left: wave info + cash + battle-step counter
         Column(Modifier.align(Alignment.TopStart).padding(start = 16.dp, top = 80.dp)) {
             Text("Wave ${state.currentWave} · ${state.enemyCount} enemies", color = Color.White, style = MaterialTheme.typography.titleMedium)
             Text(state.wavePhase.lowercase().replaceFirstChar { it.uppercase() }, color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
@@ -99,9 +98,6 @@ fun BattleScreen(
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.semantics { contentDescription = "Battle Steps earned this round: ${state.stepsEarnedThisRound}" },
                 )
-            }
-            state.activeOverdriveType?.let { type ->
-                Text("⚡ ${type.name} ${state.overdriveTimeRemaining.toInt()}s", color = Color(0xFFFF9800), style = MaterialTheme.typography.labelMedium)
             }
         }
 
@@ -120,13 +116,15 @@ fun BattleScreen(
 
         // Bottom controls
         if (roundActive) {
-            // R3-04 / GitHub #3: 6 buttons (3× speed + Pause + Upgrade + Overdrive) overflowed
-            // the right edge of narrow phones (e.g. Pixel 6, 411dp wide), cutting off the
-            // Overdrive button. The plain `Row` had no horizontal scroll fallback. Fix:
+            // R3-04 / GitHub #3: bottom control row (3× speed + Pause + Upgrade) historically
+            // overflowed the right edge of narrow phones (e.g. Pixel 6, 411dp wide). The
+            // Overdrive button was removed in R4-01 (5 buttons now, was 6) but the scroll
+            // safety net stays in place because future R4 work (Rapid Fire indicator etc.)
+            // may grow the row again. Layout invariant:
             //   - `windowInsetsPadding(navigationBars)` lifts the row above the system
             //     gesture handle so it isn't competing with the swipe-up area.
             //   - `horizontalScroll(rememberScrollState())` on the inner content lets the
-            //     row scroll horizontally on screens too narrow to show all 6 buttons.
+            //     row scroll horizontally on screens too narrow to show every button.
             //   - The background+rounded corners stay on the inner Row so the pill follows
             //     the buttons (and only the buttons), not the full viewport.
             // Pure layout change — no behaviour change to any individual button. Verified
@@ -164,16 +162,6 @@ fun BattleScreen(
                         containerColor = if (state.showUpgradeMenu) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)),
                     modifier = Modifier.semantics { contentDescription = "Upgrades" },
                 ) { Text("⬆", color = Color.White) }
-
-                // Overdrive button
-                FilledTonalButton(
-                    onClick = { viewModel.toggleOverdriveMenu() },
-                    enabled = !state.overdriveUsed,
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = if (state.showOverdriveMenu) Color(0xFFFF9800) else Color.White.copy(alpha = 0.2f),
-                        disabledContainerColor = Color.White.copy(alpha = 0.05f)),
-                    modifier = Modifier.semantics { contentDescription = "Step Overdrive" },
-                ) { Text("⚡", color = if (state.overdriveUsed) Color.Gray else Color.White) }
             }
         }
 
@@ -183,13 +171,6 @@ fun BattleScreen(
                 InRoundUpgradeMenu(cash = state.cash, inRoundLevels = state.inRoundLevels,
                     onPurchase = viewModel::purchaseInRoundUpgrade, onDismiss = viewModel::toggleUpgradeMenu,
                     describeEffect = viewModel::describeEffect)
-            }
-        }
-
-        // Overdrive menu
-        if (state.showOverdriveMenu && roundActive) {
-            Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 72.dp)) {
-                OverdriveMenu(stepBalance = state.stepBalance, onSelect = viewModel::activateOverdrive, onDismiss = viewModel::toggleOverdriveMenu)
             }
         }
 

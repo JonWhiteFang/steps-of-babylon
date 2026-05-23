@@ -67,9 +67,9 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
      * Gated on [GameEngine.hasWaveProgress] so a background-and-resume cycle does not wipe an
      * in-flight round (R3-01 / issue #2). Pre-fix every Android lifecycle event (surfaceCreated
      * + surfaceChanged) unconditionally called [GameEngine.init], resetting `cash`,
-     * `totalEnemiesKilled`, `elapsedTimeSeconds`, [WaveSpawner.currentWave], and every UW /
-     * overdrive flag. The guard reuses the [GameEngine.hasWaveProgress] helper added by RO-03
-     * (B.3 PR 2) for [com.whitefang.stepsofbabylon.presentation.battle.BattleViewModel.onCleared] —
+     * `totalEnemiesKilled`, `elapsedTimeSeconds`, [WaveSpawner.currentWave], and every UW
+     * cooldown / effect flag. The guard reuses the [GameEngine.hasWaveProgress] helper added
+     * by RO-03 (B.3 PR 2) for [com.whitefang.stepsofbabylon.presentation.battle.BattleViewModel.onCleared] —
      * exactly the right signal at the wrong call site, now wired in.
      *
      * Fresh-battle path (engine never ticked) and replay-after-end (round-end clears progress

@@ -7,7 +7,6 @@ import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
 import com.whitefang.stepsofbabylon.domain.model.CosmeticItem
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
-import com.whitefang.stepsofbabylon.domain.model.OverdriveType
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.TierConfig
@@ -22,7 +21,6 @@ import com.whitefang.stepsofbabylon.presentation.battle.biome.BiomeTheme
 import com.whitefang.stepsofbabylon.presentation.battle.effects.DeathEffect
 import com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine
 import com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText
-import com.whitefang.stepsofbabylon.presentation.battle.effects.OverdriveAuraEffect
 import com.whitefang.stepsofbabylon.presentation.battle.effects.ProjectileTrailEffect
 import com.whitefang.stepsofbabylon.presentation.battle.effects.UWVisualEffect
 import com.whitefang.stepsofbabylon.presentation.battle.effects.WaveAnnouncement
@@ -74,7 +72,6 @@ class GameEngine {
     var soundManager: SoundManager? = null
     private var reducedMotion: Boolean = false
     private var cooldownText: WaveCooldownText? = null
-    private var overdriveAuraEffect: OverdriveAuraEffect? = null
     private var lastWave: Int = 0
 
     @Volatile var cash: Long = 0L; private set
@@ -83,8 +80,6 @@ class GameEngine {
     @Volatile var totalEnemiesKilled: Int = 0; private set
     @Volatile var totalStepsEarned: Long = 0L; private set
     @Volatile var elapsedTimeSeconds: Float = 0f; private set
-    @Volatile var activeOverdrive: OverdriveType? = null; private set
-    @Volatile var overdriveTimeRemaining: Float = 0f; private set
     @Volatile var secondWindHpPercent: Double = 0.0
     @Volatile var secondWindUsed: Boolean = false
     @Volatile var cashBonusPercent: Double = 0.0
@@ -111,7 +106,15 @@ class GameEngine {
      * stays in sync with the actual cooldown duration.
      */
     @Volatile var uwCooldownMultiplier: Float = 1f
-    private var preOverdriveStats: ResolvedStats? = null
+
+    /**
+     * GOLDEN_ZIGGURAT cash buff multiplier. Written by [activateUW] (set to 5.0×) and reset
+     * to 1.0× by the GOLDEN expiry branch in [updateUWs]. Pre-R4-01 this multiplier was
+     * shared between Step Overdrive (FORTUNE, 3.0×) and the Ultimate Weapon (GOLDEN, 5.0×)
+     * with a coerceAtLeast lifecycle that preserved the higher of the two across
+     * activation/expiry interactions; R4-01 deletes Step Overdrive entirely so GOLDEN is
+     * the sole writer.
+     */
     private var fortuneMultiplier: Double = 1.0
 
     /**
@@ -229,7 +232,7 @@ class GameEngine {
         entities.clear(); pendingAdd.clear()
         cash = 0L; totalCashEarned = 0L; roundOver = false
         totalEnemiesKilled = 0; totalStepsEarned = 0L; elapsedTimeSeconds = 0f
-        activeOverdrive = null; overdriveTimeRemaining = 0f; preOverdriveStats = null; fortuneMultiplier = 1.0
+        fortuneMultiplier = 1.0
         secondWindUsed = false
         uwStates.clear(); chronoActive = false; goldenZigActive = false; preGoldenStats = null
         recoveryTimer = 0f
@@ -243,7 +246,6 @@ class GameEngine {
         // Initialize effect engine
         val fx = EffectEngine(reducedMotion)
         effectEngine = fx
-        overdriveAuraEffect = null
         lastWave = 0
 
         val zigColors = cosmeticOverrides[CosmeticCategory.ZIGGURAT_SKIN]?.overrideColors
@@ -281,54 +283,6 @@ class GameEngine {
     }
 
     fun setStats(resolvedStats: ResolvedStats) { applyStats(resolvedStats) }
-
-    fun activateOverdrive(type: OverdriveType, baseStats: ResolvedStats) {
-        activeOverdrive = type
-        overdriveTimeRemaining = type.durationSeconds.toFloat()
-        preOverdriveStats = baseStats
-        when (type) {
-            OverdriveType.ASSAULT -> {
-                applyStats(stats.copy(damage = stats.damage * 1.5, attackSpeed = stats.attackSpeed * 2.0))
-                ziggurat?.let { it.overdriveColor = 0xFFE53935.toInt() }
-            }
-            OverdriveType.FORTRESS -> {
-                applyStats(stats.copy(healthRegen = stats.healthRegen * 2.0, defensePercent = min(stats.defensePercent + 0.50, 0.75)))
-                ziggurat?.let { it.overdriveColor = 0xFF2196F3.toInt() }
-            }
-            OverdriveType.FORTUNE -> {
-                // RO-09 #2: coerceAtLeast(3.0) preserves a higher GOLDEN_ZIGGURAT (5.0×)
-                // multiplier when FORTUNE is activated *during* GOLDEN. Pre-fix this branch
-                // unconditionally wrote 3.0, downgrading the player's active 5.0× buff.
-                fortuneMultiplier = fortuneMultiplier.coerceAtLeast(3.0)
-                ziggurat?.let { it.overdriveColor = 0xFFFFD700.toInt() }
-            }
-            OverdriveType.SURGE -> {
-                resetUWCooldowns()
-                ziggurat?.let { it.overdriveColor = 0xFF9C27B0.toInt() }
-            }
-        }
-        // Spawn overdrive aura effect
-        val fx = effectEngine ?: return
-        val zig = ziggurat ?: return
-        overdriveAuraEffect?.let {} // Remove old if any — it auto-finishes when progress hits 0
-        val aura = OverdriveAuraEffect(fx.pool, type, { zig.x }, { zig.centerY }, { ziggurat?.overdriveProgress ?: 0f }, reducedMotion)
-        overdriveAuraEffect = aura
-        fx.addEffect(aura)
-    }
-
-    private fun expireOverdrive() {
-        preOverdriveStats?.let { applyStats(it) }
-        preOverdriveStats = null
-        // RO-09 #2: don't clobber GOLDEN_ZIGGURAT's 5.0× multiplier when an unrelated
-        // overdrive (ASSAULT / FORTRESS / SURGE) expires while GOLDEN is still running.
-        // Pre-fix this was unconditionally `1.0`, which silently downgraded the player's
-        // active 5.0× buff for the remainder of GOLDEN's effect window.
-        fortuneMultiplier = if (goldenZigActive) 5.0 else 1.0
-        activeOverdrive = null
-        overdriveTimeRemaining = 0f
-        ziggurat?.let { it.overdriveColor = 0; it.overdriveProgress = 0f }
-        overdriveAuraEffect = null
-    }
 
     fun updateZigguratStats(newStats: ResolvedStats) { applyStats(newStats) }
 
@@ -377,11 +331,6 @@ class GameEngine {
         backgroundRenderer?.update(deltaTime)
         effectEngine?.update(deltaTime)
 
-        if (activeOverdrive != null) {
-            overdriveTimeRemaining -= deltaTime
-            ziggurat?.overdriveProgress = (overdriveTimeRemaining / 60f).coerceIn(0f, 1f)
-            if (overdriveTimeRemaining <= 0f) expireOverdrive()
-        }
         updateUWs(deltaTime)
         tickRecoveryPackages(deltaTime)
 
@@ -506,9 +455,10 @@ class GameEngine {
             UltimateWeaponType.POISON_SWAMP -> {} // Ongoing effect in updateUWs
             UltimateWeaponType.GOLDEN_ZIGGURAT -> {
                 goldenZigActive = true; preGoldenStats = stats
-                fortuneMultiplier = fortuneMultiplier.coerceAtLeast(5.0)
+                // GOLDEN is the sole writer of fortuneMultiplier post-R4-01 (Step Overdrive
+                // removed). Activation hard-sets to 5.0×; expiry resets to 1.0×.
+                fortuneMultiplier = 5.0
                 applyStats(stats.copy(damage = stats.damage * 1.5))
-                zig.overdriveColor = 0xFFFFD700.toInt(); zig.overdriveProgress = 1f
             }
         }
     }
@@ -525,14 +475,10 @@ class GameEngine {
                         UltimateWeaponType.CHRONO_FIELD -> chronoActive = false
                         UltimateWeaponType.GOLDEN_ZIGGURAT -> {
                             goldenZigActive = false; preGoldenStats?.let { applyStats(it) }; preGoldenStats = null
-                            // RO-09 #2: condition on `activeOverdrive == FORTUNE` (not just
-                            // `!= null`). Pre-fix the if-null check kept fortuneMultiplier at
-                            // 5.0× across ASSAULT / FORTRESS / SURGE expiries — a leaked buff
-                            // that persisted up to ~50 s after GOLDEN expired. FORTUNE is the
-                            // only overdrive that owns a fortuneMultiplier value (3.0×); for
-                            // every other overdrive, GOLDEN's expiry must reset to 1.0.
-                            fortuneMultiplier = if (activeOverdrive == OverdriveType.FORTUNE) 3.0 else 1.0
-                            if (activeOverdrive == null) { zig.overdriveColor = 0; zig.overdriveProgress = 0f }
+                            // R4-01: GOLDEN is the sole writer of fortuneMultiplier post-R4-01
+                            // (Step Overdrive removed). The 4 RO-09 #2 cross-overdrive guards
+                            // that lived here pre-R4 collapse to a single unconditional reset.
+                            fortuneMultiplier = 1.0
                         }
                         else -> {}
                     }
@@ -804,7 +750,7 @@ class GameEngine {
         val tierMult = TierConfig.forTier(tier).cashMultiplier
         val cashBonus = 1.0 + wsLevel(UpgradeType.CASH_BONUS) * 0.03
         // RO-11 #A.2: CASH_RESEARCH multiplies the per-kill cash. Stacks multiplicatively
-        // with workshop CASH_BONUS, tier cash multiplier, FORTUNE/GOLDEN buffs, and the
+        // with workshop CASH_BONUS, tier cash multiplier, GOLDEN_ZIGGURAT UW, and the
         // CASH_BONUS_GAIN card. Default 1.0× means "no CASH_RESEARCH research".
         val killCash = (baseCash * tierMult * cashBonus * fortuneMultiplier *
             (1.0 + cashBonusPercent / 100.0) * cashResearchMultiplier).toLong()

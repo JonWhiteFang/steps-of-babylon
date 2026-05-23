@@ -1,16 +1,19 @@
 package com.whitefang.stepsofbabylon.balance
 
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
-import com.whitefang.stepsofbabylon.domain.model.OverdriveType
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.presentation.battle.engine.EnemyScaler
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 /**
- * Validates UW cooldowns, damage, and Overdrive cost proportionality.
+ * Validates UW cooldowns, damage, and balance proportionality. R4-01 deleted Step Overdrive
+ * entirely; the file was previously [UWOverdriveBalanceTest.kt] and covered Overdrive cost
+ * proportionality + the Surge-saves-cooldowns synergy. Both tests are gone post-R4-01;
+ * future R4-06 (UW per-path upgrades + auto-trigger) will replace this file's coverage with
+ * per-path balance tests covering the new 3-path \u00d7 10-level UW progression.
  */
-class UWOverdriveBalanceTest {
+class UWBalanceTest {
 
     @Test
     fun `all UWs can activate 2 to 3 times in a 20 minute round at level 1`() {
@@ -41,28 +44,5 @@ class UWOverdriveBalanceTest {
         val effectiveMultiplier = (10.0 / 35.0) * 5.0 + (25.0 / 35.0) * 1.0
         assertTrue(effectiveMultiplier < 3.0,
             "Golden Ziggurat effective wave multiplier: $effectiveMultiplier (should be <3x)")
-    }
-
-    @Test
-    fun `overdrive costs represent 3 to 10 minutes of walking`() {
-        // Average walking pace: ~100 steps/minute
-        val stepsPerMinute = 100
-        for (od in OverdriveType.entries) {
-            val minutes = od.stepCost.toDouble() / stepsPerMinute
-            assertTrue(minutes in 2.0..10.0,
-                "${od.name} costs ${od.stepCost} Steps = ${minutes}min of walking (should be 2-10min)")
-        }
-    }
-
-    @Test
-    fun `surge overdrive value scales with equipped UW count`() {
-        // Surge resets all cooldowns — value is proportional to number of UWs
-        // With 1 UW: saves 1 cooldown. With 3 UWs: saves 3 cooldowns.
-        // Cost (750) should be justified with 2+ UWs
-        val surgeCost = OverdriveType.SURGE.stepCost
-        val cheapestUWCooldown = UltimateWeaponType.entries.minOf { it.baseCooldownSeconds }
-        // With 3 UWs, you save 3 × cheapest cooldown worth of waiting
-        val timeSavedWith3 = cheapestUWCooldown * 3
-        assertTrue(timeSavedWith3 >= 120, "Surge with 3 UWs saves ${timeSavedWith3}s (should be ≥120s)")
     }
 }
