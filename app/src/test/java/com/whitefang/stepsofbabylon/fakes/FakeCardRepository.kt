@@ -18,8 +18,35 @@ class FakeCardRepository : CardRepository {
 
     override suspend fun addCard(type: CardType): Long {
         val id = nextId++
-        cards.update { it + OwnedCard(id, type, 1, false) }
+        cards.update { it + OwnedCard(id, type, 1, false, copyCount = 1) }
         return id.toLong()
+    }
+
+    override suspend fun addCardOrIncrementCopy(type: CardType) {
+        val existing = cards.value.find { it.type == type }
+        if (existing != null) {
+            cards.update { list -> list.map { if (it.type == type) it.copy(copyCount = it.copyCount + 1) else it } }
+        } else {
+            addCard(type)
+        }
+    }
+
+    override suspend fun incrementCopyCount(type: CardType) {
+        val existing = cards.value.find { it.type == type }
+        if (existing != null) {
+            cards.update { list -> list.map { if (it.type == type) it.copy(copyCount = it.copyCount + 1) else it } }
+        } else {
+            addCard(type)
+        }
+    }
+
+    override suspend fun decrementCopiesAndLevelUp(id: Int, amount: Int): Boolean {
+        val card = cards.value.find { it.id == id } ?: return false
+        if (card.copyCount < amount) return false
+        cards.update { list ->
+            list.map { if (it.id == id) it.copy(copyCount = it.copyCount - amount, level = it.level + 1) else it }
+        }
+        return true
     }
 
     override suspend fun upgradeCard(id: Int, newLevel: Int) {

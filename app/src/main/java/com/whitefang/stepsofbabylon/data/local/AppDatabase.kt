@@ -20,7 +20,7 @@ import androidx.room.TypeConverters
         CosmeticEntity::class,
         BillingReceiptEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

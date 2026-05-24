@@ -22,6 +22,27 @@ class CardRepositoryImpl @Inject constructor(
     override suspend fun addCard(type: CardType): Long =
         dao.insert(CardInventoryEntity(cardType = type.name))
 
+    override suspend fun addCardOrIncrementCopy(type: CardType) {
+        val existing = dao.getByType(type.name)
+        if (existing != null) {
+            dao.incrementCopyCount(type.name)
+        } else {
+            dao.insert(CardInventoryEntity(cardType = type.name))
+        }
+    }
+
+    override suspend fun incrementCopyCount(type: CardType) {
+        val existing = dao.getByType(type.name)
+        if (existing != null) {
+            dao.incrementCopyCount(type.name)
+        } else {
+            dao.insert(CardInventoryEntity(cardType = type.name))
+        }
+    }
+
+    override suspend fun decrementCopiesAndLevelUp(id: Int, amount: Int): Boolean =
+        dao.decrementCopiesAndLevelUp(id, amount) > 0
+
     override suspend fun upgradeCard(id: Int, newLevel: Int) {
         val entity = dao.getById(id) ?: return
         dao.update(entity.copy(level = newLevel))
@@ -47,5 +68,6 @@ class CardRepositoryImpl @Inject constructor(
         type = CardType.valueOf(cardType),
         level = level,
         isEquipped = isEquipped,
+        copyCount = copyCount,
     )
 }

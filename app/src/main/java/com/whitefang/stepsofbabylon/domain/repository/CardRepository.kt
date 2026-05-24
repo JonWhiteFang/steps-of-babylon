@@ -8,6 +8,9 @@ interface CardRepository {
     fun observeAllCards(): Flow<List<OwnedCard>>
     fun observeEquippedCards(): Flow<List<OwnedCard>>
     suspend fun addCard(type: CardType): Long
+    suspend fun addCardOrIncrementCopy(type: CardType)
+    suspend fun incrementCopyCount(type: CardType)
+    suspend fun decrementCopiesAndLevelUp(id: Int, amount: Int): Boolean
     suspend fun upgradeCard(id: Int, newLevel: Int)
     suspend fun equipCard(id: Int)
     suspend fun unequipCard(id: Int)

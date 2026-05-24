@@ -3,6 +3,7 @@ package com.whitefang.stepsofbabylon.domain.usecase
 import com.whitefang.stepsofbabylon.domain.model.SupplyDrop
 import com.whitefang.stepsofbabylon.domain.model.SupplyDropReward
 import com.whitefang.stepsofbabylon.domain.model.SupplyDropTrigger
+import com.whitefang.stepsofbabylon.fakes.FakeCardRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWalkingEncounterRepository
 import kotlinx.coroutines.flow.first
@@ -14,7 +15,8 @@ class ClaimSupplyDropTest {
 
     private val playerRepo = FakePlayerRepository()
     private val encounterRepo = FakeWalkingEncounterRepository()
-    private val sut = ClaimSupplyDrop(encounterRepo, playerRepo)
+    private val cardRepo = FakeCardRepository()
+    private val sut = ClaimSupplyDrop(encounterRepo, playerRepo, cardRepo)
 
     private fun makeDrop(reward: SupplyDropReward, amount: Int, claimed: Boolean = false) =
         SupplyDrop(id = 1, trigger = SupplyDropTrigger.RANDOM, reward = reward, rewardAmount = amount, claimed = claimed, createdAt = 1000)
@@ -54,14 +56,15 @@ class ClaimSupplyDropTest {
     }
 
     @Test
-    fun `claiming card dust drop adds card dust`() = runTest {
+    fun `claiming card copy drop adds card to inventory`() = runTest {
         playerRepo.ensureProfileExists()
-        encounterRepo.createDrop(SupplyDropTrigger.RANDOM, SupplyDropReward.CARD_DUST, 20)
+        // rewardAmount=0 → CardType.entries[0] = IRON_SKIN
+        encounterRepo.createDrop(SupplyDropTrigger.RANDOM, SupplyDropReward.CARD_COPY, 0)
         val drop = encounterRepo.observeUnclaimed().first().first()
 
         sut(drop)
 
-        assertEquals(20L, playerRepo.observeProfile().first().cardDust)
+        assertEquals(1, cardRepo.cards.value.size)
     }
 
     @Test

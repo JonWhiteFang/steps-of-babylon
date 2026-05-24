@@ -5,4 +5,5 @@ data class OwnedCard(
     val type: CardType,
     val level: Int,
     val isEquipped: Boolean,
+    val copyCount: Int = 1,
 )

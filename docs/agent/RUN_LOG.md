@@ -1,4 +1,18 @@
 
+## 2026-05-24 — R4-08 (Cards copy-based 7-level progression) implementation
+
+- **Goal:** Replace Card Dust with copy-based upgrades, raise max level to 7, schema v10→v11.
+- **Outcome:** Full implementation on branch `feat/R4-08-card-copy-progression`. Test count 645 → 646 (+1 net). Both `testDebugUnitTest` and `assembleDebug` BUILD SUCCESSFUL. Wave 3 complete.
+- **Changes:**
+  - **Domain:** `CardType` maxLevel 7, L7 extrapolation, SECOND_WIND cap. `CardRarity` +`copiesPerLevel`, dust fields deprecated. `OwnedCard` +`copyCount`. `SupplyDropReward.CARD_DUST` → `CARD_COPY`.
+  - **Data:** `CardInventoryEntity` +`copyCount` + unique index. `CardDao` +`getByType`/`incrementCopyCount`/`decrementCopiesAndLevelUp`. `MIGRATION_10_11` (temp table dance + aggregate + unique index + zero cardDust). `AppDatabase` v10→v11.
+  - **Use cases:** `OpenCardPack` (duplicate→incrementCopy, first card guaranteed pack-tier rarity). `UpgradeCard` (copy-based, no PlayerRepository). `ClaimSupplyDrop` (+CardRepository, CARD_COPY branch). `GenerateSupplyDrop` (CARD_COPY with random card index).
+  - **Repository:** `CardRepository` +`addCardOrIncrementCopy`/`incrementCopyCount`/`decrementCopiesAndLevelUp`. `CardRepositoryImpl` toDomain maps copyCount.
+  - **Presentation:** `CardsViewModel`/`CardsUiState` (removed cardDust, added copyCount/copiesNeeded). `CardsScreen` (dust→gems display, upgrade shows copies). `UnclaimedSuppliesViewModel` (+cardRepository). `UnclaimedSuppliesScreen` (CARD_COPY label).
+  - **Tests:** UpgradeCardTest (5 copy-based), ClaimSupplyDropTest (CARD_COPY), GenerateSupplyDropTest (CARD_COPY range), CardsViewModelTest (copy-based upgrade), UnclaimedSuppliesViewModelTest (pass cardRepo), ApplyCardEffectsTest (L5→L7), CardBalanceTest (SECOND_WIND L7 cap). FakeCardRepository extended.
+  - **ADR-0010:** Records copy-based design, rarity scaling, migration, dust deprecation.
+- **What remains:** Merge to main, then Wave 4 (R4-05 Help screen), then end-of-R4 AAB.
+
 ## 2026-05-24 — R4-07 (Boss-drop Power Stones) implementation
 
 - **Goal:** Implement the Wave 2 closer — boss kills award tier-scaled Power Stones with a 100/day cap.

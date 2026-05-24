@@ -56,9 +56,9 @@ class CardBalanceTest {
 
     @Test
     fun `second wind is once per round - does not make player unkillable`() {
-        // Second Wind at Lv5: revive at 100% HP — but only once
-        val value = CardType.SECOND_WIND.effectAtLevel(5)
-        assertEquals(100.0, value, "Second Wind Lv5 should revive at 100% HP")
+        // Second Wind at Lv7: revive at 100% HP (capped) — but only once
+        val value = CardType.SECOND_WIND.effectAtLevel(7)
+        assertEquals(100.0, value, "Second Wind Lv7 should revive at 100% HP (capped)")
         // The "once per round" is enforced by secondWindUsed flag in GameEngine
         // This test validates the value is correct, not the mechanic
     }

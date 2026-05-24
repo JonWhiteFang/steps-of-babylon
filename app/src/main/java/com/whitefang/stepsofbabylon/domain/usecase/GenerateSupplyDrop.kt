@@ -64,7 +64,7 @@ class GenerateSupplyDrop(private val random: Random = Random) {
             0 -> makeDrop(SupplyDropTrigger.RANDOM, SupplyDropReward.STEPS, random.nextInt(100, 301), timestampMs)
             1 -> makeDrop(SupplyDropTrigger.RANDOM, SupplyDropReward.GEMS, random.nextInt(1, 3), timestampMs)
             2 -> makeDrop(SupplyDropTrigger.RANDOM, SupplyDropReward.POWER_STONES, 1, timestampMs)
-            else -> makeDrop(SupplyDropTrigger.RANDOM, SupplyDropReward.CARD_DUST, random.nextInt(10, 31), timestampMs)
+            else -> makeDrop(SupplyDropTrigger.RANDOM, SupplyDropReward.CARD_COPY, random.nextInt(0, 9), timestampMs)
         }
     }
 

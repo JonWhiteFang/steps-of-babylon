@@ -89,7 +89,7 @@ class GenerateSupplyDropTest {
                     SupplyDropReward.STEPS -> assertTrue(drop.rewardAmount in 100..300)
                     SupplyDropReward.GEMS -> assertTrue(drop.rewardAmount in 1..2)
                     SupplyDropReward.POWER_STONES -> assertEquals(1, drop.rewardAmount)
-                    SupplyDropReward.CARD_DUST -> assertTrue(drop.rewardAmount in 10..30)
+                    SupplyDropReward.CARD_COPY -> assertTrue(drop.rewardAmount in 0..8)
                 }
                 return
             }

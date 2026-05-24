@@ -41,7 +41,7 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 # Debug APK
 ./gradlew assembleDebug
 
-# Unit tests (645 JVM tests)
+# Unit tests (646 JVM tests)
 ./gradlew test
 
 # Lint

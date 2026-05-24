@@ -2,24 +2,21 @@ package com.whitefang.stepsofbabylon.domain.usecase
 
 import com.whitefang.stepsofbabylon.domain.model.OwnedCard
 import com.whitefang.stepsofbabylon.domain.repository.CardRepository
-import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 
 class UpgradeCard(
     private val cardRepository: CardRepository,
-    private val playerRepository: PlayerRepository,
 ) {
     sealed class Result {
-        data class Upgraded(val newLevel: Int, val dustCost: Long) : Result()
+        data class Upgraded(val newLevel: Int) : Result()
         data object MaxLevel : Result()
-        data object InsufficientDust : Result()
+        data object InsufficientCopies : Result()
     }
 
-    suspend operator fun invoke(card: OwnedCard, cardDust: Long): Result {
+    suspend operator fun invoke(card: OwnedCard): Result {
         if (card.level >= card.type.maxLevel) return Result.MaxLevel
-        val cost = card.level * card.type.rarity.upgradeDustPerLevel
-        if (cardDust < cost) return Result.InsufficientDust
-        playerRepository.spendCardDust(cost)
-        cardRepository.upgradeCard(card.id, card.level + 1)
-        return Result.Upgraded(card.level + 1, cost)
+        val copiesNeeded = card.type.rarity.copiesPerLevel
+        if (card.copyCount < copiesNeeded) return Result.InsufficientCopies
+        val success = cardRepository.decrementCopiesAndLevelUp(card.id, copiesNeeded)
+        return if (success) Result.Upgraded(card.level + 1) else Result.InsufficientCopies
     }
 }
