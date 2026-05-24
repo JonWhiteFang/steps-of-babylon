@@ -1,7 +1,7 @@
 # Project State
 
 ## Current objective
-- **Plan R4 complete.** All 8 sub-plans (R4-01 through R4-08) merged to `main`. R4-05 (Help screen) merged 2026-05-24 via PR #17. Quick Invest FAB removed from Workshop per user request (commit `5e3530c`). **Next: end-of-R4 AAB v11 build + verify, then promote to closed track.**
+- **Plan R4 complete.** All 8 sub-plans (R4-01 through R4-08) merged to `main`. R4-05 (Help screen) merged 2026-05-24 via PR #17. Quick Invest FAB removed from Workshop per user request (commit `5e3530c`). **AAB v11 (versionCode 11) built + uploaded to closed track 2026-05-24. Next: on-device smoke test, then ≥14-day closed-track window.**
 - **Previous objective (R4-08, complete + merged):** Cards copy-based 7-level progression. Branch merged to `main` via PR #16 2026-05-24 (commit `c20f5bc`). Test count 645 → 646 (+1). Schema v10→v11. ADR-0010.
 - **Previous objective (R4-07, complete + merged):** Boss-drop Power Stones. Branch merged to `main` via PR #15 2026-05-24 (commit `7b83852`). Test count 633 → 645 (+12). AAB v10 uploaded + smoke test PASSED 2026-05-24.
 - **Previous objective (R4-03, complete + merged):** Rapid Fire upgrade. Branch `feat/R4-03-rapid-fire` merged to `main` via PR #13 2026-05-23 (commit `141f052`). Test count 616 → 626 (+10).
@@ -55,11 +55,11 @@
 - **RO-09 deferred findings (v1.x patch backlog):** #3 STEP_MULTIPLIER × cross-validator unit mismatch (needs schema migration to track multiplier-bonus separately); #4 currency lifetime counter desync (display-only drift on crash); #5 TOCTOU race on gem/PS spend (lifetime drift, wallet stays correct); #6 per-kill battle-step credit on `viewModelScope` (≤1 step per pending callback lost on mid-round nav-away).
 
 ## Top priorities (next 5)
-1. **End-of-R4 AAB v11 build + verify.** versionCode bump 10 → 11, `clean bundleRelease`, sign, upload to internal track, on-device smoke test (Help screen renders, cards show copies, boss PS floats).
-2. **(External)** Promote latest internal AAB → closed testing. Recruit ≥12 testers, distribute opt-in URL.
-3. **(External)** Wait ≥14 calendar days on closed track collecting feedback.
-4. **(External)** Apply for production access. Google review 1–3 days.
-5. **(External)** Promote closed → production with staged rollout. Tag v1.0.0 in git.
+1. **(External)** On-device smoke test of AAB v11 on closed track (Help screen renders, cards show copies, boss PS floats, UW auto-triggers).
+2. **(External)** Recruit ≥12 testers, distribute opt-in URL. Wait ≥14 calendar days on closed track collecting feedback.
+3. **(External)** Apply for production access. Google review 1–3 days.
+4. **(External)** Promote closed → production with staged rollout. Tag v1.0.0 in git.
+5. **(v1.x patch backlog)** RO-09 deferred findings #3–#6, B.4/B.5 refactor, live-price retry, CHRONO_FIELD balance review.
 
 ## Next actions (explicit order)
 1. **(R4-06 UW redesign — resume on branch `feat/R4-06-uw-paths-auto-trigger`)** Branch already cut from `main` (post-R4-03 merge `141f052`). Implementation plan:

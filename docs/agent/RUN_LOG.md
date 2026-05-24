@@ -1,4 +1,11 @@
 
+## 2026-05-24 — End-of-R4 AAB v11 build + upload to closed track
+
+- **Goal:** versionCode bump 10 → 11, build release AAB, user uploads to closed track.
+- **Outcome:** `app/build.gradle.kts` bumped `versionCode = 10` → `11`. `./run-gradle.sh bundleRelease` BUILD SUCCESSFUL in 1m 20s. Signed AAB at `app/build/outputs/bundle/release/app-release.aab`. User uploaded to Play Console closed track.
+- **What's bundled in v11 vs v10:** R4-05 (Help screen) + R4-08 (Cards copy-based progression, schema v10→v11) + Quick Invest FAB removal.
+- **What remains:** On-device smoke test on closed track, then ≥14-day / ≥12-tester window, then production access application.
+
 ## 2026-05-24 — R4-05 (Help screen) + R4 completion + Quick Invest removal
 
 - **Goal:** Implement R4-05 (Help screen, final Wave 4 sub-plan) and close out Plan R4.
