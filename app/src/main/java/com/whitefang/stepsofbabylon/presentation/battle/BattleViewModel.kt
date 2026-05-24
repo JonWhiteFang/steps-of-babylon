@@ -32,6 +32,7 @@ import com.whitefang.stepsofbabylon.domain.time.TimeProvider
 import com.whitefang.stepsofbabylon.data.time.SystemTimeProvider
 import com.whitefang.stepsofbabylon.di.ApplicationScope
 import com.whitefang.stepsofbabylon.domain.usecase.AwardBattleSteps
+import com.whitefang.stepsofbabylon.domain.usecase.AwardBossPowerStones
 import com.whitefang.stepsofbabylon.domain.usecase.AwardWaveMilestone
 import com.whitefang.stepsofbabylon.domain.usecase.ApplyCardEffects
 import com.whitefang.stepsofbabylon.domain.usecase.CalculateUpgradeCost
@@ -107,6 +108,7 @@ class BattleViewModel @Inject constructor(
     private val awardWaveMilestone = AwardWaveMilestone(playerRepository)
     private val applyCardEffects = ApplyCardEffects()
     private val awardBattleSteps = AwardBattleSteps(dailyStepDao, playerProfileDao, timeProvider)
+    private val awardBossPowerStones = AwardBossPowerStones(dailyStepDao, playerProfileDao, timeProvider)
 
     var resolvedStats: ResolvedStats = ResolvedStats(); private set
     var workshopLevels: Map<UpgradeType, Int> = emptyMap(); private set
@@ -204,6 +206,7 @@ class BattleViewModel @Inject constructor(
         // up-to-date set either way.
         engine.cosmeticOverrides = equippedCosmetics
         wireStepRewardCallback(engine)
+        wireBossKilledCallback(engine)
         roundEnded = false
         viewModelScope.launch {
             while (true) {
@@ -422,6 +425,25 @@ class BattleViewModel @Inject constructor(
         }
     }
 
+    @VisibleForTesting
+    internal fun wireBossKilledCallback(engine: GameEngine) {
+        engine.onBossKilled = { bossKillTier, x, y ->
+            viewModelScope.launch {
+                val credited = awardBossPowerStones(bossKillTier)
+                if (credited > 0L) {
+                    engine.effectEngine?.addEffect(
+                        com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText(
+                            x = x,
+                            y = y,
+                            text = "+$credited PS",
+                            color = com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText.PS_COLOR,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
     fun playAgain() {
         roundEnded = false; inRoundLevels.clear()
         resolvedStats = resolveStats(workshopLevels, emptyMap(), labLevels)
@@ -459,6 +481,7 @@ class BattleViewModel @Inject constructor(
             markEndedAndLaunchPersistence(applicationScope, eng)
         }
         eng?.onStepReward = null
+        eng?.onBossKilled = null
         super.onCleared()
     }
 

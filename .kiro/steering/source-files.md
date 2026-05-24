@@ -34,7 +34,7 @@ data/local/CardDao.kt             # Card inventory DAO
 data/local/UltimateWeaponStateEntity.kt # UW state entity (R4-06: weaponType PK + damageLevel + secondaryLevel + cooldownLevel + isUnlocked + isEquipped)
 data/local/UltimateWeaponDao.kt   # UW state DAO (+markUnlocked +updateDamageLevel/updateSecondaryLevel/updateCooldownLevel for R4-06 per-path upgrades)
 data/local/DailyStepRecordEntity.kt # Daily step record entity (with escrow fields)
-data/local/DailyStepDao.kt        # Daily step record DAO (with escrow queries) + @Transaction creditBattleStepsAtomic default method (B.2 PR 2); incrementBattleSteps UPSERT SQL supplies all 9 NOT NULL columns explicitly on the INSERT half so the fresh-install first-kill path doesn't crash on NOT NULL before ON CONFLICT can resolve UNIQUE (2026-05-12 hotfix)
+data/local/DailyStepDao.kt        # Daily step record DAO (with escrow queries) + @Transaction creditBattleStepsAtomic default method (B.2 PR 2); incrementBattleSteps UPSERT SQL supplies all 9 NOT NULL columns explicitly on the INSERT half so the fresh-install first-kill path doesn't crash on NOT NULL before ON CONFLICT can resolve UNIQUE (2026-05-12 hotfix); +creditBossPowerStonesAtomic (R4-07) mirrors the battle-step shape for boss-drop PS with 100/day cap
 data/local/WalkingEncounterEntity.kt # Walking encounter entity
 data/local/WalkingEncounterDao.kt # Walking encounter DAO
 data/local/WeeklyChallengeEntity.kt # Weekly step challenge entity
@@ -202,6 +202,7 @@ domain/usecase/ClaimSupplyDrop.kt                # Credits reward to player, mar
 domain/usecase/TrackWeeklyChallenge.kt           # Weekly step challenge PS awards (50k/75k/100k)
 domain/usecase/TrackDailyLogin.kt                # Daily login PS + Gem streak
 domain/usecase/AwardWaveMilestone.kt             # PS on new personal-best waves (1/2/5)
+domain/usecase/AwardBossPowerStones.kt           # PS on boss kills: tier×PS (T1=1, T10=10), 100/day cap, atomic DAO path (R4-07 / ADR-0009)
 domain/usecase/CheckMilestones.kt                # Detect newly achievable walking milestones
 domain/usecase/ClaimMilestone.kt                 # Credit milestone rewards via MilestoneDao.claimMilestoneAtomic (gems + power stones) with pre-flight CosmeticRepository.idExists check; returns `ClaimMilestoneResult` sealed type (Success | InsufficientSteps | AlreadyClaimed | UnknownCosmetic(cosmeticId)) so the 3 mismatched milestone cosmetic ids surface explicitly instead of silently dropping (C.4)
 domain/usecase/GenerateDailyMissions.kt          # Generate 3 daily missions (date-seeded random)

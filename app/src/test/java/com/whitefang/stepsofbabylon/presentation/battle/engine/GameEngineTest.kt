@@ -11,6 +11,7 @@ import com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText
 import com.whitefang.stepsofbabylon.presentation.battle.entities.EnemyEntity
 import com.whitefang.stepsofbabylon.presentation.battle.entities.ProjectileEntity
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -751,5 +752,65 @@ class GameEngineTest {
         val textField = FloatingText::class.java.getDeclaredField("text")
             .apply { isAccessible = true }
         return pending.filterIsInstance<FloatingText>().map { textField.get(it) as String }
+    }
+
+    // ---- R4-07: onBossKilled callback fires for BOSS enemy type ----
+
+    @Test
+    fun `R407 onBossKilled fires when a BOSS enemy dies`() {
+        val eng = freshEngine()
+        var callbackTier: Int? = null
+        eng.onBossKilled = { tier, _, _ -> callbackTier = tier }
+        val zig = eng.ziggurat!!
+        val boss = EnemyEntity(
+            enemyType = EnemyType.BOSS,
+            currentHp = 1.0, maxHp = 1.0, speed = 0f, damage = 0.0,
+            targetX = zig.originX, targetY = zig.originY, onDeath = {},
+        )
+        val method = GameEngine::class.java
+            .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
+            .apply { isAccessible = true }
+        method.invoke(eng, boss)
+        assertEquals(1, callbackTier, "onBossKilled must fire with the engine's tier for BOSS kills")
+    }
+
+    @Test
+    fun `R407 onBossKilled does NOT fire for non-BOSS enemy types`() {
+        val eng = freshEngine()
+        var fired = false
+        eng.onBossKilled = { _, _, _ -> fired = true }
+        val zig = eng.ziggurat!!
+        for (type in listOf(EnemyType.BASIC, EnemyType.FAST, EnemyType.TANK, EnemyType.RANGED)) {
+            val enemy = EnemyEntity(
+                enemyType = type,
+                currentHp = 1.0, maxHp = 1.0, speed = 0f, damage = 0.0,
+                targetX = zig.originX, targetY = zig.originY, onDeath = {},
+            )
+            val method = GameEngine::class.java
+                .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
+                .apply { isAccessible = true }
+            method.invoke(eng, enemy)
+        }
+        assertFalse(fired, "onBossKilled must NOT fire for non-BOSS enemy types")
+    }
+
+    @Test
+    fun `R407 onBossKilled passes engine tier to callback`() {
+        // Init engine at tier 7
+        val eng = GameEngine()
+        eng.init(width = 1080f, height = 1920f, resolvedStats = ResolvedStats(), playerTier = 7)
+        var receivedTier: Int? = null
+        eng.onBossKilled = { tier, _, _ -> receivedTier = tier }
+        val zig = eng.ziggurat!!
+        val boss = EnemyEntity(
+            enemyType = EnemyType.BOSS,
+            currentHp = 1.0, maxHp = 1.0, speed = 0f, damage = 0.0,
+            targetX = zig.originX, targetY = zig.originY, onDeath = {},
+        )
+        val method = GameEngine::class.java
+            .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
+            .apply { isAccessible = true }
+        method.invoke(eng, boss)
+        assertEquals(7, receivedTier, "onBossKilled must pass the engine's playerTier")
     }
 }

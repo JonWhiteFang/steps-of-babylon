@@ -118,6 +118,13 @@ object AppMigrations {
             db.execSQL(
                 "ALTER TABLE `ultimate_weapon_state_new` RENAME TO `ultimate_weapon_state`",
             )
+
+            // 4. R4-07: Add bossPsEarnedToday column to daily_step_record for boss-drop
+            //    Power Stone daily cap tracking.
+            db.execSQL(
+                "ALTER TABLE daily_step_record " +
+                    "ADD COLUMN bossPsEarnedToday INTEGER NOT NULL DEFAULT 0"
+            )
         }
     }
 

@@ -171,6 +171,13 @@ class GameEngine {
     @Volatile var onStepReward: ((amount: Long, x: Float, y: Float) -> Unit)? = null
 
     /**
+     * Callback fired when a BOSS enemy is killed. The listener (BattleViewModel) uses this
+     * to award tier-scaled Power Stones via [AwardBossPowerStones]. The tier is passed so
+     * the listener can compute the reward amount.
+     */
+    @Volatile var onBossKilled: ((tier: Int, x: Float, y: Float) -> Unit)? = null
+
+    /**
      * Returns `true` if this round has made observable progress — at least one enemy killed
      * or any game-loop ticks elapsed. Used by [com.whitefang.stepsofbabylon.presentation.battle.BattleViewModel.onCleared]
      * to decide whether a mid-nav teardown should persist the in-flight round (RO-03 B.3 PR 2).
@@ -946,6 +953,11 @@ class GameEngine {
             if (enemy.enemyType == EnemyType.BOSS && !reducedMotion) {
                 fx.screenShake.trigger(8f, 0.3f)
             }
+        }
+
+        // Boss-kill Power Stone reward — tier-scaled, capped at 100/day.
+        if (enemy.enemyType == EnemyType.BOSS) {
+            onBossKilled?.invoke(tier, enemy.x, enemy.y + 24f)
         }
 
         // Battle Step reward — flat per enemy type, independent of multipliers.

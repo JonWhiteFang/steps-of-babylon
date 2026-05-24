@@ -1,4 +1,17 @@
 
+## 2026-05-24 — R4-07 (Boss-drop Power Stones) implementation
+
+- **Goal:** Implement the Wave 2 closer — boss kills award tier-scaled Power Stones with a 100/day cap.
+- **Outcome:** Full implementation complete on branch `feat/R4-07-boss-drop-power-stones`. Test count 633 → 645 (+12 net). `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh assembleDebug` both BUILD SUCCESSFUL. Wave 2 complete.
+- **Changes:**
+  - **Data:** `DailyStepRecordEntity.kt` +`bossPsEarnedToday: Long` column. `DailyStepDao.kt` +`getBossPsEarnedToday` +`incrementBossPs` +`creditBossPowerStonesAtomic` (mirrors `creditBattleStepsAtomic` shape). `Migrations.kt` — `MIGRATION_9_10` extended with `ALTER TABLE daily_step_record ADD COLUMN bossPsEarnedToday`.
+  - **Domain:** New `AwardBossPowerStones.kt` use case — takes tier, awards `tier.toLong().coerceAtLeast(1)` PS, delegates to `creditBossPowerStonesAtomic` with 100/day cap.
+  - **Engine:** `GameEngine.kt` +`@Volatile var onBossKilled: ((tier: Int, x: Float, y: Float) -> Unit)?` callback, fires in `handleEnemyDeath` when `enemy.enemyType == EnemyType.BOSS`.
+  - **Presentation:** `BattleViewModel.kt` +`wireBossKilledCallback` subscribes to `onBossKilled`, calls `AwardBossPowerStones`, emits purple `FloatingText("+N PS")` on non-zero credit. Nulled in `onCleared`. `FloatingText.kt` +`PS_COLOR` constant (0xFF9C27B0 purple).
+  - **Tests:** 9 new in `AwardBossPowerStonesTest` (tier 1/5/10 awards, cap at 100, zero when exhausted, multiple accumulate, tier 0 coerced to 1, uses atomic path, day rollover resets). 3 new in `GameEngineTest` (onBossKilled fires for BOSS, does NOT fire for non-BOSS, passes engine tier). `FakeDailyStepDao` extended with boss PS methods.
+  - **ADR-0009:** Records reward formula, daily cap, atomic DAO pattern, cap tracking column, engine callback, alternatives considered.
+- **What remains:** Merge to main via PR, then end-of-Wave-2 AAB v10 build + verify. Wave 3 (R4-08 cards rewrite) next.
+
 ## 2026-05-24 — R4-06 (UW auto-trigger + per-path upgrades) implementation
 
 - **Goal:** Implement the largest Wave 2 sub-plan — redesign the UW system from a single `level` axis to 3 independent paths per UW with auto-trigger activation.

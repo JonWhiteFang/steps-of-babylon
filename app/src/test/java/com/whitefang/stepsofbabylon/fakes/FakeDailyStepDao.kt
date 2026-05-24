@@ -79,12 +79,39 @@ class FakeDailyStepDao(
         val remaining = (dailyCap - alreadyEarned).coerceAtLeast(0L)
         if (remaining <= 0L) return@withLock 0L
         val credited = min(requested, remaining)
-        // Under-the-mutex read-modify-write faithfully emulates the SQL guard.
         incrementBattleSteps(date, credited)
-        // Test-level decoy: the real impl calls playerDao.adjustStepBalance(credited). The fake
-        // routes the wallet side to linkedPlayer so tests can continue to assert on the existing
-        // FakePlayerRepository flow. Callers pass mock<PlayerProfileDao>() for type satisfaction.
         linkedPlayer?.profile?.update { it.copy(stepBalance = it.stepBalance + credited) }
+        credited
+    }
+
+    override suspend fun getBossPsEarnedToday(date: String): Long =
+        data.value[date]?.bossPsEarnedToday ?: 0L
+
+    override suspend fun incrementBossPs(date: String, delta: Long) {
+        val existing = data.value[date]
+        val updated = existing?.copy(bossPsEarnedToday = existing.bossPsEarnedToday + delta)
+            ?: DailyStepRecordEntity(date = date, bossPsEarnedToday = delta)
+        data.value = data.value + (date to updated)
+    }
+
+    /** Number of [creditBossPowerStonesAtomic] calls. */
+    var creditBossPsAtomicCallCount: Int = 0
+        private set
+
+    override suspend fun creditBossPowerStonesAtomic(
+        date: String,
+        requested: Long,
+        dailyCap: Long,
+        playerDao: PlayerProfileDao,
+    ): Long = atomicMutex.withLock {
+        creditBossPsAtomicCallCount++
+        if (requested <= 0L) return@withLock 0L
+        val alreadyEarned = getBossPsEarnedToday(date)
+        val remaining = (dailyCap - alreadyEarned).coerceAtLeast(0L)
+        if (remaining <= 0L) return@withLock 0L
+        val credited = min(requested, remaining)
+        incrementBossPs(date, credited)
+        linkedPlayer?.profile?.update { it.copy(powerStones = it.powerStones + credited) }
         credited
     }
 }
