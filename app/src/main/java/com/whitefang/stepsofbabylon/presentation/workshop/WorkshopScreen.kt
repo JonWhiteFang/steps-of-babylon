@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -81,14 +80,6 @@ fun WorkshopScreen(onNavigateToWeapons: () -> Unit = {}, onNavigateToCards: () -
                     UpgradeCard(info = info, onClick = { viewModel.purchase(info.type) })
                 }
             }
-        }
-
-        // Quick Invest FAB
-        FloatingActionButton(
-            onClick = { viewModel.quickInvest() },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-        ) {
-            Text("⚡", style = MaterialTheme.typography.titleLarge)
         }
     }
     }
