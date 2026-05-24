@@ -1,3 +1,19 @@
+
+## 2026-05-24 — R4-06 (UW auto-trigger + per-path upgrades) implementation
+
+- **Goal:** Implement the largest Wave 2 sub-plan — redesign the UW system from a single `level` axis to 3 independent paths per UW with auto-trigger activation.
+- **Outcome:** Full implementation complete on branch `feat/R4-06-uw-paths-auto-trigger`. Test count 626 → 633 (+7 net). `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh assembleDebug` both BUILD SUCCESSFUL.
+- **Changes:**
+  - **Domain:** New `UWPath.kt` enum (DAMAGE/SECONDARY/COOLDOWN). `UltimateWeaponType.kt` rewritten with per-path L1/L10 spec for all 6 UWs + `valueAtLevel`/`cooldownAtLevel`/`damageAtLevel`/`secondaryAtLevel`/`costForPath` helpers. `OwnedWeapon.kt` now 6 fields (type + 3 path levels + isUnlocked + isEquipped + `levelOf(path)`). `UpgradeUltimateWeapon.kt` takes `path: UWPath` param; L0→L1 is free. `UnlockUltimateWeapon.kt` gates on `isUnlocked` flag.
+  - **Data:** `UltimateWeaponStateEntity.kt` (4 new columns replacing single `level`). `UltimateWeaponDao.kt` (+`markUnlocked` +`updateDamageLevel`/`updateSecondaryLevel`/`updateCooldownLevel`). `AppDatabase.kt` v9→v10. `Migrations.kt` +`MIGRATION_9_10` (recreate-table dance with `(L+2)/3, (L+1)/3, L/3` redistribution).
+  - **Repository:** `UltimateWeaponRepository.kt` (`upgradePathLevel` replaces `upgradeWeapon`). `UltimateWeaponRepositoryImpl.kt` (toDomain rewrite for 4-column entity → 6-field OwnedWeapon; `upgradePathLevel` dispatches to per-path DAO methods).
+  - **Engine:** `GameEngine.kt` — `UWState` 4-field struct (type + damageLevel + secondaryLevel + cooldownLevel). Auto-trigger in `updateUWs` gated on `getAliveEnemies().isNotEmpty()`. All 6 `activateUW` branches rewritten for per-path reads. `chronoSlowFactor` instance field replaces `CHRONO_SLOW_FACTOR` companion constant. GOLDEN `fortuneMultiplier` uses `coerceAtLeast(damageAtLevel(damageLevel))`.
+  - **UI:** `UltimateWeaponBar.kt` passive (no clickable). `UltimateWeaponScreen.kt` 3 per-path Upgrade buttons with path labels + "L0 → value" previews. `UltimateWeaponViewModel.kt` (`UWPathDisplay` + `UWDisplayInfo.paths`). `BattleViewModel.activateUW` removed.
+  - **Tests:** `FakeUltimateWeaponRepository` rewritten. `UpgradeUltimateWeaponTest` (4→6, +2). `UnlockUltimateWeaponTest` (3→4, +1). `UltimateWeaponViewModelTest` (4→6, +2). `UWBalanceTest` (3→5, +2). `GameEngineTest` updated (OwnedWeapon constructor calls, GOLDEN assertions 5.0→2.0, `setChronoActive` sets `chronoSlowFactor`, `activateGoldenZigForTest` uses named params).
+  - **ADR-0008** written (`docs/agent/DECISIONS/ADR-0008-uw-per-path-upgrades.md`).
+  - **Doc-sync:** AGENTS.md, README.md, CHANGELOG.md, source-files.md, database-schema.md all updated.
+- **Next:** R4-07 (boss-drop Power Stones) — cut branch, add `bossPsEarnedToday` column to `DailyStepRecordEntity` (folded into same v9→v10 migration), new `AwardBossPowerStones` use case, `GameEngine.onBossKilled` callback, ADR-0009.
+
 # Run Log
 
 ## 2026-05-22 (evening) — Plan R4 (Internal Soak Feedback Bundle) authored end-to-end
@@ -5101,4 +5117,38 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Memory updated: STATE ✅ / RUN_LOG ✅
 
 - ADR: not warranted — Rapid Fire is an additive Workshop upgrade with a centralised interpolation helper. The `tickRapidFire` mirrors `tickRecoveryPackages` pattern; no new architectural decision. ADR-0008 (UW per-path) and ADR-0009 (Boss-drop PS) will land alongside the next two Wave 2 sub-plans which DO need ADRs.
+
+## 2026-05-23 evening — R4-03 merged via PR #13; R4-06 branch cut + context preflight; no code changes
+
+- Goal: open R4-06 (UW auto-trigger + per-UW upgrade paths) implementation now that R4-03 has merged. Plan §R4-06 estimates ~1 week effort; this session ends after the context preflight before code changes begin.
+
+- Context preflight (per agent protocol):
+  - Pulled `main`: fast-forward `cbbb525` → `141f052` (Merge PR #13 from `feat/R4-03-rapid-fire`). R4-03 (Rapid Fire upgrade) is now on `main`; test count 626; AAB v9 still the latest internal-track build (R4-03 hasn't shipped a new AAB yet — that's the end-of-Wave-2 AAB v10 milestone).
+  - Cut branch `feat/R4-06-uw-paths-auto-trigger` from `main` (post-PR #13 merge state).
+  - Read the full UW surface to map what changes:
+    - `domain/model/UltimateWeaponType.kt` — current shape: `enum class UltimateWeaponType(val unlockCost, val baseCooldownSeconds, val effectDurationSeconds, val description)` with 6 entries (DEATH_WAVE 50/60/0, CHAIN_LIGHTNING 75/45/0, BLACK_HOLE 100/90/5, CHRONO_FIELD 75/75/8, POISON_SWAMP 60/60/6, GOLDEN_ZIGGURAT 80/90/10). Methods: `upgradeCost(currentLevel)` = `unlockCost × 2 × currentLevel`; `cooldownAtLevel(level)` = `baseCooldownSeconds × (1f - 0.05f × (level - 1))`. Companion: `MAX_LEVEL = 10`. → R4-06 will replace this with per-path L1/L10 spec blocks per the locked plan §R4-06 tables.
+    - `domain/model/OwnedWeapon.kt` — 3-field data class (`type`, `level`, `isEquipped`). → R4-06 will replace `level: Int` with `damageLevel: Int`, `secondaryLevel: Int`, `cooldownLevel: Int`, `isUnlocked: Boolean`.
+    - `domain/model/UltimateWeaponLoadout.kt` — wraps `List<UltimateWeaponType>` with 3-max + no-duplicates invariants. **No per-UW state on the loadout** — just type references. → No change needed; the loadout is type-only.
+    - `data/local/UltimateWeaponStateEntity.kt` — single `level: Int = 1` + `isEquipped: Boolean = false` + `weaponType: String` PK. → R4-06 schema rewrite: add `damageLevel`, `secondaryLevel`, `cooldownLevel`, `isUnlocked` columns; drop legacy `level`.
+    - `data/local/UltimateWeaponDao.kt` — 5 methods (`getAll`/`getEquipped`/`upsert`/`countEquipped`/`getByType`). → R4-06 will likely need a new `upgradePathLevelAtomic(weaponType, path)` method to keep per-path level updates atomic; existing methods otherwise still work post-schema-change.
+    - `data/local/Migrations.kt` — `MIGRATION_7_8` + `MIGRATION_8_9` registered in `ALL` array. → R4-06 adds new `MIGRATION_9_10` object that performs (1) `ALTER TABLE ultimate_weapon_state ADD COLUMN damageLevel INTEGER NOT NULL DEFAULT 0` × 3 paths + `isUnlocked INTEGER NOT NULL DEFAULT 0`; (2) UPDATE rows to redistribute legacy `level` proportionally across the 3 path columns (e.g. legacy L5 → 2/2/1, legacy L10 → 4/3/3 or similar) and set `isUnlocked = (level >= 1)`; (3) drop legacy `level` column. Schema export commit needed (`app/schemas/com.whitefang.stepsofbabylon.data.local.AppDatabase/10.json`).
+    - `data/local/AppDatabase.kt` — `version = 9`, 13 entities, 13 DAOs. → Bump to `version = 10`. R4-07 (boss-drop PS) is the second occupant of v9→v10 — the migration object will combine both schema changes (UW path columns + `bossPsEarnedToday` column on `DailyStepRecordEntity`).
+
+- No production or test code changes this session — R4-06 implementation starts in the next session on the same branch. Per the agent protocol, ending the session here gets the doc state truthful before context is lost.
+
+- Doc-sync per agent protocol PR Task-List Convention:
+  - **No** AGENTS.md / README.md / CHANGELOG.md / source-files.md / structure.md changes — those would be premature, since no source changes have landed. Per the protocol's "touch only if the PR actually invalidates them" rule, the current-state docs already accurately reflect post-R4-03 state (test count 626, R4-03 merged, Wave 2 in progress).
+  - `STATE.md`: current objective rotated onto **R4-06 branch cut + awaiting implementation**; previous-objectives stack pushed; top priorities + next actions reframed for resume-from-preflight (with the implementation plan explicitly captured in `Next actions` step #1 so the next session can pick up without re-reading the source again).
+  - `RUN_LOG.md`: this entry.
+
+- Open questions:
+  - **Migration redistribution rule for legacy `level`.** Plan §R4-06 says "redistribute the legacy `level` value across `damageLevel`, `secondaryLevel`, `cooldownLevel` proportionally (e.g. legacy L5 → 2/2/1)". Need to lock the exact algorithm before the migration ships. Candidate: `damageLevel = (level + 2) / 3`, `secondaryLevel = (level + 1) / 3`, `cooldownLevel = level / 3` (ceil-rounding for the most-impactful path; floor-rounding for the least). Alternative: equal split `level / 3` rounded down, with the remainder going to damage. Both are reasonable; pick one and explain in the ADR.
+  - **GOLDEN_ZIGGURAT secondary path.** Plan §R4-06 §GOLDEN_ZIGGURAT lists Cash multiplier path (L1 2× → L10 8×) and Damage multiplier path (L1 1.2× → L10 3×). The `fortuneMultiplier` engine field is currently set to a flat 5.0× on activation post-R4-01; R4-06 needs to read the player's GOLDEN cash-multiplier path level on activation. Affects the RO-09 #2 test set: 4 tests collapse to 2 since GOLDEN is now sole writer + the value is per-path-level instead of flat.
+  - **Auto-trigger UI feedback.** When a UW auto-fires the player loses the explicit "I tapped the button" feedback. Plan §R4-06 says `UltimateWeaponBar` becomes a passive cooldown-progress indicator. Need to confirm: should the auto-fire emit a brief flash / sound / floating text on the UW slot? Plan doesn't lock this; default will be silent (the existing per-UW visual effect via `UWVisualEffect` already plays on activation, so the player gets the visual cue from that). On-device check during the Wave 2 AAB will reveal if more feedback is needed.
+
+- Follow-ups created: resume R4-06 implementation next session on `feat/R4-06-uw-paths-auto-trigger`. The implementation plan is captured in STATE.md `Next actions` step #1 with sub-bullet ordering: schema migration → domain rewrite → use case rewrite → repository layer → engine rewrite → UI rewrite → tests → ADR-0008 → PR.
+
+- Memory updated: STATE ✅ / RUN_LOG ✅
+
+- ADR: not yet warranted — no implementation choices locked this session. ADR-0008 will be written alongside the R4-06 implementation in the next session, capturing the per-path L1/L10 spec, migration redistribution rule, auto-trigger semantics, and the per-UW path choice rationale.
 

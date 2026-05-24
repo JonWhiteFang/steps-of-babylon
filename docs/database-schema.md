@@ -70,12 +70,15 @@ One row per owned card.
 
 ### UltimateWeaponState
 
-One row per unlocked UW.
+One row per UW (6 rows total, one per UltimateWeaponType).
 
 | Column | Type | Notes |
 |---|---|---|
 | weaponType | String (PK) | UltimateWeaponType enum name |
-| level | Int | Upgrade level |
+| damageLevel | Int | DAMAGE path upgrade level (0–10) |
+| secondaryLevel | Int | SECONDARY path upgrade level (0–10) |
+| cooldownLevel | Int | COOLDOWN path upgrade level (0–10) |
+| isUnlocked | Boolean | Whether the weapon has been unlocked with Power Stones |
 | isEquipped | Boolean | Max 3 equipped |
 
 ### DailyStepRecord
@@ -229,8 +232,8 @@ Each entity gets its own DAO:
 - Write manual migrations for complex changes (column renames, data transforms)
 - Version numbering: increment by 1 per plan that touches the schema
 - Test migrations with `MigrationTestHelper` in instrumented tests
-- Current schema version: 9
-- Active migrations: `MIGRATION_7_8` (adds `battleStepsEarned`), `MIGRATION_8_9` (adds `billing_receipt` table, C.5 PR 1)
+- Current schema version: 10
+- Active migrations: `MIGRATION_7_8` (adds `battleStepsEarned`), `MIGRATION_8_9` (adds `billing_receipt` table, C.5 PR 1), `MIGRATION_9_10` (recreates `ultimate_weapon_state` table with per-path columns, R4-06 / ADR-0008)
 - v1→v2: Added `highestUnlockedTier` column to `player_profile` (Plan 13). Uses `fallbackToDestructiveMigration` during development.
 - v2→v3: Added `labSlotCount` column to `player_profile` (Plan 16). Uses `fallbackToDestructiveMigration` during development.
 - v3→v4: Added `WeeklyChallengeEntity`, `DailyLoginEntity`, streak fields on `player_profile` (Plan 20). Uses `fallbackToDestructiveMigration`.
@@ -238,6 +241,8 @@ Each entity gets its own DAO:
 - v5→v6: Added lifetime currency counters and battle stats to `player_profile` (Plan 22). Uses `fallbackToDestructiveMigration`.
 - v6→v7: Added `CosmeticEntity`, monetization fields on `player_profile` (adRemoved, seasonPassActive, seasonPassExpiry, freeLabRushUsedToday, freeCardPackAdUsedToday) (Plan 26). Uses `fallbackToDestructiveMigration`.
 - v7→v8: Added `battleStepsEarned` column to `daily_step_record` (Battle Step Rewards, ADR-0003). First explicit `Migration` object (`MIGRATION_7_8` in `data/local/Migrations.kt`); `fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)` retained for dev/QA downgrades only.
+- v8→v9: Added `billing_receipt` table (Play Billing idempotency store, C.5 PR 1 / ADR-0005). `MIGRATION_8_9` creates the table with all 10 columns.
+- v9→v10: Recreated `ultimate_weapon_state` table (R4-06 / ADR-0008). Recreate-table dance: create `_new` table with per-path columns (`damageLevel`, `secondaryLevel`, `cooldownLevel`, `isUnlocked`), copy existing rows mapping old `level` → `damageLevel` and `level > 0` → `isUnlocked = 1`, drop old table, rename `_new` to `ultimate_weapon_state`. `MIGRATION_9_10` in `data/local/Migrations.kt`.
 
 ## Type Converters
 

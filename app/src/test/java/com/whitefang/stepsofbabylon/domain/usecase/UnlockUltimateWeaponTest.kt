@@ -27,8 +27,14 @@ class UnlockUltimateWeaponTest {
     }
 
     @Test
-    fun `already owned returns false`() = runTest {
-        val owned = listOf(OwnedWeapon(UltimateWeaponType.DEATH_WAVE, 1, false))
+    fun `already unlocked returns false`() = runTest {
+        val owned = listOf(OwnedWeapon(UltimateWeaponType.DEATH_WAVE, isUnlocked = true))
         assertFalse(sut(UltimateWeaponType.DEATH_WAVE, 200, owned))
+    }
+
+    @Test
+    fun `row exists but not unlocked allows unlock`() = runTest {
+        val owned = listOf(OwnedWeapon(UltimateWeaponType.DEATH_WAVE, isUnlocked = false))
+        assertTrue(sut(UltimateWeaponType.DEATH_WAVE, 200, owned))
     }
 }

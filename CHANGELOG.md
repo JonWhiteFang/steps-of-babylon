@@ -4,6 +4,43 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### R4-06: UW auto-trigger + per-path upgrades (2026-05-24)
+
+Second Wave 2 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Redesigns Ultimate Weapons from a single-level upgrade with manual activation to a 3-path upgrade system (DAMAGE, SECONDARY, COOLDOWN) with automatic cooldown-based triggering. Source feedback: *"UWs should auto-trigger on cooldown and have per-path upgrades instead of a single level."* ADR-0008 records the decision.
+
+**Schema:** Room v9 → v10. `ultimate_weapon_state` table recreated via `MIGRATION_9_10` (recreate-table dance) — single `level` column replaced by `damageLevel`, `secondaryLevel`, `cooldownLevel`, `isUnlocked` columns.
+
+**New domain model:**
+
+- `domain/model/UWPath.kt` — 3-value enum: DAMAGE, SECONDARY, COOLDOWN.
+
+**Rewritten files (source, 14):**
+
+- `domain/model/UltimateWeaponType.kt` — per-path L1/L10 spec + `valueAtLevel`/`cooldownAtLevel`/`damageAtLevel`/`secondaryAtLevel`/`costForPath` methods.
+- `domain/model/OwnedWeapon.kt` — 6 fields: type, damageLevel, secondaryLevel, cooldownLevel, isUnlocked, isEquipped + `levelOf(path)` accessor.
+- `domain/usecase/UpgradeUltimateWeapon.kt` — takes `path: UWPath` parameter for per-path upgrade.
+- `domain/usecase/UnlockUltimateWeapon.kt` — sets `isUnlocked` flag (no longer increments level).
+- `domain/repository/UltimateWeaponRepository.kt` — `upgradePathLevel` replaces `upgradeWeapon`.
+- `data/local/UltimateWeaponStateEntity.kt` — 4 new columns (damageLevel, secondaryLevel, cooldownLevel, isUnlocked) replacing single `level`.
+- `data/local/UltimateWeaponDao.kt` — +`markUnlocked` +`updateDamageLevel`/`updateSecondaryLevel`/`updateCooldownLevel`.
+- `data/local/Migrations.kt` — +`MIGRATION_9_10` recreate-table dance for `ultimate_weapon_state`.
+- `data/local/AppDatabase.kt` — version 9 → 10.
+- `data/repository/UltimateWeaponRepositoryImpl.kt` — `toDomain` rewrite for 4-column entity → 6-field domain model.
+- `presentation/battle/engine/GameEngine.kt` — UWState 4-field struct, auto-trigger on cooldown, per-path `activateUW`, `chronoSlowFactor` instance field (companion `CHRONO_SLOW_FACTOR` constant removed).
+- `presentation/battle/ui/UltimateWeaponBar.kt` — passive display (no clickable activation buttons).
+- `presentation/weapons/UltimateWeaponScreen.kt` — 3 per-path Upgrade buttons per UW card.
+- `presentation/weapons/UltimateWeaponViewModel.kt` — `UWPathDisplay` + `UWDisplayInfo.paths` for per-path UI state.
+
+**BattleViewModel:** `activateUW` method removed (auto-trigger replaces manual activation).
+
+**Files changed (test, 1):**
+
+- `fakes/FakeUltimateWeaponRepository.kt` — rewritten for new `upgradePathLevel` interface + per-path level tracking.
+
+**Test count:** 626 → 633 (+7). `./run-gradle.sh testDebugUnitTest` BUILD SUCCESSFUL.
+
+**ADR:** ADR-0008 — UW per-path upgrade system with auto-trigger.
+
 ### R4-03: Rapid Fire upgrade (2026-05-23)
 
 First Wave 2 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Adds a new `RAPID_FIRE` Workshop upgrade in the ATTACK category that fires a periodic attack-speed burst during a wave's SPAWNING phase. Source feedback: *"Add 'Rapid Fire', upgradable duration and speed, auto triggers at time interval (max upgrade should be constant)."* Locked decision (2026-05-22T20:27 BST): periodic-pulse engine pattern mirroring `RECOVERY_PACKAGES`.

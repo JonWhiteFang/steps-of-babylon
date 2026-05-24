@@ -2,6 +2,7 @@ package com.whitefang.stepsofbabylon.presentation.weapons
 
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
+import com.whitefang.stepsofbabylon.domain.model.UWPath
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeUltimateWeaponRepository
@@ -46,23 +47,32 @@ class UltimateWeaponViewModelTest {
     }
 
     @Test
-    fun `owned weapon shows as owned`() = runTest(dispatcher) {
-        uwRepo.weapons.value = mapOf(UltimateWeaponType.DEATH_WAVE to OwnedWeapon(UltimateWeaponType.DEATH_WAVE, 1, false))
+    fun `unlocked weapon shows as unlocked with 3 paths`() = runTest(dispatcher) {
+        uwRepo.weapons.value = mapOf(
+            UltimateWeaponType.DEATH_WAVE to OwnedWeapon(
+                UltimateWeaponType.DEATH_WAVE, damageLevel = 2, secondaryLevel = 1,
+                cooldownLevel = 0, isUnlocked = true, isEquipped = false,
+            ),
+        )
         val vm = createVm()
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
-        val storm = vm.uiState.value.weapons.find { it.type == UltimateWeaponType.DEATH_WAVE }!!
-        assertTrue(storm.owned)
-        assertEquals(1, storm.level)
+        val dw = vm.uiState.value.weapons.find { it.type == UltimateWeaponType.DEATH_WAVE }!!
+        assertTrue(dw.isUnlocked)
+        assertEquals(3, dw.paths.size)
+        assertEquals(2, dw.paths[UWPath.DAMAGE]!!.level)
+        assertEquals(1, dw.paths[UWPath.SECONDARY]!!.level)
+        assertEquals(0, dw.paths[UWPath.COOLDOWN]!!.level)
     }
 
     @Test
-    fun `locked weapon shows not owned`() = runTest(dispatcher) {
+    fun `locked weapon shows not unlocked with empty paths`() = runTest(dispatcher) {
         val vm = createVm()
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
         val first = vm.uiState.value.weapons.first()
-        assertFalse(first.owned)
+        assertFalse(first.isUnlocked)
+        assertTrue(first.paths.isEmpty())
     }
 
     @Test
@@ -71,5 +81,34 @@ class UltimateWeaponViewModelTest {
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
         assertEquals(500, vm.uiState.value.powerStones)
+    }
+
+    @Test
+    fun `per-path canAfford reflects wallet`() = runTest(dispatcher) {
+        // DEATH_WAVE costForPath(5) = 50*2*5 = 500. Wallet = 500 → can afford.
+        uwRepo.weapons.value = mapOf(
+            UltimateWeaponType.DEATH_WAVE to OwnedWeapon(
+                UltimateWeaponType.DEATH_WAVE, damageLevel = 5, isUnlocked = true,
+            ),
+        )
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val dw = vm.uiState.value.weapons.find { it.type == UltimateWeaponType.DEATH_WAVE }!!
+        assertTrue(dw.paths[UWPath.DAMAGE]!!.canAfford)
+    }
+
+    @Test
+    fun `maxed path shows isMaxed`() = runTest(dispatcher) {
+        uwRepo.weapons.value = mapOf(
+            UltimateWeaponType.DEATH_WAVE to OwnedWeapon(
+                UltimateWeaponType.DEATH_WAVE, damageLevel = 10, isUnlocked = true,
+            ),
+        )
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val dw = vm.uiState.value.weapons.find { it.type == UltimateWeaponType.DEATH_WAVE }!!
+        assertTrue(dw.paths[UWPath.DAMAGE]!!.isMaxed)
     }
 }
