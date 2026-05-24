@@ -1,7 +1,7 @@
 # Project State
 
 ## Current objective
-- **R4-07 (Boss-drop Power Stones) landed 2026-05-24 on branch `feat/R4-07-boss-drop-power-stones`.** Test count 633 → 645 (+12 net). Boss kills award `tier` PS (T1=1, T10=10) with 100/day cap. New `bossPsEarnedToday` column on `DailyStepRecordEntity` (folded into v9→v10 migration). `DailyStepDao.creditBossPowerStonesAtomic` mirrors `creditBattleStepsAtomic` shape. New `AwardBossPowerStones` use case. `GameEngine.onBossKilled` callback fires in `handleEnemyDeath` for BOSS type. `BattleViewModel.wireBossKilledCallback` subscribes + emits purple `FloatingText("+N PS")`. ADR-0009. **Wave 2 complete. Next: merge R4-07 to main, then end-of-Wave-2 AAB v10 build + verify.**
+- **R4-07 (Boss-drop Power Stones) merged 2026-05-24 via PR #15 (commit `7b83852`).** Test count 633 → 645 (+12 net). Boss kills award `tier` PS (T1=1, T10=10) with 100/day cap. ADR-0009. **Wave 2 complete. AAB v10 (versionCode 10) uploaded to Play Console internal track 2026-05-24, on-device smoke test PASSED 2026-05-24.** Next: Wave 3 (R4-08 cards rewrite).
 - **Previous objective (R4-06, complete + merged):** UW auto-trigger + per-path upgrades. Branch `feat/R4-06-uw-paths-auto-trigger` merged to `main` via PR #14 2026-05-24 (commit `d8b1d5c`). Test count 626 → 633 (+7).
 - **Previous objective (R4-03, complete + merged):** Rapid Fire upgrade. Branch `feat/R4-03-rapid-fire` merged to `main` via PR #13 2026-05-23 (commit `141f052`). Test count 616 → 626 (+10).
 - **Previous objective (Plan R4 Wave 1, complete + verified):** AAB v9 uploaded + on-device smoke test PASSED 2026-05-23.
