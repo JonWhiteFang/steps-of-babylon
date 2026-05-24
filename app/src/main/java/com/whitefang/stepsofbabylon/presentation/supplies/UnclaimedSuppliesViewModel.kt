@@ -3,6 +3,7 @@ package com.whitefang.stepsofbabylon.presentation.supplies
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.domain.model.SupplyDrop
+import com.whitefang.stepsofbabylon.domain.repository.CardRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.WalkingEncounterRepository
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimSupplyDrop
@@ -18,9 +19,10 @@ import javax.inject.Inject
 class UnclaimedSuppliesViewModel @Inject constructor(
     private val encounterRepository: WalkingEncounterRepository,
     private val playerRepository: PlayerRepository,
+    private val cardRepository: CardRepository,
 ) : ViewModel() {
 
-    private val claimSupplyDrop = ClaimSupplyDrop(encounterRepository, playerRepository)
+    private val claimSupplyDrop = ClaimSupplyDrop(encounterRepository, playerRepository, cardRepository)
 
     val uiState: StateFlow<SuppliesUiState> = encounterRepository.observeUnclaimed()
         .map { SuppliesUiState(drops = it, isLoading = false) }

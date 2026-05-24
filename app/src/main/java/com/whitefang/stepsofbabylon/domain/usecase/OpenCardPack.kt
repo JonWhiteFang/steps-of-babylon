@@ -13,7 +13,7 @@ enum class PackTier(val gemCost: Long, val commonWeight: Double, val rareWeight:
     EPIC(500, 0.20, 0.40, 0.40),
 }
 
-data class CardResult(val type: CardType, val isNew: Boolean, val dustAwarded: Long)
+data class CardResult(val type: CardType, val isNew: Boolean, val copiesAwarded: Int = 1)
 
 class OpenCardPack(
     private val cardRepository: CardRepository,
@@ -32,22 +32,28 @@ class OpenCardPack(
         val ownedTypes = ownedCards.map { it.type }.toMutableSet()
         val results = mutableListOf<CardResult>()
 
-        repeat(3) {
-            val rarity = rollRarity(packTier)
+        repeat(3) { index ->
+            // First card guaranteed at pack-tier rarity; other 2 use standard weights
+            val rarity = if (index == 0) packTierToRarity(packTier) else rollRarity(packTier)
             val candidates = CardType.entries.filter { it.rarity == rarity }
             val type = candidates[random.nextInt(candidates.size)]
 
             if (type in ownedTypes) {
-                val dust = type.rarity.dustValue
-                playerRepository.addCardDust(dust)
-                results += CardResult(type, isNew = false, dustAwarded = dust)
+                cardRepository.incrementCopyCount(type)
+                results += CardResult(type, isNew = false)
             } else {
                 cardRepository.addCard(type)
                 ownedTypes += type
-                results += CardResult(type, isNew = true, dustAwarded = 0)
+                results += CardResult(type, isNew = true)
             }
         }
         return Result.Opened(results)
+    }
+
+    private fun packTierToRarity(packTier: PackTier): CardRarity = when (packTier) {
+        PackTier.COMMON -> CardRarity.COMMON
+        PackTier.RARE -> CardRarity.RARE
+        PackTier.EPIC -> CardRarity.EPIC
     }
 
     private fun rollRarity(packTier: PackTier): CardRarity {

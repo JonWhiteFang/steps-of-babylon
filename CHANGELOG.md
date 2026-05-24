@@ -4,6 +4,24 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### R4-08: Cards copy-based 7-level progression (2026-05-24)
+
+Wave 3 of [Plan R4](docs/plans/plan-R4-feedback-bundle.md). Replaces Card Dust with copy-based upgrades. Cards now upgrade by collecting copies (3 COMMON / 4 RARE / 5 EPIC per level). Max level raised from 5 to 7 (~30% stronger at cap). ADR-0010 records the decision.
+
+**Schema:** Room v10 → v11. `card_inventory` table recreated with `copyCount` column, duplicate rows aggregated, unique index on `cardType`.
+
+**Key changes:**
+
+- `CardType` — maxLevel 5→7, L7 values via linear extrapolation, SECOND_WIND capped at 100%.
+- `CardRarity` — `copiesPerLevel` (3/4/5) added; `dustValue`/`upgradeDustPerLevel` deprecated.
+- `OpenCardPack` — duplicates increment copy count; first card guaranteed at pack-tier rarity.
+- `UpgradeCard` — copy-based (no longer needs PlayerRepository/dust).
+- `SupplyDropReward` — `CARD_DUST` → `CARD_COPY`.
+- `ClaimSupplyDrop` — now takes `CardRepository`; CARD_COPY awards 1 copy of random card.
+- `CardsViewModel/UiState/Screen` — dust UI removed, shows copies/copiesNeeded.
+
+**Tests:** 645 → 646 (+1 net). UpgradeCardTest, ClaimSupplyDropTest, GenerateSupplyDropTest, CardsViewModelTest, ApplyCardEffectsTest, CardBalanceTest all updated.
+
 ### R4-07: Boss-drop Power Stones (2026-05-24)
 
 Third and final Wave 2 sub-plan of [Plan R4](docs/plans/plan-R4-feedback-bundle.md). Boss kills now award tier-scaled Power Stones (T1=1 PS, T2=2 PS, … T10=10 PS) with a 100 PS/day cap. Addresses the PS scarcity created by R4-06's expanded 3-path UW upgrade system. ADR-0009 records the decision.

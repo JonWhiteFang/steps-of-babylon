@@ -47,7 +47,7 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
     Column(Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("💎 ${state.gems}", style = MaterialTheme.typography.titleMedium)
-            Text("✨ ${state.cardDust} Dust", style = MaterialTheme.typography.titleMedium)
+            Text("💎 ${state.gems} Gems", style = MaterialTheme.typography.titleMedium)
         }
         Spacer(Modifier.height(8.dp))
         Text("Equipped: ${state.equippedCount}/3", style = MaterialTheme.typography.titleSmall)
@@ -96,7 +96,7 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
             text = {
                 Column {
                     results.forEach { r ->
-                        val label = if (r.isNew) "🆕 ${formatName(r.type.name)}" else "♻ ${formatName(r.type.name)} → ${r.dustAwarded} Dust"
+                        val label = if (r.isNew) "🆕 ${formatName(r.type.name)}" else "♻ ${formatName(r.type.name)} +1 Copy"
                         Text(label, color = rarityColor(r.type.rarity))
                     }
                 }
@@ -137,7 +137,7 @@ private fun CardItem(
                 }
                 if (!card.isMaxLevel) {
                     Button(onClick = onUpgrade, enabled = card.canAffordUpgrade, modifier = Modifier.weight(1f)) {
-                        Text("Upgrade (${card.upgradeDustCost}✨)")
+                        Text("Upgrade (${card.copyCount}/${card.copiesNeeded})")
                     }
                 }
             }

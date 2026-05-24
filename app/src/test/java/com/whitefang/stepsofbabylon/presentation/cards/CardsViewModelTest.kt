@@ -55,12 +55,11 @@ class CardsViewModelTest {
     }
 
     @Test
-    fun `gem balance and dust shown`() = runTest(dispatcher) {
+    fun `gem balance shown`() = runTest(dispatcher) {
         val vm = createVm()
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
         assertEquals(500, vm.uiState.value.gems)
-        assertEquals(100, vm.uiState.value.cardDust)
     }
 
     @Test
@@ -86,8 +85,8 @@ class CardsViewModelTest {
     }
 
     @Test
-    fun `upgrade deducts dust and increments level`() = runTest(dispatcher) {
-        cardRepo.cards.value = listOf(OwnedCard(1, CardType.SHARP_SHOOTER, 1, false))
+    fun `upgrade decrements copies and increments level`() = runTest(dispatcher) {
+        cardRepo.cards.value = listOf(OwnedCard(1, CardType.SHARP_SHOOTER, 1, false, copyCount = 5))
         val vm = createVm()
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
@@ -95,7 +94,7 @@ class CardsViewModelTest {
         advanceUntilIdle()
         val card = vm.uiState.value.ownedCards.first()
         assertEquals(2, card.level)
-        assertTrue(playerRepo.profile.value.cardDust < 100)
+        assertEquals(2, card.copyCount) // 5 - 3 (COMMON copiesPerLevel)
     }
 
     // --- A.4: ad failure-mode coverage for watchFreePackAd ---

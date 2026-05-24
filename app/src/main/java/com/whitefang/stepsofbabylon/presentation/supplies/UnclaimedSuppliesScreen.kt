@@ -100,7 +100,7 @@ private fun formatReward(drop: SupplyDrop): String {
         SupplyDropReward.STEPS -> "Steps"
         SupplyDropReward.GEMS -> "Gems"
         SupplyDropReward.POWER_STONES -> "Power Stones"
-        SupplyDropReward.CARD_DUST -> "Card Dust"
+        SupplyDropReward.CARD_COPY -> "Card Copy"
     }
     return "+${drop.rewardAmount} $label"
 }

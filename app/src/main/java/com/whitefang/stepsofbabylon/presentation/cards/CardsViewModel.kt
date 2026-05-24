@@ -31,7 +31,7 @@ class CardsViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val openCardPack = OpenCardPack(cardRepository, playerRepository)
-    private val upgradeCard = UpgradeCard(cardRepository, playerRepository)
+    private val upgradeCardUseCase = UpgradeCard(cardRepository)
     private val manageLoadout = ManageCardLoadout(cardRepository)
 
     private val _lastPackResult = MutableStateFlow<List<CardResult>?>(null)
@@ -51,18 +51,18 @@ class CardsViewModel @Inject constructor(
         CardsUiState(
             ownedCards = cards.map { card ->
                 val isMax = card.level >= card.type.maxLevel
-                val dustCost = if (isMax) 0L else card.level * card.type.rarity.upgradeDustPerLevel
+                val copiesNeeded = card.type.rarity.copiesPerLevel
                 CardDisplayInfo(
                     id = card.id, type = card.type, level = card.level,
                     isEquipped = card.isEquipped, isMaxLevel = isMax,
-                    upgradeDustCost = dustCost,
-                    canAffordUpgrade = !isMax && profile.cardDust >= dustCost,
+                    copyCount = card.copyCount,
+                    copiesNeeded = copiesNeeded,
+                    canAffordUpgrade = !isMax && card.copyCount >= copiesNeeded,
                     effectDescription = card.type.effectLv1,
                 )
             },
             equippedCount = equipped,
             gems = profile.gems,
-            cardDust = profile.cardDust,
             packOptions = PackTier.entries.map { PackOption(it, profile.gems >= it.gemCost) },
             lastPackResult = packResult,
             freePackAvailable = !profile.adRemoved && profile.freeCardPackAdUsedToday != LocalDate.now().toString(),
@@ -96,16 +96,11 @@ class CardsViewModel @Inject constructor(
             _processing.value = true
             try {
                 val card = allCards.find { it.id == cardId } ?: return@launch
-                if (card.level >= card.type.maxLevel) {
-                    _userMessage.value = "Card already at max level"
-                    return@launch
+                when (upgradeCardUseCase(card)) {
+                    is UpgradeCard.Result.Upgraded -> { /* UI updates reactively via Flow */ }
+                    is UpgradeCard.Result.MaxLevel -> _userMessage.value = "Card already at max level"
+                    is UpgradeCard.Result.InsufficientCopies -> _userMessage.value = "Not enough copies"
                 }
-                val dustCost = card.level * card.type.rarity.upgradeDustPerLevel
-                if (uiState.value.cardDust < dustCost) {
-                    _userMessage.value = "Not enough Card Dust"
-                    return@launch
-                }
-                upgradeCard(card, uiState.value.cardDust)
             } finally {
                 _processing.value = false
             }

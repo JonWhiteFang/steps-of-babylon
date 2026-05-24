@@ -3,6 +3,7 @@ package com.whitefang.stepsofbabylon.presentation.supplies
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.domain.model.SupplyDropReward
 import com.whitefang.stepsofbabylon.domain.model.SupplyDropTrigger
+import com.whitefang.stepsofbabylon.fakes.FakeCardRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWalkingEncounterRepository
 import kotlinx.coroutines.Dispatchers
@@ -24,18 +25,20 @@ class UnclaimedSuppliesViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private lateinit var encounterRepo: FakeWalkingEncounterRepository
     private lateinit var playerRepo: FakePlayerRepository
+    private lateinit var cardRepo: FakeCardRepository
 
     @BeforeEach
     fun setup() {
         Dispatchers.setMain(dispatcher)
         encounterRepo = FakeWalkingEncounterRepository()
         playerRepo = FakePlayerRepository(PlayerProfile(stepBalance = 1000))
+        cardRepo = FakeCardRepository()
     }
 
     @AfterEach
     fun tearDown() { Dispatchers.resetMain() }
 
-    private fun createVm() = UnclaimedSuppliesViewModel(encounterRepo, playerRepo)
+    private fun createVm() = UnclaimedSuppliesViewModel(encounterRepo, playerRepo, cardRepo)
 
     @Test
     fun `maps unclaimed drops to UI state`() = runTest(dispatcher) {

@@ -90,8 +90,8 @@ class ApplyCardEffectsTest {
     @Test
     fun `level scaling works correctly`() {
         val lv1 = apply(baseStats, listOf(OwnedCard(1, CardType.IRON_SKIN, 1, true)))
-        val lv5 = apply(baseStats, listOf(OwnedCard(1, CardType.IRON_SKIN, 5, true)))
+        val lv7 = apply(baseStats, listOf(OwnedCard(1, CardType.IRON_SKIN, 7, true)))
         assertEquals(baseStats.defenseAbsolute + 10.0, lv1.stats.defenseAbsolute)
-        assertEquals(baseStats.defenseAbsolute + 30.0, lv5.stats.defenseAbsolute)
+        assertEquals(baseStats.defenseAbsolute + 42.0, lv7.stats.defenseAbsolute)
     }
 }

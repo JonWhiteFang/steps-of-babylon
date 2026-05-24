@@ -49,12 +49,12 @@ class OpenCardPackTest {
     }
 
     @Test
-    fun `duplicate cards award dust`() = runTest {
+    fun `duplicate cards increment copy count`() = runTest {
         // Own all cards already
         val owned = CardType.entries.mapIndexed { i, t -> OwnedCard(i + 1, t, 1, false) }
         val result = useCase(PackTier.COMMON, 1000, owned)
         assertTrue(result is OpenCardPack.Result.Opened)
         val opened = (result as OpenCardPack.Result.Opened).cards
-        assertTrue(opened.all { !it.isNew && it.dustAwarded > 0 })
+        assertTrue(opened.all { !it.isNew })
     }
 }

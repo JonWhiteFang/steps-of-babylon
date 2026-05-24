@@ -128,6 +128,51 @@ object AppMigrations {
         }
     }
 
+    /**
+     * v10 → v11: R4-08 rewrites the card system from dust-based to copy-based progression.
+     * Adds `copyCount` column, aggregates duplicate rows by `cardType` into single rows
+     * with `copyCount = COUNT(*)`, and adds a unique index on `cardType`. See ADR-0010.
+     */
+    val MIGRATION_10_11 = object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // 1. Create the v11-shaped table with unique index on cardType.
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `card_inventory_new` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `cardType` TEXT NOT NULL,
+                    `level` INTEGER NOT NULL,
+                    `isEquipped` INTEGER NOT NULL,
+                    `copyCount` INTEGER NOT NULL DEFAULT 1
+                )
+                """.trimIndent(),
+            )
+
+            // 2. Aggregate duplicate rows: group by cardType, take MAX(level) and MAX(isEquipped),
+            //    count duplicates as copyCount.
+            db.execSQL(
+                """
+                INSERT INTO `card_inventory_new` (`cardType`, `level`, `isEquipped`, `copyCount`)
+                SELECT `cardType`, MAX(`level`), MAX(`isEquipped`), COUNT(*)
+                FROM `card_inventory`
+                GROUP BY `cardType`
+                """.trimIndent(),
+            )
+
+            // 3. Drop old table and rename.
+            db.execSQL("DROP TABLE `card_inventory`")
+            db.execSQL("ALTER TABLE `card_inventory_new` RENAME TO `card_inventory`")
+
+            // 4. Create unique index on cardType.
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_card_inventory_cardType` ON `card_inventory` (`cardType`)",
+            )
+
+            // 5. Zero out cardDust balance (only developer's own install affected).
+            db.execSQL("UPDATE player_profile SET cardDust = 0 WHERE id = 1")
+        }
+    }
+
     /** All migrations in version order. Wire this into the Room builder. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+    val ALL: Array<Migration> = arrayOf(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
 }
