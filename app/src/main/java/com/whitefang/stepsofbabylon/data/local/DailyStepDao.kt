@@ -59,8 +59,8 @@ interface DailyStepDao {
     @Query(
         "INSERT INTO daily_step_record " +
             "(date, sensorSteps, healthConnectSteps, creditedSteps, escrowSteps, " +
-            "escrowSyncCount, activityMinutes, stepEquivalents, battleStepsEarned) " +
-            "VALUES (:date, 0, 0, 0, 0, 0, '{}', 0, :delta) " +
+            "escrowSyncCount, activityMinutes, stepEquivalents, battleStepsEarned, bossPsEarnedToday) " +
+            "VALUES (:date, 0, 0, 0, 0, 0, '{}', 0, :delta, 0) " +
             "ON CONFLICT(date) DO UPDATE SET battleStepsEarned = battleStepsEarned + :delta",
     )
     suspend fun incrementBattleSteps(date: String, delta: Long)
@@ -107,6 +107,47 @@ interface DailyStepDao {
         val credited = min(requested, remaining)
         incrementBattleSteps(date, credited)
         playerDao.adjustStepBalance(credited)
+        return credited
+    }
+
+    /**
+     * Returns today's [DailyStepRecordEntity.bossPsEarnedToday], or 0 if no row exists.
+     */
+    @Query("SELECT COALESCE(bossPsEarnedToday, 0) FROM daily_step_record WHERE date = :date")
+    suspend fun getBossPsEarnedToday(date: String): Long
+
+    /**
+     * UPSERT that increments [bossPsEarnedToday] by [delta], creating the row if needed.
+     * Mirrors [incrementBattleSteps] shape.
+     */
+    @Query(
+        "INSERT INTO daily_step_record " +
+            "(date, sensorSteps, healthConnectSteps, creditedSteps, escrowSteps, " +
+            "escrowSyncCount, activityMinutes, stepEquivalents, battleStepsEarned, bossPsEarnedToday) " +
+            "VALUES (:date, 0, 0, 0, 0, 0, '{}', 0, 0, :delta) " +
+            "ON CONFLICT(date) DO UPDATE SET bossPsEarnedToday = bossPsEarnedToday + :delta",
+    )
+    suspend fun incrementBossPs(date: String, delta: Long)
+
+    /**
+     * Atomically credits boss-kill Power Stones to the player's wallet while respecting
+     * the per-day cap. Mirrors [creditBattleStepsAtomic] shape.
+     */
+    @Transaction
+    suspend fun creditBossPowerStonesAtomic(
+        date: String,
+        requested: Long,
+        dailyCap: Long,
+        playerDao: PlayerProfileDao,
+    ): Long {
+        if (requested <= 0L) return 0L
+        val alreadyEarned = getBossPsEarnedToday(date)
+        val remaining = (dailyCap - alreadyEarned).coerceAtLeast(0L)
+        if (remaining <= 0L) return 0L
+        val credited = min(requested, remaining)
+        incrementBossPs(date, credited)
+        playerDao.adjustPowerStones(credited)
+        playerDao.incrementPowerStonesEarned(credited)
         return credited
     }
 }

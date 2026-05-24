@@ -30,5 +30,7 @@ class FloatingText(
         const val DEFAULT_COLOR: Int = 0xFFD4A843.toInt()
         /** Green, used by battle-Step reward floats. */
         const val STEP_COLOR: Int = 0xFF4CAF50.toInt()
+        /** Purple, used by boss-drop Power Stone floats. */
+        const val PS_COLOR: Int = 0xFF9C27B0.toInt()
     }
 }

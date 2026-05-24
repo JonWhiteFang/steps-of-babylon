@@ -8,7 +8,7 @@ An Android idle tower defense game where real-world walking drives all progressi
 
 ## Status
 
-Version 1.0.0 (versionCode 9) — pre-launch. AAB v9 (Plan R4 Wave 1 bundle: R4-01 remove Overdrive + R4-02 Multishot/Bounce per-level scaling + R4-02b Labs research path + R4-04 upgrade-button icon) uploaded to Play Console internal track 2026-05-23, on-device smoke test PASSED 2026-05-23. **Plan R4 Wave 2 in progress** — R4-03 (Rapid Fire upgrade) landed on branch `feat/R4-03-rapid-fire` 2026-05-23. R4-06 (UW auto-trigger + per-path upgrades) landed on branch `feat/R4-06-uw-paths-auto-trigger` 2026-05-24 (Room v9→v10, ADR-0008). R4-07 (boss-drop Power Stones) next; combined Room migration in R4-06. Waves 3–4 close out before closed-track promotion (R4-08 cards rewrite, R4-05 Help screen). 633 JVM unit tests green.
+Version 1.0.0 (versionCode 9) — pre-launch. AAB v9 (Plan R4 Wave 1 bundle: R4-01 remove Overdrive + R4-02 Multishot/Bounce per-level scaling + R4-02b Labs research path + R4-04 upgrade-button icon) uploaded to Play Console internal track 2026-05-23, on-device smoke test PASSED 2026-05-23. **Plan R4 Wave 2 in progress** — R4-03 (Rapid Fire upgrade) landed on branch `feat/R4-03-rapid-fire` 2026-05-23. R4-06 (UW auto-trigger + per-path upgrades) landed on branch `feat/R4-06-uw-paths-auto-trigger` 2026-05-24 (Room v9→v10, ADR-0008). R4-07 (boss-drop Power Stones) landed on branch `feat/R4-07-boss-drop-power-stones` 2026-05-24 (ADR-0009). Wave 2 complete; Waves 3–4 close out before closed-track promotion (R4-08 cards rewrite, R4-05 Help screen). 645 JVM unit tests green.
 
 For the live current state see [docs/agent/STATE.md](docs/agent/STATE.md). For recent changes see [CHANGELOG.md](CHANGELOG.md).
 
@@ -41,7 +41,7 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 # Debug APK
 ./gradlew assembleDebug
 
-# Unit tests (633 JVM tests)
+# Unit tests (645 JVM tests)
 ./gradlew test
 
 # Lint

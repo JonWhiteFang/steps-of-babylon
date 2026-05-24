@@ -19,4 +19,9 @@ data class DailyStepRecordEntity(
      * per-day battle-Step cap in AwardBattleSteps. Added in DB v8.
      */
     val battleStepsEarned: Long = 0,
+    /**
+     * Power Stones earned from boss kills this day. Enforced against the
+     * per-day boss-PS cap (100) in AwardBossPowerStones. Added in DB v10 (R4-07).
+     */
+    val bossPsEarnedToday: Long = 0,
 )

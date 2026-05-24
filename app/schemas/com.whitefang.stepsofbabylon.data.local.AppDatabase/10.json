@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 10,
-    "identityHash": "d37d52685ba5af5768d0a45eb7cf1a3e",
+    "identityHash": "070a777d023f302248ed8d5883688519",
     "entities": [
       {
         "tableName": "player_profile",
@@ -332,7 +332,7 @@
       },
       {
         "tableName": "daily_step_record",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` TEXT NOT NULL, `sensorSteps` INTEGER NOT NULL, `healthConnectSteps` INTEGER NOT NULL, `creditedSteps` INTEGER NOT NULL, `escrowSteps` INTEGER NOT NULL, `escrowSyncCount` INTEGER NOT NULL, `activityMinutes` TEXT NOT NULL, `stepEquivalents` INTEGER NOT NULL, `battleStepsEarned` INTEGER NOT NULL, PRIMARY KEY(`date`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` TEXT NOT NULL, `sensorSteps` INTEGER NOT NULL, `healthConnectSteps` INTEGER NOT NULL, `creditedSteps` INTEGER NOT NULL, `escrowSteps` INTEGER NOT NULL, `escrowSyncCount` INTEGER NOT NULL, `activityMinutes` TEXT NOT NULL, `stepEquivalents` INTEGER NOT NULL, `battleStepsEarned` INTEGER NOT NULL, `bossPsEarnedToday` INTEGER NOT NULL, PRIMARY KEY(`date`))",
         "fields": [
           {
             "fieldPath": "date",
@@ -385,6 +385,12 @@
           {
             "fieldPath": "battleStepsEarned",
             "columnName": "battleStepsEarned",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bossPsEarnedToday",
+            "columnName": "bossPsEarnedToday",
             "affinity": "INTEGER",
             "notNull": true
           }
@@ -748,7 +754,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd37d52685ba5af5768d0a45eb7cf1a3e')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '070a777d023f302248ed8d5883688519')"
     ]
   }
 }

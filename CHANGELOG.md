@@ -4,6 +4,28 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### R4-07: Boss-drop Power Stones (2026-05-24)
+
+Third and final Wave 2 sub-plan of [Plan R4](docs/plans/plan-R4-feedback-bundle.md). Boss kills now award tier-scaled Power Stones (T1=1 PS, T2=2 PS, … T10=10 PS) with a 100 PS/day cap. Addresses the PS scarcity created by R4-06's expanded 3-path UW upgrade system. ADR-0009 records the decision.
+
+**Schema:** `bossPsEarnedToday` column added to `daily_step_record` table (folded into existing v9→v10 migration).
+
+**New files:**
+
+- `domain/usecase/AwardBossPowerStones.kt` — use case mirroring `AwardBattleSteps` pattern.
+- `docs/agent/DECISIONS/ADR-0009-boss-drop-power-stones.md`
+
+**Modified files:**
+
+- `data/local/DailyStepRecordEntity.kt` — +`bossPsEarnedToday: Long` column.
+- `data/local/DailyStepDao.kt` — +`getBossPsEarnedToday`, +`incrementBossPs`, +`creditBossPowerStonesAtomic`.
+- `data/local/Migrations.kt` — `MIGRATION_9_10` extended with `ALTER TABLE ADD COLUMN bossPsEarnedToday`.
+- `presentation/battle/engine/GameEngine.kt` — +`onBossKilled` callback, fires in `handleEnemyDeath` for BOSS type.
+- `presentation/battle/BattleViewModel.kt` — +`wireBossKilledCallback`, calls use case + emits FloatingText.
+- `presentation/battle/effects/FloatingText.kt` — +`PS_COLOR` constant (purple).
+
+**Tests:** +12 (633 → 645). 9 in `AwardBossPowerStonesTest` + 3 in `GameEngineTest`.
+
 ### R4-06: UW auto-trigger + per-path upgrades (2026-05-24)
 
 Second Wave 2 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Redesigns Ultimate Weapons from a single-level upgrade with manual activation to a 3-path upgrade system (DAMAGE, SECONDARY, COOLDOWN) with automatic cooldown-based triggering. Source feedback: *"UWs should auto-trigger on cooldown and have per-path upgrades instead of a single level."* ADR-0008 records the decision.
