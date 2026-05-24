@@ -1,4 +1,15 @@
 
+## 2026-05-24 — R4-05 (Help screen) + R4 completion + Quick Invest removal
+
+- **Goal:** Implement R4-05 (Help screen, final Wave 4 sub-plan) and close out Plan R4.
+- **Outcome:** R4-05 merged via PR #17. Quick Invest FAB removed from Workshop per user request (commit `5e3530c`). Plan R4 fully complete (all 8 sub-plans across 4 waves). Test count 646 → 647 (+1).
+- **Changes:**
+  - New `presentation/help/HelpScreen.kt` — 9 sections covering all post-R4 game systems.
+  - `Screen.Help` route added (13 total). `HomeScreen` +Help button. `MainActivity` NavHost registers Help.
+  - `DeepLinkRoutingTest` updated for 13 routes + help resolution.
+  - `WorkshopScreen` — Quick Invest FAB removed (user didn't like the feature).
+- **What remains:** End-of-R4 AAB v11 build + on-device verify, then closed-track promotion.
+
 ## 2026-05-24 — R4-08 (Cards copy-based 7-level progression) implementation
 
 - **Goal:** Replace Card Dust with copy-based upgrades, raise max level to 7, schema v10→v11.

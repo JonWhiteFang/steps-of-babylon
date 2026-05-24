@@ -1,7 +1,8 @@
 # Project State
 
 ## Current objective
-- **R4-08 (Cards copy-based 7-level progression) landed 2026-05-24 on branch `feat/R4-08-card-copy-progression`.** Test count 645 → 646 (+1 net). Replaces Card Dust with copy-based upgrades (3/4/5 copies per level by rarity). Max level 5→7. Schema v10→v11. ADR-0010. **Wave 3 complete. Next: merge R4-08 to main, then Wave 4 (R4-05 Help screen).**
+- **Plan R4 complete.** All 8 sub-plans (R4-01 through R4-08) merged to `main`. R4-05 (Help screen) merged 2026-05-24 via PR #17. Quick Invest FAB removed from Workshop per user request (commit `5e3530c`). **Next: end-of-R4 AAB v11 build + verify, then promote to closed track.**
+- **Previous objective (R4-08, complete + merged):** Cards copy-based 7-level progression. Branch merged to `main` via PR #16 2026-05-24 (commit `c20f5bc`). Test count 645 → 646 (+1). Schema v10→v11. ADR-0010.
 - **Previous objective (R4-07, complete + merged):** Boss-drop Power Stones. Branch merged to `main` via PR #15 2026-05-24 (commit `7b83852`). Test count 633 → 645 (+12). AAB v10 uploaded + smoke test PASSED 2026-05-24.
 - **Previous objective (R4-03, complete + merged):** Rapid Fire upgrade. Branch `feat/R4-03-rapid-fire` merged to `main` via PR #13 2026-05-23 (commit `141f052`). Test count 616 → 626 (+10).
 - **Previous objective (Plan R4 Wave 1, complete + verified):** AAB v9 uploaded + on-device smoke test PASSED 2026-05-23.
@@ -32,7 +33,7 @@
 - Play Console: developer account verified, app `com.whitefang.stepsofbabylon` created in Draft, package registered via ADV (debug-keystore path). Listing populated end-to-end. Internal track v3 (versionCode 3) live, on-device-verified. 5 SKUs created and active.
 - Real Play Billing v8 + AdMob v25 + UMP v4 wired end-to-end and verified on a real device.
 - **Pre-closed-testing UX polish (PRs A + B):** Ad-failure modes surface as snackbars in Battle + Cards; Store screen displays live Play-Console prices via `ProductDetails.priceDisplay` with static-constant fallback. Walkthrough doc reflects the lessons learned during the live walk-through.
-- **646 JVM tests** green post-R4-08 (+1 net: copy-based UpgradeCardTest, updated ClaimSupplyDropTest/GenerateSupplyDropTest/CardsViewModelTest/ApplyCardEffectsTest/CardBalanceTest).
+- **647 JVM tests** green post-R4-05 (Help route resolution test added).
 - **R4-04 in-round upgrade button icon swap complete on branch `feat/R4-04-upgrade-button-icon`:** `BattleScreen.kt:165` `Text("⬆", color = Color.White)` → `Icon(Icons.Filled.Upgrade, contentDescription = null, tint = Color.White)`. New imports: `androidx.compose.material.icons.filled.Upgrade`. New dep `compose-material-icons-extended` added to `gradle/libs.versions.toml` + `app/build.gradle.kts` because `Icons.Filled.Upgrade` lives in the extended catalogue (R4-05 will reuse for `Icons.Filled.Help`). R8 minification effectively tree-shakes unused icons in release builds; release APK still 30 MB.
 - **R4-02 Multishot/Bounce 4-level scaling complete + merged via PR #10** (commit `b2f7cd5`). 615 tests unchanged.
 - **R4-01 Step Overdrive removal complete + merged via PR #9** (commit `e375d14`). 627 → 615.
@@ -54,11 +55,11 @@
 - **RO-09 deferred findings (v1.x patch backlog):** #3 STEP_MULTIPLIER × cross-validator unit mismatch (needs schema migration to track multiplier-bonus separately); #4 currency lifetime counter desync (display-only drift on crash); #5 TOCTOU race on gem/PS spend (lifetime drift, wallet stays correct); #6 per-kill battle-step credit on `viewModelScope` (≤1 step per pending callback lost on mid-round nav-away).
 
 ## Top priorities (next 5)
-1. **Merge R4-07 + End-of-Wave-2 AAB v10 build + verify.** versionCode bump 9 → 10, `clean bundleRelease`, sign, upload to internal track, on-device smoke test.
-2. **Plan R4 Wave 3 — R4-08 implementation.** Card system rewrite. Schema migration v10→v11. New ADR (Card copy-based progression). Substantial test churn (~25 tests changed). End-of-Wave-3 AAB.
-3. **Plan R4 Wave 4 — R4-05 implementation.** Help screen written last so the content reflects post-R4 game state. End-of-Wave-4 AAB.
-4. **(External)** Promote latest internal AAB → closed testing. Recruit ≥12 testers, distribute opt-in URL.
-5. **(External)** Wait ≥14 calendar days on closed track collecting feedback.
+1. **End-of-R4 AAB v11 build + verify.** versionCode bump 10 → 11, `clean bundleRelease`, sign, upload to internal track, on-device smoke test (Help screen renders, cards show copies, boss PS floats).
+2. **(External)** Promote latest internal AAB → closed testing. Recruit ≥12 testers, distribute opt-in URL.
+3. **(External)** Wait ≥14 calendar days on closed track collecting feedback.
+4. **(External)** Apply for production access. Google review 1–3 days.
+5. **(External)** Promote closed → production with staged rollout. Tag v1.0.0 in git.
 
 ## Next actions (explicit order)
 1. **(R4-06 UW redesign — resume on branch `feat/R4-06-uw-paths-auto-trigger`)** Branch already cut from `main` (post-R4-03 merge `141f052`). Implementation plan:
