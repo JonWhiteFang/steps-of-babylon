@@ -1,7 +1,7 @@
 # Project State
 
 ## Current objective
-- **R4-06 (UW auto-trigger + per-path upgrades) implementation complete on branch `feat/R4-06-uw-paths-auto-trigger` 2026-05-24.** Test count 626 → 633 (+7 net). Room schema v9→v10 (recreate-table migration redistributing legacy single-level UW state across 3 path columns + isUnlocked flag). New `domain/model/UWPath.kt` enum. `GameEngine` UWState 4-field struct + auto-trigger + `chronoSlowFactor` instance field. `UltimateWeaponBar` passive (no clickable). `UltimateWeaponScreen` 3 per-path Upgrade buttons. `BattleViewModel.activateUW` removed. ADR-0008. **Next: R4-07 (boss-drop Power Stones) — Wave 2 closer.**
+- **R4-06 (UW auto-trigger + per-path upgrades) merged 2026-05-24 via PR #14 (commit `d8b1d5c`).** Test count 626 → 633 (+7 net). Room schema v9→v10 (recreate-table migration redistributing legacy single-level UW state across 3 path columns + isUnlocked flag). New `domain/model/UWPath.kt` enum. `GameEngine` UWState 4-field struct + auto-trigger + `chronoSlowFactor` instance field. `UltimateWeaponBar` passive (no clickable). `UltimateWeaponScreen` 3 per-path Upgrade buttons. `BattleViewModel.activateUW` removed. ADR-0008. **Next: R4-07 (boss-drop Power Stones) — Wave 2 closer.**
 - **Previous objective (R4-03, complete + merged):** Rapid Fire upgrade. Branch `feat/R4-03-rapid-fire` merged to `main` via PR #13 2026-05-23 (commit `141f052`). Test count 616 → 626 (+10).
 - **Previous objective (Plan R4 Wave 1, complete + verified):** AAB v9 uploaded + on-device smoke test PASSED 2026-05-23.
 - **Previous objective (R4-04, complete + merged):** in-round upgrade button icon. Branch `feat/R4-04-upgrade-button-icon` merged to `main` via PR #11 2026-05-23.
