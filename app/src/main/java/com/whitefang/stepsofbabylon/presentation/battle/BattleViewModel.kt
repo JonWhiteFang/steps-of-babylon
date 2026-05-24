@@ -218,13 +218,15 @@ class BattleViewModel @Inject constructor(
                         cash = eng.cash, enemyCount = spawner?.enemiesAlive ?: 0,
                         wavePhase = spawner?.phase?.name ?: "",
                         uwSlots = eng.uwStates.map { uw ->
-                            // RO-11 #A.2: cooldownTotal mirrors the engine-side multiplier so the
-                            // ring-fill UI tracks the actual cooldown duration. `eng.uwCooldownMultiplier`
-                            // defaults to 1f when no UW_COOLDOWN research is owned.
+                            // RO-11 #A.2 / R4-06: cooldownTotal mirrors the engine-side multiplier
+                            // so the ring-fill UI tracks the actual cooldown duration. Cooldown
+                            // is now per-UW-state (COOLDOWN path), not a single shared `level`.
+                            // `eng.uwCooldownMultiplier` defaults to 1f when no UW_COOLDOWN
+                            // research is owned.
                             UWSlotInfo(
                                 uw.type.name,
                                 uw.cooldownRemaining,
-                                uw.type.cooldownAtLevel(uw.level) * eng.uwCooldownMultiplier,
+                                uw.type.cooldownAtLevel(uw.cooldownLevel) * eng.uwCooldownMultiplier,
                                 uw.cooldownRemaining <= 0f,
                             )
                         },
@@ -460,7 +462,13 @@ class BattleViewModel @Inject constructor(
         super.onCleared()
     }
 
-    fun activateUW(index: Int) { engine?.activateUW(index) }
+    // R4-06: pre-R4-06 the `activateUW(index)` method here was wired to the
+    // [com.whitefang.stepsofbabylon.presentation.battle.ui.UltimateWeaponBar] tap
+    // callback. R4-06 makes [UltimateWeaponBar] a passive cooldown indicator and
+    // moves activation into [com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine.updateUWs]
+    // (auto-trigger when cooldown reaches 0 AND enemies are present), so the VM
+    // method is no longer needed. Tests hit `engine.activateUW(0)` directly via the
+    // public engine API (used in [GameEngineTest]).
 
     fun purchaseInRoundUpgrade(type: UpgradeType) {
         val eng = engine ?: return

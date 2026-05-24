@@ -1,3 +1,19 @@
+
+## 2026-05-24 — R4-06 (UW auto-trigger + per-path upgrades) implementation
+
+- **Goal:** Implement the largest Wave 2 sub-plan — redesign the UW system from a single `level` axis to 3 independent paths per UW with auto-trigger activation.
+- **Outcome:** Full implementation complete on branch `feat/R4-06-uw-paths-auto-trigger`. Test count 626 → 633 (+7 net). `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh assembleDebug` both BUILD SUCCESSFUL.
+- **Changes:**
+  - **Domain:** New `UWPath.kt` enum (DAMAGE/SECONDARY/COOLDOWN). `UltimateWeaponType.kt` rewritten with per-path L1/L10 spec for all 6 UWs + `valueAtLevel`/`cooldownAtLevel`/`damageAtLevel`/`secondaryAtLevel`/`costForPath` helpers. `OwnedWeapon.kt` now 6 fields (type + 3 path levels + isUnlocked + isEquipped + `levelOf(path)`). `UpgradeUltimateWeapon.kt` takes `path: UWPath` param; L0→L1 is free. `UnlockUltimateWeapon.kt` gates on `isUnlocked` flag.
+  - **Data:** `UltimateWeaponStateEntity.kt` (4 new columns replacing single `level`). `UltimateWeaponDao.kt` (+`markUnlocked` +`updateDamageLevel`/`updateSecondaryLevel`/`updateCooldownLevel`). `AppDatabase.kt` v9→v10. `Migrations.kt` +`MIGRATION_9_10` (recreate-table dance with `(L+2)/3, (L+1)/3, L/3` redistribution).
+  - **Repository:** `UltimateWeaponRepository.kt` (`upgradePathLevel` replaces `upgradeWeapon`). `UltimateWeaponRepositoryImpl.kt` (toDomain rewrite for 4-column entity → 6-field OwnedWeapon; `upgradePathLevel` dispatches to per-path DAO methods).
+  - **Engine:** `GameEngine.kt` — `UWState` 4-field struct (type + damageLevel + secondaryLevel + cooldownLevel). Auto-trigger in `updateUWs` gated on `getAliveEnemies().isNotEmpty()`. All 6 `activateUW` branches rewritten for per-path reads. `chronoSlowFactor` instance field replaces `CHRONO_SLOW_FACTOR` companion constant. GOLDEN `fortuneMultiplier` uses `coerceAtLeast(damageAtLevel(damageLevel))`.
+  - **UI:** `UltimateWeaponBar.kt` passive (no clickable). `UltimateWeaponScreen.kt` 3 per-path Upgrade buttons with path labels + "L0 → value" previews. `UltimateWeaponViewModel.kt` (`UWPathDisplay` + `UWDisplayInfo.paths`). `BattleViewModel.activateUW` removed.
+  - **Tests:** `FakeUltimateWeaponRepository` rewritten. `UpgradeUltimateWeaponTest` (4→6, +2). `UnlockUltimateWeaponTest` (3→4, +1). `UltimateWeaponViewModelTest` (4→6, +2). `UWBalanceTest` (3→5, +2). `GameEngineTest` updated (OwnedWeapon constructor calls, GOLDEN assertions 5.0→2.0, `setChronoActive` sets `chronoSlowFactor`, `activateGoldenZigForTest` uses named params).
+  - **ADR-0008** written (`docs/agent/DECISIONS/ADR-0008-uw-per-path-upgrades.md`).
+  - **Doc-sync:** AGENTS.md, README.md, CHANGELOG.md, source-files.md, database-schema.md all updated.
+- **Next:** R4-07 (boss-drop Power Stones) — cut branch, add `bossPsEarnedToday` column to `DailyStepRecordEntity` (folded into same v9→v10 migration), new `AwardBossPowerStones` use case, `GameEngine.onBossKilled` callback, ADR-0009.
+
 # Run Log
 
 ## 2026-05-22 (evening) — Plan R4 (Internal Soak Feedback Bundle) authored end-to-end

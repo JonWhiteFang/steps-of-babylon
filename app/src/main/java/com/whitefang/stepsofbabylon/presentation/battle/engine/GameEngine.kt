@@ -8,6 +8,7 @@ import com.whitefang.stepsofbabylon.domain.model.CosmeticItem
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
 import com.whitefang.stepsofbabylon.domain.model.RapidFireSchedule
+import com.whitefang.stepsofbabylon.domain.model.UWPath
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.TierConfig
@@ -198,9 +199,31 @@ class GameEngine {
 
 
 
-    data class UWState(val type: UltimateWeaponType, val level: Int, var cooldownRemaining: Float = 0f, var effectTimeRemaining: Float = 0f)
+    /**
+     * R4-06: per-UW state with three independent path levels (see [UWPath]). Pre-R4-06
+     * this held a single `level: Int`; the engine now reads each path explicitly via
+     * [damageLevel] / [secondaryLevel] / [cooldownLevel] and computes the per-path
+     * effect via [UltimateWeaponType.valueAtLevel]. The active CHRONO_FIELD slow factor
+     * is captured in [chronoSlowFactor] at activation time so a re-equip / level-up
+     * mid-effect can't change the slow strength on an already-firing UW.
+     */
+    data class UWState(
+        val type: UltimateWeaponType,
+        val damageLevel: Int,
+        val secondaryLevel: Int,
+        val cooldownLevel: Int,
+        var cooldownRemaining: Float = 0f,
+        var effectTimeRemaining: Float = 0f,
+    )
     val uwStates = mutableListOf<UWState>()
     private var chronoActive = false
+    /**
+     * Active CHRONO_FIELD slow factor. Set to the firing UW's [UltimateWeaponType.damageAtLevel]
+     * value at activation; reset to 1.0 when [chronoActive] flips back to false. Replaces
+     * the pre-R4-06 [CHRONO_SLOW_FACTOR] companion constant (which was the single value
+     * the slow path produced regardless of UW level). Smaller value = stronger slow.
+     */
+    private var chronoSlowFactor: Float = 1f
     private var goldenZigActive = false
     private var preGoldenStats: ResolvedStats? = null
 
@@ -220,17 +243,6 @@ class GameEngine {
         const val RECOVERY_INTERVAL_SECONDS = 30f
         const val RECOVERY_PERCENT_PER_LEVEL = 0.01
         const val RECOVERY_PERCENT_PER_PULSE_CAP = 0.50
-
-        /**
-         * CHRONO_FIELD slow factor (RO-09 #1). The Ultimate Weapon's description claims
-         * "Slows all enemies to 10 % speed for duration"; pre-RO-09 [chronoActive] only
-         * drove a purple-tint render overlay and never reached enemy movement. The fix
-         * scales the per-tick `deltaTime` passed to each [EnemyEntity] by this factor in
-         * the entity-update loop when [chronoActive] is `true`. Projectiles, orbs, and
-         * the ziggurat continue to receive the unscaled `deltaTime` so player-side timing
-         * (shoot cooldowns, projectile travel) is unaffected.
-         */
-        const val CHRONO_SLOW_FACTOR = 0.10f
     }
 
     fun init(
@@ -255,7 +267,7 @@ class GameEngine {
         totalEnemiesKilled = 0; totalStepsEarned = 0L; elapsedTimeSeconds = 0f
         fortuneMultiplier = 1.0
         secondWindUsed = false
-        uwStates.clear(); chronoActive = false; goldenZigActive = false; preGoldenStats = null
+        uwStates.clear(); chronoActive = false; chronoSlowFactor = 1f; goldenZigActive = false; preGoldenStats = null
         recoveryTimer = 0f
         rapidFireTimer = 0f
         rapidFireActiveRemaining = 0f
@@ -367,13 +379,13 @@ class GameEngine {
 
         waveSpawner?.update(deltaTime, screenWidth, screenHeight)
         entities.addAll(pendingAdd); pendingAdd.clear()
-        // RO-09 #1: scale `deltaTime` to CHRONO_SLOW_FACTOR (10 %) for EnemyEntity when
-        // CHRONO_FIELD is active. Projectiles, orbs, and the ziggurat receive the
-        // unscaled `deltaTime` so player-side timing is unaffected. Pre-RO-09 the only
-        // consumer of `chronoActive` was the render overlay — the UW had no gameplay
-        // effect despite the 75-Power-Stone unlock cost.
+        // RO-09 #1 / R4-06: scale `deltaTime` to [chronoSlowFactor] for EnemyEntity when
+        // CHRONO_FIELD is active. The slow factor is per-UW-state (set by `activateUW`
+        // from the firing UW's DAMAGE path); pre-R4-06 the factor was a hard-coded
+        // [CHRONO_SLOW_FACTOR] = 0.10f companion constant. Projectiles, orbs, and the
+        // ziggurat receive the unscaled `deltaTime` so player-side timing is unaffected.
         entities.forEach { e ->
-            val dt = if (chronoActive && e is EnemyEntity) deltaTime * CHRONO_SLOW_FACTOR else deltaTime
+            val dt = if (chronoActive && e is EnemyEntity) deltaTime * chronoSlowFactor else deltaTime
             e.update(dt)
         }
 
@@ -429,19 +441,61 @@ class GameEngine {
 
     fun addEntity(entity: Entity) { pendingAdd.add(entity) }
 
+    /**
+     * R4-06: populates [uwStates] from the player's equipped UWs, mapping each
+     * [OwnedWeapon]'s 3 path levels onto a [UWState] and zeroing the active timers.
+     * Called by [BattleViewModel] after loading the equipped-UW set from the repository.
+     */
     fun initUWs(equipped: List<OwnedWeapon>) {
         uwStates.clear()
-        equipped.forEach { uwStates.add(UWState(it.type, it.level)) }
+        equipped.forEach {
+            uwStates.add(
+                UWState(
+                    type = it.type,
+                    damageLevel = it.damageLevel,
+                    secondaryLevel = it.secondaryLevel,
+                    cooldownLevel = it.cooldownLevel,
+                ),
+            )
+        }
     }
 
+    /**
+     * R4-06: fires the UW at [index] if it's off cooldown and not already mid-effect.
+     * Pre-R4-06 this was the entry point for the player-tap activation path; post-R4-06
+     * the UW is auto-fired from [updateUWs] when its cooldown reaches 0 AND enemies are
+     * present (`UltimateWeaponBar` is now a passive cooldown indicator). The method
+     * stays public for direct invocation by tests.
+     *
+     * Per-path reads (replaces the pre-R4-06 single-`level` reads):
+     * - DEATH_WAVE: damage from DAMAGE path; SECONDARY (radius fraction) feeds visual but
+     *   damage applies to all aliveEnemies for v1 of R4-06 (radius UI deferred).
+     * - CHAIN_LIGHTNING: damage from DAMAGE path; chain length from SECONDARY path.
+     * - BLACK_HOLE: ongoing-effect handled in [updateUWs]; activation just primes the
+     *   timer + visual.
+     * - CHRONO_FIELD: slow factor from DAMAGE path written to [chronoSlowFactor];
+     *   duration from SECONDARY path overrides [UltimateWeaponType.effectDurationSeconds].
+     * - POISON_SWAMP: ongoing-effect handled in [updateUWs].
+     * - GOLDEN_ZIGGURAT: cash multiplier from DAMAGE path → [fortuneMultiplier]
+     *   (`coerceAtLeast` preserves any pre-existing higher buff, defensive for future
+     *   multi-source stacking); damage multiplier from SECONDARY path → stats copy.
+     */
     fun activateUW(index: Int) {
         val uw = uwStates.getOrNull(index) ?: return
         if (uw.cooldownRemaining > 0f) return
-        // RO-11 #A.2: outer multiplier reduces every cooldown set on activation. Reset to
-        // 1f means "no UW_COOLDOWN research"; values below 1f shorten the cooldown.
-        uw.cooldownRemaining = uw.type.cooldownAtLevel(uw.level) * uwCooldownMultiplier
+        if (uw.effectTimeRemaining > 0f) return
+        // R4-06: cooldown comes from per-UW-state COOLDOWN path. RO-11 #A.2 outer multiplier
+        // (UW_COOLDOWN lab research) still stacks via [uwCooldownMultiplier].
+        uw.cooldownRemaining = uw.type.cooldownAtLevel(uw.cooldownLevel) * uwCooldownMultiplier
         val zig = ziggurat ?: return
-        val duration = uw.type.effectDurationSeconds.toFloat()
+
+        // CHRONO_FIELD overrides the flat [effectDurationSeconds] with the SECONDARY-path
+        // value; all other UWs use the flat constant.
+        val duration = if (uw.type == UltimateWeaponType.CHRONO_FIELD) {
+            uw.type.secondaryAtLevel(uw.secondaryLevel).toFloat()
+        } else {
+            uw.type.effectDurationSeconds
+        }
         if (duration > 0f) uw.effectTimeRemaining = duration
 
         soundManager?.play(SoundEffect.UW_ACTIVATE)
@@ -466,23 +520,33 @@ class GameEngine {
 
         when (uw.type) {
             UltimateWeaponType.DEATH_WAVE -> {
-                val dmg = 500.0 * uw.level
+                val dmg = uw.type.damageAtLevel(uw.damageLevel)
                 getAliveEnemies().forEach { it.takeDamage(dmg) }
             }
             UltimateWeaponType.CHAIN_LIGHTNING -> {
-                val dmg = 300.0 * uw.level
-                val targets = getAliveEnemies().sortedBy { hypot(it.x - zig.x, it.y - zig.y) }.take(8)
+                val dmg = uw.type.damageAtLevel(uw.damageLevel)
+                val chainLen = uw.type.secondaryAtLevel(uw.secondaryLevel).toInt().coerceAtLeast(1)
+                val targets = getAliveEnemies().sortedBy { hypot(it.x - zig.x, it.y - zig.y) }.take(chainLen)
                 targets.forEach { it.takeDamage(dmg) }
             }
             UltimateWeaponType.BLACK_HOLE -> {} // Ongoing effect in updateUWs
-            UltimateWeaponType.CHRONO_FIELD -> { chronoActive = true }
+            UltimateWeaponType.CHRONO_FIELD -> {
+                chronoActive = true
+                chronoSlowFactor = uw.type.damageAtLevel(uw.damageLevel).toFloat()
+            }
             UltimateWeaponType.POISON_SWAMP -> {} // Ongoing effect in updateUWs
             UltimateWeaponType.GOLDEN_ZIGGURAT -> {
                 goldenZigActive = true; preGoldenStats = stats
-                // GOLDEN is the sole writer of fortuneMultiplier post-R4-01 (Step Overdrive
-                // removed). Activation hard-sets to 5.0×; expiry resets to 1.0×.
-                fortuneMultiplier = 5.0
-                applyStats(stats.copy(damage = stats.damage * 1.5))
+                // R4-06: cash multiplier comes from DAMAGE path. coerceAtLeast preserves any
+                // pre-existing higher fortuneMultiplier value (defensive for future
+                // multi-source stacking; R4-01 already removed Step Overdrive as the only
+                // other writer, so in practice this only matters across overlapping GOLDEN
+                // activations — prevented by cooldown gating but harmless).
+                val cashMult = uw.type.damageAtLevel(uw.damageLevel)
+                fortuneMultiplier = fortuneMultiplier.coerceAtLeast(cashMult)
+                // Damage multiplier comes from SECONDARY path (replaces hard-coded 1.5×).
+                val dmgMult = uw.type.secondaryAtLevel(uw.secondaryLevel)
+                applyStats(stats.copy(damage = stats.damage * dmgMult))
             }
         }
     }
@@ -496,33 +560,56 @@ class GameEngine {
                 if (uw.effectTimeRemaining <= 0f) {
                     uw.effectTimeRemaining = 0f
                     when (uw.type) {
-                        UltimateWeaponType.CHRONO_FIELD -> chronoActive = false
+                        UltimateWeaponType.CHRONO_FIELD -> {
+                            chronoActive = false
+                            chronoSlowFactor = 1f
+                        }
                         UltimateWeaponType.GOLDEN_ZIGGURAT -> {
                             goldenZigActive = false; preGoldenStats?.let { applyStats(it) }; preGoldenStats = null
-                            // R4-01: GOLDEN is the sole writer of fortuneMultiplier post-R4-01
-                            // (Step Overdrive removed). The 4 RO-09 #2 cross-overdrive guards
-                            // that lived here pre-R4 collapse to a single unconditional reset.
+                            // R4-01 / R4-06: GOLDEN is the sole writer of fortuneMultiplier
+                            // post-R4-01 (Step Overdrive removed). Per-path damage value
+                            // determines activation strength but expiry always resets to 1.0×
+                            // because no other writer exists.
                             fortuneMultiplier = 1.0
                         }
                         else -> {}
                     }
                 }
-                // Ongoing effects
+                // Ongoing effects (per-path reads)
                 when (uw.type) {
                     UltimateWeaponType.BLACK_HOLE -> {
                         val cx = screenWidth / 2f; val cy = screenHeight * 0.35f
-                        val dmg = 50.0 * uw.level * deltaTime
+                        // R4-06: damage DPS from DAMAGE path; pull strength from SECONDARY path.
+                        val dps = uw.type.damageAtLevel(uw.damageLevel)
+                        val pull = uw.type.secondaryAtLevel(uw.secondaryLevel).toFloat()
                         getAliveEnemies().forEach { e ->
                             val dx = cx - e.x; val dy = cy - e.y; val d = hypot(dx, dy).coerceAtLeast(1f)
-                            e.x += dx / d * 60f * deltaTime; e.y += dy / d * 60f * deltaTime
-                            e.takeDamage(dmg)
+                            e.x += dx / d * pull * deltaTime; e.y += dy / d * pull * deltaTime
+                            e.takeDamage(dps * deltaTime)
                         }
                     }
                     UltimateWeaponType.POISON_SWAMP -> {
-                        val dmg = 0.02 * uw.level * deltaTime
-                        getAliveEnemies().forEach { e -> e.takeDamage(e.maxHp * dmg) }
+                        // R4-06: DoT % MaxHP/sec from DAMAGE path. Area path (SECONDARY) is
+                        // captured for visual / future filtering but every alive enemy is
+                        // hit in v1 of R4-06.
+                        val dotFrac = uw.type.damageAtLevel(uw.damageLevel)
+                        getAliveEnemies().forEach { e -> e.takeDamage(e.maxHp * dotFrac * deltaTime) }
                     }
                     else -> {}
+                }
+            }
+        }
+
+        // R4-06: auto-trigger. Fire any UW whose cooldown has reached 0 AND that's not
+        // currently mid-effect, but only when at least one enemy is alive on screen —
+        // empty-screen fires would burn cooldowns during wave-cooldown breaks for no
+        // benefit. Pre-R4-06 activation came from a player tap on `UltimateWeaponBar`;
+        // post-R4-06 the bar is a passive indicator and this loop is the sole activator.
+        if (uwStates.isNotEmpty() && getAliveEnemies().isNotEmpty()) {
+            for (i in uwStates.indices) {
+                val uw = uwStates[i]
+                if (uw.cooldownRemaining <= 0f && uw.effectTimeRemaining <= 0f) {
+                    activateUW(i)
                 }
             }
         }

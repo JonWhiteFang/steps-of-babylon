@@ -108,10 +108,10 @@ fun BattleScreen(
             }
         }
 
-        // UW bar
+        // UW bar (passive cooldown indicator post-R4-06; auto-trigger handled in engine)
         if (roundActive && state.uwSlots.isNotEmpty()) {
             Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 72.dp)) {
-                UltimateWeaponBar(slots = state.uwSlots, onActivate = viewModel::activateUW)
+                UltimateWeaponBar(slots = state.uwSlots)
             }
         }
 

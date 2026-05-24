@@ -25,23 +25,39 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.domain.model.UWPath
+import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 
 @Composable
 fun UltimateWeaponScreen(viewModel: UltimateWeaponViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize()) {
-        Text("Power Stones: ${state.powerStones}", style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
-        Text("Equipped: ${state.equippedCount}/3", style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(horizontal = 16.dp), color = Color.Gray)
+        Text(
+            "Power Stones: ${state.powerStones}",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(16.dp),
+        )
+        Text(
+            "Equipped: ${state.equippedCount}/3",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(horizontal = 16.dp),
+            color = Color.Gray,
+        )
 
-        LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyColumn(
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             items(state.weapons, key = { it.type.name }) { info ->
-                UWCard(info = info, canEquipMore = state.equippedCount < 3,
+                UWCard(
+                    info = info,
+                    canEquipMore = state.equippedCount < 3,
                     onUnlock = { viewModel.unlock(info.type) },
-                    onUpgrade = { viewModel.upgrade(info.type) },
-                    onToggleEquip = { viewModel.toggleEquip(info.type) })
+                    onUpgrade = { path -> viewModel.upgrade(info.type, path) },
+                    onToggleEquip = { viewModel.toggleEquip(info.type) },
+                )
             }
         }
     }
@@ -49,50 +65,170 @@ fun UltimateWeaponScreen(viewModel: UltimateWeaponViewModel = hiltViewModel()) {
 
 @Composable
 private fun UWCard(
-    info: UWDisplayInfo, canEquipMore: Boolean,
-    onUnlock: () -> Unit, onUpgrade: () -> Unit, onToggleEquip: () -> Unit,
+    info: UWDisplayInfo,
+    canEquipMore: Boolean,
+    onUnlock: () -> Unit,
+    onUpgrade: (UWPath) -> Unit,
+    onToggleEquip: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = if (info.owned) Color(0xFF2A2A3E) else Color(0xFF1A1A2E)),
+        colors = CardDefaults.cardColors(
+            containerColor = if (info.isUnlocked) Color(0xFF2A2A3E) else Color(0xFF1A1A2E),
+        ),
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(info.type.name.replace('_', ' '), fontWeight = FontWeight.Bold,
-                        color = if (info.owned) Color.White else Color.Gray)
-                    Text(info.type.description, style = MaterialTheme.typography.bodySmall,
-                        color = if (info.owned) Color.White.copy(alpha = 0.7f) else Color.Gray.copy(alpha = 0.5f))
-                    if (info.owned) {
-                        Text("Level ${info.level} · CD: ${info.type.cooldownAtLevel(info.level).toInt()}s",
-                            style = MaterialTheme.typography.labelSmall, color = Color(0xFFD4A843))
-                    }
+                    Text(
+                        info.type.name.replace('_', ' '),
+                        fontWeight = FontWeight.Bold,
+                        color = if (info.isUnlocked) Color.White else Color.Gray,
+                    )
+                    Text(
+                        info.type.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (info.isUnlocked) Color.White.copy(alpha = 0.7f) else Color.Gray.copy(alpha = 0.5f),
+                    )
                 }
                 if (info.isEquipped) {
-                    Text("✓", color = Color(0xFF4CAF50), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        "✓",
+                        color = Color(0xFF4CAF50),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge,
+                    )
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                if (!info.owned) {
-                    Button(onClick = onUnlock, enabled = info.canAffordUnlock,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A5ACD))) {
+            if (!info.isUnlocked) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Button(
+                        onClick = onUnlock,
+                        enabled = info.canAffordUnlock,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A5ACD)),
+                    ) {
                         Text("Unlock (${info.type.unlockCost} PS)")
                     }
-                } else {
-                    OutlinedButton(onClick = onToggleEquip, enabled = info.isEquipped || canEquipMore) {
+                }
+            } else {
+                // Per-path upgrade rows
+                UWPath.ALL.forEach { path ->
+                    val pathInfo = info.paths[path] ?: return@forEach
+                    UWPathRow(
+                        type = info.type,
+                        path = path,
+                        pathInfo = pathInfo,
+                        onUpgrade = { onUpgrade(path) },
+                    )
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = onToggleEquip,
+                        enabled = info.isEquipped || canEquipMore,
+                    ) {
                         Text(if (info.isEquipped) "Unequip" else "Equip")
-                    }
-                    if (!info.isMaxLevel) {
-                        Button(onClick = onUpgrade, enabled = info.canAffordUpgrade,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A5ACD))) {
-                            Text("Upgrade (${info.upgradeCost} PS)")
-                        }
-                    } else {
-                        Text("MAX", color = Color(0xFFD4A843), fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.CenterVertically))
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun UWPathRow(
+    type: UltimateWeaponType,
+    path: UWPath,
+    pathInfo: UWPathDisplay,
+    onUpgrade: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                pathLabel(type, path),
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White,
+            )
+            Text(
+                "L${pathInfo.level} → ${pathValueAtNext(type, path, pathInfo.level)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color(0xFFD4A843),
+            )
+        }
+        if (pathInfo.isMaxed) {
+            Text(
+                "MAX",
+                color = Color(0xFFD4A843),
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelMedium,
+            )
+        } else {
+            Button(
+                onClick = onUpgrade,
+                enabled = pathInfo.canAfford,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A5ACD)),
+            ) {
+                Text("L${pathInfo.level + 1} (${pathInfo.cost} PS)")
+            }
+        }
+    }
+}
+
+/**
+ * UI-side label for a UW's path (e.g. "Damage" / "Chain length" / "Cooldown"). Display
+ * names are intentionally short so the row layout stays single-line on narrow screens.
+ */
+private fun pathLabel(type: UltimateWeaponType, path: UWPath): String = when (path) {
+    UWPath.DAMAGE -> when (type) {
+        UltimateWeaponType.CHRONO_FIELD -> "Slow factor"
+        UltimateWeaponType.GOLDEN_ZIGGURAT -> "Cash multiplier"
+        UltimateWeaponType.POISON_SWAMP -> "DoT % MaxHP/sec"
+        UltimateWeaponType.BLACK_HOLE -> "Damage DPS"
+        else -> "Damage"
+    }
+    UWPath.SECONDARY -> when (type) {
+        UltimateWeaponType.CHAIN_LIGHTNING -> "Chain length"
+        UltimateWeaponType.DEATH_WAVE -> "Radius"
+        UltimateWeaponType.BLACK_HOLE -> "Pull strength"
+        UltimateWeaponType.CHRONO_FIELD -> "Duration"
+        UltimateWeaponType.POISON_SWAMP -> "Area"
+        UltimateWeaponType.GOLDEN_ZIGGURAT -> "Damage multiplier"
+    }
+    UWPath.COOLDOWN -> "Cooldown"
+}
+
+/**
+ * Format the path's value at the next level (after a hypothetical purchase). Returns a
+ * UI-friendly string with the appropriate unit suffix per UW × path. Used by the
+ * per-path row's "L0 → 666 dmg" preview line.
+ */
+private fun pathValueAtNext(type: UltimateWeaponType, path: UWPath, currentLevel: Int): String {
+    val next = (currentLevel + 1).coerceAtMost(UltimateWeaponType.MAX_PATH_LEVEL)
+    val v = type.valueAtLevel(path, next)
+    return when (path) {
+        UWPath.COOLDOWN -> "${v.toInt()}s"
+        UWPath.DAMAGE -> when (type) {
+            UltimateWeaponType.CHRONO_FIELD -> String.format(java.util.Locale.ROOT, "%.0f%%", v * 100)
+            UltimateWeaponType.GOLDEN_ZIGGURAT -> String.format(java.util.Locale.ROOT, "%.1f×", v)
+            UltimateWeaponType.POISON_SWAMP -> String.format(java.util.Locale.ROOT, "%.1f%%", v * 100)
+            UltimateWeaponType.BLACK_HOLE -> "${v.toInt()} DPS"
+            else -> "${v.toInt()} dmg"
+        }
+        UWPath.SECONDARY -> when (type) {
+            UltimateWeaponType.CHAIN_LIGHTNING -> "${v.toInt()} enemies"
+            UltimateWeaponType.DEATH_WAVE -> String.format(java.util.Locale.ROOT, "%.0f%% screen", v * 100)
+            UltimateWeaponType.BLACK_HOLE -> "${v.toInt()} px/s"
+            UltimateWeaponType.CHRONO_FIELD -> String.format(java.util.Locale.ROOT, "%.0fs", v)
+            UltimateWeaponType.POISON_SWAMP -> String.format(java.util.Locale.ROOT, "%.0f%% area", v * 100)
+            UltimateWeaponType.GOLDEN_ZIGGURAT -> String.format(java.util.Locale.ROOT, "%.1f× dmg", v)
         }
     }
 }

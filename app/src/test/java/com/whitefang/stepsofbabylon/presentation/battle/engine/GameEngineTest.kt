@@ -90,13 +90,13 @@ class GameEngineTest {
         // (max-research-level simulation: 1 - 15 × 0.03 = 0.55) and read again. Should be
         // ~55 % of baseline.
         val eng1 = freshEngine()
-        eng1.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, 1, isEquipped = true)))
+        eng1.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, cooldownLevel = 1, isUnlocked = true, isEquipped = true)))
         eng1.activateUW(0)
         val cooldownBaseline = eng1.uwStates[0].cooldownRemaining
 
         val eng2 = freshEngine()
         eng2.uwCooldownMultiplier = 0.55f
-        eng2.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, 1, isEquipped = true)))
+        eng2.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, cooldownLevel = 1, isUnlocked = true, isEquipped = true)))
         eng2.activateUW(0)
         val cooldownBoosted = eng2.uwStates[0].cooldownRemaining
 
@@ -261,7 +261,7 @@ class GameEngineTest {
     // simple activate-sets-5× / expiry-resets-1× pair.
 
     @Test
-    fun `R401 GOLDEN_ZIGGURAT activation sets fortuneMultiplier to 5x`() {
+    fun `R401 GOLDEN_ZIGGURAT activation sets fortuneMultiplier to cash mult from DAMAGE path`() {
         val eng = freshEngine()
         assertEquals(
             1.0,
@@ -272,11 +272,12 @@ class GameEngineTest {
 
         activateGoldenZigForTest(eng)
 
+        // R4-06: GOLDEN damageAtLevel(1) = 2.0 (cash multiplier from DAMAGE path)
         assertEquals(
-            5.0,
+            2.0,
             readFortuneMultiplier(eng),
             0.001,
-            "GOLDEN_ZIGGURAT activation must set fortuneMultiplier to 5.0× (sole writer post-R4-01)",
+            "GOLDEN_ZIGGURAT activation must set fortuneMultiplier to damageAtLevel value (2.0× at L1)",
         )
     }
 
@@ -284,7 +285,7 @@ class GameEngineTest {
     fun `R401 GOLDEN_ZIGGURAT expiry resets fortuneMultiplier to 1x`() {
         val eng = freshEngine()
         activateGoldenZigForTest(eng)
-        assertEquals(5.0, readFortuneMultiplier(eng), 0.001, "Sanity: GOLDEN sets 5.0×")
+        assertEquals(2.0, readFortuneMultiplier(eng), 0.001, "Sanity: GOLDEN sets 2.0× at L1")
 
         // Expire GOLDEN via a long updateUWs tick (effectDuration is 10 s).
         invokeUpdateUWs(eng, deltaTime = 20f)
@@ -482,11 +483,18 @@ class GameEngineTest {
     }
 
     /** Reflectively flips the engine's private `chronoActive` flag without going through
-     *  the full UW activation path (which would queue cooldowns + visual effects + sounds). */
+     *  the full UW activation path (which would queue cooldowns + visual effects + sounds).
+     *  R4-06: also sets `chronoSlowFactor` to 0.10f (the pre-R4-06 constant) so the
+     *  entity-update loop applies the expected slow. */
     private fun setChronoActive(eng: GameEngine, active: Boolean) {
         val field = GameEngine::class.java.getDeclaredField("chronoActive")
             .apply { isAccessible = true }
         field.setBoolean(eng, active)
+        if (active) {
+            val sfField = GameEngine::class.java.getDeclaredField("chronoSlowFactor")
+                .apply { isAccessible = true }
+            sfField.setFloat(eng, 0.10f)
+        }
     }
 
     /**
@@ -537,7 +545,7 @@ class GameEngineTest {
      * if a prior buff already set a higher value), `preGoldenStats` captured.
      */
     private fun activateGoldenZigForTest(eng: GameEngine, level: Int = 1) {
-        eng.initUWs(listOf(OwnedWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT, level, isEquipped = true)))
+        eng.initUWs(listOf(OwnedWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT, damageLevel = level, secondaryLevel = level, cooldownLevel = level, isUnlocked = true, isEquipped = true)))
         eng.activateUW(0)
     }
 

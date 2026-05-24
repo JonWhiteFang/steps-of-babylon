@@ -19,8 +19,8 @@ di/CoroutineScopeModule.kt         # Hilt: @ApplicationScope qualifier + app-lif
 ## Data Layer — Room
 
 ```
-data/local/AppDatabase.kt         # @Database: 13 entities, 13 DAOs, version 9, exportSchema=true
-data/local/Migrations.kt          # Registered Migration objects (v7→8 for battleStepsEarned / ADR-0003, v8→9 for billing_receipt / ADR-0005)
+data/local/AppDatabase.kt         # @Database: 13 entities, 13 DAOs, version 10, exportSchema=true
+data/local/Migrations.kt          # Registered Migration objects (v7→8 for battleStepsEarned / ADR-0003, v8→9 for billing_receipt / ADR-0005, v9→10 for ultimate_weapon_state recreate-table / ADR-0008)
 data/local/Converters.kt          # @TypeConverters: Map<Int,Int> and Map<String,Int> via JSON
 data/local/DatabaseKeyManager.kt  # SQLCipher passphrase via Android Keystore
 data/local/PlayerProfileEntity.kt # Player profile entity (single row, id=1)
@@ -31,8 +31,8 @@ data/local/LabResearchEntity.kt   # Lab research entity
 data/local/LabDao.kt              # Lab research DAO
 data/local/CardInventoryEntity.kt # Card inventory entity
 data/local/CardDao.kt             # Card inventory DAO
-data/local/UltimateWeaponStateEntity.kt # UW state entity
-data/local/UltimateWeaponDao.kt   # UW state DAO
+data/local/UltimateWeaponStateEntity.kt # UW state entity (R4-06: weaponType PK + damageLevel + secondaryLevel + cooldownLevel + isUnlocked + isEquipped)
+data/local/UltimateWeaponDao.kt   # UW state DAO (+markUnlocked +updateDamageLevel/updateSecondaryLevel/updateCooldownLevel for R4-06 per-path upgrades)
 data/local/DailyStepRecordEntity.kt # Daily step record entity (with escrow fields)
 data/local/DailyStepDao.kt        # Daily step record DAO (with escrow queries) + @Transaction creditBattleStepsAtomic default method (B.2 PR 2); incrementBattleSteps UPSERT SQL supplies all 9 NOT NULL columns explicitly on the INSERT half so the fresh-install first-kill path doesn't crash on NOT NULL before ON CONFLICT can resolve UNIQUE (2026-05-12 hotfix)
 data/local/WalkingEncounterEntity.kt # Walking encounter entity
@@ -58,7 +58,7 @@ data/repository/PlayerRepositoryImpl.kt         # Player profile + wallet (entit
 data/repository/WorkshopRepositoryImpl.kt        # Workshop upgrades; takes WorkshopDao + PlayerProfileDao for purchaseUpgradeAtomic (B.2 PR 1)
 data/repository/LabRepositoryImpl.kt             # Lab research
 data/repository/CardRepositoryImpl.kt            # Card inventory
-data/repository/UltimateWeaponRepositoryImpl.kt  # Ultimate weapon state
+data/repository/UltimateWeaponRepositoryImpl.kt  # Ultimate weapon state (R4-06: toDomain rewrite for 4-column entity → 6-field OwnedWeapon; upgradePathLevel dispatches to per-path DAO methods)
 data/repository/StepRepositoryImpl.kt            # Daily step records + escrow + getDailyRecord()
 data/repository/WalkingEncounterRepositoryImpl.kt # Walking encounters
 data/repository/CosmeticRepositoryImpl.kt        # Cosmetic store items + private ZIGGURAT_COLOR_LOOKUP table (4 palettes: zig_jade @ C.2 PR 2, lapis_lazuli_skin @ PR 3 / IRON_SOLES reward, garden_ziggurat_skin @ PR 3b / MARATHON_WALKER reward, sandals_of_gilgamesh @ PR 3c / GLOBE_TROTTER reward); toDomain populates CosmeticItem.overrideColors from the lookup; SEED_COSMETICS: 11 rows (7 ZIGGURAT_SKIN including the 3 milestone-reward cosmetics + 2 PROJECTILE_EFFECT + 2 ENEMY_SKIN); ensureSeedData uses per-cosmeticId filter so content PRs land on already-seeded installs without a data clear and player `isOwned`/`isEquipped` state survives upgrades
@@ -125,7 +125,8 @@ domain/model/PlayerWallet.kt          # Currency balances data class
 domain/model/PlayerProfile.kt         # Full profile (maps from PlayerProfileEntity)
 domain/model/ActiveResearch.kt        # In-progress lab research
 domain/model/OwnedCard.kt             # Player-owned card instance
-domain/model/OwnedWeapon.kt           # Player-owned ultimate weapon
+domain/model/OwnedWeapon.kt           # Player-owned ultimate weapon (R4-06: 6 fields — type, damageLevel, secondaryLevel, cooldownLevel, isUnlocked, isEquipped + levelOf(path))
+domain/model/UWPath.kt                # 3-value enum: DAMAGE, SECONDARY, COOLDOWN (R4-06 — used by UpgradeUltimateWeapon + UltimateWeaponRepository)
 domain/model/DailyStepSummary.kt      # Daily step record domain model (with escrow fields)
 domain/model/SupplyDrop.kt              # Walking encounter supply drop
 domain/model/SupplyDropTrigger.kt        # 4 trigger types with notification messages
@@ -149,7 +150,7 @@ domain/model/BattleCondition.kt       # 7 battle condition types
 domain/model/Biome.kt                 # 5 biomes with forTier() mapping
 domain/model/BattleConditionEffects.kt # Pre-computed battle condition modifiers from tier
 domain/model/EnemyType.kt             # 6 enemy types with multipliers
-domain/model/UltimateWeaponType.kt    # 6 UW types with unlock costs
+domain/model/UltimateWeaponType.kt    # 6 UW types with per-path L1/L10 spec + valueAtLevel/cooldownAtLevel/damageAtLevel/secondaryAtLevel/costForPath (R4-06)
 domain/model/UltimateWeaponLoadout.kt # UW loadout (max 3)
 domain/model/ResearchType.kt          # 10 lab research types; +`val isComingSoon: Boolean = false` constructor field (RO-11 #B.2); AUTO_UPGRADE_AI + ENEMY_INTEL flagged true with description "Reserved for v1.x — research progress preserved"; the other 8 wired end-to-end (DAMAGE / HEALTH / CRITICAL / REGEN / CASH / STEP_EFFICIENCY / UW_COOLDOWN as outer multipliers via ResolveStats + GameEngine + DailyStepManager; WAVE_SKIP via WaveSpawner.startWave)
 domain/model/CardRarity.kt            # Common, Rare, Epic
@@ -167,7 +168,7 @@ domain/repository/PlayerRepository.kt          # Profile/wallet: observe + spend
 domain/repository/WorkshopRepository.kt         # Workshop upgrades interface (incl. purchaseUpgradeAtomic for B.2 PR 1)
 domain/repository/LabRepository.kt              # Lab research interface
 domain/repository/CardRepository.kt             # Card inventory interface
-domain/repository/UltimateWeaponRepository.kt   # Ultimate weapon interface
+domain/repository/UltimateWeaponRepository.kt   # Ultimate weapon interface (R4-06: upgradePathLevel replaces upgradeWeapon)
 domain/repository/StepRepository.kt             # Daily step records + escrow + Health Connect methods
 domain/repository/WalkingEncounterRepository.kt # Walking encounter interface
 domain/repository/BillingManager.kt             # Billing interface (purchase, query, reconcilePendingPurchases with default no-op so fakes inherit do-nothing contract; C.5 PR 1). Plan 31 PR B added `getPriceDisplay(product): String?` (default null) so the Store screen can read live formatted prices from Play Billing's ProductDetails.priceDisplay instead of the static BillingProduct.priceDisplay constants.
@@ -182,8 +183,8 @@ domain/usecase/CalculateDamage.kt               # Raw damage + crit roll + damag
 domain/usecase/CalculateDefense.kt              # Damage reduction (cap 75%) + flat block
 domain/usecase/UpdateBestWave.kt                # Compares wave to stored best, persists if new record
 domain/usecase/CheckTierUnlock.kt               # Checks wave milestones for tier unlock eligibility
-domain/usecase/UnlockUltimateWeapon.kt           # Checks Power Stone balance, deducts, unlocks UW
-domain/usecase/UpgradeUltimateWeapon.kt          # Cost scaling per level, max level 10
+domain/usecase/UnlockUltimateWeapon.kt           # Checks Power Stone balance, deducts, sets isUnlocked flag (R4-06)
+domain/usecase/UpgradeUltimateWeapon.kt          # Per-path UW upgrade: takes UWPath param, cost scaling per level, max level 10 (R4-06)
 domain/usecase/CalculateResearchCost.kt          # Research cost: baseCostSteps × costScaling^level
 domain/usecase/CalculateResearchTime.kt          # Research time: baseTimeHours × timeScaling^level
 domain/usecase/StartResearch.kt                  # Validates slots/affordability/max level, deducts Steps, starts timer
@@ -228,7 +229,7 @@ presentation/battle/BattleViewModel.kt             # @HiltViewModel: 16-param co
 presentation/battle/BattleUiState.kt               # UI state: wave, HP, cash, speed, pause, RoundEndState
 presentation/battle/GameSurfaceView.kt             # SurfaceView + SurfaceHolder.Callback, manages game loop thread; tracks `currentStartWave` and threads it through all 3 `engine.init` call sites (configure / surfaceCreated / surfaceChanged) so `playAgain` mid-session sees the latest WAVE_SKIP level (RO-11 #B.1); R3-01: surfaceCreated + surfaceChanged route through `@VisibleForTesting internal fun initEngineIfNeeded()` which gates `engine.init` on `!engine.hasWaveProgress()` so a background-and-resume cycle preserves the in-flight round; `@Volatile internal var pendingSpeed` / `pendingPaused` captured by `setSpeedMultiplier` / `setPaused` survive the `gameThread = null` lifecycle gap and seed the new thread when surfaceCreated fires
 presentation/battle/GameLoopThread.kt              # Dedicated thread: fixed timestep (60 UPS), accumulator, speed multiplier
-presentation/battle/engine/GameEngine.kt           # Central coordinator: entity list, update/render dispatch, wave/collision integration; +hasWaveProgress() (B.3 PR 2); +@Volatile cosmeticOverrides: Map<CosmeticCategory, CosmeticItem> consulted in init() to select ziggurat layer colors (C.2 PR 1); +applyStats() single-mutation point that propagates ResolvedStats updates to engine + ziggurat in lock-step (RO-08); +updateEffectiveLevels() public setter for in-round cash-utility levels (RO-08); +tickRecoveryPackages() periodic-heal pulse (RO-08, RECOVERY_PACKAGES — 30s interval, 1% per level capped at 50%, SPAWNING-phase only); RO-09 #1: entities.forEach scales `deltaTime` for `EnemyEntity` only when `chronoActive` true (`CHRONO_SLOW_FACTOR=0.10f` companion constant) so CHRONO_FIELD UW actually slows enemies; projectiles/orbs/ziggurat keep unscaled `deltaTime`. R4-01: Step Overdrive deleted entirely — `activeOverdrive` / `overdriveTimeRemaining` / `preOverdriveStats` / `overdriveAuraEffect` fields removed; `activateOverdrive` / `expireOverdrive` methods deleted; the `update()` overdrive-timer block deleted. GOLDEN_ZIGGURAT becomes the sole writer of `fortuneMultiplier`: activate hard-sets to 5.0×, expiry resets to 1.0× (collapses the 3-site coerceAtLeast/cross-overdrive RO-09 #2 lifecycle to 2 unconditional writes). R3-02: 2 onMeleeHit lambdas (initial WaveSpawner wiring + SCATTER child enemy spawn) flipped from `{ _, dmg -> applyDamageToZiggurat(dmg, null) }` to `{ atk, dmg -> applyDamageToZiggurat(dmg, atk) }` so `applyThorn` actually fires; +`lifestealAccumulator: Double = 0.0` field reset in init() + new `applyLifesteal(healAmount)` helper that mirrors applyThorn's shape and emits `FloatingText("+X HP", STEP_COLOR)` each time the accumulator crosses an integer HP threshold so low-level LIFESTEAL produces visible burst feedback (math identical to pre-fix; only the visual is new).
+presentation/battle/engine/GameEngine.kt           # Central coordinator: entity list, update/render dispatch, wave/collision integration; +hasWaveProgress() (B.3 PR 2); +@Volatile cosmeticOverrides: Map<CosmeticCategory, CosmeticItem> consulted in init() to select ziggurat layer colors (C.2 PR 1); +applyStats() single-mutation point that propagates ResolvedStats updates to engine + ziggurat in lock-step (RO-08); +updateEffectiveLevels() public setter for in-round cash-utility levels (RO-08); +tickRecoveryPackages() periodic-heal pulse (RO-08, RECOVERY_PACKAGES — 30s interval, 1% per level capped at 50%, SPAWNING-phase only); RO-09 #1: entities.forEach scales `deltaTime` for `EnemyEntity` only when `chronoActive` true (`CHRONO_SLOW_FACTOR=0.10f` companion constant) so CHRONO_FIELD UW actually slows enemies; projectiles/orbs/ziggurat keep unscaled `deltaTime`. R4-01: Step Overdrive deleted entirely — `activeOverdrive` / `overdriveTimeRemaining` / `preOverdriveStats` / `overdriveAuraEffect` fields removed; `activateOverdrive` / `expireOverdrive` methods deleted; the `update()` overdrive-timer block deleted. GOLDEN_ZIGGURAT becomes the sole writer of `fortuneMultiplier`: activate hard-sets to 5.0×, expiry resets to 1.0× (collapses the 3-site coerceAtLeast/cross-overdrive RO-09 #2 lifecycle to 2 unconditional writes). R3-02: 2 onMeleeHit lambdas (initial WaveSpawner wiring + SCATTER child enemy spawn) flipped from `{ _, dmg -> applyDamageToZiggurat(dmg, null) }` to `{ atk, dmg -> applyDamageToZiggurat(dmg, atk) }` so `applyThorn` actually fires; +`lifestealAccumulator: Double = 0.0` field reset in init() + new `applyLifesteal(healAmount)` helper that mirrors applyThorn's shape and emits `FloatingText("+X HP", STEP_COLOR)` each time the accumulator crosses an integer HP threshold so low-level LIFESTEAL produces visible burst feedback (math identical to pre-fix; only the visual is new). R4-06: UWState 4-field struct (type + damageLevel + secondaryLevel + cooldownLevel); auto-trigger on cooldown replaces manual activation; per-path `activateUW`; `chronoSlowFactor` instance field (companion `CHRONO_SLOW_FACTOR` constant removed).
 presentation/battle/engine/Entity.kt               # Abstract base: x, y, width, height, isAlive, update(), render()
 presentation/battle/engine/WaveSpawner.kt          # Wave lifecycle: 26s spawn + 9s cooldown, enemy composition by wave; RO-11 #B.1 added optional `startWave: Int = 1` constructor param backing `var currentWave: Int = startWave` so BattleViewModel can map a WAVE_SKIP lab-research level to a higher initial wave (L0 → wave 1, L10 → wave 11). Enemy scaling at the higher wave is automatic via EnemyScaler. R3-02 changed `onMeleeHit: (Double) -> Unit` to `(EnemyEntity, Double) -> Unit` so consumers can react to the attacker reference (THORN_DAMAGE reflection); the field is forwarded as-is to each spawned `EnemyEntity.onMeleeHit`.
 presentation/battle/engine/EnemyScaler.kt          # Wave-based stat scaling (1.05^wave), cash rewards per type
@@ -253,13 +254,13 @@ presentation/battle/ui/InRoundUpgradeMenu.kt      # In-round upgrade menu: 3 tab
 presentation/battle/ui/PostRoundOverlay.kt         # Post-round summary: wave, kills, cash, time, new record banner
 presentation/battle/ui/PauseOverlay.kt             # Pause overlay: Resume + Quit Round buttons
 presentation/battle/ui/BiomeTransitionOverlay.kt   # Full-screen biome reveal overlay with step count
-presentation/battle/ui/UltimateWeaponBar.kt        # UW activation buttons (up to 3, cooldown overlay)
+presentation/battle/ui/UltimateWeaponBar.kt        # UW passive cooldown display (R4-06: no clickable activation buttons; auto-trigger replaces manual)
 presentation/battle/biome/BiomeTheme.kt            # 5 biome color palettes (sky, ground, ziggurat, enemy, particles)
 presentation/battle/biome/BackgroundRenderer.kt    # Gradient sky + ambient particle system per biome
 presentation/ui/theme/Color.kt                     # Compose color definitions
 presentation/ui/theme/Theme.kt                     # Compose theme setup (Material3)
-presentation/weapons/UltimateWeaponViewModel.kt    # @HiltViewModel: UW unlock/upgrade/equip state
-presentation/weapons/UltimateWeaponScreen.kt       # UW management: 6 cards with lock/unlock/equip/upgrade
+presentation/weapons/UltimateWeaponViewModel.kt    # @HiltViewModel: UW unlock/upgrade/equip state (R4-06: UWPathDisplay + UWDisplayInfo.paths for per-path UI)
+presentation/weapons/UltimateWeaponScreen.kt       # UW management: 6 cards with lock/unlock/equip + 3 per-path Upgrade buttons (R4-06)
 presentation/labs/LabsViewModel.kt                  # @HiltViewModel: research state + wallet + countdown ticker. R3-03: replaced the private `updateResearchMission()` helper with `private val updateMissionProgress = UpdateCompleteResearchMissionProgress(dailyMissionDao)`; all 3 call sites (init / rushResearch / freeRush) pass an explicit count (init: `completed.size` from CheckResearchCompletion; rush: 1 on Result.Rushed; freeRush: 1 after manual completeResearch). The DailyMissionType import was removed.
 presentation/labs/LabsUiState.kt                    # UI state: research list, slots, balances
 presentation/labs/LabsScreen.kt                     # Labs screen: research cards, start/rush/unlock slot
@@ -333,7 +334,7 @@ All paths relative to `app/src/test/java/com/whitefang/stepsofbabylon/`.
 ```
 fakes/FakePlayerRepository.kt                    # In-memory StateFlow-backed fake for PlayerRepository
 fakes/FakeWorkshopRepository.kt                  # In-memory StateFlow-backed fake for WorkshopRepository
-fakes/FakeUltimateWeaponRepository.kt            # In-memory StateFlow-backed fake for UltimateWeaponRepository
+fakes/FakeUltimateWeaponRepository.kt            # In-memory StateFlow-backed fake for UltimateWeaponRepository (R4-06: rewritten for upgradePathLevel + per-path level tracking)
 fakes/FakeLabRepository.kt                       # In-memory StateFlow-backed fake for LabRepository
 fakes/FakeCardRepository.kt                      # In-memory StateFlow-backed fake for CardRepository
 fakes/FakeWalkingEncounterRepository.kt          # In-memory StateFlow-backed fake for WalkingEncounterRepository
