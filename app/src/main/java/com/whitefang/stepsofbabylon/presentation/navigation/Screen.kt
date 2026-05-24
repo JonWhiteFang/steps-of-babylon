@@ -21,6 +21,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     data object Missions : Screen("missions", "Missions", Icons.Default.Star)
     data object Settings : Screen("settings", "Settings", Icons.Default.Star)
     data object Store : Screen("store", "Store", Icons.Default.Star)
+    data object Help : Screen("help", "Help", Icons.Default.Star)
 
     companion object {
         val items by lazy { listOf(Home, Workshop, Battle, Labs, Stats) }
@@ -30,7 +31,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
         // this list is evaluated before all data objects are constructed
         // (see commit 1872af9).
         private val allScreens by lazy {
-            listOf(Home, Workshop, Battle, Labs, Stats, Weapons, Cards, Supplies, Economy, Missions, Settings, Store)
+            listOf(Home, Workshop, Battle, Labs, Stats, Weapons, Cards, Supplies, Economy, Missions, Settings, Store, Help)
         }
 
         /**

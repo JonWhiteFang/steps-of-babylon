@@ -181,6 +181,7 @@ class MainActivity : ComponentActivity() {
                                 onMissionsClick = { navController.navigate(Screen.Missions.route) },
                                 onSettingsClick = { navController.navigate(Screen.Settings.route) },
                                 onStoreClick = { navController.navigate(Screen.Store.route) },
+                                onHelpClick = { navController.navigate(Screen.Help.route) },
                             )
                         }
                         composable(Screen.Workshop.route) {
@@ -220,6 +221,9 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Screen.Store.route) {
                             StoreScreen()
+                        }
+                        composable(Screen.Help.route) {
+                            com.whitefang.stepsofbabylon.presentation.help.HelpScreen()
                         }
                     }
                 }

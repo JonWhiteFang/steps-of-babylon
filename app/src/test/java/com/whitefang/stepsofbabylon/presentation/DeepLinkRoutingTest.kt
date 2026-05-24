@@ -37,7 +37,7 @@ class DeepLinkRoutingTest {
     }
 
     // --- Screen.fromRoute coverage (A.5) ---
-    // Every one of the 12 routes wired in NavHost must resolve back to its
+    // Every one of the 13 routes wired in NavHost must resolve back to its
     // Screen object. A silent regression here would disable notification
     // deep-links without test failure.
 
@@ -49,6 +49,11 @@ class DeepLinkRoutingTest {
     @Test
     fun `fromRoute resolves store`() {
         assertSame(Screen.Store, Screen.fromRoute("store"))
+    }
+
+    @Test
+    fun `fromRoute resolves help`() {
+        assertSame(Screen.Help, Screen.fromRoute("help"))
     }
 
     @Test
@@ -119,11 +124,11 @@ class DeepLinkRoutingTest {
     // --- argumentFreeRoutes whitelist ---
 
     @Test
-    fun `argumentFreeRoutes contains all 12 current screens`() {
+    fun `argumentFreeRoutes contains all 13 current screens`() {
         val expected = setOf(
             "home", "workshop", "battle", "labs", "stats",
             "weapons", "cards", "supplies", "economy", "missions",
-            "settings", "store",
+            "settings", "store", "help",
         )
         assertEquals(expected, Screen.argumentFreeRoutes)
     }
