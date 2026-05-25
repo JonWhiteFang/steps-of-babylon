@@ -4,6 +4,10 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix #18: Ad-rewarded card pack persistence (2026-05-25)
+
+Fixed a bug where watching a reward ad for a free card pack would show the cards in the UI but never persist them to the database. Root cause: `OpenCardPack` relied on a stale `ownedCards` snapshot; when the INSERT hit the UNIQUE constraint on `cardType`, `OnConflictStrategy.IGNORE` silently dropped the write. Fix: query the DB directly via `cardRepository.hasCard(type)` instead of trusting the caller's snapshot.
+
 ### R4-08: Cards copy-based 7-level progression (2026-05-24)
 
 Wave 3 of [Plan R4](docs/plans/plan-R4-feedback-bundle.md). Replaces Card Dust with copy-based upgrades. Cards now upgrade by collecting copies (3 COMMON / 4 RARE / 5 EPIC per level). Max level raised from 5 to 7 (~30% stronger at cap). ADR-0010 records the decision.

@@ -1,6 +1,7 @@
 # Project State
 
 ## Current objective
+- **Fix #18 (ad-rewarded card pack silently drops cards) landed on `main` 2026-05-25** (commit `d243b04`). `OpenCardPack` now queries the DB directly via `cardRepository.hasCard(type)` instead of relying on a stale `ownedCards` snapshot. Test count 647 → 649 (+2). Closes GitHub issue #18.
 - **Plan R4 complete.** All 8 sub-plans (R4-01 through R4-08) merged to `main`. R4-05 (Help screen) merged 2026-05-24 via PR #17. Quick Invest FAB removed from Workshop per user request (commit `5e3530c`). **AAB v11 (versionCode 11) built + uploaded to closed track 2026-05-24. Next: on-device smoke test, then ≥14-day closed-track window.**
 - **Previous objective (R4-08, complete + merged):** Cards copy-based 7-level progression. Branch merged to `main` via PR #16 2026-05-24 (commit `c20f5bc`). Test count 645 → 646 (+1). Schema v10→v11. ADR-0010.
 - **Previous objective (R4-07, complete + merged):** Boss-drop Power Stones. Branch merged to `main` via PR #15 2026-05-24 (commit `7b83852`). Test count 633 → 645 (+12). AAB v10 uploaded + smoke test PASSED 2026-05-24.
@@ -33,7 +34,7 @@
 - Play Console: developer account verified, app `com.whitefang.stepsofbabylon` created in Draft, package registered via ADV (debug-keystore path). Listing populated end-to-end. Internal track v3 (versionCode 3) live, on-device-verified. 5 SKUs created and active.
 - Real Play Billing v8 + AdMob v25 + UMP v4 wired end-to-end and verified on a real device.
 - **Pre-closed-testing UX polish (PRs A + B):** Ad-failure modes surface as snackbars in Battle + Cards; Store screen displays live Play-Console prices via `ProductDetails.priceDisplay` with static-constant fallback. Walkthrough doc reflects the lessons learned during the live walk-through.
-- **647 JVM tests** green post-R4-05 (Help route resolution test added).
+- **649 JVM tests** green post-fix-18 (ad-rewarded card pack persistence).
 - **R4-04 in-round upgrade button icon swap complete on branch `feat/R4-04-upgrade-button-icon`:** `BattleScreen.kt:165` `Text("⬆", color = Color.White)` → `Icon(Icons.Filled.Upgrade, contentDescription = null, tint = Color.White)`. New imports: `androidx.compose.material.icons.filled.Upgrade`. New dep `compose-material-icons-extended` added to `gradle/libs.versions.toml` + `app/build.gradle.kts` because `Icons.Filled.Upgrade` lives in the extended catalogue (R4-05 will reuse for `Icons.Filled.Help`). R8 minification effectively tree-shakes unused icons in release builds; release APK still 30 MB.
 - **R4-02 Multishot/Bounce 4-level scaling complete + merged via PR #10** (commit `b2f7cd5`). 615 tests unchanged.
 - **R4-01 Step Overdrive removal complete + merged via PR #9** (commit `e375d14`). 627 → 615.

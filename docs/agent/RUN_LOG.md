@@ -1,3 +1,12 @@
+## 2026-05-25 — Fix #18: Ad-rewarded card pack silently drops cards
+
+- **Goal:** Investigate and fix GitHub issue #18 — ad-rewarded card pack shows cards in UI but never persists them.
+- **Root cause:** `OpenCardPack` relied on a stale `ownedCards` snapshot from the ViewModel to decide between INSERT (new card) vs UPDATE (copy increment). When the snapshot was stale after a long-running reward ad, the INSERT hit the UNIQUE constraint on `cardType` and `OnConflictStrategy.IGNORE` silently dropped the write.
+- **Fix:** Added `CardRepository.hasCard(type)` method that queries the DB directly. Rewrote `OpenCardPack.invoke()` to call `hasCard` instead of checking the passed-in list. Removed the `ownedCards` parameter entirely.
+- **Changes:** 6 files (CardRepository interface + impl, OpenCardPack, CardsViewModel, FakeCardRepository, OpenCardPackTest). Test count 647 → 649 (+2 net: free pack test + regression test for #18).
+- **Commit:** `d243b04` on `main`. Closes #18.
+- **What remains:** On-device verification on next internal build.
+
 
 ## 2026-05-24 — End-of-R4 AAB v11 build + upload to closed track
 
