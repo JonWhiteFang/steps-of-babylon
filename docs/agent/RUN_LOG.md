@@ -5256,3 +5256,48 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Memory updated: STATE ✅ / RUN_LOG ✅
 
 - ADR: not warranted — both fixes apply existing established patterns (`CosmeticRepositoryImpl.ensureSeedData` per-enum filter; `LaunchedEffect(state.isLoading)` data-load gating). The diagnoses are documented inline (KDoc on the two repo methods, 24-line invariant comment in BattleScreen, full triage doc in `docs/external-reviews/`). ADR-0011 territory would be a future architecture-level decision like "extract simulation core from GameEngine" (issue #37) or "add android instrumentation tests" (issue #32).
+
+## 2026-05-25 evening (later) — versionCode 12 → 13 + AAB v13 build, end-of-session
+
+- Goal: complete the #19 + #20 fix-bundle work cycle by bumping versionCode, building + signing the release AAB, and running the session-ending memory writes per the agent protocol.
+
+- Context preflight: confirmed PR #52 merged to `main` via commit `230309c` (test count 656; both #19 and #20 closed); local + remote branch `fix/19-20-uw-autotrigger-and-seeding` deleted; working tree clean on `main`. Confirmed `release/upload-keystore.jks` (2760 bytes) and `keystore.properties` present locally.
+
+- Source changes (1 file):
+  - **`app/build.gradle.kts`** — single-line bump `versionCode = 12` → `versionCode = 13`. Committed as `9807f34` and pushed to `origin main`.
+
+- Build + sign:
+  - `./run-gradle.sh clean bundleRelease` — BUILD SUCCESSFUL on first run (1m 9s wall clock). R8 + lintVital + signing + native-debug-symbols bundling all clean.
+  - Output `app/build/outputs/bundle/release/app-release.aab` (~19 MB), signed with the upload keystore at `release/upload-keystore.jks` (gitignored).
+  - `jarsigner -verify` confirmed signed (PKIX warning expected for self-signed upload keys; Play App Signing re-signs with Google's key after upload — same warnings appeared on every prior AAB).
+
+- Test changes: none. No source code changed beyond the versionCode bump; the test count stays at 656 from the post-PR-#52 baseline.
+
+- Doc-sync per agent protocol PR Task-List Convention:
+  - `AGENTS.md` — Version line rewritten end-to-end for versionCode 13 / AAB v13. The historical-sequence summary collapses the old line and brings in v10 / v11 / v12 / v13 entries that had been missing. Test count 656 already in place from the merged PR; no further changes needed there.
+  - `README.md` — Status line rewritten for AAB v13 ready-for-upload. Drops the now-stale "Plan R4 Wave 2 in progress" framing (R4 has been complete since 2026-05-24) and replaces with a concise "AAB v13 ready for closed track" + brief v11/v12 historical context.
+  - `CHANGELOG.md` — new `### versionCode 12 → 13 + AAB v13 build (2026-05-25 evening)` section at top of `[Unreleased]` above the existing Fix #19 + #20 section. Includes the on-device-verification-needed checklist for post-upload smoke testing.
+  - No changes to `.kiro/steering/source-files.md` (no source files added/removed/changed).
+  - No changes to `.kiro/steering/structure.md` (no architectural shift).
+  - No changes to `.kiro/steering/tech.md` (no library version changes).
+  - No changes to `docs/database-schema.md` (no schema change).
+  - `STATE.md` — current objective rotated onto AAB v13 ready-for-upload; previous-objectives stack pushed onto the head; Last run rotated.
+  - `RUN_LOG.md` — this entry.
+
+- AAB v13 sub-plan inventory (relative to v12 which was uploaded to closed track 2026-05-25):
+  - **#19 fix:** UW auto-trigger race in `BattleScreen` composition (PR #52 source change to `BattleScreen.kt` LaunchedEffect ordering).
+  - **#20 fix:** Workshop additive seeding (`WorkshopRepositoryImpl.kt`).
+  - **#20 sibling fix:** Lab additive seeding (`LabRepositoryImpl.kt`).
+  - 2 new fakes (`FakeWorkshopDao`, `FakeLabDao`) + 2 new repo-impl test files (4 + 3 = 7 new tests, 649 → 656).
+  - Triage doc `docs/external-reviews/2026-05-25-issue-triage.md` for the 31 other open issues (no v1.0 impact, but provides the v1.x roadmap).
+
+- Open questions: none.
+
+- Follow-ups (off-agent):
+  1. Upload AAB v13 to Play Console internal track (or directly to closed track since v11 + v12 already on closed track).
+  2. On-device smoke test on an upgrade-from-v8 device — equip Golden Tower → start a battle → confirm UW auto-triggers when its cooldown reaches 0; open Workshop → Attack tab → confirm `RAPID_FIRE` is listed and purchasable; open Labs → confirm `MULTISHOT_RESEARCH` and `BOUNCE_RESEARCH` are listed.
+  3. If smoke test passes, the closed-track ≥14-day window can resume from v13.
+
+- Memory updated: STATE ✅ / RUN_LOG ✅
+
+- ADR: not warranted — release-engineering milestone only, no architectural decision.

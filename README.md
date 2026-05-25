@@ -8,7 +8,7 @@ An Android idle tower defense game where real-world walking drives all progressi
 
 ## Status
 
-Version 1.0.0 (versionCode 9) — pre-launch. AAB v9 (Plan R4 Wave 1 bundle: R4-01 remove Overdrive + R4-02 Multishot/Bounce per-level scaling + R4-02b Labs research path + R4-04 upgrade-button icon) uploaded to Play Console internal track 2026-05-23, on-device smoke test PASSED 2026-05-23. **Plan R4 Wave 2 in progress** — R4-03 (Rapid Fire upgrade) landed on branch `feat/R4-03-rapid-fire` 2026-05-23. R4-06 (UW auto-trigger + per-path upgrades) landed on branch `feat/R4-06-uw-paths-auto-trigger` 2026-05-24 (Room v9→v10, ADR-0008). R4-07 (boss-drop Power Stones) landed on branch `feat/R4-07-boss-drop-power-stones` 2026-05-24 (ADR-0009). Wave 2 complete; Waves 3–4 close out before closed-track promotion (R4-08 cards rewrite, R4-05 Help screen). 645 JVM unit tests green.
+Version 1.0.0 (versionCode 13) — pre-launch. AAB v13 built + signed 2026-05-25 evening with the #19 + #20 fix bundle (UW auto-trigger race in `BattleScreen` + Workshop/Lab additive seeding for upgrade-from-v8 installs). PR #52 merged to `main` via commit `230309c`. Ready for upload to Play Console closed track. Pre-history: AAB v11 (2026-05-24, Plan R4 complete) and v12 (2026-05-25, #18 ad-rewarded card pack persistence fix) were on closed track when v13 superseded. 656 JVM unit tests green.
 
 For the live current state see [docs/agent/STATE.md](docs/agent/STATE.md). For recent changes see [CHANGELOG.md](CHANGELOG.md).
 

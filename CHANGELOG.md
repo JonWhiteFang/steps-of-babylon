@@ -4,6 +4,12 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### versionCode 12 → 13 + AAB v13 build (2026-05-25 evening)
+
+Bumped `versionCode` 12 → 13 in `app/build.gradle.kts` (commit `9807f34`) following the merge of PR #52 (#19 + #20 fix bundle, commit `230309c`). `./run-gradle.sh clean bundleRelease` BUILD SUCCESSFUL in 1m 9s. Output `app/build/outputs/bundle/release/app-release.aab` (~19 MB) signed with the upload keystore and verified by `jarsigner -verify` (PKIX warning expected for self-signed upload keys; Play App Signing re-signs with Google's key after upload). Ready for upload to Play Console closed track.
+
+**On-device verification needed post-upload:** equip Golden Tower → start a battle → confirm UW auto-triggers when its cooldown reaches 0; open Workshop → Attack tab → confirm `RAPID_FIRE` is listed; open Labs → confirm `MULTISHOT_RESEARCH` and `BOUNCE_RESEARCH` are listed.
+
 ### Fix #19 + #20: UW auto-trigger race + Workshop/Lab additive seeding (2026-05-25)
 
 Two on-device-only bugs surfaced by the AAB v12 closed-track smoke test. Both ship in the same fix bundle on branch `fix/19-20-uw-autotrigger-and-seeding`.
