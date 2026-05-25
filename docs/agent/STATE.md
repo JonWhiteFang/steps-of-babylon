@@ -1,7 +1,7 @@
 # Project State
 
 ## Current objective
-- **Fix #18 (ad-rewarded card pack silently drops cards) landed on `main` 2026-05-25** (commit `d243b04`). `OpenCardPack` now queries the DB directly via `cardRepository.hasCard(type)` instead of relying on a stale `ownedCards` snapshot. Test count 647 → 649 (+2). Closes GitHub issue #18.
+- **Fix #18 (ad-rewarded card pack silently drops cards) landed on `main` 2026-05-25** (commit `d243b04`). `OpenCardPack` now queries the DB directly via `cardRepository.hasCard(type)` instead of relying on a stale `ownedCards` snapshot. Test count 647 → 649 (+2). Closes GitHub issue #18. **AAB v12 (versionCode 12) built + signed 2026-05-25 (commit `a456c36`). Ready for upload to closed track.**
 - **Plan R4 complete.** All 8 sub-plans (R4-01 through R4-08) merged to `main`. R4-05 (Help screen) merged 2026-05-24 via PR #17. Quick Invest FAB removed from Workshop per user request (commit `5e3530c`). **AAB v11 (versionCode 11) built + uploaded to closed track 2026-05-24. Next: on-device smoke test, then ≥14-day closed-track window.**
 - **Previous objective (R4-08, complete + merged):** Cards copy-based 7-level progression. Branch merged to `main` via PR #16 2026-05-24 (commit `c20f5bc`). Test count 645 → 646 (+1). Schema v10→v11. ADR-0010.
 - **Previous objective (R4-07, complete + merged):** Boss-drop Power Stones. Branch merged to `main` via PR #15 2026-05-24 (commit `7b83852`). Test count 633 → 645 (+12). AAB v10 uploaded + smoke test PASSED 2026-05-24.
