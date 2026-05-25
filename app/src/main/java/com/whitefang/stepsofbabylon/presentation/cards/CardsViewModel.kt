@@ -78,7 +78,7 @@ class CardsViewModel @Inject constructor(
         viewModelScope.launch {
             _processing.value = true
             try {
-                val result = openCardPack(packTier, uiState.value.gems, allCards)
+                val result = openCardPack(packTier, uiState.value.gems)
                 if (result is OpenCardPack.Result.Opened) {
                     _lastPackResult.value = result.cards
                 } else {
@@ -128,7 +128,7 @@ class CardsViewModel @Inject constructor(
                 val result = rewardAdManager.showRewardAd(AdPlacement.DAILY_FREE_CARD_PACK)
                 when (result) {
                     is AdResult.Rewarded -> {
-                        val packResult = openCardPack(PackTier.COMMON, uiState.value.gems, allCards, isFree = true)
+                        val packResult = openCardPack(PackTier.COMMON, uiState.value.gems, isFree = true)
                         if (packResult is OpenCardPack.Result.Opened) _lastPackResult.value = packResult.cards
                         playerRepository.updateFreeCardPackAdUsed(LocalDate.now().toString())
                     }

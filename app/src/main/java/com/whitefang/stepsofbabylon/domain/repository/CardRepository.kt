@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 interface CardRepository {
     fun observeAllCards(): Flow<List<OwnedCard>>
     fun observeEquippedCards(): Flow<List<OwnedCard>>
+    suspend fun hasCard(type: CardType): Boolean
     suspend fun addCard(type: CardType): Long
     suspend fun addCardOrIncrementCopy(type: CardType)
     suspend fun incrementCopyCount(type: CardType)

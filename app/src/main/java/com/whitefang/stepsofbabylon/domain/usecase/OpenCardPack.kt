@@ -2,7 +2,6 @@ package com.whitefang.stepsofbabylon.domain.usecase
 
 import com.whitefang.stepsofbabylon.domain.model.CardRarity
 import com.whitefang.stepsofbabylon.domain.model.CardType
-import com.whitefang.stepsofbabylon.domain.model.OwnedCard
 import com.whitefang.stepsofbabylon.domain.repository.CardRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import kotlin.random.Random
@@ -25,11 +24,10 @@ class OpenCardPack(
         data object InsufficientGems : Result()
     }
 
-    suspend operator fun invoke(packTier: PackTier, gems: Long, ownedCards: List<OwnedCard>, isFree: Boolean = false): Result {
+    suspend operator fun invoke(packTier: PackTier, gems: Long, isFree: Boolean = false): Result {
         if (!isFree && gems < packTier.gemCost) return Result.InsufficientGems
         if (!isFree) playerRepository.spendGems(packTier.gemCost)
 
-        val ownedTypes = ownedCards.map { it.type }.toMutableSet()
         val results = mutableListOf<CardResult>()
 
         repeat(3) { index ->
@@ -38,12 +36,11 @@ class OpenCardPack(
             val candidates = CardType.entries.filter { it.rarity == rarity }
             val type = candidates[random.nextInt(candidates.size)]
 
-            if (type in ownedTypes) {
+            if (cardRepository.hasCard(type)) {
                 cardRepository.incrementCopyCount(type)
                 results += CardResult(type, isNew = false)
             } else {
                 cardRepository.addCard(type)
-                ownedTypes += type
                 results += CardResult(type, isNew = true)
             }
         }

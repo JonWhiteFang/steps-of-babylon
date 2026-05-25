@@ -19,6 +19,9 @@ class CardRepositoryImpl @Inject constructor(
     override fun observeEquippedCards(): Flow<List<OwnedCard>> =
         dao.getEquipped().map { list -> list.map { it.toDomain() } }
 
+    override suspend fun hasCard(type: CardType): Boolean =
+        dao.getByType(type.name) != null
+
     override suspend fun addCard(type: CardType): Long =
         dao.insert(CardInventoryEntity(cardType = type.name))
 

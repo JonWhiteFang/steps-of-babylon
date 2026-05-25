@@ -16,6 +16,9 @@ class FakeCardRepository : CardRepository {
     override fun observeAllCards(): Flow<List<OwnedCard>> = cards
     override fun observeEquippedCards(): Flow<List<OwnedCard>> = cards.map { it.filter { c -> c.isEquipped } }
 
+    override suspend fun hasCard(type: CardType): Boolean =
+        cards.value.any { it.type == type }
+
     override suspend fun addCard(type: CardType): Long {
         val id = nextId++
         cards.update { it + OwnedCard(id, type, 1, false, copyCount = 1) }
