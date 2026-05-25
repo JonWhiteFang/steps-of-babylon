@@ -39,9 +39,27 @@ class WorkshopRepositoryImpl @Inject constructor(
             playerDao = playerProfileDao,
         )
 
+    /**
+     * Seeds rows for any [UpgradeType] enum entries that do not yet have a row in
+     * `workshop_upgrade`. Per-enum filter — not a global "seed if completely empty" gate.
+     *
+     * Pre-fix (issue #20): the previous implementation only seeded when the table was
+     * fully empty (`if (dao.getAll().first().isEmpty())`). Players upgrading from an
+     * older AAB that pre-dated a new content addition (e.g. v8 → v9 added
+     * [UpgradeType.RAPID_FIRE] in R4-03) had a non-empty table, so the early-return
+     * branch fired and the new enum's row was never inserted. Result: the upgrade
+     * appeared nowhere in the Workshop UI for upgrade-from-v8 testers.
+     *
+     * Post-fix: same pattern as [com.whitefang.stepsofbabylon.data.repository.CosmeticRepositoryImpl.ensureSeedData].
+     * Existing rows' levels (and any other state) are preserved — only missing enum
+     * entries get a new default-level row. Cheap in steady state (one DAO read on app
+     * launch via [com.whitefang.stepsofbabylon.presentation.home.HomeViewModel.init]).
+     */
     override suspend fun ensureUpgradesExist() {
-        if (dao.getAll().first().isEmpty()) {
-            dao.upsertAll(UpgradeType.entries.map { WorkshopUpgradeEntity(upgradeType = it.name) })
+        val existing: Set<String> = dao.getAll().first().mapTo(mutableSetOf()) { it.upgradeType }
+        val missing = UpgradeType.entries.filter { it.name !in existing }
+        if (missing.isNotEmpty()) {
+            dao.upsertAll(missing.map { WorkshopUpgradeEntity(upgradeType = it.name) })
         }
     }
 }
