@@ -5206,3 +5206,53 @@ After the fix, tests pass on first try and assembleDebug is clean.
 
 - ADR: not yet warranted — no implementation choices locked this session. ADR-0008 will be written alongside the R4-06 implementation in the next session, capturing the per-path L1/L10 spec, migration redistribution rule, auto-trigger semantics, and the per-UW path choice rationale.
 
+
+## 2026-05-25 evening — Open-issue triage (33 issues commented) + #19 + #20 fix bundle
+
+- Goal (split): (1) recon every open GitHub issue and post a diagnostic comment on each; (2) write a triage document summarising findings for the issues we are NOT fixing immediately (i.e., excluding #19 and #20); (3) start fixing #19 (UWs not auto-triggering in battle) and #20 (RAPID_FIRE not visible in Workshop) on a new branch with full diagnosis-driven implementation, tests, and doc-sync.
+
+- Context preflight: pulled `main` (post-fix-#18 commit `2169cf9`); 33 open issues listed via `gh issue list`. Read all 33 issue bodies + posted diagnostic comments on every one (32 detailed-bug-or-proposal comments + 1 uniform triage note batch on #21–31 high-level proposals). The two critical bugs (#19, #20) emerged from reading: #19 is a Compose / coroutine race in `BattleScreen` initialization where `LaunchedEffect(surfaceView) { startPollingEngine }` fires synchronously with `equippedWeapons = emptyList()` because the VM init coroutine has not loaded yet; #20 is a "seed if completely empty" gate in `WorkshopRepositoryImpl.ensureUpgradesExist()` that prevents new enum entries (R4-03 `RAPID_FIRE`) from landing on upgrade-from-v8 installs. While diagnosing #20 I confirmed `LabRepositoryImpl.ensureResearchExists()` has the identical broken pattern (sibling bug for R4-02b's `MULTISHOT_RESEARCH` / `BOUNCE_RESEARCH`).
+
+- Triage doc: `docs/external-reviews/2026-05-25-issue-triage.md` (184 lines). Groups 16 verified-accurate detailed findings by tier (T1 closed-track polish: #48, #47, #33; T2 visible-but-not-blocking: #38, #46, #39, #34, #45; T3 architecture / testing investments: #32, #42, #37; T4 content / design gaps: #43, #41, #36, #50, #49, #40), plus 4 already-tracked-debt cross-refs (#35, #44, #45, #51) and an 11-item summary of the high-level proposals (#21–31). Includes a suggested v1.x patch sequencing (v1.0.1 polish → v1.0.2 audio → v1.1 testing infra + debt cleanup → v1.2 cloud save + i18n).
+
+- Branch: `fix/19-20-uw-autotrigger-and-seeding` cut from `main` after the triage doc was committed-locally (untracked in working tree).
+
+- Source changes (3 files):
+  - **`presentation/battle/BattleScreen.kt`** — removed the early `LaunchedEffect(surfaceView) { viewModel.startPollingEngine(surfaceView.engine, surfaceView) }` that fired synchronously on first composition. Moved `startPollingEngine` into the existing `LaunchedEffect(state.isLoading)` block, ordered AFTER `surfaceView.configure(...)`. Added a 24-line invariant comment block on the new combined effect explaining the pre-fix vs post-fix ordering: pre-fix path called `engine.initUWs(emptyList())` because `equippedWeapons` was still empty; the subsequent `engine.init()` inside `surfaceView.configure(...)` cleared `uwStates` again; `startPollingEngine` was never re-invoked. Post-fix path: data load completes (gated on `state.isLoading == false`), then `surfaceView.configure(...)` triggers `engine.init()` which clears `uwStates`, then `startPollingEngine(...)` runs `engine.initUWs(equippedWeapons)` with the now-populated list. The polling coroutine inside `startPollingEngine` launches exactly once because `state.isLoading` is a one-way transition (never toggles back). Closes GitHub issue #19.
+  - **`data/repository/WorkshopRepositoryImpl.kt`** — replaced the "seed if completely empty" gate with the additive per-enum-name filter that mirrors `CosmeticRepositoryImpl.ensureSeedData`: read existing rows' upgradeType strings into a Set, filter `UpgradeType.entries` for missing names, upsert only the missing ones. KDoc explains the pre-fix behaviour and the upgrade-from-older-AAB scenario (R4-03 RAPID_FIRE example). Closes GitHub issue #20.
+  - **`data/repository/LabRepositoryImpl.kt`** — same shape as the Workshop fix, applied to `ensureResearchExists()`. KDoc points at the R4-02b MULTISHOT_RESEARCH / BOUNCE_RESEARCH scenario. Closes the sibling Lab side of #20 that I called out in the diagnostic comment on #20.
+
+- Test changes (5 files, 0 source modifications to existing tests):
+  - **NEW `fakes/FakeWorkshopDao.kt`** (49 lines) — in-memory fake for `WorkshopDao`. Mirrors `FakeCosmeticDao` shape: `MutableStateFlow<List<WorkshopUpgradeEntity>>` backing field, `getAll/getByType/getByCategory/upsert/upsertAll` overrides. The interface's default `purchaseUpgradeAtomic` method is inherited unchanged so future atomic-purchase tests can opt in by supplying a real PlayerProfileDao without touching the fake.
+  - **NEW `fakes/FakeLabDao.kt`** (39 lines) — in-memory fake for `LabDao`. `MutableStateFlow<List<LabResearchEntity>>` backing field with 4 overrides (`getAll/getByType/getActive/upsert`).
+  - **NEW `data/repository/WorkshopRepositoryImplTest.kt`** (149 lines, 4 tests) — `issue 20 - ensureUpgradesExist seeds every UpgradeType on a completely empty table (fresh install path)`; `issue 20 - ensureUpgradesExist inserts the new RAPID_FIRE enum on an upgrade-from-v8 install` (pre-seeds 23 historical rows with varying levels representing an invested player, asserts RAPID_FIRE row added at default level 0, asserts every historical level preserved); `issue 20 - ensureUpgradesExist is idempotent when every UpgradeType is already seeded` (mutates a row's level to 7 then re-runs, asserts unchanged); `issue 20 - ensureUpgradesExist preserves an unknown upgradeType row in the table` (defensive — orphan rows from removed enum entries are not deleted). Uses `mockito-kotlin`'s `mock<PlayerProfileDao>()` to satisfy the constructor signature; `ensureUpgradesExist` never invokes any player-DAO method so the mock is never called.
+  - **NEW `data/repository/LabRepositoryImplTest.kt`** (118 lines, 3 tests) — `issue 20 sibling - ensureResearchExists seeds every ResearchType on a completely empty table`; `issue 20 sibling - ensureResearchExists inserts new MULTISHOT_RESEARCH and BOUNCE_RESEARCH on upgrade-from-v8 install` (pre-seeds 1 actively-researching row + 9 idle rows, asserts both new entries added at default state, asserts all historical levels AND startedAt/completesAt timestamps preserved); `issue 20 sibling - ensureResearchExists is idempotent when every ResearchType is already seeded`. No constructor-mock needed since `LabRepositoryImpl` only takes a `LabDao`.
+
+- Verification:
+  - `./run-gradle.sh testDebugUnitTest` — BUILD SUCCESSFUL on first run with **656 tests** (was 649, +7 net: 4 WorkshopRepositoryImplTest + 3 LabRepositoryImplTest). 43-second wall clock.
+  - `./run-gradle.sh assembleDebug` — BUILD SUCCESSFUL. 9-second wall clock.
+
+- Diagnostic comments posted (32 issues, one comment each):
+  - **Critical bugs (closed-track blockers):** #19 (UW auto-trigger race — full diagnosis with file:line refs and fix shape), #20 (Workshop seeding gate — full diagnosis + cross-reference to LabRepositoryImpl sibling bug).
+  - **Verified-accurate findings:** #32 (no androidTest/), #33 (Star icons on 9 nav screens), #34 (i18n hardcoded), #36 (no cloud save), #37 (GameEngine in presentation/), #38 (placeholder SFX), #39 (no background music), #40 (GPS not implemented), #41 (no Weekly Challenges screen), #42 (repo impls have no tests), #43 (CELESTIAL_GATE unreachable), #44 (Coming Soon research types), #45 (7 Coming Soon cosmetics), #46 (SoundPool 100ms throttle), #47 (Season Pass UI gaps), #48 (no in-app data delete), #49 (STEP_MULTIPLIER cap=100), #50 (no social sharing).
+  - **Already-tracked debt:** #35 (TOCTOU on gem/PS spend = RO-09 #5), #51 (per-kill viewModelScope = RO-09 #6).
+  - **Roadmap proposals (uniform triage note):** #21, #22, #23, #24, #25, #26, #27, #28, #29, #30, #31.
+
+- Doc-sync per agent protocol PR Task-List Convention:
+  - `AGENTS.md` — fakes list updated (added FakeWorkshopDao + FakeLabDao with issue #19/#20 attribution); test count bumped 646 → 656.
+  - `CHANGELOG.md` — new section at top of `[Unreleased]` titled "Fix #19 + #20: UW auto-trigger race + Workshop/Lab additive seeding (2026-05-25)" with full pre-fix vs post-fix narrative, files modified/created inventory, test-count delta.
+  - `.kiro/steering/source-files.md` — added entries for `FakeWorkshopDao.kt`, `FakeLabDao.kt`, `WorkshopRepositoryImplTest.kt`, `LabRepositoryImplTest.kt`. Modified source files (BattleScreen.kt, WorkshopRepositoryImpl.kt, LabRepositoryImpl.kt) keep their existing entries since the responsibility shape is unchanged.
+  - `STATE.md` — current objective rotated onto the #19+#20 fix bundle; previous-objectives stack pushed onto the head; Last run rotated.
+  - `RUN_LOG.md` — this entry.
+  - No changes to `README.md` (no user-facing build/run instructions changed).
+  - No changes to `.kiro/steering/structure.md` (no architectural shift).
+  - No changes to `.kiro/steering/tech.md` (no library version changes).
+  - No changes to `docs/database-schema.md` (no schema change).
+
+- Open questions: none.
+
+- Follow-ups created: commit + push branch + open PR `fix(battle+repos): UW auto-trigger race + Workshop/Lab additive seeding (#19, #20)` against `main`. Once merged, AAB v13 (versionCode 12 → 13) will roll up this fix bundle alongside any other landed work; promote to closed track after verifying on a real upgrade-from-v8 device that (1) Golden Tower auto-triggers in battle and (2) RAPID_FIRE / MULTISHOT_RESEARCH / BOUNCE_RESEARCH all appear in their respective screens.
+
+- Memory updated: STATE ✅ / RUN_LOG ✅
+
+- ADR: not warranted — both fixes apply existing established patterns (`CosmeticRepositoryImpl.ensureSeedData` per-enum filter; `LaunchedEffect(state.isLoading)` data-load gating). The diagnoses are documented inline (KDoc on the two repo methods, 24-line invariant comment in BattleScreen, full triage doc in `docs/external-reviews/`). ADR-0011 territory would be a future architecture-level decision like "extract simulation core from GameEngine" (issue #37) or "add android instrumentation tests" (issue #32).

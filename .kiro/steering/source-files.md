@@ -349,6 +349,8 @@ fakes/FakeDailyLoginDao.kt                       # In-memory fake for DailyLogin
 fakes/FakeWeeklyChallengeDao.kt                  # In-memory fake for WeeklyChallengeDao
 fakes/FakeDailyStepDao.kt                        # In-memory fake for DailyStepDao with Flow support
 fakes/FakeCosmeticDao.kt                         # In-memory fake for CosmeticDao with auto-increment id simulation (C.2 PR 2)
+fakes/FakeWorkshopDao.kt                         # In-memory fake for WorkshopDao (issue #19/#20 fix bundle) — supports repo-impl seeding tests; default `purchaseUpgradeAtomic` interface body inherited unchanged so future atomic-purchase tests can opt in by supplying a real PlayerProfileDao
+fakes/FakeLabDao.kt                              # In-memory fake for LabDao (issue #19/#20 fix bundle) — supports repo-impl seeding tests on the per-`researchType` primary key
 fakes/FakeTimeProvider.kt                        # Mutable TimeProvider with var fixedDate / fixedInstant (B.1)
 domain/usecase/CalculateUpgradeCostTest.kt        # Cost formula: baseCost × scaling^level, all 23 types
 domain/usecase/CanAffordUpgradeTest.kt            # Affordability checks against wallet
@@ -437,5 +439,7 @@ data/billing/BillingManagerImplTest.kt             # 14 tests for BillingManager
 data/ads/RewardAdManagerImplTest.kt                # 8 tests for RewardAdManagerImpl (C.6 PR 1 / ADR-0006): happy Rewarded; Cancelled on user-dismiss; 4 Error paths (no activity, consent unavailable, load failed with AdMob NO_FILL code 3 → 'No ad available' user msg, show failed with code 1 → 'already shown' user msg); consent-denied-still-grants per Q1; placement → ad-unit routing for all 3 AdPlacements. No Robolectric — plain-Kotlin sealed adapter types + mockito-kotlin.
 data/integration/EscrowLifecycleTest.kt            # End-to-end escrow lifecycle (release + discard)
 data/repository/CosmeticRepositoryImplTest.kt      # Seed → ZIGGURAT_COLOR_LOOKUP → overrideColors mapping for all 4 palette-shipping cosmetics (zig_jade, lapis_lazuli_skin, garden_ziggurat_skin, sandals_of_gilgamesh) with exact-value assertions as content-as-code contracts; non-palette seeds have null overrideColors; equipped zig_jade surfaces via observeEquipped with palette intact; ensureSeedData idempotent; partial-catalogue upgrade inserts 4 missing milestone cosmetics without touching legacy 7; existing-row isOwned/isEquipped preserved across ensureSeedData (C.2 PR 2 + PR 3 + PR 3b + PR 3c + ensureSeedData fix)
+data/repository/WorkshopRepositoryImplTest.kt      # 4 tests for WorkshopRepositoryImpl.ensureUpgradesExist (issue #20 fix): empty-table seeds every UpgradeType; upgrade-from-v8 install adds RAPID_FIRE while preserving historical levels; idempotent on second call; orphan/unknown rows tolerated and not deleted. Mockito-kotlin `mock<PlayerProfileDao>()` to satisfy constructor signature; ensureUpgradesExist never invokes player DAO methods.
+data/repository/LabRepositoryImplTest.kt           # 3 tests for LabRepositoryImpl.ensureResearchExists (issue #20 sibling fix): empty-table seeds every ResearchType; upgrade-from-v8 install adds MULTISHOT_RESEARCH + BOUNCE_RESEARCH while preserving historical levels AND active-research timestamps (startedAt / completesAt); idempotent on second call.
 service/StepWidgetProviderTest.kt                  # Widget SharedPreferences round-trip
 ```

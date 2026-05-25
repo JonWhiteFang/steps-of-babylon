@@ -69,11 +69,31 @@ fun BattleScreen(
         state.userMessage?.let { snackbarHostState.showSnackbar(it); viewModel.clearMessage() }
     }
 
-    LaunchedEffect(surfaceView) { viewModel.startPollingEngine(surfaceView.engine, surfaceView) }
     LaunchedEffect(state.speedMultiplier) { surfaceView.setSpeedMultiplier(state.speedMultiplier) }
     LaunchedEffect(state.isPaused) { surfaceView.setPaused(state.isPaused) }
+    // Issue #19: ordering invariant — `surfaceView.configure(...)` MUST run before
+    // `viewModel.startPollingEngine(...)` and BOTH MUST run only after the VM init
+    // coroutine has loaded equipped weapons / cards / cosmetics from disk
+    // (`state.isLoading == false`).
+    //
+    // Pre-fix: a separate `LaunchedEffect(surfaceView) { viewModel.startPollingEngine(...) }`
+    // fired synchronously on first composition, calling `engine.initUWs(equippedWeapons)`
+    // while `equippedWeapons` was still `emptyList()`. Subsequent `surfaceView.configure(...)`
+    // called `engine.init(...)` which clears `uwStates` again, and `startPollingEngine` was
+    // never re-invoked — leaving `uwStates` empty for the entire first round and silently
+    // disabling the R4-06 auto-trigger gate (`if (uwStates.isNotEmpty() && ...)`).
+    //
+    // Post-fix: both calls live inside the same `LaunchedEffect(state.isLoading)` block,
+    // ordered configure → startPollingEngine. `configure` triggers `engine.init` which
+    // wipes `uwStates`; `startPollingEngine` then re-populates them via
+    // `engine.initUWs(equippedWeapons)` with the now-loaded list. The block fires once
+    // when `isLoading` flips from true → false (a one-way transition; never toggles back),
+    // so the polling coroutine inside `startPollingEngine` is launched exactly once.
     LaunchedEffect(state.isLoading) {
-        if (!state.isLoading) surfaceView.configure(viewModel.resolvedStats, viewModel.tier, viewModel.workshopLevels, viewModel.startWave)
+        if (!state.isLoading) {
+            surfaceView.configure(viewModel.resolvedStats, viewModel.tier, viewModel.workshopLevels, viewModel.startWave)
+            viewModel.startPollingEngine(surfaceView.engine, surfaceView)
+        }
     }
 
     DisposableEffect(lifecycleOwner) {

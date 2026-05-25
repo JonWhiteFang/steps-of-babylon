@@ -4,6 +4,20 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix #19 + #20: UW auto-trigger race + Workshop/Lab additive seeding (2026-05-25)
+
+Two on-device-only bugs surfaced by the AAB v12 closed-track smoke test. Both ship in the same fix bundle on branch `fix/19-20-uw-autotrigger-and-seeding`.
+
+**#19 — UWs not auto-triggering in battle (Golden Tower confirmed).** Root cause: race condition in `BattleScreen` composition. `LaunchedEffect(surfaceView) { viewModel.startPollingEngine(...) }` fired synchronously on first composition, calling `engine.initUWs(equippedWeapons)` while `equippedWeapons` was still `emptyList()` (the `BattleViewModel.init { viewModelScope.launch }` data load had not yet completed). The subsequent `LaunchedEffect(state.isLoading) { surfaceView.configure(...) }` ran `engine.init(...)` which clears `uwStates` again — and `startPollingEngine` was never re-invoked, leaving `uwStates` empty for the entire round and silently disabling the R4-06 auto-trigger gate. Fix: removed the early `LaunchedEffect(surfaceView)` and moved `startPollingEngine` into the existing `LaunchedEffect(state.isLoading)` block, ordered AFTER `surfaceView.configure(...)` so the configure-fired `engine.init` clears `uwStates` first and `startPollingEngine` then re-populates them via `engine.initUWs(equippedWeapons)` with the now-loaded list.
+
+**#20 — RAPID_FIRE not visible in Workshop (and sibling: MULTISHOT_RESEARCH / BOUNCE_RESEARCH not visible in Labs).** Root cause: `WorkshopRepositoryImpl.ensureUpgradesExist()` and `LabRepositoryImpl.ensureResearchExists()` both used a "seed if completely empty" gate (`if (dao.getAll().first().isEmpty())`). Players upgrading from an older AAB whose tables already had rows for the then-existing enum entries hit the early-return branch, so new enums added in subsequent releases (R4-03 RAPID_FIRE; R4-02b MULTISHOT_RESEARCH / BOUNCE_RESEARCH) never got rows inserted. Fix: change both to the additive per-enum-name filter pattern already used by `CosmeticRepositoryImpl.ensureSeedData` — select only the missing entries and insert default-level rows while preserving existing rows' levels and active-research state.
+
+**Files modified (3):** `BattleScreen.kt`, `WorkshopRepositoryImpl.kt`, `LabRepositoryImpl.kt`.
+
+**Files created (5):** `docs/external-reviews/2026-05-25-issue-triage.md` (184-line triage of all 33 open issues), new fakes `FakeWorkshopDao` (49 lines) + `FakeLabDao` (39 lines), new repo-impl tests `WorkshopRepositoryImplTest` (4 tests, 149 lines) + `LabRepositoryImplTest` (3 tests, 118 lines).
+
+**Tests:** 649 → 656 (+7 — 4 Workshop + 3 Lab). Both `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh assembleDebug` BUILD SUCCESSFUL.
+
 ### Fix #18: Ad-rewarded card pack persistence (2026-05-25)
 
 Fixed a bug where watching a reward ad for a free card pack would show the cards in the UI but never persist them to the database. Root cause: `OpenCardPack` relied on a stale `ownedCards` snapshot; when the INSERT hit the UNIQUE constraint on `cardType`, `OnConflictStrategy.IGNORE` silently dropped the write. Fix: query the DB directly via `cardRepository.hasCard(type)` instead of trusting the caller's snapshot.
