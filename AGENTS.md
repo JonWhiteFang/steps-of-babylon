@@ -134,6 +134,7 @@ Development follows a master plan with 36 entries (Plans 01–31, 10b, R, R2, R3
 | R2 | Remediation 2 | Bug and UX fixes from second external review. 12 sub-plans (R2-01–R2-12), 3 priority tiers. | Plan R |
 | R3 | Remediation 3 | Bug fixes from v5 internal-track on-device smoke test (2026-05-19). 4 sub-plans (R3-01–R3-04) tracked as GitHub issues #1–#4. Tier 1 blocks closed-track promotion. | Plan R2 |
 | R4 | Remediation 4 — Feedback Bundle | Gameplay-redesign bundle from internal-soak feedback (2026-05-22). 8 sub-plans across 4 waves: removes Overdrive, simplifies Multishot/Bounce, adds Rapid Fire + Help screen, redesigns UWs (auto-trigger + 3-path upgrades), adds boss-drop Power Stones, scraps card dust for copy-based progression. Two Room migrations (v9→v10, v10→v11). 3 new ADRs. | Plan R3 |
+| V1X | v1.x Roadmap | Post-launch patch sequence from 2026-05-25 issue triage (33 GitHub issues). 29 sub-plans across 4 versioned waves (v1.0.1 polish, v1.0.2 audio, v1.1 testing-infra + simulation extraction, v1.2 cloud save + i18n) + content/balance/docs ships + 9 strategic v2.x proposals. 1 schema migration (v11→v12 cloud save). 7 new ADRs. | Plan 31 |
 
 ### Dependency Graph
 
@@ -174,11 +175,12 @@ graph TD
     PR2 --> PR3[R3: Remediation 3]
     PR3 --> PR4[R4: Feedback Bundle]
     PR4 --> P31[31: Play Console]
+    P31 --> PV1X[V1X: v1.x Roadmap]
 ```
 
 ### Critical Path
 
-01 → 02 → 03 → 06 → 08 → 09 → 10 → 11 → 12 → 13 → 18 → 27 → 28 → 29 → 30 → R (Tier 1) → R2 (Tier 1) → R3 (Tier 1) → R4 (Tier 1) → 31
+01 → 02 → 03 → 06 → 08 → 09 → 10 → 11 → 12 → 13 → 18 → 27 → 28 → 29 → 30 → R (Tier 1) → R2 (Tier 1) → R3 (Tier 1) → R4 (Tier 1) → 31 → V1X (post-launch)
 
 ### Current Status
 

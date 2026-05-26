@@ -46,6 +46,7 @@ See `docs/StepsOfBabylon_GDD.md` for the full game design document.
 | R2 | [Remediation 2](./plan-R2-remediation.md) | Bug and UX fixes from second external review. 12 sub-plans (R2-01–R2-12) across 3 priority tiers. Tier 1 blocks release. | Plan R |
 | R3 | [Remediation 3](./plan-R3-remediation-3.md) | Bug fixes from the v5 internal-track on-device smoke test (2026-05-19). 4 sub-plans (R3-01–R3-04) tracked as GitHub issues #1–#4. Tier 1 (R3-01/02/03) blocks closed-track promotion. | Plan R2 |
 | R4 | [Remediation 4 — Feedback Bundle](./plan-R4-feedback-bundle.md) | Gameplay-redesign bundle from internal-soak feedback (2026-05-22). 8 sub-plans across 4 waves. Removes Overdrive, simplifies Multishot/Bounce, adds Rapid Fire + Help screen, redesigns UWs with auto-trigger + 3-path upgrades, adds boss-drop Power Stones, scraps card dust for copy-based progression. Two Room migrations (v9→v10, v10→v11). 3 new ADRs. | Plan R3 |
+| V1X | [v1.x Roadmap](./plan-V1X-roadmap.md) | Post-launch patch sequence derived from the 2026-05-25 GitHub issue triage (33 issues). 29 sub-plans across 4 versioned waves (v1.0.1 polish, v1.0.2 audio, v1.1 testing-infra + simulation extraction, v1.2 cloud save + i18n) plus content/balance/docs ships and 9 strategic v2.x proposals. 1 schema migration (v11→v12 cloud save). 7 new ADRs. | Plan 31 |
 
 ---
 
@@ -88,6 +89,7 @@ graph TD
     PR2 --> PR3[R3: Remediation 3]
     PR3 --> PR4[R4: Feedback Bundle]
     PR4 --> P31[31: Play Console]
+    P31 --> PV1X[V1X: v1.x Roadmap]
 ```
 
 ---
@@ -143,5 +145,6 @@ graph TD
 - [x] Plan R: Remediation (R01–R12 complete)
 - [x] Plan R2: Remediation 2 (R2-01–R2-12)
 - [x] Plan R3: Remediation 3 (R3-01–R3-04 all merged)
-- [ ] Plan R4: Remediation 4 — Internal Soak Feedback Bundle (8 sub-plans, 4 waves; approved 2026-05-22, Wave 1 pending)
+- [x] Plan R4: Remediation 4 — Internal Soak Feedback Bundle (8 sub-plans, 4 waves; complete 2026-05-24)
 - [ ] Plan 31: Play Console & Store Publication
+- [ ] Plan V1X: v1.x Roadmap (29 sub-plans, 4 waves; authored 2026-05-26 from 2026-05-25 issue triage; sequenced post-v1.0.0 production rollout)

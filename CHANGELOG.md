@@ -4,6 +4,36 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Plan V1X (v1.x Roadmap) authored (2026-05-26 early hours)
+
+New planning document `docs/plans/plan-V1X-roadmap.md` derived from the [2026-05-25 GitHub issue triage](docs/external-reviews/2026-05-25-issue-triage.md) of all 33 open issues. Captures the post-launch patch sequence as 29 sub-plans across 6 versioned releases (v1.0.1 polish → v1.0.2 audio → v1.1 testing-infra + simulation extraction → v1.2 cloud save + i18n) plus content/balance/docs ships and 9 strategic v2.x proposals. **Pure planning — no source / build / test impact.**
+
+**4 user decisions locked 2026-05-26:**
+
+1. CELESTIAL_GATE biome (#43) stays deferred (V1X-15) — added to `Biome.isComingSoon` flag.
+2. ENEMY_INTEL research (#44) gets full v1.x design content (V1X-15b) — new 10-level Lab project: +2 %/level damage outer multiplier + UI overlays at L1 (next-wave composition) / L5 (per-enemy HP %) / L10 (boss-arrival countdown). Cost curve matches CASH_RESEARCH (8000 Steps × 1.5×, 4 hours × 1.10×).
+3. GPS / Exploration Mode (#40) dropped from GDD (V1X-19) — ADR-0016 to be written.
+4. STEP_MULTIPLIER asymptotic curve (#49) confirmed to land in same PR as RO-09 deferred #3 cross-validator unit-mismatch fix (V1X-18) — ADR-0015 to be written.
+
+**Already-tracked debt items got full sub-plan specs per user request** (#35 atomic Gem/PS spend → V1X-10 + ADR-0011, #44 Coming Soon flags → V1X-15 + V1X-15b + ADR-0017, #45 ziggurat skin content → V1X-14, #51 per-kill scope migration → V1X-11). All four now have proper Files/Tests/Acceptance blocks instead of cross-references.
+
+**ADRs to write when sub-plans land:** ADR-0011 through ADR-0017 (7 new ADRs).
+
+**Schema migrations expected:** v11 → v12 (cloud save tracking columns in V1X-12).
+
+**Test count target:** 656 → ~910 (≃40 instrumented + ~210 JVM net).
+
+**Files modified:**
+
+- `docs/plans/plan-V1X-roadmap.md` — NEW (~1300 lines)
+- `docs/plans/master-plan.md` — V1X row added to plan index, dependency graph, status checklist; R4 status flipped to complete
+- `AGENTS.md` — V1X registered in Plan Index + Dependency Graph + Critical Path
+- `CHANGELOG.md` — this entry
+- `docs/agent/STATE.md` — current objective rotated; previous-run history retained
+- `docs/agent/RUN_LOG.md` — new entry appended
+
+**No application code changes; no test count change.**
+
 ### versionCode 13 → 14 + AAB v14 build (2026-05-26 early hours)
 
 Play Console rejected AAB v13 with "versionCode already used" — likely from an aborted/cached earlier upload registration; v13 was never visible on any release track. Bumped `versionCode` 13 → 14 in `app/build.gradle.kts` (commit `8b51cc5`). `./run-gradle.sh clean bundleRelease` BUILD SUCCESSFUL in 1m 26s. Output `app/build/outputs/bundle/release/app-release.aab` (~19 MB) signed with the upload keystore and verified by `jarsigner -verify`. Same content as v13 (the #19 + #20 fix bundle); only the `versionCode` differs.

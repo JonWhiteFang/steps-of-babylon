@@ -1,3 +1,32 @@
+## 2026-05-26 — Plan V1X (v1.x Roadmap) authored
+
+- **Goal:** Author a master roadmap document for the v1.x patch sequence derived from the 2026-05-25 GitHub issue triage. Per user direction: option 1 (single master plan, mirrors Plan R4 style); include strategic roadmap proposals (#21–31); full sub-plan specs for already-tracked debt items (not just cross-references).
+- **Outcome:** New `docs/plans/plan-V1X-roadmap.md` (~1300 lines) capturing 29 sub-plans across 6 versioned releases. Full spec blocks (Source / Why / Scope / Files affected / Tests / ADR / Acceptance) for V1X-01 through V1X-19 (19 sub-plans incl. V1X-15b). Strategic v2.x proposals V1X-20–28 captured at scope-guidance depth (full specs deferred to scheduling time). Master-plan.md updated to register V1X.
+- **4 user decisions locked 2026-05-26:**
+  1. **#43 CELESTIAL_GATE — keep deferred** (V1X-15 flags `Biome.CELESTIAL_GATE.isComingSoon = true`). v2.x revival reserved via V1X-25 meta-progression.
+  2. **#44 ENEMY_INTEL — design v1.x content** (new V1X-15b sub-plan). 10-level Lab research: +2 %/level damage outer multiplier (vs DAMAGE_RESEARCH 5 %/lvl baseline) stacked with information-tier UI overlays at L1 (next-wave composition during cooldown phase) / L5 (per-enemy HP % above HP bar) / L10 (boss-arrival countdown in HUD). Cost curve matches CASH_RESEARCH (8000 Steps × 1.5×, 4 hours × 1.10×, max L10). AUTO_UPGRADE_AI half stays deferred under V1X-15.
+  3. **#40 GPS / Exploration Mode — drop from GDD** (V1X-19 Option A; ADR-0016).
+  4. **#49 STEP_MULTIPLIER asymptotic curve — land same PR as RO-09 deferred #3 cross-validator unit-mismatch fix** (V1X-18; ADR-0015).
+- **Already-tracked debt items got full specs per user request** (not just cross-refs): V1X-10 (#35 atomic Gem/PS spend + 6 atomic-deduct DAO tests + ADR-0011), V1X-11 (#51 per-kill scope migration + 2 nav-away regression tests), V1X-14 (#45 zig_obsidian palette + 1 exact-value test mirroring C.2 PR 2/3/3b/3c precedent), V1X-15 (#44 AUTO_UPGRADE_AI deferral half + 2 set-equality contract tests), V1X-15b (#44 ENEMY_INTEL design half + 12 new tests across ResolveStats / ResearchType / DescribeUpgradeEffect / WaveSpawner / GameEngine / BattleViewModel).
+- **7 new ADRs queued for when sub-plans land:** ADR-0011 (atomic Gem/PS spend), ADR-0012 (simulation extraction), ADR-0013 (cloud save conflict resolution), ADR-0014 (i18n string-extraction strategy), ADR-0015 (STEP_MULTIPLIER asymptotic curve, supersedes Plan 01 hard-cap), ADR-0016 (GPS/Exploration drop), ADR-0017 (ENEMY_INTEL design).
+- **1 schema migration expected** (v11 → v12 in V1X-12 cloud save).
+- **Test count target:** 656 → ~910 (≃40 instrumented + ~210 JVM net).
+- **Wave structure** mirrors the triage doc's proposed 6-patch phasing:
+  - Wave 1 (v1.0.1): V1X-01 in-app data deletion, V1X-02 Season Pass UI, V1X-03 per-screen nav icons. ~2 days.
+  - Wave 2 (v1.0.2): V1X-04 real SFX, V1X-05 frequency-aware throttle, V1X-06 background music. ~1 week.
+  - Wave 3 (v1.1): V1X-07 repo unit tests, V1X-08 instrumented test infra, V1X-09 simulation extraction, V1X-10 atomic spend, V1X-11 per-kill scope. ~3–4 weeks. Major refactor wave.
+  - Wave 4 (v1.2): V1X-12 Snapshots cloud save, V1X-13 i18n phase 1. ~3 weeks. User-trust gates.
+  - Content/balance/docs (bundled into nearest wave): V1X-14 zig_obsidian, V1X-15 + V1X-15b Coming Soon flags + ENEMY_INTEL ship, V1X-16 Weekly screen, V1X-17 text-share, V1X-18 STEP_MULTIPLIER curve, V1X-19 GDD reconciliation.
+- **Files modified (no source):**
+  - `docs/plans/plan-V1X-roadmap.md` — NEW (~1300 lines)
+  - `docs/plans/master-plan.md` — V1X row + dependency-graph node + status checklist
+  - `AGENTS.md` — V1X registered in Plan Index + Dependency Graph + Critical Path
+  - `CHANGELOG.md` — new "Plan V1X authored" section under [Unreleased]
+  - `STATE.md` — current objective rotated
+  - `RUN_LOG.md` — this entry
+- **No application code changes; no test count change; no build run.**
+- **What remains:** AAB v14 on-device smoke test (still the active gating activity); V1X execution begins post-v1.0.0 production rollout. Wave 1 is the first scheduled implementation work.
+
 ## 2026-05-25 — Fix #18: Ad-rewarded card pack silently drops cards
 
 - **Goal:** Investigate and fix GitHub issue #18 — ad-rewarded card pack shows cards in UI but never persists them.
