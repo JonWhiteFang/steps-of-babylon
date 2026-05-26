@@ -59,14 +59,15 @@ One row per research type (10 rows total).
 
 ### CardInventory
 
-One row per owned card.
+One row per CardType (unique index on `cardType` since R4-08).
 
 | Column | Type | Notes |
 |---|---|---|
 | id | Int (PK, auto) | |
-| cardType | String | CardType enum name |
-| level | Int | 1–5 |
+| cardType | String (UNIQUE) | CardType enum name. Unique index added in v10→11 (R4-08). |
+| level | Int | 1–7 (R4-08 raised cap from 5 → 7) |
 | isEquipped | Boolean | Max 3 equipped |
+| copyCount | Int | Total copies collected. Used for upgrade gating (3 COMMON / 4 RARE / 5 EPIC per level). Replaces Card Dust. Added in v10→11 (R4-08 / ADR-0010). Default 1. |
 
 ### UltimateWeaponState
 
@@ -96,6 +97,7 @@ Historical step data, one row per day.
 | activityMinutes | String (JSON) | Map<ActivityType, Int> |
 | stepEquivalents | Long | From Activity Minute Parity |
 | battleStepsEarned | Long | Steps credited from enemy kills today; capped at 2,000/day. Separate from the 50k walking ceiling. See ADR-0003. |
+| bossPsEarnedToday | Long | Power Stones credited from boss kills today; capped at 100/day. Tier-scaled (T1=1 PS … T10=10 PS). Added in v9→10 (R4-07 / ADR-0009). |
 
 ### WalkingEncounter
 
@@ -232,8 +234,8 @@ Each entity gets its own DAO:
 - Write manual migrations for complex changes (column renames, data transforms)
 - Version numbering: increment by 1 per plan that touches the schema
 - Test migrations with `MigrationTestHelper` in instrumented tests
-- Current schema version: 10
-- Active migrations: `MIGRATION_7_8` (adds `battleStepsEarned`), `MIGRATION_8_9` (adds `billing_receipt` table, C.5 PR 1), `MIGRATION_9_10` (recreates `ultimate_weapon_state` table with per-path columns, R4-06 / ADR-0008)
+- Current schema version: 11
+- Active migrations: `MIGRATION_7_8` (adds `battleStepsEarned`), `MIGRATION_8_9` (adds `billing_receipt` table, C.5 PR 1), `MIGRATION_9_10` (recreates `ultimate_weapon_state` table with per-path columns + adds `bossPsEarnedToday` to `daily_step_record`, R4-06 + R4-07 / ADR-0008 + ADR-0009), `MIGRATION_10_11` (recreates `card_inventory` aggregating duplicate rows by `cardType` into `copyCount` + adds unique index on `cardType`, R4-08 / ADR-0010)
 - v1→v2: Added `highestUnlockedTier` column to `player_profile` (Plan 13). Uses `fallbackToDestructiveMigration` during development.
 - v2→v3: Added `labSlotCount` column to `player_profile` (Plan 16). Uses `fallbackToDestructiveMigration` during development.
 - v3→v4: Added `WeeklyChallengeEntity`, `DailyLoginEntity`, streak fields on `player_profile` (Plan 20). Uses `fallbackToDestructiveMigration`.
@@ -242,7 +244,8 @@ Each entity gets its own DAO:
 - v6→v7: Added `CosmeticEntity`, monetization fields on `player_profile` (adRemoved, seasonPassActive, seasonPassExpiry, freeLabRushUsedToday, freeCardPackAdUsedToday) (Plan 26). Uses `fallbackToDestructiveMigration`.
 - v7→v8: Added `battleStepsEarned` column to `daily_step_record` (Battle Step Rewards, ADR-0003). First explicit `Migration` object (`MIGRATION_7_8` in `data/local/Migrations.kt`); `fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)` retained for dev/QA downgrades only.
 - v8→v9: Added `billing_receipt` table (Play Billing idempotency store, C.5 PR 1 / ADR-0005). `MIGRATION_8_9` creates the table with all 10 columns.
-- v9→v10: Recreated `ultimate_weapon_state` table (R4-06 / ADR-0008). Recreate-table dance: create `_new` table with per-path columns (`damageLevel`, `secondaryLevel`, `cooldownLevel`, `isUnlocked`), copy existing rows mapping old `level` → `damageLevel` and `level > 0` → `isUnlocked = 1`, drop old table, rename `_new` to `ultimate_weapon_state`. `MIGRATION_9_10` in `data/local/Migrations.kt`.
+- v9→v10: Recreated `ultimate_weapon_state` table (R4-06 / ADR-0008). Recreate-table dance: create `_new` table with per-path columns (`damageLevel`, `secondaryLevel`, `cooldownLevel`, `isUnlocked`), copy existing rows mapping old `level` → `damageLevel` and `level > 0` → `isUnlocked = 1`, drop old table, rename `_new` to `ultimate_weapon_state`. Same migration also adds `bossPsEarnedToday` column to `daily_step_record` (R4-07 / ADR-0009 — boss-drop Power Stones daily cap tracking, folded into the same migration).
+- v10→v11: Recreated `card_inventory` table (R4-08 / ADR-0010). Recreate-table dance: aggregate duplicate rows by `cardType` via `MAX(level)`/`MAX(isEquipped)`/`COUNT(*) AS copyCount`, drop old table, rename `_new`, add `UNIQUE INDEX index_card_inventory_cardType`. Card Dust is deprecated by copy-based progression — the migration also zero-clears `player_profile.cardDust`. `MIGRATION_10_11` in `data/local/Migrations.kt`.
 
 ## Type Converters
 

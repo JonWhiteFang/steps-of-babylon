@@ -41,7 +41,7 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 # Debug APK
 ./gradlew assembleDebug
 
-# Unit tests (646 JVM tests)
+# Unit tests (656 JVM tests)
 ./gradlew test
 
 # Lint
@@ -83,7 +83,7 @@ exit $EXIT_CODE
 ```
 app/src/main/java/com/whitefang/stepsofbabylon/
 ├── data/
-│   ├── local/         # Room entities, DAOs, SQLCipher key manager (13 entities, schema v10)
+│   ├── local/         # Room entities, DAOs, SQLCipher key manager (13 entities, schema v11)
 │   ├── repository/    # Repository implementations
 │   ├── sensor/        # Step sensor data source, rate limiter, daily step manager
 │   ├── healthconnect/ # Health Connect client, cross-validator, activity-minute parity

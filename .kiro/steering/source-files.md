@@ -19,8 +19,8 @@ di/CoroutineScopeModule.kt         # Hilt: @ApplicationScope qualifier + app-lif
 ## Data Layer — Room
 
 ```
-data/local/AppDatabase.kt         # @Database: 13 entities, 13 DAOs, version 10, exportSchema=true
-data/local/Migrations.kt          # Registered Migration objects (v7→8 for battleStepsEarned / ADR-0003, v8→9 for billing_receipt / ADR-0005, v9→10 for ultimate_weapon_state recreate-table / ADR-0008)
+data/local/AppDatabase.kt         # @Database: 13 entities, 13 DAOs, version 11, exportSchema=true
+data/local/Migrations.kt          # Registered Migration objects (v7→8 for battleStepsEarned / ADR-0003, v8→9 for billing_receipt / ADR-0005, v9→10 for ultimate_weapon_state recreate-table + bossPsEarnedToday / ADR-0008 + ADR-0009, v10→11 for card_inventory copyCount aggregation / ADR-0010)
 data/local/Converters.kt          # @TypeConverters: Map<Int,Int> and Map<String,Int> via JSON
 data/local/DatabaseKeyManager.kt  # SQLCipher passphrase via Android Keystore
 data/local/PlayerProfileEntity.kt # Player profile entity (single row, id=1)

@@ -1,3 +1,22 @@
+## 2026-05-26 — Doc sweep — sync current-state docs to schema v11 + 656 tests + Plan R4 complete + AAB v14 PASSED
+
+- **Goal:** Full current-state doc sweep per agent protocol PR Task-List Convention. Audit all 7 standard-sweep docs (AGENTS.md, README.md, CHANGELOG.md, source-files.md, structure.md, tech.md, lib-room.md) plus database-schema.md, architecture.md, STATE.md for drift accumulated since v14 upload + smoke test pass + Plan V1X authoring (post-2026-05-26 ~05:35 BST).
+- **Drift surfaced and fixed (10 docs):**
+  - **Schema version (v11 is current; was scattered as v9 / v10):** `.kiro/steering/source-files.md` line 22 `version 10` → `version 11`; `.kiro/steering/structure.md` line 143 `version 9` → `version 11`; `.kiro/steering/lib-room.md` lines 60 + 89 both `v9` → `v11`; `docs/architecture.md` line 69 `schema v9` → `schema v11`; `README.md` line 86 `(13 entities, schema v10)` → `schema v11`; `docs/database-schema.md` line 236 `Current schema version: 10` → `11`; `STATE.md` `What works` line `DB version 9` → `DB version 11`.
+  - **Test count (656 is current; was scattered as 646 / 649):** `README.md` line 44 `# Unit tests (646 JVM tests)` → `656`; `STATE.md` `What works` line `649 JVM tests` → `656 JVM tests`. (`AGENTS.md` already at 656 from the post-#19/#20 fix-bundle update.)
+  - **AGENTS.md status checklist:** Plan R4 flipped `[ ]` → `[x]` ✓ with all-8-sub-plans-merged closure narrative; Plan 31 narrative rewritten from "Next: ship Plan R4" → "AAB v14 PASSED smoke test 2026-05-26 ~05:35 BST + closed-track soak in progress + earliest production-access application 2026-06-09"; new `[ ] Plan V1X: v1.x Roadmap` entry added after Plan 31.
+  - **STATE.md `Next actions (explicit order)` block:** stale items 1–5 (R4-06/R4-07/R4-08/R4-05 implementation steps) deleted; renumbered the surviving 5 external-gating entries; added V1X waves 1–4 + content/balance/docs as items 5–9 to give the next session enough context.
+  - **`docs/database-schema.md` granular updates beyond schema-version:** new `MIGRATION_10_11` entry in Active migrations list; v9→v10 description amended to mention `bossPsEarnedToday` (R4-07 / ADR-0009 folded into same migration); new v10→v11 entry covering R4-08 / ADR-0010 card_inventory recreate-table dance; CardInventory entity gained `copyCount` column row + level cap `1–7` (was `1–5`) + UNIQUE-on-cardType note; DailyStepRecord entity gained `bossPsEarnedToday` column row.
+- **Audit findings flagged but deliberately not fixed in this sweep (per agent protocol):**
+  - **`docs/StepsOfBabylon_GDD.md` §5.1 Step Overdrive:** describes the pre-R4-01 mechanic. R4-01 removed it 2026-05-23 but the GDD section still reads as if Overdrive ships in v1.0. Per protocol, GDD edits are managed via dedicated sub-plans + ADRs (see V1X-19 `GDD reconciliation` + ADR-0016).
+  - **`docs/monetization.md` Card Dust references:** R4-08 / ADR-0010 deprecated Card Dust as the upgrade currency in favour of copy-based progression. monetization.md still references Card Dust as a player-facing currency. Same disposition — V1X-19.
+  - **`docs/battle-formulas.md` overdrive cash-multiplier section:** R4-01 deleted the overdrive system. battle-formulas.md still references the FORTUNE 3.0× / SURGE damage% rules. Same disposition — V1X-19.
+  - **`docs/plans/plan-14-step-overdrive.md`, `plan-17-cards.md`, `plan-01-domain-models.md`** still describe Step Overdrive + Card Dust. These are historical plan docs at their authoring date — protocol explicitly says don't touch.
+- **`tech.md` audited:** all 23 versions in `gradle/libs.versions.toml` matched the version table in tech.md. No edits needed.
+- **Files modified (10 — listed in CHANGELOG entry):** `AGENTS.md`, `README.md`, `.kiro/steering/source-files.md`, `.kiro/steering/structure.md`, `.kiro/steering/lib-room.md`, `docs/architecture.md`, `docs/database-schema.md`, `docs/agent/STATE.md`, `CHANGELOG.md`, `docs/agent/RUN_LOG.md` (this entry).
+- **No source / build / test impact — pure docs sync.** Test count stays at 656.
+- **What remains:** External tester recruitment (≥12), ≥14-day soak window (resumes 2026-05-26), production-access application, staged rollout, tag v1.0.0. Then V1X Wave 1 implementation work (V1X-01/02/03, ~2 days).
+
 ## 2026-05-26 — AAB v14 on-device smoke test PASSED
 
 - **Goal:** Verify AAB v14 on a real upgrade-from-v8 device per the smoke-test checklist (Golden Tower UW auto-trigger; RAPID_FIRE in Workshop; MULTISHOT_RESEARCH + BOUNCE_RESEARCH in Labs).

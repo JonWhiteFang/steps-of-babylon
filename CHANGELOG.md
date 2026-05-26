@@ -4,6 +4,35 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Doc sweep — sync current-state docs to schema v11 + 656 tests + Plan R4 complete + AAB v14 PASSED (2026-05-26 ~08:20 BST)
+
+Full current-state doc sweep per the agent protocol's PR Task-List Convention. Drift accumulated since the v14 upload + smoke test pass + Plan V1X authoring: schema version (v9 / v10 stale references in 6 places), test count (646 / 649 stale references in 2 places), Plan R4 status (still marked in progress in AGENTS.md status checklist), Plan 31 narrative (still referenced "ship Plan R4 next" instead of v14 PASSED + closed-track soak), Plan V1X (not yet listed in AGENTS.md status checklist), STATE.md `Next actions` block (still listed R4-06/R4-07/R4-08 implementation steps).
+
+**Files synced (10 docs):**
+
+- `AGENTS.md` — Plan R4 status flipped `[ ]` → `[x]` with closure narrative; Plan 31 narrative refreshed to reflect AAB v14 PASSED smoke test + closed-track ≥14-day window resume; new `[ ] Plan V1X` status entry added.
+- `README.md` — `# Unit tests (646 JVM tests)` → `656`; `(13 entities, schema v10)` → `(13 entities, schema v11)`.
+- `.kiro/steering/source-files.md` — AppDatabase line `version 10` → `version 11`; Migrations line extended with `v9→10 ... + bossPsEarnedToday / ADR-0008 + ADR-0009, v10→11 for card_inventory copyCount aggregation / ADR-0010`.
+- `.kiro/steering/structure.md` — AppDatabase row `version 9` → `version 11` with full description of v9→10 (R4-06 + R4-07) + v10→11 (R4-08) schema changes.
+- `.kiro/steering/lib-room.md` — `Current schema version: 9` → `11`; `(13 entities, 13 DAOs, schema v9)` → `schema v11`.
+- `docs/architecture.md` — `DatabaseModule ... schema v9` → `schema v11`.
+- `docs/database-schema.md` — `Current schema version: 10` → `11`; new `MIGRATION_10_11` entry; v9→v10 description amended to mention `bossPsEarnedToday` (R4-07 / ADR-0009 folded into the same migration); CardInventory entity gained `copyCount` column row + level cap 5→7 + unique index note; DailyStepRecord entity gained `bossPsEarnedToday` row.
+- `docs/agent/STATE.md` — DB version line refreshed to v11 with all 4 migrations registered; test count line `649 JVM tests` → `656 JVM tests`; `Next actions (explicit order)` block collapsed from 10 entries (5 stale R4-implementation + 4 external + 1 backlog) to 9 entries that match the current external-gating + V1X waves shape.
+- `CHANGELOG.md` — this entry.
+- `docs/agent/RUN_LOG.md` — new "Doc sweep" entry appended.
+
+**`tech.md` audited but not modified** — all 23 dependency versions matched `gradle/libs.versions.toml` exactly. **`structure.md` lower sections audited but not modified** — module list still accurate.
+
+**Historical artifacts deliberately not modified per agent protocol:**
+- `RUN_LOG.md` prior entries (only appending new)
+- `docs/plans/plan-R*.md`, `plan-R2*.md`, `plan-R3*.md`, `plan-R4*.md`, `plan-V1X*.md` (all historical at authoring date)
+- `docs/external-reviews/*`, `devdocs/archaeology/*`, `smoke_tests/*`
+- `docs/agent/DECISIONS/ADR-*.md` files
+- `docs/StepsOfBabylon_GDD.md` (still describes Step Overdrive in §5.1 — R4-01 removal supersedes the GDD section but GDD edits are managed via dedicated sub-plans + ADRs, not routine sweeps; V1X-19 will reconcile)
+- `docs/monetization.md`, `docs/battle-formulas.md`, `docs/step-tracking.md` (current-state design docs not in the standard sweep list; may have drift from R4-01 overdrive removal + R4-08 dust removal but absent major reader confusion the corrections wait for V1X-19 GDD reconciliation)
+
+**No source / build / test impact — pure docs sync.** Test count stays at 656.
+
 ### AAB v14 on-device smoke test PASSED (2026-05-26 ~05:35 BST)
 
 AAB v14 verified on an upgrade-from-v8 device. All three checklist items confirmed working:

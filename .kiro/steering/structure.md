@@ -140,7 +140,7 @@ All in `domain/model/`:
 | `di/CoroutineScopeModule.kt` | Hilt module: provides @ApplicationScope CoroutineScope(SupervisorJob + Dispatchers.Default) that outlives VM cancellation (B.3 PR 2, RO-03) |
 | `domain/time/TimeProvider.kt` | Pure-Kotlin seam for wall-clock access; migrated 3 sites in B.1 PR 2 |
 | `data/time/SystemTimeProvider.kt` | Production TimeProvider: delegates to Instant.now() / LocalDate.now() |
-| `data/local/AppDatabase.kt` | Room database (13 entities, 13 DAOs, version 9; `billing_receipt` added in C.5 PR 1) |
+| `data/local/AppDatabase.kt` | Room database (13 entities, 13 DAOs, version 11; `billing_receipt` added in C.5 PR 1; `ultimate_weapon_state` recreated with per-path columns + `daily_step_record.bossPsEarnedToday` added in v9→10 R4-06 + R4-07; `card_inventory` recreated with `copyCount` aggregation + unique index on `cardType` in v10→11 R4-08) |
 | `data/local/DatabaseKeyManager.kt` | SQLCipher passphrase via Android Keystore |
 | `data/local/Converters.kt` | TypeConverters for `Map<Int,Int>` and `Map<String,Int>` (JSON) |
 | `data/sensor/StepSensorDataSource.kt` | TYPE_STEP_COUNTER wrapper, emits deltas via callbackFlow |

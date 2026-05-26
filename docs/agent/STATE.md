@@ -32,14 +32,14 @@
 ## What works
 - Plans 01–30 + 10b + R (R01–R12) + R2 (R2-01–R2-12) complete.
 - Battle Step Rewards (ADR-0003): per-enemy flat reward, 2k/day cap, partial credit, capped-kill FloatingText suppression (A.7).
-- DB version 9: 13 entities (billing_receipt added in C.5 PR 1), Room Migrations v7→8 and v8→9 registered. DB-file wipe recovery on decrypt failure (A.3).
+- DB version 11: 13 entities (billing_receipt added in C.5 PR 1; ultimate_weapon_state recreated in R4-06; card_inventory recreated with copyCount in R4-08), Room Migrations v7→8 / v8→9 / v9→10 / v10→11 registered. DB-file wipe recovery on decrypt failure (A.3).
 - Phase A foundation, Phase B.1 (TimeProvider seam), Phase B.2 PRs 1–5 (RO-02 atomic transactions, 5/5 sites complete), Phase B.3 PRs 1–2 (RO-03 resilient endRound complete), Phase C.2 PRs 1+2+3+3b+3c + ensureSeedData fix (RO-07 cosmetic renderer override pipeline complete), Phase C.4 (`ClaimMilestone` UnknownCosmetic detection), Phase C.5 PRs 1+2+3 complete (real Play Billing v8 BillingManagerImpl + lifecycle wiring + reconcile hook + `StubBillingManager` deletion after on-device PASS), Phase C.6 PRs 1+2+3 (real AdMob RewardAdManagerImpl + UMP consent + `StubRewardAdManager` deletion).
 - Fresh-install first-kill crash hotfix landed (2026-05-12).
 - App launcher icon + Play Store 512×512 hi-res PNG + 1024×500 feature graphic + 5 phone screenshots all landed.
 - Play Console: developer account verified, app `com.whitefang.stepsofbabylon` created in Draft, package registered via ADV (debug-keystore path). Listing populated end-to-end. Internal track v3 (versionCode 3) live, on-device-verified. 5 SKUs created and active.
 - Real Play Billing v8 + AdMob v25 + UMP v4 wired end-to-end and verified on a real device.
 - **Pre-closed-testing UX polish (PRs A + B):** Ad-failure modes surface as snackbars in Battle + Cards; Store screen displays live Play-Console prices via `ProductDetails.priceDisplay` with static-constant fallback. Walkthrough doc reflects the lessons learned during the live walk-through.
-- **649 JVM tests** green post-fix-18 (ad-rewarded card pack persistence).
+- **656 JVM tests** green post-#19/#20 fix bundle (UW auto-trigger race + Workshop/Lab additive seeding).
 - **R4-04 in-round upgrade button icon swap complete on branch `feat/R4-04-upgrade-button-icon`:** `BattleScreen.kt:165` `Text("⬆", color = Color.White)` → `Icon(Icons.Filled.Upgrade, contentDescription = null, tint = Color.White)`. New imports: `androidx.compose.material.icons.filled.Upgrade`. New dep `compose-material-icons-extended` added to `gradle/libs.versions.toml` + `app/build.gradle.kts` because `Icons.Filled.Upgrade` lives in the extended catalogue (R4-05 will reuse for `Icons.Filled.Help`). R8 minification effectively tree-shakes unused icons in release builds; release APK still 30 MB.
 - **R4-02 Multishot/Bounce 4-level scaling complete + merged via PR #10** (commit `b2f7cd5`). 615 tests unchanged.
 - **R4-01 Step Overdrive removal complete + merged via PR #9** (commit `e375d14`). 627 → 615.
@@ -68,25 +68,15 @@
 5. **(post-launch v1.0.1)** Plan V1X Wave 1: V1X-01 (in-app data deletion), V1X-02 (Season Pass UI), V1X-03 (per-screen nav icons). ~2 days. See `docs/plans/plan-V1X-roadmap.md`.
 
 ## Next actions (explicit order)
-1. **(R4-06 UW redesign — resume on branch `feat/R4-06-uw-paths-auto-trigger`)** Branch already cut from `main` (post-R4-03 merge `141f052`). Implementation plan:
-   - **Schema migration v9→v10** in `data/local/Migrations.kt` (new `MIGRATION_9_10` object). Add `damageLevel` / `secondaryLevel` / `cooldownLevel` / `isUnlocked` columns NOT NULL DEFAULT 0; redistribute legacy `level` proportionally across the 3 path columns (e.g. legacy L5 → 2/2/1); seed `isUnlocked = (level >= 1)`; drop legacy `level` column. Bump `AppDatabase.version` 9 → 10. Schema export commit (`app/schemas/`).
-   - **Domain rewrite:** new `domain/model/UWPath.kt` sealed enum (DAMAGE / SECONDARY / COOLDOWN). `UltimateWeaponType.kt` replaces single `unlockCost` / `baseCooldownSeconds` / `effectDurationSeconds` with per-path `damageL1` / `damageL10`, `secondaryL1` / `secondaryL10`, `cooldownL1` / `cooldownL10` blocks (per-UW spec table in plan-R4-feedback-bundle.md §R4-06). `OwnedWeapon.kt` replaces `level: Int` with `damageLevel`, `secondaryLevel`, `cooldownLevel`, `isUnlocked`.
-   - **Use case rewrite:** `UpgradeUltimateWeapon.kt` accepts `path: UWPath` parameter; `UnlockUltimateWeapon.kt` gates on `isUnlocked` flag instead of `level >= 1`.
-   - **Repository layer:** `UltimateWeaponRepository.kt` adds `upgradePathLevel(type, path)` method. `UltimateWeaponRepositoryImpl.kt` toDomain/toEntity rewrite.
-   - **Engine rewrite:** `GameEngine.updateUWs()` adds enemy-presence-gated auto-trigger (fires when cooldown reaches 0 AND enemies are present). All 6 weapon `activateUW` branches rewritten to read per-path levels (CHAIN_LIGHTNING / DEATH_WAVE / BLACK_HOLE / CHRONO_FIELD / POISON_SWAMP / GOLDEN_ZIGGURAT). `fortuneMultiplier` write at GOLDEN activation = `coerceAtLeast(currentCashMultLevelValue)` (RO-09 #2's 4 stacking guards collapse to 2 since R4-01 already removed Overdrive as the second writer).
-   - **UI rewrite:** `UltimateWeaponBar.kt` drops clickable, becomes passive cooldown indicator. `UltimateWeaponScreen.kt` replaces single Upgrade button with 3 per-path Upgrade buttons. `UltimateWeaponViewModel.kt` + `UWDisplayInfo.kt` per-path display state.
-   - **Tests:** ~80 new across `UpgradeUltimateWeaponTest`, `UnlockUltimateWeaponTest`, `GameEngineTest` (auto-trigger gating, per-path activation reads), `UltimateWeaponViewModelTest`, schema migration test.
-   - **ADR-0008** (`docs/agent/DECISIONS/ADR-0008-uw-per-path-upgrades.md`): records the redesign — 3 paths per UW, symmetric L10 cap, auto-trigger semantics, schema migration approach, per-UW path choice rationale. Sibling of ADR-0003 + ADR-0005.
-   - Open PR `feat(weapons): UW auto-trigger + per-path upgrades (R4-06)`.
-2. **(R4-07 boss-drop PS)** Cut branch `feat/R4-07-boss-drop-power-stones` after R4-06 merges. Add `bossPsEarnedToday: Long` column to `DailyStepRecordEntity` (folded into the same v9→v10 migration). Add `creditBossPowerStonesAtomic(today, requested, dailyCap=100, playerDao)` to `DailyStepDao` (mirrors `creditBattleStepsAtomic` shape). New `AwardBossPowerStones` use case. New `@Volatile var onBossKilled: ((tier: Int) -> Unit)?` callback on `GameEngine` fired in `handleEnemyDeath` when `enemy.enemyType == EnemyType.BOSS`. `BattleViewModel` subscribes, calls use case, on non-zero result emits `FloatingText("+N PS")`. Write `ADR-0009-boss-drop-power-stones.md`. ~12 new tests. Open PR `feat(economy): boss-drop Power Stones (R4-07)`.
-3. **(End-of-Wave-2 AAB v10)** versionCode bump 9 → 10 in `app/build.gradle.kts`. `./run-gradle.sh clean bundleRelease`. Sign + verify + upload to internal track. On-device smoke test: per-path Upgrade buttons render in UltimateWeaponScreen; UW auto-fires when cooldown reaches 0 AND enemies are present (no fire on empty wave-cooldown screen); Rapid Fire visible 5s yellow-tint burst every 60s at L1; killing a boss credits `tier` PS with `+N PS` FloatingText; killing past 100 PS/day produces no PS and no floating text.
-4. **(R4 Wave 3)** R4-08 (Cards copy-based 7-level). Schema migration v10→v11 (add `copyCount` column + collapse duplicate-row card data via temp-table dance). Replace `SupplyDropReward.CARD_DUST` → `CARD_COPY`. Rewrite `OpenCardPack` / `UpgradeCard` / `ApplyCardEffects`. ~25 tests changed. Write `ADR-0010-card-copy-progression.md`. End-of-Wave-3 AAB v11.
-5. **(R4 Wave 4)** R4-05 (Help screen). New `Screen.Help` route. 9 sections (currencies, workshop, battle controls, tiers/biomes, labs, cards (post-R4-08 copy-based), UWs (post-R4-06 auto-trigger + paths), walking encounters, anti-cheat). HomeScreen top-right Help icon + Settings link. End-of-Wave-4 AAB v12.
-6. **(External)** Promote latest internal AAB → closed testing. Recruit ≥12 testers, distribute opt-in URL.
-7. **(External)** Wait ≥14 calendar days on closed track collecting feedback.
-8. **(External)** Apply for production access. Google review 1–3 days.
-9. **(External)** Promote closed → production with staged rollout. Tag v1.0.0 in git.
-10. **(v1.x patch backlog)** RO-09 deferred findings #3–#6, RO-11 deferred items, B.4/B.5 refactor, live-price retry, `cardDust` field deletion (deprecated post-R4-08), CHRONO_FIELD balance review, SECOND_WIND L7 cap.
+1. **(External)** Recruit ≥12 testers for the closed track. Distribute the Play Console closed-track opt-in URL via word-of-mouth + project channels. Track tester opt-in count in Play Console → Closed testing → Testers tab.
+2. **(External)** Wait ≥14 calendar days on closed track collecting tester feedback. Window resumes 2026-05-26 from v14; earliest production-access application 2026-06-09. Triage any new issues filed against `JonWhiteFang/steps-of-babylon` during the window.
+3. **(External)** Apply for production access via Play Console once both gates clear (≥12 testers + ≥14 days). Google review takes 1–3 days.
+4. **(External)** Promote closed → production with staged rollout. Tag v1.0.0 in git after rollout reaches 100 %.
+5. **(post-launch v1.0.1)** Plan V1X Wave 1: V1X-01 (in-app data deletion), V1X-02 (Season Pass UI), V1X-03 (per-screen nav icons). ~2 days. See `docs/plans/plan-V1X-roadmap.md`.
+6. **(post-launch v1.0.2)** Plan V1X Wave 2: V1X-04 / 05 / 06 audio overhaul (real SFX + frequency-aware throttle + background music). ~1 week.
+7. **(post-launch v1.1)** Plan V1X Wave 3: V1X-07/08/09/10/11 testing-infra + simulation extraction + atomic-spend fixes. ~3–4 weeks. Major refactor wave — includes RO-09 deferred findings #3–#6 cleanup.
+8. **(post-launch v1.2)** Plan V1X Wave 4: V1X-12 Snapshots cloud save + V1X-13 i18n phase 1. ~3 weeks. User-trust gates.
+9. **(content/balance/docs, bundled into nearest wave)** V1X-14 zig_obsidian palette, V1X-15 + V1X-15b Coming Soon flags + ENEMY_INTEL ship, V1X-16 Weekly screen, V1X-17 text-share, V1X-18 STEP_MULTIPLIER curve, V1X-19 GDD reconciliation.
 
 ## Do-not-touch / fragile zones
 - `domain/model/` — stable, all constants validated by balance tests. `BillingProduct.skuId()` is now a public method; treat as a stable public API.
