@@ -5337,3 +5337,21 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Memory updated: STATE ✅ / RUN_LOG ✅
 
 - ADR: not warranted — release-engineering milestone only (the workaround is the standard pattern for any monotonic-version-code system).
+
+## 2026-05-26 ~04:52 BST — AAB v14 uploaded to Play Console (off-agent)
+
+- Goal: capture the upload milestone in project memory.
+
+- Off-agent action: user uploaded `app/build/outputs/bundle/release/app-release.aab` (versionCode 14) to Play Console. No "versionCode already used" rejection this time — confirms the v13 rejection from a few hours earlier was a one-off Play Console quirk (aborted upload registration or similar; not investigated).
+
+- No source / build / test changes this run.
+
+- Doc-sync: STATE.md current-objective rotated to "AAB v14 uploaded; awaiting smoke test"; RUN_LOG.md gets this entry.
+
+- Next: on-device smoke test on an upgrade-from-v8 device. Checklist:
+  1. Equip Golden Tower → start a battle → confirm UW auto-triggers when its cooldown reaches 0 (regression check for #19).
+  2. Open Workshop → Attack tab → confirm `RAPID_FIRE` is listed and purchasable (regression check for #20 Workshop side).
+  3. Open Labs → confirm `MULTISHOT_RESEARCH` and `BOUNCE_RESEARCH` are listed (regression check for #20 Lab side).
+  4. If all three pass, the closed-track ≥14-day window resumes from v14.
+
+- Memory updated: STATE ✅ / RUN_LOG ✅
