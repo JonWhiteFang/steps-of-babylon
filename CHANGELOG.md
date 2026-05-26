@@ -4,6 +4,10 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### versionCode 13 → 14 + AAB v14 build (2026-05-26 early hours)
+
+Play Console rejected AAB v13 with "versionCode already used" — likely from an aborted/cached earlier upload registration; v13 was never visible on any release track. Bumped `versionCode` 13 → 14 in `app/build.gradle.kts` (commit `8b51cc5`). `./run-gradle.sh clean bundleRelease` BUILD SUCCESSFUL in 1m 26s. Output `app/build/outputs/bundle/release/app-release.aab` (~19 MB) signed with the upload keystore and verified by `jarsigner -verify`. Same content as v13 (the #19 + #20 fix bundle); only the `versionCode` differs.
+
 ### versionCode 12 → 13 + AAB v13 build (2026-05-25 evening)
 
 Bumped `versionCode` 12 → 13 in `app/build.gradle.kts` (commit `9807f34`) following the merge of PR #52 (#19 + #20 fix bundle, commit `230309c`). `./run-gradle.sh clean bundleRelease` BUILD SUCCESSFUL in 1m 9s. Output `app/build/outputs/bundle/release/app-release.aab` (~19 MB) signed with the upload keystore and verified by `jarsigner -verify` (PKIX warning expected for self-signed upload keys; Play App Signing re-signs with Google's key after upload). Ready for upload to Play Console closed track.

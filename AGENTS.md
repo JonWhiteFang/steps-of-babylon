@@ -27,7 +27,7 @@ Operating rules:
 - **Package:** `com.whitefang.stepsofbabylon`
 - **Min SDK:** 34 (Android 14)
 - **Target/Compile SDK:** 36
-- **Version:** 1.0.0 (versionCode 13 — historical sequence v3 → v7 (2026-05-21, full {RO-12 + R3-01 through R3-04} bundle) → v9 (2026-05-23, Plan R4 Wave 1 bundle, smoke test PASSED) → v10 (2026-05-24, R4-07 boss-drop PS) → v11 (2026-05-24, Plan R4 complete + Quick Invest FAB removal, uploaded to closed track) → v12 (2026-05-25, #18 ad-rewarded card pack persistence fix) → **v13 (2026-05-25 evening, #19 + #20 fix bundle: UW auto-trigger race in `BattleScreen` + Workshop/Lab additive seeding for upgrade-from-v8 installs, 649 → 656 tests, PR #52 merged via commit `230309c`, versionCode 12 → 13 in commit `9807f34`, AAB v13 built+signed 2026-05-25 evening, ready for closed-track upload)**.
+- **Version:** 1.0.0 (versionCode 14 — historical sequence v3 → v7 (2026-05-21, full {RO-12 + R3-01 through R3-04} bundle) → v9 (2026-05-23, Plan R4 Wave 1 bundle, smoke test PASSED) → v10 (2026-05-24, R4-07 boss-drop PS) → v11 (2026-05-24, Plan R4 complete + Quick Invest FAB removal, uploaded to closed track) → v12 (2026-05-25, #18 ad-rewarded card pack persistence fix) → v13 (2026-05-25 evening, #19 + #20 fix bundle, built+signed but rejected by Play Console as "versionCode already used" — likely an aborted/cached upload registration; not on any track) → **v14 (2026-05-26 early hours, same #19 + #20 fix bundle as v13, versionCode bumped 13 → 14 in commit `8b51cc5`, AAB v14 built+signed 2026-05-26 02:08 BST, ready for closed-track upload)**.
 - **Architecture:** MVVM + Clean Architecture
 - **UI:** Jetpack Compose (menus/screens) + SurfaceView (battle renderer)
 - **DI:** Hilt (with KSP)

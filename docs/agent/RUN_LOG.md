@@ -5301,3 +5301,39 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Memory updated: STATE ✅ / RUN_LOG ✅
 
 - ADR: not warranted — release-engineering milestone only, no architectural decision.
+
+## 2026-05-26 early hours — versionCode 13 → 14 + AAB v14 build (Play Console rejection workaround)
+
+- Goal: produce an uploadable AAB after Play Console rejected v13 with "versionCode already used" on upload attempt. Standard workaround: versionCodes are monotonic-only; bump and re-build.
+
+- Context preflight: `main` at `2ae9b29` (post-#19+#20 docs commit); working tree clean. AAB v13 from the previous session still on disk at `app/build/outputs/bundle/release/app-release.aab`. User confirmed v13 had not in fact been uploaded successfully (likely an aborted earlier upload that registered the versionCode in Play Console's reserved set).
+
+- Source changes (1 file):
+  - **`app/build.gradle.kts`** — single-line bump `versionCode = 13` → `versionCode = 14`. Committed as `8b51cc5` and pushed to `origin main`.
+
+- Build + sign:
+  - `./run-gradle.sh clean bundleRelease` — BUILD SUCCESSFUL on first run (1m 26s wall clock). R8 + lintVital + signing + native-debug-symbols bundling all clean.
+  - Output `app/build/outputs/bundle/release/app-release.aab` (~19 MB) overwrites the v13 AAB (which was never uploaded successfully anyway). Signed with the upload keystore; `jarsigner -verify` returns "jar verified." (PKIX warning expected and unchanged from prior builds).
+
+- Test changes: none. Same source / test / schema content as v13 — only the `versionCode` differs. Test count stays at 656.
+
+- Doc-sync per agent protocol PR Task-List Convention:
+  - `AGENTS.md` — Version line rewritten v13 → v14 with footnote about the v13 rejection (kept as a historical entry in the sequence so anyone investigating the v13 → v14 jump in git log understands what happened).
+  - `README.md` — Status line rewritten for AAB v14 ready-for-upload + brief note about the v13 rejection.
+  - `CHANGELOG.md` — new `### versionCode 13 → 14 + AAB v14 build (2026-05-26 early hours)` section at top of `[Unreleased]` above the v13 section. Acknowledges the v13 rejection without claiming a root cause (it's plausibly a stale Play Console upload-registration entry; not investigated since the workaround is trivial and the underlying bug, if any, is on Google's side).
+  - No changes to `.kiro/steering/source-files.md` (no source files added/removed/changed).
+  - No changes to `.kiro/steering/structure.md`, `.kiro/steering/tech.md`, `docs/database-schema.md`.
+  - `STATE.md` — current objective rotated onto AAB v14 ready-for-upload; previous-objectives stack pushed (v13 added as the rejected predecessor); Last run rotated.
+  - `RUN_LOG.md` — this entry.
+
+- Open questions:
+  - **Why did Play Console mark v13 as "already used"?** Possibilities: (1) a partial / aborted upload from the v13 session left a versionCode reservation; (2) Play Console UI cache showing stale state; (3) a v13 was uploaded to a different track / context that this session's owner didn't have visibility into. Not investigated — the workaround is cheap and reliable. If the same thing happens with v14 we should dig into the Play Console upload history before bumping again.
+
+- Follow-ups (off-agent):
+  1. Upload AAB v14 to Play Console closed track.
+  2. On-device smoke test on an upgrade-from-v8 device — equip Golden Tower → start a battle → confirm UW auto-triggers when its cooldown reaches 0; open Workshop → Attack tab → confirm `RAPID_FIRE` is listed and purchasable; open Labs → confirm `MULTISHOT_RESEARCH` and `BOUNCE_RESEARCH` are listed.
+  3. If smoke test passes, the closed-track ≥14-day window resumes from v14.
+
+- Memory updated: STATE ✅ / RUN_LOG ✅
+
+- ADR: not warranted — release-engineering milestone only (the workaround is the standard pattern for any monotonic-version-code system).
