@@ -4,6 +4,18 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### AAB v14 on-device smoke test PASSED (2026-05-26 ~05:35 BST)
+
+AAB v14 verified on an upgrade-from-v8 device. All three checklist items confirmed working:
+
+1. **#19 fix — UW auto-trigger race resolved:** Equipped Golden Tower fires automatically when its cooldown reaches 0.
+2. **#20 fix (Workshop half) — additive seeding works:** `RAPID_FIRE` visible and purchasable in Workshop → Attack tab on the upgrade-from-v8 install.
+3. **#20 fix (Lab half) — additive seeding works:** `MULTISHOT_RESEARCH` and `BOUNCE_RESEARCH` visible in Labs on the upgrade-from-v8 install.
+
+The #19 + #20 fix bundle (PR #52, commit `230309c`) is now confirmed working on the upgrade path that originally triggered the bugs in v12. **Closed-track ≥14-day window resumes from v14 effective 2026-05-26.** Earliest production-access application: 2026-06-09. Active gating activity shifts from on-device verification to tester recruitment + soak.
+
+**No source / build / test impact — this is an external verification milestone.**
+
 ### Plan V1X (v1.x Roadmap) authored (2026-05-26 early hours)
 
 New planning document `docs/plans/plan-V1X-roadmap.md` derived from the [2026-05-25 GitHub issue triage](docs/external-reviews/2026-05-25-issue-triage.md) of all 33 open issues. Captures the post-launch patch sequence as 29 sub-plans across 6 versioned releases (v1.0.1 polish → v1.0.2 audio → v1.1 testing-infra + simulation extraction → v1.2 cloud save + i18n) plus content/balance/docs ships and 9 strategic v2.x proposals. **Pure planning — no source / build / test impact.**

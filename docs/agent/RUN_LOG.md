@@ -1,3 +1,20 @@
+## 2026-05-26 — AAB v14 on-device smoke test PASSED
+
+- **Goal:** Verify AAB v14 on a real upgrade-from-v8 device per the smoke-test checklist (Golden Tower UW auto-trigger; RAPID_FIRE in Workshop; MULTISHOT_RESEARCH + BOUNCE_RESEARCH in Labs).
+- **Outcome:** All three checklist items confirmed working off-agent. The #19 + #20 fix bundle (PR #52, commit `230309c`) is now verified on the upgrade path that originally surfaced both bugs in v12.
+- **What this proves end-to-end:**
+  - **#19 (UW auto-trigger race):** `BattleScreen` `LaunchedEffect` reordering correctly populates `engine.uwStates` before the auto-trigger gate evaluates. Golden Tower visibly fires on cooldown.
+  - **#20 Workshop (additive seeding):** `WorkshopRepositoryImpl.ensureUpgradesExist` per-enum-name filter inserts `RAPID_FIRE` row on first launch of v14 against an existing schema-v9 install. The upgrade is visible and purchasable.
+  - **#20 Labs (additive seeding):** `LabRepositoryImpl.ensureResearchExists` correctly inserts `MULTISHOT_RESEARCH` and `BOUNCE_RESEARCH` rows on the same path. Both visible in Labs.
+- **Active gating shifts:** No more on-device verification needed for v14. Closed-track ≥14-day window resumes effective 2026-05-26. Earliest production-access application: 2026-06-09. Next external task: recruit ≥12 testers and distribute opt-in URL.
+- **Files modified:**
+  - `README.md` — Status section updated from "pre-launch" to "closed-track soak in progress"
+  - `CHANGELOG.md` — new "AAB v14 smoke test PASSED" section under [Unreleased]
+  - `docs/agent/STATE.md` — current objective rotated; smoke test pass becomes the active milestone; top-priority #1 flipped from on-device verification to tester recruitment
+  - `docs/agent/RUN_LOG.md` — this entry
+- **No source / build / test impact — external verification milestone only.**
+- **What remains:** Tester recruitment (≥12), ≥14-day soak window, production-access application, staged rollout, tag v1.0.0.
+
 ## 2026-05-26 — Plan V1X (v1.x Roadmap) authored
 
 - **Goal:** Author a master roadmap document for the v1.x patch sequence derived from the 2026-05-25 GitHub issue triage. Per user direction: option 1 (single master plan, mirrors Plan R4 style); include strategic roadmap proposals (#21–31); full sub-plan specs for already-tracked debt items (not just cross-references).

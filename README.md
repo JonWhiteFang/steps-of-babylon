@@ -8,7 +8,7 @@ An Android idle tower defense game where real-world walking drives all progressi
 
 ## Status
 
-Version 1.0.0 (versionCode 14) — pre-launch. AAB v14 built + signed 2026-05-26 early hours, carrying the #19 + #20 fix bundle (UW auto-trigger race in `BattleScreen` + Workshop/Lab additive seeding for upgrade-from-v8 installs). v13 was built + signed but rejected by Play Console with "versionCode already used"; v14 supersedes. PR #52 merged to `main` via commit `230309c`. Ready for upload to Play Console closed track. 656 JVM unit tests green.
+Version 1.0.0 (versionCode 14) — closed-track soak in progress. AAB v14 uploaded to Play Console 2026-05-26 ~04:52 BST and on-device smoke test PASSED 2026-05-26 ~05:35 BST (Golden Tower UW auto-trigger, RAPID_FIRE visible in Workshop, MULTISHOT_RESEARCH + BOUNCE_RESEARCH visible in Labs — the #19 + #20 fix bundle confirmed working on upgrade-from-v8 installs). Closed-track ≥14-day window resumes from 2026-05-26; earliest production-access application 2026-06-09. **Next: recruit ≥12 testers and soak.** 656 JVM unit tests green.
 
 For the live current state see [docs/agent/STATE.md](docs/agent/STATE.md). For recent changes see [CHANGELOG.md](CHANGELOG.md).
 
