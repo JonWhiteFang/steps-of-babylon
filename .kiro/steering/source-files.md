@@ -239,7 +239,7 @@ presentation/battle/entities/ZigguratEntity.kt     # 5-layer ziggurat, nearest-e
 presentation/battle/entities/ProjectileEntity.kt   # Moves toward target, self-destructs on arrival
 presentation/battle/entities/EnemyEntity.kt        # 6 enemy types, movement, melee/ranged attack, mini HP bar. R3-02 changed `onMeleeHit: ((Double) -> Unit)?` to `((EnemyEntity, Double) -> Unit)?`; `update()` invokes `onMeleeHit?.invoke(this, damage)` so consumers see the attacker reference (THORN_DAMAGE reflection). Pre-R3-02 the chain dropped the attacker so `GameEngine.applyThorn` always early-returned despite being plumbed.
 presentation/battle/entities/EnemyProjectileEntity.kt # Ranged enemy projectiles targeting ziggurat
-presentation/battle/entities/OrbEntity.kt          # Orbiting projectiles circling ziggurat, per-enemy hit cooldown
+presentation/battle/entities/OrbEntity.kt          # Orbiting projectiles circling ziggurat, per-enemy hit cooldown. #54 fix: orbit radius now oscillates internally between [ORBIT_RADIUS_MIN] (25 px) and [ORBIT_RADIUS_MAX] (70 px) over [ORBIT_PERIOD_SEC] (2.5 s) so the inner sweep overlaps the enemy melee zone and the outer sweep places the orb cleanly outside HIT_RANGE. Pre-fix the radius was passed in by `GameEngine.spawnOrbs` as `stats.range * 0.4f` ≈ 120 px which placed orbs entirely outside the kill zone (min orb-to-enemy distance 80 px > HIT_RANGE 25 px) so orbs were dead content from Plan 10b through to v14. The `orbitRadius` constructor param was dropped; new `initialRadialPhase` constructor param + `radialPhase` var + `currentOrbitRadius` getter all `@VisibleForTesting internal` for unit-test phase control.
 presentation/battle/effects/ParticlePool.kt        # Pre-allocated particle pool (200 capacity), acquire/release/recycle
 presentation/battle/effects/EffectEngine.kt        # Manages active effects, owns ParticlePool + ScreenShake
 presentation/battle/effects/ScreenShake.kt         # Canvas translate oscillation with decaying amplitude
@@ -406,6 +406,7 @@ data/sensor/DailyStepManagerTest.kt                 # Widget balance, walking mi
 data/healthconnect/StepCrossValidatorTest.kt      # Graduated response levels, offense tracking, escrow
 data/healthconnect/ActivityMinuteValidatorTest.kt # Duration/type/micro-session filtering
 presentation/battle/effects/ParticlePoolTest.kt   # Acquire/release/recycle/expire/clear/reset
+presentation/battle/entities/OrbEntityTest.kt     # 6 #54-regression tests covering radial-oscillation behaviour: inner-sweep hits melee enemy, outer-sweep does not hit, HIT_COOLDOWN gates double-hits within one cooldown window, dead enemies skipped, damage forwarded verbatim from constructor to onHitEnemy callback, full MIN/MAX cycle traversed over ORBIT_PERIOD_SEC. Robolectric + JUnit 4 because OrbEntity initialises an [android.graphics.Paint] field at construction; pattern matches DailyStepDaoTest / GameSurfaceViewTest. Closes the gap that pre-fix had zero tests on the orb damage path despite the path being broken since Plan 10b.
 presentation/battle/effects/ScreenShakeTest.kt    # Trigger/decay/override/reset/offset
 presentation/battle/effects/DeathEffectTest.kt    # Particle counts per enemy type (6 types)
 balance/StepEconomyTest.kt                        # Step economy vs 5 GDD player profiles (multi-week)

@@ -651,12 +651,15 @@ class GameEngine {
         val zig = ziggurat ?: return
         val count = stats.orbCount
         if (count <= 0) return
-        val radius = stats.range * 0.4f
+        // #54: orbit radius is now controlled internally by [OrbEntity] via radial
+        // oscillation between [OrbEntity.ORBIT_RADIUS_MIN] and [OrbEntity.ORBIT_RADIUS_MAX]
+        // so orbs actually sweep through the enemy melee zone. Pre-fix the radius was
+        // `stats.range * 0.4f` ≈ 120 px which placed orbs entirely outside the kill zone.
         val damage = stats.damage * 0.5 * conditions.orbDamageMultiplier
         for (i in 0 until count) {
             val angle = (2.0 * PI / count * i).toFloat()
             entities.add(OrbEntity(
-                zigX = zig.originX, zigY = zig.originY, orbitRadius = radius,
+                zigX = zig.originX, zigY = zig.originY,
                 angle = angle, damage = damage,
                 getEnemies = ::getAliveEnemies,
                 onHitEnemy = ::onOrbHitEnemy,
