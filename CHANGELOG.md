@@ -4,6 +4,22 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### versionCode 14 → 15 + AAB v15 build (2026-05-27)
+
+Bundle of the 3 v14-soak-board fixes — #53 (PR #56), #55 (PR #57), #54 (PR #58) — into a single AAB for closed-track upload. Bumped `versionCode` 14 → 15 in `app/build.gradle.kts`. `versionName` stays `1.0.0` because this is a hotfix, not a feature release.
+
+`./run-gradle.sh clean bundleRelease` BUILD SUCCESSFUL in 2m 32s. Output AAB at `app/build/outputs/bundle/release/app-release.aab` (~19 MB), signed with the upload keystore from `keystore.properties` and verified by `jarsigner -verify` (PKIX warnings expected for self-signed upload keys; Play App Signing re-signs after upload). Merged manifest at `app/build/intermediates/merged_manifest/release/.../AndroidManifest.xml` confirms `android:versionCode="15"`.
+
+**What's bundled in v15 vs v14:**
+
+- **#53** — Card upgrade descriptions reflect level (PR #56). New `CardType.effectDescriptionAtLevel(level)` method.
+- **#55** — Background lab research completion credits the COMPLETE_RESEARCH daily mission (PR #57). HomeViewModel.init R3-03 regression.
+- **#54** — Orbs damage enemies via radial oscillation (PR #58). Geometry mismatch since Plan 10b.
+
+**Upload note.** Closed-track ≥14-day window resumes from v14 effective 2026-05-26. Uploading v15 mid-window does NOT reset the 14-day clock as long as v15 doesn't surface fresh blockers in its own soak. Earliest production-access application stays **2026-06-09**.
+
+**On-device verification needed post-upload:** install v15 from the closed track on a real device → confirm a card upgrade visibly changes its description text (e.g. IRON_SKIN Lv 1 "+10% Defense Absolute" → upgrade once → text shows ≥ +15%) → confirm a background-completed lab research project credits the COMPLETE_RESEARCH daily mission on the next app launch → confirm orbs visually pulse inward and damage enemies at melee range (HP bars on parked enemies should drop visibly when an orb's inner sweep aligns with the enemy's angle).
+
 ### Fix #54: Orbs do no damage — radial oscillation through enemy kill zone (2026-05-27)
 
 Fixes [GitHub issue #54](https://github.com/JonWhiteFang/steps-of-babylon/issues/54). The ORBS Workshop upgrade has been dead content since Plan 10b shipped — orbs orbited at a fixed radius `stats.range * 0.4f` ≈ 120 px while enemies stopped at meleeRange = 40 px from the same origin, so the minimum orb-to-enemy distance (80 px) was 3.2× larger than HIT_RANGE (25 px). Orbs literally couldn't reach stopped enemies; they only occasionally clipped enemies during the brief approach window. Surfaced during v14 closed-track soak.

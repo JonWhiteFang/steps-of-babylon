@@ -1,3 +1,60 @@
+## 2026-05-27 — versionCode 14 → 15 + AAB v15 build (v14-soak-board hotfix bundle)
+
+- **Goal:** package the 3 v14-soak-board fixes (#53 + #55 + #54) — all merged today via PRs #56 / #57 / #58 — into a single closed-track AAB so testers receive the corrected build before the ≥14-day window completes.
+- **Outcome:** done. `versionCode = 14` → `15` in `app/build.gradle.kts`. `./run-gradle.sh clean bundleRelease` BUILD SUCCESSFUL in 2m 32s. Output AAB at `app/build/outputs/bundle/release/app-release.aab` (~19 MB), signed with the upload keystore (`keystore.properties` at project root). `jarsigner -verify` reports `jar verified` (PKIX warnings expected for self-signed upload keys; Play App Signing re-signs after upload). Merged manifest at `app/build/intermediates/merged_manifest/release/.../AndroidManifest.xml` confirms `android:versionCode="15"`.
+
+### Why a v15 hotfix instead of waiting
+
+Closed-track ≥14-day window resumes from v14 effective 2026-05-26. Earliest production-access application: 2026-06-09.
+
+If we DIDN'T ship v15:
+- Testers recruited for the closed track would hit all 3 known bugs in their first session.
+- The "Card upgrade looks like a no-op" and "Orbs do no damage" bugs in particular are highly visible and would burn tester feedback budget on already-fixed problems.
+- We'd be optimising for "minimum builds shipped" at the cost of "minimum test value extracted from each tester".
+
+If we DO ship v15 (the choice we made):
+- Mid-window AAB upload does NOT reset the 14-day clock as long as v15 doesn't surface fresh blockers in its own soak. Earliest production-access stays 2026-06-09.
+- Testers run a clean build with the 3 obvious bugs gone. Feedback is more useful.
+- v15 introduces no new feature surface, only fixes — so soak-test risk is bounded.
+
+### What's bundled in v15 vs v14
+
+| # | Fix | PR | Test delta | Type |
+|---|---|---|---|---|
+| #53 | Card upgrade descriptions reflect level | PR #56 | +31 (CardTypeTest) | Display-only |
+| #55 | Background lab research credits COMPLETE_RESEARCH mission | PR #57 | +2 (HomeViewModelTest) | HomeViewModel.init regression from R3-03 |
+| #54 | Orbs damage enemies via radial oscillation | PR #58 | +6 (OrbEntityTest, NEW) | Geometry bug since Plan 10b |
+
+Total test delta: 656 → 695 (+39 across all 3 PRs). All 695 tests pass on `main` post-merge.
+
+### Doc-sync (this commit)
+
+- `app/build.gradle.kts` — single `versionCode = 14` → `versionCode = 15` line.
+- `AGENTS.md` — version line extended with the v15 entry at the end of the historical sequence; Plan 31 status block refreshed to mention the v15 build is ready for closed-track upload.
+- `CHANGELOG.md` — new "versionCode 14 → 15 + AAB v15 build" section at top of [Unreleased] above the Fix #54 / #55 / #53 sections from earlier today.
+- `STATE.md` — current objective rotated; previous objectives (#54, #55, #53) demoted; new "Next: user uploads to Play Console closed track + on-device smoke test" callout.
+- `RUN_LOG.md` — this entry.
+
+### What's NOT in this commit
+
+- The AAB itself is a build artifact, not committed (release builds at `app/build/outputs/bundle/release/` are gitignored).
+- No upload happens automatically; user uploads via Play Console UI.
+
+### Smoke-test checklist for v15 (post-upload, on real device)
+
+1. **Card upgrade displays scaled description** — equip any card (e.g. IRON_SKIN), open Cards screen, observe Lv 1 description ("+10% Defense Absolute"). Open a card pack, accumulate enough copies to upgrade, tap Upgrade. The displayed description should now show a higher value (e.g. "+15% Defense Absolute" at Lv 2). Pre-v15: text stays at Lv 1 forever.
+2. **Background lab research credits the daily mission** — start a lab research project (any wired ResearchType, e.g. DAMAGE_RESEARCH at level 0), close the app, wait for the timer to elapse, reopen the app, navigate to Missions. The COMPLETE_RESEARCH daily mission should show progress=1 / completed. Pre-v15: progress=0.
+3. **Orbs visually pulse inward and damage enemies** — buy ORBS Workshop upgrade (any level 1–6), start a battle, watch orbs orbit. They should visibly pulse inward toward the ziggurat top every ~2.5 seconds. When the inward sweep aligns with parked enemies, those enemies' HP bars should drop. Pre-v15: orbs orbit at fixed wide radius and never touch enemies.
+
+### What remains
+
+- **(External, immediate)** User uploads `app/build/outputs/bundle/release/app-release.aab` to Play Console → Closed testing → Create new release.
+- **(External, post-upload)** On-device smoke test using the 3-item checklist above.
+- **(External, ongoing)** Recruit ≥12 testers, distribute closed-track opt-in URL, wait ≥14 calendar days from 2026-05-26 (earliest production-access application: 2026-06-09).
+- **(Internal, post-launch)** Plan V1X Wave 1 (V1X-01 in-app data deletion + V1X-02 Season Pass UI + V1X-03 per-screen nav icons, ~2 days) is the first scheduled implementation work post-v1.0.0 production rollout.
+
+---
+
 ## 2026-05-27 — Fix #54: Orbs do no damage — radial oscillation through enemy kill zone
 
 - **Goal:** fix [GitHub issue #54](https://github.com/JonWhiteFang/steps-of-babylon/issues/54). The ORBS Workshop upgrade has been dead content since Plan 10b shipped — orbs orbited at a fixed radius `stats.range * 0.4f` ≈ 120 px while enemies stopped at meleeRange = 40 px from the same origin, so the min orb-to-enemy distance (80 px) was 3.2× larger than HIT_RANGE (25 px). Orbs literally couldn't reach stopped enemies. Surfaced during v14 closed-track soak.
