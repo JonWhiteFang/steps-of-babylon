@@ -4,6 +4,27 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix #53: Card upgrades not showing increased power (2026-05-27)
+
+Fixes [GitHub issue #53](https://github.com/JonWhiteFang/steps-of-babylon/issues/53). Cards Screen rendered the same `+10% Defense Absolute` text for IRON_SKIN regardless of the player's actual card level, so a player upgrading from Lv1 to Lv2 saw no visual change even though the underlying gameplay effect (`ApplyCardEffects` → `CardType.effectAtLevel(level)`) correctly scaled. Bug existed since R4-08 (Cards copy-based 7-level progression, 2026-05-24).
+
+**Bug shape (display-only).** `CardsScreen.kt:99` rendered `card.type.effectLv1` — the hardcoded Lv1 description string baked into the `CardType` enum. `CardsUiState.effectDescription` propagated the same constant via `CardsViewModel.kt:55`. Both UiState and Screen bypassed any level-awareness. Actual gameplay path via `ApplyCardEffects.kt:21` correctly used `card.type.effectAtLevel(card.level)` which interpolates between `valueLv1` and `valueLv7` over levels 1–7, so the stat *was* scaling as designed — players could not see it.
+
+**Fix.** Added `CardType.effectDescriptionAtLevel(level): String` as the single source of truth for the level-aware user-facing description. The method derives its numbers from the same `effectAtLevel(level)` / `secondaryAtLevel(level)` formulas used by `ApplyCardEffects`, so display and gameplay can never drift. Format conventions:
+
+- Primary value: integer truncation via `.toInt()` to match the existing Lv1 / Lv7 strings (`+10%`, `+42%`, `+2`, …). Actual gameplay uses the un-truncated `Double`; display intentionally drops fractional parts so 87.5 % reads as "+87 %".
+- Secondary value (WALKING_FORTRESS / GLASS_CANNON debuffs): same `.toInt()` shape; the negative sign is part of the template since `secondaryAtLevel` always returns a positive magnitude.
+- STEP_SURGE multiplier: one decimal place via a new `formatMultiplier` helper, with a trailing `.0` stripped so Lv1 reads "Earn 2x Gems this round" (matches `effectLv1` verbatim) while Lv4 reads "Earn 3.5x Gems this round". Pinned to `Locale.ROOT` so the decimal separator stays as `.` regardless of device locale (matches the `DescribeUpgradeEffect` convention from RO-11 #C).
+
+`CardsViewModel.kt:55` `effectDescription = card.type.effectLv1` → `effectDescription = card.type.effectDescriptionAtLevel(card.level)`. `CardsScreen.kt:99` `Text(card.type.effectLv1, …)` → `Text(card.effectDescription, …)` (the screen now reads the UiState field instead of bypassing it).
+
+31 new tests in `app/src/test/java/com/whitefang/stepsofbabylon/domain/model/CardTypeTest.kt`:
+
+- 3 named tests per card × 9 cards = 27. For each card: Lv1 description matches `effectLv1` verbatim (no-regression contract — players who haven't upgraded see unchanged text); Lv4 shows the interpolated mid-curve value (catches stuck-on-Lv1 / jumps-to-Lv7 regressions); Lv7 description matches `effectLv7` verbatim (curve must hit the documented cap exactly).
+- 4 cross-card invariants: `9 entries exist`; `every card produces a non-empty description at every level 1 to maxLevel` (catches future `when`-branch omissions); `Lv1 and Lv7 descriptions are different for every card` (direct regression guard for #53 — would have failed on `main` pre-fix); `Lv4 description is different from both Lv1 and Lv7 for cards with continuous progression` (excludes CHAIN_REACTION whose integer truncation is intentional).
+
+Test count: 656 → 687 (+31). `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh assembleDebug` both BUILD SUCCESSFUL. Pure display fix — no schema change, no DI change, no public API change beyond the additive method on `CardType`.
+
 ### Doc sweep — sync current-state docs to schema v11 + 656 tests + Plan R4 complete + AAB v14 PASSED (2026-05-26 ~08:20 BST)
 
 Full current-state doc sweep per the agent protocol's PR Task-List Convention. Drift accumulated since the v14 upload + smoke test pass + Plan V1X authoring: schema version (v9 / v10 stale references in 6 places), test count (646 / 649 stale references in 2 places), Plan R4 status (still marked in progress in AGENTS.md status checklist), Plan 31 narrative (still referenced "ship Plan R4 next" instead of v14 PASSED + closed-track soak), Plan V1X (not yet listed in AGENTS.md status checklist), STATE.md `Next actions` block (still listed R4-06/R4-07/R4-08 implementation steps).

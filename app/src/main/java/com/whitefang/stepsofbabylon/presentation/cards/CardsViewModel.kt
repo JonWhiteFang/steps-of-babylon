@@ -58,7 +58,7 @@ class CardsViewModel @Inject constructor(
                     copyCount = card.copyCount,
                     copiesNeeded = copiesNeeded,
                     canAffordUpgrade = !isMax && card.copyCount >= copiesNeeded,
-                    effectDescription = card.type.effectLv1,
+                    effectDescription = card.type.effectDescriptionAtLevel(card.level),
                 )
             },
             equippedCount = equipped,

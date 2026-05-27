@@ -1,3 +1,57 @@
+## 2026-05-27 — Fix #53: Card upgrade descriptions not reflecting level
+
+- **Goal:** fix [GitHub issue #53](https://github.com/JonWhiteFang/steps-of-babylon/issues/53). Cards Screen rendered the same `+10% Defense Absolute` text for IRON_SKIN regardless of the player's actual card level. Player upgrades a card from Lv1 to Lv2 → no visual change in description, even though the underlying gameplay effect (`ApplyCardEffects` → `CardType.effectAtLevel(level)`) correctly scaled. Bug present since R4-08 shipped 2026-05-24.
+- **Outcome:** done in a single session on branch `fix/53-card-upgrade-display`. Pure display fix — no schema change, no DI change, no public API change beyond the additive method on `CardType`. Test count 656 → 687 (+31).
+
+### Diagnosis (already posted on the issue 21:28 BST)
+
+`presentation/cards/CardsScreen.kt:99` rendered `card.type.effectLv1` — the hardcoded Lv1 description string baked into the `CardType` enum. `CardsUiState.effectDescription` propagated the same constant via `CardsViewModel.kt:55`. Both UiState and Screen bypassed any level-awareness. Actual gameplay path via `ApplyCardEffects.kt:21` correctly used `card.type.effectAtLevel(card.level)` which interpolates between `valueLv1` and `valueLv7` over levels 1–7, so the stat *was* scaling as designed — players could not see it.
+
+### Strategy
+
+Add `CardType.effectDescriptionAtLevel(level): String` as the single source of truth for the level-aware user-facing description. The method derives its numbers from the same `effectAtLevel(level)` / `secondaryAtLevel(level)` formulas used by `ApplyCardEffects`, so display and gameplay can never drift. Format conventions:
+
+- Primary value: integer truncation via `.toInt()` to match the existing Lv1 / Lv7 strings (`+10%`, `+42%`, `+2`, …). Actual gameplay uses the un-truncated `Double`; display intentionally drops fractional parts so 87.5 % reads as "+87 %".
+- Secondary value (WALKING_FORTRESS / GLASS_CANNON debuffs): same `.toInt()` shape; the negative sign is part of the template since `secondaryAtLevel` always returns a positive magnitude.
+- STEP_SURGE multiplier: one decimal place via a new private `formatMultiplier` helper, with a trailing `.0` stripped so Lv1 reads "Earn 2x Gems this round" (matches `effectLv1` verbatim) while Lv4 reads "Earn 3.5x Gems this round". Pinned to `Locale.ROOT` so the decimal separator stays as `.` regardless of device locale (matches the `DescribeUpgradeEffect` convention from RO-11 #C).
+
+Then wire it through both broken sites:
+
+- `CardsViewModel.kt:55`: `effectDescription = card.type.effectLv1` → `card.type.effectDescriptionAtLevel(card.level)`
+- `CardsScreen.kt:99`: `Text(card.type.effectLv1, …)` → `Text(card.effectDescription, …)` (the screen now reads the UiState field instead of bypassing it)
+
+### Tests (+31)
+
+New `app/src/test/java/com/whitefang/stepsofbabylon/domain/model/CardTypeTest.kt` (264 lines) covering `effectDescriptionAtLevel`:
+
+- 3 named tests per card × 9 cards = 27. For each card: `Lv1 description matches effectLv1` verbatim (no-regression contract — players who haven't upgraded see unchanged text); `Lv4 shows interpolated value` (catches stuck-on-Lv1 / jumps-to-Lv7 regressions); `Lv7 description matches effectLv7` verbatim (curve must hit the documented cap exactly, not 1% off because of `.toInt()` rounding drift). Math for each card walked through in code comments showing the linear-interpolation arithmetic.
+- 4 cross-card invariants: `9 entries exist` (catches a future enum addition slipping through); `every card produces a non-empty description at every level 1 to maxLevel` (smoke test — catches a missed `when` branch); `Lv1 and Lv7 descriptions are different for every card` (direct regression guard for #53 — would have failed on `main` pre-fix); `Lv4 description is different from both Lv1 and Lv7 for cards with continuous progression` (excludes CHAIN_REACTION whose integer truncation is intentional).
+
+### Verification
+
+- `./run-gradle.sh testDebugUnitTest` — BUILD SUCCESSFUL in 2s. Aggregated XML count: **687 tests, 0 failures, 0 errors, 0 skipped** (656 baseline → 687 with +31 new in CardTypeTest).
+- `./run-gradle.sh assembleDebug` — BUILD SUCCESSFUL in 18s. CardsScreen + CardsViewModel compile cleanly with the new field reference; no Kotlin warnings from this change.
+- Pre-existing Kotlin KT-73255 forward-compat warnings on 4 files (`@ApplicationContext` param-vs-field annotation target on RealConsentManager / RealRewardedAdAdapter / BillingManagerImpl / RealBillingClientAdapter) carry through unchanged — not addressed in this PR.
+
+### Doc-sync (per agent protocol PR Task-List Convention)
+
+- `AGENTS.md` — test count 656 → 687.
+- `README.md` — Status block test count + Build & Run command comment both 656 → 687.
+- `.kiro/steering/source-files.md` — `domain/model/CardType.kt` entry expanded to mention `effectDescriptionAtLevel(level)` + #53 fix narrative + lockstep-with-gameplay-math invariant; new `domain/model/CardTypeTest.kt` row added under the test-section domain/model list with 31-test summary including the Lv1≠Lv7 regression-guard contract.
+- `CHANGELOG.md` — new "Fix #53: Card upgrades not showing increased power" section at top of [Unreleased] with full bug shape + fix description + test table + format-convention notes.
+- `STATE.md` — current objective rotated to the #53 fix; previous AAB-v14-PASSED objective demoted to "Previous"; What-works test-count line 656 → 687 with #53 attribution.
+- `RUN_LOG.md` — this entry.
+
+**Deliberately not touched** (historical artifacts per protocol): prior CHANGELOG sections, prior RUN_LOG entries, plan docs, ADRs, devdocs/archaeology snapshots.
+
+### What remains
+
+- Push branch + open PR `Fixes #53`. Review + merge to `main`.
+- After merge: bundle into a v15 hotfix AAB once #54 (Orbs) and #55 (Lab mission credit) also have fixes ready, OR ship #53 standalone if the soak window can't wait.
+- Closed-track soak window resumes from v14 effective 2026-05-26; if v15 ships before 2026-06-09, the production-access application date stays the same as long as v15 doesn't surface fresh blockers.
+
+---
+
 ## 2026-05-26 — Doc sweep — sync current-state docs to schema v11 + 656 tests + Plan R4 complete + AAB v14 PASSED
 
 - **Goal:** Full current-state doc sweep per agent protocol PR Task-List Convention. Audit all 7 standard-sweep docs (AGENTS.md, README.md, CHANGELOG.md, source-files.md, structure.md, tech.md, lib-room.md) plus database-schema.md, architecture.md, STATE.md for drift accumulated since v14 upload + smoke test pass + Plan V1X authoring (post-2026-05-26 ~05:35 BST).
