@@ -154,7 +154,7 @@ domain/model/UltimateWeaponType.kt    # 6 UW types with per-path L1/L10 spec + v
 domain/model/UltimateWeaponLoadout.kt # UW loadout (max 3)
 domain/model/ResearchType.kt          # 10 lab research types; +`val isComingSoon: Boolean = false` constructor field (RO-11 #B.2); AUTO_UPGRADE_AI + ENEMY_INTEL flagged true with description "Reserved for v1.x — research progress preserved"; the other 8 wired end-to-end (DAMAGE / HEALTH / CRITICAL / REGEN / CASH / STEP_EFFICIENCY / UW_COOLDOWN as outer multipliers via ResolveStats + GameEngine + DailyStepManager; WAVE_SKIP via WaveSpawner.startWave)
 domain/model/CardRarity.kt            # Common, Rare, Epic
-domain/model/CardType.kt              # 9 card types with effects
+domain/model/CardType.kt              # 9 card types with effects + effectAtLevel/secondaryAtLevel/effectDescriptionAtLevel(level) — the description method (#53 fix) is the single source of truth for the live, level-aware UI string and stays in lockstep with the gameplay math by deriving its numbers from the same effectAtLevel formula
 domain/model/CardLoadout.kt           # Card loadout (max 3)
 domain/model/RoundState.kt            # Transient battle state
 domain/model/ZigguratBaseStats.kt     # Base stat constants (HP, damage, attack speed, range, regen, projectile speed)
@@ -388,6 +388,7 @@ domain/model/DailyMissionTypeTest.kt              # 6 mission types: targets, re
 domain/model/TierConfigTest.kt                    # All 10 tiers, battle conditions, invalid tier
 domain/model/BiomeTest.kt                         # All tier→biome mappings
 domain/model/CardLoadoutTest.kt                   # Max 3, no duplicates, add/remove
+domain/model/CardTypeTest.kt                      # 31 #53-regression tests covering effectDescriptionAtLevel: 3 named tests per card (Lv1 matches effectLv1 / Lv4 visibly different / Lv7 matches effectLv7) for all 9 cards + 4 cross-card invariants (entry count, no-blank smoke, Lv1≠Lv7 regression guard, Lv4 differs from both ends for the 8 continuous-progression cards). Lv1≠Lv7 invariant directly fails on `main` pre-fix where every level rendered effectLv1 verbatim.
 domain/model/UltimateWeaponLoadoutTest.kt         # Max 3, no duplicates, add/remove
 domain/model/UpgradeTypeTest.kt                   # 23 entries, category counts, valid configs
 domain/model/EnemyTypeTest.kt                     # 6 entries, multiplier correctness

@@ -1,5 +1,7 @@
 package com.whitefang.stepsofbabylon.domain.model
 
+import java.util.Locale
+
 enum class CardType(
     val rarity: CardRarity,
     val effectLv1: String,
@@ -28,4 +30,57 @@ enum class CardType(
 
     fun secondaryAtLevel(level: Int): Double =
         secondaryLv1 + (secondaryLv7 - secondaryLv1) * (level - 1) / 6.0
+
+    /**
+     * Returns the live effect description for this card at the given [level].
+     *
+     * Closes #53 — pre-fix the UI rendered the hardcoded [effectLv1] string regardless of
+     * `OwnedCard.level`, so a player who upgraded a card from Lv1 to Lv2 saw the same
+     * "+10% Defense Absolute" text even though `ApplyCardEffects` correctly applied the
+     * scaled value. The actual gameplay path (`effectAtLevel(level)` /
+     * `secondaryAtLevel(level)`) is unchanged; this method is the single source of truth
+     * for the user-facing description and stays in lockstep with the gameplay math by
+     * deriving its numbers from the same formulas.
+     *
+     * Format conventions:
+     * - Primary value: integer truncation via `.toInt()` to match the existing Lv1 / Lv7
+     *   strings (`+10%`, `+42%`, `+2`, …). The actual gameplay uses the un-truncated
+     *   double — display intentionally drops fractional parts so 87.5% reads as "+87%".
+     * - Secondary value (WALKING_FORTRESS / GLASS_CANNON debuffs): same `.toInt()` shape;
+     *   the negative sign is part of the template since `secondaryAtLevel` always returns
+     *   a positive magnitude.
+     * - STEP_SURGE multiplier: one decimal place via [formatMultiplier], with a trailing
+     *   `.0` stripped so Lv1 reads "Earn 2x Gems this round" (matches [effectLv1]) while
+     *   Lv4 reads "Earn 3.5x Gems this round". Pinned to [Locale.ROOT] so the decimal
+     *   separator stays as `.` regardless of device locale (matches the
+     *   `DescribeUpgradeEffect` convention from RO-11 #C).
+     */
+    fun effectDescriptionAtLevel(level: Int): String {
+        val v = effectAtLevel(level).toInt()
+        val sv = secondaryAtLevel(level).toInt()
+        return when (this) {
+            IRON_SKIN -> "+$v% Defense Absolute"
+            SHARP_SHOOTER -> "+$v% Critical Chance"
+            CASH_GRAB -> "+$v% Cash from kills"
+            VAMPIRIC_TOUCH -> "+$v% Lifesteal"
+            CHAIN_REACTION -> "+$v Bounce Shot targets"
+            SECOND_WIND -> "Revive once at $v% HP"
+            WALKING_FORTRESS -> "+$v% Health, -$sv% Attack Speed"
+            GLASS_CANNON -> "+$v% Damage, -$sv% Health"
+            STEP_SURGE -> "Earn ${formatMultiplier(effectAtLevel(level))}x Gems this round"
+        }
+    }
+
+    private companion object {
+        /**
+         * Formats a multiplier with a single decimal place, stripping a trailing `.0` so
+         * integer values render as "2" instead of "2.0". Used by STEP_SURGE so its
+         * description matches [effectLv1] / [effectLv7] verbatim at the endpoints while
+         * still showing fractional progress mid-curve (e.g. Lv4 → 3.5).
+         */
+        fun formatMultiplier(value: Double): String {
+            val s = String.format(Locale.ROOT, "%.1f", value)
+            return if (s.endsWith(".0")) s.dropLast(2) else s
+        }
+    }
 }

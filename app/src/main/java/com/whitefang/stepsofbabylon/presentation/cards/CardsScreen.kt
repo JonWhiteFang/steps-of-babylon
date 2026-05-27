@@ -127,7 +127,7 @@ private fun CardItem(
                     Text(" • ${card.type.rarity.name}", style = MaterialTheme.typography.labelSmall, color = rarityColor(card.type.rarity))
                 }
             }
-            Text(card.type.effectLv1, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(card.effectDescription, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (card.isEquipped) {
