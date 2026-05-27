@@ -4,6 +4,42 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix #54: Orbs do no damage — radial oscillation through enemy kill zone (2026-05-27)
+
+Fixes [GitHub issue #54](https://github.com/JonWhiteFang/steps-of-babylon/issues/54). The ORBS Workshop upgrade has been dead content since Plan 10b shipped — orbs orbited at a fixed radius `stats.range * 0.4f` ≈ 120 px while enemies stopped at meleeRange = 40 px from the same origin, so the minimum orb-to-enemy distance (80 px) was 3.2× larger than HIT_RANGE (25 px). Orbs literally couldn't reach stopped enemies; they only occasionally clipped enemies during the brief approach window. Surfaced during v14 closed-track soak.
+
+**Bug shape (geometry mismatch since 2024).** Both circles share the same centre (`zig.originX, zig.originY`) — orbs are constructed with `zigX = zig.originX, zigY = zig.originY` and enemies target `targetX = zig.originX, targetY = zig.originY` per `WaveSpawner` lines 11–12. So an enemy parked at melee range sits at radius 40 px; an orb sat at radius 120 px on the same circle. When orb angle == enemy angle, distance = `120 - 40 = 80 px` — 3.2× larger than `HIT_RANGE = 25`. The damage wiring (`OrbEntity.update → onOrbHitEnemy → enemy.takeDamage`) was correct; the geometry was wrong. **Zero unit tests covered the orb damage path before this fix.**
+
+**Fix — radial oscillation.** Replace the fixed orbit radius with a sinusoidal oscillation between `ORBIT_RADIUS_MIN = 25` (orb just inside meleeRange, 15 px from enemy → hit) and `ORBIT_RADIUS_MAX = 70` (orb cleanly outside, 30 px from enemy → no hit). One full cycle takes `ORBIT_PERIOD_SEC = 2.5 s`. All 6 max-level orbs share the same radial phase by default so the swarm pulses inward together — a visible "breathing" defensive rhythm rather than a constantly-grinding kill ring. Per-enemy `HIT_COOLDOWN = 0.5 s` still gates double-hits within a single inward sweep.
+
+The math:
+
+| Phase | sin(phase) | Radius | Distance to enemy at melee | Hit? |
+|---|---|---|---|---|
+| `-π/2` (inner) | -1 | 25 | 15 | ✓ (well within HIT_RANGE) |
+| `0` (mid) | 0 | 47.5 | 7.5 | ✓ |
+| `+π/2` (outer) | +1 | 70 | 30 | ✗ (outside HIT_RANGE) |
+
+Result: orbs deal damage during the inward half of the cycle (~1.25 s), rest during the outward half. With 6 orbs synced and each enemy hit at most once per HIT_COOLDOWN per orb, expected DPS is ~12 dmg/s per enemy at base damage 10 — about half the throughput of a fixed-radius orbit but with much more visual character.
+
+**Files changed:**
+
+- `presentation/battle/entities/OrbEntity.kt` — fully rewritten. Dropped the `orbitRadius` constructor param. Added 3 companion constants (`ORBIT_RADIUS_MIN`, `ORBIT_RADIUS_MAX`, `ORBIT_PERIOD_SEC`), a derived `RADIAL_ANGULAR_SPEED` (`2π / period`), and `MID` / `AMPLITUDE` constants. New `initialRadialPhase: Float = 0f` constructor param. New `@VisibleForTesting internal var radialPhase` (private set) advances by `RADIAL_ANGULAR_SPEED * deltaTime` each `update()` call. New `@VisibleForTesting internal val currentOrbitRadius` getter computes `MID + AMPLITUDE * sin(radialPhase)`. The proximity check inside `update()` uses `currentOrbitRadius` instead of the dropped `orbitRadius` constructor field.
+- `presentation/battle/engine/GameEngine.kt` — `spawnOrbs()` no longer computes `radius = stats.range * 0.4f`. The single call site to `OrbEntity(...)` drops the `orbitRadius = radius` arg. 1-line deletion + 1 inline comment explaining the #54 fix.
+
+6 new tests in `app/src/test/java/com/whitefang/stepsofbabylon/presentation/battle/entities/OrbEntityTest.kt` (Robolectric + JUnit 4, mirroring DailyStepDaoTest / GameSurfaceViewTest):
+
+- `R54 orb at inner sweep hits enemy at melee range from origin` — positive path. Phase = -π/2, R=25, enemy at (40, 0), distance 15 → hit expected.
+- `R54 orb at outer sweep does NOT hit enemy at melee range` — negative path. Phase = +π/2, R=70, enemy at (40, 0), distance 30 → no hit.
+- `R54 per-enemy HIT_COOLDOWN prevents double-hits within one cooldown window` — gating behaviour. First update lands the hit, second update 0.1s later (well below 0.5s cooldown) does NOT.
+- `R54 orb does not hit dead enemy at melee range` — defensive guard for the `!enemy.isAlive` skip in the proximity loop.
+- `R54 damage value is forwarded verbatim from constructor to onHitEnemy callback` — tests damage = 42.5 (arbitrary non-default) reaches the callback unchanged.
+- `R54 radial oscillation traverses full MIN to MAX cycle over ORBIT_PERIOD_SEC` — samples the radius at 4 phase angles (0, π/2, π, 3π/2) and asserts the values match MID, MAX, MID, MIN. Catches any future regression where the oscillation gets collapsed to a constant radius.
+
+Test count: 689 → 695 (+6). `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh assembleDebug` both BUILD SUCCESSFUL. Pure geometry fix — no schema change, no DI graph change, no public API change.
+
+**This closes the v14 closed-track soak board.** All 3 real-bug issues filed during v14 soak are now fixed: #53 (card upgrade descriptions, merged via PR #56), #55 (lab mission credit, merged via PR #57), #54 (this PR). The 30 already-triaged backlog issues (#21–#51) remain folded into Plan V1X.
+
 ### Fix #55: Lab research completion when app closed does not credit COMPLETE_RESEARCH daily mission (2026-05-27)
 
 Fixes [GitHub issue #55](https://github.com/JonWhiteFang/steps-of-babylon/issues/55). When research finished while the app was closed (timer elapsed in the background), the auto-completion path on next launch correctly incremented the research level but never advanced the daily COMPLETE_RESEARCH mission counter. Player observed: research level went up, daily Gem reward stayed locked.

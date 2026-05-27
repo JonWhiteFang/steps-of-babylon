@@ -1,3 +1,69 @@
+## 2026-05-27 — Fix #54: Orbs do no damage — radial oscillation through enemy kill zone
+
+- **Goal:** fix [GitHub issue #54](https://github.com/JonWhiteFang/steps-of-babylon/issues/54). The ORBS Workshop upgrade has been dead content since Plan 10b shipped — orbs orbited at a fixed radius `stats.range * 0.4f` ≈ 120 px while enemies stopped at meleeRange = 40 px from the same origin, so the min orb-to-enemy distance (80 px) was 3.2× larger than HIT_RANGE (25 px). Orbs literally couldn't reach stopped enemies. Surfaced during v14 closed-track soak.
+- **Outcome:** done in a single session on branch `fix/54-orb-radial-oscillation`. Pure geometry fix — no schema change, no DI graph change, no public API change. Test count 689 → 695 (+6). **Closes the v14 soak board** — all 3 real-bug issues filed during v14 soak are now fixed (#53 + #55 merged; #54 PR pending review).
+
+### Design decision: Option C (radial oscillation), user-selected over A (fixed 50 px) and B (fixed 60 px)
+
+Earlier I posted three fix options on the issue + offered them to the user. They picked C explicitly: "I like C". The reasoning behind the option matrix:
+
+- **Option A (fixed 50 px):** simplest 1-line change. Orbs constantly graze stopped enemies. With 6 orbs (max), each enemy is hit ~12 ×/sec at 5 dmg = 60 dmg/s per enemy. Strong; about 25 % of projectile DPS at endgame builds.
+- **Option B (fixed 60 px):** slightly weaker fixed orbit. ~30–40 dmg/s per enemy at max orbs. Closer to the implied intent of "orbs are a defensive secondary".
+- **Option C (radial oscillation 25 → 70 px over 2.5 s):** ~10 lines added. Orbs sweep inward and outward through the kill zone; hits are intermittent (about 50 % uptime per cycle). About half the throughput of A but with much more visual character — the swarm "breathes" inward together rather than grinding constantly.
+
+User chose C for the visual interest. ~12 dmg/s per enemy at max-orb endgame, roughly halfway between A and a no-op.
+
+### Locked parameters
+
+- **`ORBIT_RADIUS_MIN = 25 px`** — inner extreme. Distance to stopped enemy at meleeRange (40 px) = 15 px ≪ HIT_RANGE 25 → guaranteed hit at same angle.
+- **`ORBIT_RADIUS_MAX = 70 px`** — outer extreme. Distance = 30 px > HIT_RANGE → no hit possible from any angle.
+- **`ORBIT_PERIOD_SEC = 2.5 s`** — full cycle. Slow enough to read as a deliberate "breathing" pulse rather than a fast wobble.
+- **All 6 orbs share the same radial phase by default** so the swarm pulses inward together. Constructor param `initialRadialPhase: Float = 0f` lets tests override per-orb.
+
+### Files changed
+
+**Production (2):**
+
+- `presentation/battle/entities/OrbEntity.kt` — fully rewritten (132 lines, +51 net). Dropped the `orbitRadius` constructor param entirely. Added companion constants `ORBIT_RADIUS_MIN`, `ORBIT_RADIUS_MAX`, `ORBIT_PERIOD_SEC` (all `@VisibleForTesting internal const val` so tests can read them by name) plus private derived `MID_ORBIT_RADIUS`, `AMPLITUDE_ORBIT_RADIUS`, `RADIAL_ANGULAR_SPEED` (the last is a `private val` not `const val` because it computes from `kotlin.math.PI`). New `initialRadialPhase: Float = 0f` constructor param. New `@VisibleForTesting internal var radialPhase` (private set) advances by `RADIAL_ANGULAR_SPEED × deltaTime` each `update()` call. New `@VisibleForTesting internal val currentOrbitRadius` getter computes `MID + AMPLITUDE × sin(radialPhase)`. The proximity check inside `update()` uses `currentOrbitRadius` instead of the dropped `orbitRadius` constructor field. KDoc explains the pre-fix bug and the post-fix oscillation.
+- `presentation/battle/engine/GameEngine.kt` — `spawnOrbs()` no longer computes `radius = stats.range * 0.4f`. The single call site to `OrbEntity(...)` drops the `orbitRadius = radius` arg. 1-line deletion + 1 inline 4-line comment explaining #54.
+
+**Test (1 new):**
+
+- `presentation/battle/entities/OrbEntityTest.kt` — Robolectric + JUnit 4, 221 lines, 6 tests. Robolectric required because `OrbEntity` initialises an `android.graphics.Paint` field at construction; `EnemyEntity` (used as the target enemy in 5 of 6 tests) does the same. Mirrors the DailyStepDaoTest / GameSurfaceViewTest pattern. Test list:
+  1. `R54 orb at inner sweep hits enemy at melee range from origin` — positive path. `initialRadialPhase = -π/2` puts orb at R = MIN = 25 px; enemy at (40, 0); distance 15 → hit asserted.
+  2. `R54 orb at outer sweep does NOT hit enemy at melee range` — negative path. `initialRadialPhase = +π/2` puts orb at R = MAX = 70 px; enemy at (40, 0); distance 30 → no hit asserted.
+  3. `R54 per-enemy HIT_COOLDOWN prevents double-hits within one cooldown window` — gating behaviour. First update lands the hit; second update at dt=0.1s (below HIT_COOLDOWN=0.5s) does NOT.
+  4. `R54 orb does not hit dead enemy at melee range` — defensive guard for the `!enemy.isAlive` skip.
+  5. `R54 damage value is forwarded verbatim from constructor to onHitEnemy callback` — uses arbitrary damage=42.5.
+  6. `R54 radial oscillation traverses full MIN to MAX cycle over ORBIT_PERIOD_SEC` — samples currentOrbitRadius at 4 phase angles (0, π/2, π, 3π/2), asserts values match MID, MAX, MID, MIN within 0.5 px tolerance.
+
+A private helper `stationaryEnemyAt(x, y, alive=true)` builds an enemy with `speed=0, onMeleeHit=null` so the enemy doesn't move or fire callbacks during the test. The `angularSpeed = 0f` arg on the orb freezes angular motion for deterministic geometry; the radial phase still advances normally on `update(dt)`.
+
+### Verification
+
+- `./run-gradle.sh testDebugUnitTest` — BUILD SUCCESSFUL in 26s. **695 tests, 0 failures, 0 errors** (689 baseline → 695 with +6 new). All 6 OrbEntityTest cases pass on first run, complete in 0.099 s.
+- `./run-gradle.sh assembleDebug` — BUILD SUCCESSFUL in 2 s. OrbEntity rewrite + GameEngine.spawnOrbs delta both compile cleanly.
+
+### Doc-sync (per agent protocol PR Task-List Convention)
+
+- `AGENTS.md` — test count 689 → 695.
+- `README.md` — Status block test count + Build & Run command comment both 689 → 695.
+- `.kiro/steering/source-files.md` — `OrbEntity.kt` entry expanded with the #54 fix narrative including the constants, the dropped constructor param, and the new VisibleForTesting fields. New `OrbEntityTest.kt` row inserted under the test section with all 6 test names.
+- `CHANGELOG.md` — new "Fix #54" section at top of [Unreleased] above the #55 section.
+- `STATE.md` — current objective rotated; previous objectives (#55 + #53) demoted; What-works test-count line 689 → 695 with note that this closes the v14 soak board.
+- `RUN_LOG.md` — this entry.
+
+**Deliberately not touched** (historical artifacts per protocol): prior CHANGELOG sections, prior RUN_LOG entries, plan docs, ADRs, devdocs.
+
+### What remains
+
+- Push branch + open PR `Closes #54`. Review + merge to `main`.
+- After merge, **the v14 closed-track soak board has zero real-bug issues open**. Bundle #53 + #54 + #55 into a v15 hotfix AAB (versionCode 14 → 15, `bundleRelease`, sign, upload to closed track) — recommend doing this now rather than waiting, so when testers are recruited they get the fixed build.
+- Re-evaluate the timing question: closed-track ≥14-day window resumes from v14 effective 2026-05-26; uploading v15 mid-window does NOT reset the clock as long as v15 doesn't surface fresh blockers. Earliest production-access application stays 2026-06-09.
+- 30 already-triaged backlog issues (#21–#51) remain folded into Plan V1X. None are closed-test blockers.
+
+---
+
 ## 2026-05-27 — Fix #55: Lab research completion when app closed does not credit lab research mission
 
 - **Goal:** fix [GitHub issue #55](https://github.com/JonWhiteFang/steps-of-babylon/issues/55). When research finished while the app was closed (timer elapsed in the background), the auto-completion path on next launch correctly incremented the research level but never advanced the daily COMPLETE_RESEARCH mission counter. Regression introduced by R3-03.
