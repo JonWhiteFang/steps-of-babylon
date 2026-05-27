@@ -4,6 +4,37 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix #55: Lab research completion when app closed does not credit COMPLETE_RESEARCH daily mission (2026-05-27)
+
+Fixes [GitHub issue #55](https://github.com/JonWhiteFang/steps-of-babylon/issues/55). When research finished while the app was closed (timer elapsed in the background), the auto-completion path on next launch correctly incremented the research level but never advanced the daily COMPLETE_RESEARCH mission counter. Player observed: research level went up, daily Gem reward stayed locked.
+
+**Bug shape (regression introduced by R3-03).** R3-03 (PR #7, commit `e628818`) extracted the daily-mission tick into `domain/usecase/UpdateCompleteResearchMissionProgress.kt` and gated the DAO write on `completedCount >= 1`. R3-03 correctly wired the new use case into all 3 `LabsViewModel` call sites (`init` / `rushResearch` / `freeRush`) — but missed the parallel call site in `HomeViewModel.init`, which had been running `CheckResearchCompletion` on every app launch since Plan 06 / Plan 16.
+
+The bad sequence:
+1. Research timer elapses while app is backgrounded.
+2. Player opens app → `HomeViewModel.init` runs → calls `CheckResearchCompletion(labRepository)()` and **discards** the returned `List<ResearchType>` of completed research. Research level increments correctly in the DB. ✓ Mission tick never happens. ✗
+3. Player navigates to Labs → `LabsViewModel.init` runs → `checkCompletion()` finds nothing to complete (already done in step 2) → returns `[]` → `updateMissionProgress(completedCount = 0)` early-returns at the R3-03 count gate. ✗
+
+Mission credit permanently lost for that completion.
+
+**Fix.** Mirror the LabsViewModel R3-03 pattern in `HomeViewModel`. Capture the `List<ResearchType>` returned by `CheckResearchCompletion` and pass `completed.size` to a new `private val updateMissionProgress = UpdateCompleteResearchMissionProgress(dailyMissionDao)` field. `dailyMissionDao` was already injected for the existing `countClaimable` flow consumer, so no Hilt graph change.
+
+```kotlin
+// Pre-fix (HomeViewModel.kt:55)
+CheckResearchCompletion(labRepository)()    // return value discarded
+
+// Post-fix
+val completed = CheckResearchCompletion(labRepository)()
+updateMissionProgress(completedCount = completed.size)
+```
+
+2 new tests in `app/src/test/java/com/whitefang/stepsofbabylon/presentation/home/HomeViewModelTest.kt`:
+
+- `R55 background research completion credits the COMPLETE_RESEARCH daily mission` — positive path. Sets up an expired research project + a fresh mission row, constructs the VM, asserts both that the mission is now ticked (progress=1, completed=true) AND that the research level itself incremented (verifies the `CheckResearchCompletion` half ran end-to-end, not just the mission tick).
+- `R55 no in-flight research means COMPLETE_RESEARCH mission stays at progress 0 (R3-03 regression guard)` — defensive. Sets up a mission row with no active research at all, asserts the mission stays at progress=0. Would fail if any future change to the HomeViewModel call site regressed to passing a hardcoded count instead of the actual `completed.size`.
+
+Test count: 687 → 689 (+2). `./run-gradle.sh testDebugUnitTest` and `./run-gradle.sh assembleDebug` both BUILD SUCCESSFUL. Pure call-site fix — no schema change, no DI graph change, no public API change beyond the additive use-case construction.
+
 ### Fix #53: Card upgrades not showing increased power (2026-05-27)
 
 Fixes [GitHub issue #53](https://github.com/JonWhiteFang/steps-of-babylon/issues/53). Cards Screen rendered the same `+10% Defense Absolute` text for IRON_SKIN regardless of the player's actual card level, so a player upgrading from Lv1 to Lv2 saw no visual change even though the underlying gameplay effect (`ApplyCardEffects` → `CardType.effectAtLevel(level)`) correctly scaled. Bug existed since R4-08 (Cards copy-based 7-level progression, 2026-05-24).

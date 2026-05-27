@@ -1,3 +1,63 @@
+## 2026-05-27 — Fix #55: Lab research completion when app closed does not credit lab research mission
+
+- **Goal:** fix [GitHub issue #55](https://github.com/JonWhiteFang/steps-of-babylon/issues/55). When research finished while the app was closed (timer elapsed in the background), the auto-completion path on next launch correctly incremented the research level but never advanced the daily COMPLETE_RESEARCH mission counter. Regression introduced by R3-03.
+- **Outcome:** done in a single session on branch `fix/55-home-research-mission-tick`. Pure call-site fix — no schema change, no DI graph change, no public API change. Test count 687 → 689 (+2).
+
+### Diagnosis (already posted on the issue 21:28 BST)
+
+R3-03 (PR #7, commit `e628818`) extracted the daily-mission tick into `domain/usecase/UpdateCompleteResearchMissionProgress.kt` and gated the DAO write on `completedCount >= 1`. R3-03 correctly wired the new use case into all 3 `LabsViewModel` call sites — but missed the parallel call site in `HomeViewModel.init` which had been running `CheckResearchCompletion` on every app launch since Plan 06 / Plan 16. `HomeViewModel.kt:55` called `CheckResearchCompletion(labRepository)()` and discarded the returned `List<ResearchType>`, so background-completed research had its level incremented (✓) but the COMPLETE_RESEARCH daily mission counter never moved (✗). By the time the player navigated to Labs, the research was already marked complete in the DB, so `LabsViewModel.init`'s `checkCompletion()` found nothing → `updateMissionProgress(0)` early-returned at the R3-03 count gate.
+
+### Fix
+
+Mirror the LabsViewModel R3-03 pattern in `HomeViewModel`:
+
+- Add `private val updateMissionProgress = UpdateCompleteResearchMissionProgress(dailyMissionDao)` field with KDoc explaining the regression context.
+- In `init`: capture the return value and call the use case with the count.
+
+```kotlin
+// Pre-fix
+CheckResearchCompletion(labRepository)()
+
+// Post-fix
+val completed = CheckResearchCompletion(labRepository)()
+updateMissionProgress(completedCount = completed.size)
+```
+
+`dailyMissionDao` was already injected on the constructor for the existing `dailyMissionDao.countClaimable(date)` flow consumer in `uiState`, so no Hilt graph change. The fix is 7 lines of source code (+ ~14 lines of explanatory KDoc).
+
+### Tests (+2)
+
+Both new tests live in `HomeViewModelTest.kt`. The existing `HomeViewModelTest` pattern (StandardTestDispatcher + `Dispatchers.setMain` + `runTest(dispatcher)` + `backgroundScope.launch { vm.uiState.collect {} }` + `advanceUntilIdle()`) is reused as-is.
+
+- **`R55 background research completion credits the COMPLETE_RESEARCH daily mission`** — positive path. Arranges an expired research project (`completesAt = now - 60_000L`) via `FakeLabRepository.startResearch` plus a fresh COMPLETE_RESEARCH mission row via `FakeDailyMissionDao.insert`. Constructs the VM, advances the dispatcher, asserts both that the mission is now ticked (progress=1, completed=true, claimed=false) AND that the research level itself incremented (verifies the `CheckResearchCompletion` half ran end-to-end, not just the mission tick).
+- **`R55 no in-flight research means COMPLETE_RESEARCH mission stays at progress 0 (R3-03 regression guard)`** — defensive. Arranges a mission row with no active research at all (`labRepo.active.value` stays empty), asserts the mission stays at progress=0, completed=false. Would fail if any future change to the HomeViewModel call site regressed to passing a hardcoded count instead of `completed.size`. Direct guard against re-introducing the R3-03 false trigger via this call site.
+
+3 new imports in the test file: `DailyMissionEntity`, `DailyMissionType`, `ResearchType`. The existing `FakeLabRepository.startResearch` and `FakeDailyMissionDao.insert` cover the fixture setup with no fake-side modifications.
+
+### Verification
+
+- `./run-gradle.sh testDebugUnitTest` — BUILD SUCCESSFUL in 27s. **689 tests, 0 failures, 0 errors** (687 baseline → 689 with +2 new). Both new tests pass on first run; HomeViewModelTest XML shows 7 cases all green in 0.091s.
+- `./run-gradle.sh assembleDebug` — BUILD SUCCESSFUL in 2s. HomeViewModel + import additions compile cleanly.
+
+### Doc-sync (per agent protocol PR Task-List Convention)
+
+- `AGENTS.md` — test count 687 → 689.
+- `README.md` — Status block test count + Build & Run command comment both 687 → 689.
+- `.kiro/steering/source-files.md` — `presentation/home/HomeViewModel.kt` entry expanded to mention the #55 fix narrative + the new `updateMissionProgress` field + the no-Hilt-graph-change note; `presentation/home/HomeViewModelTest.kt` entry expanded with the 2 new test names + their roles.
+- `CHANGELOG.md` — new "Fix #55" section at top of [Unreleased] above the Fix #53 section from earlier today.
+- `STATE.md` — current objective rotated to the #55 fix; previous objective (the #53 fix merged via PR #56) demoted to "Previous"; What-works test-count line 687 → 689 with #55 attribution.
+- `RUN_LOG.md` — this entry.
+
+**Deliberately not touched** (historical artifacts per protocol): prior CHANGELOG sections, prior RUN_LOG entries, plan docs, ADRs, devdocs.
+
+### What remains
+
+- Push branch + open PR `Closes #55`. Review + merge to `main`.
+- After merge, **#54 (Orbs do no damage)** is the only remaining real-bug issue from the v14 soak board. That fix is the geometric parameter bug since Plan 10b — bigger blast radius than #53/#55, ~30 lines + ~120 test lines.
+- Once all 3 (#53 + #55 + #54) are merged, decide whether to ship a v15 hotfix AAB or accept the soak window will absorb them. The closed-track ≥14-day window resumes from v14 effective 2026-05-26; earliest production-access application 2026-06-09.
+
+---
+
 ## 2026-05-27 — Fix #53: Card upgrade descriptions not reflecting level
 
 - **Goal:** fix [GitHub issue #53](https://github.com/JonWhiteFang/steps-of-babylon/issues/53). Cards Screen rendered the same `+10% Defense Absolute` text for IRON_SKIN regardless of the player's actual card level. Player upgrades a card from Lv1 to Lv2 → no visual change in description, even though the underlying gameplay effect (`ApplyCardEffects` → `CardType.effectAtLevel(level)`) correctly scaled. Bug present since R4-08 shipped 2026-05-24.

@@ -17,6 +17,7 @@ import com.whitefang.stepsofbabylon.domain.usecase.CheckResearchCompletion
 import com.whitefang.stepsofbabylon.domain.usecase.GenerateDailyMissions
 import com.whitefang.stepsofbabylon.domain.usecase.CheckMilestones
 import com.whitefang.stepsofbabylon.domain.usecase.TrackDailyLogin
+import com.whitefang.stepsofbabylon.domain.usecase.UpdateCompleteResearchMissionProgress
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -47,12 +48,31 @@ class HomeViewModel @Inject constructor(
 
     private val _currentDate = MutableStateFlow(LocalDate.now().toString())
 
+    /**
+     * Closes #55. Pre-fix `init` discarded the [List] returned by [CheckResearchCompletion],
+     * so research that completed in the background (timer elapsed while the app was closed)
+     * had its level incremented correctly on the next app launch but never advanced the
+     * COMPLETE_RESEARCH daily mission. By the time the player navigated to Labs, the
+     * research was already marked complete in the DB, so [LabsViewModel]'s mission tick
+     * found nothing to credit (`checkCompletion()` returned an empty list →
+     * `updateMissionProgress(0)` early-returned at R3-03's count gate).
+     *
+     * Mirrors the [LabsViewModel] pattern landed in R3-03: capture `completed.size` from
+     * [CheckResearchCompletion] and pass it to [UpdateCompleteResearchMissionProgress],
+     * which gates the DAO write on `completedCount >= 1`. `dailyMissionDao` is already
+     * injected for the existing `countClaimable` flow consumer, so no Hilt graph change.
+     */
+    private val updateMissionProgress = UpdateCompleteResearchMissionProgress(dailyMissionDao)
+
     init {
         viewModelScope.launch {
             playerRepository.ensureProfileExists()
             workshopRepository.ensureUpgradesExist()
             labRepository.ensureResearchExists()
-            CheckResearchCompletion(labRepository)()
+            // #55: capture the completed list so we can credit the COMPLETE_RESEARCH daily
+            // mission on background completions. Pre-fix the return value was discarded.
+            val completed = CheckResearchCompletion(labRepository)()
+            updateMissionProgress(completedCount = completed.size)
 
             val today = _currentDate.value
             val todaySteps = stepRepository.getDailyRecord(today)?.creditedSteps ?: 0
