@@ -8,7 +8,7 @@ An Android idle tower defense game where real-world walking drives all progressi
 
 ## Status
 
-Version 1.0.0 (versionCode 14) — closed-track soak in progress. AAB v14 uploaded to Play Console 2026-05-26 ~04:52 BST and on-device smoke test PASSED 2026-05-26 ~05:35 BST (Golden Tower UW auto-trigger, RAPID_FIRE visible in Workshop, MULTISHOT_RESEARCH + BOUNCE_RESEARCH visible in Labs — the #19 + #20 fix bundle confirmed working on upgrade-from-v8 installs). Closed-track ≥14-day window resumes from 2026-05-26; earliest production-access application 2026-06-09. **Next: recruit ≥12 testers and soak.** 687 JVM unit tests green.
+Version 1.0.0 (versionCode 14) — closed-track soak in progress. AAB v14 uploaded to Play Console 2026-05-26 ~04:52 BST and on-device smoke test PASSED 2026-05-26 ~05:35 BST (Golden Tower UW auto-trigger, RAPID_FIRE visible in Workshop, MULTISHOT_RESEARCH + BOUNCE_RESEARCH visible in Labs — the #19 + #20 fix bundle confirmed working on upgrade-from-v8 installs). Closed-track ≥14-day window resumes from 2026-05-26; earliest production-access application 2026-06-09. **Next: recruit ≥12 testers and soak.** 689 JVM unit tests green.
 
 For the live current state see [docs/agent/STATE.md](docs/agent/STATE.md). For recent changes see [CHANGELOG.md](CHANGELOG.md).
 
@@ -41,7 +41,7 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 # Debug APK
 ./gradlew assembleDebug
 
-# Unit tests (687 JVM tests)
+# Unit tests (689 JVM tests)
 ./gradlew test
 
 # Lint
