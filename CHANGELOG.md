@@ -4,6 +4,18 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### AAB v15 uploaded to Play Console closed track (2026-05-27 ~05:39 BST)
+
+User uploaded `app/build/outputs/bundle/release/app-release.aab` (versionCode 15) to the Play Console closed-testing track. AAB bundles 3 v14-soak-board fixes: #53 (card upgrade descriptions, PR #56), #55 (lab mission credit, PR #57), #54 (orbs damage via radial oscillation, PR #58).
+
+**On-device smoke test pending.** Test the 3-item checklist on a real device installed from the closed track:
+
+1. Card upgrade visibly changes its description text (e.g. IRON_SKIN Lv 1 "+10% Defense Absolute" → upgrade once → text shows ≥ +15%).
+2. Background-completed lab research credits the COMPLETE_RESEARCH daily mission on next app launch.
+3. Orbs visually pulse inward and damage enemies at melee range (HP bars on parked enemies should drop visibly when an orb's inner sweep aligns with the enemy's angle).
+
+**No source / build / test impact — external upload milestone.** Closed-track ≥14-day window unchanged; earliest production-access application stays 2026-06-09.
+
 ### versionCode 14 → 15 + AAB v15 build (2026-05-27)
 
 Bundle of the 3 v14-soak-board fixes — #53 (PR #56), #55 (PR #57), #54 (PR #58) — into a single AAB for closed-track upload. Bumped `versionCode` 14 → 15 in `app/build.gradle.kts`. `versionName` stays `1.0.0` because this is a hotfix, not a feature release.

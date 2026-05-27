@@ -1,3 +1,52 @@
+## 2026-05-27 — AAB v15 uploaded to Play Console closed track + end-of-session
+
+- **Goal:** ship the v15 hotfix bundle to closed-track testers and complete end-of-session memory writes per the agent protocol.
+- **Outcome:** done. User uploaded `app/build/outputs/bundle/release/app-release.aab` (versionCode 15, ~19 MB, signed with the upload keystore) to the Play Console closed-testing track at ~05:39 BST. **No source / build / test impact** — pure external upload milestone with corresponding doc-sync.
+
+### What happened in the session
+
+This session ran end-to-end through the full v14-soak-board response in one sitting:
+
+1. **#53 fix shipped** (Card upgrade descriptions reflect level). Branch `fix/53-card-upgrade-display` → PR #56 → merged. Test count 656 → 687 (+31 in new `CardTypeTest`).
+2. **#55 fix shipped** (Background lab research credits the daily mission). Branch `fix/55-home-research-mission-tick` → PR #57 → merged. Test count 687 → 689 (+2 in `HomeViewModelTest`). HomeViewModel.init R3-03 regression — `CheckResearchCompletion` return value was discarded.
+3. **#54 fix shipped** (Orbs damage enemies via radial oscillation). Branch `fix/54-orb-radial-oscillation` → PR #58 → merged. Test count 689 → 695 (+6 in new `OrbEntityTest`). User picked design Option C (radial oscillation 25→70 px over 2.5 s) over A (fixed 50 px) and B (fixed 60 px) — geometry bug since Plan 10b that left ORBS upgrade as dead content.
+4. **v15 hotfix AAB built** (commit `935dac6`). versionCode bumped 14 → 15. `./run-gradle.sh clean bundleRelease` BUILD SUCCESSFUL; jarsigner verified clean; merged manifest confirms `android:versionCode="15"`. ~19 MB.
+5. **v15 uploaded to Play Console closed track** at ~05:39 BST (this entry).
+
+### Files modified in this end-of-session commit (3 docs)
+
+- `docs/agent/STATE.md` — current objective rotated to "v15 uploaded; on-device smoke test pending".
+- `AGENTS.md` — historical version sequence extended with the upload timestamp; Plan 31 status block updated to reflect v15 upload state.
+- `CHANGELOG.md` — new "AAB v15 uploaded" section above the existing "versionCode 14 → 15 + AAB v15 build" section.
+- `docs/agent/RUN_LOG.md` — this entry.
+
+### Smoke-test checklist for v15 (post-install on closed-track device)
+
+1. **Card upgrade displays scaled description.** Equip any card (e.g. IRON_SKIN), open Cards screen, observe Lv 1 description ("+10% Defense Absolute"). Open a card pack, accumulate enough copies to upgrade, tap Upgrade. The displayed description should now show a higher value (e.g. "+15% Defense Absolute" at Lv 2). Pre-v15: text stayed at Lv 1 forever.
+2. **Background lab research credits the daily mission.** Start a lab research project (any wired ResearchType, e.g. DAMAGE_RESEARCH at level 0), close the app, wait for the timer to elapse, reopen the app, navigate to Missions. The COMPLETE_RESEARCH daily mission should show progress=1 / completed. Pre-v15: progress=0.
+3. **Orbs visually pulse inward and damage enemies.** Buy ORBS Workshop upgrade (any level 1–6), start a battle, watch orbs orbit. They should visibly pulse inward toward the ziggurat top every ~2.5 seconds. When the inward sweep aligns with parked enemies, those enemies' HP bars should drop. Pre-v15: orbs orbit at fixed wide radius and never touch enemies.
+
+### What remains
+
+- **(External, immediate)** On-device smoke test using the 3-item checklist above.
+- **(External, ongoing)** Recruit ≥12 testers, distribute closed-track opt-in URL.
+- **(External, gating)** Wait ≥14 calendar days from 2026-05-26. Earliest production-access application: 2026-06-09. Uploading v15 mid-window does NOT reset the 14-day clock as long as v15 doesn't surface fresh blockers in its own soak.
+- **(External)** After ≥14 days + ≥12 testers, apply for production access. Google review 1–3 days.
+- **(External)** Promote closed → production with staged rollout. Tag v1.0.0 in git after rollout reaches 100 %.
+- **(Internal, post-launch)** Plan V1X Wave 1 (V1X-01 in-app data deletion + V1X-02 Season Pass UI + V1X-03 per-screen nav icons, ~2 days) is the first scheduled implementation work post-v1.0.0 production rollout.
+
+### Session metrics
+
+- **PRs merged today:** 3 (#56, #57, #58).
+- **Test count delta:** 656 → 695 (+39 across all 3 PRs).
+- **AAB versions built:** 1 (v15).
+- **AAB versions uploaded:** 1 (v15 to closed track).
+- **Source files changed:** 5 production + 3 test (1 new file: `OrbEntityTest.kt`).
+- **Doc files changed:** 8 (`AGENTS.md`, `README.md`, `CHANGELOG.md`, `docs/agent/STATE.md`, `docs/agent/RUN_LOG.md`, `.kiro/steering/source-files.md`, `app/build.gradle.kts`, plus the 4 PR-side doc updates that landed via merges).
+- **Tests passing on `main` post-session:** 695 (verified via `./run-gradle.sh testDebugUnitTest` after each fix landed).
+
+---
+
 ## 2026-05-27 — versionCode 14 → 15 + AAB v15 build (v14-soak-board hotfix bundle)
 
 - **Goal:** package the 3 v14-soak-board fixes (#53 + #55 + #54) — all merged today via PRs #56 / #57 / #58 — into a single closed-track AAB so testers receive the corrected build before the ≥14-day window completes.
