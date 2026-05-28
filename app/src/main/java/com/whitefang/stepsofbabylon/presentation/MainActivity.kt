@@ -33,6 +33,8 @@ import com.whitefang.stepsofbabylon.BuildConfig
 import com.whitefang.stepsofbabylon.data.ads.internal.ConsentManager
 import com.whitefang.stepsofbabylon.data.billing.internal.ActivityProvider
 import com.whitefang.stepsofbabylon.data.healthconnect.HealthConnectClientWrapper
+import com.whitefang.stepsofbabylon.presentation.audio.MusicManager
+import com.whitefang.stepsofbabylon.presentation.audio.MusicPreferences
 import com.whitefang.stepsofbabylon.presentation.battle.BattleScreen
 import com.whitefang.stepsofbabylon.presentation.cards.CardsScreen
 import com.whitefang.stepsofbabylon.presentation.economy.CurrencyDashboardScreen
@@ -67,6 +69,9 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var playerRepository: PlayerRepository
     @Inject internal lateinit var activityProvider: ActivityProvider
     @Inject internal lateinit var consentManager: ConsentManager
+    @Inject lateinit var musicPreferences: MusicPreferences
+
+    private lateinit var musicManager: MusicManager
 
     private val activityScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val pendingNavigation = MutableStateFlow<String?>(null)
@@ -81,6 +86,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        musicManager = MusicManager(this).apply {
+            setVolume(musicPreferences.getVolume())
+            setMuted(musicPreferences.isMuted())
+        }
         enableEdgeToEdge()
         setContent {
             StepsOfBabylonTheme {
@@ -153,7 +162,16 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     bottomBar = {
                         val backStackEntry by navController.currentBackStackEntryAsState()
-                        if (backStackEntry?.destination?.route != Screen.Battle.route) {
+                        val currentRoute = backStackEntry?.destination?.route
+                        // Switch music track based on current screen
+                        LaunchedEffect(currentRoute) {
+                            if (currentRoute == Screen.Battle.route) {
+                                musicManager.playBattle()
+                            } else if (currentRoute != null) {
+                                musicManager.playWalking()
+                            }
+                        }
+                        if (currentRoute != Screen.Battle.route) {
                             BottomNavBar(navController)
                         }
                     }
@@ -233,6 +251,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        musicManager.resume()
         // Register this Activity with ActivityProvider so BillingManagerImpl can launch
         // Play Billing purchase flows (BillingClient.launchBillingFlow requires an
         // Activity, not a Context). C.5 PR 2 / ADR-0005.
@@ -257,6 +276,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        musicManager.pause()
         // Clear before super so nothing observes a stale Activity reference mid-teardown.
         // The WeakReference in ActivityProvider would also let the ref die, but an explicit
         // clear avoids purchase attempts racing with a paused-but-not-yet-GC'd Activity.
@@ -271,6 +291,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        musicManager.release()
         activityScope.cancel()
         super.onDestroy()
     }
