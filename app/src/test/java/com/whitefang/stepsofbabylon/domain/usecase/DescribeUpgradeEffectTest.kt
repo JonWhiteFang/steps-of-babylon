@@ -218,10 +218,35 @@ class DescribeUpgradeEffectTest {
     // ---- Hidden-from-in-round upgrades (kept testable for Workshop reuse) ----
 
     @Test
-    fun `STEP_MULTIPLIER clamps to 100 percent cap`() {
-        // L50 -> 50 * 1 = +50 % steps.
+    fun `V1X18 STEP_MULTIPLIER reads asymptotic curve formula`() {
+        // V1X-18 / ADR-0015: asymptotic curve `1 - (1-0.05)^level` with 2-decimal-place format.
+        // L50 → 1 - 0.95^50 ≈ 0.92306 → "+92.31% steps" (rounds up)
         val r = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 50), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)
-        assertEquals("+50% steps", r.current)
+        assertEquals("+92.31% steps", r.current)
+    }
+
+    @Test
+    fun `V1X18 STEP_MULTIPLIER L0 reads zero bonus`() {
+        val r = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 0), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)
+        assertEquals("+0.00% steps", r.current)
+    }
+
+    @Test
+    fun `V1X18 STEP_MULTIPLIER L100 reads near-100 percent (asymptote)`() {
+        // L100 → 1 - 0.95^100 ≈ 0.99408 → "+99.41% steps"
+        val r = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 100), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)
+        assertEquals("+99.41% steps", r.current)
+    }
+
+    @Test
+    fun `V1X18 STEP_MULTIPLIER adjacent levels visibly differ at high range`() {
+        // V1X-18 motivation: at high levels, adjacent levels should be visibly distinct in
+        // the readout. Pre-V1X-18 L99 = L100 (both clamped to "+100% steps"); post-V1X-18
+        // they differ by 0.03 percentage points (visible at 2-decimal format).
+        val r99 = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 99), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)
+        val r100 = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 100), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)
+        assertNotEquals(r99.current, r100.current,
+            "V1X-18 fixes the dead-content L99=L100 problem; readouts must differ")
     }
 
     @Test
