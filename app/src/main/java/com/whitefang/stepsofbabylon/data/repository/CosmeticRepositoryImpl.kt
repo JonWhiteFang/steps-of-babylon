@@ -130,6 +130,13 @@ class CosmeticRepositoryImpl @Inject constructor(
                 0xFFB89152.toInt(), // layer 3 — polished bronze / brass
                 0xFFE8C068.toInt(), // layer 4 (top) — gold crown (heroic motif)
             ),
+            "zig_obsidian" to listOf(
+                0xFF1A1A1A.toInt(), // layer 0 (base) — deep obsidian black
+                0xFF2D2D2D.toInt(), // layer 1
+                0xFF3F3F3F.toInt(), // layer 2 (mid)
+                0xFF525252.toInt(), // layer 3
+                0xFF7A6F4D.toInt(), // layer 4 (top) — dim gold-bronze cap
+            ),
         )
 
         private val SEED_COSMETICS = listOf(
