@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.battle.ui
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,9 +22,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.whitefang.stepsofbabylon.BuildConfig
 import com.whitefang.stepsofbabylon.domain.model.TierConfig
 import com.whitefang.stepsofbabylon.presentation.battle.RoundEndState
 
@@ -119,6 +122,24 @@ fun PostRoundOverlay(
                     Text("Play Again")
                 }
                 Spacer(Modifier.height(8.dp))
+                if (state.isNewBestWave) {
+                    val context = LocalContext.current
+                    OutlinedButton(
+                        onClick = {
+                            val shareText = "I just hit Wave ${state.waveReached} in Steps of Babylon! " +
+                                "Built up by walking. ${BuildConfig.PLAY_STORE_URL}"
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, shareText)
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Share your record"))
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("📤 Share Record")
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
                 OutlinedButton(onClick = onExitBattle, modifier = Modifier.fillMaxWidth()) {
                     Text("Leave Battle")
                 }

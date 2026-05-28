@@ -57,6 +57,9 @@ android {
         buildConfigField("String", "AD_UNIT_POST_ROUND_DOUBLE_PS", "\"ca-app-pub-3940256099942544/5224354917\"")
         buildConfigField("String", "AD_UNIT_DAILY_FREE_CARD_PACK", "\"ca-app-pub-3940256099942544/5224354917\"")
 
+        // V1X-17: Play Store URL for text-share buttons (share-sheet templates).
+        buildConfigField("String", "PLAY_STORE_URL", "\"https://play.google.com/store/apps/details?id=com.whitefang.stepsofbabylon\"")
+
         // AdMob APPLICATION_ID manifest placeholder. Substituted into the
         // <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID"/> entry in
         // AndroidManifest.xml at build time. Debug uses Google's documented test app ID
