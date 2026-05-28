@@ -73,7 +73,7 @@ class LabsViewModel @Inject constructor(
     ) { levels, activeList, profile, now, (processing, message) ->
         val activeMap = activeList.associateBy { it.type }
         LabsUiState(
-            researchList = ResearchType.entries.map { type ->
+            researchList = ResearchType.entries.filterNot { it.isComingSoon }.map { type ->
                 val level = levels[type] ?: 0
                 val isMaxed = level >= type.maxLevel
                 val active = activeMap[type]
