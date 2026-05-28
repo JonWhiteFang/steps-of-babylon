@@ -294,7 +294,8 @@ class GameEngine {
             ?: biomeTheme.zigguratColors
         val zig = ZigguratEntity(width, height, stats, ::findNearestEnemies, layerColors = zigColors) { sx, sy, tx, ty ->
             pendingAdd.add(ProjectileEntity(sx, sy, tx, ty, ZigguratBaseStats.PROJECTILE_SPEED, bouncesRemaining = stats.bounceCount))
-            soundManager?.play(SoundEffect.SHOOT)
+            val intervalMs = ((1.0 / (ziggurat?.stats?.attackSpeed ?: 1.0)) * 1000).toLong()
+            soundManager?.play(SoundEffect.SHOOT, intervalMs)
         }
         ziggurat = zig
         entities.add(zig)

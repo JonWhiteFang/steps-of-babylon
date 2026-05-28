@@ -28,12 +28,14 @@ class SoundManager(context: Context) {
         soundIds[SoundEffect.ROUND_END] = soundPool.load(context, R.raw.sfx_round_end, 1)
     }
 
-    fun play(effect: SoundEffect) {
+    fun play(effect: SoundEffect, expectedIntervalMs: Long = 100L) {
         if (muted) return
-        // Throttle shoot sound
+        // Frequency-aware throttle for SHOOT: scales to ~1/3 of expected interval,
+        // floored at 30ms (SoundPool channel safety) and capped at 100ms (baseline).
         if (effect == SoundEffect.SHOOT) {
             val now = System.currentTimeMillis()
-            if (now - lastShootTime < 100) return
+            val throttle = (expectedIntervalMs / 3L).coerceIn(30L, 100L)
+            if (now - lastShootTime < throttle) return
             lastShootTime = now
         }
         soundIds[effect]?.let { soundPool.play(it, volume, volume, 1, 0, 1f) }
