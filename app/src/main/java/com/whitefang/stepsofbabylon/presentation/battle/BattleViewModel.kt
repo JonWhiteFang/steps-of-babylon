@@ -405,7 +405,7 @@ class BattleViewModel @Inject constructor(
     @androidx.annotation.VisibleForTesting
     internal fun wireStepRewardCallback(engine: GameEngine) {
         engine.onStepReward = { amount, x, y ->
-            viewModelScope.launch {
+            applicationScope.launch {
                 val credited = awardBattleSteps(amount)
                 if (credited > 0L) {
                     _uiState.update { s ->
