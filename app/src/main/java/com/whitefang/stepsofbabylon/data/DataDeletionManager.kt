@@ -65,6 +65,7 @@ class DataDeletionManager @Inject constructor(
             "milestone_notification_prefs",
             "notification_prefs",
             "sound_prefs",
+            "music_prefs",
             "anti_cheat_prefs",
             "step_ingestion",
             "db_key_prefs",

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import com.whitefang.stepsofbabylon.data.DataDeletionManager
 import com.whitefang.stepsofbabylon.data.NotificationPreferences
 import com.whitefang.stepsofbabylon.data.SoundPreferences
+import com.whitefang.stepsofbabylon.presentation.audio.MusicPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,12 +19,15 @@ data class NotificationSettingsState(
     val smartReminders: Boolean = true,
     val milestoneAlerts: Boolean = true,
     val soundMuted: Boolean = false,
+    val musicMuted: Boolean = false,
+    val musicVolume: Float = 0.5f,
 )
 
 @HiltViewModel
 class NotificationSettingsViewModel @Inject constructor(
     private val prefs: NotificationPreferences,
     private val soundPrefs: SoundPreferences,
+    private val musicPrefs: MusicPreferences,
     private val dataDeletionManager: DataDeletionManager,
 ) : ViewModel() {
 
@@ -33,6 +37,8 @@ class NotificationSettingsViewModel @Inject constructor(
         smartReminders = prefs.isSmartRemindersEnabled(),
         milestoneAlerts = prefs.isMilestoneAlertsEnabled(),
         soundMuted = soundPrefs.isMuted(),
+        musicMuted = musicPrefs.isMuted(),
+        musicVolume = musicPrefs.getVolume(),
     ))
     val state: StateFlow<NotificationSettingsState> = _state.asStateFlow()
 
@@ -41,6 +47,8 @@ class NotificationSettingsViewModel @Inject constructor(
     fun setSmartReminders(enabled: Boolean) { prefs.setSmartRemindersEnabled(enabled); _state.update { it.copy(smartReminders = enabled) } }
     fun setMilestoneAlerts(enabled: Boolean) { prefs.setMilestoneAlertsEnabled(enabled); _state.update { it.copy(milestoneAlerts = enabled) } }
     fun setSoundMuted(muted: Boolean) { soundPrefs.setMuted(muted); _state.update { it.copy(soundMuted = muted) } }
+    fun setMusicMuted(muted: Boolean) { musicPrefs.setMuted(muted); _state.update { it.copy(musicMuted = muted) } }
+    fun setMusicVolume(volume: Float) { musicPrefs.setVolume(volume); _state.update { it.copy(musicVolume = volume) } }
 
     fun deleteAllData(activity: Activity) {
         dataDeletionManager.deleteAllData(activity)

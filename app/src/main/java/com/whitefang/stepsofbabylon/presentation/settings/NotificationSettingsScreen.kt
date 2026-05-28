@@ -36,6 +36,17 @@ fun NotificationSettingsScreen(viewModel: NotificationSettingsViewModel = hiltVi
         Text("Sound", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         ToggleRow("Mute Sound Effects", "Silence all in-game sounds", state.soundMuted, viewModel::setSoundMuted)
+        ToggleRow("Mute Music", "Silence background music", state.musicMuted, viewModel::setMusicMuted)
+        if (!state.musicMuted) {
+            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Music Volume", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(0.4f))
+                Slider(
+                    value = state.musicVolume,
+                    onValueChange = { viewModel.setMusicVolume(it) },
+                    modifier = Modifier.weight(0.6f),
+                )
+            }
+        }
         Spacer(Modifier.height(24.dp))
         Text("Data", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
