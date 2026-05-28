@@ -72,13 +72,12 @@ Walking Encounters transform the real-world activity into a loot-driven experien
 | Trigger | Notification Example | Reward |
 |---|---|---|
 | Every 2,000 steps (5% chance per 100 steps after threshold) | "A supply crate was spotted on your path! Tap to claim." | 50–200 bonus Steps or 1–3 Gems |
-| Every 1.5km GPS distance | "You've covered serious ground! A Power Stone glints in the distance." | 1–2 Power Stones |
 | Step burst (500+ steps in 5 min) | "Your pace is impressive! An energy surge flows into your ziggurat." | Overdrive Charge (see §5.1) |
 | 10,000 step daily milestone | "10K steps! A rare supply drop has materialized." | Rare Card Pack or 5 Gems + 3 Power Stones |
 | Random (1% per 500 steps) | "Something shimmers ahead on the trail..." | Random: Steps, Gems, Power Stones, or Card Dust |
 
 - Supply Drops are generated locally using a seeded random system based on step count and time of day.
-- GPS distance tracking is optional ("Exploration Mode") to preserve battery and privacy.
+- **GPS / location tracking removed in v1.0.** Original GDD draft proposed an "Exploration Mode" with GPS-based 1.5km distance triggers; this was dropped per ADR-0016 (battery, privacy, and Play Console review-cost trade-off). Reserved as a v2.x meta-progression concept that may ship alongside V1X-25 long-term progression.
 - Players who disable notifications still accumulate drops in an "Unclaimed Supplies" inbox (max 10 stored).
 - Drop rates average 2–4 per 10,000 steps.
 
