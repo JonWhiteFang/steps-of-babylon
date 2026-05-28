@@ -16,7 +16,10 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 ├── domain/             # Pure Kotlin — no Android imports
 │   ├── model/          # Data classes and enums
 │   ├── repository/     # Repository interfaces (Flow-based)
-│   └── usecase/        # Use case classes (plain Kotlin, no @Inject)
+│   ├── usecase/        # Use case classes (plain Kotlin, no @Inject)
+│   ├── time/           # TimeProvider seam (B.1 / RO-01)
+│   └── battle/         # V1X-09 Phase 1 simulation extraction (ADR-0012)
+│       └── engine/     # SimulationMath — pure-math helpers (recovery pulse, chrono, thorn, lifesteal, HP clamp, step multiplier asymptotic curve)
 ├── presentation/       # Android/Compose layer
 │   ├── navigation/     # Screen routes, BottomNavBar
 │   ├── home/           # Home screen, ViewModel, UiState

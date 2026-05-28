@@ -38,6 +38,7 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | Mockito Kotlin | 5.4.0 | Kotlin-friendly mocking for tests |
 | Robolectric | 4.14.1 | Android framework simulation for JVM tests |
 | AndroidX Test Core | 1.6.1 | Test utilities for Android components |
+| WorkManager Testing | 2.11.0 | `WorkManagerTestInitHelper` for tests that exercise `WorkManager.cancelAllWork` (added by V1X-01 `DataDeletionManagerTest`). Same version as the main WorkManager dep. |
 
 ## Gradle Plugins
 

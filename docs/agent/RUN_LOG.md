@@ -1,3 +1,16 @@
+## 2026-05-28 — Full doc sweep after V1X session
+
+- **Goal:** Apply the agent protocol PR Task-List Convention systematically across every canonical doc, capturing 16 PRs of changes that landed in incremental sessions.
+- **Outcome:** 5 docs updated (README, AGENTS, source-files, structure, tech). CHANGELOG and STATE/RUN_LOG were already current from incremental updates.
+- **Changes:**
+  - **README.md:** versionCode 14 → 16; status banner reflects 16 V1X PRs / 800 tests / V1X-15b-or-soak next; new GPS-disclaimer line referencing ADR-0016; data deletion path updated to mention V1X-01 in-app option; build-command test count 695 → 800.
+  - **AGENTS.md:** version line bumped 15 → 16 with full v16 build history; Plan V1X status reflects 16 PRs merged across waves + 3 ADRs added (0012/0015/0016); Plan 31 closed-track-soak status simplified to current state.
+  - **source-files.md:** SoundManager entry updated for V1X-05 throttle; new MusicManager + MusicPreferences entries (V1X-06); PlayerProfileDao atomic-spend annotation (V1X-10); SimulationMath updated to 7 functions / 7 constants (V1X-09 + V1X-18); 9 new test entries (DataDeletionManagerTest, SimulationMathTest, SoundManagerThrottleTest, MusicPreferencesTest, PlayerRepositoryImplTest, UltimateWeaponRepositoryImplTest, CardRepositoryImplTest, StepRepositoryImplTest).
+  - **structure.md:** new `domain/battle/engine/` branch for V1X-09 Phase 1 SimulationMath extraction.
+  - **tech.md:** added WorkManager Testing 2.11.0 row (V1X-01 dep).
+- **Files unchanged in sweep:** `docs/database-schema.md` (no schema migration today), `.kiro/steering/lib-*.md` (no library convention changes), `docs/architecture.md` (already updated by V1X-19 with the Privacy & Permissions section), individual `docs/agent/DECISIONS/ADR-*.md` files (3 new ones authored during sub-plans), historical RUN_LOG entries / past CHANGELOG sections / plan-R*.md / devdocs / archaeology.
+- **Next:** V1X-15b ENEMY_INTEL ship OR V1X-08 instrumented tests OR resume closed-track soak.
+
 ## 2026-05-28 — V1X-18 STEP_MULTIPLIER asymptotic curve + V1X-19 GDD GPS reconciliation
 
 - **Goal:** Two related sub-plans — balance change (V1X-18) and design-doc reconciliation (V1X-19).
