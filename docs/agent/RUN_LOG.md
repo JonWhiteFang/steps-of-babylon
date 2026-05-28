@@ -1,3 +1,18 @@
+## 2026-05-28 — V1X Wave 2 + quick wins (V1X-04, V1X-05, V1X-06, V1X-10, V1X-11, V1X-14)
+
+- **Goal:** implement V1X Wave 2 (audio overhaul) + Wave 3 quick wins + content ship.
+- **Outcome:** 6 PRs merged (#67–#72). Issues #46, #38, #39, #51, #35, #45 closed. Test count 704 → 711 (+7).
+- **Changes:**
+  - **V1X-05 (PR #67):** Frequency-aware SHOOT throttle. `SoundManager.play` gains `expectedIntervalMs` param; formula `(interval/3).coerceIn(30,100)`. GameEngine passes ziggurat attack interval. 5 pure-logic tests.
+  - **V1X-04 (PR #68):** 7 synthesized SFX replacing sine-wave placeholders. Generator script `tools/generate_sfx.py`. No code changes.
+  - **V1X-06 (PR #69):** `MusicManager` + `MusicPreferences` + 2 looping tracks (bgm_walking/bgm_battle). MainActivity wires nav-state observation for track switching + lifecycle pause/resume. Settings screen gains music mute toggle + volume slider. 1 test.
+  - **V1X-11 (PR #70):** Single-line `viewModelScope` → `applicationScope` in `wireStepRewardCallback`. Closes RO-09 #6.
+  - **V1X-10 (PR #71):** `spendGemsAtomic` + `spendPowerStonesAtomic` SQL-guarded DAO methods. `PlayerRepositoryImpl` delegates to them. Closes RO-09 #5.
+  - **V1X-14 (PR #72):** `zig_obsidian` palette added to `ZIGGURAT_COLOR_LOOKUP`. 1 test.
+- **Files created:** `MusicManager.kt`, `MusicPreferences.kt`, `bgm_walking.ogg`, `bgm_battle.ogg`, `SoundManagerThrottleTest.kt`, `MusicPreferencesTest.kt`, `tools/generate_sfx.py`.
+- **Files modified:** `SoundManager.kt`, `GameEngine.kt`, `PlayerProfileDao.kt`, `PlayerRepositoryImpl.kt`, `BattleViewModel.kt`, `CosmeticRepositoryImpl.kt`, `CosmeticRepositoryImplTest.kt`, `MainActivity.kt`, `NotificationSettingsViewModel.kt`, `NotificationSettingsScreen.kt`, `DataDeletionManager.kt`.
+- **Next:** V1X-07 (repo unit tests), V1X-08 (instrumented tests), V1X-09 (simulation extraction) — the major Wave 3 refactor items.
+
 ## 2026-05-28 — V1X Wave 1 complete (V1X-01, V1X-02, V1X-03)
 
 - **Goal:** implement V1X Wave 1 (post-launch polish) — 3 sub-plans, each on its own branch with GitHub issue updates.

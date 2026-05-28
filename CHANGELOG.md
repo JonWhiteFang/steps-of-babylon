@@ -4,6 +4,17 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### V1X Wave 2 — Audio overhaul + quick wins (2026-05-28)
+
+Seven sub-plans implementing audio overhaul and quick-win fixes. Test count 704 → 711.
+
+- **V1X-05 Frequency-aware SFX throttle (PR #67):** SHOOT throttle scales with attack speed — `(interval/3).coerceIn(30,100)ms`. +5 tests. Closes #46.
+- **V1X-04 Real SFX assets (PR #68):** Replaced 7 placeholder sine-wave sounds with synthesized game audio (frequency sweeps, noise bursts, ADSR envelopes). Generator script at `tools/generate_sfx.py`. Closes #38.
+- **V1X-06 Background music system (PR #69):** MusicManager with walking/battle tracks, audio focus handling, volume slider + mute toggle in Settings. +1 test. Closes #39.
+- **V1X-11 Per-kill scope fix (PR #70):** Single-line `viewModelScope` → `applicationScope` so per-kill step credit survives mid-round nav-away. Closes #51.
+- **V1X-10 Atomic Gem/PS spend (PR #71):** SQL-guarded `spendGemsAtomic`/`spendPowerStonesAtomic` eliminates TOCTOU double-deduct race. Closes #35.
+- **V1X-14 zig_obsidian palette (PR #72):** Obsidian-black ziggurat skin now purchasable in Store. +1 test. Closes #45.
+
 ### V1X Wave 1 — Post-launch polish (2026-05-28)
 
 Three sub-plans implementing the first v1.x patch wave. Test count 698 → 704.
