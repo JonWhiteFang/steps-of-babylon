@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -99,8 +100,10 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                         Column {
                             Text("⭐ Season Pass", fontWeight = FontWeight.Bold)
                             Text(
-                                if (state.seasonPassActive) "✅ Active"
-                                else state.priceDisplays[BillingProduct.SEASON_PASS] ?: BillingProduct.SEASON_PASS.priceDisplay,
+                                when {
+                                    state.seasonPassActive -> "✅ Active — ${state.seasonPassDaysRemaining ?: 0} days remaining"
+                                    else -> state.priceDisplays[BillingProduct.SEASON_PASS] ?: BillingProduct.SEASON_PASS.priceDisplay
+                                },
                                 color = Color.Gray,
                             )
                         }
@@ -108,10 +111,21 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                             Button(onClick = { viewModel.purchaseSeasonPass() }) { Text("Subscribe") }
                         }
                     }
+                    Spacer(Modifier.height(8.dp))
+                    Text("Free vs Season Pass:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(4.dp))
-                    Text("• 10 bonus Gems/day", style = MaterialTheme.typography.bodySmall)
-                    Text("• 1 free Lab rush/day", style = MaterialTheme.typography.bodySmall)
-                    Text("• Exclusive cosmetics", style = MaterialTheme.typography.bodySmall)
+                    Text("• Daily Gems: 0 → 10/day", style = MaterialTheme.typography.bodySmall)
+                    Text("• Lab Rush: 50–200 Gems → 1 free/day", style = MaterialTheme.typography.bodySmall)
+                    Text("• Exclusive cosmetics unlocked", style = MaterialTheme.typography.bodySmall)
+                    if (state.seasonPassActive) {
+                        Spacer(Modifier.height(8.dp))
+                        val context = LocalContext.current
+                        OutlinedButton(onClick = {
+                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse("https://play.google.com/store/account/subscriptions?package=com.whitefang.stepsofbabylon"))
+                            context.startActivity(intent)
+                        }) { Text("Manage subscription") }
+                    }
                 }
             }
         }
