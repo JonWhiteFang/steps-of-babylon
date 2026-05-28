@@ -1,3 +1,16 @@
+## 2026-05-28 — v15 soak hotfix bundle (#60 #62 #59 #63 #61)
+
+- **Goal:** fix 5 new issues filed during v15 closed-track soak testing.
+- **Outcome:** all 5 fixed in a single commit (`0ecfe1d`). 698 tests pass (695 + 3 new).
+- **Changes:**
+  - **#60 Higher tiers don't get harder:** Added `tierMultiplier: Double = 1.0` param to `EnemyScaler.scaleHealth/scaleDamage`. `WaveSpawner` accepts new `tierMultiplier` constructor param. `GameEngine` passes `TierConfig.forTier(tier).cashMultiplier` (T1=1×, T10=10×). 3 new tests in `EnemyScalerTest`.
+  - **#62 Free Upgrades no visual:** Added `lastPurchaseFree: Boolean` param to `InRoundUpgradeMenu`. Shows green "FREE!" text next to cash display when triggered. `BattleScreen` passes `state.lastPurchaseFree` through.
+  - **#59 Death Wave invisible:** Changed DEATH_WAVE visual from green 0.5s/3 particles to red (`0xFFE53935`) 1.2s/8 particles, bigger size (7f), wider radius (0.8× screen), faster velocity (80px/s). Reduced-motion fallback also red + thicker stroke (6f).
+  - **#63 Wave progress bar:** Added `waveProgress: Float` to `BattleUiState`, computed in polling loop as `phaseTimer / duration`. Thin `LinearProgressIndicator` in HUD (green=SPAWNING, amber=COOLDOWN).
+  - **#61 Ranged thorn damage:** Reversed R3-02 design decision. Widened `onFireProjectile` callback to `(EnemyEntity, Float, Float, Float, Float, Double)`. Added `shooter: EnemyEntity?` field to `EnemyProjectileEntity`. Changed `onEnemyProjectileHitZiggurat` from `applyDamageToZiggurat(proj.damage, null)` to `applyDamageToZiggurat(proj.damage, proj.shooter)`. Updated `WaveSpawnerTest`.
+- **Files modified (12):** EnemyScaler.kt, WaveSpawner.kt, GameEngine.kt, InRoundUpgradeMenu.kt, BattleScreen.kt, BattleUiState.kt, BattleViewModel.kt, UWVisualEffect.kt, EnemyEntity.kt, EnemyProjectileEntity.kt, EnemyScalerTest.kt, WaveSpawnerTest.kt.
+- **Next:** bump versionCode 15 → 16, build AAB v16, upload to closed track, on-device smoke test.
+
 ## 2026-05-27 — AAB v15 uploaded to Play Console closed track + end-of-session
 
 - **Goal:** ship the v15 hotfix bundle to closed-track testers and complete end-of-session memory writes per the agent protocol.

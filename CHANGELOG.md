@@ -4,6 +4,16 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### v15 soak hotfix bundle (2026-05-28)
+
+Fixes 5 issues filed during v15 closed-track soak testing. Commit `0ecfe1d`. Test count 695 → 698.
+
+- **#60 Higher tiers don't get harder:** Enemy HP/damage now scaled by `TierConfig.cashMultiplier` per tier (T1=1×, T10=10×). Added `tierMultiplier` param to `EnemyScaler.scaleHealth/scaleDamage`, threaded through `WaveSpawner` and `GameEngine`.
+- **#62 Free Upgrades no visual:** Wired `lastPurchaseFree` from `BattleUiState` to `InRoundUpgradeMenu`. Green "FREE!" text appears next to cash display when a free upgrade triggers.
+- **#59 Death Wave invisible:** Overhauled DEATH_WAVE visual effect — red expanding ring (was green), 1.2s duration (was 0.5s), 8 particles/tick (was 3), bigger size (7f vs 4f), wider radius (0.8× screen vs 0.6×).
+- **#63 Wave progress bar:** Added thin `LinearProgressIndicator` to Compose HUD showing spawn/cooldown phase progress. Green during spawning, amber during cooldown.
+- **#61 Ranged thorn damage:** Reversed R3-02 design decision. Ranged enemies now take thorn damage when their projectiles hit the ziggurat. Widened `onFireProjectile` callback to pass shooter reference through `EnemyProjectileEntity` to `applyDamageToZiggurat`.
+
 ### AAB v15 uploaded to Play Console closed track (2026-05-27 ~05:39 BST)
 
 User uploaded `app/build/outputs/bundle/release/app-release.aab` (versionCode 15) to the Play Console closed-testing track. AAB bundles 3 v14-soak-board fixes: #53 (card upgrade descriptions, PR #56), #55 (lab mission credit, PR #57), #54 (orbs damage via radial oscillation, PR #58).
