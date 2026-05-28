@@ -96,3 +96,18 @@ Hilt with KSP (not kapt). All modules in `di/`.
 | Backup | Disabled | `allowBackup="false"` — local-only game, prevents restore-related crashes |
 | Network | Network security config | Cleartext traffic blocked via `network_security_config.xml` |
 | Release build | R8 / ProGuard | Code shrinking, obfuscation, and resource shrinking enabled for release builds |
+
+
+## Privacy & Permissions
+
+The app does **not** request location permissions. There is no `LocationManager`, `FusedLocationProviderClient`, or GPS/network-location usage anywhere in the codebase. Step counting comes solely from `TYPE_STEP_COUNTER` (Android Sensor API) and Health Connect, which are activity-permission-gated, not location-permission-gated.
+
+The original GDD §2.3 draft proposed an "Exploration Mode" with GPS-based 1.5km distance triggers; this was dropped from the v1.0 scope per [ADR-0016](agent/DECISIONS/ADR-0016-gps-exploration-mode-reconciliation.md) — the battery + privacy + Play Console review-cost trade-off doesn't justify the unproven gameplay payoff. Reserved as a v2.x meta-progression concept that may ship alongside V1X-25 long-term progression.
+
+If a future agent reintroduces location services, that change must:
+
+- Re-submit Play Console data safety form
+- Add `play-services-location` dependency to `gradle/libs.versions.toml`
+- Foreground service permission upgrade (`ACCESS_BACKGROUND_LOCATION` is intrusive — expect Play review delay)
+- Update privacy policy at `docs/release/privacy-policy.md` and the hosted GitHub Pages copy
+- Update this section to remove the "no location" guarantee
