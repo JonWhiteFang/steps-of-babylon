@@ -4,6 +4,16 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### V1X Wave 3 partial — Repo tests + content/social (2026-05-28)
+
+Five sub-plans landing the testing infrastructure foundation and content/social polish. Test count 711 → 760.
+
+- **V1X-07 Repository unit tests (PR #73):** 4 new test files, 49 tests for PlayerRepositoryImpl (13), UltimateWeaponRepositoryImpl (12), CardRepositoryImpl (16), StepRepositoryImpl (8). Pattern uses mockito-kotlin to verify entity→domain mapping + DAO call shapes. Closes #42 (partial — 4/6 repos).
+- **V1X-15 Coming Soon flags (PR #74):** Biome.isComingSoon flag (CELESTIAL_GATE flagged true). LabsViewModel filters research types where isComingSoon=true. +1 test. Closes #43, #44 (AUTO_UPGRADE_AI half).
+- **V1X-17 Text-share for personal bests (PR #75):** PostRoundOverlay shows 'Share Record' button on new wave record. ACTION_SEND with pre-populated text. New BuildConfig.PLAY_STORE_URL. Closes #50.
+
+V1X-08 (instrumented tests) and V1X-09 (simulation extraction) remain — both multi-day refactors deferred.
+
 ### V1X Wave 2 — Audio overhaul + quick wins (2026-05-28)
 
 Seven sub-plans implementing audio overhaul and quick-win fixes. Test count 704 → 711.

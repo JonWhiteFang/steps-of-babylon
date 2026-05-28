@@ -1,3 +1,16 @@
+## 2026-05-28 — V1X Wave 3 partial (V1X-07, V1X-15, V1X-17)
+
+- **Goal:** Implement Wave 3 high-leverage items: repository unit tests + content/social polish.
+- **Outcome:** 3 PRs merged (#73, #74, #75). Issues #42 (partial), #43, #44 (AUTO_UPGRADE_AI half), #50 closed. Test count 711 → 760 (+49).
+- **Changes:**
+  - **V1X-07 (PR #73):** 4 new test files using mockito-kotlin pattern. PlayerRepositoryImplTest (13), UltimateWeaponRepositoryImplTest (12), CardRepositoryImplTest (16), StepRepositoryImplTest (8). Total +49 tests across all 4 high-priority repos.
+  - **V1X-15 (PR #74):** Added `Biome.isComingSoon` flag, flagged CELESTIAL_GATE true. LabsViewModel now filters research types where `isComingSoon = true`. +1 test.
+  - **V1X-17 (PR #75):** PostRoundOverlay shows 'Share Record' button on `state.isNewBestWave = true`. ACTION_SEND intent with pre-populated text template. New `BuildConfig.PLAY_STORE_URL` constant.
+- **Files created:** PlayerRepositoryImplTest.kt, UltimateWeaponRepositoryImplTest.kt, CardRepositoryImplTest.kt, StepRepositoryImplTest.kt.
+- **Files modified:** Biome.kt, LabsViewModel.kt, BiomeTest.kt, PostRoundOverlay.kt, build.gradle.kts.
+- **Deferred:** V1X-08 (instrumented tests, ~1 week, requires emulator setup), V1X-09 (simulation extraction, ~3-4 days major refactor), V1X-15b (ENEMY_INTEL design ship, ~1 week with 3 UI overlays + new wave-composition helper). All deferred for separate sessions.
+- **Next:** V1X-08 OR V1X-09 OR resume closed-track soak.
+
 ## 2026-05-28 — V1X Wave 2 + quick wins (V1X-04, V1X-05, V1X-06, V1X-10, V1X-11, V1X-14)
 
 - **Goal:** implement V1X Wave 2 (audio overhaul) + Wave 3 quick wins + content ship.
