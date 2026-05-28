@@ -150,10 +150,15 @@ class DescribeUpgradeEffect(
 
             // Hidden-from-in-round upgrades — included so the same use case can power a
             // future Workshop-screen readout without a second formatter.
+            // V1X-18 / ADR-0015: STEP_MULTIPLIER uses asymptotic curve `1 - (1-0.05)^level`,
+            // delegating to SimulationMath.stepMultiplierBonus for the math. Format with 2
+            // decimal places so adjacent levels at the high end (L99 = 99.41% vs L100 = 99.44%)
+            // remain visibly distinct — the dead-content problem V1X-18 fixes.
             UpgradeType.STEP_MULTIPLIER -> {
                 val total = (workshopLevels[type] ?: 0) + (inRoundLevels[type] ?: 0)
-                val pct = min(total * type.config.effectPerLevel, 100.0)
-                fmt("+%.0f%% steps", pct)
+                val bonus = com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath.stepMultiplierBonus(total)
+                val pct = bonus * 100.0
+                fmt("+%.2f%% steps", pct)
             }
             UpgradeType.RECOVERY_PACKAGES -> {
                 val total = (workshopLevels[type] ?: 0) + (inRoundLevels[type] ?: 0)

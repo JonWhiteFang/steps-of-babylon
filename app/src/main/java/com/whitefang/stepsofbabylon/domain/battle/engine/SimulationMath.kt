@@ -138,4 +138,45 @@ object SimulationMath {
      */
     fun clampHp(candidateHp: Double, maxHp: Double): Double =
         candidateHp.coerceIn(0.0, maxHp.coerceAtLeast(0.0))
+
+    // ---- STEP_MULTIPLIER asymptotic curve (V1X-18, ADR-0015) ----
+
+    /**
+     * Per-level decay factor for the asymptotic STEP_MULTIPLIER curve.
+     * `bonus(L) = 1 - (1 - 0.05)^L` — at L20 ≈ +64%, at L100 ≈ +99.4%, asymptotes at +100%.
+     */
+    const val STEP_MULTIPLIER_DECAY_FACTOR = 0.05
+
+    /**
+     * Hard ceiling on the asymptotic bonus, defensive against pathological inputs.
+     * The curve naturally asymptotes at 1.0; this cap is purely belt-and-braces.
+     */
+    const val STEP_MULTIPLIER_BONUS_CAP = 1.0
+
+    /**
+     * STEP_MULTIPLIER walking-credit bonus as a fraction of base credit. Pre-V1X-18 this
+     * was a linear `level × 0.01` capped at `1.0` — players hit the cap at L100 and
+     * subsequent levels were dead content.
+     *
+     * Post-V1X-18 the formula is asymptotic: `1 - (1 - p)^level` where `p = 0.05`.
+     * Properties:
+     *   L0 → 0 (no bonus)
+     *   L10 → 0.401 (40.1% bonus)
+     *   L20 → 0.642 (64.2% bonus)
+     *   L50 → 0.923 (92.3% bonus)
+     *   L100 → 0.994 (99.4% bonus — meaningfully different from L99's 99.3%)
+     *   L200 → ~1.0 (asymptotic)
+     *
+     * The exponential cost scaling (1.35×/level) provides natural cost-limited
+     * progression — L50+ requires 5.5 billion Steps which is physically impossible,
+     * so the curve's asymptotic tail is academic but harmless.
+     *
+     * @param level Player's STEP_MULTIPLIER upgrade level (≥0).
+     * @return Bonus fraction in `[0.0, 1.0]`.
+     */
+    fun stepMultiplierBonus(level: Int): Double {
+        if (level <= 0) return 0.0
+        val bonus = 1.0 - Math.pow(1.0 - STEP_MULTIPLIER_DECAY_FACTOR, level.toDouble())
+        return bonus.coerceIn(0.0, STEP_MULTIPLIER_BONUS_CAP)
+    }
 }

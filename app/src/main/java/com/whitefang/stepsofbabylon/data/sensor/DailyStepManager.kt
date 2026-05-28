@@ -274,8 +274,14 @@ class DailyStepManager @Inject constructor(
             0
         }
         if (wsLevel <= 0 && labLevel <= 0) return baseCredit
-        val bonus = (wsLevel * STEP_MULTIPLIER_PER_LEVEL + labLevel * STEP_EFFICIENCY_PER_LEVEL)
-            .coerceAtMost(STEP_MULTIPLIER_CAP)
+        // V1X-18 / ADR-0015: STEP_MULTIPLIER now uses the asymptotic curve
+        // `bonus = 1 - (1 - 0.05)^level` (centralised in SimulationMath.stepMultiplierBonus).
+        // STEP_EFFICIENCY (Lab) keeps its linear +2 %/level — capped at 0.20 since maxLevel = 10.
+        // The two stack ADDITIVELY but the COMBINED total is clamped at +100 % to preserve the
+        // GDD §4.3 "cap 100 %" wording and the existing balance-test contract.
+        val workshopBonus = com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath.stepMultiplierBonus(wsLevel)
+        val labBonus = labLevel * STEP_EFFICIENCY_PER_LEVEL
+        val bonus = (workshopBonus + labBonus).coerceAtMost(STEP_MULTIPLIER_CAP)
         return (baseCredit * (1.0 + bonus)).toLong()
     }
 }

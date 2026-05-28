@@ -75,7 +75,7 @@ enum class UpgradeType(
             INTEREST to UpgradeConfig(150, 1.18, 20, 0.5, "+0.5% interest on held cash between waves (cap 10%)"),
             FREE_UPGRADES to UpgradeConfig(200, 1.20, 25, 1.0, "+1% chance for in-round upgrades to cost 0 (cap 25%)"),
             RECOVERY_PACKAGES to UpgradeConfig(300, 1.22, null, 1.0, "Periodic health restore drops during waves"),
-            STEP_MULTIPLIER to UpgradeConfig(1_000, 1.35, 100, 1.0, "+1% bonus steps earned from walking (cap 100%)"),
+            STEP_MULTIPLIER to UpgradeConfig(1_000, 1.35, 100, 1.0, "Bonus steps from walking — asymptotic curve approaches +100%"),
         )
 
         fun configFor(type: UpgradeType): UpgradeConfig = configs.getValue(type)

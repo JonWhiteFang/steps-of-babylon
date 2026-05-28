@@ -328,33 +328,37 @@ class DailyStepManagerTest {
     }
 
     @Test
-    fun `RO08 STEP_MULTIPLIER level 50 grants a 50 percent walking bonus`() = runTest {
-        // 50 levels × 0.01 per level = 0.50 bonus. 100 sensor steps → 150 credited.
+    fun `V1X18 STEP_MULTIPLIER level 50 grants asymptotic ~92 percent walking bonus`() = runTest {
+        // V1X-18 / ADR-0015: asymptotic curve `1 - (1 - 0.05)^level`.
+        // L50 → 1 - 0.95^50 ≈ 0.923 → 100 sensor steps → 192 credited.
         com.whitefang.stepsofbabylon.fakes.FakeWorkshopRepository::class.java // unused import suppress
         workshopRepo.upgrades.value =
             mapOf(com.whitefang.stepsofbabylon.domain.model.UpgradeType.STEP_MULTIPLIER to 50)
 
         manager.recordSteps(100, baseTime)
 
+        // 100 * (1 + 0.92306..) = 192.306 → toLong() = 192
         assertEquals(
-            150L,
+            192L,
             playerRepo.getStepBalance(),
-            "STEP_MULTIPLIER level 50 must grant +50 % bonus (100 sensor → 150 credited)",
+            "STEP_MULTIPLIER L50 asymptotic curve: ~92.3% bonus (100 sensor → 192 credited)",
         )
     }
 
     @Test
-    fun `RO08 STEP_MULTIPLIER caps at +100 percent regardless of level`() = runTest {
-        // 200 levels × 0.01 = 2.0 → clamped to 1.0 cap → 2.0× total. 100 sensor → 200 credited.
+    fun `V1X18 STEP_MULTIPLIER level 200 asymptotes near +100 percent`() = runTest {
+        // V1X-18 / ADR-0015: asymptotic curve naturally approaches +100% at high levels.
+        // L200 → 1 - 0.95^200 ≈ 0.99996 → essentially +100%. 100 sensor → 199 credited.
+        // (toLong() truncates 199.99...)
         workshopRepo.upgrades.value =
             mapOf(com.whitefang.stepsofbabylon.domain.model.UpgradeType.STEP_MULTIPLIER to 200)
 
         manager.recordSteps(100, baseTime)
 
         assertEquals(
-            200L,
+            199L,
             playerRepo.getStepBalance(),
-            "STEP_MULTIPLIER must cap the bonus at +100 % (max 2.0× credited)",
+            "STEP_MULTIPLIER asymptotic curve at L200 must be essentially at the cap (~199 credited)",
         )
     }
 
@@ -426,10 +430,11 @@ class DailyStepManagerTest {
     }
 
     @Test
-    fun `RO11 STEP_MULTIPLIER and STEP_EFFICIENCY stack additively under the cap`() = runTest {
-        // Workshop STEP_MULTIPLIER L10 → +10 %; Lab STEP_EFFICIENCY L5 → +10 %; combined +20 %.
-        // 100 sensor steps → 120 credited. Both levels well under their respective caps and
-        // the combined sum (0.20) is well under the +100 % cap.
+    fun `V1X18 STEP_MULTIPLIER and STEP_EFFICIENCY stack additively under the cap`() = runTest {
+        // Workshop STEP_MULTIPLIER L10 (asymptotic) → 1 - 0.95^10 ≈ 0.4013 → +40.13 %.
+        // Lab STEP_EFFICIENCY L5 (linear) → +10 %.
+        // Combined: 0.5013, well under the +100 % cap.
+        // 100 sensor steps × 1.5013 = 150 credited (toLong truncates 150.13).
         workshopRepo.upgrades.value =
             mapOf(com.whitefang.stepsofbabylon.domain.model.UpgradeType.STEP_MULTIPLIER to 10)
         labRepo.levels.value =
@@ -438,17 +443,16 @@ class DailyStepManagerTest {
         manager.recordSteps(100, baseTime)
 
         assertEquals(
-            120L,
+            150L,
             playerRepo.getStepBalance(),
-            "STEP_MULTIPLIER L10 + STEP_EFFICIENCY L5 must add to +20 % bonus (100 → 120)",
+            "Workshop L10 (asymptotic ~40 %) + Lab L5 (+10 %) = ~50 % combined → ~150 credited",
         )
     }
 
     @Test
-    fun `RO11 combined STEP_MULTIPLIER plus STEP_EFFICIENCY caps at +100 percent`() = runTest {
-        // Workshop L100 → +100 % alone; adding Lab STEP_EFFICIENCY L10 → +20 % would push to
-        // +120 % uncapped. The shared cap holds at +100 % → 100 sensor steps → 200 credited
-        // (max 2× credited).
+    fun `V1X18 combined STEP_MULTIPLIER plus STEP_EFFICIENCY caps at +100 percent`() = runTest {
+        // V1X-18 / ADR-0015: Workshop L100 (asymptotic) → 0.9941 ≈ 99.4%. Lab L10 (linear) → 20%.
+        // Combined uncapped: 1.1941 → clamped to 1.0 → 100 sensor → 200 credited.
         workshopRepo.upgrades.value =
             mapOf(com.whitefang.stepsofbabylon.domain.model.UpgradeType.STEP_MULTIPLIER to 100)
         labRepo.levels.value =
@@ -459,7 +463,7 @@ class DailyStepManagerTest {
         assertEquals(
             200L,
             playerRepo.getStepBalance(),
-            "Combined STEP_MULTIPLIER + STEP_EFFICIENCY must respect the shared +100 % cap",
+            "Combined STEP_MULTIPLIER (asymptotic ~99.4%) + STEP_EFFICIENCY (+20%) → clamped to 200 credited",
         )
     }
 }

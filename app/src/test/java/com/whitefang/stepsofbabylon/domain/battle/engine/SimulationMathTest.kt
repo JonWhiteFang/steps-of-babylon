@@ -187,4 +187,56 @@ class SimulationMathTest {
         // Defensive: coerceAtLeast(0) on the upper bound
         assertEquals(0.0, SimulationMath.clampHp(candidateHp = 5.0, maxHp = -10.0))
     }
+
+    // ---- STEP_MULTIPLIER asymptotic curve (V1X-18) ----
+
+    @Test
+    fun `V1X18 stepMultiplierBonus level 0 returns zero`() {
+        assertEquals(0.0, SimulationMath.stepMultiplierBonus(0))
+    }
+
+    @Test
+    fun `V1X18 stepMultiplierBonus level 1 returns 0_05`() {
+        // 1 - 0.95^1 = 0.05
+        assertEquals(0.05, SimulationMath.stepMultiplierBonus(1), 0.0001)
+    }
+
+    @Test
+    fun `V1X18 stepMultiplierBonus level 10 returns ~0_4013`() {
+        // 1 - 0.95^10 = 0.40126...
+        assertEquals(0.4013, SimulationMath.stepMultiplierBonus(10), 0.0005)
+    }
+
+    @Test
+    fun `V1X18 stepMultiplierBonus level 20 returns ~0_6415`() {
+        // 1 - 0.95^20 = 0.64151...
+        assertEquals(0.6415, SimulationMath.stepMultiplierBonus(20), 0.0005)
+    }
+
+    @Test
+    fun `V1X18 stepMultiplierBonus level 50 returns ~0_9231`() {
+        // 1 - 0.95^50 = 0.92306...
+        assertEquals(0.9231, SimulationMath.stepMultiplierBonus(50), 0.0005)
+    }
+
+    @Test
+    fun `V1X18 stepMultiplierBonus level 100 asymptotes near 0_994`() {
+        // 1 - 0.95^100 = 0.99408...
+        assertEquals(0.9941, SimulationMath.stepMultiplierBonus(100), 0.0005)
+    }
+
+    @Test
+    fun `V1X18 stepMultiplierBonus level 200 stays under cap`() {
+        val bonus = SimulationMath.stepMultiplierBonus(200)
+        assertTrue(bonus < 1.0, "asymptotic curve never reaches the cap")
+        assertTrue(bonus > 0.999, "L200 should be very close to the asymptote")
+    }
+
+    @Test
+    fun `V1X18 stepMultiplierBonus L99 differs visibly from L100 (dead-content fix)`() {
+        // Core V1X-18 motivation: pre-fix L99 = L100 (both = 100% bonus). Post-fix they differ.
+        val l99 = SimulationMath.stepMultiplierBonus(99)
+        val l100 = SimulationMath.stepMultiplierBonus(100)
+        assertTrue(l100 > l99, "L100 must give more bonus than L99 (dead-content fix)")
+    }
 }
