@@ -4,6 +4,14 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### V1X Wave 1 — Post-launch polish (2026-05-28)
+
+Three sub-plans implementing the first v1.x patch wave. Test count 698 → 704.
+
+- **V1X-03 Per-screen navigation icons (PR #64):** Replaced 9× `Icons.Default.Star` placeholders with category-appropriate Material icons (BarChart, AutoAwesome, Style, Inbox, AttachMoney, Flag, Settings, ShoppingCart, HelpOutline). Closes #33.
+- **V1X-01 In-app data deletion UI (PR #65):** New `DataDeletionManager` performs full local wipe (WorkManager cancel → service stop → DB delete → 10 SharedPreferences clear → Keystore alias delete → Activity recreate). Settings screen gains danger-styled "Delete All Data" card with 2-step confirmation dialog. New dep: `work-testing`. +4 tests. Closes #48.
+- **V1X-02 Season Pass UI revamp (PR #66):** Season Pass card now shows "Active — N days remaining", free-vs-paid feature comparison, and "Manage subscription" deep-link to Play subscription management. +2 tests. Closes #47.
+
 ### v15 soak hotfix bundle (2026-05-28)
 
 Fixes 5 issues filed during v15 closed-track soak testing. Commit `0ecfe1d`. Test count 695 → 698.

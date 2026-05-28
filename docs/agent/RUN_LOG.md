@@ -1,3 +1,15 @@
+## 2026-05-28 — V1X Wave 1 complete (V1X-01, V1X-02, V1X-03)
+
+- **Goal:** implement V1X Wave 1 (post-launch polish) — 3 sub-plans, each on its own branch with GitHub issue updates.
+- **Outcome:** all 3 merged to `main` via PRs #64, #65, #66. Issues #33, #48, #47 auto-closed. Test count 698 → 704 (+6).
+- **Changes:**
+  - **V1X-03 (PR #64, commit `371d7ce`):** Replaced 9× `Icons.Default.Star` in `Screen.kt` with category-appropriate Material icons. Pure UI, no tests.
+  - **V1X-01 (PR #65, commit `e0df9f0`):** New `DataDeletionManager` + Settings screen "Delete All Data" card with 2-step confirmation. Wipe sequence: WorkManager cancel → service stop → DB close + delete → 10 SharedPreferences clear → Keystore alias delete → Activity recreate. New dep: `work-testing`. 4 new Robolectric tests.
+  - **V1X-02 (PR #66, commit `2d6cbe5`):** Season Pass UI revamp — `seasonPassDaysRemaining` field, "Active — N days remaining" display, free-vs-paid comparison, "Manage subscription" deep-link. 2 new tests.
+- **Files created:** `data/DataDeletionManager.kt`, `test/data/DataDeletionManagerTest.kt`.
+- **Files modified:** `Screen.kt`, `NotificationSettingsViewModel.kt`, `NotificationSettingsScreen.kt`, `StoreUiState.kt`, `StoreViewModel.kt`, `StoreScreen.kt`, `StoreViewModelTest.kt`, `libs.versions.toml`, `build.gradle.kts`.
+- **Next:** V1X Wave 2 (audio overhaul) or resume closed-track soak per user direction.
+
 ## 2026-05-28 — v15 soak hotfix bundle (#60 #62 #59 #63 #61)
 
 - **Goal:** fix 5 new issues filed during v15 closed-track soak testing.
