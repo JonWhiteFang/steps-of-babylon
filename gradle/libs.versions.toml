@@ -52,6 +52,7 @@ hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", v
 
 # WorkManager
 workmanager = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workmanager" }
+workmanager-testing = { group = "androidx.work", name = "work-testing", version.ref = "workmanager" }
 
 # Hilt WorkManager & Navigation
 hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }

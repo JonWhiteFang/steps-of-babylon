@@ -210,4 +210,5 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.room.testing)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.workmanager.testing)
 }
