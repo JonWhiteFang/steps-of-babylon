@@ -1,3 +1,15 @@
+## 2026-05-28 — V1X-18 STEP_MULTIPLIER asymptotic curve + V1X-19 GDD GPS reconciliation
+
+- **Goal:** Two related sub-plans — balance change (V1X-18) and design-doc reconciliation (V1X-19).
+- **Outcome:** 2 PRs merged (#78 V1X-19, #79 V1X-18). Test count 789 → 800 (+11). Issues #40, #49 closed. ADR-0015 + ADR-0016 added.
+- **Changes:**
+  - **V1X-19 (PR #78):** Drop GPS-based "Exploration Mode" from GDD §2.3 supply-drop trigger table; new "Privacy & Permissions" section in `architecture.md` declares no location services and lists requirements for any future reintroduction. ADR-0016 records the v2.x reservation rationale (battery + privacy + Play review trade-off). Pure docs change, no code.
+  - **V1X-18 (PR #79):** STEP_MULTIPLIER curve replaced with asymptotic `1 - (1-0.05)^level`. New `SimulationMath.stepMultiplierBonus(level)` function (V1X-09 Phase 1 seam). `DailyStepManager.applyStepMultiplier` and `DescribeUpgradeEffect` both delegate to it. DescribeUpgradeEffect format bumped to `%.2f%%` so adjacent high-level readouts visibly differ (L99 = 99.41%, L100 = 99.44%). 4 existing DailyStepManager tests rewritten for new curve values; 4 new DescribeUpgradeEffect tests; 8 new SimulationMath tests covering the curve at L0/L1/L10/L20/L50/L100/L200 + L99-vs-L100 dead-content regression guard. ADR-0015 records rationale and V1X-18b deferred (cross-validator interaction RO-09 #3).
+- **Files created:** `ADR-0015-step-multiplier-asymptotic-curve.md`, `ADR-0016-gps-exploration-mode-reconciliation.md`.
+- **Files modified:** `SimulationMath.kt`, `DailyStepManager.kt`, `DescribeUpgradeEffect.kt`, `UpgradeType.kt`, `SimulationMathTest.kt`, `DescribeUpgradeEffectTest.kt`, `DailyStepManagerTest.kt`, `StepsOfBabylon_GDD.md`, `architecture.md`.
+- **Deferred:** V1X-18b (cross-validator subtracts multiplier-bonus before comparison, addresses RO-09 #3).
+- **Next:** V1X-15b ENEMY_INTEL design ship (~1 week, larger UI work with 3 overlays + new wave-composition helper) OR V1X-08 instrumented tests OR resume closed-track soak.
+
 ## 2026-05-28 — V1X-16 Weekly Challenges expanded view
 
 - **Goal:** Expand the Weekly Step Challenge card with time-remaining countdown + last 4 weeks history.

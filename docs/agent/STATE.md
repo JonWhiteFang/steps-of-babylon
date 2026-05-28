@@ -1,7 +1,7 @@
 # Project State
 
 ## Current objective
-- **V1X Waves 1+2+3 partial complete (2026-05-28).** Total 14 PRs merged (#64–#77). Test count 698 → 789 (+91). Closed: #33, #35, #37 (partial), #38, #39, #41, #42 (partial), #43, #44 (partial), #45, #46, #47, #48, #50, #51. **Next: V1X-18 STEP_MULTIPLIER curve OR V1X-19 GDD reconciliation OR V1X-15b ENEMY_INTEL OR V1X-08 instrumented tests.**
+- **Major V1X progress complete (2026-05-28).** Total 16 PRs merged today (#64–#79). Test count 698 → 800 (+102). Closed: #33, #35, #37 (partial), #38, #39, #40, #41, #42 (partial), #43, #44 (partial), #45, #46, #47, #48, #49, #50, #51. **Next: V1X-15b ENEMY_INTEL ship (~1 week, larger UI work) OR V1X-08 instrumented tests OR V1X-12/13 cloud save + i18n OR resume closed-track soak.**
 - **Previous objective (v15 build, complete):** versionCode bumped 14 → 15 in commit `935dac6`. `./run-gradle.sh clean bundleRelease` BUILD SUCCESSFUL; jarsigner verified clean; AAB at `app/build/outputs/bundle/release/app-release.aab` (~19 MB).
 - **Previous objective (#54 fix, complete + merged):** PR #58 merged 2026-05-27. Orbs now oscillate radially through the enemy melee zone. Test count 689 → 695 (+6).
 - **Previous objective (#55 fix, complete + merged):** PR #57 merged 2026-05-27. HomeViewModel.init R3-03 regression.
@@ -44,7 +44,7 @@
 - Play Console: developer account verified, app `com.whitefang.stepsofbabylon` created in Draft, package registered via ADV (debug-keystore path). Listing populated end-to-end. Internal track v3 (versionCode 3) live, on-device-verified. 5 SKUs created and active.
 - Real Play Billing v8 + AdMob v25 + UMP v4 wired end-to-end and verified on a real device.
 - **Pre-closed-testing UX polish (PRs A + B):** Ad-failure modes surface as snackbars in Battle + Cards; Store screen displays live Play-Console prices via `ProductDetails.priceDisplay` with static-constant fallback. Walkthrough doc reflects the lessons learned during the live walk-through.
-- **789 JVM tests** green post-V1X-16 (787 → 789: +2 weekly history tests).
+- **800 JVM tests** green post-V1X-18 (789 → 800: +11 STEP_MULTIPLIER asymptotic curve tests).
 - **R4-04 in-round upgrade button icon swap complete on branch `feat/R4-04-upgrade-button-icon`:** `BattleScreen.kt:165` `Text("⬆", color = Color.White)` → `Icon(Icons.Filled.Upgrade, contentDescription = null, tint = Color.White)`. New imports: `androidx.compose.material.icons.filled.Upgrade`. New dep `compose-material-icons-extended` added to `gradle/libs.versions.toml` + `app/build.gradle.kts` because `Icons.Filled.Upgrade` lives in the extended catalogue (R4-05 will reuse for `Icons.Filled.Help`). R8 minification effectively tree-shakes unused icons in release builds; release APK still 30 MB.
 - **R4-02 Multishot/Bounce 4-level scaling complete + merged via PR #10** (commit `b2f7cd5`). 615 tests unchanged.
 - **R4-01 Step Overdrive removal complete + merged via PR #9** (commit `e375d14`). 627 → 615.
@@ -113,7 +113,8 @@
 - Plan RO-12 (complete, in-round stat drift bugfix bundle): docs/plans/plan-RO-12-in-round-stat-drift.md
 - Plan R3 (in progress, GitHub-issue-driven remediation): docs/plans/plan-R3-remediation-3.md (4 sub-plans → GitHub issues #1–#4 on `JonWhiteFang/steps-of-babylon`, milestone `v1.0.0 closed-test gate`)
 - Critical path: 01→…30→R→R2→ Battle Step Rewards → Phase A done → B.1 done → B.2 done (RO-02 complete) → B.3 done (RO-03 complete) → B.4–B.5 (deferred post-launch) → C.2 PRs done → C.4 done → C.5 PRs 1+2+3 done → C.6 PRs 1+2+3 done → battle-step-credit hotfix done → RO-08 done (4-fix upgrade-wiring bundle) → RO-09 done (chrono fix + fortune stacking + drive-by) → RO-11 done (Phase A 7 simple Labs multipliers + Phase B WAVE_SKIP + Coming Soon gate + Phase C in-round readout, 572 → 609 tests) → RO-12 done (in-round stat drift bundle: lab + card preservation + DescribeUpgradeEffect card threading + HEALTH_REGEN precision, 609 → 615 tests) → Plan 31 (Phases A–G done; smoke test PASSED 2026-05-18; v4 superseded by v5; v5 uploaded to internal track 2026-05-19; v5 smoke test surfaced RO-12; **v6 built + uploaded to internal track 2026-05-19; v7 built + signed 2026-05-20 (first AAB with full R3 bundle)**) → **upload v7 + smoke-test v7 + Phase G2 closed track** (≥14 days, ≥12 testers) → Phases H+I production access → tag v1.0.0
-- Last run: 2026-05-28 ~15:00 BST — **V1X-16 Weekly Challenges expanded view complete.** PR #77 merged. Time-remaining countdown + 4-week history. Test count 787 → 789.
+- Last run: 2026-05-28 ~15:30 BST — **V1X-18 STEP_MULTIPLIER asymptotic curve + V1X-19 GDD GPS reconciliation complete.** 2 PRs merged (#78 docs, #79 balance). Issues #40, #49 closed. ADR-0015 + ADR-0016 added. Test count 789 → 800.
+- Previous run: 2026-05-28 ~15:00 BST — **V1X-16 Weekly Challenges expanded view complete.** PR #77 merged. Time-remaining countdown + 4-week history. Test count 787 → 789.
 - Previous run: 2026-05-28 ~14:50 BST — **V1X-09 Phase 1 simulation extraction complete.** PR #76 merged. Pure-math helpers lifted to `domain/battle/engine/SimulationMath`. ADR-0012 documents the decision. Test count 760 → 787.
 - Previous run: 2026-05-28 ~14:30 BST — **V1X Wave 3 partial complete.** 3 PRs merged (#73 repo tests, #74 Coming Soon, #75 text-share). Issues #42 (partial), #43, #44 (partial), #50 closed. Test count 711 → 760.
 - Previous run: 2026-05-28 ~14:00 BST — **V1X Wave 2 + quick wins complete.** 6 PRs merged (#67–#72). Issues #46, #38, #39, #51, #35, #45 closed. Test count 704 → 711.

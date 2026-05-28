@@ -4,6 +4,14 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### V1X-18 STEP_MULTIPLIER asymptotic curve (2026-05-28)
+
+- **PR #79:** Replace the linear-with-hard-cap STEP_MULTIPLIER curve with an asymptotic curve `bonus = 1 - (1 - 0.05)^level`. Early-mid game buffed (L10 was +10%, now +40.1%); late game tiny nerf at L100 (-0.6pp); dead-content L99=L100 fixed. Math centralised in `SimulationMath.stepMultiplierBonus`. DescribeUpgradeEffect format bumped to 2-decimal precision. ADR-0015 records the rationale and V1X-18b deferred (cross-validator interaction). +11 tests. Closes #49. Test count 789 → 800.
+
+### V1X-19 GDD GPS Exploration Mode reconciliation (2026-05-28)
+
+- **PR #78:** Reconcile GDD §2.3 with shipping product per ADR-0016. Drop the GPS-based "Exploration Mode" feature from v1.x scope (battery + privacy + Play review trade-off doesn't justify unproven gameplay payoff). Reserved as v2.x meta-progression concept. New "Privacy & Permissions" section in architecture.md explicitly declares no location services. Docs-only. Closes #40.
+
 ### V1X-16 Weekly Challenges expanded view (2026-05-28)
 
 - **PR #77:** Expand Weekly Step Challenge card in CurrencyDashboardScreen — time remaining ('Nd Hh' until next Monday reset) shown in header; last 4 past weeks history with met/missed indicator + PS earned per week. New `WeeklyChallengeDao.getLastNWeeks(limit)` query. New `WeeklyResult` data class. +2 tests. Closes #41. Test count 787 → 789.
