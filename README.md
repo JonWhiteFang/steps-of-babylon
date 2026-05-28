@@ -56,7 +56,7 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 ./gradlew bundleRelease
 ```
 
-Instrumented tests (`connectedAndroidTest`) are not yet implemented; all current coverage is JVM unit tests under `app/src/test/`. See [AGENTS.md](AGENTS.md) for the full coverage breakdown.
+Instrumented tests live under `app/src/androidTest/`. The harness was stood up in V1X-08 Phase 1A with one infrastructure smoke test (`InfrastructureSmokeTest.harnessBoots`); the three planned suites — `BattleSurfaceLifecycleTest`, `StoreIapFlowTest`, `DeepLinkIntentTest` — are layered on in follow-up PRs. Run via `./gradlew connectedDebugAndroidTest` on a connected emulator (API 34+). All other coverage is JVM unit tests under `app/src/test/`. See [AGENTS.md](AGENTS.md) for the full coverage breakdown.
 
 ### Non-TTY Environments (Kiro CLI, CI, etc.)
 

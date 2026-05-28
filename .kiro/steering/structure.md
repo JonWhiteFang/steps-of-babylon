@@ -76,6 +76,8 @@ app/src/test/java/com/whitefang/stepsofbabylon/
 └── service/            # StepWidgetProvider tests
 ```
 
+The instrumented (`androidTest`) source set lives at `app/src/androidTest/java/com/whitefang/stepsofbabylon/` and was stood up in V1X-08 Phase 1A. Two files: `HiltTestRunner.kt` and `InfrastructureSmokeTest.kt`. Run with `./run-gradle.sh connectedDebugAndroidTest` against a connected emulator (API 34+).
+
 ## Layer Rules
 
 - `domain/` must have zero Android imports — pure Kotlin only

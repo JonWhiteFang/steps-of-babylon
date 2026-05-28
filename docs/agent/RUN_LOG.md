@@ -1,3 +1,29 @@
+## 2026-05-28 — V1X-08 Phase 1A: instrumented-test infrastructure stood up
+
+- **Goal:** Stand up the `androidTest/` source set end-to-end and prove the harness boots on a connected emulator with one minimal smoke test. Three real suites (`BattleSurfaceLifecycleTest` for R3-01-class regression guards, `StoreIapFlowTest` for closed-track IAP coverage, `DeepLinkIntentTest` for the 13 nav routes) deferred to follow-up PRs per the V1X-08 plan's phased layout.
+- **Outcome:** `connectedDebugAndroidTest` BUILD SUCCESSFUL in 1m 28s on emulator-5554 (Pixel 6, API 36); `InfrastructureSmokeTest.harnessBoots` passed. JVM unit tests still 800/800 green (no regressions from the gradle/manifest changes). Total test count now **800 JVM + 1 instrumented** across the project.
+- **Branch:** `feat/V1X-08-instrumented-infra` cut from `main` (HEAD `3736dff`). Not yet committed/pushed pending user PR decision.
+- **Changes:**
+  - **`gradle/libs.versions.toml`:** Added 2 version pins (`androidxTestRunner=1.6.2`, `androidxTestExtJunit=1.2.1`) + 3 library aliases (`androidx-test-runner`, `androidx-test-ext-junit`, `hilt-android-testing` reusing the existing `hilt=2.59.2` pin).
+  - **`app/build.gradle.kts`:** Added `testInstrumentationRunner = "com.whitefang.stepsofbabylon.HiltTestRunner"` to `defaultConfig`. Added 3 `androidTestImplementation` deps (test-runner, test-ext-junit, hilt-android-testing) + `kspAndroidTest(libs.hilt.compiler)` so Hilt generates DI components for `@HiltAndroidTest` classes (the regular `ksp` config does not cover androidTest).
+  - **`app/src/androidTest/java/com/whitefang/stepsofbabylon/HiltTestRunner.kt`** (NEW, 23 lines): `AndroidJUnitRunner` subclass overriding `newApplication` to install `HiltTestApplication`. Wired via `testInstrumentationRunner` in build.gradle.kts.
+  - **`app/src/androidTest/java/com/whitefang/stepsofbabylon/InfrastructureSmokeTest.kt`** (NEW, 43 lines): `@HiltAndroidTest` `@RunWith(AndroidJUnit4::class)` with one `harnessBoots` test that asserts the pipeline (Gradle config → KSP → Hilt component generation → AndroidJUnit4 dispatch) is fully wired. Deliberately does NOT touch DB / services / sensors / permissions — those belong to the three real suites.
+  - **Manifest decision:** Skipped creating `app/src/androidTest/AndroidManifest.xml`. With modern AGP 9 + Hilt 2.59, the runner's `newApplication()` override installs `HiltTestApplication` at instrumentation init, before Android reads `<application android:name>` from the merged manifest. The original V1X-08 plan called for a manifest override but it's redundant with the runner approach. If a future suite hits manifest-merge issues we'll add the manifest as a remediation.
+- **Doc-sync (per PR Task-List Convention):**
+  - **CHANGELOG.md:** New `V1X-08 Phase 1A instrumented-test infrastructure` section under `[Unreleased]`.
+  - **README.md:** Replaced "Instrumented tests are not yet implemented" line with the V1X-08 Phase 1A status + run command.
+  - **AGENTS.md:** Testing section: rewrote 4 stale lines (instrumented coverage / framework / run command / source); test-count line bumped to **800 JVM + 1 instrumented**.
+  - **`.kiro/steering/tech.md`:** Added 3 new dep rows (AndroidX Test Runner, AndroidX Test Ext JUnit, Hilt Android Testing).
+  - **`.kiro/steering/source-files.md`:** Test Layer header annotated to mention the androidTest source set; new `Instrumented (androidTest) source set` subsection at the bottom listing both new files with their contracts.
+  - **`.kiro/steering/structure.md`:** Inline callout below the Test source-set tree noting the androidTest location + run command.
+- **Verification commands run:**
+  - `git checkout -b feat/V1X-08-instrumented-infra`
+  - `./gradlew --stop && rm -rf app/build` (cold-build prep after a stale AGP cache validation hit `mergeExtDexDebug` on a daemon-cached fingerprint)
+  - `./run-gradle.sh connectedDebugAndroidTest --console=plain` — BUILD SUCCESSFUL in 1m 28s, 80/80 tasks executed, smoke test PASSED on emulator-5554
+  - `./run-gradle.sh testDebugUnitTest --console=plain` — BUILD SUCCESSFUL in 32s, 800 tests / 0 failures / 0 errors / 0 skipped
+- **Pre-existing warnings observed (none from this PR):** 6 Kotlin `@param:` annotation-target advisories from the KT-73255 migration affect `DataDeletionManager`, `RealConsentManager`, `RealRewardedAdAdapter`, `BillingManagerImpl`, `RealBillingClientAdapter`. 1 unnecessary-`!!` warning in `UltimateWeaponViewModel.kt:71`. None are related to V1X-08.
+- **Next session:** Commit + push branch, open PR. Then pick the first real suite to layer on — most likely `BattleSurfaceLifecycleTest` since it directly benefits the R3-01 regression guard (currently a Robolectric workaround) and is the canonical use case for instrumented tests vs JVM. `StoreIapFlowTest` and `DeepLinkIntentTest` follow.
+
 ## 2026-05-28 — Full doc sweep after V1X session
 
 - **Goal:** Apply the agent protocol PR Task-List Convention systematically across every canonical doc, capturing 16 PRs of changes that landed in incremental sessions.

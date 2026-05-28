@@ -4,6 +4,10 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### V1X-08 Phase 1A instrumented-test infrastructure (2026-05-28)
+
+- **Branch `feat/V1X-08-instrumented-infra`:** Stand up the `androidTest/` source set end-to-end. New `HiltTestRunner` (subclass of `AndroidJUnitRunner` that swaps `StepsOfBabylonApp` → `HiltTestApplication` via `newApplication` override) wired via `testInstrumentationRunner` in `app/build.gradle.kts`. New `androidTestImplementation` deps: `androidx.test:runner` 1.6.2, `androidx.test.ext:junit` 1.2.1, `dagger.hilt:hilt-android-testing` 2.59.2 (re-uses existing `hilt` version pin). New `kspAndroidTest(libs.hilt.compiler)` so Hilt DI components get generated for `@HiltAndroidTest` classes; the regular `ksp` config does not cover the androidTest source set. Single-test smoke suite `InfrastructureSmokeTest.harnessBoots` proves the pipeline (Gradle config → KSP → Hilt component → AndroidJUnit4 → emulator) is wired correctly. `connectedDebugAndroidTest` BUILD SUCCESSFUL in 1m 28s on Pixel 6 emulator (API 36); JVM unit tests still 800/800 green. Three real suites (`BattleSurfaceLifecycleTest` for R3-01-class regression guards, `StoreIapFlowTest` for closed-track IAP coverage, `DeepLinkIntentTest` for the 13 nav routes) deferred to follow-up PRs. Per the V1X-08 plan, no ADR required at this scope.
+
 ### V1X-18 STEP_MULTIPLIER asymptotic curve (2026-05-28)
 
 - **PR #79:** Replace the linear-with-hard-cap STEP_MULTIPLIER curve with an asymptotic curve `bonus = 1 - (1 - 0.05)^level`. Early-mid game buffed (L10 was +10%, now +40.1%); late game tiny nerf at L100 (-0.6pp); dead-content L99=L100 fixed. Math centralised in `SimulationMath.stepMultiplierBonus`. DescribeUpgradeEffect format bumped to 2-decimal precision. ADR-0015 records the rationale and V1X-18b deferred (cross-validator interaction). +11 tests. Closes #49. Test count 789 → 800.
