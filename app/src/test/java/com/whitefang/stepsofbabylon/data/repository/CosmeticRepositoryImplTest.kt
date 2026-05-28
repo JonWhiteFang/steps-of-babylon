@@ -167,7 +167,7 @@ class CosmeticRepositoryImplTest {
         repo.ensureSeedData()
 
         val allItems = repo.observeAll().first()
-        val otherIds = listOf("zig_obsidian", "zig_crystal", "zig_golden", "proj_fire", "proj_lightning", "enemy_shadow", "enemy_neon")
+        val otherIds = listOf("zig_crystal", "zig_golden", "proj_fire", "proj_lightning", "enemy_shadow", "enemy_neon")
 
         otherIds.forEach { id ->
             val item = allItems.single { it.cosmeticId == id }
@@ -300,5 +300,27 @@ class CosmeticRepositoryImplTest {
         // Palette still plumbs through (proves toDomain still applies ZIGGURAT_COLOR_LOOKUP
         // to the already-persisted row, not just to freshly-seeded rows).
         assertNotNull(jade.overrideColors)
+    }
+
+    @Test
+    fun `V1X14 - zig_obsidian propagates obsidian palette via overrideColors`() = runTest {
+        val dao = FakeCosmeticDao()
+        val repo = CosmeticRepositoryImpl(dao)
+        repo.ensureSeedData()
+
+        val obsidian = repo.observeAll().first().single { it.cosmeticId == "zig_obsidian" }
+
+        assertNotNull(obsidian.overrideColors, "zig_obsidian must have overrideColors from ZIGGURAT_COLOR_LOOKUP")
+        assertEquals(5, obsidian.overrideColors!!.size)
+        assertEquals(
+            listOf(
+                0xFF1A1A1A.toInt(),
+                0xFF2D2D2D.toInt(),
+                0xFF3F3F3F.toInt(),
+                0xFF525252.toInt(),
+                0xFF7A6F4D.toInt(),
+            ),
+            obsidian.overrideColors,
+        )
     }
 }
