@@ -1,6 +1,8 @@
 package com.whitefang.stepsofbabylon.presentation.settings
 
+import android.app.Activity
 import androidx.lifecycle.ViewModel
+import com.whitefang.stepsofbabylon.data.DataDeletionManager
 import com.whitefang.stepsofbabylon.data.NotificationPreferences
 import com.whitefang.stepsofbabylon.data.SoundPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +24,7 @@ data class NotificationSettingsState(
 class NotificationSettingsViewModel @Inject constructor(
     private val prefs: NotificationPreferences,
     private val soundPrefs: SoundPreferences,
+    private val dataDeletionManager: DataDeletionManager,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(NotificationSettingsState(
@@ -38,4 +41,8 @@ class NotificationSettingsViewModel @Inject constructor(
     fun setSmartReminders(enabled: Boolean) { prefs.setSmartRemindersEnabled(enabled); _state.update { it.copy(smartReminders = enabled) } }
     fun setMilestoneAlerts(enabled: Boolean) { prefs.setMilestoneAlertsEnabled(enabled); _state.update { it.copy(milestoneAlerts = enabled) } }
     fun setSoundMuted(muted: Boolean) { soundPrefs.setMuted(muted); _state.update { it.copy(soundMuted = muted) } }
+
+    fun deleteAllData(activity: Activity) {
+        dataDeletionManager.deleteAllData(activity)
+    }
 }
