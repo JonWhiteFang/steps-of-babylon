@@ -35,7 +35,7 @@ android {
         applicationId = "com.whitefang.stepsofbabylon"
         minSdk = 34
         targetSdk = 36
-        versionCode = 15
+        versionCode = 16
         versionName = "1.0.0"
 
         // Default USE_REAL_ADS value. Post-C.6 PR 3 the flag no longer gates the
