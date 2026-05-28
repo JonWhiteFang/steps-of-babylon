@@ -94,4 +94,22 @@ interface PlayerProfileDao {
 
     @Query("UPDATE player_profile SET freeCardPackAdUsedToday = :date WHERE id = 1")
     suspend fun updateFreeCardPackAdUsed(date: String)
+
+    /**
+     * Atomic guarded Gem deduction. Deducts [amount] from gem balance and increments
+     * totalGemsSpent in a single SQL statement, only if the balance is sufficient.
+     * Eliminates the TOCTOU race where two concurrent spends both pass a Kotlin-side check.
+     *
+     * @return Rows affected — `1` if sufficient and deducted; `0` otherwise.
+     */
+    @Query("UPDATE player_profile SET gems = gems - :amount, totalGemsSpent = totalGemsSpent + :amount WHERE id = 1 AND gems >= :amount")
+    suspend fun spendGemsAtomic(amount: Long): Int
+
+    /**
+     * Atomic guarded Power Stone deduction. Same shape as [spendGemsAtomic].
+     *
+     * @return Rows affected — `1` if sufficient and deducted; `0` otherwise.
+     */
+    @Query("UPDATE player_profile SET powerStones = powerStones - :amount, totalPowerStonesSpent = totalPowerStonesSpent + :amount WHERE id = 1 AND powerStones >= :amount")
+    suspend fun spendPowerStonesAtomic(amount: Long): Int
 }

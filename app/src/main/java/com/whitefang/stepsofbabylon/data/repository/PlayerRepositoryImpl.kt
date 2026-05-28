@@ -31,16 +31,14 @@ class PlayerRepositoryImpl @Inject constructor(
         dao.incrementGemsEarned(amount)
     }
     override suspend fun spendGems(amount: Long) {
-        dao.adjustGems(-amount)
-        dao.incrementGemsSpent(amount)
+        dao.spendGemsAtomic(amount)
     }
     override suspend fun addPowerStones(amount: Long) {
         dao.adjustPowerStones(amount)
         dao.incrementPowerStonesEarned(amount)
     }
     override suspend fun spendPowerStones(amount: Long) {
-        dao.adjustPowerStones(-amount)
-        dao.incrementPowerStonesSpent(amount)
+        dao.spendPowerStonesAtomic(amount)
     }
     override suspend fun addCardDust(amount: Long) = dao.adjustCardDust(amount)
     override suspend fun spendCardDust(amount: Long) = dao.adjustCardDust(-amount)
