@@ -32,6 +32,7 @@ data class BattleUiState(
     val cash: Long = 0,
     val enemyCount: Int = 0,
     val wavePhase: String = "",
+    val waveProgress: Float = 0f,
     val speedMultiplier: Float = 1f,
     val isPaused: Boolean = false,
     val isLoading: Boolean = true,

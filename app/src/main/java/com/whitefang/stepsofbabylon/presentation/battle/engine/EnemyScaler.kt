@@ -9,11 +9,11 @@ object EnemyScaler {
     const val BASE_SPEED = 80f
     const val SCALING_FACTOR = 1.05
 
-    fun scaleHealth(type: EnemyType, wave: Int): Double =
-        BASE_HEALTH * type.healthMultiplier * SCALING_FACTOR.pow(wave)
+    fun scaleHealth(type: EnemyType, wave: Int, tierMultiplier: Double = 1.0): Double =
+        BASE_HEALTH * type.healthMultiplier * SCALING_FACTOR.pow(wave) * tierMultiplier
 
-    fun scaleDamage(type: EnemyType, wave: Int): Double =
-        BASE_DAMAGE * type.damageMultiplier * SCALING_FACTOR.pow(wave)
+    fun scaleDamage(type: EnemyType, wave: Int, tierMultiplier: Double = 1.0): Double =
+        BASE_DAMAGE * type.damageMultiplier * SCALING_FACTOR.pow(wave) * tierMultiplier
 
     fun scaleSpeed(type: EnemyType): Float =
         BASE_SPEED * type.speedMultiplier.toFloat()

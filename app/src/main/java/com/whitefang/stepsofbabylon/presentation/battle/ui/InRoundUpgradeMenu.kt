@@ -39,6 +39,7 @@ fun InRoundUpgradeMenu(
     inRoundLevels: Map<UpgradeType, Int>,
     onPurchase: (UpgradeType) -> Unit,
     onDismiss: () -> Unit,
+    lastPurchaseFree: Boolean = false,
     /**
      * RO-11 #C / RO-10: per-row "Now → Next" readout. Default is a no-readout fallback
      * (current = empty, next = null) so the existing `BattleScreen` invocation that hasn't
@@ -73,7 +74,16 @@ fun InRoundUpgradeMenu(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("$${cash}", color = Color(0xFFD4A843), style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("$${cash}", color = Color(0xFFD4A843), style = MaterialTheme.typography.titleMedium)
+                if (lastPurchaseFree) {
+                    Text(
+                        "  FREE!",
+                        color = Color(0xFF4CAF50),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+            }
             TextButton(onClick = onDismiss) { Text("✕", color = Color.White, fontSize = 18.sp) }
         }
 

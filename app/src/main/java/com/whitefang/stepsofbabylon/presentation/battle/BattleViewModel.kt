@@ -43,6 +43,8 @@ import com.whitefang.stepsofbabylon.domain.usecase.ResolveStats
 import com.whitefang.stepsofbabylon.domain.usecase.UpdateBestWave
 import com.whitefang.stepsofbabylon.service.MilestoneNotificationManager
 import com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine
+import com.whitefang.stepsofbabylon.presentation.battle.engine.WavePhase
+import com.whitefang.stepsofbabylon.presentation.battle.engine.WaveSpawner
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BiomeTransitionInfo
 import com.whitefang.stepsofbabylon.presentation.battle.UWSlotInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -220,6 +222,10 @@ class BattleViewModel @Inject constructor(
                         currentHp = zig.currentHp, maxHp = zig.maxHp,
                         cash = eng.cash, enemyCount = spawner?.enemiesAlive ?: 0,
                         wavePhase = spawner?.phase?.name ?: "",
+                        waveProgress = spawner?.let { s ->
+                            val dur = if (s.phase == WavePhase.SPAWNING) WaveSpawner.SPAWN_DURATION else WaveSpawner.COOLDOWN_DURATION
+                            (s.phaseTimer / dur).coerceIn(0f, 1f)
+                        } ?: 0f,
                         uwSlots = eng.uwStates.map { uw ->
                             // RO-11 #A.2 / R4-06: cooldownTotal mirrors the engine-side multiplier
                             // so the ring-fill UI tracks the actual cooldown duration. Cooldown

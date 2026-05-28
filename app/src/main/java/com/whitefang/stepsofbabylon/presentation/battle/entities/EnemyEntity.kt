@@ -27,7 +27,7 @@ class EnemyEntity(
      * site simply passed `attacker = null`. (R3-02 / GitHub issue #4)
      */
     private val onMeleeHit: ((EnemyEntity, Double) -> Unit)? = null,
-    private val onFireProjectile: ((Float, Float, Float, Float, Double) -> Unit)? = null,
+    private val onFireProjectile: ((EnemyEntity, Float, Float, Float, Float, Double) -> Unit)? = null,
     private val attackInterval: Float = 1f,
     armorHits: Int = 0,
     enemyTint: Int = 0,
@@ -61,7 +61,7 @@ class EnemyEntity(
             attackCooldown -= deltaTime
             if (attackCooldown <= 0f) {
                 attackCooldown = attackInterval
-                if (enemyType == EnemyType.RANGED) onFireProjectile?.invoke(x, y, targetX, targetY, damage)
+                if (enemyType == EnemyType.RANGED) onFireProjectile?.invoke(this, x, y, targetX, targetY, damage)
                 else onMeleeHit?.invoke(this, damage)
             }
         }

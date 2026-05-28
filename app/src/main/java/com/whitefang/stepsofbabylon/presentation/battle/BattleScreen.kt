@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +20,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -111,6 +114,12 @@ fun BattleScreen(
         Column(Modifier.align(Alignment.TopStart).padding(start = 16.dp, top = 80.dp)) {
             Text("Wave ${state.currentWave} · ${state.enemyCount} enemies", color = Color.White, style = MaterialTheme.typography.titleMedium)
             Text(state.wavePhase.lowercase().replaceFirstChar { it.uppercase() }, color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+            LinearProgressIndicator(
+                progress = { state.waveProgress },
+                modifier = Modifier.width(120.dp).height(4.dp).padding(top = 2.dp),
+                color = if (state.wavePhase == "SPAWNING") Color(0xFF4CAF50) else Color(0xFFFFA726),
+                trackColor = Color.White.copy(alpha = 0.2f),
+            )
             Text("$${state.cash}", color = Color(0xFFD4A843), style = MaterialTheme.typography.titleSmall)
             if (state.stepsEarnedThisRound > 0) {
                 Text(
@@ -191,6 +200,7 @@ fun BattleScreen(
             Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 72.dp)) {
                 InRoundUpgradeMenu(cash = state.cash, inRoundLevels = state.inRoundLevels,
                     onPurchase = viewModel::purchaseInRoundUpgrade, onDismiss = viewModel::toggleUpgradeMenu,
+                    lastPurchaseFree = state.lastPurchaseFree,
                     describeEffect = viewModel::describeEffect)
             }
         }

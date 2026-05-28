@@ -53,4 +53,25 @@ class EnemyScalerTest {
             assertTrue(EnemyScaler.stepReward(type) > 0L, "stepReward must be > 0 for $type")
         }
     }
+
+    @Test
+    fun `tier multiplier scales health`() {
+        val base = EnemyScaler.scaleHealth(EnemyType.BASIC, 1)
+        val tier10 = EnemyScaler.scaleHealth(EnemyType.BASIC, 1, 10.0)
+        assertEquals(base * 10.0, tier10, eps)
+    }
+
+    @Test
+    fun `tier multiplier scales damage`() {
+        val base = EnemyScaler.scaleDamage(EnemyType.BASIC, 1)
+        val tier10 = EnemyScaler.scaleDamage(EnemyType.BASIC, 1, 10.0)
+        assertEquals(base * 10.0, tier10, eps)
+    }
+
+    @Test
+    fun `tier multiplier defaults to 1`() {
+        val explicit = EnemyScaler.scaleHealth(EnemyType.TANK, 5, 1.0)
+        val defaulted = EnemyScaler.scaleHealth(EnemyType.TANK, 5)
+        assertEquals(explicit, defaulted, eps)
+    }
 }

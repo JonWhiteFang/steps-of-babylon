@@ -40,13 +40,13 @@ class UWVisualEffect(
         when (type) {
             UltimateWeaponType.DEATH_WAVE -> {
                 val progress = age / duration
-                val radius = progress * screenWidth * 0.6f
-                repeat(3) {
+                val radius = progress * screenWidth * 0.8f
+                repeat(8) {
                     val angle = Random.nextFloat() * 2f * PI.toFloat()
                     val p = pool.acquire()
                     p.x = cx + cos(angle) * radius; p.y = cy + sin(angle) * radius
-                    p.vx = cos(angle) * 40f; p.vy = sin(angle) * 40f
-                    p.color = 0xFF4CAF50.toInt(); p.size = 4f; p.lifetime = 0.3f
+                    p.vx = cos(angle) * 80f; p.vy = sin(angle) * 80f
+                    p.color = 0xFFE53935.toInt(); p.size = 7f; p.lifetime = 0.6f
                 }
             }
             UltimateWeaponType.CHAIN_LIGHTNING -> {
@@ -94,8 +94,8 @@ class UWVisualEffect(
         fallbackPaint.alpha = alpha
         when (type) {
             UltimateWeaponType.DEATH_WAVE -> {
-                fallbackPaint.color = 0xFF4CAF50.toInt(); fallbackPaint.style = Paint.Style.STROKE; fallbackPaint.strokeWidth = 4f
-                canvas.drawCircle(cx, cy, progress * screenWidth * 0.6f, fallbackPaint)
+                fallbackPaint.color = 0xFFE53935.toInt(); fallbackPaint.style = Paint.Style.STROKE; fallbackPaint.strokeWidth = 6f
+                canvas.drawCircle(cx, cy, progress * screenWidth * 0.8f, fallbackPaint)
             }
             UltimateWeaponType.BLACK_HOLE -> {
                 fallbackPaint.color = 0xFF6A0DAD.toInt(); fallbackPaint.style = Paint.Style.FILL

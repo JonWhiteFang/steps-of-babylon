@@ -311,13 +311,14 @@ class GameEngine {
             // to the melee enemy. Pre-R3-02 this was `{ dmg -> ... null }` and THORN_DAMAGE
             // never fired on melee hits despite being plumbed through ResolvedStats.
             onMeleeHit = { atk, dmg -> applyDamageToZiggurat(dmg, atk) },
-            onEnemyFireProjectile = { sx, sy, tx, ty, dmg ->
-                pendingAdd.add(EnemyProjectileEntity(sx, sy, tx, ty, damage = dmg))
+            onEnemyFireProjectile = { shooter, sx, sy, tx, ty, dmg ->
+                pendingAdd.add(EnemyProjectileEntity(sx, sy, tx, ty, damage = dmg, shooter = shooter))
             },
             onWaveComplete = ::handleWaveComplete,
             conditions = conditions,
             enemyTint = biomeTheme.enemyTint,
             startWave = safeStartWave,
+            tierMultiplier = TierConfig.forTier(tier).cashMultiplier,
         )
 
         // Initial wave announcement
@@ -412,7 +413,7 @@ class GameEngine {
             entities, zig.x, zig.y, zig.width,
             onProjectileHitEnemy = ::onProjectileHitEnemy,
             onEnemyProjectileHitZiggurat = { proj ->
-                applyDamageToZiggurat(proj.damage, null)
+                applyDamageToZiggurat(proj.damage, proj.shooter)
                 proj.isAlive = false
             },
         )
@@ -510,7 +511,11 @@ class GameEngine {
         // Spawn particle-based UW visual effect
         val fx = effectEngine
         if (fx != null) {
-            val effectDuration = if (duration > 0f) duration else 0.5f
+            val effectDuration = when {
+                uw.type == UltimateWeaponType.DEATH_WAVE -> 1.2f
+                duration > 0f -> duration
+                else -> 0.5f
+            }
             val cx: Float; val cy: Float
             when (uw.type) {
                 UltimateWeaponType.BLACK_HOLE -> { cx = screenWidth / 2f; cy = screenHeight * 0.35f }

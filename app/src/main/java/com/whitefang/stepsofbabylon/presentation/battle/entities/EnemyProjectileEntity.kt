@@ -12,6 +12,7 @@ class EnemyProjectileEntity(
     private val targetY: Float,
     private val speed: Float = 300f,
     val damage: Double,
+    val shooter: EnemyEntity? = null,
 ) : Entity(x = startX, y = startY, width = 6f, height = 6f) {
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFE53935.toInt() }

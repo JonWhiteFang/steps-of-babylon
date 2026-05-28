@@ -14,7 +14,7 @@ class WaveSpawner(
     private val zigguratY: Float,
     private val onEnemyDeath: (EnemyEntity) -> Unit,
     private val onMeleeHit: (EnemyEntity, Double) -> Unit,
-    private val onEnemyFireProjectile: (Float, Float, Float, Float, Double) -> Unit,
+    private val onEnemyFireProjectile: (EnemyEntity, Float, Float, Float, Float, Double) -> Unit,
     private val onWaveComplete: (waveNumber: Int) -> Unit = {},
     private val conditions: BattleConditionEffects = BattleConditionEffects(),
     private val enemyTint: Int = 0,
@@ -27,6 +27,7 @@ class WaveSpawner(
      * responsibility — the constructor does not clamp.
      */
     private val startWave: Int = 1,
+    private val tierMultiplier: Double = 1.0,
 ) {
     var currentWave: Int = startWave; private set
     var phase: WavePhase = WavePhase.SPAWNING; private set
@@ -84,8 +85,8 @@ class WaveSpawner(
 
     private fun spawnEnemy(screenWidth: Float, screenHeight: Float) {
         val type = pickType(currentWave, enemiesSpawned)
-        val hp = EnemyScaler.scaleHealth(type, currentWave)
-        val dmg = EnemyScaler.scaleDamage(type, currentWave)
+        val hp = EnemyScaler.scaleHealth(type, currentWave, tierMultiplier)
+        val dmg = EnemyScaler.scaleDamage(type, currentWave, tierMultiplier)
         val spd = EnemyScaler.scaleSpeed(type) * conditions.enemySpeedMultiplier
         val atkInterval = 1f / conditions.enemyAttackSpeedMultiplier
         val (sx, sy) = spawnPosition(screenWidth, screenHeight, type)
