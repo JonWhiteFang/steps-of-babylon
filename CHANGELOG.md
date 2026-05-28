@@ -4,6 +4,10 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### V1X-16 Weekly Challenges expanded view (2026-05-28)
+
+- **PR #77:** Expand Weekly Step Challenge card in CurrencyDashboardScreen — time remaining ('Nd Hh' until next Monday reset) shown in header; last 4 past weeks history with met/missed indicator + PS earned per week. New `WeeklyChallengeDao.getLastNWeeks(limit)` query. New `WeeklyResult` data class. +2 tests. Closes #41. Test count 787 → 789.
+
 ### V1X-09 Simulation extraction Phase 1 (2026-05-28)
 
 - **PR #76:** Lift pure-math helpers from `GameEngine.kt` (1004 LOC) to a new `domain/battle/engine/SimulationMath` object. Zero Android imports. 27 new pure-JVM tests covering Recovery Packages heal formula, Chrono multiplier, Thorn damage reflection, Lifesteal heal + accumulator threshold-crossing, HP clamping. ADR-0012 documents the Phase 1 decision; Phase 2 (entity extraction) and Phase 3 (full Simulation+Flow) deferred. Closes #37 (partial). Test count 760 → 787.

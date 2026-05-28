@@ -1,3 +1,16 @@
+## 2026-05-28 — V1X-16 Weekly Challenges expanded view
+
+- **Goal:** Expand the Weekly Step Challenge card with time-remaining countdown + last 4 weeks history.
+- **Outcome:** PR #77 merged. Test count 787 → 789 (+2). Closes #41.
+- **Changes:**
+  - `WeeklyChallengeDao.getLastNWeeks(limit)` query (DESC by weekStartDate). FakeWeeklyChallengeDao updated to match.
+  - New `WeeklyResult` data class in EconomyUiState with `powerStonesForTier(tier)` helper (10/30/65 PS for tiers 1/2/3).
+  - `EconomyUiState.weeklyTimeRemaining` (formatted 'Nd Hh' string) and `weeklyHistory: List<WeeklyResult>` fields.
+  - `CurrencyDashboardViewModel.refresh()` computes time-until-next-Monday and fetches last 4 past weeks (excluding current).
+  - `CurrencyDashboardScreen` Weekly card header now shows countdown clock; "Past Weeks" sub-section renders below the threshold rows when history is non-empty.
+- **Files modified:** WeeklyChallengeDao.kt, EconomyUiState.kt, CurrencyDashboardViewModel.kt, CurrencyDashboardScreen.kt, FakeWeeklyChallengeDao.kt, CurrencyDashboardViewModelTest.kt.
+- **Next:** V1X-18 STEP_MULTIPLIER asymptotic curve OR V1X-19 GDD reconciliation OR V1X-15b ENEMY_INTEL.
+
 ## 2026-05-28 — V1X-09 Phase 1 simulation extraction
 
 - **Goal:** Begin V1X-09 simulation extraction by lifting pure-math helpers to the domain layer without breaking the entity/Canvas/SurfaceView code.
