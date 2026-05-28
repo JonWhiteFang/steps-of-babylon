@@ -52,7 +52,12 @@ fun CurrencyDashboardScreen(
         // Weekly Challenge
         Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
             Column(Modifier.padding(16.dp)) {
-                Text("Weekly Step Challenge", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("Weekly Step Challenge", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    if (state.weeklyTimeRemaining.isNotBlank()) {
+                        Text("⏱ ${state.weeklyTimeRemaining}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
                 Spacer(Modifier.height(8.dp))
                 Text("${state.weeklySteps} / 100,000 steps", style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(4.dp))
@@ -65,6 +70,14 @@ fun CurrencyDashboardScreen(
                 ThresholdRow("50,000", 10, state.weeklyClaimedTier >= 1, state.weeklySteps >= 50_000)
                 ThresholdRow("75,000", 20, state.weeklyClaimedTier >= 2, state.weeklySteps >= 75_000)
                 ThresholdRow("100,000", 35, state.weeklyClaimedTier >= 3, state.weeklySteps >= 100_000)
+                if (state.weeklyHistory.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    Text("Past Weeks", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(4.dp))
+                    state.weeklyHistory.forEach { week ->
+                        HistoryRow(week)
+                    }
+                }
             }
         }
 
@@ -135,5 +148,27 @@ private fun ThresholdRow(steps: String, ps: Int, claimed: Boolean, reached: Bool
             fontWeight = if (reached && !claimed) FontWeight.Bold else FontWeight.Normal,
             color = if (claimed) Color(0xFF4CAF50) else if (reached) Gold else MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun HistoryRow(week: WeeklyResult) {
+    val met = week.claimedTier > 0
+    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(week.weekStartDate, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row {
+            Text(
+                if (met) "✓" else "✗",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (met) Color(0xFF4CAF50) else Color(0xFFE53935),
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(
+                if (met) "${week.powerStonesEarned} PS" else "—",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (met) Gold else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
