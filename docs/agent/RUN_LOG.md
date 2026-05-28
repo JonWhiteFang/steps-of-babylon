@@ -1,3 +1,17 @@
+## 2026-05-28 — V1X-09 Phase 1 simulation extraction
+
+- **Goal:** Begin V1X-09 simulation extraction by lifting pure-math helpers to the domain layer without breaking the entity/Canvas/SurfaceView code.
+- **Outcome:** PR #76 merged. Test count 760 → 787 (+27).
+- **Changes:**
+  - Created `domain/battle/engine/SimulationMath.kt` (141 LOC, zero Android imports) with 6 pure functions: `recoveryPulseAmount`, `chronoMultiplier`, `thornReflectionDamage`, `lifestealHealAmount`, `tickLifestealAccumulator`, `clampHp`. Plus 5 constants moved from GameEngine companion object.
+  - Refactored `GameEngine.applyThorn`, `applyLifesteal`, and `tickRecoveryPackages` to delegate to SimulationMath. Removed unused `floor` import. Removed dead `RECOVERY_*` companion-object constants (no external references).
+  - 27 new pure-JVM tests in `SimulationMathTest.kt` covering recovery pulse formula (level 0 / level 1 / cap / minimum 1 HP), chrono active/inactive, thorn reflection (zero edges, percentage application, condition multiplier), lifesteal cap + sub-1 fraction conservation, accumulator threshold-crossing (no burst / 1 HP / multi-HP / 50-hit accumulation), HP clamping (over-heal / negative / passthrough / zero maxHp / negative maxHp).
+  - Created ADR-0012 documenting the Phase 1 decision and Phase 2/3 deferred scope.
+- **Files created:** `SimulationMath.kt`, `SimulationMathTest.kt`, `ADR-0012-simulation-extraction.md`.
+- **Files modified:** `GameEngine.kt`.
+- **Deferred:** Phase 2 (entity extraction, ~3-4 days), Phase 3 (full Simulation+EventFlow, ~2 days). Both require V1X-08 instrumented tests as a safety net.
+- **Next:** Continue V1X items (V1X-12 cloud save, V1X-13 i18n, V1X-15b ENEMY_INTEL, V1X-16/18/19 simpler items) OR V1X-08 instrumented test infrastructure OR resume closed-track soak.
+
 ## 2026-05-28 — V1X Wave 3 partial (V1X-07, V1X-15, V1X-17)
 
 - **Goal:** Implement Wave 3 high-leverage items: repository unit tests + content/social polish.

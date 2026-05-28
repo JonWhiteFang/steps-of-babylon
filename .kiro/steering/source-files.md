@@ -118,6 +118,12 @@ data/time/SystemTimeProvider.kt       # Production TimeProvider backed by Instan
 domain/time/TimeProvider.kt           # Wall-clock seam: now() / today(). No Android imports. Introduced by B.1.
 ```
 
+## Domain Layer — Battle Engine (V1X-09)
+
+```
+domain/battle/engine/SimulationMath.kt # Pure-math helpers extracted from GameEngine (V1X-09 Phase 1, ADR-0012). 6 functions: recoveryPulseAmount, chronoMultiplier, thornReflectionDamage, lifestealHealAmount, tickLifestealAccumulator, clampHp. Plus 5 constants.
+```
+
 ## Domain Layer — Models
 
 ```

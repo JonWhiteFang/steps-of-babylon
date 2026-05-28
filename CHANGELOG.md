@@ -4,6 +4,10 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### V1X-09 Simulation extraction Phase 1 (2026-05-28)
+
+- **PR #76:** Lift pure-math helpers from `GameEngine.kt` (1004 LOC) to a new `domain/battle/engine/SimulationMath` object. Zero Android imports. 27 new pure-JVM tests covering Recovery Packages heal formula, Chrono multiplier, Thorn damage reflection, Lifesteal heal + accumulator threshold-crossing, HP clamping. ADR-0012 documents the Phase 1 decision; Phase 2 (entity extraction) and Phase 3 (full Simulation+Flow) deferred. Closes #37 (partial). Test count 760 → 787.
+
 ### V1X Wave 3 partial — Repo tests + content/social (2026-05-28)
 
 Five sub-plans landing the testing infrastructure foundation and content/social polish. Test count 711 → 760.
