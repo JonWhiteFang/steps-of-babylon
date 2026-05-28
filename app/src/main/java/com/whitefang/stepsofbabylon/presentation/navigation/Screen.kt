@@ -1,11 +1,19 @@
 package com.whitefang.stepsofbabylon.presentation.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Style
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
@@ -13,15 +21,15 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     data object Workshop : Screen("workshop", "Workshop", Icons.Default.Build)
     data object Battle : Screen("battle", "Battle", Icons.Default.PlayArrow)
     data object Labs : Screen("labs", "Labs", Icons.Default.Search)
-    data object Stats : Screen("stats", "Stats", Icons.Default.Star)
-    data object Weapons : Screen("weapons", "Weapons", Icons.Default.Star)
-    data object Cards : Screen("cards", "Cards", Icons.Default.Star)
-    data object Supplies : Screen("supplies", "Supplies", Icons.Default.Star)
-    data object Economy : Screen("economy", "Economy", Icons.Default.Star)
-    data object Missions : Screen("missions", "Missions", Icons.Default.Star)
-    data object Settings : Screen("settings", "Settings", Icons.Default.Star)
-    data object Store : Screen("store", "Store", Icons.Default.Star)
-    data object Help : Screen("help", "Help", Icons.Default.Star)
+    data object Stats : Screen("stats", "Stats", Icons.Filled.BarChart)
+    data object Weapons : Screen("weapons", "Weapons", Icons.Filled.AutoAwesome)
+    data object Cards : Screen("cards", "Cards", Icons.Filled.Style)
+    data object Supplies : Screen("supplies", "Supplies", Icons.Filled.Inbox)
+    data object Economy : Screen("economy", "Economy", Icons.Filled.AttachMoney)
+    data object Missions : Screen("missions", "Missions", Icons.Filled.Flag)
+    data object Settings : Screen("settings", "Settings", Icons.Filled.Settings)
+    data object Store : Screen("store", "Store", Icons.Filled.ShoppingCart)
+    data object Help : Screen("help", "Help", Icons.AutoMirrored.Filled.HelpOutline)
 
     companion object {
         val items by lazy { listOf(Home, Workshop, Battle, Labs, Stats) }
