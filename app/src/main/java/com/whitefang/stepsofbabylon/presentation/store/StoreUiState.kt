@@ -7,6 +7,7 @@ data class StoreUiState(
     val adRemoved: Boolean = false,
     val seasonPassActive: Boolean = false,
     val seasonPassExpiry: Long = 0,
+    val seasonPassDaysRemaining: Int? = null,
     val cosmetics: List<CosmeticDisplayInfo> = emptyList(),
     val isPurchasing: Boolean = false,
     val userMessage: String? = null,

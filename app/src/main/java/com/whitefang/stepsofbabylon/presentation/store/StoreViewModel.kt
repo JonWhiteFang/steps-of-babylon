@@ -56,11 +56,16 @@ class StoreViewModel @Inject constructor(
         _userMessage,
         _priceDisplays,
     ) { profile, cosmetics, purchasing, message, priceDisplays ->
+        val isActive = profile.seasonPassActive && profile.seasonPassExpiry > System.currentTimeMillis()
+        val daysRemaining = if (isActive) {
+            ((profile.seasonPassExpiry - System.currentTimeMillis()) / (1000L * 60 * 60 * 24)).toInt().coerceAtLeast(0)
+        } else null
         StoreUiState(
             gems = profile.gems,
             adRemoved = profile.adRemoved,
-            seasonPassActive = profile.seasonPassActive && profile.seasonPassExpiry > System.currentTimeMillis(),
+            seasonPassActive = isActive,
             seasonPassExpiry = profile.seasonPassExpiry,
+            seasonPassDaysRemaining = daysRemaining,
             cosmetics = cosmetics.map {
                 CosmeticDisplayInfo(it.cosmeticId, it.category.name, it.name, it.description, it.priceGems, it.isOwned, it.isEquipped)
             },

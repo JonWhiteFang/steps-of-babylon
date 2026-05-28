@@ -239,4 +239,30 @@ class StoreViewModelSeasonPassTest {
         advanceUntilIdle()
         assertTrue(vm.uiState.value.seasonPassActive)
     }
+
+    @Test
+    fun `V1X02 daysRemaining is computed when season pass is active`() = runTest(dispatcher) {
+        val playerRepo = FakePlayerRepository(PlayerProfile(
+            seasonPassActive = true,
+            seasonPassExpiry = System.currentTimeMillis() + 14L * 86_400_000, // 14 days from now
+        ))
+        val vm = StoreViewModel(playerRepo, FakeBillingManager(), FakeCosmeticRepository())
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val days = vm.uiState.value.seasonPassDaysRemaining
+        assertNotNull(days)
+        assertTrue(days!! in 13..14, "Expected ~14 days remaining, got $days")
+    }
+
+    @Test
+    fun `V1X02 daysRemaining is null when season pass is inactive`() = runTest(dispatcher) {
+        val playerRepo = FakePlayerRepository(PlayerProfile(
+            seasonPassActive = false,
+            seasonPassExpiry = 0,
+        ))
+        val vm = StoreViewModel(playerRepo, FakeBillingManager(), FakeCosmeticRepository())
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        assertNull(vm.uiState.value.seasonPassDaysRemaining)
+    }
 }
