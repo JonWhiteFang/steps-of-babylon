@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.battle.engine
 
 import android.graphics.Canvas
+import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath
 import com.whitefang.stepsofbabylon.domain.model.BattleConditionEffects
 import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
@@ -34,7 +35,6 @@ import com.whitefang.stepsofbabylon.presentation.battle.entities.ProjectileEntit
 import com.whitefang.stepsofbabylon.presentation.battle.entities.ZigguratEntity
 import com.whitefang.stepsofbabylon.presentation.battle.ui.HealthBarRenderer
 import kotlin.math.PI
-import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.random.Random
@@ -123,7 +123,7 @@ class GameEngine {
      * Recovery Packages periodic-heal timer (RO-08). Accumulates during the SPAWNING wave
      * phase only (not during cooldown — heals between waves with no enemies on screen would
      * feel disconnected from the upgrade's "during waves" framing). Fires when the timer
-     * crosses [RECOVERY_INTERVAL_SECONDS]; reset to zero on each fire and on round init.
+     * crosses [SimulationMath.RECOVERY_INTERVAL_SECONDS]; reset to zero on each fire and on round init.
      */
     private var recoveryTimer: Float = 0f
 
@@ -237,19 +237,8 @@ class GameEngine {
     companion object {
         const val BASE_CASH_PER_WAVE = 20L
         const val FLAT_BONUS_PER_WAVE_LEVEL = 5L
-
-        /**
-         * Recovery Packages constants (RO-08). Each [RECOVERY_INTERVAL_SECONDS] of active
-         * SPAWNING phase grants `level × RECOVERY_PERCENT_PER_LEVEL` of max HP, capped per
-         * pulse at [RECOVERY_PERCENT_PER_PULSE_CAP] so very high levels can't one-shot the
-         * tower to full from low HP (preserves the in-round upgrade decisions for HEALTH /
-         * HEALTH_REGEN / DEFENSE_PERCENT). Cumulative healing across multiple pulses is
-         * unbounded — players who stockpile RECOVERY_PACKAGES levels see frequent partial
-         * heals throughout each wave.
-         */
-        const val RECOVERY_INTERVAL_SECONDS = 30f
-        const val RECOVERY_PERCENT_PER_LEVEL = 0.01
-        const val RECOVERY_PERCENT_PER_PULSE_CAP = 0.50
+        // Recovery Packages constants moved to domain/battle/engine/SimulationMath
+        // as part of V1X-09 Phase 1 simulation extraction (ADR-0012).
     }
 
     fun init(
@@ -730,12 +719,11 @@ class GameEngine {
         val level = wsLevel(UpgradeType.RECOVERY_PACKAGES)
         if (level <= 0) return
         recoveryTimer += deltaTime
-        if (recoveryTimer < RECOVERY_INTERVAL_SECONDS) return
+        if (recoveryTimer < SimulationMath.RECOVERY_INTERVAL_SECONDS) return
         recoveryTimer = 0f
         if (zig.currentHp >= zig.maxHp) return
-        val percent = (level * RECOVERY_PERCENT_PER_LEVEL).coerceAtMost(RECOVERY_PERCENT_PER_PULSE_CAP)
-        val healAmount = (zig.maxHp * percent).coerceAtLeast(1.0)
-        zig.currentHp = (zig.currentHp + healAmount).coerceAtMost(zig.maxHp)
+        val healAmount = SimulationMath.recoveryPulseAmount(level, zig.maxHp)
+        zig.currentHp = SimulationMath.clampHp(zig.currentHp + healAmount, zig.maxHp)
         effectEngine?.addEffect(
             FloatingText(
                 x = zig.x,
@@ -889,8 +877,13 @@ class GameEngine {
     }
 
     private fun applyThorn(rawDamage: Double, attacker: EnemyEntity?) {
-        if (attacker != null && attacker.isAlive && stats.thornPercent > 0)
-            attacker.takeDamage(rawDamage * stats.thornPercent * conditions.thornMultiplier)
+        if (attacker == null || !attacker.isAlive) return
+        val reflection = SimulationMath.thornReflectionDamage(
+            rawDamage = rawDamage,
+            thornPercent = stats.thornPercent,
+            conditionMultiplier = conditions.thornMultiplier.toDouble(),
+        )
+        if (reflection > 0) attacker.takeDamage(reflection)
     }
 
     /**
@@ -909,16 +902,15 @@ class GameEngine {
      */
     private fun applyLifesteal(healAmount: Double) {
         val zig = ziggurat ?: return
-        zig.currentHp = min(zig.currentHp + healAmount, zig.maxHp)
-        lifestealAccumulator += healAmount
-        if (lifestealAccumulator >= 1.0) {
-            val visibleHp = floor(lifestealAccumulator).toInt()
-            lifestealAccumulator -= visibleHp.toDouble()
+        zig.currentHp = SimulationMath.clampHp(zig.currentHp + healAmount, zig.maxHp)
+        val tick = SimulationMath.tickLifestealAccumulator(lifestealAccumulator, healAmount)
+        lifestealAccumulator = tick.newAccumulator
+        if (tick.visibleHp > 0) {
             effectEngine?.addEffect(
                 FloatingText(
                     x = zig.x,
                     y = zig.originY - 30f,
-                    text = "+$visibleHp HP",
+                    text = "+${tick.visibleHp} HP",
                     color = FloatingText.STEP_COLOR,
                 ),
             )
