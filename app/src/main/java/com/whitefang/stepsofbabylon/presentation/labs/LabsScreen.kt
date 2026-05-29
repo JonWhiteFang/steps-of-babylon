@@ -92,9 +92,10 @@ private fun ResearchCard(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(formatName(info.type), style = MaterialTheme.typography.titleSmall)
                 when {
-                    // RO-11 #B.2: AUTO_UPGRADE_AI + ENEMY_INTEL gated as Coming Soon while their
-                    // real implementations are deferred to v1.x. Badge takes priority over the
-                    // MAX / level chip so testers see the deferral state immediately.
+                    // RO-11 #B.2 / V1X-15b: AUTO_UPGRADE_AI gated as Coming Soon while its
+                    // real implementation is deferred to v1.x (ENEMY_INTEL was wired in V1X-15b).
+                    // Badge takes priority over the MAX / level chip so testers see the deferral
+                    // state immediately.
                     info.type.isComingSoon -> Text(
                         "COMING SOON",
                         style = MaterialTheme.typography.labelMedium,

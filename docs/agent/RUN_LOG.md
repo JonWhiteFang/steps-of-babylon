@@ -5954,3 +5954,42 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - ADR: not warranted — deferral decision recorded inline in the plan; no architecture change.
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-05-29 ~13:55 BST — V1X-15b ENEMY_INTEL combat foundation
+
+- Goal: ship the combat half of ENEMY_INTEL (GitHub issue #44), flipping it from the RO-11 #B.2 `isComingSoon` placeholder to a real wired research type. UI overlays (L1/L5/L10) deliberately split into a follow-up PR because they're SurfaceView rendering changes needing human on-device verification.
+
+- Context preflight: `main` at `01f8329` (post-PR-#83), clean. Read V1X-15b design in `plan-V1X-roadmap.md`, ResearchType.kt, ResolveStats.kt (DAMAGE_RESEARCH multiplier pattern), DescribeUpgradeEffect.kt (confirmed keyed on UpgradeType, not ResearchType), LabsScreen/LabsViewModel filters, ResolveStatsTest RO-11 block, ResearchTypeTest contract.
+
+- Branch: `feat/V1X-15b-enemy-intel-combat` from `main`.
+
+- Source changes:
+  - **`domain/model/ResearchType.kt`** — ENEMY_INTEL constructor flipped from `(3_000, 6.0, 3, 1.0, "Reserved for v1.x…", isComingSoon = true)` to `(8_000, 4.0, 10, 2.0, "Tactical awareness. +2% damage per level. Reveals next wave at L1, enemy HP at L5, boss timing at L10.", costScaling = 1.5)`. Class KDoc + `isComingSoon` field KDoc updated (one deferred enum left: AUTO_UPGRADE_AI).
+  - **`domain/usecase/ResolveStats.kt`** — `damage` gains `× (1 + lab(ResearchType.ENEMY_INTEL) * 0.02)` after the DAMAGE_RESEARCH factor; KDoc note added.
+  - **`presentation/labs/LabsScreen.kt`** + **`presentation/labs/LabsViewModel.kt`** — comments updated (only AUTO_UPGRADE_AI deferred). No logic change — both already read `isComingSoon`, so ENEMY_INTEL auto-surfaces.
+
+- DEVIATION FROM PLAN (documented in ADR-0017 §Rationale 4): the plan listed a `DescribeUpgradeEffect` ENEMY_INTEL branch, but that use case is keyed on `UpgradeType` (the in-round Cash menu). Research types — including DAMAGE_RESEARCH — have never had a standalone readout there; ENEMY_INTEL's damage surfaces through the existing DAMAGE upgrade readout via `labLevels`. Also skipped the planned LabsViewModelTest visibility test: the Labs VM tests intentionally bypass VM instantiation (ticker `while(true){delay}`), and the `ResearchTypeTest` set-equality contract transitively guards Labs visibility (both layers read the same flag).
+
+- Tests:
+  - **`domain/model/ResearchTypeTest.kt`** — contract `{AUTO_UPGRADE_AI, ENEMY_INTEL}` → `{AUTO_UPGRADE_AI}` (renamed); +1 new `ENEMY_INTEL has full balance values populated` guard.
+  - **`domain/usecase/ResolveStatsTest.kt`** — +5: L0 no-op, L1 → 1.02×, L10 → 1.20×, stacks with DAMAGE_RESEARCH (1.10 × 1.25 = 1.375×), preserves CRITICAL_RESEARCH alongside.
+  - Net +6 JVM tests (the contract test was renamed, not added).
+
+- Verification: `./run-gradle.sh testDebugUnitTest` BUILD SUCCESSFUL; test-results XML sum = 806 (800 → 806, exactly the expected delta).
+
+- ADR: **ADR-0017 — ENEMY_INTEL Research Design** created. Records the dual-benefit design (combat +2%/lvl + L1/L5/L10 information overlays), the 2%/lvl coefficient choice (smaller than DAMAGE_RESEARCH's 5% because of the added UI value — flagged as an open balance item), the cost-curve match to CASH_RESEARCH, and the combat-foundation / UI-overlay shipping split. Status: Accepted (combat shipped; UI overlays tracked follow-up).
+
+- Doc-sync per agent protocol PR Task-List Convention:
+  - `AGENTS.md` — current-coverage JVM count 800 → 806.
+  - `.kiro/steering/source-files.md` — ResearchType entry rewritten (12 types, only AUTO_UPGRADE_AI Coming Soon, ENEMY_INTEL wired per ADR-0017).
+  - `CHANGELOG.md` — new `[Unreleased]` entry.
+  - `STATE.md` — current objective rotated; what-works count 800 → 806; top priorities (UI-overlay PR now #2 with balance open item).
+  - `RUN_LOG.md` — this entry.
+  - `docs/agent/DECISIONS/ADR-0017-enemy-intel-design.md` — new ADR.
+  - No `README.md` change (no build/run-instruction change; status banner already says "V1X-15b ENEMY_INTEL ship" as a next option — accurate). No `structure.md` / `tech.md` / `database-schema.md` change.
+
+- Open balance item (ADR-0017): re-evaluate the +2 %/lvl coefficient vs DAMAGE_RESEARCH 5 %/lvl after on-device testing; bump to 3 %/lvl if the UI value doesn't compensate. Single-constant change in ResolveStats.
+
+- Follow-ups: commit + push + PR + merge. Then the V1X-15b UI-overlay PR (on-device).
+
+- Memory updated: STATE ✅ / RUN_LOG ✅
