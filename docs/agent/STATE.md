@@ -71,11 +71,11 @@
 - **RO-09 deferred findings (v1.x patch backlog):** #3 STEP_MULTIPLIER × cross-validator unit mismatch (needs schema migration to track multiplier-bonus separately); #4 currency lifetime counter desync (display-only drift on crash); #5 TOCTOU race on gem/PS spend (lifetime drift, wallet stays correct); #6 per-kill battle-step credit on `viewModelScope` (≤1 step per pending callback lost on mid-round nav-away).
 
 ## Top priorities (next 5)
-1. **(this PR)** Commit + push `feat/V1X-15b-enemy-intel-overlays` + open PR + merge.
-2. **(follow-up, needs on-device)** On-device verification of the V1X-15b overlays: HP-% labels legible at 30+ enemies on high-tier Tank waves; boss-countdown not too cluttered at end-game. Balance open item: re-evaluate the +2 %/lvl damage coefficient vs DAMAGE_RESEARCH 5 %/lvl (ADR-0017) — single-constant change in ResolveStats if bumped to 3 %/lvl.
-3. **(External)** Recruit ≥12 testers for the closed track. Distribute opt-in URL via word-of-mouth + project channels.
-4. **(External)** Wait ≥14 calendar days on closed track collecting feedback (window resumes 2026-05-26; earliest production-access application 2026-06-09).
-5. **(External)** Apply for production access. Google review 1–3 days.
+1. **(External)** Recruit ≥12 testers for the closed track. Distribute opt-in URL via word-of-mouth + project channels.
+2. **(External)** Wait ≥14 calendar days on closed track collecting feedback (window resumes 2026-05-26; earliest production-access application 2026-06-09).
+3. **(External)** Apply for production access. Google review 1–3 days.
+4. **(External)** Promote closed → production with staged rollout. Tag v1.0.0 in git after rollout reaches 100 %.
+5. **(post-launch)** Resume Plan V1X backlog — V1X-09 Phase 2/3 entity extraction, V1X-12 cloud save (schema v11→v12), V1X-13 i18n, RO-09 deferred findings #3–#6. See `docs/plans/plan-V1X-roadmap.md`.
 
 ## Next actions (explicit order)
 1. **(External)** Recruit ≥12 testers for the closed track. Distribute the Play Console closed-track opt-in URL via word-of-mouth + project channels. Track tester opt-in count in Play Console → Closed testing → Testers tab.

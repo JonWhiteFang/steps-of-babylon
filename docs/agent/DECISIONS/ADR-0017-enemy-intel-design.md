@@ -1,6 +1,6 @@
 # ADR-0017: ENEMY_INTEL Research Design
 
-**Status:** Accepted (combat foundation shipped PR #84; UI overlays shipped — see Implementation §UI overlays)
+**Status:** Accepted (combat foundation shipped PR #84; UI overlays shipped PR #86; on-device verified 2026-05-29 — overlays legible/uncluttered, +2 %/lvl coefficient confirmed; all open balance items resolved)
 **Date:** 2026-05-29
 **Supersedes:** The `isComingSoon = true` placeholder for `ResearchType.ENEMY_INTEL` introduced in RO-11 #B.2.
 **Superseded by:** None
@@ -48,11 +48,11 @@ The combat benefit is live and meaningful on its own the moment this PR lands: a
 - Only `AUTO_UPGRADE_AI` remains `isComingSoon`; the `ResearchTypeTest` set-equality contract is tightened to `{AUTO_UPGRADE_AI}`, catching any future regression in either direction.
 - Combat-foundation test count 800 → 806 (+6: 5 `ResolveStatsTest` + 1 `ResearchTypeTest` balance-values guard; the contract test was renamed, not added).
 
-### Negative / Open balance items
+### Resolved balance items (on-device verified 2026-05-29)
 
-1. **The 2 %/level coefficient is unvalidated.** If closed-test players strictly prefer DAMAGE_RESEARCH (+5 %/lvl) and the UI value isn't compensating, raise ENEMY_INTEL to 3 %/level — a single-constant change in `ResolveStats`.
-2. **Boss-arrival countdown (L10)** may be too information-rich at end-game; closed-test feedback will tell. (UI-overlay PR.)
-3. **HP-% label rendering (L5)** must not interfere with the existing HP bar at high enemy counts; test with 30+ enemies on screen. (UI-overlay PR.)
+1. **The 2 %/level coefficient is confirmed.** On-device verification kept ENEMY_INTEL at +2 %/lvl (user decision 2026-05-29). The information value compensates for the smaller raw-damage coefficient vs DAMAGE_RESEARCH; no change to `ResolveStats`. May still be revisited if closed-test feedback indicates otherwise.
+2. **Boss-arrival countdown (L10)** verified clean at end-game — not too cluttered.
+3. **HP-% label rendering (L5)** verified legible at 30+ enemies — does not interfere with the existing HP bar.
 
 ### Neutral
 
