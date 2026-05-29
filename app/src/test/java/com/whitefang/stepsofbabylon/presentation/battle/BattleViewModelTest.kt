@@ -117,6 +117,29 @@ class BattleViewModelTest {
         )
     }
 
+    // ---- V1X-15b: ENEMY_INTEL level plumbs through to the engine overlays ----
+
+    @Test
+    fun `V1X15b applyResearchParams pushes ENEMY_INTEL level onto the engine`() = runTest(dispatcher) {
+        // ENEMY_INTEL L7 must reach GameEngine.enemyIntelLevel so the render-time L1/L5/L10
+        // overlay gates fire. Asserted via the extracted applyResearchParams helper to avoid
+        // driving the infinite polling loop.
+        labRepo.levels.value = ResearchType.entries.associateWith { 0 } +
+            (ResearchType.ENEMY_INTEL to 7)
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        val engine = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine()
+        vm.applyResearchParams(engine)
+
+        assertEquals(
+            7,
+            engine.enemyIntelLevel,
+            "ENEMY_INTEL level must be pushed onto the engine to gate the L1/L5/L10 overlays",
+        )
+    }
+
     @Test
     fun `biome transition shown for unseen biome`() = runTest(dispatcher) {
         whenever(biomePreferences.hasSeenBiome(any())).thenReturn(false)

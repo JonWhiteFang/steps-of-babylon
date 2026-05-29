@@ -136,6 +136,47 @@ class WaveSpawner(
 
     private fun enemiesPerWave(wave: Int): Int = min(5 + (wave - 1) * 2, 40)
 
+    /**
+     * Deterministic expected composition of [wave] (V1X-15b, ENEMY_INTEL L1 overlay). Mirrors
+     * the [pickType] probability bands but returns *expected* per-type counts instead of
+     * rolling [Random], so the same wave always yields the same map (the L1 overlay must be
+     * stable across re-renders). On a boss wave (index 0 is always a BOSS) one BOSS is split
+     * off and the remaining slots distributed by band probability with rounding. Pure — no
+     * spawner state is read or mutated, so it's safe to call for any future wave number.
+     */
+    fun getWaveComposition(wave: Int): Map<EnemyType, Int> {
+        val total = enemiesPerWave(wave)
+        val isBoss = wave % conditions.bossWaveInterval == 0 && wave > 0
+        val result = linkedMapOf<EnemyType, Int>()
+        var remaining = total
+        if (isBoss) { result[EnemyType.BOSS] = 1; remaining-- }
+        for ((type, prob) in typeProbabilities(wave)) {
+            val count = Math.round(remaining * prob).toInt()
+            if (count > 0) result[type] = (result[type] ?: 0) + count
+        }
+        return result
+    }
+
+    /**
+     * Number of waves from [currentWave] until the next boss wave (V1X-15b, ENEMY_INTEL L10
+     * overlay). On a boss wave itself this returns [BattleConditionEffects.bossWaveInterval]
+     * (the *next* boss, not the current one). Pure read of [currentWave] + the boss interval.
+     */
+    fun wavesUntilNextBoss(): Int {
+        val interval = conditions.bossWaveInterval
+        val rem = currentWave % interval
+        return if (rem == 0) interval else interval - rem
+    }
+
+    /** Per-type spawn probabilities for the non-boss slots of [wave] (mirrors [pickType] bands). */
+    private fun typeProbabilities(wave: Int): Map<EnemyType, Double> = when {
+        wave <= 5 -> mapOf(EnemyType.BASIC to 1.0)
+        wave <= 10 -> mapOf(EnemyType.FAST to 0.20, EnemyType.BASIC to 0.80)
+        wave <= 20 -> mapOf(EnemyType.TANK to 0.10, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.70)
+        wave <= 30 -> mapOf(EnemyType.TANK to 0.10, EnemyType.RANGED to 0.15, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.55)
+        else -> mapOf(EnemyType.SCATTER to 0.10, EnemyType.TANK to 0.10, EnemyType.RANGED to 0.15, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.45)
+    }
+
     private fun spawnPosition(screenWidth: Float, screenHeight: Float, type: EnemyType): Pair<Float, Float> {
         val margin = if (type == EnemyType.BOSS) 50f else 30f
         return when (Random.nextInt(3)) {

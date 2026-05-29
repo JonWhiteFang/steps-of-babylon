@@ -41,6 +41,35 @@ class GameEngineTest {
         return eng
     }
 
+    // ---- V1X-15b: ENEMY_INTEL information-overlay label helpers ----
+
+    @Test
+    fun `V1X15b nextWaveCompositionLabel is null below L1 and populated at L1`() {
+        val eng = freshEngine() // opens on wave 1, default enemyIntelLevel = 0
+        assertEquals(null, eng.nextWaveCompositionLabel(), "no overlay below ENEMY_INTEL L1")
+        eng.enemyIntelLevel = 1
+        // currentWave 1 → next wave 2: enemiesPerWave(2) = 7, band <=5 is 100% BASIC.
+        assertEquals(
+            "Next: 7 BASIC",
+            eng.nextWaveCompositionLabel(),
+            "L1 overlay must reveal the next wave's deterministic composition",
+        )
+    }
+
+    @Test
+    fun `V1X15b bossCountdownLabel is null below L10 and populated at L10`() {
+        val eng = freshEngine() // wave 1, bossWaveInterval 10 (tier 1)
+        eng.enemyIntelLevel = 9
+        assertEquals(null, eng.bossCountdownLabel(), "no boss countdown below ENEMY_INTEL L10")
+        eng.enemyIntelLevel = 10
+        // currentWave 1, interval 10 → 9 waves until the wave-10 boss.
+        assertEquals(
+            "Boss in 9 waves",
+            eng.bossCountdownLabel(),
+            "L10 overlay must surface the boss-arrival countdown",
+        )
+    }
+
     // ---- RO-08 #3c: in-round cash-utility purchases reach the engine ----
 
     @Test

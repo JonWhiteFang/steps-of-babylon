@@ -41,10 +41,14 @@ class WaveAnnouncement(
 
 class WaveCooldownText(
     private val screenWidth: Float,
+    private val nextWaveComposition: String? = null,
     private val getTimeRemaining: () -> Float,
 ) : Effect {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = 0xAAFFFFFF.toInt(); textSize = 28f; textAlign = Paint.Align.CENTER
+    }
+    private val compositionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xAAB3E5FC.toInt(); textSize = 22f; textAlign = Paint.Align.CENTER
     }
 
     override val isFinished: Boolean get() = getTimeRemaining() <= 0f
@@ -53,6 +57,10 @@ class WaveCooldownText(
 
     override fun render(canvas: Canvas) {
         val t = getTimeRemaining()
-        if (t > 0f) canvas.drawText("Next Wave: ${t.toInt()}s", screenWidth / 2f, 60f, paint)
+        if (t > 0f) {
+            canvas.drawText("Next Wave: ${t.toInt()}s", screenWidth / 2f, 60f, paint)
+            // V1X-15b: ENEMY_INTEL L1+ next-wave composition line, drawn just below the timer.
+            nextWaveComposition?.let { canvas.drawText(it, screenWidth / 2f, 90f, compositionPaint) }
+        }
     }
 }

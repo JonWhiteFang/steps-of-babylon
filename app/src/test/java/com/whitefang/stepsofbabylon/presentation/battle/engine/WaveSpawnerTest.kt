@@ -1,7 +1,9 @@
 package com.whitefang.stepsofbabylon.presentation.battle.engine
 
+import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.presentation.battle.entities.EnemyEntity
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
@@ -34,5 +36,33 @@ class WaveSpawnerTest {
             spawner.currentWave,
             "WAVE_SKIP L10 must produce wave 11 at round start",
         )
+    }
+
+    // ---- V1X-15b: ENEMY_INTEL overlay helpers (getWaveComposition / wavesUntilNextBoss) ----
+
+    @Test
+    fun `getWaveComposition early non-boss wave is all BASIC and deterministic`() {
+        // Wave 3: enemiesPerWave = min(5 + 2*2, 40) = 9; band <=5 is 100% BASIC; not a boss wave.
+        val spawner = newSpawner()
+        val comp = spawner.getWaveComposition(3)
+        assertEquals(mapOf(EnemyType.BASIC to 9), comp, "wave 3 must be 9 BASIC, no boss")
+        assertEquals(comp, spawner.getWaveComposition(3), "composition must be deterministic across calls")
+    }
+
+    @Test
+    fun `getWaveComposition boss wave includes exactly one BOSS`() {
+        // Wave 10: bossWaveInterval default 10 → boss wave. One BOSS split off the 23 slots.
+        val comp = newSpawner().getWaveComposition(10)
+        assertEquals(1, comp[EnemyType.BOSS], "a boss wave must contain exactly one BOSS")
+        assertTrue(comp.containsKey(EnemyType.BASIC), "wave 10 band still spawns BASIC enemies")
+    }
+
+    @Test
+    fun `wavesUntilNextBoss counts forward from currentWave`() {
+        // Default interval 10. startWave 8 → 2 waves to wave 10. startWave 1 → 9. A boss wave
+        // itself returns the full interval (the *next* boss, not the current one).
+        assertEquals(2, newSpawner(startWave = 8).wavesUntilNextBoss())
+        assertEquals(9, newSpawner(startWave = 1).wavesUntilNextBoss())
+        assertEquals(10, newSpawner(startWave = 10).wavesUntilNextBoss())
     }
 }

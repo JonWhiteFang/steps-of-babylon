@@ -1,6 +1,6 @@
 # ADR-0017: ENEMY_INTEL Research Design
 
-**Status:** Accepted (combat foundation shipped; UI overlays tracked as follow-up)
+**Status:** Accepted (combat foundation shipped PR #84; UI overlays shipped — see Implementation §UI overlays)
 **Date:** 2026-05-29
 **Supersedes:** The `isComingSoon = true` placeholder for `ResearchType.ENEMY_INTEL` introduced in RO-11 #B.2.
 **Superseded by:** None
@@ -59,7 +59,7 @@ The combat benefit is live and meaningful on its own the moment this PR lands: a
 - Research progress on the still-deferred `AUTO_UPGRADE_AI` remains preserved per the RO-11 #B.2 contract.
 - The UI-overlay helpers (`getWaveComposition`, `wavesUntilNextBoss`) will be pure functions on `WaveSpawner`, easily JVM-testable when that PR lands.
 
-## Implementation (combat foundation, this PR)
+## Implementation (combat foundation, PR #84)
 
 Files changed:
 
@@ -71,6 +71,20 @@ Tests:
 
 - `domain/model/ResearchTypeTest.kt` — set-equality contract `{AUTO_UPGRADE_AI, ENEMY_INTEL}` → `{AUTO_UPGRADE_AI}`; new `ENEMY_INTEL has full balance values populated` guard against a partial revert.
 - `domain/usecase/ResolveStatsTest.kt` — 5 new tests: L0 no-op, L1 → 1.02×, L10 → 1.20×, stacks with DAMAGE_RESEARCH (1.10 × 1.25 = 1.375×), preserves CRITICAL_RESEARCH alongside.
+
+## Implementation (UI overlays, follow-up PR)
+
+The three information overlays from the Decision shipped in a second PR (the combat half was meaningful on its own). All three are gated on a new `@Volatile var GameEngine.enemyIntelLevel`, set by `BattleViewModel` from the round-start `labLevels` snapshot via an extracted `applyResearchParams(engine)` helper (deduped across `startPollingEngine` + `playAgain`) and **not** reset in `GameEngine.init` — the VM owns the value, mirroring the existing `cashResearchMultiplier` pattern.
+
+- **L1 next-wave composition.** `WaveSpawner.getWaveComposition(wave)` is a new pure helper returning deterministic *expected* per-type counts (the `pickType` probability bands × `enemiesPerWave`, with one BOSS split off index 0 on boss waves). `GameEngine.nextWaveCompositionLabel()` (null below L1) formats it as `Next: 12 BASIC, 4 RANGED, 1 BOSS` and feeds it into a new optional `WaveCooldownText(nextWaveComposition)` param, drawn below the cooldown timer.
+- **L5 per-enemy HP %.** Drawn in `GameEngine.render()` looping the live `EnemyEntity` list when `enemyIntelLevel >= 5` — deliberately **not** in `EnemyEntity.render` (see Rationale 5 below), so the level gate never touches the entity constructor or the SCATTER child-spawn path.
+- **L10 boss countdown.** `WaveSpawner.wavesUntilNextBoss()` (pure) + `GameEngine.bossCountdownLabel()` (null below L10) render `Boss in N waves` / `Boss next wave`, right-aligned in `render()` so it clears the centre-aligned cooldown banner.
+
++6 JVM tests (3 `WaveSpawnerTest` — deterministic early-wave composition, boss-wave includes one BOSS, `wavesUntilNextBoss` forward count; 2 `GameEngineTest` — `nextWaveCompositionLabel` null-below-L1 / populated-at-L1, `bossCountdownLabel` null-below-L10 / populated-at-L10; 1 `BattleViewModelTest` — `applyResearchParams` pushes the ENEMY_INTEL level onto the engine). `testDebugUnitTest` + `assembleDebug` BUILD SUCCESSFUL, 806 → 812. The overlays still need human **on-device verification** (HP-% labels at 30+ enemies; boss-countdown clutter at end-game) — these are visual-legibility checks no JVM test can make.
+
+### Rationale 5 — L5 HP-% labels rendered in `GameEngine`, not `EnemyEntity`
+
+The plan listed the L5 label in `EnemyEntity.render`. Drawing it in `GameEngine.render` instead (looping the live entity list) keeps the `enemyIntelLevel` gate out of the per-enemy constructor — `EnemyEntity` is built in two places (`WaveSpawner.spawnEnemy` + the SCATTER child-spawn in `GameEngine.handleEnemyDeath`), so threading the level through both constructors would be churn for no benefit. The engine already owns the level and already loops entities in `render`; the label is a single `drawText` per living enemy at the same gate. Functionally identical to the plan; lower blast radius.
 
 ## References
 

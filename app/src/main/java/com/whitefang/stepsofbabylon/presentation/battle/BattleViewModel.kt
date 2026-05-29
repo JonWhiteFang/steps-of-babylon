@@ -197,11 +197,9 @@ class BattleViewModel @Inject constructor(
         this.engine = engine; this.surfaceView = surfaceView
         engine.setStats(resolvedStats); engine.initUWs(equippedWeapons)
         engine.secondWindHpPercent = cardSecondWind; engine.cashBonusPercent = cardCashBonus
-        // RO-11 #A.2: push lab-research multipliers onto the engine. CASH_RESEARCH applies
-        // to every kill-cash + wave-end-cash; UW_COOLDOWN applies at the activateUW set
-        // site. Defaults of 1.0 / 1f when level is 0 preserve the pre-RO-11 behaviour.
-        engine.cashResearchMultiplier = cashResearchMultiplier()
-        engine.uwCooldownMultiplier = uwCooldownMultiplier()
+        // RO-11 #A.2 + V1X-15b: push lab-research-derived engine params (cash / UW-cooldown
+        // multipliers + ENEMY_INTEL overlay level). Extracted so playAgain reuses it.
+        applyResearchParams(engine)
         // RO-07 C.2 PR 1: propagate the cosmetic override map. May be empty if the VM init
         // launch hasn't completed yet; the init path re-pushes on completion so the subsequent
         // `engine.init()` (fired by the surfaceView when isLoading becomes false) reads the
@@ -463,11 +461,8 @@ class BattleViewModel @Inject constructor(
         surfaceView?.configure(resolvedStats, tier, workshopLevels, startWave)
         engine?.initUWs(equippedWeapons)
         engine?.secondWindHpPercent = cardSecondWind; engine?.cashBonusPercent = cardCashBonus
-        // RO-11 #A.2: refresh lab-research multipliers on every replay. Lab levels are
-        // re-read from disk in [init] only; here we re-derive the engine-side multipliers
-        // from the current `labLevels` snapshot in case the engine was reset between rounds.
-        engine?.cashResearchMultiplier = cashResearchMultiplier()
-        engine?.uwCooldownMultiplier = uwCooldownMultiplier()
+        // RO-11 #A.2 + V1X-15b: refresh lab-research-derived engine params on every replay.
+        engine?.let { applyResearchParams(it) }
         val eng = engine ?: return; val sv = surfaceView ?: return
         startPollingEngine(eng, sv)
     }
@@ -586,6 +581,30 @@ class BattleViewModel @Inject constructor(
         val level = labLevels[ResearchType.UW_COOLDOWN] ?: 0
         return (1f - level * 0.03f).coerceAtLeast(0.10f)
     }
+
+    /**
+     * Pushes the lab-research-derived engine parameters onto [engine] (RO-11 #A.2 + V1X-15b):
+     * CASH_RESEARCH → [GameEngine.cashResearchMultiplier] (every kill / wave-end cash),
+     * UW_COOLDOWN → [GameEngine.uwCooldownMultiplier] (activateUW cooldown-set site), and
+     * ENEMY_INTEL → [GameEngine.enemyIntelLevel] (L1/L5/L10 information overlays). Extracted
+     * from [startPollingEngine] so [playAgain] reuses the same write set; `@VisibleForTesting`
+     * so the plumbing can be asserted without driving the polling loop. Defaults (1.0 / 1f / 0)
+     * when the corresponding level is 0 preserve pre-RO-11 / pre-V1X-15b behaviour.
+     */
+    @VisibleForTesting
+    internal fun applyResearchParams(engine: GameEngine) {
+        engine.cashResearchMultiplier = cashResearchMultiplier()
+        engine.uwCooldownMultiplier = uwCooldownMultiplier()
+        engine.enemyIntelLevel = enemyIntelLevel()
+    }
+
+    /**
+     * ENEMY_INTEL lab research level (V1X-15b, ADR-0017). Pushed onto
+     * [GameEngine.enemyIntelLevel] to gate the L1 next-wave-composition / L5 per-enemy-HP-% /
+     * L10 boss-countdown overlays. The +2 %/lvl damage half is applied separately via
+     * [resolveStats]. Default 0 (no ENEMY_INTEL owned) suppresses all overlays.
+     */
+    private fun enemyIntelLevel(): Int = labLevels[ResearchType.ENEMY_INTEL] ?: 0
 
     /**
      * Computes the WAVE_SKIP starting wave (RO-11 #B.1) from the current [labLevels]
