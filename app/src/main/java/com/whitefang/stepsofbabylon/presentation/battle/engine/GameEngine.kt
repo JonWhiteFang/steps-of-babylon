@@ -110,6 +110,18 @@ class GameEngine {
     @Volatile var uwCooldownMultiplier: Float = 1f
 
     /**
+     * ENEMY_INTEL lab research level (V1X-15b, ADR-0017). Drives three information overlays:
+     * L1+ next-wave composition in the cooldown banner ([nextWaveCompositionLabel]), L5+ a
+     * per-enemy HP-% label drawn above each enemy's HP bar in [render], and L10 a boss-arrival
+     * countdown ([bossCountdownLabel]) drawn in [render]. Default `0` = no overlays (preserves
+     * pre-V1X-15b rendering). Set by [com.whitefang.stepsofbabylon.presentation.battle.BattleViewModel]
+     * from the round-start lab snapshot; NOT reset in [init] (mirrors [cashResearchMultiplier]
+     * — the VM owns the value and re-pushes it each round). The +2 %/lvl damage half of
+     * ENEMY_INTEL is applied separately via `ResolveStats` (PR #84 combat foundation).
+     */
+    @Volatile var enemyIntelLevel: Int = 0
+
+    /**
      * GOLDEN_ZIGGURAT cash buff multiplier. Written by [activateUW] (set to 5.0×) and reset
      * to 1.0× by the GOLDEN expiry branch in [updateUWs]. Pre-R4-01 this multiplier was
      * shared between Step Overdrive (FORTUNE, 3.0×) and the Ultimate Weapon (GOLDEN, 5.0×)
@@ -434,7 +446,29 @@ class GameEngine {
 
         if (fx != null && !reducedMotion) fx.screenShake.restore(canvas)
 
+        // V1X-15b: ENEMY_INTEL L5+ per-enemy HP-% label above each enemy's HP bar. Drawn here
+        // (not in EnemyEntity.render) so the level gate stays out of the entity constructor.
+        if (enemyIntelLevel >= 5) {
+            for (e in entities) {
+                if (e is EnemyEntity && e.isAlive) {
+                    val pct = ((e.currentHp / e.maxHp).coerceIn(0.0, 1.0) * 100).toInt()
+                    canvas.drawText("$pct%", e.x, e.y - e.height / 2f - 14f, hpPercentPaint)
+                }
+            }
+        }
+
         ziggurat?.let { healthBarRenderer.render(canvas, it.currentHp, it.maxHp, screenWidth) }
+
+        // V1X-15b: ENEMY_INTEL L10 boss-arrival countdown, right-aligned to clear the
+        // centre-aligned cooldown banner.
+        bossCountdownLabel()?.let { canvas.drawText(it, screenWidth - 16f, 90f, bossCountdownPaint) }
+    }
+
+    private val hpPercentPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFFFFF8E7.toInt(); textSize = 22f; textAlign = android.graphics.Paint.Align.CENTER
+    }
+    private val bossCountdownPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        color = 0xFFF44336.toInt(); textSize = 26f; textAlign = android.graphics.Paint.Align.RIGHT; isFakeBoldText = true
     }
 
     fun addEntity(entity: Entity) { pendingAdd.add(entity) }
@@ -631,13 +665,39 @@ class GameEngine {
         cooldownText = null // Old one auto-finishes
         val spawner = waveSpawner
         if (spawner != null) {
-            val ct = WaveCooldownText(screenWidth) {
+            // V1X-15b: ENEMY_INTEL L1+ reveals the next wave's composition during cooldown.
+            val ct = WaveCooldownText(screenWidth, nextWaveCompositionLabel()) {
                 if (spawner.phase == WavePhase.COOLDOWN) WaveSpawner.COOLDOWN_DURATION - (spawner.phaseTimer)
                 else 0f
             }
             cooldownText = ct
             fx.addEffect(ct)
         }
+    }
+
+    /**
+     * Next-wave composition string for the ENEMY_INTEL L1+ overlay (V1X-15b). Returns `null`
+     * when ENEMY_INTEL is below L1 (overlay suppressed) or no spawner exists. Reads the pure
+     * [WaveSpawner.getWaveComposition] helper for `currentWave + 1`, e.g. "Next: 12 BASIC, 4 RANGED, 1 BOSS".
+     */
+    fun nextWaveCompositionLabel(): String? {
+        if (enemyIntelLevel < 1) return null
+        val spawner = waveSpawner ?: return null
+        val comp = spawner.getWaveComposition(spawner.currentWave + 1)
+        if (comp.isEmpty()) return null
+        return "Next: " + comp.entries.joinToString(", ") { "${it.value} ${it.key.name}" }
+    }
+
+    /**
+     * Boss-arrival countdown string for the ENEMY_INTEL L10 overlay (V1X-15b). Returns `null`
+     * below L10 or with no spawner. Combines [WaveSpawner.wavesUntilNextBoss] with the current
+     * phase timer to estimate seconds, e.g. "Boss in 2 waves".
+     */
+    fun bossCountdownLabel(): String? {
+        if (enemyIntelLevel < 10) return null
+        val spawner = waveSpawner ?: return null
+        val waves = spawner.wavesUntilNextBoss()
+        return if (waves == 1) "Boss next wave" else "Boss in $waves waves"
     }
 
     // --- Orb management ---

@@ -6012,3 +6012,36 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - No code/test changes; counts unchanged (806 JVM + 9 instrumented).
 
 - Memory updated: STATE (current objective already accurate post-#84) / RUN_LOG ✅
+
+## 2026-05-29 ~14:30 BST — V1X-15b ENEMY_INTEL UI overlays
+
+- Goal: ship the information half of ENEMY_INTEL (the combat +2 %/lvl damage half merged via PR #84). Three SurfaceView overlays unlocking at L1 / L5 / L10 per ADR-0017.
+
+- Context preflight: `main` clean at `78dc6b3` (post-PR-#85 doc sweep). Read the V1X-15b sub-plan, ADR-0017, WaveSpawner, GameEngine, WaveAnnouncement, EnemyEntity, HealthBarRenderer, BattleViewModel + the WaveSpawnerTest / GameEngineTest / BattleViewModelTest patterns. Confirmed `unitTests.isReturnDefaultValues = true` so `android.graphics.Paint` constructs in pure-JVM tests (the existing `freshEngine()` GameEngineTest helper already relies on this).
+
+- Branch: `feat/V1X-15b-enemy-intel-overlays` from `main`.
+
+- Source changes:
+  - **`WaveSpawner.kt`** — 2 pure helpers: `getWaveComposition(wave): Map<EnemyType,Int>` (deterministic expected per-type counts; mirrors the `pickType` probability bands via a new private `typeProbabilities(wave)`, splits one BOSS off index 0 on boss waves, `Math.round` band distribution) + `wavesUntilNextBoss(): Int` (forward count from `currentWave` using `conditions.bossWaveInterval`).
+  - **`GameEngine.kt`** — `@Volatile var enemyIntelLevel = 0` (NOT reset in `init` — mirrors `cashResearchMultiplier`; VM owns it). `nextWaveCompositionLabel()` (null < L1 → `"Next: 7 BASIC"`) fed into `WaveCooldownText` via `triggerWaveAnnouncement`. `bossCountdownLabel()` (null < L10 → `"Boss in 9 waves"` / `"Boss next wave"`). `render()` draws L5+ per-enemy HP-% above each living `EnemyEntity` + the L10 boss countdown right-aligned at `(w-16, 90)`. New `hpPercentPaint` + `bossCountdownPaint` fields.
+  - **`WaveAnnouncement.kt`** — `WaveCooldownText` gained an optional `nextWaveComposition: String? = null` 2nd param + `compositionPaint`, drawn at y=90 below the timer. Existing `GameEngine` call site is the only caller.
+  - **`BattleViewModel.kt`** — extracted `@VisibleForTesting internal applyResearchParams(engine)` (sets `cashResearchMultiplier` + `uwCooldownMultiplier` + `enemyIntelLevel`), called from both `startPollingEngine` + `playAgain` (dedup); private `enemyIntelLevel() = labLevels[ENEMY_INTEL] ?: 0`.
+
+- DEVIATION FROM PLAN (documented in ADR-0017 §Rationale 5): the L5 HP-% label is drawn in `GameEngine.render` looping the live entity list, not in `EnemyEntity.render` as the plan listed. Keeps the level gate out of the `EnemyEntity` constructor (built in 2 places: `WaveSpawner.spawnEnemy` + SCATTER child-spawn). Functionally identical; lower blast radius.
+
+- Tests (+6 JVM, 806 → 812):
+  - `WaveSpawnerTest` +3: early non-boss wave is all-BASIC + deterministic; boss wave includes exactly one BOSS; `wavesUntilNextBoss` forward count (start 8→2, 1→9, 10→10).
+  - `GameEngineTest` +2: `nextWaveCompositionLabel` null < L1 / `"Next: 7 BASIC"` @ L1; `bossCountdownLabel` null < L10 / `"Boss in 9 waves"` @ L10.
+  - `BattleViewModelTest` +1: `applyResearchParams` pushes ENEMY_INTEL L7 onto `engine.enemyIntelLevel`.
+
+- Verification: `./run-gradle.sh testDebugUnitTest` BUILD SUCCESSFUL (test-results XML sum = 812, 806 → 812 exactly). `./run-gradle.sh assembleDebug` BUILD SUCCESSFUL. All green first run.
+
+- ADR: ADR-0017 status updated from "UI overlays tracked as follow-up" → "UI overlays shipped"; added an `## Implementation (UI overlays)` section + Rationale 5 (the `GameEngine`-render deviation). The +2 %/lvl coefficient remains an open balance item.
+
+- Doc-sync per agent protocol PR Task-List Convention: AGENTS.md (coverage 806 → 812 + V1X status line), CHANGELOG.md (new `[Unreleased]` entry), `.kiro/steering/source-files.md` (WaveSpawner / GameEngine / WaveAnnouncement / EnemyEntity / BattleViewModel / WaveSpawnerTest entries), ADR-0017, STATE.md (this rotation), RUN_LOG.md (this entry). No `structure.md` / `tech.md` / `database-schema.md` / README change (no new module, dep, schema, or build-instruction shift).
+
+- Open balance item (ADR-0017): re-evaluate +2 %/lvl vs DAMAGE_RESEARCH 5 %/lvl after on-device testing; bump to 3 %/lvl if UI value doesn't compensate. On-device verification still needed for the overlays (HP-% legibility at 30+ enemies; boss-countdown end-game clutter).
+
+- Follow-ups: commit + push + PR + merge. Then on-device verification.
+
+- Memory updated: STATE ✅ / RUN_LOG ✅
