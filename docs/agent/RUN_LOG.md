@@ -6106,3 +6106,28 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Follow-ups: commit + push + PR + merge. Then remaining Phase 2 entities (Enemy, Orb, EnemyProjectile, Ziggurat) as per-entity sub-PRs, then Phase 3 (update-loop → `domain/battle/engine/Simulation`).
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-05-29 ~15:50 BST — V1X-09 Phase 2 (cont.): Orb + EnemyProjectile motion extraction
+
+- Goal: continue V1X-09 Phase 2 with the next two entities. Second per-entity sub-PR.
+
+- Context preflight: `main` clean at `1f2d571` (post-PR-#89). Read `EnemyProjectileEntity` (confirmed identical homing motion to `ProjectileEntity`), `OrbEntity`, and `OrbEntityTest` (to preserve its `@VisibleForTesting` contract: `OrbEntity.ORBIT_RADIUS_MIN/MAX`, `ORBIT_PERIOD_SEC`, `orb.currentOrbitRadius`).
+
+- Branch: `feat/V1X-09-phase2-orb-enemyproj` from `main`.
+
+- Source changes:
+  - **`EnemyProjectileEntity`** — now holds + delegates to the existing pure-domain `ProjectileState` (no new domain class; motion math is identical to `ProjectileEntity` and already covered by `ProjectileStateTest`). Keeps `render()` + `damage`/`shooter`. Constructor unchanged.
+  - **`domain/battle/entity/OrbState.kt`** (NEW) — pure orbit-position + radial-oscillation state: owns `angle` + `radialPhase` + derived `(x,y)` + `currentOrbitRadius`; companion consts `ORBIT_RADIUS_MIN/MAX` (25/70), `ORBIT_PERIOD_SEC` (2.5), `MID/AMPLITUDE/RADIAL_ANGULAR_SPEED`. `init` computes initial position; `update(dt)` advances both angles + recomputes.
+  - **`OrbEntity`** — holds an `OrbState`, delegates position (`x`/`y` synced after `state.update`), keeps the enemy-proximity + per-enemy hit-cooldown loop (needs `EnemyEntity` refs + `onHitEnemy`) + `render()`. Re-exposes `ORBIT_RADIUS_MIN/MAX` + `ORBIT_PERIOD_SEC` (as `const val = OrbState.X`) and `currentOrbitRadius` (delegating getter) via `@VisibleForTesting` so the Robolectric `OrbEntityTest` (6 #54 regression tests) compiles + passes unchanged. Dropped the now-OrbState-owned `radialPhase` field. Constructor unchanged.
+
+- Tests: **`domain/battle/entity/OrbStateTest.kt`** (NEW, +4 pure-JVM) — mid-radius + on-orbit position at phase 0, MAX after quarter-cycle, MIN after three-quarter-cycle, angularSpeed advances the orbit angle. No Robolectric. EnemyProjectileEntity needed no new test (ProjectileState already covered).
+
+- Verification: `./run-gradle.sh testDebugUnitTest assembleDebug` BUILD SUCCESSFUL; test-results XML sum = 820 (816 → 820, exactly the expected +4). The 6 Robolectric `OrbEntityTest` #54 guards still pass (build green). No behaviour change.
+
+- ADR: ADR-0012 per-entity checklist updated — ProjectileEntity ✅, EnemyProjectileEntity ✅, OrbEntity ✅; EnemyEntity + ZigguratEntity ⬜ remain.
+
+- Doc-sync per agent protocol PR Task-List Convention: AGENTS.md (coverage 816 → 820 + V1X status line), CHANGELOG.md (new `[Unreleased]` entry), `.kiro/steering/source-files.md` (OrbState + OrbStateTest entries + OrbEntity/EnemyProjectileEntity notes), `.kiro/steering/structure.md` (entity dir mentions OrbState), ADR-0012 (checklist), STATE.md (this rotation), RUN_LOG.md (this entry). No README / tech.md / database-schema.md change.
+
+- Follow-ups: commit + push + PR + merge. Then EnemyEntity (the big one — 6 types, melee/ranged, onMeleeHit callback) + ZigguratEntity, then Phase 3 (update-loop → `domain/battle/engine/Simulation`).
+
+- Memory updated: STATE ✅ / RUN_LOG ✅
