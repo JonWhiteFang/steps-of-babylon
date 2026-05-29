@@ -6082,3 +6082,27 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Remaining path to v1.0.0 is entirely external: recruit ≥12 closed-track testers + ≥14-day window (earliest production-access application 2026-06-09) → production access → staged rollout → tag v1.0.0.
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-05-29 ~15:45 BST — V1X-09 Phase 2 (start): ProjectileEntity motion extraction
+
+- Goal: begin V1X-09 Phase 2 (entity update-logic extraction; ADR-0012) with the cleanest entity first, establishing the `domain/battle/entity/<Name>State` package + delegation pattern that scales to the harder entities. Framed as the first of several per-entity sub-PRs.
+
+- Context preflight: `main` clean at `90ffe13` (post-PR-#88). Read ADR-0012 (Phase 1/2/3 phasing), `SimulationMath` (Phase 1 precedent), `Entity` base, `ProjectileEntity`, `OrbEntity`, `SimulationMathTest` (JUnit 5 conventions). Picked ProjectileEntity as the first extraction (trivial homing motion; render() is one drawCircle).
+
+- Branch: `feat/V1X-09-phase2-projectile` from `main`.
+
+- Source changes:
+  - **`domain/battle/entity/ProjectileState.kt`** (NEW) — pure motion state (no Android imports): `var x/y`, `targetX/targetY`, `speed`, `isAlive` (private set). `update(dt)` does the homing step (dies when within one step's reach). Mirrors the State-object shape ADR-0012 prescribes for Phase 2 (not a bare pure function — chosen so the pattern scales to stateful entities like EnemyEntity).
+  - **`presentation/battle/entities/ProjectileEntity.kt`** — now owns a `ProjectileState`, delegates `update()` to it and syncs `x`/`y`/`isAlive` back onto the Entity base; keeps `render()` + the collision/bounce fields (`damage`, `bouncesRemaining`, `hitEnemies`). Constructor signature unchanged, so `CollisionSystem` / `GameEngine` are untouched.
+
+- Tests: **`domain/battle/entity/ProjectileStateTest.kt`** (NEW, +4 pure-JVM) — single-axis proportional move, two-axis proportional split (3-4-5 triangle half-step), arrival-within-one-step death, multi-step convergence. No Robolectric.
+
+- Verification: `./run-gradle.sh testDebugUnitTest assembleDebug` BUILD SUCCESSFUL; test-results XML sum = 816 (812 → 816, exactly the expected +4). No behaviour change.
+
+- ADR: ADR-0012 amended — Future Phases §Phase 2 flipped from "deferred" to "in progress — started 2026-05-29" with a per-entity sub-PR progress checklist (ProjectileEntity ✅; Enemy/Orb/EnemyProjectile/Ziggurat ⬜).
+
+- Doc-sync per agent protocol PR Task-List Convention: AGENTS.md (coverage 812 → 816 + V1X status line), CHANGELOG.md (new `[Unreleased]` entry), `.kiro/steering/source-files.md` (ProjectileState + ProjectileStateTest entries + ProjectileEntity note), `.kiro/steering/structure.md` (new `domain/battle/entity/` dir), ADR-0012, STATE.md (this rotation; note: PR #88's STATE current-objective rotation hadn't landed on `main`, so this run also reframes the V1X-15b bullet as merged + on-device-verified — the verification fact was already durable in ADR-0017 + the PR #88 RUN_LOG entry), RUN_LOG.md (this entry). No README / tech.md / database-schema.md change.
+
+- Follow-ups: commit + push + PR + merge. Then remaining Phase 2 entities (Enemy, Orb, EnemyProjectile, Ziggurat) as per-entity sub-PRs, then Phase 3 (update-loop → `domain/battle/engine/Simulation`).
+
+- Memory updated: STATE ✅ / RUN_LOG ✅

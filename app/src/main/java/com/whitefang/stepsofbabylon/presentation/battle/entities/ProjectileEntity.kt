@@ -2,28 +2,34 @@ package com.whitefang.stepsofbabylon.presentation.battle.entities
 
 import android.graphics.Canvas
 import android.graphics.Paint
+import com.whitefang.stepsofbabylon.domain.battle.entity.ProjectileState
 import com.whitefang.stepsofbabylon.presentation.battle.engine.Entity
-import kotlin.math.hypot
 
+/**
+ * Moves toward a target, self-destructs on arrival. V1X-09 Phase 2 (ADR-0012): the homing
+ * motion now lives in the pure-domain [ProjectileState]; this class delegates `update()` to
+ * it and retains only the Canvas `render()` and the collision/bounce fields
+ * (`damage`, `bouncesRemaining`, `hitEnemies`) that `CollisionSystem` / `GameEngine` read.
+ */
 class ProjectileEntity(
     startX: Float,
     startY: Float,
-    private val targetX: Float,
-    private val targetY: Float,
-    private val speed: Float,
+    targetX: Float,
+    targetY: Float,
+    speed: Float,
     val damage: Double = 0.0,
     var bouncesRemaining: Int = 0,
     val hitEnemies: MutableSet<EnemyEntity> = mutableSetOf(),
 ) : Entity(x = startX, y = startY, width = 8f, height = 8f) {
 
+    private val state = ProjectileState(startX, startY, targetX, targetY, speed)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFD4A843.toInt() }
 
     override fun update(deltaTime: Float) {
-        val dx = targetX - x; val dy = targetY - y
-        val dist = hypot(dx, dy)
-        if (dist < speed * deltaTime) { isAlive = false; return }
-        val ratio = speed * deltaTime / dist
-        x += dx * ratio; y += dy * ratio
+        state.update(deltaTime)
+        x = state.x
+        y = state.y
+        isAlive = state.isAlive
     }
 
     override fun render(canvas: Canvas) {
