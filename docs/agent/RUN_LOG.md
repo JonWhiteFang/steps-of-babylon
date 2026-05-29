@@ -6063,3 +6063,22 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - No code/test changes; counts unchanged (812 JVM + 9 instrumented).
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-05-29 ~15:35 BST — V1X-15b ENEMY_INTEL on-device verification (PASSED)
+
+- Goal: record the on-device verification outcome for the V1X-15b ENEMY_INTEL overlays (PR #86) and resolve the ADR-0017 open balance items.
+
+- User confirmed on-device (2026-05-29): (1) overlays PASS — L5 per-enemy HP-% labels legible at 30+ enemies, L10 boss-countdown clean/uncluttered at end-game; (2) keep the ENEMY_INTEL combat coefficient at +2 %/lvl (not bumped to 3 %/lvl).
+
+- Docs-only update (no code/test change; counts unchanged at 812 JVM + 9 instrumented):
+  - `docs/agent/DECISIONS/ADR-0017-enemy-intel-design.md` — Status line notes on-device verification + confirmed coefficient; the "Negative / Open balance items" section retitled "Resolved balance items (on-device verified 2026-05-29)" with all three items marked resolved.
+  - `STATE.md` — current objective rotated to "V1X-15b fully shipped + on-device verified"; previous objective demoted; top-priorities renumbered (the commit/PR + on-device-verification items dropped; external release-gate items move up; post-launch V1X backlog added as #5).
+  - `RUN_LOG.md` — this entry.
+
+- No `README.md` / `AGENTS.md` / other technical-doc change — no build-instruction, test-count, dependency, schema, or module-structure shift.
+
+- Branch: `docs/V1X-15b-ondevice-verified`. Follow-up: commit + push + PR + merge.
+
+- Remaining path to v1.0.0 is entirely external: recruit ≥12 closed-track testers + ≥14-day window (earliest production-access application 2026-06-09) → production access → staged rollout → tag v1.0.0.
+
+- Memory updated: STATE ✅ / RUN_LOG ✅
