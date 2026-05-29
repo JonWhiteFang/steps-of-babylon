@@ -5993,3 +5993,22 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Follow-ups: commit + push + PR + merge. Then the V1X-15b UI-overlay PR (on-device).
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-05-29 ~14:00 BST — Doc sweep after V1X-08 + V1X-15b session
+
+- Goal: reconcile live current-state docs after the session's four PRs (#81 BattleSurfaceLifecycleTest, #82 DeepLinkIntentTest, #83 StoreIapFlowTest deferral, #84 V1X-15b ENEMY_INTEL combat foundation), since each PR's own doc-sync touched only the docs relevant to that PR and a couple of cross-cutting summary lines drifted.
+
+- Audited: README, AGENTS, master-plan, tech.md, source-files.md, structure.md, database-schema.md, CHANGELOG, STATE.
+
+- Drift found + fixed (2 files):
+  - **AGENTS.md** V1X status line (line 224) — still said "16 of 29 … #64–#79", "3 ADRs … ADR-0016", "656 → 800", and listed V1X-08 / V1X-15b as remaining. Rewritten: V1X-08 complete (PRs #80–#83, StoreIapFlowTest deferred), V1X-15b combat foundation merged (#84), 4 ADRs (incl. ADR-0017), 656 → 806 + 9 instrumented, remaining items now lead with the V1X-15b UI overlays.
+  - **README.md** status banner (line 11) — "800 JVM" → 806; added V1X-15b combat + ADR-0017; the stale "V1X-15b ENEMY_INTEL ship" Next option replaced with "V1X-15b ENEMY_INTEL UI overlays (needs on-device verification)". Build-command comment "800 JVM tests" → 806.
+
+- No change needed:
+  - AGENTS coverage line (806) — already correct from PR #84.
+  - `master-plan.md`, `tech.md`, `structure.md`, `database-schema.md` — no V1X-08/V1X-15b drift (no new modules, dep versions, or schema changes this session).
+  - All other "800" hits are legitimately historical: RUN_LOG append-only entries, CHANGELOG per-PR snapshots (accurate as-of their PR), STATE "Previous objective"/"Previous run" stack, and ADR-0015 (historical at its date). Not touched per the agent protocol's historical-artifact rule.
+
+- No code/test changes; counts unchanged (806 JVM + 9 instrumented).
+
+- Memory updated: STATE (current objective already accurate post-#84) / RUN_LOG ✅
