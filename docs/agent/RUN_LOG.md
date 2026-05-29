@@ -5861,3 +5861,36 @@ After the fix, tests pass on first try and assembleDebug is clean.
   4. If all three pass, the closed-track ≥14-day window resumes from v14.
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-05-29 ~13:15 BST — V1X-08 BattleSurfaceLifecycleTest (first real instrumented suite)
+
+- Goal: layer the first real instrumented suite onto the V1X-08 Phase 1A harness — the documented #1 priority. Hardens the R3-01 backgrounding-state-loss regression guard, which currently only exists as a Robolectric test (`GameSurfaceViewTest`) that runs against shadow `SurfaceView` and never exercises true `SurfaceHolder.Callback` lifecycle timing.
+
+- Context preflight: `main` clean + synced with origin; last commit `5d4c5b4` (gitignore .repowise/.env). Read STATE.md / RUN_LOG tail / git status. Read the harness (`HiltTestRunner`, `InfrastructureSmokeTest`), the class under test (`GameSurfaceView` + `GameLoopThread`), the Robolectric `GameSurfaceViewTest` being mirrored, `GameEngine.init`/`hasWaveProgress` API, `app/build.gradle.kts` deps, and the version catalog.
+
+- Branch: `feat/V1X-08-battle-surface-lifecycle-test` cut from `main`.
+
+- Source changes (1 new file):
+  - **`app/src/androidTest/java/com/whitefang/stepsofbabylon/BattleSurfaceLifecycleTest.kt`** (100 lines, 4 tests). `@RunWith(AndroidJUnit4)`, no Hilt rule (`GameSurfaceView` takes only `Context`). `newView()` constructs the view on the real main thread via `InstrumentationRegistry.getInstrumentation().runOnMainSync { ... }` against `targetContext`. The 4 tests mirror the Robolectric suite 1:1: (1) surface recreation preserves engine progress mid-round (`engine.init` + `update` → `initEngineIfNeeded` short-circuits via `hasWaveProgress`); (2) `setSpeedMultiplier` persists `pendingSpeed`; (3) `setPaused` persists `pendingPaused`; (4) inverse no-regression — fresh engine still inits + becomes tickable.
+
+- Why no new gradle deps: the suite drives the `GameSurfaceView` testable seams directly (not Compose UI), so it only needs `androidx.test.ext.junit` (`AndroidJUnit4`) + `androidx.test.runner` (`InstrumentationRegistry`), both already present from Phase 1A. No `build.gradle.kts` change. Espresso / compose-ui-test deferred until `StoreIapFlowTest` / `DeepLinkIntentTest` need real UI interaction.
+
+- Verification:
+  - `./run-gradle.sh connectedDebugAndroidTest` BUILD SUCCESSFUL in 19s on emulator-5554 (Pixel 6 AVD). "Starting 5 tests / Finished 5 tests" = 4 new `BattleSurfaceLifecycleTest` + 1 existing `InfrastructureSmokeTest`, all green. Instrumented count 1 → 5; JVM unchanged at 800.
+
+- Doc-sync per agent protocol PR Task-List Convention:
+  - `AGENTS.md` — instrumented-test count 1 → 5 in the Testing bullet + the harness/coverage line; `BattleSurfaceLifecycleTest` described.
+  - `CHANGELOG.md` — new section at top of `[Unreleased]` above the Phase 1A entry.
+  - `.kiro/steering/source-files.md` — added `BattleSurfaceLifecycleTest.kt` entry to the androidTest section.
+  - `README.md` — status banner + instrumented-test paragraph updated (1 → 5 instrumented; "Next" reframed to the two remaining suites).
+  - `STATE.md` — current objective rotated; "what works" instrumented count 1 → 5; top priorities reordered (commit+PR now #1).
+  - `RUN_LOG.md` — this entry.
+  - No changes to `.kiro/steering/structure.md` (no module/architecture shift), `.kiro/steering/tech.md` (no version changes), `docs/database-schema.md` (no schema change).
+
+- Open questions: none.
+
+- Follow-ups: commit + push branch + open PR against `main`. After merge, layer `StoreIapFlowTest` + `DeepLinkIntentTest` to complete V1X-08.
+
+- ADR: not warranted — adds a test suite against existing public/`@VisibleForTesting` seams; no architecture decision.
+
+- Memory updated: STATE ✅ / RUN_LOG ✅

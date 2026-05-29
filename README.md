@@ -8,7 +8,7 @@ An Android idle tower defense game where real-world walking drives all progressi
 
 ## Status
 
-Version 1.0.0 (versionCode 16) — V1X post-launch work in progress. AAB v15 uploaded to Play Console 2026-05-27 ~05:39 BST and on-device smoke test PASSED 2026-05-26 ~05:35 BST. Sixteen V1X sub-plans landed on `main` 2026-05-28 (Waves 1+2 complete; Wave 3 partial; ADR-0012 + ADR-0015 + ADR-0016 added); V1X-08 Phase 1A (instrumented-test harness) merged via PR #80 on 2026-05-29. 800 JVM unit tests + 1 instrumented test green. **Next: layer on `BattleSurfaceLifecycleTest` (first real instrumented suite, R3-01 regression guard) OR V1X-15b ENEMY_INTEL ship OR resume closed-track soak (closed-track ≥14-day window resumes from v14 effective 2026-05-26; earliest production-access application 2026-06-09).**
+Version 1.0.0 (versionCode 16) — V1X post-launch work in progress. AAB v15 uploaded to Play Console 2026-05-27 ~05:39 BST and on-device smoke test PASSED 2026-05-26 ~05:35 BST. Sixteen V1X sub-plans landed on `main` 2026-05-28 (Waves 1+2 complete; Wave 3 partial; ADR-0012 + ADR-0015 + ADR-0016 added); V1X-08 Phase 1A (instrumented-test harness) merged via PR #80 on 2026-05-29, with `BattleSurfaceLifecycleTest` (first real instrumented suite, R3-01 regression guard) layered on 2026-05-29. 800 JVM unit tests + 5 instrumented tests green. **Next: layer on `StoreIapFlowTest` / `DeepLinkIntentTest` (remaining V1X-08 suites) OR V1X-15b ENEMY_INTEL ship OR resume closed-track soak (closed-track ≥14-day window resumes from v14 effective 2026-05-26; earliest production-access application 2026-06-09).**
 
 For the live current state see [docs/agent/STATE.md](docs/agent/STATE.md). For recent changes see [CHANGELOG.md](CHANGELOG.md).
 
@@ -56,7 +56,7 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 ./gradlew bundleRelease
 ```
 
-Instrumented tests live under `app/src/androidTest/`. The harness was stood up in V1X-08 Phase 1A with one infrastructure smoke test (`InfrastructureSmokeTest.harnessBoots`); the three planned suites — `BattleSurfaceLifecycleTest`, `StoreIapFlowTest`, `DeepLinkIntentTest` — are layered on in follow-up PRs. Run via `./gradlew connectedDebugAndroidTest` on a connected emulator (API 34+). All other coverage is JVM unit tests under `app/src/test/`. See [AGENTS.md](AGENTS.md) for the full coverage breakdown.
+Instrumented tests live under `app/src/androidTest/`. The harness was stood up in V1X-08 Phase 1A with one infrastructure smoke test (`InfrastructureSmokeTest.harnessBoots`); `BattleSurfaceLifecycleTest` (4 R3-01 lifecycle regression guards) layered on 2026-05-29; the two remaining planned suites — `StoreIapFlowTest`, `DeepLinkIntentTest` — are layered on in follow-up PRs. Run via `./gradlew connectedDebugAndroidTest` on a connected emulator (API 34+). All other coverage is JVM unit tests under `app/src/test/`. See [AGENTS.md](AGENTS.md) for the full coverage breakdown.
 
 ### Non-TTY Environments (Kiro CLI, CI, etc.)
 
