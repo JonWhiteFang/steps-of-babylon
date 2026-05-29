@@ -38,6 +38,11 @@ android {
         versionCode = 16
         versionName = "1.0.0"
 
+        // V1X-08 Phase 1A: instrumented tests use a custom AndroidJUnitRunner that swaps
+        // StepsOfBabylonApp → HiltTestApplication so Hilt-rooted DI works in androidTest.
+        // The runner class lives in app/src/androidTest/java/com/whitefang/stepsofbabylon/HiltTestRunner.kt.
+        testInstrumentationRunner = "com.whitefang.stepsofbabylon.HiltTestRunner"
+
         // Default USE_REAL_ADS value. Post-C.6 PR 3 the flag no longer gates the
         // `RewardAdManager` binding (there is only `RewardAdManagerImpl`). It still
         // gates the UMP consent prefetch in MainActivity.onResume so debug emulators
@@ -214,4 +219,12 @@ dependencies {
     testImplementation(libs.room.testing)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.workmanager.testing)
+
+    // Instrumented testing (androidTest source set) — V1X-08 Phase 1A.
+    // Hilt instrumented DI requires kspAndroidTest so the @HiltAndroidTest classes get
+    // their components generated; the regular ksp config does not cover androidTest.
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.hilt.android.testing)
+    kspAndroidTest(libs.hilt.compiler)
 }

@@ -339,7 +339,7 @@ service/WidgetUpdateHelper.kt        # Throttled widget update helper
 
 ## Test Layer
 
-All paths relative to `app/src/test/java/com/whitefang/stepsofbabylon/`.
+All paths relative to `app/src/test/java/com/whitefang/stepsofbabylon/` unless noted otherwise. The `androidTest` source set lives at `app/src/androidTest/java/com/whitefang/stepsofbabylon/` and is documented at the bottom of this section (V1X-08 Phase 1A).
 
 ```
 fakes/FakePlayerRepository.kt                    # In-memory StateFlow-backed fake for PlayerRepository
@@ -461,4 +461,13 @@ domain/battle/engine/SimulationMathTest.kt         # 27 pure-JVM tests for Simul
 presentation/audio/SoundManagerThrottleTest.kt     # 5 pure-logic tests for the V1X-05 frequency-aware SHOOT throttle formula `(expectedIntervalMs / 3).coerceIn(30, 100)`. Default 100ms input → 33ms throttle; baseline 1000ms (1 atk/sec) caps at 100ms; fast 200ms (5 atk/sec) → 66ms; very-fast 60ms floors at 30ms; zero floors at 30ms. Pure JVM, no Robolectric needed.
 presentation/audio/MusicPreferencesTest.kt         # 1 Robolectric test for MusicPreferences round-trip (V1X-06): default isMuted=false + getVolume=0.5; setMuted(true) + setVolume(0.8) round-trip persists across SharedPreferences read.
 service/StepWidgetProviderTest.kt                  # Widget SharedPreferences round-trip
+```
+
+### Instrumented (androidTest) source set
+
+All paths relative to `app/src/androidTest/java/com/whitefang/stepsofbabylon/`. Stood up by V1X-08 Phase 1A on 2026-05-28.
+
+```
+HiltTestRunner.kt                  # AndroidJUnitRunner subclass; overrides newApplication() to install HiltTestApplication. Wired via testInstrumentationRunner in app/build.gradle.kts. The class FQN com.whitefang.stepsofbabylon.HiltTestRunner is the contract between Gradle config and runtime instantiation — don't rename without updating both call sites.
+InfrastructureSmokeTest.kt         # Single @HiltAndroidTest harnessBoots smoke test asserting the instrumented pipeline (Gradle config → KSP → Hilt → AndroidJUnit4 → emulator) runs end-to-end. Deliberately does not touch DB / services / sensors / permissions — those belong to the three follow-up suites (BattleSurfaceLifecycleTest, StoreIapFlowTest, DeepLinkIntentTest).
 ```
