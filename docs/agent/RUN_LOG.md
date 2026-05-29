@@ -5927,3 +5927,30 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - ADR: not warranted — adds a test suite against the existing `Intent` / `Parcel` / `Screen` public contract.
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-05-29 ~13:40 BST — V1X-08 StoreIapFlowTest formally deferred (docs-only)
+
+- Goal: close out V1X-08's instrumented-coverage goal cleanly. After `BattleSurfaceLifecycleTest` (PR #81) and `DeepLinkIntentTest` (PR #82) shipped, decide the fate of the third planned suite `StoreIapFlowTest` rather than leave it as an open "follow-up".
+
+- Decision: **formally defer `StoreIapFlowTest`.** Rationale: unlike the first two suites (which close real Robolectric blind spots — SurfaceHolder.Callback lifecycle timing; Binder/Parcel marshalling), an instrumented IAP test has no real-framework-only gap. Real Play Billing can't run on a bare emulator (needs signed Play-Console build + licensed test account), so the test would drive a fake `BillingClientAdapter` — duplicating the 14-test JVM `BillingManagerImplTest` (which already runs against a real in-memory Room DB, exercising `grantOnceAtomic`'s `@Transaction` semantics) plus the on-device C.5 internal-track verification. It would also be the suite's first `@TestInstallIn` module-replacement, for near-zero new signal. V1X-08's "first-pass instrumented coverage" goal is considered met with 2 of 3 suites.
+
+- Branch: `docs/V1X-08-defer-store-iap-flow-test` from `main`.
+
+- Changes (docs-only, no code/test):
+  - `docs/plans/plan-V1X-roadmap.md` — added a dated "Status update" note under the V1X-08 suite table recording the deferral + rationale + revisit condition (a future CI Play-Console license-test lane).
+  - `AGENTS.md` — Testing bullet: `StoreIapFlowTest` marked formally deferred with the duplication rationale (was "follow-up PR adds").
+  - `README.md` — status banner + instrumented paragraph: dropped `StoreIapFlowTest` from the "Next" options; noted it deferred.
+  - `CHANGELOG.md` — new `[Unreleased]` entry.
+  - `STATE.md` — current objective rotated to "V1X-08 coverage complete (2 of 3), StoreIapFlowTest deferred"; top priorities now point at V1X-15b.
+  - `RUN_LOG.md` — this entry.
+  - No `.kiro/steering/source-files.md` change (no source/test files added or removed; the androidTest entries already list only the two shipped suites).
+
+- Verification: docs-only; no build/test run needed. Instrumented count stays at 9, JVM at 800.
+
+- Open questions: none.
+
+- Follow-ups: commit + push + PR + merge. Then start V1X-15b ENEMY_INTEL combat foundation.
+
+- ADR: not warranted — deferral decision recorded inline in the plan; no architecture change.
+
+- Memory updated: STATE ✅ / RUN_LOG ✅

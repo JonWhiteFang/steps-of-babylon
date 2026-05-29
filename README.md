@@ -8,7 +8,7 @@ An Android idle tower defense game where real-world walking drives all progressi
 
 ## Status
 
-Version 1.0.0 (versionCode 16) — V1X post-launch work in progress. AAB v15 uploaded to Play Console 2026-05-27 ~05:39 BST and on-device smoke test PASSED 2026-05-26 ~05:35 BST. Sixteen V1X sub-plans landed on `main` 2026-05-28 (Waves 1+2 complete; Wave 3 partial; ADR-0012 + ADR-0015 + ADR-0016 added); V1X-08 Phase 1A (instrumented-test harness) merged via PR #80 on 2026-05-29, with `BattleSurfaceLifecycleTest` + `DeepLinkIntentTest` (first two real instrumented suites) layered on 2026-05-29. 800 JVM unit tests + 9 instrumented tests green. **Next: layer on `StoreIapFlowTest` (remaining V1X-08 suite — needs a Hilt billing-adapter test double) OR V1X-15b ENEMY_INTEL ship OR resume closed-track soak (closed-track ≥14-day window resumes from v14 effective 2026-05-26; earliest production-access application 2026-06-09).**
+Version 1.0.0 (versionCode 16) — V1X post-launch work in progress. AAB v15 uploaded to Play Console 2026-05-27 ~05:39 BST and on-device smoke test PASSED 2026-05-26 ~05:35 BST. Sixteen V1X sub-plans landed on `main` 2026-05-28 (Waves 1+2 complete; Wave 3 partial; ADR-0012 + ADR-0015 + ADR-0016 added); V1X-08 instrumented coverage landed `BattleSurfaceLifecycleTest` + `DeepLinkIntentTest` 2026-05-29 (`StoreIapFlowTest` formally deferred). 800 JVM unit tests + 9 instrumented tests green. **Next: V1X-15b ENEMY_INTEL ship OR resume closed-track soak (closed-track ≥14-day window resumes from v14 effective 2026-05-26; earliest production-access application 2026-06-09).**
 
 For the live current state see [docs/agent/STATE.md](docs/agent/STATE.md). For recent changes see [CHANGELOG.md](CHANGELOG.md).
 

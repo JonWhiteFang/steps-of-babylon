@@ -504,6 +504,24 @@ Estimated test count delta: +43 tests (656 → ~699 by end of V1X-07 alone).
 | `StoreIapFlowTest` | Mock BillingClient → product query → purchase → consume; happy + cancelled + pending paths | Catches Plan 31 closed-track regressions |
 | `DeepLinkIntentTest` | All 13 deep-link routes via `Intent.setData`; verifies nav state | Catches `Screen.argumentFreeRoutes` drift |
 
+> **Status update (2026-05-29).** `BattleSurfaceLifecycleTest` (PR #81, 4 tests) and
+> `DeepLinkIntentTest` (PR #82, 4 tests) shipped against the real framework — each closes
+> a genuine Robolectric blind spot (true `SurfaceHolder.Callback` lifecycle timing;
+> real Binder/Parcel marshalling of the notification deep-link `Intent`). **`StoreIapFlowTest`
+> is formally deferred.** Unlike the other two, it has no real-framework-only gap to exercise:
+> a meaningful instrumented IAP flow can't drive real Play Billing on a bare emulator (needs a
+> signed Play-Console build + a licensed test account), so it would run against a **fake**
+> `BillingClientAdapter` — exactly what the existing JVM `BillingManagerImplTest` already does
+> across 14 tests (happy consume/ack/sub, 5 failure paths, idempotency, reconciliation), and
+> against a **real in-memory Room DB** so the `grantOnceAtomic` `@Transaction` semantics are
+> already exercised end-to-end. The real SDK path was separately verified on-device during the
+> C.5 internal-track pass (all 5 SKUs credited the wallet through Play Billing v8). Building it
+> would also introduce the suite's first `@TestInstallIn` module-replacement for near-zero new
+> signal — the worst effort:value ratio of the three. V1X-08's "first-pass instrumented
+> coverage" goal is considered met with 2 of 3 suites; `StoreIapFlowTest` can be revisited if a
+> future change makes the billing wiring genuinely instrumented-testable (e.g. a CI Play-Console
+> license-test lane).
+
 **Files affected:**
 
 - `app/build.gradle.kts` — add `testInstrumentationRunner = "com.whitefang.stepsofbabylon.HiltTestRunner"`; add `dagger.hilt.android.testing` dep + `androidx.test:runner` + `androidx.test.ext:junit` (likely already present transitively)
