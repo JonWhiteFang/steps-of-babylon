@@ -49,11 +49,15 @@ Constants moved alongside (`RECOVERY_INTERVAL_SECONDS`, `RECOVERY_PERCENT_PER_LE
 
 ## Future Phases
 
-**Phase 2 (V1X-09b, deferred):** Extract entity update logic. Each `presentation/battle/entities/*` file splits into:
+**Phase 2 (V1X-09b, in progress — started 2026-05-29):** Extract entity update logic. Each `presentation/battle/entities/*` file splits into:
 - `domain/battle/entity/<Name>State.kt` — pure data class + update(deltaTime, world) logic
-- `presentation/battle/entities/<Name>Renderer.kt` — Canvas-using render() impl
+- the presentation entity keeps `render()` + any Android-coupled collision fields and delegates `update()` to its state
 
 Estimated effort: 3-4 days. Requires V1X-08 (instrumented tests) as a safety net.
+
+**Per-entity sub-PR progress:**
+- ✅ **ProjectileEntity (2026-05-29):** motion extracted to `domain/battle/entity/ProjectileState` (homing-toward-target step + alive flag). The presentation entity delegates `update()` and keeps `render()` + the collision/bounce fields (`damage`, `bouncesRemaining`, `hitEnemies`); constructor signature unchanged so `CollisionSystem` / `GameEngine` are untouched. +4 pure-JVM `ProjectileStateTest` cases. Establishes the `domain/battle/entity/<Name>State` package + delegation pattern.
+- ⬜ EnemyEntity, OrbEntity, EnemyProjectileEntity, ZigguratEntity — follow in subsequent per-entity sub-PRs.
 
 **Phase 3 (V1X-09c, deferred):** Extract `GameEngine.update()` loop into `domain/battle/engine/Simulation.kt`. Migrate `BattleViewModel` from polling `engine.uiSnapshot` to collecting `simulation.events: Flow<SimulationEvent>`.
 

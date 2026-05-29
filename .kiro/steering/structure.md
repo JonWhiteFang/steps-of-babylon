@@ -18,8 +18,9 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── repository/     # Repository interfaces (Flow-based)
 │   ├── usecase/        # Use case classes (plain Kotlin, no @Inject)
 │   ├── time/           # TimeProvider seam (B.1 / RO-01)
-│   └── battle/         # V1X-09 Phase 1 simulation extraction (ADR-0012)
-│       └── engine/     # SimulationMath — pure-math helpers (recovery pulse, chrono, thorn, lifesteal, HP clamp, step multiplier asymptotic curve)
+│   └── battle/         # V1X-09 simulation extraction (ADR-0012)
+│       ├── engine/     # SimulationMath — pure-math helpers (recovery pulse, chrono, thorn, lifesteal, HP clamp, step multiplier asymptotic curve)
+│       └── entity/      # Phase 2 pure entity-motion state (ProjectileState — no Android imports; presentation entity delegates update())
 ├── presentation/       # Android/Compose layer
 │   ├── navigation/     # Screen routes, BottomNavBar
 │   ├── home/           # Home screen, ViewModel, UiState
