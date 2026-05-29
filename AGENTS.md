@@ -279,7 +279,7 @@ The battle screen uses a custom `SurfaceView` with a game loop (not Compose). Ke
 
 - Unit test domain use cases and game logic (cost calculations, damage formulas, tier progression).
 - Use fakes for repositories in ViewModel tests.
-- Instrumented tests live under `app/src/androidTest/java/com/whitefang/stepsofbabylon/`. Harness landed in V1X-08 Phase 1A (1 smoke test); `BattleSurfaceLifecycleTest` (4 tests, R3-01 regression guards) + `DeepLinkIntentTest` (4 tests, `navigate_to` deep-link contract incl. real Parcel round-trip) layered on 2026-05-29; follow-up PR adds `StoreIapFlowTest`.
+- Instrumented tests live under `app/src/androidTest/java/com/whitefang/stepsofbabylon/`. Harness landed in V1X-08 Phase 1A (1 smoke test); `BattleSurfaceLifecycleTest` (4 tests, R3-01 regression guards) + `DeepLinkIntentTest` (4 tests, `navigate_to` deep-link contract incl. real Parcel round-trip) layered on 2026-05-29. The third planned suite `StoreIapFlowTest` is formally deferred — it has no real-framework-only gap (billing logic is already covered by the 14-test JVM `BillingManagerImplTest` against a real in-memory Room DB, plus on-device verification of the real SDK path); see the V1X-08 status note in `docs/plans/plan-V1X-roadmap.md`.
 - **Test frameworks:** JUnit 5 + kotlinx-coroutines-test for JVM unit tests (pure JVM, no emulator); JUnit 4 + AndroidJUnit4 + Hilt-android-testing for instrumented tests (requires connected emulator API 34+).
 - **Run tests:** `./run-gradle.sh testDebugUnitTest` (JVM) or `./run-gradle.sh connectedDebugAndroidTest` (instrumented).
 - **Test source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
