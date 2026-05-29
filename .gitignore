@@ -20,3 +20,6 @@ keystore.properties
 
 # Android Developer Verification proof-of-ownership snippet (account-specific, one-time use).
 app/src/main/assets/adi-registration.properties
+
+# repowise API keys (local)
+.repowise/.env
