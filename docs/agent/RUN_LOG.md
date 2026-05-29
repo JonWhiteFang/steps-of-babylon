@@ -1,3 +1,27 @@
+## 2026-05-29 — V1X-08 Phase 1A PR #80 merged + branch cleanup + post-merge doc sweep
+
+- **Goal:** Merge yesterday's V1X-08 Phase 1A PR cleanly to `main`, prune stale local branches, then rotate current-state docs to reflect the post-merge state.
+- **Outcome:** PR #80 merged via standard merge commit `1f2217f` (matches project precedent of regular merge commits, not squash). `main` fast-forwarded `3736dff..1f2217f`. Local + remote branch `feat/V1X-08-instrumented-infra` deleted. 11 stale local branches pruned (9 R4 + 2 fix/). Doc sweep covered CHANGELOG, README, STATE.md, RUN_LOG.md.
+- **Pre-merge gates verified:**
+  - `mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`
+  - `statusCheckRollup: []` — no required CI checks (none configured on the repo)
+  - `reviewDecision: ""` — no review required (solo project)
+  - `isDraft: false`
+- **Merge style choice:** Inspected last 6 merges on `main` (`05c27f0`, `2e4100a`, `1a89971`, `29bffd7`, `d63ddb9`, `9f7b4d8`) — all use the standard `Merge pull request #N from JonWhiteFang/feat/...` pattern. Used `gh pr merge 80 --merge --delete-branch` to match.
+- **Branch cleanup:**
+  - `git fetch --prune` removed 17 stale remote-tracking refs (all V1X branches from yesterday's session that had been deleted on origin but lingered in local config).
+  - Cross-checked merge status with `git branch --merged main`. 11 local branches confirmed merged: 9 R4 features (`feat/R4-01-remove-overdrive` through `feat/R4-08-card-copy-progression` + `feat/R4-02b-multishot-bounce-labs`) and 2 fix/ (`fix/1-complete-research-false-trigger`, `fix/3-bottom-bar-overflow`). Zero unmerged branches found.
+  - Used `git branch -d` (lowercase, safe) so any unmerged branch would have been refused. All 11 deleted cleanly. Final local branch list: just `main`.
+- **Doc sweep (this commit):**
+  - **CHANGELOG.md:** V1X-08 entry rewrapped — header changed from `(2026-05-28)` to `(merged 2026-05-29)`; body changed from `**Branch \`feat/V1X-08-instrumented-infra\`:**` to `**PR #80:**`; added `Test count: 800 JVM (unchanged) + 1 instrumented (new).` to match the V1X-18 / V1X-19 pattern.
+  - **README.md:** Status banner extended — added `; V1X-08 Phase 1A (instrumented-test harness) merged via PR #80 on 2026-05-29` to the V1X-progress sentence; bumped test-count claim to `800 JVM unit tests + 1 instrumented test`; added `BattleSurfaceLifecycleTest` as the leading **Next** option.
+  - **STATE.md:** Current objective rotated (V1X-08 Phase 1A now described as `merged to main 2026-05-29 via PR #80 (commit 1f2217f)`; previous-objective stack pushed down). Top priorities cleaned up (dropped the `(commit + PR)` step since it's done; promoted `BattleSurfaceLifecycleTest` to slot 1; added `StoreIapFlowTest`/`DeepLinkIntentTest` follow-up at slot 2). New Last run entry; old Last run demoted to Previous run.
+  - **RUN_LOG.md:** This entry prepended.
+- **Files NOT modified (already current from yesterday's V1X-08 PR):** AGENTS.md, tech.md, source-files.md, structure.md, app/build.gradle.kts, app/src/androidTest/, gradle/libs.versions.toml. These were updated as part of the merged commit `f4fa1cb` itself.
+- **`.gitignore` decision:** The `.repowise/.env` working-tree drift from before the V1X-08 branch is still unstaged. Not in scope for this doc sweep; left for the user to handle whenever they choose.
+- **Direct-to-main commit pattern:** Doc-only post-merge sync committed directly to `main` (no PR), matching the existing project precedent visible in recent history (`3736dff docs: full doc sweep after V1X session (16 PRs)` and `1073ba8 docs: sync current-state docs for V1X-18 + V1X-19` were both direct doc commits, not PR merges). This keeps the `Merge pull request` history exclusively for code changes.
+- **Next session:** Either the first real instrumented suite (`BattleSurfaceLifecycleTest`) or pivot to V1X-15b ENEMY_INTEL or closed-track soak per user direction.
+
 ## 2026-05-28 — V1X-08 Phase 1A: instrumented-test infrastructure stood up
 
 - **Goal:** Stand up the `androidTest/` source set end-to-end and prove the harness boots on a connected emulator with one minimal smoke test. Three real suites (`BattleSurfaceLifecycleTest` for R3-01-class regression guards, `StoreIapFlowTest` for closed-track IAP coverage, `DeepLinkIntentTest` for the 13 nav routes) deferred to follow-up PRs per the V1X-08 plan's phased layout.
