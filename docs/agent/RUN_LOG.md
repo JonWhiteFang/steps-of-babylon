@@ -6045,3 +6045,21 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Follow-ups: commit + push + PR + merge. Then on-device verification.
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-05-29 ~14:33 BST — Doc sweep after V1X-15b UI-overlays merge (end of session)
+
+- Goal: reconcile live current-state docs after PR #86 (V1X-15b UI overlays) merged to `main` (`41f1a8f`). PR #86's own doc-sync covered AGENTS / CHANGELOG / source-files / ADR-0017 / STATE / RUN_LOG, but the README status banner + build-command comment still read 806 and framed the overlays as a pending "Next" option.
+
+- Audited: README, AGENTS, master-plan, STATE, source-files, CHANGELOG.
+
+- Drift found + fixed (2 files):
+  - **README.md** — status banner: 806 → 812; "V1X-15b ENEMY_INTEL combat foundation merged" → "combat foundation + L1/L5/L10 UI overlays merged"; "Next" option flipped from "V1X-15b UI overlays (needs on-device verification)" to "on-device verification of the V1X-15b overlays (HP-% legibility at 30+ enemies; +2 %/lvl balance re-eval)". Build-command comment "806 JVM tests" → 812.
+  - **STATE.md** — "what works" line: 806 → 812; "V1X-15b UI overlays (branch, +6 → 812)" → "UI overlays merged (+6)".
+
+- No change needed:
+  - AGENTS.md (812 + V1X line already correct from PR #86), source-files.md / CHANGELOG / ADR-0017 (current from PR #86), master-plan.md (no V1X test-count line).
+  - RUN_LOG "806" hits are historical append-only entries (PR #84 / #85 sessions) — not touched per the agent protocol's historical-artifact rule.
+
+- No code/test changes; counts unchanged (812 JVM + 9 instrumented).
+
+- Memory updated: STATE ✅ / RUN_LOG ✅
