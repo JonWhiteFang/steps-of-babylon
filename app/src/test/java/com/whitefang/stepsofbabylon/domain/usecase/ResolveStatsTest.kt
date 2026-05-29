@@ -409,4 +409,102 @@ class ResolveStatsTest {
             "REGEN_RESEARCH L15 must scale health regen by 1.60× (max-level cap)",
         )
     }
+
+    // -------- V1X-15b: ENEMY_INTEL +2 %/level damage outer multiplier (ADR-0017) --------
+    // ENEMY_INTEL stacks multiplicatively with DAMAGE_RESEARCH on the damage field. Its
+    // smaller per-level coefficient (2 % vs DAMAGE_RESEARCH's 5 %) reflects that the research
+    // also grants UI/information value (next-wave preview, enemy HP %, boss timing).
+
+    @Test
+    fun `V1X15b ENEMY_INTEL level 0 produces no damage change`() {
+        val stats = sut(
+            workshopLevels = emptyMap(),
+            inRoundLevels = emptyMap(),
+            labLevels = mapOf(ResearchType.ENEMY_INTEL to 0),
+        )
+        assertEquals(
+            ZigguratBaseStats.BASE_DAMAGE,
+            stats.damage,
+            eps,
+            "ENEMY_INTEL L0 must leave base damage unchanged",
+        )
+    }
+
+    @Test
+    fun `V1X15b ENEMY_INTEL level 1 grants +2 percent base damage`() {
+        val stats = sut(
+            workshopLevels = emptyMap(),
+            inRoundLevels = emptyMap(),
+            labLevels = mapOf(ResearchType.ENEMY_INTEL to 1),
+        )
+        assertEquals(
+            ZigguratBaseStats.BASE_DAMAGE * 1.02,
+            stats.damage,
+            eps,
+            "ENEMY_INTEL L1 must multiply base damage by 1.02×",
+        )
+    }
+
+    @Test
+    fun `V1X15b ENEMY_INTEL level 10 grants +20 percent base damage`() {
+        // 10 levels × 2 % per level = +20 % outer multiplier (max-level cap).
+        val stats = sut(
+            workshopLevels = emptyMap(),
+            inRoundLevels = emptyMap(),
+            labLevels = mapOf(ResearchType.ENEMY_INTEL to 10),
+        )
+        assertEquals(
+            ZigguratBaseStats.BASE_DAMAGE * 1.20,
+            stats.damage,
+            eps,
+            "ENEMY_INTEL L10 must multiply base damage by 1.20×",
+        )
+    }
+
+    @Test
+    fun `V1X15b ENEMY_INTEL stacks multiplicatively with DAMAGE_RESEARCH`() {
+        // ENEMY_INTEL L5 → 1.10× ; DAMAGE_RESEARCH L5 → 1.25× ; combined 1.10 × 1.25 = 1.375×.
+        val stats = sut(
+            workshopLevels = emptyMap(),
+            inRoundLevels = emptyMap(),
+            labLevels = mapOf(
+                ResearchType.ENEMY_INTEL to 5,
+                ResearchType.DAMAGE_RESEARCH to 5,
+            ),
+        )
+        assertEquals(
+            ZigguratBaseStats.BASE_DAMAGE * 1.375,
+            stats.damage,
+            eps,
+            "ENEMY_INTEL must stack multiplicatively with DAMAGE_RESEARCH (1.10 × 1.25)",
+        )
+    }
+
+    @Test
+    fun `V1X15b ENEMY_INTEL combined with CRITICAL_RESEARCH preserves both multipliers`() {
+        // ENEMY_INTEL drives damage (L10 → 1.20×); CRITICAL_RESEARCH drives crit factor
+        // (L15 on top of workshop CRITICAL_FACTOR L5 → 2.5 × 1.45 = 3.625×). The two are
+        // independent fields; this guards that wiring ENEMY_INTEL onto damage didn't disturb
+        // the crit-multiplier path.
+        val stats = sut(
+            workshopLevels = mapOf(UpgradeType.CRITICAL_FACTOR to 5),
+            inRoundLevels = emptyMap(),
+            labLevels = mapOf(
+                ResearchType.ENEMY_INTEL to 10,
+                ResearchType.CRITICAL_RESEARCH to 15,
+            ),
+        )
+        assertEquals(
+            ZigguratBaseStats.BASE_DAMAGE * 1.20,
+            stats.damage,
+            eps,
+            "ENEMY_INTEL L10 damage multiplier must be preserved alongside CRITICAL_RESEARCH",
+        )
+        assertEquals(
+            3.625,
+            stats.critMultiplier,
+            eps,
+            "CRITICAL_RESEARCH crit multiplier must be preserved alongside ENEMY_INTEL",
+        )
+    }
 }

@@ -30,6 +30,11 @@ import kotlin.math.min
  *
  *     baseStat × (1 + ws × perLevel) × (1 + ir × perLevel) × (1 + lab × labPerLevel)
  *
+ * ENEMY_INTEL (+2 %/lvl, V1X-15b / ADR-0017) is a second damage-side lab multiplier that
+ * stacks multiplicatively with DAMAGE_RESEARCH — its smaller coefficient reflects that the
+ * research also grants UI/information value (next-wave preview, enemy HP %, boss timing)
+ * beyond the raw damage bump.
+ *
  * Pre-RO-11 all 10 [ResearchType] enums were dead — declared with effect descriptions and
  * costing Steps + real-time + Gems to complete, but never read by any combat-path consumer.
  * The optional [labLevels] parameter defaults to `emptyMap()` so the existing call sites
@@ -56,7 +61,8 @@ class ResolveStats {
             damage = ZigguratBaseStats.BASE_DAMAGE *
                 (1 + ws(UpgradeType.DAMAGE) * 0.02) *
                 (1 + ir(UpgradeType.DAMAGE) * 0.02) *
-                (1 + lab(ResearchType.DAMAGE_RESEARCH) * 0.05),
+                (1 + lab(ResearchType.DAMAGE_RESEARCH) * 0.05) *
+                (1 + lab(ResearchType.ENEMY_INTEL) * 0.02),
             attackSpeed = ZigguratBaseStats.BASE_ATTACK_SPEED *
                 (1 + ws(UpgradeType.ATTACK_SPEED) * 0.015) *
                 (1 + ir(UpgradeType.ATTACK_SPEED) * 0.015),

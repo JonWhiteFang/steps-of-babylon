@@ -2,15 +2,16 @@ package com.whitefang.stepsofbabylon.domain.model
 
 /**
  * Lab research types. 12 enums, all consumed by combat-path / step-credit / cash-economy /
- * UW-cooldown wiring as of RO-11 + R4-02b (pre-RO-11 the entire system was dead — declared
- * with effect descriptions and costing Steps + real-time + Gems but never read by any
- * gameplay class). Phase A wired the 7 simple multipliers; Phase B wired [WAVE_SKIP];
+ * UW-cooldown wiring as of RO-11 + R4-02b + V1X-15b (pre-RO-11 the entire system was dead —
+ * declared with effect descriptions and costing Steps + real-time + Gems but never read by
+ * any gameplay class). Phase A wired the 7 simple multipliers; Phase B wired [WAVE_SKIP];
  * R4-02b adds [MULTISHOT_RESEARCH] / [BOUNCE_RESEARCH] as the per-level Steps+time path
- * complementing the in-round Cash purchases for the same two upgrades. The remaining two
- * ([AUTO_UPGRADE_AI], [ENEMY_INTEL]) stay gated as [isComingSoon] = true and deferred to
- * v1.x — their descriptions are updated to surface the deferral and the Labs screen disables
- * the Start Research button so testers don't spend Steps on something that won't land
- * before production rollout. Research progress on the deferred two is preserved so any
+ * complementing the in-round Cash purchases for the same two upgrades; V1X-15b wires
+ * [ENEMY_INTEL] (+2 %/lvl damage outer multiplier + UI overlays). The remaining one
+ * ([AUTO_UPGRADE_AI]) stays gated as [isComingSoon] = true and deferred to v1.x — its
+ * description is updated to surface the deferral and the Labs screen disables the Start
+ * Research button so testers don't spend Steps on something that won't land before
+ * production rollout. Research progress on the deferred enum is preserved so any
  * pre-deferral research carries over once v1.x ships.
  */
 enum class ResearchType(
@@ -22,13 +23,12 @@ enum class ResearchType(
     val costScaling: Double = 1.15,
     val timeScaling: Double = 1.10,
     /**
-     * `true` for the two enums whose gameplay implementation is deferred to v1.x
-     * (RO-11 #B.2). Pre-RO-11 these were dead like the other 8; rather than ship a real
-     * implementation that would require ~2 days of design + UI work each (auto-purchase
-     * coroutine + optimal-upgrade definition for [AUTO_UPGRADE_AI]; HP-bar gating + wave
-     * preview + boss telegraph UI for [ENEMY_INTEL]), Phase B gates them in the Labs UI
-     * with a Coming Soon badge and disables the Start Research button. Default `false`
-     * for the 8 wired enums.
+     * `true` for the one enum whose gameplay implementation is deferred to v1.x
+     * ([AUTO_UPGRADE_AI]; RO-11 #B.2). Pre-RO-11 this was dead like the others; rather than
+     * ship a real implementation that would require ~2 days of design + UI work
+     * (auto-purchase coroutine + optimal-upgrade definition), Phase B gates it in the Labs
+     * UI with a Coming Soon badge and disables the Start Research button. [ENEMY_INTEL] was
+     * flipped to wired in V1X-15b. Default `false` for the 11 wired enums.
      */
     val isComingSoon: Boolean = false,
 ) {
@@ -46,9 +46,9 @@ enum class ResearchType(
     CRITICAL_RESEARCH(3_000, 5.0, 15, 3.0, "+3% critical damage multiplier"),
     REGEN_RESEARCH(2_500, 4.5, 15, 4.0, "+4% health regen multiplier"),
     ENEMY_INTEL(
-        3_000, 6.0, 3, 1.0,
-        "Reserved for v1.x — research progress preserved",
-        isComingSoon = true,
+        8_000, 4.0, 10, 2.0,
+        "Tactical awareness. +2% damage per level. Reveals next wave at L1, enemy HP at L5, boss timing at L10.",
+        costScaling = 1.5,
     ),
     /**
      * Permanent +1 multishot target per level. Stacks with the in-round Cash purchase of
