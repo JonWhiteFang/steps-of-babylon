@@ -5894,3 +5894,36 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - ADR: not warranted — adds a test suite against existing public/`@VisibleForTesting` seams; no architecture decision.
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-05-29 ~13:25 BST — V1X-08 DeepLinkIntentTest (second real instrumented suite)
+
+- Goal: layer the second real instrumented suite onto the V1X-08 harness, immediately after `BattleSurfaceLifecycleTest` (PR #81) merged. Verifies the `navigate_to` deep-link contract `MainActivity` reads against the real Android framework, hardening the Robolectric `DeepLinkRoutingTest`.
+
+- Context preflight: `main` clean + synced (PR #81 fast-forwarded `5d4c5b4..35878f7`). Read the Robolectric `DeepLinkRoutingTest`, `Screen.kt` (13 routes, `fromRoute` + `argumentFreeRoutes` by-lazy), and the `MainActivity` deep-link handler block (`intent.getStringExtra("navigate_to")?.let { pendingNavigation.value = it }` → `Screen.fromRoute(route)?.takeIf { it.route in argumentFreeRoutes }?.let { navController.navigate(it.route) }`).
+
+- Branch: `feat/V1X-08-deep-link-intent-test` from `main`.
+
+- Source changes (1 new file):
+  - **`app/src/androidTest/java/com/whitefang/stepsofbabylon/DeepLinkIntentTest.kt`** (90 lines, 4 tests). `@RunWith(AndroidJUnit4)`, no Hilt rule. (1) `navigateToExtraSurvivesRealParcelRoundTrip` — writes the `navigate_to` extra into a real `android.os.Parcel`, `setDataPosition(0)`, reads back via `Intent.CREATOR.createFromParcel`; this is the instrumented-only value over Robolectric, since a notification deep-link travels inside a `PendingIntent` that marshals the Intent through Binder/Parcel (Robolectric stubs Parcel). (2) `missingNavigateToExtraIsNullAfterParcelRoundTrip`. (3) `everyArgumentFreeRouteResolvesAndPassesTheRoutingGate` — mirrors the MainActivity gate for the whole `argumentFreeRoutes` set. (4) `unknownRouteFailsClosedThroughTheRoutingGate`.
+
+- Why this scope (and why not StoreIapFlowTest yet): `DeepLinkIntentTest` is fully verifiable on a bare emulator and follows the established "mirror a JVM/Robolectric test against the real framework" pattern. `StoreIapFlowTest` is deliberately deferred — a meaningful instrumented IAP test needs either a Hilt test module swapping the billing adapter or a signed Play-Console build + logged-in test account (not feasible on a bare emulator). Billing logic is already covered by `BillingManagerImplTest` (14 JVM tests) + off-agent real-device verification, so it's the lower-urgency remaining suite and warrants a design decision rather than a guess.
+
+- Verification:
+  - `./run-gradle.sh connectedDebugAndroidTest` BUILD SUCCESSFUL in 14s on emulator-5554 (Pixel 6). "Starting 9 tests / Finished 9 tests" = 1 `InfrastructureSmokeTest` + 4 `BattleSurfaceLifecycleTest` + 4 `DeepLinkIntentTest`, all green. Instrumented count 5 → 9; JVM unchanged at 800.
+
+- Doc-sync per agent protocol PR Task-List Convention:
+  - `AGENTS.md` — instrumented count 5 → 9 in the Testing bullet + coverage line; `DeepLinkIntentTest` described.
+  - `CHANGELOG.md` — new section at top of `[Unreleased]` above the BattleSurfaceLifecycleTest entry.
+  - `.kiro/steering/source-files.md` — added `DeepLinkIntentTest.kt` entry to the androidTest section.
+  - `README.md` — status banner + instrumented-test paragraph updated (5 → 9; "Next" now cites only `StoreIapFlowTest`).
+  - `STATE.md` — current objective rotated; "what works" instrumented count 5 → 9; top priorities reordered (StoreIapFlowTest design decision now #2).
+  - `RUN_LOG.md` — this entry.
+  - No changes to `.kiro/steering/structure.md`, `.kiro/steering/tech.md`, `docs/database-schema.md` (no architecture/version/schema shift).
+
+- Open questions: `StoreIapFlowTest` design — Hilt billing-adapter test double vs signed-build path. Deferred.
+
+- Follow-ups: commit + push + open PR + merge.
+
+- ADR: not warranted — adds a test suite against the existing `Intent` / `Parcel` / `Screen` public contract.
+
+- Memory updated: STATE ✅ / RUN_LOG ✅
