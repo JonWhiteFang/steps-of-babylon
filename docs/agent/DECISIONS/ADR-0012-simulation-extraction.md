@@ -57,7 +57,9 @@ Estimated effort: 3-4 days. Requires V1X-08 (instrumented tests) as a safety net
 
 **Per-entity sub-PR progress:**
 - ✅ **ProjectileEntity (2026-05-29):** motion extracted to `domain/battle/entity/ProjectileState` (homing-toward-target step + alive flag). The presentation entity delegates `update()` and keeps `render()` + the collision/bounce fields (`damage`, `bouncesRemaining`, `hitEnemies`); constructor signature unchanged so `CollisionSystem` / `GameEngine` are untouched. +4 pure-JVM `ProjectileStateTest` cases. Establishes the `domain/battle/entity/<Name>State` package + delegation pattern.
-- ⬜ EnemyEntity, OrbEntity, EnemyProjectileEntity, ZigguratEntity — follow in subsequent per-entity sub-PRs.
+- ✅ **EnemyProjectileEntity (2026-05-29):** reuses the same `ProjectileState` (identical homing motion); keeps `render()` + `damage`/`shooter`. No new domain class — motion already covered by `ProjectileStateTest`.
+- ✅ **OrbEntity (2026-05-29):** orbit position + radial-oscillation math extracted to `domain/battle/entity/OrbState`. The presentation entity delegates position and keeps the enemy-proximity / per-enemy hit-cooldown logic (needs `EnemyEntity` refs + `onHitEnemy`) + `render()`; re-exposes `ORBIT_RADIUS_MIN/MAX`, `ORBIT_PERIOD_SEC`, and `currentOrbitRadius` from `OrbState` so the Robolectric `OrbEntityTest` (6 #54 regression tests) is untouched. +4 pure-JVM `OrbStateTest` cases.
+- ⬜ EnemyEntity, ZigguratEntity — follow in subsequent per-entity sub-PRs.
 
 **Phase 3 (V1X-09c, deferred):** Extract `GameEngine.update()` loop into `domain/battle/engine/Simulation.kt`. Migrate `BattleViewModel` from polling `engine.uiSnapshot` to collecting `simulation.events: Flow<SimulationEvent>`.
 
