@@ -735,11 +735,13 @@ class BattleViewModelTest {
         kills: Int = 3,
     ): com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine {
         val engine = installEngineForEndRound(vm)
-        val engineCls = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine::class.java
-        engineCls.getDeclaredField("elapsedTimeSeconds").apply { isAccessible = true }
-            .setFloat(engine, elapsedSeconds)
-        engineCls.getDeclaredField("totalEnemiesKilled").apply { isAccessible = true }
-            .setInt(engine, kills)
+        // V1X-09 Phase 3: round counters now live on the engine's private `simulation`
+        // (domain Simulation). Seed them via its public tickElapsed / recordEnemyKilled.
+        val sim = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine::class.java
+            .getDeclaredField("simulation").apply { isAccessible = true }.get(engine)
+        val simCls = sim.javaClass
+        simCls.getMethod("tickElapsed", Float::class.java).invoke(sim, elapsedSeconds)
+        repeat(kills) { simCls.getMethod("recordEnemyKilled").invoke(sim) }
         return engine
     }
 

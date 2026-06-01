@@ -85,9 +85,9 @@ class GameEngine {
     val cash: Long get() = simulation.cash
     val totalCashEarned: Long get() = simulation.totalCashEarned
     @Volatile var roundOver: Boolean = false
-    @Volatile var totalEnemiesKilled: Int = 0; private set
-    @Volatile var totalStepsEarned: Long = 0L; private set
-    @Volatile var elapsedTimeSeconds: Float = 0f; private set
+    val totalEnemiesKilled: Int get() = simulation.totalEnemiesKilled
+    val totalStepsEarned: Long get() = simulation.totalStepsEarned
+    val elapsedTimeSeconds: Float get() = simulation.elapsedSeconds
     @Volatile var secondWindHpPercent: Double = 0.0
     @Volatile var secondWindUsed: Boolean = false
     @Volatile var cashBonusPercent: Double = 0.0
@@ -206,7 +206,7 @@ class GameEngine {
      * committed even if navigation cancels the VM. Safe to call from any thread — reads
      * `@Volatile` fields only.
      */
-    fun hasWaveProgress(): Boolean = elapsedTimeSeconds > 0f || totalEnemiesKilled > 0
+    fun hasWaveProgress(): Boolean = simulation.hasWaveProgress()
 
     /**
      * Equipped-cosmetic override map, indexed by category. Read by [init] when constructing
@@ -278,7 +278,6 @@ class GameEngine {
         screenWidth = width; screenHeight = height
         entities.clear(); pendingAdd.clear()
         simulation.reset(); roundOver = false
-        totalEnemiesKilled = 0; totalStepsEarned = 0L; elapsedTimeSeconds = 0f
         fortuneMultiplier = 1.0
         secondWindUsed = false
         uwStates.clear(); chronoActive = false; chronoSlowFactor = 1f; goldenZigActive = false; preGoldenStats = null
@@ -375,7 +374,7 @@ class GameEngine {
     fun update(deltaTime: Float) {
         if (roundOver) return
         val zig = ziggurat ?: return
-        elapsedTimeSeconds += deltaTime
+        simulation.tickElapsed(deltaTime)
         backgroundRenderer?.update(deltaTime)
         effectEngine?.update(deltaTime)
 
@@ -989,7 +988,7 @@ class GameEngine {
     }
 
     private fun handleEnemyDeath(enemy: EnemyEntity) {
-        totalEnemiesKilled++
+        simulation.recordEnemyKilled()
         val baseCash = EnemyScaler.cashReward(enemy.enemyType)
         val tierMult = TierConfig.forTier(tier).cashMultiplier
         val cashBonus = 1.0 + wsLevel(UpgradeType.CASH_BONUS) * 0.03
@@ -1025,7 +1024,7 @@ class GameEngine {
         // silently dropped without a misleading "+N Step" indicator.
         val stepReward = EnemyScaler.stepReward(enemy.enemyType)
         if (stepReward > 0L) {
-            totalStepsEarned += stepReward
+            simulation.creditSteps(stepReward)
             onStepReward?.invoke(stepReward, enemy.x, enemy.y + 24f)
         }
 

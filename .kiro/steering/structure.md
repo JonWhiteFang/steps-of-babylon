@@ -19,7 +19,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── usecase/        # Use case classes (plain Kotlin, no @Inject)
 │   ├── time/           # TimeProvider seam (B.1 / RO-01)
 │   └── battle/         # V1X-09 simulation extraction (ADR-0012)
-│       ├── engine/     # SimulationMath (pure-math helpers) + Simulation (V1X-09 Phase 3 — pure-domain in-round cash economy state; GameEngine delegates its cash/totalCashEarned/spendCash surface)
+│       ├── engine/     # SimulationMath (pure-math helpers) + Simulation (V1X-09 Phase 3 — pure-domain in-round state: cash economy + round-progress counters; GameEngine delegates that surface + hasWaveProgress)
 │       └── entity/      # Phase 2 pure entity-motion/simulation state (ProjectileState, OrbState, EnemyState, ZigguratState — no Android imports; presentation entities delegate update())
 ├── presentation/       # Android/Compose layer
 │   ├── navigation/     # Screen routes, BottomNavBar

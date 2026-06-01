@@ -8,13 +8,15 @@ import kotlin.math.min
  * Canvas-coupled `presentation/battle/engine/GameEngine`. No Android imports — fully
  * unit-testable without Robolectric.
  *
- * **First slice — the in-round cash economy.** [GameEngine] holds a [Simulation] and
- * delegates its `cash` / `totalCashEarned` / `spendCash` public surface here, so the
- * engine's API (and every caller — `BattleViewModel` polling, `BattleScreen`,
- * `GameEngineTest`) is unchanged. The reward *formulas* (per-kill cash, wave-complete
- * cash) stay in [GameEngine] for now — they depend on tier config, enemy type, and the
- * engine's multiplier fields — and call [creditCash] / [applyInterest] with the
- * already-computed amounts. Subsequent Phase 3 slices migrate further state here.
+ * **In-round state owner (growing per Phase 3 slice).** [GameEngine] holds a [Simulation]
+ * and delegates to it: the cash economy (`cash` / `totalCashEarned` / `spendCash`) plus the
+ * round-progress counters (`totalEnemiesKilled` / `totalStepsEarned` / `elapsedSeconds` +
+ * [hasWaveProgress]). The engine's public API (and every caller — `BattleViewModel` polling,
+ * `BattleScreen`, `GameEngineTest`) is unchanged. The reward *formulas* (per-kill cash,
+ * wave-complete cash) stay in [GameEngine] — they depend on tier config, enemy type, and the
+ * engine's multiplier fields — and call [creditCash] / [applyInterest] / [creditSteps] /
+ * [recordEnemyKilled] with the already-computed values. Subsequent Phase 3 slices migrate
+ * further state here.
  *
  * [cash] and [totalCashEarned] are `@Volatile`: they are written on the game-loop
  * thread (kills, wave completion) and read from the `BattleViewModel` polling coroutine
@@ -30,10 +32,28 @@ class Simulation {
     var totalCashEarned: Long = 0L
         private set
 
-    /** Zeroes the cash economy at round start. */
+    /** Enemies killed this round. */
+    @Volatile
+    var totalEnemiesKilled: Int = 0
+        private set
+
+    /** Battle Steps earned this round (pre-cap; cap enforcement lives in the credit listener). */
+    @Volatile
+    var totalStepsEarned: Long = 0L
+        private set
+
+    /** Wall-clock seconds the round has been running. */
+    @Volatile
+    var elapsedSeconds: Float = 0f
+        private set
+
+    /** Zeroes all in-round state at round start. */
     fun reset() {
         cash = 0L
         totalCashEarned = 0L
+        totalEnemiesKilled = 0
+        totalStepsEarned = 0L
+        elapsedSeconds = 0f
     }
 
     /**
@@ -67,4 +87,28 @@ class Simulation {
         cash -= amount
         return true
     }
+
+    /** Advances the round clock. */
+    fun tickElapsed(deltaTime: Float) {
+        elapsedSeconds += deltaTime
+    }
+
+    /** Records one enemy kill. */
+    fun recordEnemyKilled() {
+        totalEnemiesKilled++
+    }
+
+    /** Accumulates Battle Steps earned this round. No-op for non-positive amounts. */
+    fun creditSteps(amount: Long) {
+        if (amount <= 0L) return
+        totalStepsEarned += amount
+    }
+
+    /**
+     * True once the round has made observable progress — at least one tick elapsed or one
+     * enemy killed. Backs
+     * [com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine.hasWaveProgress]
+     * (the surface-recreation guard + mid-nav persistence decision).
+     */
+    fun hasWaveProgress(): Boolean = elapsedSeconds > 0f || totalEnemiesKilled > 0
 }
