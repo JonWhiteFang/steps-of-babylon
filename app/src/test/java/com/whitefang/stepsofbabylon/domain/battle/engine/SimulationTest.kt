@@ -98,4 +98,64 @@ class SimulationTest {
         assertEquals(0L, sim.cash)
         assertEquals(0L, sim.totalCashEarned)
     }
+
+    // ---- round-progress counters ----
+
+    @Test
+    fun `tickElapsed accumulates the round clock`() {
+        val sim = Simulation()
+        sim.tickElapsed(0.5f)
+        sim.tickElapsed(0.25f)
+        assertEquals(0.75f, sim.elapsedSeconds, 1e-4f)
+    }
+
+    @Test
+    fun `recordEnemyKilled increments the kill counter`() {
+        val sim = Simulation()
+        sim.recordEnemyKilled()
+        sim.recordEnemyKilled()
+        assertEquals(2, sim.totalEnemiesKilled)
+    }
+
+    @Test
+    fun `creditSteps accumulates and ignores non-positive amounts`() {
+        val sim = Simulation()
+        sim.creditSteps(40L)
+        sim.creditSteps(0L)
+        sim.creditSteps(-5L)
+        sim.creditSteps(10L)
+        assertEquals(50L, sim.totalStepsEarned)
+    }
+
+    @Test
+    fun `hasWaveProgress is false on a fresh round`() {
+        assertFalse(Simulation().hasWaveProgress())
+    }
+
+    @Test
+    fun `hasWaveProgress is true after a tick`() {
+        val sim = Simulation()
+        sim.tickElapsed(0.1f)
+        assertTrue(sim.hasWaveProgress())
+    }
+
+    @Test
+    fun `hasWaveProgress is true after a kill with no elapsed time`() {
+        val sim = Simulation()
+        sim.recordEnemyKilled()
+        assertTrue(sim.hasWaveProgress())
+    }
+
+    @Test
+    fun `reset zeroes round-progress counters`() {
+        val sim = Simulation()
+        sim.tickElapsed(12f)
+        sim.recordEnemyKilled()
+        sim.creditSteps(99L)
+        sim.reset()
+        assertEquals(0, sim.totalEnemiesKilled)
+        assertEquals(0L, sim.totalStepsEarned)
+        assertEquals(0f, sim.elapsedSeconds, 1e-4f)
+        assertFalse(sim.hasWaveProgress())
+    }
 }
