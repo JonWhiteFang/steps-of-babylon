@@ -6131,3 +6131,27 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Follow-ups: commit + push + PR + merge. Then EnemyEntity (the big one — 6 types, melee/ranged, onMeleeHit callback) + ZigguratEntity, then Phase 3 (update-loop → `domain/battle/engine/Simulation`).
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-06-01 ~10:25 BST — V1X-09 Phase 2 (cont.): EnemyEntity motion extraction
+
+- Goal: continue V1X-09 Phase 2 with the next entity. Third per-entity sub-PR (ADR-0012).
+
+- Context preflight: `main` clean at `1a23de1` (post-PR-#90). Read `EnemyEntity`, `OrbState` (pattern), `Entity` base, `WaveSpawner.spawnEnemy` (confirmed `EnemyEntity(...).apply { x=sx; y=sy; initDistance() }` wiring), `ProjectileStateTest` (JUnit5 style). No existing `EnemyEntity` test file. Confirmed `CollisionSystem` / `GameEngine` / `OrbEntity` all read `enemy.x`/`enemy.y` directly off the `Entity` base, so the entity must keep syncing position back from the state.
+
+- Branch: `feat/V1X-09-phase2-enemy` from `main`.
+
+- Source changes:
+  - **`domain/battle/entity/EnemyState.kt`** (NEW) — pure movement + attack-cooldown state (no Android imports): owns `x`/`y` (private set) + `attackCooldown` + `initialDist`. `spawn(spawnX, spawnY)` sets position + captures `initialDist = hypot(target - pos)`. `update(dt): Boolean` does the homing step while `dist > stopDistance` (returns `false`), otherwise ticks the cooldown and returns `true` on the frame an attack should fire. `applyKnockback(fx, fy)` shifts position. `stopDistance` = `initialDist * RANGED_STOP_FACTOR` (0.4) for ranged, else `MELEE_RANGE` (40). Companion holds the two constants.
+  - **`EnemyEntity`** — now holds `private val state = EnemyState(targetX, targetY, speed, enemyType == RANGED, attackInterval)`. Removed the local `attackCooldown` / `meleeRange` / `initialDist` fields + the `kotlin.math.hypot` import. `initDistance() = state.spawn(x, y)`. `update()` calls `state.update(dt)`; on `true` invokes the ranged `onFireProjectile` or melee `onMeleeHit` callback (same dispatch as before), then syncs `x = state.x; y = state.y`. `applyKnockback` delegates to the state then syncs. `render()` / `takeDamage` / armor / companion (BASE_COLORS / paints / blendColor) unchanged. Constructor signature + `WaveSpawner` `.apply{}` wiring untouched.
+
+- Tests: **`domain/battle/entity/EnemyStateTest.kt`** (NEW, +5 pure-JVM) — melee proportional move (no attack), fire-on-arrival when spawned in range (immediate attack, no move), attack-cooldown gating across the interval (true → false → true at 0.5s steps with interval 1.0), ranged stops + attacks farther out than melee range (initialDist 200 → stop 80; attacks while 70px away, > melee 40), knockback shift. No Robolectric.
+
+- Verification: `./run-gradle.sh testDebugUnitTest assembleDebug` BUILD SUCCESSFUL; test-results XML sum = 825 (820 → 825, exactly the expected +5). No behaviour change.
+
+- ADR: ADR-0012 per-entity checklist updated — EnemyEntity ✅; only ZigguratEntity ⬜ remains for Phase 2.
+
+- Doc-sync per agent protocol PR Task-List Convention: AGENTS.md (coverage 820 → 825 + V1X status line), CHANGELOG.md (new `[Unreleased]` entry), `.kiro/steering/source-files.md` (EnemyState + EnemyStateTest entries + EnemyEntity note), `.kiro/steering/structure.md` (entity dir mentions EnemyState), ADR-0012 (checklist), STATE.md (this rotation), RUN_LOG.md (this entry). No README / tech.md / database-schema.md change.
+
+- Follow-ups: commit + push + PR + merge. Then the final entity (ZigguratEntity — 5-layer render + nearest-enemy targeting + HP, the most coupled), then Phase 3 (update-loop → `domain/battle/engine/Simulation`).
+
+- Memory updated: STATE ✅ / RUN_LOG ✅
