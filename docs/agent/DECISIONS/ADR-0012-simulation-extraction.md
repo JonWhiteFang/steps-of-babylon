@@ -49,7 +49,7 @@ Constants moved alongside (`RECOVERY_INTERVAL_SECONDS`, `RECOVERY_PERCENT_PER_LE
 
 ## Future Phases
 
-**Phase 2 (V1X-09b, in progress — started 2026-05-29):** Extract entity update logic. Each `presentation/battle/entities/*` file splits into:
+**Phase 2 (V1X-09b, COMPLETE — 2026-05-29 → 2026-06-01):** Extract entity update logic. Each `presentation/battle/entities/*` file splits into:
 - `domain/battle/entity/<Name>State.kt` — pure data class + update(deltaTime, world) logic
 - the presentation entity keeps `render()` + any Android-coupled collision fields and delegates `update()` to its state
 
@@ -60,7 +60,7 @@ Estimated effort: 3-4 days. Requires V1X-08 (instrumented tests) as a safety net
 - ✅ **EnemyProjectileEntity (2026-05-29):** reuses the same `ProjectileState` (identical homing motion); keeps `render()` + `damage`/`shooter`. No new domain class — motion already covered by `ProjectileStateTest`.
 - ✅ **OrbEntity (2026-05-29):** orbit position + radial-oscillation math extracted to `domain/battle/entity/OrbState`. The presentation entity delegates position and keeps the enemy-proximity / per-enemy hit-cooldown logic (needs `EnemyEntity` refs + `onHitEnemy`) + `render()`; re-exposes `ORBIT_RADIUS_MIN/MAX`, `ORBIT_PERIOD_SEC`, and `currentOrbitRadius` from `OrbState` so the Robolectric `OrbEntityTest` (6 #54 regression tests) is untouched. +4 pure-JVM `OrbStateTest` cases.
 - ✅ **EnemyEntity (2026-06-01):** movement + attack-cooldown state extracted to `domain/battle/entity/EnemyState` (homing step + RANGED stop-distance + attack-cadence; `update(dt): Boolean` returns `true` on the frame an attack should fire). The presentation entity delegates `update()`/`initDistance()`/`applyKnockback()` to it, syncs `x`/`y` back onto the `Entity` base each tick (so `CollisionSystem` / `GameEngine` / `OrbEntity` reads stay correct), and keeps HP/armor/death, the melee/ranged attack callbacks (which need the entity reference), and the Canvas `render()`. Constructor + `WaveSpawner` `.apply { x=…; y=…; initDistance() }` wiring unchanged. +5 pure-JVM `EnemyStateTest` cases.
-- ⬜ ZigguratEntity — follows in a subsequent per-entity sub-PR.
+- ✅ **ZigguratEntity (2026-06-01):** HP / regen + attack-cooldown + RAPID_FIRE multiplier + the derived `attackInterval` / `attackRange` reads extracted to `domain/battle/entity/ZigguratState`. The presentation entity delegates its full public surface (`currentHp` / `maxHp` get+set, `stats` / `attackRange` read-only get, `rapidFireMultiplier` get+set, `updateStats`) to the state so `GameEngine` (≈30 `zig.*` touch points: HP damage/heal/death-defy/second-wind writes, `applyStats`, `tickRapidFire`) and `BattleViewModel` are **untouched**; keeps the layer geometry, `originX`/`originY`/`centerY`, the nearest-enemy targeting + fire callback (need presentation `EnemyEntity` refs), and the Canvas `render()`. `update()` = `state.regenHp(dt)` then `if (state.tickAttackReady(dt)) { targets = findNearestEnemies(stats.multishotTargets); if non-empty state.onFired() + fire each else state.holdReady() }`. Constructor unchanged. +6 pure-JVM `ZigguratStateTest` cases. **Completes Phase 2 — all 5 battle entities now delegate simulation state to `domain/battle/entity`.**
 
 **Phase 3 (V1X-09c, deferred):** Extract `GameEngine.update()` loop into `domain/battle/engine/Simulation.kt`. Migrate `BattleViewModel` from polling `engine.uiSnapshot` to collecting `simulation.events: Flow<SimulationEvent>`.
 

@@ -6155,3 +6155,27 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Follow-ups: commit + push + PR + merge. Then the final entity (ZigguratEntity — 5-layer render + nearest-enemy targeting + HP, the most coupled), then Phase 3 (update-loop → `domain/battle/engine/Simulation`).
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-06-01 ~12:20 BST — V1X-09 Phase 2 (final entity): ZigguratEntity extraction — Phase 2 COMPLETE
+
+- Goal: extract the last and most-coupled battle entity, completing V1X-09 Phase 2 (ADR-0012).
+
+- Context preflight: `main` clean at `440d330` (post-PR-#91). Read `ZigguratEntity`, `OrbState` (pattern), `Entity` base, `ResolvedStats` (all-default fields → easy named-arg test construction). Inventoried every external touch point: grepped `zig.<member>` across GameEngine/BattleViewModel — ~30 sites read/write `currentHp`, `maxHp`, `rapidFireMultiplier`, call `updateStats`, read `originX`/`originY`. Decision: keep the entity's public surface byte-identical by delegating each property to the state, so GameEngine/BattleViewModel need zero edits (unlike EnemyEntity, the ziggurat doesn't move, so there's no x/y-sync wrinkle; the wrinkle here is the heavy external HP mutation, solved by get+set delegation).
+
+- Branch: `feat/V1X-09-phase2-ziggurat` from `main`.
+
+- Source changes:
+  - **`domain/battle/entity/ZigguratState.kt`** (NEW) — pure ziggurat simulation state (no Android imports): owns `stats` (private set) + `currentHp`/`maxHp` (public var) + `@Volatile rapidFireMultiplier` + private `attackCooldown`. Derived `attackRange` (= stats.range) + `attackInterval` (= 1/(attackSpeed × rapidFireMultiplier)). `regenHp(dt)` clamps at maxHp; `tickAttackReady(dt): Boolean` decrements cooldown + returns ≤0; `onFired()` resets to attackInterval; `holdReady()` clamps a negative overshoot to 0 (ready-but-no-targets); `updateStats(newStats)` redirects derived reads.
+  - **`ZigguratEntity`** — holds `private val state`. Every public property delegates: `currentHp`/`maxHp` via get+set, `stats`/`attackRange` read-only get, `rapidFireMultiplier` get+set, `updateStats`. Dropped the local `attackCooldown` field + `kotlin.math.min` import. `update()` = `state.regenHp(dt)` then `if (state.tickAttackReady(dt)) { targets = findNearestEnemies(stats.multishotTargets); if non-empty state.onFired() + fire each else state.holdReady() }`. Layer geometry / paints / originX/originY/centerY / render() unchanged. Constructor unchanged → GameEngine + BattleViewModel untouched (verified by the inventory + the clean build).
+
+- Tests: **`domain/battle/entity/ZigguratStateTest.kt`** (NEW, +6 pure-JVM) — regen below cap, regen clamp at maxHp, attack-cooldown cadence across the interval (true → onFired → false → true), holdReady keeps ready next tick, attackInterval reflects attackSpeed × rapidFireMultiplier, updateStats redirects attackRange + attackInterval. `currentHp` starts at `maxHealth` so the regen tests lower it first. No Robolectric.
+
+- Verification: `./run-gradle.sh testDebugUnitTest assembleDebug` BUILD SUCCESSFUL; test-results XML sum = 831 (825 → 831, exactly the expected +6). No behaviour change.
+
+- ADR: ADR-0012 — Phase 2 header flipped to **COMPLETE (2026-05-29 → 2026-06-01)**; ZigguratEntity ticked ✅. All 5 battle entities now delegate simulation state to `domain/battle/entity`. Phase 3 (update-loop → `Simulation`) remains the only open V1X-09 phase.
+
+- Doc-sync per agent protocol PR Task-List Convention: AGENTS.md (coverage 825 → 831 + V1X status flipped to "Phase 2 COMPLETE"), CHANGELOG.md (new `[Unreleased]` entry), `.kiro/steering/source-files.md` (ZigguratState + ZigguratStateTest entries + ZigguratEntity note rewrite), `.kiro/steering/structure.md` (entity dir lists all 5 states), ADR-0012, STATE.md (this rotation), RUN_LOG.md (this entry). No README / tech.md / database-schema.md change.
+
+- Follow-ups: commit + push + PR + merge. Then either V1X-09 Phase 3 (the 2-day update-loop extraction that unlocks V1X-27 headless balance simulation) or pause for the external closed-track soak (earliest production-access application 2026-06-09).
+
+- Memory updated: STATE ✅ / RUN_LOG ✅

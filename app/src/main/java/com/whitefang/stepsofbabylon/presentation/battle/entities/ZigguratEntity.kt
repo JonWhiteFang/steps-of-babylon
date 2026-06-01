@@ -2,9 +2,9 @@ package com.whitefang.stepsofbabylon.presentation.battle.entities
 
 import android.graphics.Canvas
 import android.graphics.Paint
+import com.whitefang.stepsofbabylon.domain.battle.entity.ZigguratState
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.presentation.battle.engine.Entity
-import kotlin.math.min
 
 class ZigguratEntity(
     private val screenWidth: Float,
@@ -16,49 +16,33 @@ class ZigguratEntity(
 ) : Entity() {
 
     /**
-     * Live combat stats. Mutable so the engine can propagate in-round upgrade / UW changes
-     * mid-round (RO-08, R4-01). Pre-RO-08 this was a `val` captured at construction, which
-     * silently dropped Overdrive ASSAULT's 2× attack speed, FORTRESS's 2× health regen, and
-     * any in-round ATTACK_SPEED purchase. R4-01 deletes Overdrive entirely; the live-stats
-     * propagation invariant remains for in-round purchases and the GOLDEN_ZIGGURAT UW.
-     * Updated via [updateStats], called by `GameEngine.applyStats`.
+     * V1X-09 Phase 2 (ADR-0012): the live combat stats, HP, RAPID_FIRE multiplier, attack
+     * cooldown, and the regen / attack-readiness logic now live in the pure-domain
+     * [ZigguratState]. Every public property below delegates to it so `GameEngine` /
+     * `BattleViewModel` (which read/write `currentHp` / `maxHp` / `rapidFireMultiplier` and
+     * call `updateStats`) are untouched. This class keeps the layer geometry, the
+     * nearest-enemy targeting + fire callback, and the Canvas `render()`.
      */
-    var stats: ResolvedStats = initialStats
-        private set
+    private val state = ZigguratState(initialStats)
 
-    var currentHp: Double = stats.maxHealth
-    var maxHp: Double = stats.maxHealth
+    /** Live combat stats (read-only externally; mutated via [updateStats]). Delegates to [state]. */
+    val stats: ResolvedStats get() = state.stats
 
-    /**
-     * Computed property — reads the current `stats.range` so in-round RANGE upgrades and
-     * future range-affecting effects propagate without the engine having to poke a cached
-     * field. Pre-RO-08 this was `val attackRange = stats.range` (frozen at construction).
-     */
-    val attackRange: Float get() = stats.range
+    var currentHp: Double
+        get() = state.currentHp
+        set(value) { state.currentHp = value }
 
-    private var attackCooldown: Float = 0f
+    var maxHp: Double
+        get() = state.maxHp
+        set(value) { state.maxHp = value }
 
-    /**
-     * Computed each shot from the current `stats.attackSpeed`. Pre-RO-08 this was a captured
-     * `val` so attack-speed updates (in-round ATTACK_SPEED purchases, GOLDEN_ZIGGURAT damage
-     * buff) were silently dropped — the cooldown reset in `update` always used the
-     * construction-time value. Recomputing per-tick is cheap (one float divide) and matches
-     * how every other stat (damage, defense, knockback, lifesteal, …) is read live from
-     * `stats`. R4-01 dropped the Overdrive ASSAULT 2× attack speed reference; the invariant
-     * is unchanged.
-     */
-    private val attackInterval: Float get() = (1.0 / (stats.attackSpeed * rapidFireMultiplier)).toFloat()
+    /** Reads the live `stats.range`; delegates to [state]. */
+    val attackRange: Float get() = state.attackRange
 
-    /**
-     * Transient attack-speed multiplier driven by the RAPID_FIRE upgrade (R4-03). Set
-     * to the level's burst multiplier (2.0× at L1, scaling to 3.0× at L10) by
-     * `GameEngine.tickRapidFire` while a burst is active, and reset to `1f` when the
-     * burst expires or the wave enters cooldown phase. Default `1f` means "no Rapid
-     * Fire active" — attack-speed reads pass through unchanged. `@Volatile` because the
-     * game-loop thread reads it every tick while the engine writes it from the same
-     * thread; the annotation documents the cross-method contract.
-     */
-    @Volatile var rapidFireMultiplier: Float = 1f
+    /** Transient RAPID_FIRE attack-speed multiplier (R4-03); delegates to [state]. */
+    var rapidFireMultiplier: Float
+        get() = state.rapidFireMultiplier
+        set(value) { state.rapidFireMultiplier = value }
 
     private val layerCount = 5
     private val totalHeight: Float = screenHeight * 0.25f
@@ -79,25 +63,17 @@ class ZigguratEntity(
     val originY: Float get() = y - totalHeight
     val centerY: Float get() = y - totalHeight / 2f
 
-    /**
-     * Replaces the live stats reference. Called by `GameEngine.applyStats` whenever an
-     * in-round upgrade or Ultimate Weapon mutates the engine's resolved stats (RO-08). The
-     * engine separately reconciles `maxHp` / `currentHp` / orb count to keep those side
-     * effects centralised; this entry point exists purely to redirect every subsequent stat
-     * read on the entity (attack speed, range, health regen, multishot targets, knockback,
-     * lifesteal, …) at the new instance.
-     */
-    fun updateStats(newStats: ResolvedStats) { stats = newStats }
+    /** Redirects every subsequent stat read at [newStats]. Called by `GameEngine.applyStats` (RO-08). */
+    fun updateStats(newStats: ResolvedStats) = state.updateStats(newStats)
 
     override fun update(deltaTime: Float) {
-        currentHp = min(currentHp + stats.healthRegen * deltaTime, maxHp)
-        attackCooldown -= deltaTime
-        if (attackCooldown <= 0f) {
+        state.regenHp(deltaTime)
+        if (state.tickAttackReady(deltaTime)) {
             val targets = findNearestEnemies(stats.multishotTargets)
             if (targets.isNotEmpty()) {
-                attackCooldown = attackInterval
+                state.onFired()
                 for (target in targets) onFireProjectile(originX, originY, target.x, target.y)
-            } else attackCooldown = 0f
+            } else state.holdReady()
         }
     }
 
