@@ -4,9 +4,9 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import com.whitefang.stepsofbabylon.domain.battle.entity.EnemyState
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.presentation.battle.engine.Entity
-import kotlin.math.hypot
 
 class EnemyEntity(
     val enemyType: EnemyType,
@@ -34,9 +34,7 @@ class EnemyEntity(
 ) : Entity() {
 
     var armorHits: Int = armorHits; private set
-    private var attackCooldown = 0f
-    private val meleeRange = 40f
-    private var initialDist = 0f
+    private val state = EnemyState(targetX, targetY, speed, enemyType == EnemyType.RANGED, attackInterval)
 
     private val bodyPaint: Paint
     private val trianglePath = Path()
@@ -50,21 +48,14 @@ class EnemyEntity(
         bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = if (enemyTint != 0) blendColor(baseColor, enemyTint, 0.3f) else baseColor }
     }
 
-    fun initDistance() { initialDist = hypot(targetX - x, targetY - y) }
+    fun initDistance() = state.spawn(x, y)
 
     override fun update(deltaTime: Float) {
-        val dx = targetX - x; val dy = targetY - y; val dist = hypot(dx, dy)
-        val stopDist = if (enemyType == EnemyType.RANGED) initialDist * 0.4f else meleeRange
-        if (dist > stopDist) {
-            val ratio = speed * deltaTime / dist; x += dx * ratio; y += dy * ratio
-        } else {
-            attackCooldown -= deltaTime
-            if (attackCooldown <= 0f) {
-                attackCooldown = attackInterval
-                if (enemyType == EnemyType.RANGED) onFireProjectile?.invoke(this, x, y, targetX, targetY, damage)
-                else onMeleeHit?.invoke(this, damage)
-            }
+        if (state.update(deltaTime)) {
+            if (enemyType == EnemyType.RANGED) onFireProjectile?.invoke(this, x, y, targetX, targetY, damage)
+            else onMeleeHit?.invoke(this, damage)
         }
+        x = state.x; y = state.y
     }
 
     fun takeDamage(amount: Double) {
@@ -73,7 +64,10 @@ class EnemyEntity(
         if (currentHp <= 0.0) { isAlive = false; onDeath(this) }
     }
 
-    fun applyKnockback(forceX: Float, forceY: Float) { x += forceX; y += forceY }
+    fun applyKnockback(forceX: Float, forceY: Float) {
+        state.applyKnockback(forceX, forceY)
+        x = state.x; y = state.y
+    }
 
     override fun render(canvas: Canvas) {
         val r = width / 2f

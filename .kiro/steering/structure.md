@@ -20,7 +20,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── time/           # TimeProvider seam (B.1 / RO-01)
 │   └── battle/         # V1X-09 simulation extraction (ADR-0012)
 │       ├── engine/     # SimulationMath — pure-math helpers (recovery pulse, chrono, thorn, lifesteal, HP clamp, step multiplier asymptotic curve)
-│       └── entity/      # Phase 2 pure entity-motion state (ProjectileState, OrbState — no Android imports; presentation entities delegate update())
+│       └── entity/      # Phase 2 pure entity-motion state (ProjectileState, OrbState, EnemyState — no Android imports; presentation entities delegate update())
 ├── presentation/       # Android/Compose layer
 │   ├── navigation/     # Screen routes, BottomNavBar
 │   ├── home/           # Home screen, ViewModel, UiState
