@@ -878,8 +878,10 @@ class BattleViewModelTest {
     /**
      * Variant of [installEngineForEndRound] that also seeds the engine's cash so an in-round
      * purchase actually executes (otherwise [BattleViewModel.purchaseInRoundUpgrade] returns
-     * early on the `eng.spendCash(cost)` check). Reflectively writes both the private `engine`
-     * field on the VM and the private-set `cash` field on the GameEngine.
+     * early on the `eng.spendCash(cost)` check). Reflectively writes the private `engine`
+     * field on the VM, then seeds cash through the engine's private `simulation` (domain
+     * [com.whitefang.stepsofbabylon.domain.battle.engine.Simulation], V1X-09 Phase 3) via its
+     * public `creditCash` entry point.
      */
     private fun installEngineForPurchase(
         vm: BattleViewModel,
@@ -888,8 +890,8 @@ class BattleViewModelTest {
         val engine = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine()
         val engineField = BattleViewModel::class.java.getDeclaredField("engine").apply { isAccessible = true }
         engineField.set(vm, engine)
-        val cashField = engine.javaClass.getDeclaredField("cash").apply { isAccessible = true }
-        cashField.set(engine, seedCash)
+        val sim = engine.javaClass.getDeclaredField("simulation").apply { isAccessible = true }.get(engine)
+        sim.javaClass.getMethod("creditCash", Long::class.java).invoke(sim, seedCash)
         return engine
     }
 
