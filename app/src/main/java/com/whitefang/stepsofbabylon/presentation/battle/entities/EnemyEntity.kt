@@ -36,6 +36,10 @@ class EnemyEntity(
     var armorHits: Int = armorHits; private set
     private val state = EnemyState(targetX, targetY, speed, enemyType == EnemyType.RANGED, attackInterval)
 
+    // V1X-09 Phase 3: CHRONO_FIELD slows enemies only. Simulation.tickEntities reads this
+    // flag instead of a presentation-layer `is EnemyEntity` check.
+    override val isChronoSlowable: Boolean get() = true
+
     private val bodyPaint: Paint
     private val trianglePath = Path()
 

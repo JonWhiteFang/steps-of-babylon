@@ -391,15 +391,12 @@ class GameEngine {
 
         waveSpawner?.update(deltaTime, screenWidth, screenHeight)
         entities.addAll(pendingAdd); pendingAdd.clear()
-        // RO-09 #1 / R4-06: scale `deltaTime` to [chronoSlowFactor] for EnemyEntity when
-        // CHRONO_FIELD is active. The slow factor is per-UW-state (set by `activateUW`
-        // from the firing UW's DAMAGE path); pre-R4-06 the factor was a hard-coded
-        // [CHRONO_SLOW_FACTOR] = 0.10f companion constant. Projectiles, orbs, and the
-        // ziggurat receive the unscaled `deltaTime` so player-side timing is unaffected.
-        entities.forEach { e ->
-            val dt = if (chronoActive && e is EnemyEntity) deltaTime * chronoSlowFactor else deltaTime
-            e.update(dt)
-        }
+        // RO-09 #1 / R4-06 / V1X-09 Phase 3: tick every entity, slowing chrono-slowable
+        // entities (enemies) to [chronoSlowFactor] while CHRONO_FIELD is active. The loop
+        // now lives in the pure-domain [Simulation]; the engine just supplies the active
+        // slow factor (1f when inactive). Projectiles, orbs, and the ziggurat tick at full
+        // `deltaTime` because they report `isChronoSlowable = false`.
+        simulation.tickEntities(entities, deltaTime, if (chronoActive) chronoSlowFactor else 1f)
 
         // Spawn projectile trails
         if (!reducedMotion) {

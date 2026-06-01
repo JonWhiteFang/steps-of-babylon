@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.domain.battle.engine
 
+import com.whitefang.stepsofbabylon.domain.battle.entity.EntityProtocol
 import kotlin.math.min
 
 /**
@@ -111,4 +112,21 @@ class Simulation {
      * (the surface-recreation guard + mid-nav persistence decision).
      */
     fun hasWaveProgress(): Boolean = elapsedSeconds > 0f || totalEnemiesKilled > 0
+
+    /**
+     * Advances every entity one frame. Entities flagged [EntityProtocol.isChronoSlowable]
+     * (enemies) are ticked with `deltaTime × [chronoSlowFactor]` so the CHRONO_FIELD UW
+     * slows them; everything else (projectiles, orbs, the ziggurat) ticks at the full
+     * [deltaTime]. Pass `1f` for [chronoSlowFactor] when CHRONO_FIELD is inactive (then
+     * slowable entities also tick at full speed). Lifted verbatim from the
+     * `GameEngine.update()` loop in V1X-09 Phase 3 (ADR-0012) — the engine previously did
+     * the `e is EnemyEntity` type check inline, which kept the loop trapped in the
+     * Canvas-coupled presentation layer.
+     */
+    fun tickEntities(entities: List<EntityProtocol>, deltaTime: Float, chronoSlowFactor: Float) {
+        entities.forEach { e ->
+            val dt = if (e.isChronoSlowable) deltaTime * chronoSlowFactor else deltaTime
+            e.update(dt)
+        }
+    }
 }

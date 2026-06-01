@@ -6214,3 +6214,30 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Follow-ups: commit + push + PR + merge. Then either V1X-09 Phase 3 (the 2-day update-loop extraction that unlocks V1X-27 headless balance simulation) or pause for the external closed-track soak (earliest production-access application 2026-06-09).
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-06-01 ~13:30 BST — V1X-09 Phase 3 (slice 3): EntityProtocol seam + entity-tick loop
+
+- Goal: continue V1X-09 Phase 3 with the next slice — introduce a pure `EntityProtocol` seam so the domain `Simulation` can iterate battle entities without `Canvas`, then lift the chrono-aware entity-tick loop out of `GameEngine.update()`. Scoped minimally: collision migration is deliberately deferred (its `CollisionSystem` callbacks are typed to concrete presentation entities — a harder, separate slice).
+
+- Context preflight: `main` clean at `22ac27d` (post-PR-#94 docs sync). Read `Simulation` (slices 1–2 pattern), `Entity` base (only `update` + `render(Canvas)`), `CollisionSystem`, `GameEngine` (full — confirmed the only tick site is the `entities.forEach { e -> val dt = if (chronoActive && e is EnemyEntity) … }` loop, and that `EnemyEntity` import stays needed elsewhere), `EnemyEntity` (placed the override after the `state` field), `SimulationTest` (JUnit-5 idiom for the new tests), ADR-0012.
+
+- Branch: `feat/V1X-09-phase3-entity-tick` from `main`.
+
+- Source changes:
+  - **`domain/battle/entity/EntityProtocol.kt`** (NEW) — pure interface (no Android imports): `val isAlive` + `val isChronoSlowable` (default `false`) + `fun update(deltaTime: Float)`. The seam the domain needs to tick entities without `Canvas`.
+  - **`presentation/battle/engine/Entity.kt`** — now `: EntityProtocol`; `isAlive` becomes `override var`, `update` becomes `abstract override fun`, `render(canvas)` stays abstract (not in the protocol). Added the `EntityProtocol` import.
+  - **`EnemyEntity.kt`** — `override val isChronoSlowable: Boolean get() = true` (the only entity CHRONO_FIELD slows).
+  - **`Simulation.kt`** — `+import EntityProtocol`; new `fun tickEntities(entities: List<EntityProtocol>, deltaTime, chronoSlowFactor)` that scales dt for `isChronoSlowable` entities and ticks the rest at full dt. Verbatim lift of the engine loop's behaviour.
+  - **`GameEngine.update()`** — replaced the inline `entities.forEach { … is EnemyEntity … }` loop with `simulation.tickEntities(entities, deltaTime, if (chronoActive) chronoSlowFactor else 1f)`. `chronoActive` / `chronoSlowFactor` fields untouched; `EnemyEntity` import still used elsewhere.
+
+- Tests: **`SimulationTest.kt`** (+4 via a private `FakeEntity(isChronoSlowable)` impl of `EntityProtocol`) — slowable entity ticked with scaled dt (0.2 × 0.1 = 0.02), non-slowable ticked with full dt even with factor 0.1, factor-1 ticks slowable at full dt (chrono-inactive case), mixed list all ticked exactly once with correct per-entity dt. Added the `EntityProtocol` import.
+
+- Verification: `./run-gradle.sh testDebugUnitTest assembleDebug` BUILD SUCCESSFUL; test-results XML sum = 851 (847 → 851, exactly +4). The `GameEngineTest` chrono regression guards (`setChronoActive` + `chronoSlowFactor` reflection) still pass — behaviour is identical (factor-1-when-inactive is algebraically the same as the old `if (chronoActive && …)` branch). No behaviour change.
+
+- ADR: ADR-0012 — added the **EntityProtocol seam + entity tick** per-slice bullet; trimmed "entity tick" from the Remaining-slices line (now: collision migration, UW lifecycle, `SimulationEvent` flow).
+
+- Doc-sync per agent protocol PR Task-List Convention: AGENTS.md (coverage 847 → 851 ×2 + V1X status slices 1–2 → 1–3 + slice-3 coverage clause), CHANGELOG.md (new `[Unreleased]` entry), `.kiro/steering/source-files.md` (EntityProtocol entry + Simulation/SimulationTest/Entity/EnemyEntity notes), `.kiro/steering/structure.md` (engine + entity dir notes), README.md (status banner + `# Unit tests (851 JVM tests)`), ADR-0012, STATE.md (this rotation; also corrected the stale slice-2 bullet which still read "on branch … Next: commit" though PR #94 had merged), RUN_LOG.md (this entry). No tech.md / database-schema.md change.
+
+- Follow-ups: commit + push + PR + merge. Then collision migration (the harder slice), then UW lifecycle + `SimulationEvent` flow — or pause for the external closed-track soak (earliest production-access application 2026-06-09).
+
+- Memory updated: STATE ✅ / RUN_LOG ✅
