@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.battle.engine
 
 import android.graphics.Canvas
+import com.whitefang.stepsofbabylon.domain.battle.engine.Simulation
 import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath
 import com.whitefang.stepsofbabylon.domain.model.BattleConditionEffects
 import com.whitefang.stepsofbabylon.domain.model.Biome
@@ -36,7 +37,6 @@ import com.whitefang.stepsofbabylon.presentation.battle.entities.ZigguratEntity
 import com.whitefang.stepsofbabylon.presentation.battle.ui.HealthBarRenderer
 import kotlin.math.PI
 import kotlin.math.hypot
-import kotlin.math.min
 import kotlin.random.Random
 
 class GameEngine {
@@ -76,8 +76,14 @@ class GameEngine {
     private var cooldownText: WaveCooldownText? = null
     private var lastWave: Int = 0
 
-    @Volatile var cash: Long = 0L; private set
-    @Volatile var totalCashEarned: Long = 0L; private set
+    /**
+     * In-round cash economy, extracted to the pure-domain [Simulation] in V1X-09 Phase 3
+     * (ADR-0012). The engine delegates its `cash` / `totalCashEarned` / `spendCash` public
+     * surface here; callers (BattleViewModel polling, BattleScreen, tests) are unchanged.
+     */
+    private val simulation = Simulation()
+    val cash: Long get() = simulation.cash
+    val totalCashEarned: Long get() = simulation.totalCashEarned
     @Volatile var roundOver: Boolean = false
     @Volatile var totalEnemiesKilled: Int = 0; private set
     @Volatile var totalStepsEarned: Long = 0L; private set
@@ -271,7 +277,7 @@ class GameEngine {
     ) {
         screenWidth = width; screenHeight = height
         entities.clear(); pendingAdd.clear()
-        cash = 0L; totalCashEarned = 0L; roundOver = false
+        simulation.reset(); roundOver = false
         totalEnemiesKilled = 0; totalStepsEarned = 0L; elapsedTimeSeconds = 0f
         fortuneMultiplier = 1.0
         secondWindUsed = false
@@ -364,10 +370,7 @@ class GameEngine {
         }
     }
 
-    fun spendCash(amount: Long): Boolean {
-        if (cash < amount) return false
-        cash -= amount; return true
-    }
+    fun spendCash(amount: Long): Boolean = simulation.spend(amount)
 
     fun update(deltaTime: Float) {
         if (roundOver) return
@@ -864,12 +867,8 @@ class GameEngine {
         // RO-11 #A.2: CASH_RESEARCH multiplies the wave-end cash payout.
         val waveCash = ((BASE_CASH_PER_WAVE + wsLevel(UpgradeType.CASH_PER_WAVE) * FLAT_BONUS_PER_WAVE_LEVEL) *
             fortuneMultiplier * cashResearchMultiplier).toLong()
-        cash += waveCash
-        totalCashEarned += waveCash
-        val interestLevel = wsLevel(UpgradeType.INTEREST)
-        if (interestLevel > 0) {
-            cash += (cash * min(interestLevel * 0.005, 0.10)).toLong()
-        }
+        simulation.creditCash(waveCash)
+        simulation.applyInterest(wsLevel(UpgradeType.INTEREST))
     }
 
     // --- Combat mechanics ---
@@ -999,8 +998,7 @@ class GameEngine {
         // CASH_BONUS_GAIN card. Default 1.0× means "no CASH_RESEARCH research".
         val killCash = (baseCash * tierMult * cashBonus * fortuneMultiplier *
             (1.0 + cashBonusPercent / 100.0) * cashResearchMultiplier).toLong()
-        cash += killCash
-        totalCashEarned += killCash
+        simulation.creditCash(killCash)
         waveSpawner?.onEnemyKilled()
 
         soundManager?.play(SoundEffect.ENEMY_DEATH)
