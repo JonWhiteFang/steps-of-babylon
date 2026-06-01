@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.domain.battle.engine
 
+import com.whitefang.stepsofbabylon.domain.battle.entity.EntityProtocol
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -157,5 +158,49 @@ class SimulationTest {
         assertEquals(0L, sim.totalStepsEarned)
         assertEquals(0f, sim.elapsedSeconds, 1e-4f)
         assertFalse(sim.hasWaveProgress())
+    }
+
+    // ---- tickEntities ----
+
+    private class FakeEntity(override val isChronoSlowable: Boolean = false) : EntityProtocol {
+        override var isAlive = true
+        var lastDt = Float.NaN
+        var tickCount = 0
+        override fun update(deltaTime: Float) {
+            lastDt = deltaTime
+            tickCount++
+        }
+    }
+
+    @Test
+    fun `tickEntities scales dt for chrono-slowable entities`() {
+        val enemy = FakeEntity(isChronoSlowable = true)
+        Simulation().tickEntities(listOf(enemy), deltaTime = 0.2f, chronoSlowFactor = 0.1f)
+        assertEquals(0.02f, enemy.lastDt, 1e-4f)
+    }
+
+    @Test
+    fun `tickEntities uses full dt for non-slowable entities even when chrono is active`() {
+        val projectile = FakeEntity(isChronoSlowable = false)
+        Simulation().tickEntities(listOf(projectile), deltaTime = 0.2f, chronoSlowFactor = 0.1f)
+        assertEquals(0.2f, projectile.lastDt, 1e-4f)
+    }
+
+    @Test
+    fun `tickEntities with factor 1 ticks slowable entities at full dt (chrono inactive)`() {
+        val enemy = FakeEntity(isChronoSlowable = true)
+        Simulation().tickEntities(listOf(enemy), deltaTime = 0.2f, chronoSlowFactor = 1f)
+        assertEquals(0.2f, enemy.lastDt, 1e-4f)
+    }
+
+    @Test
+    fun `tickEntities updates every entity in the list exactly once`() {
+        val enemy = FakeEntity(isChronoSlowable = true)
+        val projectile = FakeEntity(isChronoSlowable = false)
+        Simulation().tickEntities(listOf(enemy, projectile), deltaTime = 0.2f, chronoSlowFactor = 0.1f)
+        assertEquals(1, enemy.tickCount)
+        assertEquals(1, projectile.tickCount)
+        assertEquals(0.02f, enemy.lastDt, 1e-4f)
+        assertEquals(0.2f, projectile.lastDt, 1e-4f)
     }
 }
