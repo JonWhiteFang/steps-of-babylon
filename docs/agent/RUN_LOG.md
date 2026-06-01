@@ -6241,3 +6241,10 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Follow-ups: commit + push + PR + merge. Then collision migration (the harder slice), then UW lifecycle + `SimulationEvent` flow — or pause for the external closed-track soak (earliest production-access application 2026-06-09).
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-06-01 ~13:47 BST — V1X-09 Phase 3 slice 3 merged (PR #95)
+
+- PR #95 merged to `main` via standard merge commit `7a16e48` (project precedent). Pre-merge gates verified clean: `mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`, no required CI checks, no review requirement. `main` fast-forwarded `22ac27d..7a16e48` (14 files, +146 / −27). `feat/V1X-09-phase3-entity-tick` deleted local + remote via `gh pr merge --delete-branch`; working tree clean on `main`. 851 JVM + 9 instrumented green.
+- Post-merge doc reflection (committed directly to `main`, matching the slice-2 `22ac27d` precedent): STATE.md current-objective bullet flipped from "on branch … Next: commit + push + PR + merge" to "merged via PR #95" + Next trimmed to collision migration; STATE Last-run line updated; this RUN_LOG entry.
+- Next: V1X-09 Phase 3 collision migration (the harder slice — `CollisionSystem` callbacks typed to concrete presentation entities), then UW lifecycle + `SimulationEvent` flow — or pause for the external closed-track soak (earliest production-access application 2026-06-09).
+- Memory updated: STATE ✅ / RUN_LOG ✅
