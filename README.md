@@ -8,7 +8,7 @@ An Android idle tower defense game where real-world walking drives all progressi
 
 ## Status
 
-Version 1.0.0 (versionCode 16) — V1X post-launch work in progress. AAB v15 uploaded to Play Console 2026-05-27 ~05:39 BST and on-device smoke test PASSED 2026-05-26 ~05:35 BST. Sixteen V1X sub-plans landed on `main` 2026-05-28 (Waves 1+2 complete; Wave 3 partial; ADR-0012 + ADR-0015 + ADR-0016 added); V1X-08 instrumented coverage landed `BattleSurfaceLifecycleTest` + `DeepLinkIntentTest` 2026-05-29 (`StoreIapFlowTest` formally deferred); V1X-15b ENEMY_INTEL combat foundation + L1/L5/L10 UI overlays merged 2026-05-29 (ADR-0017). 812 JVM unit tests + 9 instrumented tests green. **Next: on-device verification of the V1X-15b overlays (HP-% legibility at 30+ enemies; +2 %/lvl balance re-eval) OR resume closed-track soak (closed-track ≥14-day window resumes from v14 effective 2026-05-26; earliest production-access application 2026-06-09).**
+Version 1.0.0 (versionCode 16) — V1X post-launch work in progress. AAB v15 uploaded to Play Console 2026-05-27 ~05:39 BST and on-device smoke test PASSED 2026-05-26 ~05:35 BST. Sixteen V1X sub-plans landed on `main` 2026-05-28 (Waves 1+2 complete; Wave 3 partial; ADR-0012 + ADR-0015 + ADR-0016 added); V1X-08 instrumented coverage landed `BattleSurfaceLifecycleTest` + `DeepLinkIntentTest` 2026-05-29 (`StoreIapFlowTest` formally deferred); V1X-15b ENEMY_INTEL combat foundation + L1/L5/L10 UI overlays merged 2026-05-29 (ADR-0017); V1X-15b overlays on-device verified 2026-05-29. **V1X-09 Phase 2 (battle-entity simulation extraction) complete (PRs #89–#92); Phase 3 (`GameEngine` → pure-domain `domain/battle/engine/Simulation`) started — cash economy + round-progress counters extracted 2026-06-01 (PRs #93/#94).** 847 JVM unit tests + 9 instrumented tests green. **Next: continue V1X-09 Phase 3 (entity tick + collision via a pure `EntityProtocol`, then UW lifecycle + `SimulationEvent` flow) OR resume closed-track soak (closed-track ≥14-day window resumes from v14 effective 2026-05-26; earliest production-access application 2026-06-09).**
 
 For the live current state see [docs/agent/STATE.md](docs/agent/STATE.md). For recent changes see [CHANGELOG.md](CHANGELOG.md).
 
@@ -43,7 +43,7 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 # Debug APK
 ./gradlew assembleDebug
 
-# Unit tests (812 JVM tests)
+# Unit tests (847 JVM tests)
 ./gradlew test
 
 # Lint
