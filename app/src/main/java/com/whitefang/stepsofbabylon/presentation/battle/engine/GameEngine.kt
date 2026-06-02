@@ -590,11 +590,17 @@ class GameEngine {
     private fun updateUWs(deltaTime: Float) {
         val zig = ziggurat ?: return
         for (uw in uwStates) {
-            if (uw.cooldownRemaining > 0f) uw.cooldownRemaining = (uw.cooldownRemaining - deltaTime).coerceAtLeast(0f)
-            if (uw.effectTimeRemaining > 0f) {
-                uw.effectTimeRemaining -= deltaTime
-                if (uw.effectTimeRemaining <= 0f) {
-                    uw.effectTimeRemaining = 0f
+            // V1X-09 Phase 3 (ADR-0012): the pure cooldown + effect-duration timer arithmetic
+            // lives in the domain [Simulation]. The engine applies the result and runs the
+            // presentation-coupled side-effects (expiry stat/flag writes, ongoing enemy
+            // damage). Behaviour is identical to the pre-extraction inline block — the ongoing
+            // `when` still runs on the tick the effect expires because it is gated on
+            // [Simulation.UWTimerAdvance.effectWasActive] (the old `effectTimeRemaining > 0f` guard).
+            val timers = simulation.advanceUWTimers(uw.cooldownRemaining, uw.effectTimeRemaining, deltaTime)
+            uw.cooldownRemaining = timers.cooldownRemaining
+            uw.effectTimeRemaining = timers.effectTimeRemaining
+            if (timers.effectWasActive) {
+                if (timers.justExpired) {
                     when (uw.type) {
                         UltimateWeaponType.CHRONO_FIELD -> {
                             chronoActive = false
@@ -644,7 +650,7 @@ class GameEngine {
         if (uwStates.isNotEmpty() && getAliveEnemies().isNotEmpty()) {
             for (i in uwStates.indices) {
                 val uw = uwStates[i]
-                if (uw.cooldownRemaining <= 0f && uw.effectTimeRemaining <= 0f) {
+                if (simulation.isUWReadyToFire(uw.cooldownRemaining, uw.effectTimeRemaining)) {
                     activateUW(i)
                 }
             }

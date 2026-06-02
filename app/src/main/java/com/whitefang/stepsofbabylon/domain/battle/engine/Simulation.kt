@@ -176,4 +176,55 @@ class Simulation {
             }
         }
     }
+
+    // --- UW lifecycle timing (V1X-09 Phase 3, ADR-0012) ---
+
+    /**
+     * Result of advancing one Ultimate Weapon's two lifecycle timers by a frame. The engine
+     * applies [cooldownRemaining] / [effectTimeRemaining] back onto its `UWState` and uses the
+     * two flags to decide which presentation-coupled side-effects to run this frame:
+     * - [effectWasActive] — the effect was running at frame start, so its per-frame ongoing
+     *   effect (BLACK_HOLE pull/DoT, POISON_SWAMP DoT) should fire. True even on the frame the
+     *   effect expires — matching the pre-extraction inline block, where the ongoing `when`
+     *   sat inside the `effectTimeRemaining > 0f` guard and so ran one final time on expiry.
+     * - [justExpired] — the effect crossed to ≤0 this frame, so its one-shot expiry side-effects
+     *   (CHRONO_FIELD slow reset, GOLDEN_ZIGGURAT stat/fortune restore) should run.
+     */
+    data class UWTimerAdvance(
+        val cooldownRemaining: Float,
+        val effectTimeRemaining: Float,
+        val effectWasActive: Boolean,
+        val justExpired: Boolean,
+    )
+
+    /**
+     * Advances a UW's cooldown + effect-duration timers by [deltaTime]. Pure: takes the two
+     * current timer values, returns the new values + transition flags (see [UWTimerAdvance]).
+     * The cooldown counts down to a floor of 0; the effect duration counts down only while
+     * active and clamps to exactly 0 on the frame it crosses. Lifted verbatim from the
+     * `GameEngine.updateUWs` inline timer block in V1X-09 Phase 3 (ADR-0012) — the engine keeps
+     * the side-effects (which touch enemies, stats, and visual flags) and just applies this
+     * result.
+     */
+    fun advanceUWTimers(cooldownRemaining: Float, effectTimeRemaining: Float, deltaTime: Float): UWTimerAdvance {
+        val newCooldown = if (cooldownRemaining > 0f) (cooldownRemaining - deltaTime).coerceAtLeast(0f) else cooldownRemaining
+        val effectWasActive = effectTimeRemaining > 0f
+        var newEffect = effectTimeRemaining
+        var justExpired = false
+        if (effectWasActive) {
+            newEffect -= deltaTime
+            if (newEffect <= 0f) {
+                newEffect = 0f
+                justExpired = true
+            }
+        }
+        return UWTimerAdvance(newCooldown, newEffect, effectWasActive, justExpired)
+    }
+
+    /**
+     * Auto-trigger readiness predicate: a UW fires when it is off cooldown AND not mid-effect.
+     * Matches the gate the engine's auto-trigger loop used inline pre-extraction.
+     */
+    fun isUWReadyToFire(cooldownRemaining: Float, effectTimeRemaining: Float): Boolean =
+        cooldownRemaining <= 0f && effectTimeRemaining <= 0f
 }

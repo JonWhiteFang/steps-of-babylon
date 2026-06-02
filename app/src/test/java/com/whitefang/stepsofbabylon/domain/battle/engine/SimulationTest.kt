@@ -273,4 +273,55 @@ class SimulationTest {
         Simulation().detectZigguratHits(listOf(proj), zigX = 0f, zigY = 0f, zigWidth = 20f) { fired = true }
         assertFalse(fired)
     }
+
+    // ---- advanceUWTimers (UW lifecycle, slice 5) ----
+
+    @Test
+    fun `advanceUWTimers decrements the cooldown and clamps it at zero`() {
+        val r = Simulation().advanceUWTimers(cooldownRemaining = 0.3f, effectTimeRemaining = 0f, deltaTime = 0.5f)
+        assertEquals(0f, r.cooldownRemaining, 1e-4f)
+    }
+
+    @Test
+    fun `advanceUWTimers leaves a zero cooldown and inactive effect untouched`() {
+        val r = Simulation().advanceUWTimers(cooldownRemaining = 0f, effectTimeRemaining = 0f, deltaTime = 0.5f)
+        assertEquals(0f, r.cooldownRemaining, 1e-4f)
+        assertEquals(0f, r.effectTimeRemaining, 1e-4f)
+        assertFalse(r.effectWasActive)
+        assertFalse(r.justExpired)
+    }
+
+    @Test
+    fun `advanceUWTimers counts down an active effect without expiring it`() {
+        val r = Simulation().advanceUWTimers(cooldownRemaining = 5f, effectTimeRemaining = 2f, deltaTime = 0.5f)
+        assertEquals(4.5f, r.cooldownRemaining, 1e-4f)
+        assertEquals(1.5f, r.effectTimeRemaining, 1e-4f)
+        assertTrue(r.effectWasActive)
+        assertFalse(r.justExpired)
+    }
+
+    @Test
+    fun `advanceUWTimers flags justExpired and clamps the effect on the crossing frame`() {
+        val r = Simulation().advanceUWTimers(cooldownRemaining = 0f, effectTimeRemaining = 0.3f, deltaTime = 0.5f)
+        assertEquals(0f, r.effectTimeRemaining, 1e-4f)
+        assertTrue(r.effectWasActive) // ongoing effects still run on the expiry frame
+        assertTrue(r.justExpired)
+    }
+
+    // ---- isUWReadyToFire ----
+
+    @Test
+    fun `isUWReadyToFire is true when off cooldown and not mid-effect`() {
+        assertTrue(Simulation().isUWReadyToFire(cooldownRemaining = 0f, effectTimeRemaining = 0f))
+    }
+
+    @Test
+    fun `isUWReadyToFire is false while on cooldown`() {
+        assertFalse(Simulation().isUWReadyToFire(cooldownRemaining = 1.5f, effectTimeRemaining = 0f))
+    }
+
+    @Test
+    fun `isUWReadyToFire is false while mid-effect`() {
+        assertFalse(Simulation().isUWReadyToFire(cooldownRemaining = 0f, effectTimeRemaining = 2f))
+    }
 }
