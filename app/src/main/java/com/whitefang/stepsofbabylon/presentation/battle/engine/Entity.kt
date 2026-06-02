@@ -4,9 +4,9 @@ import android.graphics.Canvas
 import com.whitefang.stepsofbabylon.domain.battle.entity.EntityProtocol
 
 abstract class Entity(
-    var x: Float = 0f,
-    var y: Float = 0f,
-    var width: Float = 0f,
+    override var x: Float = 0f,
+    override var y: Float = 0f,
+    override var width: Float = 0f,
     var height: Float = 0f,
     override var isAlive: Boolean = true,
 ) : EntityProtocol {
