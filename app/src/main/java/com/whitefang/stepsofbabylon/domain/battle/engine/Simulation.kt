@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.domain.battle.engine
 
 import com.whitefang.stepsofbabylon.domain.battle.entity.EntityProtocol
+import kotlin.math.hypot
 import kotlin.math.min
 
 /**
@@ -127,6 +128,52 @@ class Simulation {
         entities.forEach { e ->
             val dt = if (e.isChronoSlowable) deltaTime * chronoSlowFactor else deltaTime
             e.update(dt)
+        }
+    }
+
+    /**
+     * Player-projectile → enemy collision sweep. For each [projectiles] entry, fires [onHit]
+     * with the FIRST overlapping [enemies] entry and stops (the original `break`). Overlap =
+     * centre distance < sum of radii (radius = width / 2).
+     *
+     * [onHit] fires synchronously inside the loop, exactly as the pre-extraction
+     * presentation `CollisionSystem` did, so side effects that move or kill an enemy
+     * (knockback, death) are observed by subsequent projectiles' overlap tests this same
+     * frame — behaviour is identical to the inline nested loop. Generic over [EntityProtocol]
+     * so callers pass concretely-typed lists + callbacks while the sweep stays Canvas-free.
+     * The caller ([CollisionSystem]) supplies already-`filterIsInstance`'d, already-alive
+     * snapshots.
+     */
+    fun <P : EntityProtocol, E : EntityProtocol> detectProjectileEnemyHits(
+        projectiles: List<P>,
+        enemies: List<E>,
+        onHit: (P, E) -> Unit,
+    ) {
+        for (proj in projectiles) {
+            for (enemy in enemies) {
+                if (hypot(proj.x - enemy.x, proj.y - enemy.y) < (proj.width + enemy.width) / 2f) {
+                    onHit(proj, enemy)
+                    break
+                }
+            }
+        }
+    }
+
+    /**
+     * Enemy-projectile → ziggurat collision sweep. Fires [onHit] for each [enemyProjectiles]
+     * entry whose centre is within `zigWidth / 2 + projWidth / 2` of the ziggurat centre.
+     * Like [detectProjectileEnemyHits], [onHit] fires synchronously inside the loop so the
+     * behaviour matches the pre-extraction presentation `CollisionSystem`.
+     */
+    fun <P : EntityProtocol> detectZigguratHits(
+        enemyProjectiles: List<P>,
+        zigX: Float, zigY: Float, zigWidth: Float,
+        onHit: (P) -> Unit,
+    ) {
+        for (proj in enemyProjectiles) {
+            if (hypot(proj.x - zigX, proj.y - zigY) < zigWidth / 2f + proj.width / 2f) {
+                onHit(proj)
+            }
         }
     }
 }

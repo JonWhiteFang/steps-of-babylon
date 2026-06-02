@@ -411,6 +411,7 @@ class GameEngine {
         }
 
         CollisionSystem.checkCollisions(
+            simulation,
             entities, zig.x, zig.y, zig.width,
             onProjectileHitEnemy = ::onProjectileHitEnemy,
             onEnemyProjectileHitZiggurat = { proj ->

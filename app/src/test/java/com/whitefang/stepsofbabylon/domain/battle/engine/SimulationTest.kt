@@ -162,7 +162,12 @@ class SimulationTest {
 
     // ---- tickEntities ----
 
-    private class FakeEntity(override val isChronoSlowable: Boolean = false) : EntityProtocol {
+    private class FakeEntity(
+        override var x: Float = 0f,
+        override var y: Float = 0f,
+        override var width: Float = 0f,
+        override val isChronoSlowable: Boolean = false,
+    ) : EntityProtocol {
         override var isAlive = true
         var lastDt = Float.NaN
         var tickCount = 0
@@ -202,5 +207,70 @@ class SimulationTest {
         assertEquals(1, projectile.tickCount)
         assertEquals(0.02f, enemy.lastDt, 1e-4f)
         assertEquals(0.2f, projectile.lastDt, 1e-4f)
+    }
+
+    // ---- detectProjectileEnemyHits ----
+
+    @Test
+    fun `detectProjectileEnemyHits fires onHit for an overlapping projectile-enemy pair`() {
+        val proj = FakeEntity(x = 0f, y = 0f, width = 20f)
+        val enemy = FakeEntity(x = 5f, y = 0f, width = 20f) // dist 5 < (20+20)/2 = 20
+        val hits = mutableListOf<Pair<FakeEntity, FakeEntity>>()
+        Simulation().detectProjectileEnemyHits(listOf(proj), listOf(enemy)) { p, e -> hits.add(p to e) }
+        assertEquals(1, hits.size)
+        assertSame(proj, hits[0].first)
+        assertSame(enemy, hits[0].second)
+    }
+
+    @Test
+    fun `detectProjectileEnemyHits stops at the first overlapping enemy per projectile`() {
+        val proj = FakeEntity(x = 0f, y = 0f, width = 20f)
+        val first = FakeEntity(x = 3f, y = 0f, width = 20f)  // overlaps
+        val second = FakeEntity(x = 5f, y = 0f, width = 20f) // also overlaps
+        val hits = mutableListOf<FakeEntity>()
+        Simulation().detectProjectileEnemyHits(listOf(proj), listOf(first, second)) { _, e -> hits.add(e) }
+        assertEquals(listOf(first), hits)
+    }
+
+    @Test
+    fun `detectProjectileEnemyHits does not fire when nothing overlaps`() {
+        val proj = FakeEntity(x = 0f, y = 0f, width = 20f)
+        val enemy = FakeEntity(x = 100f, y = 0f, width = 20f) // dist 100 > 20
+        var fired = false
+        Simulation().detectProjectileEnemyHits(listOf(proj), listOf(enemy)) { _, _ -> fired = true }
+        assertFalse(fired)
+    }
+
+    @Test
+    fun `detectProjectileEnemyHits observes a mid-sweep moved enemy so a later projectile misses it`() {
+        val p1 = FakeEntity(x = 0f, y = 0f, width = 20f)
+        val p2 = FakeEntity(x = 0f, y = 0f, width = 20f)
+        val enemy = FakeEntity(x = 5f, y = 0f, width = 20f)
+        val hits = mutableListOf<FakeEntity>()
+        // onHit knocks the enemy far away — mirrors GameEngine.onProjectileHitEnemy applyKnockback.
+        // Because firing is interleaved with iteration, p2 re-reads the moved position and misses.
+        Simulation().detectProjectileEnemyHits(listOf(p1, p2), listOf(enemy)) { p, e ->
+            hits.add(p)
+            e.x = 1000f
+        }
+        assertEquals(listOf(p1), hits)
+    }
+
+    // ---- detectZigguratHits ----
+
+    @Test
+    fun `detectZigguratHits fires for a projectile overlapping the ziggurat`() {
+        val proj = FakeEntity(x = 5f, y = 0f, width = 20f) // dist 5 < 20/2 + 20/2 = 20
+        val hits = mutableListOf<FakeEntity>()
+        Simulation().detectZigguratHits(listOf(proj), zigX = 0f, zigY = 0f, zigWidth = 20f) { hits.add(it) }
+        assertEquals(listOf(proj), hits)
+    }
+
+    @Test
+    fun `detectZigguratHits does not fire outside the overlap radius`() {
+        val proj = FakeEntity(x = 100f, y = 0f, width = 20f)
+        var fired = false
+        Simulation().detectZigguratHits(listOf(proj), zigX = 0f, zigY = 0f, zigWidth = 20f) { fired = true }
+        assertFalse(fired)
     }
 }
