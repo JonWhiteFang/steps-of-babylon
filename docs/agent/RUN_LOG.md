@@ -6298,3 +6298,10 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Follow-ups: commit + push + PR + merge. Then the final Phase 3 slice — the `SimulationEvent` flow replacing the `@Volatile` callbacks (`onStepReward` / `onBossKilled`) — or pause for the external closed-track soak (earliest production-access application 2026-06-09).
 
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-06-02 — V1X-09 Phase 3 slice 5 merged (PR #97)
+
+- PR #97 merged to `main` via standard merge commit `5e5eee9` (project precedent). Pre-merge gates verified clean: `mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`, no required CI checks, no review requirement. `main` fast-forwarded `2631dc8..5e5eee9` (11 files, +156 / −17). `feat/V1X-09-phase3-uw-lifecycle` deleted local + remote via `gh pr merge --delete-branch`; working tree clean on `main`. 864 JVM + 9 instrumented green.
+- Post-merge doc reflection (committed directly to `main`, matching the slice-3 `a97d9df` precedent): STATE.md current-objective bullet flipped from "branch … Next: commit + push + PR + merge" to "merged via PR #97" + Next trimmed to the final slice; STATE Last-run line updated; this RUN_LOG entry.
+- Next: V1X-09 Phase 3 final slice — the `SimulationEvent` flow replacing the `@Volatile` `onStepReward` / `onBossKilled` callbacks — or pause for the external closed-track soak (earliest production-access application 2026-06-09).
+- Memory updated: STATE ✅ / RUN_LOG ✅
