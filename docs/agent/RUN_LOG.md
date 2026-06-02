@@ -1,3 +1,11 @@
+## 2026-06-02 — Doc sync: structure.md collision-sweep gap from PR #96
+
+- **Goal:** "update all docs" — audit the full current-state doc set after the PR #96 collision-sweep merge.
+- **Finding:** PR #96's own sweep covered ADR-0012, source-files.md, AGENTS, README, CHANGELOG, STATE, RUN_LOG — all correct (the `851` strings still in RUN_LOG are intentional `851 → 857` delta descriptions). The one miss was `.kiro/steering/structure.md`: the `domain/battle/engine/` line still listed the `Simulation` Phase-3 surface as "cash economy + round-progress counters + entity tick" (no collision sweep), and the `entity/` line described `EntityProtocol` as just "lets Simulation iterate entities".
+- **Fix:** structure.md line 22 now ends "…+ entity tick + collision sweep; …"; line 23 `EntityProtocol` now reads "exposes isAlive/x/y/width/update so Simulation can run the entity tick + collision sweep". No code change; test count unchanged (857).
+- **Audit scope:** grep across `*.md` for `851` / `slice 3` / `entity tick` confirmed structure.md was the only stale current-state doc. `database-schema.md` / `tech.md` / `lib-*.md` unaffected (no schema / dependency / library-pattern change this slice). `plan-V1X-roadmap.md`'s "entity tick, collision" match is general rationale prose, not a status claim — left as-is (historical plan doc).
+- **Commit:** committed + pushed directly to `main` (post-merge doc sync, matching the ea4530b / a97d9df precedent for small doc follow-ups).
+
 ## 2026-06-02 — V1X-09 Phase 3 (slice 4): collision sweep extracted to domain Simulation
 
 - **Goal:** "start on collision migration please" — the next Phase 3 slice flagged in STATE.md as the harder one, because `CollisionSystem`'s callbacks are typed to the concrete presentation entities (`ProjectileEntity` / `EnemyEntity` / `EnemyProjectileEntity`).
