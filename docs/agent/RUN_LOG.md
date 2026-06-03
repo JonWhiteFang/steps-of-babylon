@@ -6368,3 +6368,11 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Post-merge doc reflection (committed directly to `main`, matching the slice-3 `a97d9df` precedent): STATE.md current-objective bullet flipped from "branch … Next: commit + push + PR + merge" to "merged via PR #97" + Next trimmed to the final slice; STATE Last-run line updated; this RUN_LOG entry.
 - Next: V1X-09 Phase 3 final slice — the `SimulationEvent` flow replacing the `@Volatile` `onStepReward` / `onBossKilled` callbacks — or pause for the external closed-track soak (earliest production-access application 2026-06-09).
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-06-03 — V1X-09 Phase 3 final slice merged (PR #98); PHASE 3 COMPLETE
+
+- PR #98 merged to `main` via standard merge commit `bab01c6` (feature commit `7e9739a`), matching project precedent. `main` now at `bab01c6`; working tree clean. 866 JVM + 9 instrumented green. Local feature branch already gone (only `main` local); the stale `origin/feat/V1X-09-phase3-simulation-events` remote-tracking ref (plus a batch of older un-pruned feature refs) will clear on the next `git fetch --prune` — cosmetic only.
+- This completes **V1X-09 in full** — Phase 1 (pure-math helpers → `SimulationMath`) + Phase 2 (5 battle entities → `domain/battle/entity`) + Phase 3 (the 6 in-round slices → `domain/battle/engine/Simulation`). `GameEngine` is now a thin presentation/render shell; the in-round simulation lives in pure-domain code.
+- Doc sync this run: corrected only the two stale "Next: commit + push + PR + merge" trailers in STATE.md (current-objective + Last-run lines). The full content doc sweep for PR #98 (ADR-0012 / AGENTS / source-files / structure / CHANGELOG / README) was already done in implementation commit `7e9739a`.
+- Next: resume the external closed-track soak (earliest production-access application 2026-06-09) OR pick up the next engineering item — V1X-12 cloud save (schema v11→v12) / V1X-13 i18n.
+- Memory updated: STATE ✅ / RUN_LOG ✅
