@@ -6376,3 +6376,12 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Doc sync this run: corrected only the two stale "Next: commit + push + PR + merge" trailers in STATE.md (current-objective + Last-run lines). The full content doc sweep for PR #98 (ADR-0012 / AGENTS / source-files / structure / CHANGELOG / README) was already done in implementation commit `7e9739a`.
 - Next: resume the external closed-track soak (earliest production-access application 2026-06-09) OR pick up the next engineering item — V1X-12 cloud save (schema v11→v12) / V1X-13 i18n.
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-06-03 — Issue housekeeping: closed #32, scoped down #44 (post-recon actions)
+
+- Actioned 2 of the close/scope-down candidates the 2026-06-02 recon surfaced (the recon itself was comment-only). GitHub-side only — no code/test/schema change; 866 JVM + 9 instrumented unchanged; `main` at `3e43a34`.
+- **#32 ([Testing] No instrumented tests)** — posted a closing comment + **closed** (reason: completed). The premise ("no `androidTest/` directory") was resolved by V1X-08 (9 instrumented tests); remaining Compose-UI / permission / Health-Connect breadth is tracked by #21.
+- **#44 (Coming Soon research types)** — **retitled** "AUTO_UPGRADE_AI and ENEMY_INTEL …" → "AUTO_UPGRADE_AI research type is permanently 'Coming Soon'" (ENEMY_INTEL shipped in V1X-15b) + scope-down comment recording the hide-or-implement decision for the lone remaining stub.
+- Open-issue count 15 → 14.
+- Next: #27 machine-enforced domain-purity guard (dependency-free JVM test).
+- Memory updated: STATE n/a (current objective unchanged) / RUN_LOG ✅
