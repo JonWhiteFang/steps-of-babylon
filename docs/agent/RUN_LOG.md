@@ -1,3 +1,34 @@
+## 2026-06-03 — Plan 32 (CI/CD Pipeline) authored: GitHub Actions plan + ADR-0018
+
+- **Goal:** user asked to "plan out a robust CI implementation". Planning-only session — author the Plan 32 doc + ADR, register in the indexes, do the memory writes. No workflow files written, no code change.
+- **Outcome:** `docs/plans/plan-32-ci.md` (new) + `docs/agent/DECISIONS/ADR-0018-ci-github-actions.md` (new) authored; Plan 32 registered in `master-plan.md` (index row + dependency-graph node + execution note + status line) and `AGENTS.md` (entry count 36 → 38, plan-index row, status checklist line). Working tree was clean on `main@0305f55` at start.
+
+### 5 user decisions locked
+1. **New top-level Plan 32** (not a V1X sub-plan) — it's release infra, not a game feature.
+2. **Instrumented suite blocking-on-PR + nightly** — `connectedDebugAndroidTest` gates PRs to `main` AND runs on a nightly `schedule:` (flake canary).
+3. **Release lane auto-uploads to the Play internal track** — `r0adkll/upload-google-play`, `track: internal`, advancing Plan 31's automate-Play-upload priority.
+4. **ADR-0018** (0011/0013/0014 left reserved for pending V1X ADRs per the user).
+5. **SHA-pinned actions** — every third-party action pinned to a 40-char commit SHA + `# vX.Y.Z` comment, Dependabot-maintained.
+
+### Plan shape (3 lanes + hardening)
+- **`ci.yml`** (PR + push:main): one ubuntu job running `./gradlew testDebugUnitTest lintDebug assembleDebug` + a Room schema-drift guard (`git diff --exit-code app/schemas`). Secret-free (debug build needs none — AdMob test-ID fallback, no google-services plugin). `setup-java` 17 + `setup-android` (platform 36) + `setup-gradle` cache.
+- **`instrumented.yml`** (PR:main + nightly + dispatch): `reactivecircus/android-emulator-runner` API-34 `google_apis` x86_64, KVM-enabled, AVD-cached, one retry.
+- **`release.yml`** (tag `v*` + dispatch): unit-test guard → decode keystore from secrets → `bundleRelease` → `jarsigner -verify` → upload-google-play internal track (+ R8 mapping + native debug symbols) → GitHub Release. `environment: release` gate. CI builds the committed `versionCode` (no auto-bump — respects the v13 reused-code rejection).
+- **Hardening:** `dependabot.yml` (gradle + github-actions), `dependency-submission`, least-privilege `permissions`, `concurrency` cancellation, branch protection requiring the CI + instrumented checks.
+
+### Grounding (verified against the build, not assumed)
+- `app/build.gradle.kts` + `libs.versions.toml`: Gradle 9.3.1 / AGP 9.0.1 / Kotlin 2.3.0 / JDK 17 / compileSdk 36 / minSdk 34 (→ emulator floor API 34). `testInstrumentationRunner = HiltTestRunner` already wired (V1X-08). JUnit5 platform for unit tests.
+- `.gitignore`: `run-gradle.sh` + `keystore.properties` + `*.jks` all gitignored — CI calls `./gradlew` directly (PTY available) and injects signing material from GH Secrets. Debug build confirmed secret-free.
+- Brave/web search confirmed current action best-practice (setup-gradle@v4 replaces the deprecated gradle-build-action; android-emulator-runner@v2 + KVM enable + AVD cache).
+
+### Protocol note
+- The "No CI" statements in `devdocs/archaeology/*` + `philosophy.md` were deliberately NOT touched — historical artifacts per `11-agent-protocol.md`. Only current-state docs (master-plan, AGENTS, STATE, RUN_LOG) + the 2 new files were written. README / tech.md / source-files / structure deferred to implementation time (no workflows exist yet).
+
+### Next
+- Implement the 3 workflow files + `dependabot.yml` on a branch; resolve + commit the exact action SHAs (`gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`). Configure repo secrets + the `release` environment + branch protection. Verify `ci.yml` green against the current 867-test suite before wiring required checks.
+
+---
+
 ## 2026-06-03 — V1X-09 Phase 3 FINAL slice: SimulationEvent flow replaces the @Volatile callbacks; PHASE 3 COMPLETE
 
 - **Goal:** complete the last slice of V1X-09 Phase 3 (ADR-0012) — replace `GameEngine`'s two `@Volatile` callback fields (`onStepReward`, `onBossKilled`) with a pure-domain `SimulationEvent` stream on `Simulation`, collected by `BattleViewModel`.
