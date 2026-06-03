@@ -43,6 +43,7 @@ import com.whitefang.stepsofbabylon.domain.usecase.ResolveStats
 import com.whitefang.stepsofbabylon.domain.usecase.UpdateBestWave
 import com.whitefang.stepsofbabylon.service.MilestoneNotificationManager
 import com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine
+import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationEvent
 import com.whitefang.stepsofbabylon.presentation.battle.engine.WavePhase
 import com.whitefang.stepsofbabylon.presentation.battle.engine.WaveSpawner
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BiomeTransitionInfo
@@ -205,10 +206,15 @@ class BattleViewModel @Inject constructor(
         // `engine.init()` (fired by the surfaceView when isLoading becomes false) reads the
         // up-to-date set either way.
         engine.cosmeticOverrides = equippedCosmetics
-        wireStepRewardCallback(engine)
-        wireBossKilledCallback(engine)
         roundEnded = false
         viewModelScope.launch {
+            // V1X-09 Phase 3 (final slice, ADR-0012): collect the engine's SimulationEvent
+            // stream as a child of the polling coroutine so it shares the round lifecycle —
+            // cancelled when the loop breaks at round end, and re-created fresh by the next
+            // startPollingEngine (playAgain). A single collector per round prevents the
+            // double-credit a leaked second collector would cause. Replaces the pre-Phase-3
+            // wireStepRewardCallback / wireBossKilledCallback @Volatile-lambda wiring.
+            val eventCollector = launch { engine.events.collect { handleSimulationEvent(engine, it) } }
             while (true) {
                 delay(200)
                 val eng = this@BattleViewModel.engine ?: break
@@ -241,6 +247,7 @@ class BattleViewModel @Inject constructor(
                 }
                 if (eng.roundOver && !roundEnded) { endRound(); break }
             }
+            eventCollector.cancel()
         }
     }
 
@@ -395,16 +402,24 @@ class BattleViewModel @Inject constructor(
     fun quitRound() { val eng = engine ?: return; eng.roundOver = true; endRound() }
 
     /**
-     * Wires the engine's per-kill Step reward callback to [awardBattleSteps]
-     * and forwards credited amounts into [BattleUiState]. Exposed at package
-     * visibility so tests can exercise the callback without starting the
-     * polling loop.
+     * Handles one [SimulationEvent] from [GameEngine.events] (V1X-09 Phase 3 final slice,
+     * ADR-0012 — replaces the `wireStepRewardCallback` / `wireBossKilledCallback` @Volatile
+     * lambda wiring). `@VisibleForTesting` so tests can feed events directly without driving
+     * the polling-loop collector, exactly as the old wire methods let tests invoke the engine
+     * callbacks directly.
+     *
+     * Coroutine scope is preserved from the original callbacks:
+     * - [SimulationEvent.StepReward] credit runs on [applicationScope] so a mid-round nav-away
+     *   still commits the (precious, walking-equivalent) Battle Steps. The floating "+N Step"
+     *   indicator is spawned only when credit actually went through — a capped kill
+     *   (credited == 0) must not show a misleading indicator.
+     * - [SimulationEvent.BossKilled] Power Stones run on [viewModelScope].
      */
-    @androidx.annotation.VisibleForTesting
-    internal fun wireStepRewardCallback(engine: GameEngine) {
-        engine.onStepReward = { amount, x, y ->
-            applicationScope.launch {
-                val credited = awardBattleSteps(amount)
+    @VisibleForTesting
+    internal fun handleSimulationEvent(engine: GameEngine, event: SimulationEvent) {
+        when (event) {
+            is SimulationEvent.StepReward -> applicationScope.launch {
+                val credited = awardBattleSteps(event.amount)
                 if (credited > 0L) {
                     _uiState.update { s ->
                         s.copy(
@@ -412,33 +427,23 @@ class BattleViewModel @Inject constructor(
                             stepBalance = s.stepBalance + credited,
                         )
                     }
-                    // Spawn the floating "+N Step" indicator only when credit
-                    // actually went through. A capped kill (credited == 0) must
-                    // not show a misleading indicator; the frozen HUD counter
-                    // at DAILY_BATTLE_STEP_CAP already communicates the gate.
                     engine.effectEngine?.addEffect(
                         com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText(
-                            x = x,
-                            y = y,
+                            x = event.x,
+                            y = event.y,
                             text = "+$credited Step",
                             color = com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText.STEP_COLOR,
                         ),
                     )
                 }
             }
-        }
-    }
-
-    @VisibleForTesting
-    internal fun wireBossKilledCallback(engine: GameEngine) {
-        engine.onBossKilled = { bossKillTier, x, y ->
-            viewModelScope.launch {
-                val credited = awardBossPowerStones(bossKillTier)
+            is SimulationEvent.BossKilled -> viewModelScope.launch {
+                val credited = awardBossPowerStones(event.tier)
                 if (credited > 0L) {
                     engine.effectEngine?.addEffect(
                         com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText(
-                            x = x,
-                            y = y,
+                            x = event.x,
+                            y = event.y,
                             text = "+$credited PS",
                             color = com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText.PS_COLOR,
                         ),
@@ -481,8 +486,10 @@ class BattleViewModel @Inject constructor(
         if (eng != null && !roundEnded && eng.hasWaveProgress()) {
             markEndedAndLaunchPersistence(applicationScope, eng)
         }
-        eng?.onStepReward = null
-        eng?.onBossKilled = null
+        // The SimulationEvent collector lives on viewModelScope (a child of the polling-loop
+        // coroutine), so it is cancelled automatically as the scope tears down — no explicit
+        // unsubscribe is needed here (the pre-Phase-3 `onStepReward`/`onBossKilled = null`
+        // unwiring is gone with the callbacks).
         super.onCleared()
     }
 

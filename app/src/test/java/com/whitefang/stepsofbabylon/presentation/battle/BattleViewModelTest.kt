@@ -3,6 +3,7 @@ package com.whitefang.stepsofbabylon.presentation.battle
 import com.whitefang.stepsofbabylon.data.BiomePreferences
 import com.whitefang.stepsofbabylon.domain.model.*
 import com.whitefang.stepsofbabylon.domain.usecase.AwardBattleSteps
+import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationEvent
 import com.whitefang.stepsofbabylon.fakes.*
 import com.whitefang.stepsofbabylon.service.MilestoneNotificationManager
 import kotlinx.coroutines.CoroutineScope
@@ -368,10 +369,9 @@ class BattleViewModelTest {
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
         val engine = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine()
-        vm.wireStepRewardCallback(engine)
         val initialBalance = playerRepo.profile.value.stepBalance
 
-        repeat(5) { engine.onStepReward?.invoke(1L, 0f, 0f) }
+        repeat(5) { vm.handleSimulationEvent(engine, SimulationEvent.StepReward(1L, 0f, 0f)) }
         advanceUntilIdle()
 
         assertEquals(5L, vm.uiState.value.stepsEarnedThisRound)
@@ -390,10 +390,9 @@ class BattleViewModelTest {
             AwardBattleSteps.DAILY_BATTLE_STEP_CAP,
         )
         val engine = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine()
-        vm.wireStepRewardCallback(engine)
         val initialBalance = playerRepo.profile.value.stepBalance
 
-        engine.onStepReward?.invoke(10L, 0f, 0f)
+        vm.handleSimulationEvent(engine, SimulationEvent.StepReward(10L, 0f, 0f))
         advanceUntilIdle()
 
         assertEquals(0L, vm.uiState.value.stepsEarnedThisRound)
@@ -419,9 +418,7 @@ class BattleViewModelTest {
             .apply { isAccessible = true }
         fxField.set(engine, fx)
 
-        vm.wireStepRewardCallback(engine)
-
-        engine.onStepReward?.invoke(10L, 100f, 200f)
+        vm.handleSimulationEvent(engine, SimulationEvent.StepReward(10L, 100f, 200f))
         advanceUntilIdle()
 
         // credited == 0 path must not spawn a step-reward FloatingText.
@@ -453,9 +450,7 @@ class BattleViewModelTest {
             .apply { isAccessible = true }
         fxField.set(engine, fx)
 
-        vm.wireStepRewardCallback(engine)
-
-        engine.onStepReward?.invoke(10L, 100f, 200f)
+        vm.handleSimulationEvent(engine, SimulationEvent.StepReward(10L, 100f, 200f))
         advanceUntilIdle()
 
         fun pendingAndActive(fxEngine: com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine): Int {
@@ -479,10 +474,9 @@ class BattleViewModelTest {
             AwardBattleSteps.DAILY_BATTLE_STEP_CAP - 3L,
         )
         val engine = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine()
-        vm.wireStepRewardCallback(engine)
         val initialBalance = playerRepo.profile.value.stepBalance
 
-        engine.onStepReward?.invoke(10L, 0f, 0f)
+        vm.handleSimulationEvent(engine, SimulationEvent.StepReward(10L, 0f, 0f))
 
         advanceUntilIdle()
 
@@ -514,9 +508,8 @@ class BattleViewModelTest {
 
         val initialBalance = playerRepo.profile.value.stepBalance
         val engine = com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine()
-        vm.wireStepRewardCallback(engine)
 
-        engine.onStepReward?.invoke(10L, 0f, 0f)
+        vm.handleSimulationEvent(engine, SimulationEvent.StepReward(10L, 0f, 0f))
         advanceUntilIdle()
 
         // Real-today's bucket is still at cap; fake-tomorrow's bucket got 10.

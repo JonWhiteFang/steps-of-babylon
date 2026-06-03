@@ -1,6 +1,11 @@
 package com.whitefang.stepsofbabylon.domain.battle.engine
 
 import com.whitefang.stepsofbabylon.domain.battle.entity.EntityProtocol
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -12,6 +17,7 @@ import org.junit.jupiter.api.Test
  * state + mutation primitives that GameEngine previously held inline and that
  * GameEngineTest could only reach through Robolectric + reflection.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class SimulationTest {
 
     // ---- creditCash ----
@@ -323,5 +329,42 @@ class SimulationTest {
     @Test
     fun `isUWReadyToFire is false while mid-effect`() {
         assertFalse(Simulation().isUWReadyToFire(cooldownRemaining = 0f, effectTimeRemaining = 2f))
+    }
+
+    // ---- events stream (SimulationEvent flow, V1X-09 Phase 3 final slice) ----
+
+    @Test
+    fun `emit delivers events to a collector in order`() = runTest(UnconfinedTestDispatcher()) {
+        val sim = Simulation()
+        val received = mutableListOf<SimulationEvent>()
+        // UnconfinedTestDispatcher: the collector subscribes eagerly at launch, so the two
+        // emits below land on an active subscriber.
+        val collector = launch { sim.events.collect { received.add(it) } }
+        sim.emit(SimulationEvent.StepReward(5L, 1f, 2f))
+        sim.emit(SimulationEvent.BossKilled(3, 4f, 5f))
+        advanceUntilIdle()
+        collector.cancel()
+        assertEquals(
+            listOf(
+                SimulationEvent.StepReward(5L, 1f, 2f),
+                SimulationEvent.BossKilled(3, 4f, 5f),
+            ),
+            received,
+        )
+    }
+
+    @Test
+    fun `events does not replay buffered events to a late subscriber`() = runTest(UnconfinedTestDispatcher()) {
+        val sim = Simulation()
+        // Emitted with no active collector. replay = 0 means a collector that subscribes
+        // afterwards must NOT receive it — the contract that stops the fresh polling-loop
+        // collector started by BattleViewModel.playAgain from re-crediting the previous
+        // round's kills.
+        sim.emit(SimulationEvent.BossKilled(1, 0f, 0f))
+        val received = mutableListOf<SimulationEvent>()
+        val collector = launch { sim.events.collect { received.add(it) } }
+        advanceUntilIdle()
+        collector.cancel()
+        assertTrue(received.isEmpty(), "replay=0 stream must not deliver pre-subscription events")
     }
 }

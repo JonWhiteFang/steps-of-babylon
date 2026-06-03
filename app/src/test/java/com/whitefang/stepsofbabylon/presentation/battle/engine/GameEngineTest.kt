@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.battle.engine
 
+import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationEvent
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
@@ -14,6 +15,11 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 
 /**
  * RO-08 + RO-09 + R4-01 regression guards for the engine-side stats / cash / recovery /
@@ -33,6 +39,7 @@ import org.junit.jupiter.api.Test
  * lifecycle. R4-01 deletes Step Overdrive entirely; GOLDEN is the sole writer and the
  * coverage collapses to 2 simple tests — activation sets 5.0×, expiry resets to 1.0×.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class GameEngineTest {
 
     private fun freshEngine(): GameEngine {
@@ -783,13 +790,15 @@ class GameEngineTest {
         return pending.filterIsInstance<FloatingText>().map { textField.get(it) as String }
     }
 
-    // ---- R4-07: onBossKilled callback fires for BOSS enemy type ----
+    // ---- R4-07: handleEnemyDeath emits SimulationEvent.BossKilled for BOSS enemy type ----
 
     @Test
-    fun `R407 onBossKilled fires when a BOSS enemy dies`() {
+    fun `R407 emits BossKilled when a BOSS enemy dies`() = runTest(UnconfinedTestDispatcher()) {
         val eng = freshEngine()
-        var callbackTier: Int? = null
-        eng.onBossKilled = { tier, _, _ -> callbackTier = tier }
+        val events = mutableListOf<SimulationEvent>()
+        // UnconfinedTestDispatcher: the collector subscribes eagerly at launch, before the
+        // synchronous handleEnemyDeath emit below, so the replay=0 stream still delivers it.
+        val collector = launch { eng.events.collect { events.add(it) } }
         val zig = eng.ziggurat!!
         val boss = EnemyEntity(
             enemyType = EnemyType.BOSS,
@@ -800,14 +809,18 @@ class GameEngineTest {
             .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
             .apply { isAccessible = true }
         method.invoke(eng, boss)
-        assertEquals(1, callbackTier, "onBossKilled must fire with the engine's tier for BOSS kills")
+        advanceUntilIdle()
+        collector.cancel()
+        val bossEvents = events.filterIsInstance<SimulationEvent.BossKilled>()
+        assertEquals(1, bossEvents.size, "exactly one BossKilled must be emitted for a BOSS kill")
+        assertEquals(1, bossEvents.first().tier, "BossKilled must carry the engine's tier for BOSS kills")
     }
 
     @Test
-    fun `R407 onBossKilled does NOT fire for non-BOSS enemy types`() {
+    fun `R407 does NOT emit BossKilled for non-BOSS enemy types`() = runTest(UnconfinedTestDispatcher()) {
         val eng = freshEngine()
-        var fired = false
-        eng.onBossKilled = { _, _, _ -> fired = true }
+        val events = mutableListOf<SimulationEvent>()
+        val collector = launch { eng.events.collect { events.add(it) } }
         val zig = eng.ziggurat!!
         for (type in listOf(EnemyType.BASIC, EnemyType.FAST, EnemyType.TANK, EnemyType.RANGED)) {
             val enemy = EnemyEntity(
@@ -820,16 +833,21 @@ class GameEngineTest {
                 .apply { isAccessible = true }
             method.invoke(eng, enemy)
         }
-        assertFalse(fired, "onBossKilled must NOT fire for non-BOSS enemy types")
+        advanceUntilIdle()
+        collector.cancel()
+        assertFalse(
+            events.any { it is SimulationEvent.BossKilled },
+            "BossKilled must NOT be emitted for non-BOSS enemy types",
+        )
     }
 
     @Test
-    fun `R407 onBossKilled passes engine tier to callback`() {
+    fun `R407 emitted BossKilled carries the engine tier`() = runTest(UnconfinedTestDispatcher()) {
         // Init engine at tier 7
         val eng = GameEngine()
         eng.init(width = 1080f, height = 1920f, resolvedStats = ResolvedStats(), playerTier = 7)
-        var receivedTier: Int? = null
-        eng.onBossKilled = { tier, _, _ -> receivedTier = tier }
+        val events = mutableListOf<SimulationEvent>()
+        val collector = launch { eng.events.collect { events.add(it) } }
         val zig = eng.ziggurat!!
         val boss = EnemyEntity(
             enemyType = EnemyType.BOSS,
@@ -840,6 +858,12 @@ class GameEngineTest {
             .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
             .apply { isAccessible = true }
         method.invoke(eng, boss)
-        assertEquals(7, receivedTier, "onBossKilled must pass the engine's playerTier")
+        advanceUntilIdle()
+        collector.cancel()
+        assertEquals(
+            7,
+            events.filterIsInstance<SimulationEvent.BossKilled>().single().tier,
+            "BossKilled must carry the engine's playerTier",
+        )
     }
 }
