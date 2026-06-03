@@ -1,3 +1,37 @@
+## 2026-06-02 — GitHub issue triage: fresh recon comments on all 15 open issues
+
+- **Goal:** user asked to go through every open GitHub issue one-by-one, deep-dive the current state of each against the codebase + V1X roadmap, and leave a detailed recon comment on each once recon was complete.
+- **Outcome:** posted 15 fresh recon comments (issues #21–#32, #34, #36, #44) on `JonWhiteFang/steps-of-babylon`. **No code / test / schema change** — GitHub-side only; working tree clean before and after. 864 JVM + 9 instrumented tests unchanged. `main` at `1370748`.
+
+### Key finding
+All 15 open issues carried only a **stale 2026-05-25 triage/diagnosis comment** (each referenced Plan R4 as in-progress, 649 tests, and #19/#20 as blockers — all long since resolved). A large amount has shipped since (V1X-08 instrumented tests, V1X-15b ENEMY_INTEL, V1X-09 simulation extraction, V1X-01 data deletion, etc.) but the issues were never updated to reflect it. Each new comment explicitly supersedes the stale note with verified ground-truth.
+
+### Per-issue verdicts (verified against code, not just the roadmap)
+- **#32** (no instrumented tests) → **substantially resolved.** `app/src/androidTest/` now exists (V1X-08); core premise false. 2/3 suggested suites shipped; `StoreIapFlowTest` formally deferred. Recommended close → #21.
+- **#44** (AUTO_UPGRADE_AI + ENEMY_INTEL Coming Soon) → **half resolved.** ENEMY_INTEL fully wired (V1X-15b, on-device verified); only AUTO_UPGRADE_AI still `isComingSoon` (verified `ResearchType.kt`). Issue's option-1 followed exactly.
+- **#21** (instrumentation + Compose UI) → **partial.** androidTest infra + lifecycle suites done (9 instrumented tests); no Compose UI tests (`composeTestRule` grep = 0), no permission/first-session coverage, no CI lane.
+- **#25** (replay/golden files) & **#30** (balance sim tooling) → **unblocked** by V1X-09 sim extraction (`domain/battle/engine/Simulation.kt` + `SimulationMath.kt` + `domain/battle/entity/*`, pure-Kotlin, 33+27 tests); harness/CLI tooling not yet built (`tools/` only has the icon + sfx scripts).
+- **#26** (perf/battery) & **#27** (modularisation) → **prereqs landed, work not started.** Macrobenchmark now possible (instrumented infra exists); still single-module (`include(":app")`); no machine-enforced `domain`-purity rule. Flagged a cheap Konsist/Detekt rule as a high-leverage standalone win for #27.
+- **#34** (i18n) → **unchanged.** `strings.xml` still only `app_name` (verified).
+- **#36** (cloud save) → **unchanged**, and even the cheap interim Option-3 Settings warning was never added (verified no device-local/cloud/backup warning text in `presentation/`). V1X-01 shipped the *opposite* (intentional data deletion).
+- **#22 / #23 / #24 / #28 / #29 / #31** → **strategic backlog** (V1X-20/21/22/25/28/26). Current foundations noted per issue (e.g. #29's `DescribeUpgradeEffect`/`QuickInvest` math already exists; #31's monetisation philosophy already documented; #23 is the foundational telemetry dep gating #22/#24/#29/#31).
+
+### Design conflicts flagged for owner decision (in the comments)
+1. **#24** — V1X-22's "100 free Steps welcome bonus" conflicts with the hard constraint *"Steps can NEVER be generated passively in-game"* (`CONSTRAINTS.md`). Needs an explicit ruling (reframe with Gems/Cash, or carve a documented ADR exception).
+2. **#29** — `QuickInvest` FAB was removed from Workshop (commit `5e3530c`); understand why before re-adding a "best buy" badge (same idea).
+3. **#23 / #36** — shipping any upload/cloud-sync sink requires a privacy-policy + Play Console Data Safety update (currently states data never leaves device beyond Billing/Ads).
+
+### Verification
+- Ground-truth checks on `main@1370748`: `strings.xml`, `ResearchType.kt` (`isComingSoon` set), `app/src/androidTest/` listing + `@Test` count (9), `settings.gradle.kts` (single module), `presentation/` warning-text grep, `domain/battle/` listing, `tools/` listing.
+- All 15 comments posted via `gh issue comment N --body-file /tmp/soab-comments/N.md`; each returned a comment URL. Temp files cleaned up afterward.
+- **Comment-only per the request — no issues closed or relabelled** (two close/scope-down candidates surfaced: #32 and #44).
+
+### Memory
+- **No STATE.md change** — comment-only recon; the project's current objective (V1X-09 Phase 3 final `SimulationEvent` slice / closed-track soak) is unchanged.
+- RUN_LOG.md: this entry.
+
+---
+
 ## 2026-06-02 — Doc sync: structure.md collision-sweep gap from PR #96
 
 - **Goal:** "update all docs" — audit the full current-state doc set after the PR #96 collision-sweep merge.
