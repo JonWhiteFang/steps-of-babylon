@@ -87,6 +87,16 @@ Data flow: `presentation → domain ← data`. Domain has no Android dependencie
 
 In non-TTY environments (Kiro CLI, CI), use `./run-gradle.sh <task>` instead of `./gradlew` to avoid output buffering. See `README.md` for the script.
 
+## Continuous Integration
+
+GitHub Actions (Plan 32 / ADR-0018). Workflows under `.github/workflows/`, all third-party actions SHA-pinned (Dependabot-maintained):
+
+- `ci.yml` — PR + push:main gate: `./gradlew testDebugUnitTest lintDebug assembleDebug` + a Room schema-drift guard. Secret-free.
+- `instrumented.yml` — `connectedDebugAndroidTest` on an API-34 KVM emulator (AVD-cached); blocking on PRs to `main` + nightly.
+- `release.yml` — `v*` tag → signed `bundleRelease` → Play internal track (`r0adkll/upload-google-play`).
+
+Plus `dependency-submission.yml` (Gradle dependency graph) and `dependabot.yml` (gradle + github-actions). CI invokes `./gradlew` directly — runners have a PTY, so `run-gradle.sh` is not needed there.
+
 ## Notes
 
 - All annotation processing uses KSP (not kapt)

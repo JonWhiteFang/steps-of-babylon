@@ -2,6 +2,8 @@
 
 ![Steps of Babylon](docs/release/store-assets/play-store-feature-graphic-1024x500.png)
 
+[![CI](https://github.com/JonWhiteFang/steps-of-babylon/actions/workflows/ci.yml/badge.svg)](https://github.com/JonWhiteFang/steps-of-babylon/actions/workflows/ci.yml)
+
 An Android idle tower defense game where real-world walking drives all progression. Players earn **Steps** by physically walking, then spend them to upgrade an ancient ziggurat that fights wave-based battles against mythic enemies.
 
 > **Every Step Builds the Tower.**

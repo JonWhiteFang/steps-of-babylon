@@ -1,6 +1,6 @@
 # ADR-0018: Adopt GitHub Actions for CI/CD
 
-**Status:** Accepted (planned — Plan 32 authored 2026-06-03; not yet implemented)
+**Status:** Accepted (implemented on branch `feat/32-ci-pipeline` 2026-06-03, PR pending; repo secrets, the `release` environment, and branch protection are post-merge setup)
 **Date:** 2026-06-03
 **Supersedes:** The deliberate "No CI for v1.0" posture documented in `devdocs/archaeology/intro2deployment.md` §4, `philosophy.md`, and the gap-analysis docs (all historical — left intact).
 **Superseded by:** None

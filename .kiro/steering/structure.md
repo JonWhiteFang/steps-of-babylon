@@ -3,6 +3,9 @@
 ## Root Layout
 
 ```
+.github/
+├── workflows/          # CI: ci.yml (PR gate) + instrumented.yml (emulator) + release.yml (Play internal) + dependency-submission.yml — SHA-pinned (Plan 32 / ADR-0018)
+└── dependabot.yml      # gradle + github-actions weekly updates
 app/src/main/java/com/whitefang/stepsofbabylon/
 ├── data/
 │   ├── local/          # Room database, entities, DAOs, TypeConverters, SQLCipher key manager

@@ -1,3 +1,30 @@
+## 2026-06-03 — Plan 32 CI implemented on branch feat/32-ci-pipeline (+ latent lint fix surfaced by the gate)
+
+- **Goal:** "commit the additions, then crack on" — commit the Plan 32 planning docs, then build the GitHub Actions pipeline.
+- **Outcome:** commit 1 (`784d915`) = the 6 planning-doc files. Then implemented all 5 `.github` files on branch `feat/32-ci-pipeline`. Local `ci.yml` gate verified green (867 tests). One latent lint fix folded in. Commit 2 pending (this doc-sync + impl). Not yet pushed/PR'd.
+
+### Files written
+- `.github/workflows/ci.yml` — PR + push:main; `./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace` + Room schema-drift guard (`git diff --exit-code app/schemas`) + report artifact on failure. `permissions: contents: read`, `concurrency` cancel.
+- `.github/workflows/instrumented.yml` — PR:main + nightly cron (`0 3 * * *`) + dispatch; KVM enable, AVD cache (`avd-api34-googleapis-x86_64`), create-snapshot-then-run two-step, API-34 `google_apis` x86_64.
+- `.github/workflows/release.yml` — `v*` tag + dispatch; `environment: release`; unit-test guard → keystore decode (`UPLOAD_KEYSTORE_BASE64`) → `keystore.properties` + conditional AdMob `local.properties` writes → `bundleRelease` → `jarsigner -verify` → `r0adkll/upload-google-play` `track: internal` + `mappingFile` → `softprops/action-gh-release`.
+- `.github/workflows/dependency-submission.yml` — push:main, `contents: write`, `gradle/actions/dependency-submission`.
+- `.github/dependabot.yml` — gradle + github-actions weekly.
+
+### SHA pins (live `gh api`, 2026-06-03)
+checkout `df4cb1c` v6.0.3 · setup-java `be666c2` v5.2.0 · gradle/actions `50e97c2` v6.1.0 (setup-gradle + dependency-submission share the repo/SHA) · setup-android `40fd30f` v4.0.1 · android-emulator-runner `e89f39f` v2.37.0 · cache `27d5ce7` v5.0.5 · upload-artifact `043fb46` v7.0.1 · upload-google-play `e738b9d` v1.1.5 · action-gh-release `b430933` v3.0.0. Each pinned to the full 40-char SHA with a `# vX.Y.Z` comment; Dependabot maintains them.
+
+### Latent lint fix (the gate's first catch)
+`./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` FAILED on a PRE-EXISTING `lintDebug` error (no prior CI ever ran `lintDebug` strictly): `NotificationSettingsScreen.kt:26` `LocalContext.current as? Activity` → `ContextCastToActivity`. Fixed → `androidx.activity.compose.LocalActivity.current` + removed unused `android.app.Activity` / `LocalContext` imports (the `activity?.let { deleteAllData(it) }` consumer is unaffected — `LocalActivity.current` already returns `Activity?`). Re-ran: BUILD SUCCESSFUL, 867 tests intact. Concrete demonstration of CI value; folded into the implementation commit.
+
+### Decisions / notes
+- Everything on ONE branch (`feat/32-ci-pipeline`), commit 1 = docs, commit 2 = impl — keeps plan + implementation in one reviewable PR and avoids a direct-to-main push.
+- `debugSymbols` omitted from the Play upload step: the v3-era RUN_LOG investigation confirmed the AAB's native `.so` (SQLCipher etc.) are pre-stripped, so there are no useful symbols to upload — including the path would just fail the step.
+- The instrumented "one retry" mentioned in the plan was dropped for minimalism; the AVD warm-snapshot + `disable-animations` is the robustness lever. Easy to add `nick-fields/retry` later if flakiness appears.
+- Doc-sync this commit: README (CI badge), `tech.md` (CI section), `structure.md` (`.github/` tree), CHANGELOG, AGENTS + STATE + plan-32 + ADR-0018 statuses flipped to implemented-on-branch.
+- **Next:** push branch + open PR. Post-merge: repo secrets + `release` environment + branch protection (require CI + instrumented checks); the release lane also needs the one-time manual Play prerequisites (service account + first manual AAB upload).
+
+---
+
 ## 2026-06-03 — Plan 32 (CI/CD Pipeline) authored: GitHub Actions plan + ADR-0018
 
 - **Goal:** user asked to "plan out a robust CI implementation". Planning-only session — author the Plan 32 doc + ADR, register in the indexes, do the memory writes. No workflow files written, no code change.
