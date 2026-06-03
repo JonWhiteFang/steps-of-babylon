@@ -1,3 +1,61 @@
+## 2026-06-03 — Plan 32 CI implemented on branch feat/32-ci-pipeline (+ latent lint fix surfaced by the gate)
+
+- **Goal:** "commit the additions, then crack on" — commit the Plan 32 planning docs, then build the GitHub Actions pipeline.
+- **Outcome:** commit 1 (`784d915`) = the 6 planning-doc files. Then implemented all 5 `.github` files on branch `feat/32-ci-pipeline`. Local `ci.yml` gate verified green (867 tests). One latent lint fix folded in. Commit 2 pending (this doc-sync + impl). Not yet pushed/PR'd.
+
+### Files written
+- `.github/workflows/ci.yml` — PR + push:main; `./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace` + Room schema-drift guard (`git diff --exit-code app/schemas`) + report artifact on failure. `permissions: contents: read`, `concurrency` cancel.
+- `.github/workflows/instrumented.yml` — PR:main + nightly cron (`0 3 * * *`) + dispatch; KVM enable, AVD cache (`avd-api34-googleapis-x86_64`), create-snapshot-then-run two-step, API-34 `google_apis` x86_64.
+- `.github/workflows/release.yml` — `v*` tag + dispatch; `environment: release`; unit-test guard → keystore decode (`UPLOAD_KEYSTORE_BASE64`) → `keystore.properties` + conditional AdMob `local.properties` writes → `bundleRelease` → `jarsigner -verify` → `r0adkll/upload-google-play` `track: internal` + `mappingFile` → `softprops/action-gh-release`.
+- `.github/workflows/dependency-submission.yml` — push:main, `contents: write`, `gradle/actions/dependency-submission`.
+- `.github/dependabot.yml` — gradle + github-actions weekly.
+
+### SHA pins (live `gh api`, 2026-06-03)
+checkout `df4cb1c` v6.0.3 · setup-java `be666c2` v5.2.0 · gradle/actions `50e97c2` v6.1.0 (setup-gradle + dependency-submission share the repo/SHA) · setup-android `40fd30f` v4.0.1 · android-emulator-runner `e89f39f` v2.37.0 · cache `27d5ce7` v5.0.5 · upload-artifact `043fb46` v7.0.1 · upload-google-play `e738b9d` v1.1.5 · action-gh-release `b430933` v3.0.0. Each pinned to the full 40-char SHA with a `# vX.Y.Z` comment; Dependabot maintains them.
+
+### Latent lint fix (the gate's first catch)
+`./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` FAILED on a PRE-EXISTING `lintDebug` error (no prior CI ever ran `lintDebug` strictly): `NotificationSettingsScreen.kt:26` `LocalContext.current as? Activity` → `ContextCastToActivity`. Fixed → `androidx.activity.compose.LocalActivity.current` + removed unused `android.app.Activity` / `LocalContext` imports (the `activity?.let { deleteAllData(it) }` consumer is unaffected — `LocalActivity.current` already returns `Activity?`). Re-ran: BUILD SUCCESSFUL, 867 tests intact. Concrete demonstration of CI value; folded into the implementation commit.
+
+### Decisions / notes
+- Everything on ONE branch (`feat/32-ci-pipeline`), commit 1 = docs, commit 2 = impl — keeps plan + implementation in one reviewable PR and avoids a direct-to-main push.
+- `debugSymbols` omitted from the Play upload step: the v3-era RUN_LOG investigation confirmed the AAB's native `.so` (SQLCipher etc.) are pre-stripped, so there are no useful symbols to upload — including the path would just fail the step.
+- The instrumented "one retry" mentioned in the plan was dropped for minimalism; the AVD warm-snapshot + `disable-animations` is the robustness lever. Easy to add `nick-fields/retry` later if flakiness appears.
+- Doc-sync this commit: README (CI badge), `tech.md` (CI section), `structure.md` (`.github/` tree), CHANGELOG, AGENTS + STATE + plan-32 + ADR-0018 statuses flipped to implemented-on-branch.
+- **Next:** push branch + open PR. Post-merge: repo secrets + `release` environment + branch protection (require CI + instrumented checks); the release lane also needs the one-time manual Play prerequisites (service account + first manual AAB upload).
+
+---
+
+## 2026-06-03 — Plan 32 (CI/CD Pipeline) authored: GitHub Actions plan + ADR-0018
+
+- **Goal:** user asked to "plan out a robust CI implementation". Planning-only session — author the Plan 32 doc + ADR, register in the indexes, do the memory writes. No workflow files written, no code change.
+- **Outcome:** `docs/plans/plan-32-ci.md` (new) + `docs/agent/DECISIONS/ADR-0018-ci-github-actions.md` (new) authored; Plan 32 registered in `master-plan.md` (index row + dependency-graph node + execution note + status line) and `AGENTS.md` (entry count 36 → 38, plan-index row, status checklist line). Working tree was clean on `main@0305f55` at start.
+
+### 5 user decisions locked
+1. **New top-level Plan 32** (not a V1X sub-plan) — it's release infra, not a game feature.
+2. **Instrumented suite blocking-on-PR + nightly** — `connectedDebugAndroidTest` gates PRs to `main` AND runs on a nightly `schedule:` (flake canary).
+3. **Release lane auto-uploads to the Play internal track** — `r0adkll/upload-google-play`, `track: internal`, advancing Plan 31's automate-Play-upload priority.
+4. **ADR-0018** (0011/0013/0014 left reserved for pending V1X ADRs per the user).
+5. **SHA-pinned actions** — every third-party action pinned to a 40-char commit SHA + `# vX.Y.Z` comment, Dependabot-maintained.
+
+### Plan shape (3 lanes + hardening)
+- **`ci.yml`** (PR + push:main): one ubuntu job running `./gradlew testDebugUnitTest lintDebug assembleDebug` + a Room schema-drift guard (`git diff --exit-code app/schemas`). Secret-free (debug build needs none — AdMob test-ID fallback, no google-services plugin). `setup-java` 17 + `setup-android` (platform 36) + `setup-gradle` cache.
+- **`instrumented.yml`** (PR:main + nightly + dispatch): `reactivecircus/android-emulator-runner` API-34 `google_apis` x86_64, KVM-enabled, AVD-cached, one retry.
+- **`release.yml`** (tag `v*` + dispatch): unit-test guard → decode keystore from secrets → `bundleRelease` → `jarsigner -verify` → upload-google-play internal track (+ R8 mapping + native debug symbols) → GitHub Release. `environment: release` gate. CI builds the committed `versionCode` (no auto-bump — respects the v13 reused-code rejection).
+- **Hardening:** `dependabot.yml` (gradle + github-actions), `dependency-submission`, least-privilege `permissions`, `concurrency` cancellation, branch protection requiring the CI + instrumented checks.
+
+### Grounding (verified against the build, not assumed)
+- `app/build.gradle.kts` + `libs.versions.toml`: Gradle 9.3.1 / AGP 9.0.1 / Kotlin 2.3.0 / JDK 17 / compileSdk 36 / minSdk 34 (→ emulator floor API 34). `testInstrumentationRunner = HiltTestRunner` already wired (V1X-08). JUnit5 platform for unit tests.
+- `.gitignore`: `run-gradle.sh` + `keystore.properties` + `*.jks` all gitignored — CI calls `./gradlew` directly (PTY available) and injects signing material from GH Secrets. Debug build confirmed secret-free.
+- Brave/web search confirmed current action best-practice (setup-gradle@v4 replaces the deprecated gradle-build-action; android-emulator-runner@v2 + KVM enable + AVD cache).
+
+### Protocol note
+- The "No CI" statements in `devdocs/archaeology/*` + `philosophy.md` were deliberately NOT touched — historical artifacts per `11-agent-protocol.md`. Only current-state docs (master-plan, AGENTS, STATE, RUN_LOG) + the 2 new files were written. README / tech.md / source-files / structure deferred to implementation time (no workflows exist yet).
+
+### Next
+- Implement the 3 workflow files + `dependabot.yml` on a branch; resolve + commit the exact action SHAs (`gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`). Configure repo secrets + the `release` environment + branch protection. Verify `ci.yml` green against the current 867-test suite before wiring required checks.
+
+---
+
 ## 2026-06-03 — V1X-09 Phase 3 FINAL slice: SimulationEvent flow replaces the @Volatile callbacks; PHASE 3 COMPLETE
 
 - **Goal:** complete the last slice of V1X-09 Phase 3 (ADR-0012) — replace `GameEngine`'s two `@Volatile` callback fields (`onStepReward`, `onBossKilled`) with a pure-domain `SimulationEvent` stream on `Simulation`, collected by `BattleViewModel`.

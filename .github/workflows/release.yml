@@ -1,0 +1,89 @@
+# Plan 32 / ADR-0018 — release lane. A `v*` tag builds a signed AAB and uploads it to
+# the Play *internal* track (decision #3). Signing material + Play credentials come from
+# the `release` environment's secrets. CI builds the COMMITTED versionCode (no auto-bump —
+# Play rejects reused codes; see the v13 rejection). One-time manual prerequisites: app
+# created in Play Console + first AAB uploaded by hand + service account with track access.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: release
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+
+      # Never ship a signed build that fails unit tests.
+      - name: Unit test guard
+        run: ./gradlew testDebugUnitTest
+
+      - name: Decode signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p release
+          echo "$KEYSTORE_BASE64" | base64 -d > release/upload-keystore.jks
+
+      - name: Write keystore.properties
+        env:
+          STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
+        run: |
+          cat > keystore.properties <<EOF
+          storeFile=release/upload-keystore.jks
+          storePassword=$STORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
+      # Production AdMob IDs (else the release build falls back to Google TEST ad units).
+      # Each line is written only when its secret is set, so an empty secret can't blank
+      # the key (build.gradle reads "" as present, not absent).
+      - name: Write AdMob production IDs
+        env:
+          ADMOB_APP_ID: ${{ secrets.ADMOB_APP_ID }}
+          ADMOB_POST_ROUND_GEM: ${{ secrets.ADMOB_AD_UNIT_POST_ROUND_GEM }}
+          ADMOB_POST_ROUND_DOUBLE_PS: ${{ secrets.ADMOB_AD_UNIT_POST_ROUND_DOUBLE_PS }}
+          ADMOB_DAILY_FREE_CARD_PACK: ${{ secrets.ADMOB_AD_UNIT_DAILY_FREE_CARD_PACK }}
+        run: |
+          if [ -n "$ADMOB_APP_ID" ]; then echo "admob.appId=$ADMOB_APP_ID" >> local.properties; fi
+          if [ -n "$ADMOB_POST_ROUND_GEM" ]; then echo "admob.adUnit.postRoundGem=$ADMOB_POST_ROUND_GEM" >> local.properties; fi
+          if [ -n "$ADMOB_POST_ROUND_DOUBLE_PS" ]; then echo "admob.adUnit.postRoundDoublePs=$ADMOB_POST_ROUND_DOUBLE_PS" >> local.properties; fi
+          if [ -n "$ADMOB_DAILY_FREE_CARD_PACK" ]; then echo "admob.adUnit.dailyFreeCardPack=$ADMOB_DAILY_FREE_CARD_PACK" >> local.properties; fi
+
+      - name: Build release bundle
+        run: ./gradlew bundleRelease
+
+      - name: Verify signature
+        run: jarsigner -verify app/build/outputs/bundle/release/app-release.aab
+
+      - name: Upload to Play internal track
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.whitefang.stepsofbabylon
+          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+          mappingFile: app/build/outputs/mapping/release/mapping.txt
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        with:
+          files: app/build/outputs/bundle/release/app-release.aab
+          generate_release_notes: true

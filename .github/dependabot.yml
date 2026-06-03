@@ -1,0 +1,13 @@
+# Plan 32 / ADR-0018 — keeps libs.versions.toml and the SHA-pinned action versions fresh.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

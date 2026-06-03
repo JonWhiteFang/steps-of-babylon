@@ -1,6 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.settings
 
-import android.app.Activity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -12,7 +12,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -23,7 +22,7 @@ fun NotificationSettingsScreen(viewModel: NotificationSettingsViewModel = hiltVi
     val state by viewModel.state.collectAsStateWithLifecycle()
     // 0 = hidden, 1 = first confirm, 2 = final confirm
     var deleteStep by remember { mutableIntStateOf(0) }
-    val activity = LocalContext.current as? Activity
+    val activity = LocalActivity.current
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Notification Settings", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)

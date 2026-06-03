@@ -47,6 +47,7 @@ See `docs/StepsOfBabylon_GDD.md` for the full game design document.
 | R3 | [Remediation 3](./plan-R3-remediation-3.md) | Bug fixes from the v5 internal-track on-device smoke test (2026-05-19). 4 sub-plans (R3-01–R3-04) tracked as GitHub issues #1–#4. Tier 1 (R3-01/02/03) blocks closed-track promotion. | Plan R2 |
 | R4 | [Remediation 4 — Feedback Bundle](./plan-R4-feedback-bundle.md) | Gameplay-redesign bundle from internal-soak feedback (2026-05-22). 8 sub-plans across 4 waves. Removes Overdrive, simplifies Multishot/Bounce, adds Rapid Fire + Help screen, redesigns UWs with auto-trigger + 3-path upgrades, adds boss-drop Power Stones, scraps card dust for copy-based progression. Two Room migrations (v9→v10, v10→v11). 3 new ADRs. | Plan R3 |
 | V1X | [v1.x Roadmap](./plan-V1X-roadmap.md) | Post-launch patch sequence derived from the 2026-05-25 GitHub issue triage (33 issues). 29 sub-plans across 4 versioned waves (v1.0.1 polish, v1.0.2 audio, v1.1 testing-infra + simulation extraction, v1.2 cloud save + i18n) plus content/balance/docs ships and 9 strategic v2.x proposals. 1 schema migration (v11→v12 cloud save). 7 new ADRs. | Plan 31 |
+| 32 | [CI/CD Pipeline](./plan-32-ci.md) | GitHub Actions CI/CD: PR gate (lint + unit + assembleDebug + Room schema-drift guard), instrumented emulator suite (blocking-on-PR + nightly), and a release lane (signed `bundleRelease` → Play internal track on a `v*` tag). Supply-chain hardening: Dependabot, dependency-graph submission, SHA-pinned actions. ADR-0018. | Plan 29, Plan 30, Plan 31 |
 
 ---
 
@@ -90,6 +91,7 @@ graph TD
     PR3 --> PR4[R4: Feedback Bundle]
     PR4 --> P31[31: Play Console]
     P31 --> PV1X[V1X: v1.x Roadmap]
+    P30 --> P32[32: CI/CD Pipeline]
 ```
 
 ---
@@ -104,6 +106,7 @@ graph TD
 - Plan R3 (Remediation 3) was added after the v5 internal-track on-device smoke test surfaced 4 closed-test-blocking bugs filed as GitHub issues #1–#4. Tier 1 (R3-01 / R3-02 / R3-03) blocks the internal → closed-track promotion in Plan 31 Phase G2.
 - Plan R4 (Remediation 4 — Internal Soak Feedback Bundle) was added after the AAB v7 internal-soak surfaced 8 gameplay-design issues. All 8 sub-plans are Tier 1 — R4 fully gates the closed-track promotion. The internal-soak window pauses while R4 ships across 4 waves; the closed-track ≥14-day clock starts only after R4 fully lands and the post-R4 internal AAB is promoted.
 - Plans 04/05, 16/17, 19/20/21, 22, 23 are feature branches that can be parallelized after their dependencies are met.
+- Plan 32 (CI/CD) is repository infrastructure, off the gameplay critical path. It depends only on the test suites (Plan 29), signing config (Plan 30), and the Play internal track + service account (Plan 31) existing; it can be implemented any time after those and gates all subsequent merges once live.
 
 ---
 
@@ -148,3 +151,4 @@ graph TD
 - [x] Plan R4: Remediation 4 — Internal Soak Feedback Bundle (8 sub-plans, 4 waves; complete 2026-05-24)
 - [ ] Plan 31: Play Console & Store Publication
 - [ ] Plan V1X: v1.x Roadmap (29 sub-plans, 4 waves; authored 2026-05-26 from 2026-05-25 issue triage; sequenced post-v1.0.0 production rollout)
+- [ ] Plan 32: CI/CD Pipeline (GitHub Actions) *(authored 2026-06-03; not yet implemented)*
