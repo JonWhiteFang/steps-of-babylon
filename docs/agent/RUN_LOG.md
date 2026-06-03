@@ -1,3 +1,13 @@
+## 2026-06-03 — Plan 32 CI merged to main (PR #100)
+
+- **Goal:** "merge please" — merge the Plan 32 CI pipeline after both PR checks went green.
+- **Outcome:** PR #100 merged via standard merge commit `2e76f91` (`gh pr merge 100 --merge --delete-branch`, matching the project's merge-commit precedent). Local + remote `feat/32-ci-pipeline` deleted; local `main` synced to the merge commit. Both PR checks passed on GitHub runners pre-merge: `build-and-test` (ci.yml gate) 7m30s, `connected` (instrumented.yml, API-34 KVM emulator, 9 tests) 8m34s. `release.yml` (tags only) + `dependency-submission.yml` (push:main only) correctly didn't run on the PR — `dependency-submission` runs now on this merge to `main`.
+- **Post-merge doc sync (this direct-to-main commit, matching the 2026-05-29 post-merge-sweep precedent):** flipped "PR pending" → "merged via PR #100" in STATE.md, AGENTS.md, ADR-0018, plan-32-ci.md (status line + implementation-status), master-plan.md. README CI badge + CHANGELOG/tech/structure already accurate from the PR.
+- **Remaining (manual, can't be done from the agent):** (1) repo secrets + a `release` environment — `UPLOAD_KEYSTORE_BASE64`, `KEYSTORE_STORE_PASSWORD`, `KEYSTORE_KEY_ALIAS`, `KEYSTORE_KEY_PASSWORD`, `PLAY_SERVICE_ACCOUNT_JSON`, optional `ADMOB_*`; (2) branch protection on `main` requiring `build-and-test` + `connected`; (3) release-lane Play prerequisites (service account with track access + first manual AAB upload). Until (1)+(3) land, the `release.yml` lane will fail on a `v*` tag — the ci + instrumented lanes are fully live.
+- **Next:** resume V1X backlog (V1X-12 cloud save / V1X-13 i18n) or the external closed-track soak per user direction.
+
+---
+
 ## 2026-06-03 — Plan 32 CI implemented on branch feat/32-ci-pipeline (+ latent lint fix surfaced by the gate)
 
 - **Goal:** "commit the additions, then crack on" — commit the Plan 32 planning docs, then build the GitHub Actions pipeline.

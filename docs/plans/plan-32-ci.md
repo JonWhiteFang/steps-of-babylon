@@ -1,6 +1,6 @@
 # Plan 32 — CI/CD Pipeline (GitHub Actions)
 
-**Status:** 📝 Authored (not yet implemented)
+**Status:** ✅ Merged to `main` via PR #100 (2026-06-03)
 **Dependencies:** Plan 29 (Testing & QA — the suites CI runs), Plan 30 (Release Prep — signing config + AAB), Plan 31 (Play Console — the internal track + service account the release lane uploads to)
 **Layer:** Repository infrastructure (`.github/`) — no app code change
 **ADR:** [ADR-0018](../agent/DECISIONS/ADR-0018-ci-github-actions.md)
@@ -187,7 +187,7 @@ On implementation, also: `README.md`, `.kiro/steering/tech.md`, `.kiro/steering/
 
 ## Implementation status (2026-06-03)
 
-Implemented on branch `feat/32-ci-pipeline` (PR pending). All 5 `.github` files written with the live-resolved SHA pins (commit-pinned + `# vX.Y.Z` comment), YAML-validated, and the `ci.yml` gate (`./gradlew testDebugUnitTest lintDebug assembleDebug`) verified green locally (867 tests).
+Merged to `main` via PR #100 (2026-06-03); both CI checks green on GitHub runners. All 5 `.github` files written with the live-resolved SHA pins (commit-pinned + `# vX.Y.Z` comment), YAML-validated, and the `ci.yml` gate (`./gradlew testDebugUnitTest lintDebug assembleDebug`) verified green locally (867 tests).
 
 The gate immediately earned its keep: enforcing `lintDebug` surfaced a latent error on `main` that no prior gate caught — `NotificationSettingsScreen.kt` cast `LocalContext.current` to `Activity` (`ContextCastToActivity`). Fixed in the same commit by switching to `androidx.activity.compose.LocalActivity.current` (available since activity-compose 1.9.0; project on 1.12.3) and dropping the now-unused `android.app.Activity` / `LocalContext` imports. Behaviour unchanged.
 
