@@ -1,6 +1,10 @@
 package com.whitefang.stepsofbabylon.domain.battle.engine
 
 import com.whitefang.stepsofbabylon.domain.battle.entity.EntityProtocol
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlin.math.hypot
 import kotlin.math.min
 
@@ -48,6 +52,26 @@ class Simulation {
     @Volatile
     var elapsedSeconds: Float = 0f
         private set
+
+    /**
+     * Hot stream of one-shot side-effect events the game loop produces and the presentation
+     * layer (`BattleViewModel`) consumes (V1X-09 Phase 3 final slice, ADR-0012). Replaces the
+     * engine's two `@Volatile` callbacks. `replay = 0` so a late subscriber — e.g. the fresh
+     * polling-loop collector `BattleViewModel.playAgain` starts for the next round — never
+     * re-receives a prior round's events (that would double-credit). `extraBufferCapacity` +
+     * [BufferOverflow.DROP_OLDEST] let [emit] hand off without ever suspending the game-loop
+     * thread.
+     */
+    private val _events = MutableSharedFlow<SimulationEvent>(
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+    val events: SharedFlow<SimulationEvent> = _events.asSharedFlow()
+
+    /** Emits [event] to [events] without suspending — safe to call from the game-loop thread. */
+    fun emit(event: SimulationEvent) {
+        _events.tryEmit(event)
+    }
 
     /** Zeroes all in-round state at round start. */
     fun reset() {

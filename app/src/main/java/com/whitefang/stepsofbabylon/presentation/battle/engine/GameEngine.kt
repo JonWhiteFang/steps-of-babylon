@@ -2,6 +2,7 @@ package com.whitefang.stepsofbabylon.presentation.battle.engine
 
 import android.graphics.Canvas
 import com.whitefang.stepsofbabylon.domain.battle.engine.Simulation
+import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationEvent
 import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath
 import com.whitefang.stepsofbabylon.domain.model.BattleConditionEffects
 import com.whitefang.stepsofbabylon.domain.model.Biome
@@ -35,6 +36,7 @@ import com.whitefang.stepsofbabylon.presentation.battle.entities.OrbEntity
 import com.whitefang.stepsofbabylon.presentation.battle.entities.ProjectileEntity
 import com.whitefang.stepsofbabylon.presentation.battle.entities.ZigguratEntity
 import com.whitefang.stepsofbabylon.presentation.battle.ui.HealthBarRenderer
+import kotlinx.coroutines.flow.SharedFlow
 import kotlin.math.PI
 import kotlin.math.hypot
 import kotlin.random.Random
@@ -178,22 +180,14 @@ class GameEngine {
     private var lifestealAccumulator: Double = 0.0
 
     /**
-     * Invoked on the game-loop thread every time a kill grants a non-zero
-     * step reward. The listener must not block the loop — forward to a
-     * coroutine scope. Arguments are `(amount, x, y)` — amount is the flat
-     * per-enemy-type reward before cap enforcement; x/y are the enemy's screen
-     * position so the listener can decide whether and where to spawn a
-     * floating indicator (e.g. suppress when the daily cap has been exhausted).
-     * Set to `null` to unsubscribe (e.g. in ViewModel.onCleared).
+     * One-shot side-effect events from the in-round simulation (V1X-09 Phase 3 final slice,
+     * ADR-0012). Replaces the pre-Phase-3 `@Volatile onStepReward` / `onBossKilled` callback
+     * fields: the game loop now [Simulation.emit]s [SimulationEvent.StepReward] /
+     * [SimulationEvent.BossKilled] from [handleEnemyDeath], and `BattleViewModel` collects
+     * this stream instead of installing nullable lambdas. `replay = 0` (see [Simulation]) so a
+     * collector started for a replayed round never re-sees the previous round's events.
      */
-    @Volatile var onStepReward: ((amount: Long, x: Float, y: Float) -> Unit)? = null
-
-    /**
-     * Callback fired when a BOSS enemy is killed. The listener (BattleViewModel) uses this
-     * to award tier-scaled Power Stones via [AwardBossPowerStones]. The tier is passed so
-     * the listener can compute the reward amount.
-     */
-    @Volatile var onBossKilled: ((tier: Int, x: Float, y: Float) -> Unit)? = null
+    val events: SharedFlow<SimulationEvent> get() = simulation.events
 
     /**
      * Returns `true` if this round has made observable progress — at least one enemy killed
@@ -1017,19 +1011,20 @@ class GameEngine {
             }
         }
 
-        // Boss-kill Power Stone reward — tier-scaled, capped at 100/day.
+        // Boss-kill Power Stone reward — tier-scaled, capped at 100/day. Emitted as a
+        // SimulationEvent; BattleViewModel's collector awards the PS via AwardBossPowerStones.
         if (enemy.enemyType == EnemyType.BOSS) {
-            onBossKilled?.invoke(tier, enemy.x, enemy.y + 24f)
+            simulation.emit(SimulationEvent.BossKilled(tier, enemy.x, enemy.y + 24f))
         }
 
         // Battle Step reward — flat per enemy type, independent of multipliers.
         // Actual wallet credit, cap enforcement, and floating-text spawn all
-        // live in the listener (BattleViewModel) so a capped reward can be
+        // live in the collector (BattleViewModel) so a capped reward can be
         // silently dropped without a misleading "+N Step" indicator.
         val stepReward = EnemyScaler.stepReward(enemy.enemyType)
         if (stepReward > 0L) {
             simulation.creditSteps(stepReward)
-            onStepReward?.invoke(stepReward, enemy.x, enemy.y + 24f)
+            simulation.emit(SimulationEvent.StepReward(stepReward, enemy.x, enemy.y + 24f))
         }
 
         if (enemy.enemyType == EnemyType.SCATTER) {

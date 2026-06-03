@@ -19,7 +19,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── usecase/        # Use case classes (plain Kotlin, no @Inject)
 │   ├── time/           # TimeProvider seam (B.1 / RO-01)
 │   └── battle/         # V1X-09 simulation extraction (ADR-0012)
-│       ├── engine/     # SimulationMath (pure-math helpers) + Simulation (V1X-09 Phase 3 — pure-domain in-round state: cash economy + round-progress counters + entity tick + collision sweep + UW lifecycle timers; GameEngine delegates that surface + hasWaveProgress)
+│       ├── engine/     # SimulationMath (pure-math helpers) + Simulation (V1X-09 Phase 3 COMPLETE — pure-domain in-round state: cash economy + round-progress counters + entity tick + collision sweep + UW lifecycle timers + the SimulationEvent flow; GameEngine delegates that surface + hasWaveProgress + events) + SimulationEvent (sealed StepReward/BossKilled side-effect events collected by BattleViewModel, replacing GameEngine's two @Volatile callbacks)
 │       └── entity/      # Pure entity-motion/simulation state (ProjectileState, OrbState, EnemyState, ZigguratState) + EntityProtocol seam (Phase 3 — exposes isAlive/x/y/width/update so Simulation can run the entity tick + collision sweep) — no Android imports; presentation entities delegate update()
 ├── presentation/       # Android/Compose layer
 │   ├── navigation/     # Screen routes, BottomNavBar
