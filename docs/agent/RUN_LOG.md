@@ -6385,3 +6385,16 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Open-issue count 15 → 14.
 - Next: #27 machine-enforced domain-purity guard (dependency-free JVM test).
 - Memory updated: STATE n/a (current objective unchanged) / RUN_LOG ✅
+
+## 2026-06-03 — #27 machine-enforced domain-purity guard (branch feat/27-domain-purity-guard)
+
+- Goal: deliver the cheap high-leverage win the 2026-06-02 issue-triage recon flagged for GitHub #27 — a machine-enforced rule that the `domain/` layer has **zero Android imports** (a core CONSTRAINTS.md invariant previously enforced only by code review).
+- Context preflight: read START_HERE / STATE / CONSTRAINTS / latest RUN_LOG; `git status` clean on `main` at `78c5858` (post the #32/#44 housekeeping note + PR-#98 merge doc-sync + 16-branch remote prune). Confirmed the existing JVM-test idiom via `ResearchTypeTest` (JUnit 5 `org.junit.jupiter.api`, backtick test names, KDoc header).
+- Decision: **dependency-free JVM test over Konsist/Detekt.** Rationale: no new Gradle dependency (the project is strict about `libs.versions.toml`), it runs inside the existing `testDebugUnitTest` suite (the project's enforcement mechanism), and it precisely covers the one invariant #27 named. Konsist would add a dependency + a tech.md version-table entry for a single rule; deferred unless a broader architecture-rule platform is wanted later. No ADR — a single test enforcing an existing documented invariant is not an architectural decision.
+- Branch `feat/27-domain-purity-guard` from `main`.
+- Source: new `app/src/test/java/com/whitefang/stepsofbabylon/architecture/DomainPurityTest.kt` (51 lines; new `architecture/` test package). 1 test `domain layer has zero Android imports`: walks `File("src/main/java/com/whitefang/stepsofbabylon/domain")` (Gradle unit-test working dir = the `:app` module dir), collects any `import ` line whose target starts with `android.` / `androidx.` / `com.android.` / `com.google.android.`, asserts the offender list is empty (offenders printed `file: import` on failure). Self-validating: asserts `domainRoot.isDirectory` first so a wrong working dir fails loud with the resolved path rather than silently passing on an empty walk.
+- Pre-write verification: grep over `app/src/main/.../domain` for `^import (android\.|androidx\.|com\.android\.|com\.google\.android\.)` → 0 matches, so the guard is green and the invariant currently holds.
+- Verification: `./run-gradle.sh testDebugUnitTest assembleDebug` BUILD SUCCESSFUL; `DomainPurityTest` ran (testsuite tests=1, failures=0, errors=0); test-results XML `<testcase` count = 867 (866 → 867, +1).
+- Doc sync per agent protocol PR Task-List Convention: AGENTS.md (coverage 866 → 867 + names the guard), README.md (status banner + `# Unit tests (867 JVM tests)`), `.kiro/steering/source-files.md` (new `architecture/DomainPurityTest.kt` Test-Layer entry), `.kiro/steering/structure.md` (new `architecture/` test package in the test tree), CHANGELOG.md (new `[Unreleased]` entry), STATE.md (this rotation), RUN_LOG.md (this entry). No tech.md / database-schema.md change (no dependency / schema change).
+- Next: commit + push + open PR + merge + prune branch.
+- Memory updated: STATE ✅ / RUN_LOG ✅

@@ -349,6 +349,7 @@ service/WidgetUpdateHelper.kt        # Throttled widget update helper
 All paths relative to `app/src/test/java/com/whitefang/stepsofbabylon/` unless noted otherwise. The `androidTest` source set lives at `app/src/androidTest/java/com/whitefang/stepsofbabylon/` and is documented at the bottom of this section (V1X-08 Phase 1A).
 
 ```
+architecture/DomainPurityTest.kt                 # Machine-enforced domain-purity guard (#27): dependency-free JVM test that fails if any domain/ file imports android./androidx./com.android./com.google.android.; self-validating (asserts domain root dir exists first). 1 test.
 fakes/FakePlayerRepository.kt                    # In-memory StateFlow-backed fake for PlayerRepository
 fakes/FakeWorkshopRepository.kt                  # In-memory StateFlow-backed fake for WorkshopRepository
 fakes/FakeUltimateWeaponRepository.kt            # In-memory StateFlow-backed fake for UltimateWeaponRepository (R4-06: rewritten for upgradePathLevel + per-path level tracking)
