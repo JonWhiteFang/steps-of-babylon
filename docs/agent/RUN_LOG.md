@@ -1,3 +1,15 @@
+## 2026-06-04 — First CI-driven release (v1.0.1) + automated Play "What's new" notes
+
+- **Goal:** "push" the first `v*` tag, then "i noticed on the new app there were no release notes for the update, can we automate that?"
+- **v1.0.1 release:** pushed annotated tag `v1.0.1` (`git tag -a v1.0.1 -m "…"`) on `main` @ versionCode 17. `release.yml` ran green end-to-end in ~10 min: Unit test guard → Decode keystore → Write keystore.properties + AdMob IDs → `bundleRelease` → `jarsigner -verify` → Upload to Play internal (`status: completed`) → GitHub Release. AAB live on the internal track; GitHub Release `v1.0.1` created. First proof of the Plan 32 release lane firing on a tag.
+- **Gap found:** the Play update showed no "What's new" text — the `r0adkll/upload-google-play` step had no `whatsNewDirectory`.
+- **Fix (release-notes automation):** confirmed the Play listing default language is `en-US` (per `plan-31-walkthrough.md` "Default language: English (United States)" + the old `release-notes-v5/v6.md` docs). Added to `release.yml`: (1) `fetch-depth: 0` on `actions/checkout` so the annotated tag object is fetched; (2) a `Prepare Play release notes` step that writes `git tag -l --format='%(contents)' "$GITHUB_REF_NAME"` into `distribution/whatsnew/whatsnew-en-US`, `head -c 500`-capped, with a `Bug fixes and improvements.` fallback for empty/lightweight/dispatch; (3) `whatsNewDirectory: distribution/whatsnew` on the upload step. Release notes now come from the annotated tag message — no manual Play Console paste. YAML validated with `ruby -ryaml` (PyYAML absent locally). The PR's CI can't exercise `release.yml` itself, so YAML-validity + the next tag are the real checks.
+- **Caveats:** applies to the NEXT release — the already-uploaded v1.0.1 internal release won't retroactively get notes (could be added by hand in Play Console if wanted). `versionName` still `1.0.0` (tag label cosmetic mismatch, flagged + accepted). Next internal release needs versionCode → 18.
+- **Doc sync:** `.kiro/steering/tech.md` (release.yml CI line), `CHANGELOG.md` (new [Unreleased] entry), this STATE/RUN_LOG. Bundled into one PR.
+- **Next:** merge the release-notes PR; bump versionCode 17→18 (+ optionally versionName) before the next `v*` tag.
+
+---
+
 ## 2026-06-04 — Merged 5 Dependabot bumps + enabled dependency graph + steering sync
 
 - **Goal:** "check our open PRs" → "merge all 5" → "do it yourself" (enable dependency graph) + "update steering" → "bundle into same PR".
