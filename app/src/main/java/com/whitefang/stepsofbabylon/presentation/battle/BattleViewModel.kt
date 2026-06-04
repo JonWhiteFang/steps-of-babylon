@@ -431,7 +431,7 @@ class BattleViewModel @Inject constructor(
                         com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText(
                             x = event.x,
                             y = event.y,
-                            text = "+$credited Step",
+                            text = engine.strings?.stepReward(credited) ?: "+$credited Step",
                             color = com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText.STEP_COLOR,
                         ),
                     )
@@ -444,7 +444,7 @@ class BattleViewModel @Inject constructor(
                         com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText(
                             x = event.x,
                             y = event.y,
-                            text = "+$credited PS",
+                            text = engine.strings?.powerStoneReward(credited) ?: "+$credited PS",
                             color = com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText.PS_COLOR,
                         ),
                     )

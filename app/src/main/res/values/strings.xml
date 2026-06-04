@@ -21,4 +21,11 @@
     <string name="notif_milestone_best_wave_text">Wave %1$d in %2$s!</string>
     <string name="notif_milestone_achieved_title">%1$s!</string>
     <string name="notif_milestone_achieved_text">Claim your reward!</string>
+
+    <!-- Battle floating-text (engine-internal, via domain/Strings) -->
+    <string name="fx_heal_hp">+%1$d HP</string>
+    <string name="fx_rapid_fire">RAPID FIRE!</string>
+    <string name="fx_cash_reward">+%1$d</string>
+    <string name="fx_step_reward">+%1$d Step</string>
+    <string name="fx_power_stone_reward">+%1$d PS</string>
 </resources>

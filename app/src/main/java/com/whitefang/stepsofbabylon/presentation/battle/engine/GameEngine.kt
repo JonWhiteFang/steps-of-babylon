@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.battle.engine
 
 import android.graphics.Canvas
+import com.whitefang.stepsofbabylon.domain.Strings
 import com.whitefang.stepsofbabylon.domain.battle.engine.Simulation
 import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationEvent
 import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath
@@ -74,6 +75,8 @@ class GameEngine {
     // Effects
     var effectEngine: EffectEngine? = null; private set
     var soundManager: SoundManager? = null
+    /** Engine-internal display strings (V1X-13, ADR-0014). Set by [GameSurfaceView]; null in pure-JVM tests, which fall back to literals. */
+    var strings: Strings? = null
     private var reducedMotion: Boolean = false
     private var cooldownText: WaveCooldownText? = null
     private var lastWave: Int = 0
@@ -788,7 +791,7 @@ class GameEngine {
             FloatingText(
                 x = zig.x,
                 y = zig.originY - 30f,
-                text = "+${healAmount.toInt()} HP",
+                text = strings?.healHp(healAmount.toInt()) ?: "+${healAmount.toInt()} HP",
                 color = FloatingText.STEP_COLOR,
             ),
         )
@@ -853,7 +856,7 @@ class GameEngine {
                 FloatingText(
                     x = zig.x,
                     y = zig.originY - 30f,
-                    text = "RAPID FIRE!",
+                    text = strings?.rapidFireBurst() ?: "RAPID FIRE!",
                     color = FloatingText.DEFAULT_COLOR,
                 ),
             )
@@ -966,7 +969,7 @@ class GameEngine {
                 FloatingText(
                     x = zig.x,
                     y = zig.originY - 30f,
-                    text = "+${tick.visibleHp} HP",
+                    text = strings?.healHp(tick.visibleHp) ?: "+${tick.visibleHp} HP",
                     color = FloatingText.STEP_COLOR,
                 ),
             )
@@ -1004,7 +1007,7 @@ class GameEngine {
         val fx = effectEngine
         if (fx != null) {
             if (!reducedMotion) DeathEffect.spawn(fx.pool, enemy.x, enemy.y, enemy.enemyType)
-            fx.addEffect(FloatingText(enemy.x, enemy.y, "+$killCash"))
+            fx.addEffect(FloatingText(enemy.x, enemy.y, strings?.cashReward(killCash) ?: "+$killCash"))
             // Boss death screen shake
             if (enemy.enemyType == EnemyType.BOSS && !reducedMotion) {
                 fx.screenShake.trigger(8f, 0.3f)
