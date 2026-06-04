@@ -16,9 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.presentation.battle.biome.BiomeTheme
 
@@ -34,15 +36,15 @@ fun BiomeTransitionOverlay(info: BiomeTransitionInfo, onContinue: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Welcome to", style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.7f))
+            Text(stringResource(R.string.biome_welcome), style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.7f))
             Text(
                 info.biome.name.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() },
                 style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(8.dp))
-            Text("${info.totalSteps} steps walked", style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.6f))
+            Text(stringResource(R.string.biome_steps_walked, info.totalSteps), style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.6f))
             Spacer(Modifier.height(24.dp))
-            Button(onClick = onContinue, modifier = Modifier.fillMaxWidth(0.5f)) { Text("Continue") }
+            Button(onClick = onContinue, modifier = Modifier.fillMaxWidth(0.5f)) { Text(stringResource(R.string.action_continue)) }
         }
     }
 }

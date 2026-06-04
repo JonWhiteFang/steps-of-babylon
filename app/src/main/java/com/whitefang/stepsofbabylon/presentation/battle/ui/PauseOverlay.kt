@@ -19,8 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.whitefang.stepsofbabylon.R
 
 @Composable
 fun PauseOverlay(
@@ -39,11 +41,11 @@ fun PauseOverlay(
                 Modifier.padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("Paused", style = MaterialTheme.typography.headlineMedium, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.pause_title), style = MaterialTheme.typography.headlineMedium, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(24.dp))
-                Button(onClick = onResume, modifier = Modifier.fillMaxWidth()) { Text("Resume") }
+                Button(onClick = onResume, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_resume)) }
                 Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = onQuitRound, modifier = Modifier.fillMaxWidth()) { Text("Quit Round") }
+                OutlinedButton(onClick = onQuitRound, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.pause_quit_round)) }
             }
         }
     }

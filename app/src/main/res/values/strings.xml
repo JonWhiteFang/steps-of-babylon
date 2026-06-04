@@ -28,4 +28,65 @@
     <string name="fx_cash_reward">+%1$d</string>
     <string name="fx_step_reward">+%1$d Step</string>
     <string name="fx_power_stone_reward">+%1$d PS</string>
+
+    <!-- Workshop screen -->
+    <string name="workshop_weapons">⚔ Ultimate Weapons</string>
+    <string name="workshop_cards">🃏 Cards</string>
+    <string name="workshop_balance">Balance: %1$d Steps</string>
+
+    <!-- Upgrade card (shared by Workshop list + in-round menu) -->
+    <string name="upgrade_max">MAX</string>
+    <string name="upgrade_level">Lv. %1$d</string>
+    <string name="upgrade_cost_steps">%1$d Steps</string>
+
+    <!-- Battle HUD + bottom controls -->
+    <string name="battle_wave_header">Wave %1$d · %2$d enemies</string>
+    <string name="cash_amount">$%1$d</string>
+    <string name="steps_earned_banner">👟 +%1$d Steps</string>
+    <string name="battle_steps_earned_desc">Battle Steps earned this round: %1$d</string>
+    <string name="battle_cd_quit_round">Quit round</string>
+    <string name="battle_speed_label">%1$dx</string>
+    <string name="battle_cd_speed">Speed %1$dx</string>
+    <string name="battle_cd_pause">Pause</string>
+    <string name="battle_cd_upgrades">Upgrades</string>
+
+    <!-- In-round upgrade menu -->
+    <string name="inround_free">"  FREE!"</string>
+    <string name="inround_level_desc">Lv %1$d · %2$s</string>
+    <string name="inround_readout_next">Now: %1$s → %2$s</string>
+    <string name="inround_readout_max">Now: %1$s (MAX)</string>
+
+    <!-- Pause overlay -->
+    <string name="pause_title">Paused</string>
+    <string name="action_resume">Resume</string>
+    <string name="pause_quit_round">Quit Round</string>
+
+    <!-- Biome transition overlay -->
+    <string name="biome_welcome">Welcome to</string>
+    <string name="biome_steps_walked">%1$d steps walked</string>
+    <string name="action_continue">Continue</string>
+
+    <!-- Post-round overlay -->
+    <string name="postround_title">Round Over</string>
+    <string name="postround_new_record">🏆 New Record!</string>
+    <string name="postround_previous_best">Previous best: Wave %1$d</string>
+    <string name="postround_tier_unlocked">🔓 Tier %1$d Unlocked!</string>
+    <string name="postround_cash_multiplier">%1$sx cash multiplier</string>
+    <string name="postround_power_stones">💎 +%1$d Power Stones</string>
+    <string name="postround_stat_wave">Wave Reached</string>
+    <string name="postround_stat_enemies">Enemies Killed</string>
+    <string name="postround_stat_cash">Cash Earned</string>
+    <string name="postround_stat_steps">Steps Earned</string>
+    <string name="postround_stat_steps_value">+%1$d</string>
+    <string name="postround_stat_time">Time Survived</string>
+    <string name="postround_time_value">%1$d:%2$02d</string>
+    <string name="postround_gem_earned">✅ +1 Gem Earned!</string>
+    <string name="postround_watch_gem_ad">🎬 Watch Ad for +1 Gem</string>
+    <string name="postround_ps_doubled">✅ Power Stones Doubled!</string>
+    <string name="postround_watch_ps_ad">🎬 Watch Ad to Double PS</string>
+    <string name="postround_play_again">Play Again</string>
+    <string name="postround_share_text">I just hit Wave %1$d in Steps of Babylon! Built up by walking. %2$s</string>
+    <string name="postround_share_chooser">Share your record</string>
+    <string name="postround_share_record">📤 Share Record</string>
+    <string name="postround_leave_battle">Leave Battle</string>
 </resources>

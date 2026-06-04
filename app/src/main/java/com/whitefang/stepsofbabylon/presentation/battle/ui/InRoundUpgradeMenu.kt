@@ -25,8 +25,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.usecase.UpgradeEffectReadout
@@ -75,10 +77,10 @@ fun InRoundUpgradeMenu(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("$${cash}", color = Color(0xFFD4A843), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.cash_amount, cash), color = Color(0xFFD4A843), style = MaterialTheme.typography.titleMedium)
                 if (lastPurchaseFree) {
                     Text(
-                        "  FREE!",
+                        stringResource(R.string.inround_free),
                         color = Color(0xFF4CAF50),
                         style = MaterialTheme.typography.titleMedium,
                     )
@@ -110,7 +112,7 @@ fun InRoundUpgradeMenu(
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(type.name.replace("_", " "), color = Color.White, fontSize = 13.sp)
-                        Text("Lv $level · ${type.config.description}", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                        Text(stringResource(R.string.inround_level_desc, level, type.config.description), color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
                         // RO-11 #C / RO-10: live "Now → Next" readout.
                         // Skip when describeEffect returns an empty current string — keeps
                         // unit-test / preview call sites (which pass the default no-op
@@ -118,9 +120,9 @@ fun InRoundUpgradeMenu(
                         val readout = describeEffect(type)
                         if (readout.current.isNotEmpty()) {
                             val line = if (readout.next != null) {
-                                "Now: ${readout.current} → ${readout.next}"
+                                stringResource(R.string.inround_readout_next, readout.current, readout.next)
                             } else {
-                                "Now: ${readout.current} (MAX)"
+                                stringResource(R.string.inround_readout_max, readout.current)
                             }
                             Text(
                                 line,
@@ -130,7 +132,7 @@ fun InRoundUpgradeMenu(
                         }
                     }
                     if (maxed) {
-                        Text("MAX", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(end = 8.dp))
+                        Text(stringResource(R.string.upgrade_max), color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(end = 8.dp))
                     } else {
                         Button(
                             onClick = { onPurchase(type) },
@@ -138,7 +140,7 @@ fun InRoundUpgradeMenu(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (affordable) Color(0xFFD4A843) else Color.DarkGray,
                             ),
-                        ) { Text("$${cost}", fontSize = 11.sp) }
+                        ) { Text(stringResource(R.string.cash_amount, cost), fontSize = 11.sp) }
                     }
                 }
             }
