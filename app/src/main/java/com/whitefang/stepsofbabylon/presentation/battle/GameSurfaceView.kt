@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import androidx.annotation.VisibleForTesting
+import com.whitefang.stepsofbabylon.data.AndroidStrings
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.presentation.audio.SoundManager
@@ -53,6 +54,7 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
         soundManager.setMuted(prefs.getBoolean("muted", false))
         soundManager.setVolume(prefs.getFloat("volume", 1f))
         engine.soundManager = soundManager
+        engine.strings = AndroidStrings(context)
     }
 
     fun configure(stats: ResolvedStats, tier: Int, wsLevels: Map<UpgradeType, Int>, startWave: Int = 1) {

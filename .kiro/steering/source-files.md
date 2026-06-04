@@ -112,10 +112,17 @@ data/anticheat/AntiCheatPreferences.kt            # SharedPreferences wrapper fo
 data/time/SystemTimeProvider.kt       # Production TimeProvider backed by Instant.now() / LocalDate.now(). @Singleton @Inject.
 ```
 
+## Data Layer — i18n
+
+```
+data/AndroidStrings.kt                # Production domain.Strings impl (V1X-13, ADR-0014): Context.getString over the fx_* string resources. Constructed directly by GameSurfaceView (like SoundManager) — no Hilt binding.
+```
+
 ## Domain Layer — Time
 
 ```
 domain/time/TimeProvider.kt           # Wall-clock seam: now() / today(). No Android imports. Introduced by B.1.
+domain/Strings.kt                     # i18n seam for engine-internal battle floating-text (V1X-13, ADR-0014). Pure-Kotlin interface, 5 methods (healHp/rapidFireBurst/cashReward/stepReward/powerStoneReward), no Android imports. Impl = data/AndroidStrings; consumed by GameEngine + BattleViewModel via nullable var with literal fallback.
 ```
 
 ## Domain Layer — Battle Engine (V1X-09)
