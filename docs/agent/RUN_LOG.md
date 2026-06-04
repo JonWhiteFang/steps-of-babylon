@@ -6526,3 +6526,15 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Doc sync per agent protocol: ADR-0014 (NEW), CHANGELOG.md (new `[Unreleased]` entry), `.kiro/steering/source-files.md` (new `data/AndroidStrings` + `domain/Strings` entries + strings.xml fx_* note), STATE.md (this rotation), RUN_LOG.md (this entry). No AGENTS test-count change (867 unchanged); no README / structure / tech / schema change.
 - Next: commit + push + open PR. Then remaining phase-1: battle + workshop Compose surfaces (`stringResource`), then add the `HardcodedText` lint-as-error guard last.
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-06-04 — End-of-session doc sweep (post #109 + #110 merges)
+
+- Both V1X-13 phase-1 slices merged this session: notification strings (PR #109, merge `ee29439`) + `domain/Strings` engine-internal floating-text seam (PR #110, merge `1f177d8`, ADR-0014). `main` at `1f177d8`, clean. 867 JVM + 9 instrumented unchanged (both slices pure refactors).
+- Swept the current-state docs for drift introduced by the merges (each PR had already done its own per-PR doc-sync; this is the consolidating end-of-session pass):
+  - **STATE.md** — flipped the four `**Next: commit + push + PR**` trailers on the two V1X-13 current-objective bullets + their two Last-run lines to `**Merged via PR #109/#110**`; the slice-2 bullet now points at the remaining phase-1 work.
+  - **README.md** — status banner: replaced the trailing "Next" sentence with a "V1X-13 i18n phase 1 in progress" note (notifications #109 + `domain/Strings` seam #110/ADR-0014 merged; battle/workshop Compose surfaces + `HardcodedText` lint guard remain).
+  - **AGENTS.md** — appended the same V1X-13 phase-1 note to the Plan V1X status-checklist bullet. Test count line already correct (867 unchanged).
+  - No change needed: CHANGELOG + source-files (current from the two PRs), tech / structure / database-schema (no dep/structure/schema change), AGENTS test count (unchanged).
+- Committing this sweep (docs only) directly to `main` per the post-merge doc-sync precedent (admins exempt from branch protection; doc-only, no code).
+- Next: remaining V1X-13 phase 1 — battle + workshop Compose surfaces (`stringResource`), then add the `HardcodedText` lint-as-error guard last. OR resume closed-track soak (earliest production-access application 2026-06-09) / pick up V1X-12 cloud save.
+- Memory updated: STATE ✅ / RUN_LOG ✅
