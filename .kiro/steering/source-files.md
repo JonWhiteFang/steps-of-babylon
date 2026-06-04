@@ -324,7 +324,7 @@ values/strings.xml                      # String resources. app_name + 16 notifi
 xml/network_security_config.xml         # Network security config (cleartext blocked).
 xml/step_widget_info.xml                # AppWidget provider info for the 2×2 step widget.
 raw/                                    # Placeholder sine-wave sound assets.
-layout/                                 # Widget layout (battle renderer is SurfaceView, not Compose/XML).
+layout/                                 # widget_step_counter.xml — 2×2 step widget layout (battle renderer is SurfaceView, not Compose/XML). V1X-13: title uses @string/app_name; the 2 runtime-set TextViews use design-time tools:text (no android:text) so the HardcodedText lint-as-error guard (app/build.gradle.kts `lint { error += "HardcodedText" }`) stays clean. HardcodedText is XML-only — does NOT catch Compose Text() (see docs/architecture.md i18n section).
 ```
 
 ## Tools & Release Assets

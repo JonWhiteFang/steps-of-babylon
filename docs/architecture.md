@@ -111,3 +111,29 @@ If a future agent reintroduces location services, that change must:
 - Foreground service permission upgrade (`ACCESS_BACKGROUND_LOCATION` is intrusive — expect Play review delay)
 - Update privacy policy at `docs/release/privacy-policy.md` and the hosted GitHub Pages copy
 - Update this section to remove the "no location" guarantee
+
+## Internationalization (i18n)
+
+String externalization is being done in phases ([ADR-0014](agent/DECISIONS/ADR-0014-i18n-string-extraction.md)). All shipped strings are English-only for v1; the work to date makes them *localizable* without changing any behaviour.
+
+**Phase 1 (done):**
+
+- **Notifications** — the 3 notification managers read every channel name / title / content / action label from `strings.xml` via `context.getString(...)`.
+- **Engine-internal floating-text** — `GameEngine` / `BattleViewModel` emit battle floating-text ("+12 HP", "RAPID FIRE!", "+45", "+3 Step", "+5 PS") through the pure-Kotlin `domain/Strings` seam (impl `data/AndroidStrings`), so the engine stays `Context`-free (keeps `GameEngineTest` pure-JVM, no Robolectric). Nullable `var strings` with a byte-identical literal fallback.
+- **Battle + workshop Compose surfaces** — `WorkshopScreen`, `UpgradeCard`, `BattleScreen`, `PostRoundOverlay`, `PauseOverlay`, `InRoundUpgradeMenu`, `BiomeTransitionOverlay` read every user-facing string via `stringResource(...)` / `context.getString(...)` (the latter only where a `Context` is unavoidable, e.g. an `onClick` building a share `Intent` — hoisted to a `stringResource` `val` at composable scope to satisfy the `LocalContextGetResourceValueCall` lint check).
+
+**Phases 2 / 3 (deferred to v1.3 / v1.4):** the remaining Compose screens (Store, Settings, Cards, Home, Economy, Labs, Missions, Stats, Supplies, UltimateWeapon, Help), then the first non-English locale.
+
+### Lint policy & the Compose limitation
+
+`app/build.gradle.kts` promotes `HardcodedText` to **error** severity:
+
+```kotlin
+lint {
+    error += "HardcodedText"   // NOT `warningsAsErrors += "…"` — that property is a Boolean
+}
+```
+
+**Important limitation (empirically verified):** Android Lint's `HardcodedText` is an **XML-only** check (`android:text` / `contentDescription` / `hint` in layout resources). It does **not** flag Jetpack Compose `Text("literal")`. Enabling the guard left `lintDebug` green even though ~110 hardcoded Compose strings still exist on the not-yet-migrated phase-2 screens — proof the rule never inspected them. So this guard concretely protects only XML resources (today: the home-screen widget layout, whose runtime-set `TextView`s use design-time `tools:text` placeholders).
+
+Compose hardcoded-string discipline is therefore held by the phase-1 migration + code review, not by this lint rule. A dedicated Compose check (a custom lint rule, a Detekt-compose rule, or a dependency-free JVM guard test in the spirit of `architecture/DomainPurityTest`) is a candidate for a later phase if regressions appear; it was intentionally not added here to avoid a new dependency.

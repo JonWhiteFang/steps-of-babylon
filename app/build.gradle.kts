@@ -147,6 +147,16 @@ android {
         unitTests.isReturnDefaultValues = true
         unitTests.isIncludeAndroidResources = true
     }
+
+    lint {
+        // V1X-13 / ADR-0014 i18n guard: promote HardcodedText from warning to error so a
+        // hardcoded android:text/contentDescription/hint in an XML resource fails the build.
+        // LIMITATION: HardcodedText is an XML-only check — it does NOT flag Compose
+        // `Text("literal")` (verified empirically: this build passes despite ~110 hardcoded
+        // Compose strings still present on phase-2 screens). Compose string discipline is held
+        // by the phase-1 migration + review until a dedicated Compose lint rule lands later.
+        error += "HardcodedText"
+    }
 }
 
 room {

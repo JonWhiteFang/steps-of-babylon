@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -11,16 +12,19 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Steps of Babylon"
+        android:text="@string/app_name"
         android:textColor="#FFD54F"
         android:textSize="12sp"
         android:textStyle="bold" />
 
+    <!-- widget_daily_steps + widget_balance are populated at runtime by
+         WidgetUpdateHelper via RemoteViews.setTextViewText; tools:text is a
+         design-time-only placeholder (no android:text → no HardcodedText). -->
     <TextView
         android:id="@+id/widget_daily_steps"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="0 steps"
+        tools:text="0 steps"
         android:textColor="#FFFFFF"
         android:textSize="20sp"
         android:textStyle="bold"
@@ -30,7 +34,7 @@
         android:id="@+id/widget_balance"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Balance: 0"
+        tools:text="Balance: 0"
         android:textColor="#B0BEC5"
         android:textSize="11sp"
         android:layout_marginTop="2dp" />
