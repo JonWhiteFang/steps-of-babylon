@@ -151,4 +151,4 @@ graph TD
 - [x] Plan R4: Remediation 4 — Internal Soak Feedback Bundle (8 sub-plans, 4 waves; complete 2026-05-24)
 - [ ] Plan 31: Play Console & Store Publication
 - [ ] Plan V1X: v1.x Roadmap (29 sub-plans, 4 waves; authored 2026-05-26 from 2026-05-25 issue triage; sequenced post-v1.0.0 production rollout)
-- [ ] Plan 32: CI/CD Pipeline (GitHub Actions) *(implemented + merged via PR #100 on 2026-06-03; ci + instrumented lanes live, both green. Repo secrets + `release` environment + branch protection remain post-merge setup)*
+- [ ] Plan 32: CI/CD Pipeline (GitHub Actions) *(implemented + merged via PR #100 on 2026-06-03; ci + instrumented lanes live + required on `main`; secrets + `release` environment + branch protection + Play service account configured 2026-06-04; `versionCode` bumped 16 → 17. Pipeline fully live — first `v*`-tag release not yet fired)*
