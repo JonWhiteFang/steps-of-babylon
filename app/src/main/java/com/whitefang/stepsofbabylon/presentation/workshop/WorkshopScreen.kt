@@ -23,10 +23,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 
 @Composable
@@ -45,15 +47,15 @@ fun WorkshopScreen(onNavigateToWeapons: () -> Unit = {}, onNavigateToCards: () -
         Column(Modifier.fillMaxSize()) {
             // Weapons + Cards buttons
             OutlinedButton(onClick = onNavigateToWeapons, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                Text("⚔ Ultimate Weapons")
+                Text(stringResource(R.string.workshop_weapons))
             }
             OutlinedButton(onClick = onNavigateToCards, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                Text("🃏 Cards")
+                Text(stringResource(R.string.workshop_cards))
             }
 
             // Balance header
             Text(
-                text = "Balance: ${state.stepBalance} Steps",
+                text = stringResource(R.string.workshop_balance, state.stepBalance),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(16.dp),

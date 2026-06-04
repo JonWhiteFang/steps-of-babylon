@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -47,6 +48,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BiomeTransitionOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.InRoundUpgradeMenu
 import com.whitefang.stepsofbabylon.presentation.battle.ui.UltimateWeaponBar
@@ -112,7 +114,7 @@ fun BattleScreen(
 
         // Top-left: wave info + cash + battle-step counter
         Column(Modifier.align(Alignment.TopStart).padding(start = 16.dp, top = 80.dp)) {
-            Text("Wave ${state.currentWave} · ${state.enemyCount} enemies", color = Color.White, style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.battle_wave_header, state.currentWave, state.enemyCount), color = Color.White, style = MaterialTheme.typography.titleMedium)
             Text(state.wavePhase.lowercase().replaceFirstChar { it.uppercase() }, color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
             LinearProgressIndicator(
                 progress = { state.waveProgress },
@@ -120,20 +122,21 @@ fun BattleScreen(
                 color = if (state.wavePhase == "SPAWNING") Color(0xFF4CAF50) else Color(0xFFFFA726),
                 trackColor = Color.White.copy(alpha = 0.2f),
             )
-            Text("$${state.cash}", color = Color(0xFFD4A843), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.cash_amount, state.cash), color = Color(0xFFD4A843), style = MaterialTheme.typography.titleSmall)
             if (state.stepsEarnedThisRound > 0) {
+                val stepsDesc = stringResource(R.string.battle_steps_earned_desc, state.stepsEarnedThisRound)
                 Text(
-                    "👟 +${state.stepsEarnedThisRound} Steps",
+                    stringResource(R.string.steps_earned_banner, state.stepsEarnedThisRound),
                     color = Color(0xFF4CAF50),
                     style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.semantics { contentDescription = "Battle Steps earned this round: ${state.stepsEarnedThisRound}" },
+                    modifier = Modifier.semantics { contentDescription = stepsDesc },
                 )
             }
         }
 
         if (roundActive) {
             IconButton(onClick = { viewModel.quitRound() }, modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = 72.dp)) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quit round", tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.battle_cd_quit_round), tint = Color.White)
             }
         }
 
@@ -171,26 +174,29 @@ fun BattleScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 listOf(1f, 2f, 4f).forEach { speed ->
-                    val desc = "Speed ${speed.toInt()}x"
+                    val desc = stringResource(R.string.battle_cd_speed, speed.toInt())
+                    val label = stringResource(R.string.battle_speed_label, speed.toInt())
                     if (state.speedMultiplier == speed) {
-                        Button(onClick = {}, modifier = Modifier.semantics { contentDescription = desc }) { Text("${speed.toInt()}x") }
+                        Button(onClick = {}, modifier = Modifier.semantics { contentDescription = desc }) { Text(label) }
                     } else {
                         FilledTonalButton(onClick = { viewModel.setSpeed(speed) },
                             colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color.White.copy(alpha = 0.2f)),
                             modifier = Modifier.semantics { contentDescription = desc },
-                        ) { Text("${speed.toInt()}x", color = Color.White) }
+                        ) { Text(label, color = Color.White) }
                     }
                 }
+                val pauseDesc = stringResource(if (state.isPaused) R.string.action_resume else R.string.battle_cd_pause)
                 FilledTonalButton(onClick = { viewModel.togglePause() },
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = if (state.isPaused) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)),
-                    modifier = Modifier.semantics { contentDescription = if (state.isPaused) "Resume" else "Pause" },
+                    modifier = Modifier.semantics { contentDescription = pauseDesc },
                 ) { Text(if (state.isPaused) "▶" else "⏸", color = Color.White) }
 
+                val upgradesDesc = stringResource(R.string.battle_cd_upgrades)
                 FilledTonalButton(onClick = { viewModel.toggleUpgradeMenu() },
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = if (state.showUpgradeMenu) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)),
-                    modifier = Modifier.semantics { contentDescription = "Upgrades" },
+                    modifier = Modifier.semantics { contentDescription = upgradesDesc },
                 ) { Icon(Icons.Filled.Upgrade, contentDescription = null, tint = Color.White) }
             }
         }

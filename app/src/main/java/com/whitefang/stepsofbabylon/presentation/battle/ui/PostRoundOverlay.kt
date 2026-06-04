@@ -23,10 +23,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.whitefang.stepsofbabylon.BuildConfig
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.TierConfig
 import com.whitefang.stepsofbabylon.presentation.battle.RoundEndState
 
@@ -54,31 +56,31 @@ fun PostRoundOverlay(
                 Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("Round Over", style = MaterialTheme.typography.headlineMedium, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.postround_title), style = MaterialTheme.typography.headlineMedium, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)
 
                 if (state.isNewBestWave) {
                     Spacer(Modifier.height(8.dp))
-                    Text("\uD83C\uDFC6 New Record!", style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFD700))
+                    Text(stringResource(R.string.postround_new_record), style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFD700))
                     if (state.previousBest > 0) {
-                        Text("Previous best: Wave ${state.previousBest}", color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.postround_previous_best, state.previousBest), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)
                     }
                 }
 
                 state.tierUnlocked?.let { tier ->
                     Spacer(Modifier.height(8.dp))
-                    Text("\uD83D\uDD13 Tier $tier Unlocked!", style = MaterialTheme.typography.titleMedium, color = Color(0xFF4CAF50))
-                    Text("${TierConfig.forTier(tier).cashMultiplier}x cash multiplier", color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.postround_tier_unlocked, tier), style = MaterialTheme.typography.titleMedium, color = Color(0xFF4CAF50))
+                    Text(stringResource(R.string.postround_cash_multiplier, TierConfig.forTier(tier).cashMultiplier.toString()), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)
                 }
 
                 if (state.powerStonesAwarded > 0) {
                     Spacer(Modifier.height(8.dp))
-                    Text("💎 +${state.powerStonesAwarded} Power Stones", style = MaterialTheme.typography.titleMedium, color = Color(0xFF9C27B0))
+                    Text(stringResource(R.string.postround_power_stones, state.powerStonesAwarded), style = MaterialTheme.typography.titleMedium, color = Color(0xFF9C27B0))
                 }
 
                 if (state.stepsEarned > 0) {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "👟 +${state.stepsEarned} Steps",
+                        stringResource(R.string.steps_earned_banner, state.stepsEarned),
                         style = MaterialTheme.typography.titleMedium,
                         color = Color(0xFF4CAF50),
                     )
@@ -86,32 +88,32 @@ fun PostRoundOverlay(
 
                 Spacer(Modifier.height(16.dp))
 
-                StatRow("Wave Reached", "${state.waveReached}")
-                StatRow("Enemies Killed", "${state.enemiesKilled}")
-                StatRow("Cash Earned", "$${state.totalCashEarned}")
+                StatRow(stringResource(R.string.postround_stat_wave), "${state.waveReached}")
+                StatRow(stringResource(R.string.postround_stat_enemies), "${state.enemiesKilled}")
+                StatRow(stringResource(R.string.postround_stat_cash), stringResource(R.string.cash_amount, state.totalCashEarned))
                 if (state.stepsEarned > 0) {
-                    StatRow("Steps Earned", "+${state.stepsEarned}")
+                    StatRow(stringResource(R.string.postround_stat_steps), stringResource(R.string.postround_stat_steps_value, state.stepsEarned))
                 }
-                StatRow("Time Survived", "%d:%02d".format(minutes, seconds))
+                StatRow(stringResource(R.string.postround_stat_time), stringResource(R.string.postround_time_value, minutes, seconds))
 
                 Spacer(Modifier.height(24.dp))
 
                 // Reward ad buttons (hidden if ad removal purchased)
                 if (!state.adRemoved) {
                     if (state.gemAdWatched) {
-                        Text("✅ +1 Gem Earned!", color = Color(0xFF4CAF50), style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.postround_gem_earned), color = Color(0xFF4CAF50), style = MaterialTheme.typography.bodySmall)
                     } else {
                         OutlinedButton(onClick = onWatchGemAd, modifier = Modifier.fillMaxWidth()) {
-                            Text("🎬 Watch Ad for +1 Gem")
+                            Text(stringResource(R.string.postround_watch_gem_ad))
                         }
                     }
                     Spacer(Modifier.height(4.dp))
                     if (state.powerStonesAwarded > 0) {
                         if (state.psAdWatched) {
-                            Text("✅ Power Stones Doubled!", color = Color(0xFF9C27B0), style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.postround_ps_doubled), color = Color(0xFF9C27B0), style = MaterialTheme.typography.bodySmall)
                         } else {
                             OutlinedButton(onClick = onWatchPsAd, modifier = Modifier.fillMaxWidth()) {
-                                Text("🎬 Watch Ad to Double PS")
+                                Text(stringResource(R.string.postround_watch_ps_ad))
                             }
                         }
                     }
@@ -119,29 +121,28 @@ fun PostRoundOverlay(
                 }
 
                 Button(onClick = onPlayAgain, modifier = Modifier.fillMaxWidth()) {
-                    Text("Play Again")
+                    Text(stringResource(R.string.postround_play_again))
                 }
                 Spacer(Modifier.height(8.dp))
                 if (state.isNewBestWave) {
                     val context = LocalContext.current
                     OutlinedButton(
                         onClick = {
-                            val shareText = "I just hit Wave ${state.waveReached} in Steps of Babylon! " +
-                                "Built up by walking. ${BuildConfig.PLAY_STORE_URL}"
+                            val shareText = context.getString(R.string.postround_share_text, state.waveReached, BuildConfig.PLAY_STORE_URL)
                             val intent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
                                 putExtra(Intent.EXTRA_TEXT, shareText)
                             }
-                            context.startActivity(Intent.createChooser(intent, "Share your record"))
+                            context.startActivity(Intent.createChooser(intent, context.getString(R.string.postround_share_chooser)))
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("📤 Share Record")
+                        Text(stringResource(R.string.postround_share_record))
                     }
                     Spacer(Modifier.height(8.dp))
                 }
                 OutlinedButton(onClick = onExitBattle, modifier = Modifier.fillMaxWidth()) {
-                    Text("Leave Battle")
+                    Text(stringResource(R.string.postround_leave_battle))
                 }
             }
         }

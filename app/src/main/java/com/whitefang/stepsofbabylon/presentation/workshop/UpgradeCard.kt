@@ -23,8 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.battle.effects.ReducedMotionCheck
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
 import kotlinx.coroutines.delay
@@ -80,7 +82,7 @@ fun UpgradeCard(info: UpgradeDisplayInfo, onClick: () -> Unit) {
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = if (info.isMaxed) "MAX" else "Lv. ${info.level}",
+                    text = if (info.isMaxed) stringResource(R.string.upgrade_max) else stringResource(R.string.upgrade_level, info.level),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     color = if (info.isMaxed) Gold else MaterialTheme.colorScheme.onSurface,
@@ -94,7 +96,7 @@ fun UpgradeCard(info: UpgradeDisplayInfo, onClick: () -> Unit) {
                 }
                 if (!info.isMaxed) {
                     Text(
-                        text = "${info.cost} Steps",
+                        text = stringResource(R.string.upgrade_cost_steps, info.cost),
                         style = MaterialTheme.typography.labelSmall,
                         color = if (info.canAfford) MaterialTheme.colorScheme.primary
                                else MaterialTheme.colorScheme.onSurfaceVariant,
