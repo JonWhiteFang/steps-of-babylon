@@ -313,7 +313,7 @@ drawable/ic_launcher_background.xml     # Solid #0E2247 deep-lapis vector backgr
 drawable/ic_launcher_foreground.xml     # 5-tier stepped-ziggurat silhouette vector, single compound path, vertical 3-stop linear gradient Gold #D4A843 (top) → SandStone #C2B280 (mid) → lightened-DeepBronze #8B5A3A (bottom). All content inside the 72dp safe zone; tower center (54,54) matches canvas center.
 mipmap-anydpi-v26/ic_launcher.xml       # <adaptive-icon> pointing at the drawable/ background + foreground pair.
 mipmap-anydpi-v26/ic_launcher_round.xml # Same contents as ic_launcher.xml — Android handles round masking from the adaptive source; no separate round asset needed.
-values/strings.xml                      # app_name string.
+values/strings.xml                      # String resources. app_name + 16 notification strings (V1X-13 i18n phase 1: channel names/descriptions, titles, content, action labels for StepNotificationManager / SupplyDropNotificationManager / MilestoneNotificationManager).
 xml/network_security_config.xml         # Network security config (cleartext blocked).
 xml/step_widget_info.xml                # AppWidget provider info for the 2×2 step widget.
 raw/                                    # Placeholder sine-wave sound assets.

@@ -4,6 +4,10 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### V1X-13 i18n phase 1 (start) — notification string extraction (2026-06-04)
+
+- Begin V1X-13 (i18n string extraction, phase 1). First slice lifts every user-facing notification string out of Kotlin literals into `res/values/strings.xml` (16 new resources). The 3 notification managers (`StepNotificationManager`, `SupplyDropNotificationManager`, `MilestoneNotificationManager`) now read all channel names/descriptions, titles, content, and action labels via `context.getString(...)`. Positional format args (`%1$d` / `%2$s`) so future translations can reorder; the step notification title reuses `R.string.app_name`; `SupplyDrop.trigger.message` is left as-is (domain-sourced). No new abstraction needed — the managers already hold a `Context`, so this slice stays clear of the battle engine. Deferred to subsequent phase-1 PRs: the `domain/Strings` Hilt seam (for engine-internal floating-text strings), the battle + workshop screen surfaces, and the `HardcodedText` lint-as-error guard (added last, once all phase-1 surfaces are migrated). `testDebugUnitTest` + `assembleDebug` BUILD SUCCESSFUL, 867 unchanged (pure refactor, no behaviour change).
+
 ### Release lane — automated Play "What's new" notes (2026-06-04)
 
 - `release.yml` now publishes Play Store release notes automatically. A new `Prepare Play release notes` step writes the annotated tag's message into `distribution/whatsnew/whatsnew-en-US` (capped at Play's 500-char limit; falls back to "Bug fixes and improvements." for lightweight tags / manual dispatch), and the `r0adkll/upload-google-play` step now passes `whatsNewDirectory: distribution/whatsnew`. `actions/checkout` gained `fetch-depth: 0` so the annotated tag object is available to read. Closes the gap where the first CI-driven release (`v1.0.1`) shipped to the internal track with no "What's new" text. Release notes are now sourced from the `git tag -a -m "…"` message — no separate manual paste into Play Console.

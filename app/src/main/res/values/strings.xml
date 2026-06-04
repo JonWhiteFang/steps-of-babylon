@@ -1,3 +1,24 @@
 <resources>
     <string name="app_name">Steps of Babylon</string>
+
+    <!-- Step counter notification -->
+    <string name="notif_step_channel_name">Step Counter</string>
+    <string name="notif_step_channel_desc">Shows your daily step count</string>
+    <string name="notif_step_content">Today: %1$d steps | Balance: %2$d Steps</string>
+    <string name="notif_step_action_workshop">Workshop</string>
+    <string name="notif_step_action_battle">Battle</string>
+    <string name="notif_step_minimal">Step tracking active</string>
+
+    <!-- Supply drop notification -->
+    <string name="notif_supply_channel_name">Supply Drops</string>
+    <string name="notif_supply_channel_desc">Rewards earned while walking</string>
+    <string name="notif_supply_title">Supply Drop!</string>
+
+    <!-- Milestone notification -->
+    <string name="notif_milestone_channel_name">Milestones</string>
+    <string name="notif_milestone_channel_desc">Wave records and walking milestones</string>
+    <string name="notif_milestone_best_wave_title">New Personal Best!</string>
+    <string name="notif_milestone_best_wave_text">Wave %1$d in %2$s!</string>
+    <string name="notif_milestone_achieved_title">%1$s!</string>
+    <string name="notif_milestone_achieved_text">Claim your reward!</string>
 </resources>

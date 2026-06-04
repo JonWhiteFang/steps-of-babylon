@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.data.NotificationPreferences
 import com.whitefang.stepsofbabylon.domain.model.SupplyDrop
 import com.whitefang.stepsofbabylon.presentation.MainActivity
@@ -28,8 +29,10 @@ class SupplyDropNotificationManager @Inject constructor(
 
     init {
         val channel = NotificationChannel(
-            CHANNEL_ID, "Supply Drops", NotificationManager.IMPORTANCE_DEFAULT
-        ).apply { description = "Rewards earned while walking" }
+            CHANNEL_ID,
+            context.getString(R.string.notif_supply_channel_name),
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply { description = context.getString(R.string.notif_supply_channel_desc) }
         notificationManager.createNotificationChannel(channel)
     }
 
@@ -45,7 +48,7 @@ class SupplyDropNotificationManager @Inject constructor(
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_compass)
-            .setContentTitle("Supply Drop!")
+            .setContentTitle(context.getString(R.string.notif_supply_title))
             .setContentText(drop.trigger.message)
             .setContentIntent(pending)
             .setAutoCancel(true)

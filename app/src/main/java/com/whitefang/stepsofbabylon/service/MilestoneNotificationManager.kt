@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.data.NotificationPreferences
 import com.whitefang.stepsofbabylon.presentation.MainActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -27,8 +28,11 @@ class MilestoneNotificationManager @Inject constructor(
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     init {
-        val channel = NotificationChannel(CHANNEL_ID, "Milestones", NotificationManager.IMPORTANCE_DEFAULT)
-            .apply { description = "Wave records and walking milestones" }
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            context.getString(R.string.notif_milestone_channel_name),
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply { description = context.getString(R.string.notif_milestone_channel_desc) }
         notificationManager.createNotificationChannel(channel)
     }
 
@@ -40,8 +44,8 @@ class MilestoneNotificationManager @Inject constructor(
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_compass)
-            .setContentTitle("New Personal Best!")
-            .setContentText("Wave $wave in $biomeName!")
+            .setContentTitle(context.getString(R.string.notif_milestone_best_wave_title))
+            .setContentText(context.getString(R.string.notif_milestone_best_wave_text, wave, biomeName))
             .setContentIntent(intent)
             .setAutoCancel(true)
             .build()
@@ -57,8 +61,8 @@ class MilestoneNotificationManager @Inject constructor(
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_compass)
-            .setContentTitle("$milestoneName!")
-            .setContentText("Claim your reward!")
+            .setContentTitle(context.getString(R.string.notif_milestone_achieved_title, milestoneName))
+            .setContentText(context.getString(R.string.notif_milestone_achieved_text))
             .setContentIntent(intent)
             .setAutoCancel(true)
             .build()

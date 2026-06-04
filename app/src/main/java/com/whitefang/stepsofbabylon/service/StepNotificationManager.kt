@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.data.NotificationPreferences
 import com.whitefang.stepsofbabylon.presentation.MainActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -30,8 +31,10 @@ class StepNotificationManager @Inject constructor(
 
     init {
         val channel = NotificationChannel(
-            CHANNEL_ID, "Step Counter", NotificationManager.IMPORTANCE_LOW
-        ).apply { description = "Shows your daily step count" }
+            CHANNEL_ID,
+            context.getString(R.string.notif_step_channel_name),
+            NotificationManager.IMPORTANCE_LOW,
+        ).apply { description = context.getString(R.string.notif_step_channel_desc) }
         notificationManager.createNotificationChannel(channel)
     }
 
@@ -53,11 +56,11 @@ class StepNotificationManager @Inject constructor(
         )
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_directions)
-            .setContentTitle("Steps of Babylon")
-            .setContentText("Today: $dailySteps steps | Balance: $balance Steps")
+            .setContentTitle(context.getString(R.string.app_name))
+            .setContentText(context.getString(R.string.notif_step_content, dailySteps, balance))
             .setContentIntent(tapIntent)
-            .addAction(0, "Workshop", workshopIntent)
-            .addAction(0, "Battle", battleIntent)
+            .addAction(0, context.getString(R.string.notif_step_action_workshop), workshopIntent)
+            .addAction(0, context.getString(R.string.notif_step_action_battle), battleIntent)
             .setOngoing(true)
             .setSilent(true)
             .build()
@@ -71,8 +74,8 @@ class StepNotificationManager @Inject constructor(
         )
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_directions)
-            .setContentTitle("Steps of Babylon")
-            .setContentText("Step tracking active")
+            .setContentTitle(context.getString(R.string.app_name))
+            .setContentText(context.getString(R.string.notif_step_minimal))
             .setContentIntent(tapIntent)
             .setOngoing(true)
             .setSilent(true)
