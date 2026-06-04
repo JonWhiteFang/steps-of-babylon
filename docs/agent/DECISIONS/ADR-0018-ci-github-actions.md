@@ -1,6 +1,6 @@
 # ADR-0018: Adopt GitHub Actions for CI/CD
 
-**Status:** Accepted (merged to `main` via PR #100, 2026-06-03; repo secrets, the `release` environment, and branch protection remain post-merge setup)
+**Status:** Accepted (merged to `main` via PR #100, 2026-06-03; post-merge setup — secrets, `release` environment, branch protection, Play service account — completed 2026-06-04; pipeline fully live)
 **Date:** 2026-06-03
 **Supersedes:** The deliberate "No CI for v1.0" posture documented in `devdocs/archaeology/intro2deployment.md` §4, `philosophy.md`, and the gap-analysis docs (all historical — left intact).
 **Superseded by:** None

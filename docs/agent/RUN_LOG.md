@@ -1,3 +1,16 @@
+## 2026-06-04 — Plan 32 manual setup complete (secrets + branch protection + Play SA) + versionCode 16→17
+
+- **Goal:** "guide me through the 3 manual steps 1 by 1" — the post-merge setup Plan 32 / ADR-0018 left to the repo owner.
+- **Outcome:** all 3 done + gh-verified; CI pipeline now fully live end-to-end. `versionCode` bumped 16 → 17. Agent ran the verifications + the `PLAY_SERVICE_ACCOUNT_JSON` secret-set (piped from file, never echoed); user performed the console/secret actions.
+- **Step 1 — `release` environment + secrets:** created `release` environment; 8 secrets set — `UPLOAD_KEYSTORE_BASE64` (piped from `release/upload-keystore.jks`), `KEYSTORE_STORE_PASSWORD`/`KEYSTORE_KEY_ALIAS`(=`upload`)/`KEYSTORE_KEY_PASSWORD`, + 4 `ADMOB_*` from `local.properties`. Verified via `gh secret list --env release`.
+- **Step 2 — branch protection:** `PUT branches/main/protection` with `required_status_checks {strict:true, contexts:[build-and-test, connected]}`, `enforce_admins:false`, no required PR reviews. Verified via the protection API (admins exempt so the project's direct doc-sync-to-`main` pattern still works).
+- **Step 3 — Play service account:** the Play Console `Setup → API access` URL redirects to `/app-list` (Google relocated it), so used the robust path: created SA `play-ci-upload` + JSON key in Google Cloud Console (enabled the Google Play Android Developer API in project `steps-of-babylon-ci`), granted it release-to-testing-tracks via Play Console **Users and permissions**, then `gh secret set PLAY_SERVICE_ACCOUNT_JSON --env release < <key>.json`. JSON validated (`type: service_account`, client_email + private_key present) then the local key file was deleted. First manual AAB upload prerequisite was already satisfied by the v3–v16 manual uploads.
+- **versionCode 16 → 17:** `app/build.gradle.kts`. Play internal already has 16, so a `v*` tag building 16 would be rejected ("versionCode already used", the v13 lesson). Now release-ready.
+- **Pipeline status:** `ci.yml` + `instrumented.yml` live + required on `main` PRs; `dependency-submission.yml` runs on `main`; `release.yml` fully wired — a `v*` tag now builds a signed AAB and uploads to the Play **internal** track (`status: completed`). `release.yml` hardcodes `status: completed` (no draft toggle) — the first tag will push live to internal testers.
+- **Next:** push a `v*` tag (e.g. `git tag v1.0.1 && git push origin v1.0.1`) to fire the first CI-driven internal release, or resume the V1X backlog / closed-track soak.
+
+---
+
 ## 2026-06-03 — Plan 32 CI merged to main (PR #100)
 
 - **Goal:** "merge please" — merge the Plan 32 CI pipeline after both PR checks went green.
