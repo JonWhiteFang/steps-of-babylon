@@ -83,7 +83,7 @@ junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engi
 coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
 mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlin" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
-androidx-test-core = { group = "androidx.test", name = "core", version = "1.6.1" }
+androidx-test-core = { group = "androidx.test", name = "core", version = "1.7.0" }
 
 # Instrumented testing (androidTest source set) — V1X-08 Phase 1A
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
