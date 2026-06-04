@@ -6564,4 +6564,5 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Doc sync per agent protocol: CHANGELOG.md (new `[Unreleased]` entry), AGENTS.md (Plan V1X status → phase 1 COMPLETE), README.md (status banner → phase 1 COMPLETE), `.kiro/steering/source-files.md` (layout/ entry annotated), `docs/architecture.md` (i18n section), STATE.md (this rotation), RUN_LOG.md (this entry). No test-count change (867); no tech / structure / schema change.
 - **Completes V1X-13 i18n phase 1** (notifications #109 + `domain/Strings` floating-text #110 + battle/workshop Compose surfaces #111 + this lint guard). Phases 2/3 deferred to v1.3/v1.4.
 - Next: commit + push + open PR. After merge: resume the closed-track soak (earliest production-access application 2026-06-09), or pick up V1X-12 cloud save.
+- Merged: PR #112 merged via merge commit `69b2633` — both required checks (`build-and-test` + `connected`) green on the first run (the full local gate incl. `lintDebug` paid off). Local `main` fast-forwarded `194da38..69b2633`; branch deleted. Post-merge doc sync (STATE + this RUN_LOG) committed directly to `main`.
 - Memory updated: STATE ✅ / RUN_LOG ✅
