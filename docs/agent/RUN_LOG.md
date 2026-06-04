@@ -1,3 +1,15 @@
+## 2026-06-04 — Merged 5 Dependabot bumps + enabled dependency graph + steering sync
+
+- **Goal:** "check our open PRs" → "merge all 5" → "do it yourself" (enable dependency graph) + "update steering" → "bundle into same PR".
+- **Open PRs:** 5, all Dependabot (opened 2026-06-03 ~12:30 UTC, right after Plan 32 went live). Initially appeared parked (~17h pending) — but they were genuinely `in_progress`, just slow on the `connected` emulator lane. All 5 went green on both required checks (`build-and-test` + `connected`) without intervention; no workflow approval was needed.
+- **Merged all 5** via `gh pr merge --squash --delete-branch --admin`, low-risk-first: #101 KSP 2.3.6→2.3.9, #102 Lifecycle 2.9.0→2.10.0, #103 AndroidX Test Core 1.6.1→1.7.0, #105 play-services-ads 25.0.0→25.3.0, #104 SQLCipher 4.13.0→4.16.0. `--admin` bypassed ONLY the strict branch-up-to-date rule (each had already passed the full required check set individually; the five edit distinct lines in `libs.versions.toml` so no real conflict) — avoids a 5× emulator re-run cascade. Flagged the bypass to the user before doing it.
+- **Backstop:** post-merge `main` CI (`ci.yml`) on the combined commit `d36feba` finished **success** (the two earlier `main` CI runs marked `cancelled` are concurrency dedup from merging in quick succession). Combined state — incl. the SQLCipher encryption-lib swap — builds + unit-tests green.
+- **Dependency Submission workflow fix:** it had been failing on every push since Plan 32 landed — the Gradle build + graph generation succeed, but the upload was rejected with "The Dependency graph is disabled for this repository." Not caused by these merges. No direct REST toggle exists (a `security_and_analysis` PATCH with `dependency_graph` was silently ignored for this public repo). Enabled it transitively via `PUT /repos/.../vulnerability-alerts` (turns on Dependabot alerts, which requires the graph; also good supply-chain hygiene — alerts were previously off). Re-ran the failed run: attempt 3 **succeeded**.
+- **Steering sync:** fast-forwarded local `main` `5876ce4..d36feba`, then updated `.kiro/steering/tech.md` version table to the 5 new versions (KSP 2.3.9 / Lifecycle 2.10.0 / SQLCipher 4.16.0 / Google Mobile Ads 25.3.0 / AndroidX Test Core 1.7.0). Bundled STATE.md + this RUN_LOG entry into the same doc-sync per the PR Task-List Convention.
+- **Next:** commit + PR the doc sync (tech.md + STATE.md + RUN_LOG.md); then push a `v*` tag for the first CI-driven internal release, or resume the V1X backlog / closed-track soak.
+
+---
+
 ## 2026-06-04 — Plan 32 manual setup complete (secrets + branch protection + Play SA) + versionCode 16→17
 
 - **Goal:** "guide me through the 3 manual steps 1 by 1" — the post-merge setup Plan 32 / ADR-0018 left to the repo owner.

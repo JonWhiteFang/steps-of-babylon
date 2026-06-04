@@ -16,19 +16,19 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 |---|---|---|
 | Kotlin | 2.3.0 | Language |
 | AGP | 9.0.1 | Android Gradle Plugin |
-| KSP | 2.3.6 | Annotation processing (replaces kapt) |
+| KSP | 2.3.9 | Annotation processing (replaces kapt) |
 | Compose BOM | 2026.02.00 | Jetpack Compose UI |
 | Hilt | 2.59.2 | Dependency injection |
 | Room | 2.8.4 | Local SQLite database |
 | Google Play Billing | 8.3.0 | IAP via `billing-ktx`. `BillingManagerImpl` is the sole `BillingManager` binding for debug + release as of C.5 PR 3 (`StubBillingManager` deleted; `BuildConfig.USE_REAL_BILLING` removed). |
-| Google Mobile Ads SDK | 25.0.0 | Reward ads via `play-services-ads`. `RewardAdManagerImpl` is the sole `RewardAdManager` binding for debug + release as of C.6 PR 3 (`StubRewardAdManager` deleted). `BuildConfig.USE_REAL_ADS` is retained only to gate the `MainActivity` UMP consent prefetch on debug emulators. |
+| Google Mobile Ads SDK | 25.3.0 | Reward ads via `play-services-ads`. `RewardAdManagerImpl` is the sole `RewardAdManager` binding for debug + release as of C.6 PR 3 (`StubRewardAdManager` deleted). `BuildConfig.USE_REAL_ADS` is retained only to gate the `MainActivity` UMP consent prefetch on debug emulators. |
 | User Messaging Platform | 4.0.0 | GDPR/DSA consent via `user-messaging-platform`; paired with AdMob (C.6 PR 1) |
 | Navigation Compose | 2.9.7 | Compose navigation |
-| Lifecycle | 2.9.0 | ViewModel, StateFlow integration |
+| Lifecycle | 2.10.0 | ViewModel, StateFlow integration |
 | WorkManager | 2.11.0 | Background step sync |
 | JUnit 5 | 5.11.4 | Unit testing framework |
 | kotlinx-coroutines-test | 1.10.1 | Coroutine test utilities |
-| SQLCipher | 4.13.0 | Database encryption |
+| SQLCipher | 4.16.0 | Database encryption |
 | Health Connect | 1.2.0-alpha02 | Step cross-validation, Activity Minute Parity |
 | SQLite KTX | 2.4.0 | SQLite support library |
 | Core KTX | 1.17.0 | Kotlin extensions for Android |
@@ -37,7 +37,7 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | Compose Material Icons | (BOM) | Material icon set for Compose. Both `material-icons-core` (small built-in set) and `material-icons-extended` (full Material catalogue) are included; R8 shrinks unused icons in release builds. Extended set added in R4-04 for `Icons.Filled.Upgrade`; R4-05 will use `Icons.Filled.Help`. |
 | Mockito Kotlin | 5.4.0 | Kotlin-friendly mocking for tests |
 | Robolectric | 4.14.1 | Android framework simulation for JVM tests |
-| AndroidX Test Core | 1.6.1 | Test utilities for Android components |
+| AndroidX Test Core | 1.7.0 | Test utilities for Android components |
 | WorkManager Testing | 2.11.0 | `WorkManagerTestInitHelper` for tests that exercise `WorkManager.cancelAllWork` (added by V1X-01 `DataDeletionManagerTest`). Same version as the main WorkManager dep. |
 | AndroidX Test Runner | 1.6.2 | `AndroidJUnitRunner` for instrumented tests; subclassed by `HiltTestRunner` (V1X-08 Phase 1A). |
 | AndroidX Test Ext JUnit | 1.2.1 | `AndroidJUnit4` runner for instrumented `@RunWith` annotation (V1X-08 Phase 1A). |
