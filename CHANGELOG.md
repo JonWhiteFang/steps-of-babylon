@@ -4,6 +4,10 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Release lane — automated Play "What's new" notes (2026-06-04)
+
+- `release.yml` now publishes Play Store release notes automatically. A new `Prepare Play release notes` step writes the annotated tag's message into `distribution/whatsnew/whatsnew-en-US` (capped at Play's 500-char limit; falls back to "Bug fixes and improvements." for lightweight tags / manual dispatch), and the `r0adkll/upload-google-play` step now passes `whatsNewDirectory: distribution/whatsnew`. `actions/checkout` gained `fetch-depth: 0` so the annotated tag object is available to read. Closes the gap where the first CI-driven release (`v1.0.1`) shipped to the internal track with no "What's new" text. Release notes are now sourced from the `git tag -a -m "…"` message — no separate manual paste into Play Console.
+
 ### Plan 32 — CI/CD pipeline (GitHub Actions) (2026-06-03)
 
 - First CI for the repo (ADR-0018). Five files under `.github/`, all third-party actions SHA-pinned (Dependabot-maintained): `ci.yml` (PR + push:main gate — `./gradlew testDebugUnitTest lintDebug assembleDebug` + a Room schema-drift guard `git diff --exit-code app/schemas`; secret-free), `instrumented.yml` (`connectedDebugAndroidTest` on an API-34 KVM emulator, AVD-cached; blocking on PRs to `main` + nightly + dispatch), `release.yml` (`v*` tag → keystore-from-secrets → `bundleRelease` → `jarsigner -verify` → `r0adkll/upload-google-play` internal track + GitHub Release; `environment: release`), `dependency-submission.yml` (Gradle dependency graph on main), and `dependabot.yml` (gradle + github-actions weekly). Least-privilege `permissions`, `concurrency` cancellation. CI builds the committed `versionCode` (no auto-bump — respects the v13 reused-code rejection).
