@@ -126,14 +126,15 @@ fun PostRoundOverlay(
                 Spacer(Modifier.height(8.dp))
                 if (state.isNewBestWave) {
                     val context = LocalContext.current
+                    val shareText = stringResource(R.string.postround_share_text, state.waveReached, BuildConfig.PLAY_STORE_URL)
+                    val shareChooserTitle = stringResource(R.string.postround_share_chooser)
                     OutlinedButton(
                         onClick = {
-                            val shareText = context.getString(R.string.postround_share_text, state.waveReached, BuildConfig.PLAY_STORE_URL)
                             val intent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
                                 putExtra(Intent.EXTRA_TEXT, shareText)
                             }
-                            context.startActivity(Intent.createChooser(intent, context.getString(R.string.postround_share_chooser)))
+                            context.startActivity(Intent.createChooser(intent, shareChooserTitle))
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
