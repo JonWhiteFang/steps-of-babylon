@@ -56,9 +56,10 @@ Run:
 ```bash
 cd /Users/jpawhite/Documents/Claude/steps-of-babylon
 git branch --show-current
-git log --oneline -1
+git log --oneline -3
+git merge-base --is-ancestor 2dd87f3 HEAD && echo "✓ spec commit is an ancestor"
 ```
-Expected: branch `feat/kiro-to-claude-code`; HEAD is `2dd87f3 docs(spec): Kiro-CLI → Claude Code conversion + memory spine design`.
+Expected: branch `feat/kiro-to-claude-code`; HEAD is the plan commit (`docs(plan): …`) sitting on top of the spec commit `2dd87f3` (`docs(spec): …`); `✓ spec commit is an ancestor`. (Do **not** pin HEAD to a fixed SHA — committing the plan advances it.)
 
 - [ ] **Step 2: Snapshot AGENTS.md `##` section headers + size**
 
@@ -70,20 +71,36 @@ wc -c AGENTS.md | tee /tmp/kiro-conversion/agents-size.txt
 ```
 Expected: a list of `## ` headers — **Project Overview, Project Memory (read first), Tech Stack, Architecture, Plans & Roadmap, Key Domain Concepts, Conventions, Battle Renderer, Testing, Important Notes** — and a size around 45 KB. Record these; Task 6's gate asserts each header (except the two that get *merged* — see Task 6) appears in CLAUDE.md.
 
-- [ ] **Step 3: Snapshot the 8 reference docs' bodies (front-matter stripped) for the post-move body-compare**
+- [ ] **Step 3: Define the canonical body-extract transform**
+
+Tasks 1, 2, and 7 all need ONE identical normalization so their compares are meaningful: strip a leading YAML front-matter block **and** any leading blank lines, leaving the body starting at its first content line (the `# ` heading). It is `sed`-free (avoids BSD/GNU divergence) and **idempotent** (running it on an already-stripped file is a no-op). Save it as a reusable script:
+
+```bash
+cat > /tmp/kiro-conversion/extract-body.awk <<'AWK'
+NR==1 && $0=="---" { infm=1; next }       # open front-matter
+infm && $0=="---"  { infm=0; next }        # close front-matter
+infm               { next }                # drop front-matter lines
+!started && $0 ~ /^[[:space:]]*$/ { next } # drop leading blank lines
+{ started=1; print }                       # body
+AWK
+echo "✓ transform saved"
+```
+
+Verified behavior (against the real tree): on the 3 lib docs it yields a body starting at `# … Reference Guide`; on the 5 docs with no front-matter it is an exact no-op; it is idempotent on all 8.
+
+- [ ] **Step 4: Snapshot the 8 reference docs' bodies for the post-move body-compare**
 
 Run:
 ```bash
 for f in tech structure source-files product lib-coroutines lib-hilt lib-jetpack-compose lib-room; do
-  # strip a leading YAML front-matter block if present, store the body
-  awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{fm=0; next} !fm{print}' \
-    ".kiro/steering/$f.md" > "/tmp/kiro-conversion/snapshots/$f.body"
+  awk -f /tmp/kiro-conversion/extract-body.awk ".kiro/steering/$f.md" > "/tmp/kiro-conversion/snapshots/$f.body"
 done
 ls -la /tmp/kiro-conversion/snapshots/
+wc -l /tmp/kiro-conversion/snapshots/*.body
 ```
-Expected: 8 `.body` files. These are the front-matter-stripped bodies; Task 2's verification diffs the moved files' bodies against these (allowing only `tech.md`'s line-88 reword in Task 7).
+Expected: 8 `.body` files, each starting at its `# ` heading. Task 2 Step 4 diffs the moved+stripped files (re-run through the SAME transform) against these — so all 8 match exactly (front-matter strip and leading-blank removal are already applied on both sides).
 
-- [ ] **Step 4: No commit (scratch only)**
+- [ ] **Step 5: No commit (scratch only)**
 
 This task writes only to `/tmp`. Nothing to commit.
 
@@ -117,42 +134,44 @@ Expected: 8 `.md` files under `docs/steering/`.
 
 - [ ] **Step 3: Strip the dead `inclusion: fileMatch` front-matter from the 3 lib docs**
 
-These three files begin with a 4-line Kiro front-matter block (`---` / `inclusion: fileMatch` / `fileMatchPattern: "..."` / `---`). Remove that block from each, leaving a blank first line removed too so the file starts at its `# ` heading.
+These three files begin with a 4-line Kiro front-matter block (`---` / `inclusion: fileMatch` / `fileMatchPattern: "..."` / `---`) followed by a blank line. Apply the **canonical body-extract transform** from Task 1 Step 3 (front-matter + leading blanks removed, `sed`-free) so each file starts at its `# ` heading. Write to a temp and `mv` over the original **only if the result is non-empty** — this guards against ever truncating a doc to 0 bytes:
 
-Run:
 ```bash
 for f in lib-coroutines lib-jetpack-compose lib-room; do
-  awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{fm=0; next} fm{next} {print}' \
-    "docs/steering/$f.md" > "docs/steering/$f.md.tmp"
-  # drop a single leading blank line if present
-  sed '1{/^$/d}' "docs/steering/$f.md.tmp" > "docs/steering/$f.md"
-  rm "docs/steering/$f.md.tmp"
+  awk -f /tmp/kiro-conversion/extract-body.awk "docs/steering/$f.md" > "docs/steering/$f.md.tmp"
+  if [ -s "docs/steering/$f.md.tmp" ]; then
+    mv "docs/steering/$f.md.tmp" "docs/steering/$f.md"
+  else
+    echo "✗ ABORT: $f.md.tmp is empty — NOT overwriting $f.md"; rm -f "docs/steering/$f.md.tmp"
+  fi
   echo "=== $f.md now starts with: ==="
   head -2 "docs/steering/$f.md"
 done
 ```
-Expected: each file now starts with its `# … Reference Guide` heading (no `---` / `inclusion:` lines).
+Expected: each file now starts with its `# … Reference Guide` heading (no `---` / `inclusion:` lines), and no `✗ ABORT` line. (Note: the earlier draft used `sed '1{/^$/d}'`, which **errors on macOS BSD sed and, with `>` redirection, truncates the file to 0 bytes** — the `awk` transform + non-empty `mv` guard above eliminates that failure mode entirely.)
 
 - [ ] **Step 4: Run the body-compare verification (passes)**
 
-Run:
+Re-run the SAME canonical transform on each moved file and diff against the Task 1 snapshot:
 ```bash
 for f in tech structure source-files product lib-coroutines lib-hilt lib-jetpack-compose lib-room; do
-  awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{fm=0; next} !fm{print}' \
-    "docs/steering/$f.md" > "/tmp/kiro-conversion/snapshots/$f.body.post"
+  awk -f /tmp/kiro-conversion/extract-body.awk "docs/steering/$f.md" > "/tmp/kiro-conversion/snapshots/$f.body.post"
   if diff -q "/tmp/kiro-conversion/snapshots/$f.body" "/tmp/kiro-conversion/snapshots/$f.body.post" >/dev/null; then
     echo "✓ $f body unchanged"
   else
-    echo "✗ $f body DIFFERS (expected only for tech.md after Task 7):"; diff "/tmp/kiro-conversion/snapshots/$f.body" "/tmp/kiro-conversion/snapshots/$f.body.post" | head
+    echo "✗ $f body DIFFERS:"; diff "/tmp/kiro-conversion/snapshots/$f.body" "/tmp/kiro-conversion/snapshots/$f.body.post" | head
   fi
 done
 ```
-Expected: **all 8 print `✓ … unchanged`** at this point (the `tech.md` Kiro-CLI reword happens later in Task 7; until then its body still matches). The front-matter strip is invisible to this check because the snapshot in Task 1 already stripped front-matter — confirming the strip removed *only* front-matter and no body content.
+Expected: **all 8 print `✓ … unchanged`**. Because Task 1's snapshot and this check both use the identical canonical transform (and the transform is idempotent), the 3 lib docs match despite the front-matter strip, and the 5 plain docs are untouched. (`tech.md`'s line-88 Kiro-CLI reword happens later in Task 7; at this point its body still matches.) Any `✗` here means real body content changed — investigate before continuing.
 
 - [ ] **Step 5: Commit**
 
+Stage with **explicit paths** (never `git add -A` — the repo has an untracked, non-ignored `RECREATE_LOCAL_SETUP.md` that `-A` would sweep into this commit). `git mv` already staged both sides of the moves; the front-matter strip needs re-staging:
+
 ```bash
-git add -A
+git add docs/steering/ .kiro/steering/
+git status --short   # confirm: only the 8 moves (R) / .kiro/steering deletions; RECREATE_LOCAL_SETUP.md still untracked (??)
 git commit -m "refactor(docs): move .kiro/steering reference docs to docs/steering/
 
 git mv the 8 reference docs (tech, structure, source-files, product,
@@ -169,7 +188,7 @@ later task. No body content changed."
 **Files:**
 - Create: `.claude/hooks/session-preflight.sh`
 
-This is the read-at-start half of the spine. It prints plain text (Claude Code adds a SessionStart hook's stdout to context — no JSON wrapper needed), bounded well under the 10,000-char `additionalContext` cap, selecting STATE.md's live forward-looking sections rather than its giant history bullets. The script below is verified working (8,016 chars on the current tree, all content assertions pass).
+This is the read-at-start half of the spine. It prints plain text (Claude Code adds a SessionStart hook's stdout to context — no JSON wrapper needed), bounded well under the 10,000-char `additionalContext` cap, selecting STATE.md's live forward-looking sections rather than its giant history bullets. The script below is verified working — output is roughly 6–9 KB (git-state-dependent: the `git status` block varies), and the only pinned assertion is `< 10000`, which passes with comfortable headroom.
 
 - [ ] **Step 1: Write the failing smoke-test**
 
@@ -191,10 +210,11 @@ Create `.claude/hooks/session-preflight.sh` with exactly this content:
 #
 # Output is plain text on stdout: Claude Code adds a SessionStart hook's stdout
 # directly to the session context (no JSON wrapper required for a context-only
-# hook). Kept dependency-free (bash + coreutils + awk/sed) and bounded well under
-# the 10,000-char additionalContext cap by selecting STATE.md's live sections
-# rather than its long historical "Current objective" / "Previous objective"
-# bullets. Always exits 0 so a hook failure never blocks a session.
+# hook). Kept dependency-light (bash + coreutils + awk; iconv only as an
+# optional multibyte-safe trim) and bounded well under the 10,000-char
+# additionalContext cap by selecting STATE.md's live sections rather than its long
+# historical "Current objective" / "Previous objective" bullets. Always exits 0 so
+# a hook failure never blocks a session, and degrades gracefully outside a git repo.
 set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." 2>/dev/null && pwd)"
@@ -218,13 +238,17 @@ fi
 if [ -f "$STATE" ]; then
   echo "## STATE.md (live sections — see docs/agent/STATE.md for full state)"
   echo
-  # Newest "## Current objective" bullet only, capped at 1500 chars.
+  # Newest "## Current objective" bullet only, capped at 1500 bytes. The cap is a
+  # byte count (head -c); if a future bullet exceeds it and a multibyte UTF-8 char
+  # (em-dash, ≥, →, ×) straddles the boundary, iconv //IGNORE drops the partial tail
+  # so the injected context never carries a corrupt byte sequence. iconv is present
+  # on macOS + Linux; if absent, the `|| cat` keeps the raw (still-valid-99%) output.
   awk '
     /^## Current objective/ { inco=1; next }
     /^## / && inco { exit }
     inco && /^- / { if (got) exit; got=1 }
     inco && got { print }
-  ' "$STATE" | head -c 1500
+  ' "$STATE" | head -c 1500 | { iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null || cat; }
   echo
   echo
   # The three live, forward-looking sections in full.
@@ -266,9 +290,25 @@ grep -q "## Do-not-touch" /tmp/kiro-conversion/preflight.out && echo "✓ Do-not
 grep -qi "Previous objective" /tmp/kiro-conversion/preflight.out && echo "✗ LEAKED history" || echo "✓ no history leak"
 grep -q "see docs/agent/STATE.md for full state" /tmp/kiro-conversion/preflight.out && echo "✓ pointer" || echo "✗ pointer"
 ```
-Expected: `exit=0`, `chars` < 10000 (≈8000), and **eight `✓` lines, zero `✗`**.
+Expected: `exit=0`, `chars` < 10000 (roughly 6–9 KB), and **eight `✓` lines, zero `✗`**.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Test graceful degradation outside a git repo (spec-required)**
+
+The spec requires the hook to exit 0 and skip the git block (no `fatal:` leak) when run outside a git repo. Test in a scratch non-git dir with a STATE.md present:
+
+```bash
+rm -rf /tmp/hooktest && mkdir -p /tmp/hooktest/.claude/hooks /tmp/hooktest/docs/agent
+cp .claude/hooks/session-preflight.sh /tmp/hooktest/.claude/hooks/
+cp docs/agent/STATE.md /tmp/hooktest/docs/agent/
+( cd /tmp/hooktest && bash .claude/hooks/session-preflight.sh > /tmp/hooktest/out 2>&1; echo "exit=$?" )
+grep -qi "fatal:" /tmp/hooktest/out && echo "✗ LEAKED git error" || echo "✓ no git-error leak"
+grep -q "## Git" /tmp/hooktest/out && echo "✗ git block present (should be skipped)" || echo "✓ git block skipped"
+grep -q "## Top priorities" /tmp/hooktest/out && echo "✓ STATE still emitted" || echo "✗ STATE missing"
+rm -rf /tmp/hooktest
+```
+Expected: `exit=0`, `✓ no git-error leak`, `✓ git block skipped`, `✓ STATE still emitted`. (The `2>/dev/null` on the git calls + the `rev-parse --is-inside-work-tree` guard make the git section vanish cleanly when there's no repo.)
+
+- [ ] **Step 6: Commit**
 
 ```bash
 git add .claude/hooks/session-preflight.sh
@@ -578,32 +618,48 @@ Carry these sections over verbatim **except** apply these exact ref rewrites ins
 
 Also carry over AGENTS.md's `## Project Overview` section (the opening paragraph + GDD pointer) — place it immediately after the `---` separator from Step 2, so CLAUDE.md reads: header (A/B/D) → Project Overview → Tech Stack → Architecture → Plans & Roadmap → Key Domain Concepts → Conventions → Battle Renderer → Testing → Important Notes.
 
-> Practical method: copy `AGENTS.md` lines 24–297 (from `## Tech Stack` to EOF) into CLAUDE.md, then copy AGENTS.md's `## Project Overview` block (lines 3–8) in just above `## Tech Stack`. Then run the 3 ref rewrites with your editor. Confirm by grep in Step 4.
+> Practical method: copy `AGENTS.md` from `## Tech Stack` (line 24) to EOF (line 296) into CLAUDE.md, then copy AGENTS.md's `## Project Overview` block (lines 3–8) in just above `## Tech Stack`. Then run the 3 ref rewrites with your editor. Confirm by grep in Step 4.
 
 - [ ] **Step 4: Run the fold-completeness gate (passes)**
 
-Run:
+This gate checks header presence **plus content survival** — a header-only check would pass even if a section body were silently dropped, and AGENTS.md is deleted in Task 8 (unrecoverable). Run all four checks; this command MUST be run under `bash` (it uses `< <(...)` process substitution — paste `bash` first if your shell is zsh):
+
 ```bash
-echo "=== every AGENTS.md ## header (minus the 2 merged ones) must appear in CLAUDE.md ==="
+# (1) every AGENTS.md '## ' header (minus the merged spine table) appears in CLAUDE.md — ANCHORED
+echo "=== header presence (anchored) ==="
 missing=0
 while IFS= read -r h; do
   case "$h" in
-    "## Project Memory (read first)") continue ;;  # merged into section A/B/D
+    "## Project Memory (read first)") continue ;;  # merged into section A/B/D, not carried verbatim
   esac
-  if grep -qF "$h" CLAUDE.md; then echo "✓ $h"; else echo "✗ MISSING: $h"; missing=1; fi
+  if grep -qxF "$h" CLAUDE.md; then echo "✓ $h"; else echo "✗ MISSING: $h"; missing=1; fi
 done < <(grep -E '^## ' AGENTS.md)
 echo "missing=$missing  (must be 0)"
 
-echo "=== sections A/B/D present ==="
+# (2) content-volume floor — guards against header-present-but-body-dropped.
+# AGENTS.md folded body (lines 24..EOF) is 273 lines; CLAUDE.md = that body + Project Overview
+# + the A/B/D header, so it must be well over 320 lines.
+lines=$(wc -l < CLAUDE.md); echo "CLAUDE.md lines = $lines"
+[ "$lines" -ge 320 ] && echo "✓ content floor (>=320 lines)" || echo "✗ CLAUDE.md too short — a section body was likely dropped"
+
+# (3) sentinel strings from the three largest at-risk sections (Plans / Testing / Important Notes-at-EOF)
+for s in "Walking features: Plan 23 (ready now" "867 JVM tests + 9 instrumented tests" "All monetization is cosmetic"; do
+  grep -qF "$s" CLAUDE.md && echo "✓ sentinel: $s" || echo "✗ MISSING sentinel: $s"
+done
+
+# (4) sections A/B/D present
+echo "=== sections A/B/D ==="
 grep -q "## Always-on memory rules" CLAUDE.md && echo "✓ memory rules" || echo "✗ memory rules"
 grep -q "## Agent protocol" CLAUDE.md && echo "✓ protocol" || echo "✗ protocol"
 grep -q "## Project Memory (read first)" CLAUDE.md && echo "✓ spine pointer" || echo "✗ spine pointer"
 
-echo "=== ref rewrites applied (no Kiro paths remain in CLAUDE.md) ==="
-grep -nE '\.kiro/|AGENTS\.md' CLAUDE.md && echo "✗ stale ref in CLAUDE.md" || echo "✓ no .kiro/ or AGENTS.md refs"
+# (5) ref rewrites applied — no Kiro paths, no AGENTS.md, no 'Kiro CLI' string survives
+echo "=== ref rewrites ==="
+grep -nE '\.kiro/|AGENTS\.md' CLAUDE.md && echo "✗ stale path ref in CLAUDE.md" || echo "✓ no .kiro/ or AGENTS.md refs"
+grep -niE 'Kiro CLI|Kiro-CLI' CLAUDE.md && echo "✗ Kiro CLI string survived (row-3 reword missed)" || echo "✓ no Kiro CLI string"
 grep -q 'docs/steering/source-files.md' CLAUDE.md && echo "✓ source-files ref rewritten" || echo "✗ source-files ref"
 ```
-Expected: every AGENTS.md header prints `✓` (the `## Project Memory (read first)` one is skipped), `missing=0`, sections A/B/D all `✓`, `✓ no .kiro/ or AGENTS.md refs`, `✓ source-files ref rewritten`.
+Expected: every header `✓` (the `## Project Memory (read first)` one skipped), `missing=0`, `✓ content floor`, all three `✓ sentinel`, A/B/D all `✓`, `✓ no .kiro/ or AGENTS.md refs`, `✓ no Kiro CLI string`, `✓ source-files ref rewritten`. Any `✗` means content was lost or a rewrite was missed — fix before Task 8 deletes the source.
 
 - [ ] **Step 5: Commit**
 
@@ -623,31 +679,32 @@ non-TTY mention. Fold-completeness gate: every AGENTS.md section preserved."
 ## Task 7: Rewrite live cross-references
 
 **Files:**
-- Modify: `README.md` (lines 61, 63, 114, 127), `docs/steering/tech.md` (line 88), `docs/agent/CONSTRAINTS.md` (line 38)
+- Modify: `README.md` (line 61 has **two** refs, + lines 63, 114, 127), `docs/steering/tech.md` (line 88), `docs/agent/CONSTRAINTS.md` (line 38)
 
-Only these three files contain live refs (verified by reading). `docs/agent/START_HERE.md` and the other 7 reference docs are already clean — do not edit them.
+Only these three files contain live refs (verified by reading). `docs/agent/START_HERE.md` and the other 7 reference docs are already clean — do not edit them. **Note:** README line 61 contains TWO `AGENTS.md` references — an inline `see AGENTS.md` AND the `[AGENTS.md](AGENTS.md)` markdown link — so README has 3 `AGENTS.md` occurrences across 3 lines but **4 edit sites** (line 61 needs two edits).
 
 - [ ] **Step 1: Write the failing verification**
 
 Run:
 ```bash
-echo "--- README live refs (expect AGENTS.md x3 + Kiro CLI + .kiro/steering/tech.md) ---"
+echo "--- README live refs (expect AGENTS.md on lines 61(x2),114,127 + Kiro CLI@63 + .kiro/steering@127) ---"
 grep -nE 'AGENTS\.md|Kiro CLI|\.kiro/steering' README.md
 echo "--- tech.md (expect 1 Kiro CLI) ---"
 grep -nE 'Kiro CLI' docs/steering/tech.md
 echo "--- CONSTRAINTS.md (expect 1 Kiro CLI) ---"
 grep -nE 'Kiro CLI' docs/agent/CONSTRAINTS.md
 ```
-Expected: README shows the 3 `AGENTS.md` link refs + the `Kiro CLI` heading + the `.kiro/steering/tech.md` link; tech.md + CONSTRAINTS.md each show one `Kiro CLI` string. These are what we will remove.
+Expected: README line 61 appears **twice** (inline `see AGENTS.md` + the markdown link), plus the line-114 + line-127 links, the `Kiro CLI` heading (63), and the `.kiro/steering/tech.md` link (127); tech.md + CONSTRAINTS.md each show one `Kiro CLI` string. These are what we will remove.
 
 - [ ] **Step 2: Edit `README.md`**
 
-Make these exact replacements:
+Make these exact replacements (5 total — line 61 twice):
 
-1. Line 61 — `See [AGENTS.md](AGENTS.md) for the full coverage breakdown.` → `See [CLAUDE.md](CLAUDE.md) for the full coverage breakdown.`
-2. Line 63 — heading `### Non-TTY Environments (Kiro CLI, CI, etc.)` → `### Non-TTY Environments (CI, etc.)`
-3. Line 114 — table row `| [AGENTS.md](AGENTS.md) | Full tech stack, conventions, status checklist, test coverage |` → `| [CLAUDE.md](CLAUDE.md) | Full tech stack, conventions, status checklist, test coverage |`
-4. Line 127 — `See [AGENTS.md](AGENTS.md) for the full tech stack with versions and conventions, and [.kiro/steering/tech.md](.kiro/steering/tech.md) for the canonical version table.` → `See [CLAUDE.md](CLAUDE.md) for the full tech stack with versions and conventions, and [docs/steering/tech.md](docs/steering/tech.md) for the canonical version table.`
+1. Line 61, inline mention — `(no real-framework-only gap; see AGENTS.md)` → `(no real-framework-only gap; see CLAUDE.md)`
+2. Line 61, markdown link — `See [AGENTS.md](AGENTS.md) for the full coverage breakdown.` → `See [CLAUDE.md](CLAUDE.md) for the full coverage breakdown.`
+3. Line 63 — heading `### Non-TTY Environments (Kiro CLI, CI, etc.)` → `### Non-TTY Environments (CI, etc.)`
+4. Line 114 — table row `| [AGENTS.md](AGENTS.md) | Full tech stack, conventions, status checklist, test coverage |` → `| [CLAUDE.md](CLAUDE.md) | Full tech stack, conventions, status checklist, test coverage |`
+5. Line 127 — `See [AGENTS.md](AGENTS.md) for the full tech stack with versions and conventions, and [.kiro/steering/tech.md](.kiro/steering/tech.md) for the canonical version table.` → `See [CLAUDE.md](CLAUDE.md) for the full tech stack with versions and conventions, and [docs/steering/tech.md](docs/steering/tech.md) for the canonical version table.`
 
 - [ ] **Step 3: Edit `docs/steering/tech.md`**
 
@@ -674,7 +731,7 @@ grep -nE '\.kiro/' README.md && echo "✗ still present" || echo "✓ README cle
 echo "--- no 'Kiro CLI' in the 3 edited files ---"
 grep -nE 'Kiro CLI' README.md docs/steering/tech.md docs/agent/CONSTRAINTS.md && echo "✗ still present" || echo "✓ no Kiro CLI strings"
 echo "--- tech.md body now differs from snapshot by exactly the line-88 reword ---"
-awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{fm=0; next} !fm{print}' docs/steering/tech.md > /tmp/kiro-conversion/snapshots/tech.body.post2
+awk -f /tmp/kiro-conversion/extract-body.awk docs/steering/tech.md > /tmp/kiro-conversion/snapshots/tech.body.post2
 diff /tmp/kiro-conversion/snapshots/tech.body /tmp/kiro-conversion/snapshots/tech.body.post2
 ```
 Expected: `✓ README clean of AGENTS.md`, `✓ README clean of .kiro/`, `✓ no Kiro CLI strings`, and the final `diff` shows exactly one changed line (the Kiro-CLI reword) and nothing else.
@@ -707,17 +764,17 @@ git grep -n '\.kiro/' -- \
   ':(exclude)docs/agent/RUN_LOG.md' ':(exclude)docs/agent/STATE.md' \
   ':(exclude)CHANGELOG.md' ':(exclude)docs/plans/*' ':(exclude)docs/external-reviews/*' \
   ':(exclude)devdocs/*' ':(exclude)smoke_tests/*' ':(exclude)docs/agent/DECISIONS/*' \
-  ':(exclude)docs/superpowers/*' ':(exclude).kiro/*' \
+  ':(exclude)docs/superpowers/*' ':(exclude).kiro/*' ':(exclude)AGENTS.md' \
   || echo "✓ no live .kiro/ refs outside history"
 echo "=== remaining live AGENTS.md refs ==="
 git grep -n 'AGENTS\.md' -- \
   ':(exclude)docs/agent/RUN_LOG.md' ':(exclude)docs/agent/STATE.md' \
   ':(exclude)CHANGELOG.md' ':(exclude)docs/plans/*' ':(exclude)docs/external-reviews/*' \
   ':(exclude)devdocs/*' ':(exclude)smoke_tests/*' ':(exclude)docs/agent/DECISIONS/*' \
-  ':(exclude)docs/superpowers/*' ':(exclude)AGENTS.md' \
+  ':(exclude)docs/superpowers/*' ':(exclude)AGENTS.md' ':(exclude).kiro/*' \
   || echo "✓ no live AGENTS.md refs outside history"
 ```
-Expected: both print their `✓ … outside history` line (the `.kiro/*` and `AGENTS.md` self-excludes keep the soon-to-be-deleted files from matching). If any OTHER live file appears, fix it before deleting.
+Expected: both print their `✓ … outside history` line. **Both** greps exclude both `.kiro/*` and `AGENTS.md` — at this point those two are still on disk (deleted in Step 2) and AGENTS.md itself still contains `.kiro/steering/...` refs (lines 20, 78), so without the `AGENTS.md` self-exclude the `.kiro/` grep would false-flag the about-to-be-deleted file. If any OTHER live file appears, fix it before deleting.
 
 - [ ] **Step 2: Delete**
 
@@ -771,8 +828,10 @@ Create `docs/agent/DECISIONS/ADR-0019-kiro-to-claude-code.md` with exactly this 
 ```markdown
 # ADR-0019: Convert agent tooling from Kiro-CLI to Claude Code
 
-## Status
-Accepted — 2026-06-10.
+**Status:** Accepted — 2026-06-10.
+**Date:** 2026-06-10
+**Supersedes:** The Kiro-CLI steering mechanism (`.kiro/steering/` `inclusion: always` docs) and `AGENTS.md` as the project guide.
+**Superseded by:** None
 
 ## Context
 - The project was wired to Kiro-CLI: `.kiro/steering/` held two `inclusion: always`
@@ -826,11 +885,11 @@ Accepted — 2026-06-10.
 Run:
 ```bash
 test -f docs/agent/DECISIONS/ADR-0019-kiro-to-claude-code.md && echo "✓ ADR-0019 exists"
-grep -q "^## Status" docs/agent/DECISIONS/ADR-0019-kiro-to-claude-code.md && echo "✓ has Status"
+grep -q "^\*\*Status:\*\*" docs/agent/DECISIONS/ADR-0019-kiro-to-claude-code.md && echo "✓ has Status (inline house style)"
 grep -q "^## Decision" docs/agent/DECISIONS/ADR-0019-kiro-to-claude-code.md && echo "✓ has Decision"
 ls docs/agent/DECISIONS/ | wc -l   # expect 17 now (was 16)
 ```
-Expected: `✓ ADR-0019 exists`, `✓ has Status`, `✓ has Decision`, `17`.
+Expected: `✓ ADR-0019 exists`, `✓ has Status (inline house style)`, `✓ has Decision`, `17`. (Inline `**Status:**`/`**Date:**` matches the existing ADRs, e.g. ADR-0018.)
 
 - [ ] **Step 4: Commit**
 
@@ -862,7 +921,7 @@ Rotate the `## Current objective` section — add a NEW top entry (and demote th
 - **Tooling — converted Kiro-CLI → Claude Code + completed the committed memory spine (branch `feat/kiro-to-claude-code`, 2026-06-10, ADR-0019).** Deleted `.kiro/` entirely; absorbed the two `inclusion: always` behavioral steering docs (memory rules + agent protocol) into a new canonical root `CLAUDE.md`; moved the 8 reference docs to `docs/steering/` (stripping dead `fileMatch` front-matter from the 3 lib docs); folded `AGENTS.md` into `CLAUDE.md` and deleted it. Added Claude Code automation: `.claude/hooks/session-preflight.sh` (plain-stdout SessionStart hook injecting git state + STATE.md's live sections, ~8 KB, under the 10k cap), `.claude/skills/checkpoint/SKILL.md` (the end-of-run protocol as a skill), `.claude/settings.json` (registers the hook, matcher `*`). Repointed live cross-refs (README, tech.md, CONSTRAINTS.md). No code/test/schema change — test count unchanged at 867. Dogfooded: this entry + RUN_LOG + CHANGELOG + ADR-0019 + `/checkpoint` run on the change itself.
 ```
 
-Also update the `## References` section: change `Master plan` and any spine pointers as needed, and note CLAUDE.md is now the guide. (Do NOT rewrite the dated historical bullets that mention `.kiro/steering/tech.md` — those are frozen history.)
+Also update the `## References` section: note CLAUDE.md is now the guide and spine pointers resolve to `docs/steering/` where relevant. **Freeze the dated history:** do NOT rewrite the historical `## Current objective` bullets that mention `.kiro/steering/tech.md` (the file currently has such tokens around lines 12 and 147) — those are frozen dated history, not live refs. Only the NEW top bullet and the live `## References` lines change.
 
 - [ ] **Step 3: Append `docs/agent/RUN_LOG.md`**
 
@@ -904,10 +963,22 @@ Run:
 grep -q "Kiro-CLI → Claude Code" docs/agent/STATE.md && echo "✓ STATE rotated" || echo "✗ STATE"
 head -1 docs/agent/RUN_LOG.md | grep -q "2026-06-10" && echo "✓ RUN_LOG appended at top" || echo "✗ RUN_LOG"
 grep -q "Converted agent tooling from Kiro-CLI to Claude Code" CHANGELOG.md && echo "✓ CHANGELOG" || echo "✗ CHANGELOG"
-echo "--- confirm no PRIOR RUN_LOG entry was edited (only an addition at top) ---"
-git diff --stat docs/agent/RUN_LOG.md
+
+echo "--- RUN_LOG: only insertions, zero deletions of prior lines ---"
+del=$(git diff --numstat docs/agent/RUN_LOG.md | awk '{print $2}')
+[ "${del:-0}" = "0" ] && echo "✓ RUN_LOG: 0 deletions (pure append)" || echo "✗ RUN_LOG has $del deleted lines — a prior entry was edited"
+
+echo "--- frozen historical-artifact paths must be byte-untouched ---"
+if git diff --quiet -- 'docs/plans' 'devdocs' 'docs/external-reviews' 'smoke_tests' 'docs/agent/DECISIONS/ADR-0001-template.md'; then
+  echo "✓ plans/devdocs/external-reviews/smoke_tests/ADR-template untouched"
+else
+  echo "✗ a frozen historical artifact changed:"; git diff --stat -- 'docs/plans' 'devdocs' 'docs/external-reviews' 'smoke_tests'
+fi
+
+echo "--- STATE.md: every REMOVED line is one the rotation legitimately replaces (review by eye) ---"
+git diff -U0 -- docs/agent/STATE.md | grep '^-' | grep -v '^---' || echo "(no lines removed — pure addition)"
 ```
-Expected: three `✓` lines; the `git diff --stat` shows RUN_LOG.md with only insertions (an addition at the top), no deletions of prior lines.
+Expected: three `✓` (STATE/RUN_LOG/CHANGELOG); `✓ RUN_LOG: 0 deletions`; `✓ … untouched`; and the STATE.md removed-lines list contains only the demoted/replaced objective + References lines you intentionally changed (NOT any dated history bullet). If a frozen path shows a diff, revert it.
 
 - [ ] **Step 6: Commit**
 
@@ -948,12 +1019,13 @@ Run:
 jq empty .claude/settings.json && echo "✓ settings.json valid JSON"
 jq -e '.hooks.SessionStart[0].matcher=="*"' .claude/settings.json >/dev/null && echo "✓ matcher *"
 awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm{print}' .claude/skills/checkpoint/SKILL.md | grep -q "name: checkpoint" && echo "✓ skill name"
+grep -niE 'Kiro CLI|Kiro-CLI' CLAUDE.md && echo "✗ Kiro CLI string survived into CLAUDE.md" || echo "✓ no Kiro CLI string in CLAUDE.md"
 ```
-Expected: three `✓`.
+Expected: four `✓` (the last confirms the Task 6 row-3 reword landed — `Kiro CLI` can't match a `.kiro/` grep, so it needs its own check).
 
 - [ ] **Step 3: Zero live `.kiro/` and `AGENTS.md` refs (history excepted)**
 
-Run:
+Run this block **under `bash`** (it uses a bash array — paste `bash` first if your shell is zsh, or the `"${EXCL[@]}"` expansion misbehaves):
 ```bash
 EXCL=(':(exclude)docs/agent/RUN_LOG.md' ':(exclude)docs/agent/STATE.md' ':(exclude)CHANGELOG.md'
       ':(exclude)docs/plans/*' ':(exclude)docs/external-reviews/*' ':(exclude)devdocs/*'
@@ -963,7 +1035,7 @@ git grep -n '\.kiro/' -- "${EXCL[@]}" && echo "✗ LIVE .kiro ref" || echo "✓ 
 echo "--- live AGENTS.md refs (expect none) ---"
 git grep -n 'AGENTS\.md' -- "${EXCL[@]}" && echo "✗ LIVE AGENTS.md ref" || echo "✓ 0 live AGENTS.md refs"
 ```
-Expected: `✓ 0 live .kiro/ refs` and `✓ 0 live AGENTS.md refs`.
+Expected: `✓ 0 live .kiro/ refs` and `✓ 0 live AGENTS.md refs`. (The `docs/superpowers/*` exclude is broad enough to skip both this plan and the spec — both legitimately contain `.kiro/`/`AGENTS.md` tokens.)
 
 - [ ] **Step 4: Structure + deliverables tracked + no code touched**
 
@@ -973,15 +1045,19 @@ test ! -d .kiro && test ! -f AGENTS.md && echo "✓ .kiro/ + AGENTS.md gone"
 test -f CLAUDE.md && echo "✓ CLAUDE.md present"
 ls docs/steering/*.md | wc -l   # expect 8
 git ls-files .claude/hooks/session-preflight.sh .claude/skills/checkpoint/SKILL.md .claude/settings.json | wc -l  # expect 3
-echo "--- no source/build/schema files changed on this branch vs main ---"
-git diff --name-only main...HEAD -- '*.kt' '*.kts' '*.toml' 'app/schemas/**' || true
-git diff --name-only main...HEAD -- '*.kt' '*.kts' '*.toml' 'app/schemas/**' | grep -q . && echo "✗ code/build/schema changed" || echo "✓ no code/build/schema changes"
+echo "--- no source/build/schema files changed on this branch vs the merge-base with main ---"
+base=$(git merge-base main HEAD)
+git diff --name-only "$base"..HEAD -- '*.kt' '*.kts' '*.toml' 'app/schemas/**' | grep -q . && echo "✗ code/build/schema changed" || echo "✓ no code/build/schema changes"
 ```
-Expected: `✓ .kiro/ + AGENTS.md gone`, `✓ CLAUDE.md present`, `8`, `3`, `✓ no code/build/schema changes`.
+Expected: `✓ .kiro/ + AGENTS.md gone`, `✓ CLAUDE.md present`, `8`, `3`, `✓ no code/build/schema changes`. (Using the explicit `git merge-base` is equivalent to `main...HEAD` but robust if `main` isn't checked out locally.)
 
 - [ ] **Step 5: (Optional, recommended) Independent adversarial re-check via a subagent**
 
-Dispatch a fresh general-purpose agent (or a workflow) to independently verify: "Read `docs/superpowers/specs/2026-06-10-kiro-to-claude-code-conversion-design.md` §7, then check each criterion against the real working tree on branch `feat/kiro-to-claude-code`. Report any criterion not satisfied, any live `.kiro/`/`AGENTS.md` ref that survived, any AGENTS.md section missing from CLAUDE.md, and whether any historical artifact was mutated (git diff)." Fix anything it surfaces.
+Dispatch a fresh general-purpose agent (or a workflow) to independently verify the work. Hand it the **exclude set explicitly** (do NOT tell it to re-derive the grep from the spec — spec §7.4/§7.5 use a narrower `docs/superpowers/specs/*` exclude that would false-flag THIS plan file, which legitimately contains `.kiro/`/`AGENTS.md` tokens). Prompt:
+
+> "On branch `feat/kiro-to-claude-code`, verify the Kiro→Claude Code conversion. (1) `git grep -n '\.kiro/'` and `git grep -n 'AGENTS\.md'` each with these excludes — `:(exclude)docs/agent/RUN_LOG.md :(exclude)docs/agent/STATE.md :(exclude)CHANGELOG.md :(exclude)docs/plans/* :(exclude)docs/external-reviews/* :(exclude)devdocs/* :(exclude)smoke_tests/* :(exclude)docs/agent/DECISIONS/* :(exclude)docs/superpowers/*` — and confirm both are empty. (2) Confirm every `## ` header in the pre-fold AGENTS.md (recover it from git: `git show HEAD~N:AGENTS.md`) appears in CLAUDE.md, and CLAUDE.md is ≥320 lines. (3) Run the hook and confirm `wc -c` < 10000 with the live STATE sections present. (4) `git diff` the frozen historical paths and confirm none mutated. Report any failure."
+
+Fix anything it surfaces.
 
 - [ ] **Step 6: No commit (verification only)** — unless Step 5 surfaced fixes, which get their own commit.
 

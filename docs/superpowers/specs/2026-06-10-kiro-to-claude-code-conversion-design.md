@@ -224,7 +224,7 @@ authoritative final list, but this is now accurate, not guesswork):**
 
 | File | Edit needed | Verified |
 |---|---|---|
-| `README.md` | lines 61, 114, 127 (`AGENTS.md` → `CLAUDE.md`) + 63, 127 (`Kiro CLI` → non-TTY; `.kiro/steering/tech.md` → `docs/steering/tech.md`) | ✅ 4 ref sites |
+| `README.md` | line 61 (**two** sites: inline `see AGENTS.md` + the `[AGENTS.md](AGENTS.md)` link), 114, 127 (`AGENTS.md` → `CLAUDE.md`) + 63, 127 (`Kiro CLI` → non-TTY; `.kiro/steering/tech.md` → `docs/steering/tech.md`) | ✅ 5 edit sites |
 | `docs/steering/tech.md` (moved) | line 88 (`Kiro CLI` non-TTY reword) | ✅ 1 site |
 | `docs/agent/CONSTRAINTS.md` | line 38 (`Kiro CLI` non-TTY reword) — **no** `.kiro/`/`AGENTS.md` refs | ✅ 1 site |
 | `CLAUDE.md` (new) | its own folded `.kiro/`/`AGENTS.md` refs (from AGENTS.md body) resolve per the rules above | n/a (authored) |
@@ -349,9 +349,11 @@ this is also the first real end-to-end test that the new machinery executes, not
    `git grep -n '\.kiro/' -- ':(exclude)docs/agent/RUN_LOG.md' ':(exclude)docs/agent/STATE.md'
    ':(exclude)CHANGELOG.md' ':(exclude)docs/plans/*' ':(exclude)docs/external-reviews/*'
    ':(exclude)devdocs/*' ':(exclude)smoke_tests/*' ':(exclude)docs/agent/DECISIONS/*'
-   ':(exclude)docs/superpowers/specs/*'` → empty. STATE.md is excluded at file level here because
-   its only remaining `.kiro/` tokens are the frozen dated bullets (a line-level exception
-   confirmed by reading, per §4.4), not live refs.
+   ':(exclude)docs/superpowers/*'` → empty. Note the exclude is `docs/superpowers/*` (the **whole**
+   superpowers tree, not just `specs/`) — the plan file under `docs/superpowers/plans/` also
+   contains `.kiro/`/`AGENTS.md` tokens by design and must be excluded too. STATE.md is excluded at
+   file level because its only remaining `.kiro/` tokens are the frozen dated bullets (a line-level
+   exception confirmed by reading, per §4.4), not live refs.
 5. **Live `AGENTS.md` refs = 0**, same exclude set: `git grep -n 'AGENTS\.md' -- <same excludes>`
    → empty.
 6. `.kiro/` and `AGENTS.md` no longer exist; the 8 reference docs exist under `docs/steering/`.
