@@ -27,7 +27,7 @@ robolectric = "4.14.1"
 guava = "33.4.0-android"
 # Instrumented (androidTest) — V1X-08 Phase 1A
 androidxTestRunner = "1.6.2"
-androidxTestExtJunit = "1.2.1"
+androidxTestExtJunit = "1.3.0"
 
 [libraries]
 # Compose
