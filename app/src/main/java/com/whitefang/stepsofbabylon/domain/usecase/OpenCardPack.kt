@@ -26,7 +26,9 @@ class OpenCardPack(
 
     suspend operator fun invoke(packTier: PackTier, gems: Long, isFree: Boolean = false): Result {
         if (!isFree && gems < packTier.gemCost) return Result.InsufficientGems
-        if (!isFree) playerRepository.spendGems(packTier.gemCost)
+        // #122: gate the card grant on the guarded deduct's success (free packs skip the spend
+        // entirely). Keeps the deduct inside the !isFree branch so free packs are never blocked.
+        if (!isFree && !playerRepository.spendGems(packTier.gemCost)) return Result.InsufficientGems
 
         val results = mutableListOf<CardResult>()
 

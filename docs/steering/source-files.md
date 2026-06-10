@@ -180,7 +180,7 @@ domain/model/ResolvedStats.kt         # Computed combat stats from workshop + in
 ## Domain Layer — Interfaces & Use Cases
 
 ```
-domain/repository/PlayerRepository.kt          # Profile/wallet: observe + spend/add currencies
+domain/repository/PlayerRepository.kt          # Profile/wallet: observe + spend/add currencies. #122: spendGems/spendPowerStones return Boolean (rows-affected>0) + new spendStepsIfSufficient(): Boolean so callers gate grants on the guarded deduct; spendSteps stays Unit/clamp for the anti-cheat escrow clawback (ADR-0020)
 domain/repository/WorkshopRepository.kt         # Workshop upgrades interface (incl. purchaseUpgradeAtomic for B.2 PR 1)
 domain/repository/LabRepository.kt              # Lab research interface
 domain/repository/CardRepository.kt             # Card inventory interface
@@ -214,7 +214,8 @@ domain/usecase/UpgradeCard.kt                    # Card upgrade: Card Dust cost 
 domain/usecase/ApplyCardEffects.kt               # Post-process ResolvedStats with equipped card effects
 domain/usecase/ManageCardLoadout.kt              # Equip/unequip cards (max 3 loadout)
 domain/usecase/GenerateSupplyDrop.kt             # Seeded random supply drop generation (4 triggers)
-domain/usecase/ClaimSupplyDrop.kt                # Credits reward to player, marks drop claimed
+domain/usecase/ClaimSupplyDrop.kt                # Credits reward to player, marks drop claimed. #122: mark-first via the atomic guarded claimDrop (returns Boolean); credits only when the claim transitions unclaimed→claimed, so a double-tap credits exactly once (ADR-0020)
+domain/usecase/ClaimMission.kt                   # #122 (ADR-0020): atomic daily-mission claim extracted from MissionsViewModel. Mark-first via guarded DailyMissionDao.markClaimed (AND claimed=0, returns Int); credits Gems/PowerStones only on rows==1. Returns ClaimMissionResult (Success | NotClaimable). Closes the double-tap double-credit (audit #10)
 domain/usecase/TrackWeeklyChallenge.kt           # Weekly step challenge PS awards (50k/75k/100k)
 domain/usecase/TrackDailyLogin.kt                # Daily login PS + Gem streak
 domain/usecase/AwardWaveMilestone.kt             # PS on new personal-best waves (1/2/5)

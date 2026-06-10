@@ -37,4 +37,15 @@ class UnlockUltimateWeaponTest {
         val owned = listOf(OwnedWeapon(UltimateWeaponType.DEATH_WAVE, isUnlocked = false))
         assertTrue(sut(UltimateWeaponType.DEATH_WAVE, 200, owned))
     }
+
+    // #122 (audit #5): the UW screen has no _processing guard, so two quick taps both read the
+    // stale powerStones snapshot. The guarded deduct charges the first and no-ops the second; the
+    // second unlock must therefore return false and NOT unlock the weapon for free.
+    @Test
+    fun `R122 stale snapshot does not unlock a UW for free`() = runTest {
+        // On-disk Power Stones are 0; both taps pass the stale snapshot (200).
+        playerRepo.profile.value = PlayerProfile(powerStones = 0)
+        val unlocked = sut(UltimateWeaponType.DEATH_WAVE, powerStones = 200, owned = emptyList())
+        assertFalse(unlocked, "a UW must not unlock when the guarded Power Stone deduct fails")
+    }
 }

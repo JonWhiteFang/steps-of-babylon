@@ -215,6 +215,11 @@ Key reference documents:
 - Currency spends should go through the **atomic guarded-deduct pattern** (guarded DAO `UPDATE …
   WHERE balance >= cost` returning rows-affected; grant only on success, inside a `@Transaction`).
   See `WorkshopDao.purchaseUpgradeAtomic` / `MilestoneDao.claimMilestoneAtomic` for the template.
+  `PlayerRepository.spendGems` / `spendPowerStones` / `spendStepsIfSufficient` return `Boolean`
+  (rows-affected > 0) — **gate the grant on that result**, never on a stale wallet snapshot (#122,
+  ADR-0020). `spendSteps` is the exception: it keeps the `MAX(0,…)` clamp for the anti-cheat escrow
+  clawback. One-shot claims (supply drops, daily missions) use a guarded `UPDATE … WHERE id AND
+  claimed = 0` returning rows-affected and **mark-first** (credit only when it returns 1).
 
 ## Battle Renderer
 
@@ -253,7 +258,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh connectedDebugAndroidTest` (instrumented).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 871 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 888 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Notable guards:** `architecture/DomainPurityTest` (fails if `domain/` imports any Android package);
   `SimulationTest` (the extracted pure-domain game-loop core); `BattleSurfaceLifecycleTest` +

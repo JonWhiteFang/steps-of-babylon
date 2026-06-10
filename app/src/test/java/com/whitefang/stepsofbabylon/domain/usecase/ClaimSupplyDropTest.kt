@@ -84,4 +84,23 @@ class ClaimSupplyDropTest {
         val result = sut(drop)
         assertInstanceOf(ClaimSupplyDrop.Result.AlreadyClaimed::class.java, result)
     }
+
+    // #122 (audit #9): a rapid double-tap presents the SAME unclaimed snapshot twice. The atomic
+    // guarded claim (markClaimed AND claimed = 0) lets only the first call credit; the second sees
+    // 0 rows and returns AlreadyClaimed. Pre-fix the credit ran before an unconditional mark, so
+    // both taps credited — a double credit of premium currency.
+    @Test
+    fun `R122 double-claim credits the reward exactly once`() = runTest {
+        playerRepo.ensureProfileExists()
+        encounterRepo.createDrop(SupplyDropTrigger.STEP_THRESHOLD, SupplyDropReward.GEMS, 25)
+        val drop = encounterRepo.observeUnclaimed().first().first()
+
+        val first = sut(drop)
+        // Second tap reuses the same stale (claimed == false) snapshot.
+        val second = sut(drop)
+
+        assertInstanceOf(ClaimSupplyDrop.Result.Success::class.java, first)
+        assertInstanceOf(ClaimSupplyDrop.Result.AlreadyClaimed::class.java, second)
+        assertEquals(25L, playerRepo.observeWallet().first().gems, "gems credited exactly once")
+    }
 }

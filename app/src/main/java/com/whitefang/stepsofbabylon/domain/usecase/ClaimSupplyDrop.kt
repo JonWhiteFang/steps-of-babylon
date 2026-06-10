@@ -20,6 +20,13 @@ class ClaimSupplyDrop(
     suspend operator fun invoke(drop: SupplyDrop): Result {
         if (drop.claimed) return Result.AlreadyClaimed
 
+        // #122: mark-first via the atomic guarded claim. Only the call that actually transitions
+        // the drop unclaimed → claimed (rows-affected == 1) proceeds to credit the reward; a
+        // concurrent double-tap loses the race and returns AlreadyClaimed, so the reward is
+        // credited exactly once. Pre-fix the credit ran BEFORE an unconditional mark, so two
+        // taps both read claimed == false and both credited.
+        if (!encounterRepository.claimDrop(drop.id)) return Result.AlreadyClaimed
+
         when (drop.reward) {
             SupplyDropReward.STEPS -> playerRepository.addSteps(drop.rewardAmount.toLong())
             SupplyDropReward.GEMS -> playerRepository.addGems(drop.rewardAmount.toLong())
@@ -30,7 +37,6 @@ class ClaimSupplyDrop(
                 cardRepository.addCardOrIncrementCopy(cardType)
             }
         }
-        encounterRepository.claimDrop(drop.id)
         return Result.Success
     }
 }

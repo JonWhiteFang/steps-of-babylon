@@ -13,6 +13,7 @@ import com.whitefang.stepsofbabylon.domain.repository.CosmeticRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestone
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestoneResult
+import com.whitefang.stepsofbabylon.domain.usecase.ClaimMission
 import com.whitefang.stepsofbabylon.domain.usecase.GenerateDailyMissions
 import com.whitefang.stepsofbabylon.domain.time.TimeProvider
 import com.whitefang.stepsofbabylon.data.time.SystemTimeProvider
@@ -40,6 +41,7 @@ class MissionsViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val generateMissions = GenerateDailyMissions(dailyMissionDao)
+    private val claimMissionUseCase = ClaimMission(dailyMissionDao, playerRepository)
     private val claimMilestoneUseCase = ClaimMilestone(
         milestoneDao,
         playerRepository,
@@ -94,13 +96,9 @@ class MissionsViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MissionsUiState())
 
     fun claimMission(id: Int) {
-        viewModelScope.launch {
-            val missions = dailyMissionDao.getByDateOnce(today)
-            val m = missions.find { it.id == id && it.completed && !it.claimed } ?: return@launch
-            if (m.rewardGems > 0) playerRepository.addGems(m.rewardGems.toLong())
-            if (m.rewardPowerStones > 0) playerRepository.addPowerStones(m.rewardPowerStones.toLong())
-            dailyMissionDao.markClaimed(id)
-        }
+        // #122: delegate to the atomic ClaimMission use case (mark-first guarded claim, credit
+        // only on rows == 1) so a rapid double-tap can't double-credit the reward.
+        viewModelScope.launch { claimMissionUseCase(id, today) }
     }
 
     fun claimMilestone(milestone: Milestone) {

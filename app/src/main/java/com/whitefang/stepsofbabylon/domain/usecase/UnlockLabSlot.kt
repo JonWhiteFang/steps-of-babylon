@@ -15,7 +15,8 @@ class UnlockLabSlot(
         if (currentSlotCount >= MAX_SLOTS) return Result.MaxSlotsReached
         if (gems < SLOT_COST_GEMS) return Result.InsufficientGems
 
-        playerRepository.spendGems(SLOT_COST_GEMS)
+        // #122: only increment the slot count when the guarded deduct actually charged the Gems.
+        if (!playerRepository.spendGems(SLOT_COST_GEMS)) return Result.InsufficientGems
         val newCount = currentSlotCount + 1
         playerRepository.updateLabSlotCount(newCount)
         return Result.Unlocked(newCount)

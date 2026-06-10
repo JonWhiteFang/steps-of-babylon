@@ -95,6 +95,7 @@ class PlayerRepositoryImplTest {
     @Test
     fun `V1X10 - spendGems delegates to atomic DAO method`() = runTest {
         val (dao, repo) = makeRepoWithEntity(PlayerProfileEntity())
+        whenever(dao.spendGemsAtomic(50L)).thenReturn(1)
 
         repo.spendGems(50L)
 
@@ -104,15 +105,50 @@ class PlayerRepositoryImplTest {
         verify(dao, never()).incrementGemsSpent(any())
     }
 
+    // #122: spendGems must propagate the atomic DAO's rows-affected as a Boolean so callers can
+    // gate the grant on the deduct actually happening.
+    @Test
+    fun `R122 - spendGems returns true when the guarded deduct affects a row`() = runTest {
+        val (dao, repo) = makeRepoWithEntity(PlayerProfileEntity())
+        whenever(dao.spendGemsAtomic(50L)).thenReturn(1)
+        assertTrue(repo.spendGems(50L))
+    }
+
+    @Test
+    fun `R122 - spendGems returns false when the guarded deduct affects no row`() = runTest {
+        val (dao, repo) = makeRepoWithEntity(PlayerProfileEntity())
+        whenever(dao.spendGemsAtomic(50L)).thenReturn(0)
+        assertFalse(repo.spendGems(50L))
+    }
+
     @Test
     fun `V1X10 - spendPowerStones delegates to atomic DAO method`() = runTest {
         val (dao, repo) = makeRepoWithEntity(PlayerProfileEntity())
+        whenever(dao.spendPowerStonesAtomic(3L)).thenReturn(1)
 
         repo.spendPowerStones(3L)
 
         verify(dao).spendPowerStonesAtomic(3L)
         verify(dao, never()).adjustPowerStones(any())
         verify(dao, never()).incrementPowerStonesSpent(any())
+    }
+
+    @Test
+    fun `R122 - spendPowerStones returns false when the guarded deduct affects no row`() = runTest {
+        val (dao, repo) = makeRepoWithEntity(PlayerProfileEntity())
+        whenever(dao.spendPowerStonesAtomic(3L)).thenReturn(0)
+        assertFalse(repo.spendPowerStones(3L))
+    }
+
+    // #122: spendStepsIfSufficient is the new guarded Step deduct (distinct from the clamping
+    // spendSteps). It must report the guarded DAO's rows-affected as a Boolean.
+    @Test
+    fun `R122 - spendStepsIfSufficient propagates the guarded DAO result`() = runTest {
+        val (dao, repo) = makeRepoWithEntity(PlayerProfileEntity())
+        whenever(dao.adjustStepBalanceIfSufficient(500L)).thenReturn(1)
+        assertTrue(repo.spendStepsIfSufficient(500L))
+        whenever(dao.adjustStepBalanceIfSufficient(999L)).thenReturn(0)
+        assertFalse(repo.spendStepsIfSufficient(999L))
     }
 
     @Test

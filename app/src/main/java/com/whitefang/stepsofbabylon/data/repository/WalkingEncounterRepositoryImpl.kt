@@ -32,8 +32,8 @@ class WalkingEncounterRepositoryImpl @Inject constructor(
             createdAt = System.currentTimeMillis(),
         ))
 
-    override suspend fun claimDrop(id: Int) =
-        dao.markClaimed(id, System.currentTimeMillis())
+    override suspend fun claimDrop(id: Int): Boolean =
+        dao.markClaimed(id, System.currentTimeMillis()) > 0
 
     override suspend fun enforceInboxCap(maxSize: Int) {
         while (dao.countUnclaimedOnce() >= maxSize) {

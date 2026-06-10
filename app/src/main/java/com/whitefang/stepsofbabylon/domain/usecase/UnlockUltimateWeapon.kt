@@ -23,7 +23,10 @@ class UnlockUltimateWeapon(
     ): Boolean {
         if (owned.any { it.type == type && it.isUnlocked }) return false
         if (powerStones < type.unlockCost) return false
-        playerRepository.spendPowerStones(type.unlockCost.toLong())
+        // #122: only unlock when the guarded deduct actually moved the balance. The UW screen
+        // has no _processing guard, so two quick taps could both pass the stale-snapshot check;
+        // gating on the deduct's success prevents a free unlock when the second deduct no-ops.
+        if (!playerRepository.spendPowerStones(type.unlockCost.toLong())) return false
         uwRepository.unlockWeapon(type)
         return true
     }

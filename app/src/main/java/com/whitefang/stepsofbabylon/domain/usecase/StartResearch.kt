@@ -34,9 +34,14 @@ class StartResearch(
         if (activeList.size >= labSlotCount) return Result.NoSlotAvailable
 
         val cost = calculateCost(type, level)
+        // #122: gate on the atomic guarded deduct, not the stale wallet snapshot. The snapshot
+        // pre-check stays as a cheap fast-fail, but the authoritative decision is the guarded
+        // SQL deduct — if a concurrent spend drained the balance after the snapshot, this
+        // returns InsufficientSteps and no research starts (previously the unguarded
+        // spendSteps clamped to 0 and started the research for free).
         if (wallet.stepBalance < cost) return Result.InsufficientSteps
+        if (!playerRepository.spendStepsIfSufficient(cost)) return Result.InsufficientSteps
 
-        playerRepository.spendSteps(cost)
         val timeHours = calculateTime(type, level)
         val completesAt = now + (timeHours * 3_600_000).toLong()
         labRepository.startResearch(type, completesAt, startedAt = now)

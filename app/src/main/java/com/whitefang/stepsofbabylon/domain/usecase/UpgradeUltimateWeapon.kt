@@ -28,7 +28,10 @@ class UpgradeUltimateWeapon(
         if (currentPathLevel >= UltimateWeaponType.MAX_PATH_LEVEL) return false
         val cost = type.costForPath(currentPathLevel)
         if (powerStones < cost) return false
-        if (cost > 0) playerRepository.spendPowerStones(cost.toLong())
+        // #122: gate the level write on the guarded deduct's success. The free L0→L1 step
+        // (cost == 0) is ungated by design. Keeps the deduct strictly inside the cost>0 branch
+        // so the free path is never blocked.
+        if (cost > 0 && !playerRepository.spendPowerStones(cost.toLong())) return false
         uwRepository.upgradePathLevel(type, path, currentPathLevel + 1)
         return true
     }

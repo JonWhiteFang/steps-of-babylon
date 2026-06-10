@@ -11,6 +11,13 @@ interface WalkingEncounterRepository {
     fun countUnclaimed(): Flow<Int>
     suspend fun getUnclaimedCount(): Int
     suspend fun createDrop(trigger: SupplyDropTrigger, reward: SupplyDropReward, rewardAmount: Int): Long
-    suspend fun claimDrop(id: Int)
+
+    /**
+     * Atomically marks the drop [id] as claimed (#122). Returns `true` iff this call transitioned
+     * the drop from unclaimed → claimed; `false` if it was already claimed. Callers MUST credit
+     * the reward only when this returns `true` — the mark-first ordering closes the double-credit
+     * window where two rapid taps both read `claimed = false` and both credit.
+     */
+    suspend fun claimDrop(id: Int): Boolean
     suspend fun enforceInboxCap(maxSize: Int)
 }

@@ -32,10 +32,15 @@ class FakeWalkingEncounterRepository : WalkingEncounterRepository {
         return id.toLong()
     }
 
-    override suspend fun claimDrop(id: Int) {
+    // #122: mirrors the guarded DAO markClaimed (AND claimed = 0). Returns true only when this
+    // call transitions an unclaimed drop → claimed; false if already claimed / not found.
+    override suspend fun claimDrop(id: Int): Boolean {
+        val target = drops.value.find { it.id == id } ?: return false
+        if (target.claimed) return false
         drops.value = drops.value.map {
             if (it.id == id) it.copy(claimed = true, claimedAt = System.currentTimeMillis()) else it
         }
+        return true
     }
 
     override suspend fun enforceInboxCap(maxSize: Int) {
