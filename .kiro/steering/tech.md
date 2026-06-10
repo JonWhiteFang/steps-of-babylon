@@ -95,7 +95,7 @@ GitHub Actions (Plan 32 / ADR-0018). Workflows under `.github/workflows/`, all t
 - `instrumented.yml` — `connectedDebugAndroidTest` on an API-34 KVM emulator (AVD-cached); blocking on PRs to `main` + nightly.
 - `release.yml` — `v*` tag → signed `bundleRelease` → Play internal track (`r0adkll/upload-google-play`). Play "What's new" notes are written from the annotated tag message (`en-US`, capped at Play's 500-char limit; falls back to a generic line for lightweight tags / manual dispatch).
 
-Plus `dependency-submission.yml` (Gradle dependency graph, scoped to `*RuntimeClasspath` via `DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS` so the security graph reflects shipped deps, not the build-tool/plugin classpath) and `dependabot.yml` (gradle + github-actions). CI invokes `./gradlew` directly — runners have a PTY, so `run-gradle.sh` is not needed there.
+Plus `dependency-submission.yml` (Gradle dependency graph, scoped via `DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS` to a regex anchored on `releaseRuntimeClasspath` so the security graph reflects only production-shipped deps — excludes the build-tool/plugin classpath and the debug/test runtime classpaths) and `dependabot.yml` (gradle + github-actions). CI invokes `./gradlew` directly — runners have a PTY, so `run-gradle.sh` is not needed there.
 
 ## Notes
 
