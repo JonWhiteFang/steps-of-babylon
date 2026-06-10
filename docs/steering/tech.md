@@ -5,7 +5,7 @@
 - **Language:** Kotlin (JVM target 17)
 - **Min SDK:** 34 (Android 14) / Target & Compile SDK: 36
 - **Architecture:** MVVM + Clean Architecture
-- **Build:** Gradle 9.3.1 with Kotlin DSL, version catalog at `gradle/libs.versions.toml`
+- **Build:** Gradle 9.5.1 with Kotlin DSL, version catalog at `gradle/libs.versions.toml`
 - **Database encryption:** SQLCipher via Android Keystore-managed passphrase
 
 ## Key Libraries & Versions
@@ -23,10 +23,10 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | Google Play Billing | 8.3.0 | IAP via `billing-ktx`. `BillingManagerImpl` is the sole `BillingManager` binding for debug + release as of C.5 PR 3 (`StubBillingManager` deleted; `BuildConfig.USE_REAL_BILLING` removed). |
 | Google Mobile Ads SDK | 25.3.0 | Reward ads via `play-services-ads`. `RewardAdManagerImpl` is the sole `RewardAdManager` binding for debug + release as of C.6 PR 3 (`StubRewardAdManager` deleted). `BuildConfig.USE_REAL_ADS` is retained only to gate the `MainActivity` UMP consent prefetch on debug emulators. |
 | User Messaging Platform | 4.0.0 | GDPR/DSA consent via `user-messaging-platform`; paired with AdMob (C.6 PR 1) |
-| Navigation Compose | 2.9.7 | Compose navigation |
+| Navigation Compose | 2.9.8 | Compose navigation |
 | Lifecycle | 2.10.0 | ViewModel, StateFlow integration |
 | WorkManager | 2.11.0 | Background step sync |
-| JUnit 5 | 5.11.4 | Unit testing framework |
+| JUnit (Jupiter) | 6.1.0 | Unit testing framework — junit-jupiter 6.x (catalog key still `junit5`) |
 | kotlinx-coroutines-test | 1.10.1 | Coroutine test utilities |
 | SQLCipher | 4.16.0 | Database encryption |
 | Health Connect | 1.2.0-alpha02 | Step cross-validation, Activity Minute Parity |

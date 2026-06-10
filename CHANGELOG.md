@@ -4,6 +4,25 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Build — Dependabot dependency wave (6 bumps, combined-verified) (2026-06-10)
+
+- Consolidated the 6 open Dependabot bumps into one branch (`deps/dependabot-wave-2026-06-10`)
+  and merged via **PR #142** (squash, merge commit `162f8be`) so the **combined** upgrade was
+  verified together — per-PR CI only ever tested each bump in isolation against `main`. Each
+  cherry-pick preserved Dependabot's exact verified change (including the binary
+  `gradle-wrapper.jar`). All 6 Dependabot PRs (#134–#139) auto-closed on merge.
+- **Bumps:** `gradle-wrapper` 9.3.1 → **9.5.1** (build tool); `junit5` (junit-jupiter) 5.11.4 →
+  **6.1.0** (JVM test — major); `androidx.navigation:navigation-compose` 2.9.7 → 2.9.8 (runtime);
+  `com.google.guava` 33.4.0 → 33.6.0-android (CVE security-floor constraint — see the guava
+  constraint block in `app/build.gradle.kts`); `androidx.test.ext:junit` 1.2.1 → 1.3.0
+  (instrumented test); `gradle/actions` 6.1.0 → 6.1.1 (SHA-pinned CI action, 4 workflow files).
+- **Verification (combined, on Gradle 9.5.1):** local `./run-gradle.sh testDebugUnitTest` →
+  BUILD SUCCESSFUL, **890 tests / 0 failures / 0 errors / 0 skipped** (matches the headline count —
+  the JUnit 6 major bump skipped nothing); `./run-gradle.sh assembleDebug lintDebug` → BUILD
+  SUCCESSFUL (R8/packaging exercises navigation-compose + guava; lint clean). Then both required
+  CI gates green on PR #142 (`build-and-test` + `connected`, 8m7s each). No production code / test /
+  schema change → headline count unchanged at **890 JVM + 9 instrumented**.
+
 ### Fix — #123 mid-day reboot loses steps (stale day-start baseline) (2026-06-10)
 
 - Fixes audit finding #7 (Major). `TYPE_STEP_COUNTER` resets to 0 on device reboot, but

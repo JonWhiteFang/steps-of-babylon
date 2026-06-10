@@ -111,7 +111,7 @@ See `docs/StepsOfBabylon_GDD.md` for the full game design document.
 - **Database:** Room (SQLite) with SQLCipher encryption — offline-first, all game state stored locally
 - **Background:** WorkManager + Foreground Service (step counting)
 - **Step Tracking:** Android Sensor API (`TYPE_STEP_COUNTER`) + Health Connect SDK (cross-validation, Activity Minute Parity)
-- **Build:** Gradle 9.3.1 (Kotlin DSL), version catalog at `gradle/libs.versions.toml` (never hardcode versions)
+- **Build:** Gradle 9.5.1 (Kotlin DSL), version catalog at `gradle/libs.versions.toml` (never hardcode versions)
 - **Security:** SQLCipher (DB encryption), Android Keystore (key management), R8 (obfuscation), network security config (cleartext blocked)
 - **CI/CD:** GitHub Actions — PR gate (lint + unit + assembleDebug + schema-drift), instrumented emulator suite, and a release lane that ships a signed AAB to the Play internal track on a `v*` tag. See `docs/plans/plan-32-ci.md` + ADR-0018.
 
@@ -253,7 +253,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 
 - Unit test domain use cases and game logic (cost calculations, damage formulas, tier progression).
 - Use fakes for repositories in ViewModel tests (`test/fakes/`).
-- **Frameworks:** JUnit 5 + kotlinx-coroutines-test for JVM unit tests (pure JVM, no emulator);
+- **Frameworks:** JUnit Jupiter + kotlinx-coroutines-test for JVM unit tests (pure JVM, no emulator);
   JUnit 4 + AndroidJUnit4 + Hilt-android-testing for instrumented tests (needs a connected emulator, API 34+).
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh connectedDebugAndroidTest` (instrumented).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
