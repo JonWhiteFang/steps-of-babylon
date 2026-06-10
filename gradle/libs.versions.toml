@@ -24,7 +24,7 @@ robolectric = "4.14.1"
 # Transitive-dependency security floor (not a direct dep — applied via a constraint in
 # app/build.gradle.kts). guava ships transitively (kotlinx-coroutines-guava + Play Services)
 # at 31.1-android; force >=32 to clear CVE-2023-2976 / CVE-2020-8908.
-guava = "33.4.0-android"
+guava = "33.6.0-android"
 # Instrumented (androidTest) — V1X-08 Phase 1A
 androidxTestRunner = "1.6.2"
 androidxTestExtJunit = "1.2.1"
