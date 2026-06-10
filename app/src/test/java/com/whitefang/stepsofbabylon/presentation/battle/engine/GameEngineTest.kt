@@ -335,6 +335,64 @@ class GameEngineTest {
         )
     }
 
+    // ---- #119: GOLDEN_ZIGGURAT expiry must preserve in-round upgrades bought during its window ----
+    // Pre-fix: activation snapshots preGoldenStats once; an in-round purchase mid-GOLDEN updates
+    // `stats` via updateZigguratStats→applyStats but NOT preGoldenStats, so expiry restores the
+    // STALE pre-GOLDEN snapshot and silently discards the purchase. Since GOLDEN auto-fires on
+    // cooldown (R4-06), the loss recurs every cycle.
+
+    @Test
+    fun `R119 GOLDEN expiry preserves in-round upgrade bought during its window`() {
+        val eng = freshEngine()
+        val baseDamage = eng.ziggurat!!.stats.damage
+
+        // Activate GOLDEN — applies its damage multiplier over the base and snapshots the base.
+        activateGoldenZigForTest(eng)
+        val goldenBoostedDamage = eng.ziggurat!!.stats.damage
+        assertTrue(
+            goldenBoostedDamage > baseDamage,
+            "Sanity: GOLDEN activation must raise damage above base " +
+                "(base=$baseDamage, golden=$goldenBoostedDamage)",
+        )
+
+        // Player buys an in-round DAMAGE upgrade WHILE GOLDEN is active (the in-round purchase
+        // channel is updateZigguratStats). Use a distinctive base damage of 999 so the assertion
+        // can't be satisfied by the pre-GOLDEN base value.
+        eng.updateZigguratStats(ResolvedStats(damage = 999.0))
+
+        // Expire GOLDEN via a long updateUWs tick (effectDuration is 10 s).
+        invokeUpdateUWs(eng, deltaTime = 20f)
+
+        assertEquals(
+            999.0,
+            eng.ziggurat!!.stats.damage,
+            0.001,
+            "After GOLDEN expires, the ziggurat must retain the in-round DAMAGE upgrade bought " +
+                "during the GOLDEN window (999), NOT roll back to the stale pre-GOLDEN snapshot",
+        )
+    }
+
+    @Test
+    fun `R119 GOLDEN damage layer still applies while active after an in-round purchase`() {
+        // Guards that the fix re-layers the GOLDEN multiplier over the NEW base after a mid-window
+        // purchase (not just that expiry restores it). While GOLDEN is active, a purchase to base
+        // damage 100 must show as 100 × goldenDamageMult, not a bare 100.
+        val eng = freshEngine()
+        val base = eng.ziggurat!!.stats.damage
+        activateGoldenZigForTest(eng)
+        val mult = eng.ziggurat!!.stats.damage / base // the GOLDEN damage multiplier (L1 secondary)
+
+        eng.updateZigguratStats(ResolvedStats(damage = 100.0))
+
+        assertEquals(
+            100.0 * mult,
+            eng.ziggurat!!.stats.damage,
+            0.01,
+            "A mid-GOLDEN purchase must keep the GOLDEN damage multiplier layered over the new " +
+                "base (100 × $mult), so the player still sees the buff until it expires",
+        )
+    }
+
     // ---- R4-03: RAPID_FIRE periodic attack-speed burst ----
     // The Workshop ATTACK upgrade fires a periodic attack-speed burst during a wave's
     // SPAWNING phase. Pre-R4-03 the upgrade did not exist; these tests guard the engine-
@@ -578,8 +636,8 @@ class GameEngineTest {
     /**
      * Equips a single GOLDEN_ZIGGURAT UW at the given level via the public `initUWs` /
      * `activateUW` path so the test exercises the same activation flow production uses.
-     * After this call: `goldenZigActive == true`, `fortuneMultiplier == 5.0` (or higher
-     * if a prior buff already set a higher value), `preGoldenStats` captured.
+     * After this call: `goldenZigActive == true`, `fortuneMultiplier == 2.0` at L1 (the DAMAGE-path
+     * cash multiplier; or higher if a prior buff already set a higher value), `preGoldenStats` captured.
      */
     private fun activateGoldenZigForTest(eng: GameEngine, level: Int = 1) {
         eng.initUWs(listOf(OwnedWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT, damageLevel = level, secondaryLevel = level, cooldownLevel = level, isUnlocked = true, isEquipped = true)))
