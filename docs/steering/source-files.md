@@ -71,7 +71,7 @@ data/sensor/StepSensorDataSource.kt  # TYPE_STEP_COUNTER wrapper, emits deltas v
 data/sensor/StepRateLimiter.kt       # Rolling 1-min window rate limiter (200/min, 250 burst)
 data/sensor/StepVelocityAnalyzer.kt  # Unnatural step pattern detection (shaker/spoof), penalty multiplier
 data/sensor/StepIngestionPreferences.kt # Service heartbeat + day-start counter for worker/service coordination
-data/sensor/DailyStepManager.kt      # Orchestrates: rate limit → velocity analysis → STEP_MULTIPLIER (Workshop) + STEP_EFFICIENCY (Lab) bonus combined under shared +100 % cap (sensor walking only, RO-08 + RO-11 #A.3) → 50k ceiling → Room persist + activity minutes; constructor takes WorkshopRepository + LabRepository
+data/sensor/DailyStepManager.kt      # Orchestrates: rate limit → velocity analysis → STEP_MULTIPLIER (Workshop) + STEP_EFFICIENCY (Lab) bonus combined under shared +100 % cap (sensor walking only, RO-08 + RO-11 #A.3) → 50k ceiling → Room persist + activity minutes; constructor takes WorkshopRepository + LabRepository. #120: recordSteps/recordActivityMinutes run their full read-check-write under a kotlinx Mutex (ensureInitializedLocked is the non-reentrant init split) so the ceiling RMW is atomic across the service + worker threads; stepsPerMinute is a ConcurrentHashMap, counters @Volatile. Guarded by DailyStepManagerConcurrencyTest (deterministic onBeforeCreditCommit seam)
 ```
 
 ## Data Layer — Billing & Ads

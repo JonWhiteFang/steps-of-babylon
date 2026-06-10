@@ -4,6 +4,29 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — #120 DailyStepManager singleton data race (2026-06-10)
+
+- Fixes audit findings #6 + #12 (Major). `DailyStepManager` is an app-wide `@Singleton` mutated by
+  two genuinely-concurrent producers — the foreground `StepCounterService` sensor collector
+  (`Dispatchers.Default`) and the periodic `StepSyncWorker` (`CoroutineWorker`, also a multi-threaded
+  pool). Its counters had no synchronization, so the ceiling read-check-write
+  (`DAILY_CEILING - dailyCreditedTotal` … `dailyCreditedTotal += credited`) could interleave: two
+  credits both pass the check and both add → overshoot the 50,000/day anti-cheat ceiling +
+  double-credit the permanent Steps wallet. The plain `mutableMapOf stepsPerMinute` (written by the
+  service, read via `getSensorStepsPerMinute().toMap()` on the worker) could also throw
+  `ConcurrentModificationException`.
+- **Fix:** added a `kotlinx.coroutines.sync.Mutex`; `recordSteps` / `recordActivityMinutes` now run
+  their full read-check-write body under `mutex.withLock`, so the ceiling check + credit are atomic
+  across the two threads. `ensureInitialized` was factored into `ensureInitializedLocked` (the Mutex
+  is non-reentrant; it is only called while the lock is held). `stepsPerMinute` is now a
+  `ConcurrentHashMap`; the daily counters are `@Volatile`. Mirrors the repo's existing
+  `RealConsentManager.initMutex` idiom. No behaviour change on the single-threaded happy path.
+- **Tests:** new `DailyStepManagerConcurrencyTest` — a **deterministic** test (test-only
+  `onBeforeCreditCommit` suspend seam parks one thread mid-credit while a second credits) seeded at
+  49,800 with 200 of ceiling headroom; asserts `getDailyCredited() <= 50,000`. Confirmed RED
+  (overshoots to 50,100) with the lock neutralized, GREEN with it. Full JVM suite green,
+  **888 → 889 JVM** (+1). No schema/dependency change (`Mutex`/`ConcurrentHashMap` are stdlib).
+
 ### Fix — #122 economy spend/claim atomicity gaps (2026-06-10)
 
 - Fixes audit findings #4 + #5 + #9 + #10 (Major) — a recurring "guarded DAO exists, caller ignores
