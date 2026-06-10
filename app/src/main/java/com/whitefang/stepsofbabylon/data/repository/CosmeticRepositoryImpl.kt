@@ -143,7 +143,7 @@ class CosmeticRepositoryImpl @Inject constructor(
             CosmeticEntity(cosmeticId = "zig_jade", category = "ZIGGURAT_SKIN", name = "Jade Ziggurat", description = "Deep jade stone with pale highlights", priceGems = 150),
             // Milestone-reward cosmetic (IRON_SOLES). Listed here so `CosmeticRepository.idExists`
             // returns true and `ClaimMilestone(IRON_SOLES)` runs the atomic credit instead of
-            // returning `UnknownCosmetic`. Intentionally NOT in StoreScreen.ENABLED_COSMETIC_ID
+            // returning `UnknownCosmetic`. Intentionally NOT in StoreScreen.ENABLED_COSMETIC_IDS
             // yet — appears as "Coming Soon" in the Store. Primary acquisition path remains
             // the milestone; store pricing is a future UX decision. (C.2 PR 3)
             CosmeticEntity(cosmeticId = "lapis_lazuli_skin", category = "ZIGGURAT_SKIN", name = "Lapis Lazuli Ziggurat Skin", description = "Deep lapis lazuli stone with pyrite-gold flecks", priceGems = 500),

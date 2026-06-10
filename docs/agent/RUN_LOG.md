@@ -6566,3 +6566,13 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Next: commit + push + open PR. After merge: resume the closed-track soak (earliest production-access application 2026-06-09), or pick up V1X-12 cloud save.
 - Merged: PR #112 merged via merge commit `69b2633` — both required checks (`build-and-test` + `connected`) green on the first run (the full local gate incl. `lintDebug` paid off). Local `main` fast-forwarded `194da38..69b2633`; branch deleted. Post-merge doc sync (STATE + this RUN_LOG) committed directly to `main`.
 - Memory updated: STATE ✅ / RUN_LOG ✅
+
+## 2026-06-10 — V1X-14 zig_obsidian store-enablement (COMPLETE)
+
+- Picked up Track 2 (post-launch V1X work) per user; selected V1X-14 as the clean, no-external-blocker item. Branch `feat/V1X-14-zig-obsidian` from clean `main`.
+- **Recon finding:** V1X-14 was ~90% already shipped — commit `5033b77` (2026-05-28, "feat(cosmetics): ship zig_obsidian palette — first purchasable dark skin (V1X-14)") committed both the `zig_obsidian` ZIGGURAT_COLOR_LOOKUP palette (0xFF1A1A1A/2D2D2D/3F3F3F/525252/7A6F4D) AND the `V1X14 - zig_obsidian propagates obsidian palette` test + the regression-guard exclusion. But it never flipped `StoreScreen.ENABLED_COSMETIC_ID = "zig_jade"`, so zig_obsidian still hit the `else → "Coming Soon"` branch — the commit's "purchasable" claim was untrue, and STATE/source-files docs were left stale (STATE known-issues still listed it Coming Soon; source-files said "4 palettes").
+- User confirmed: enable it in the Store. Edit: `ENABLED_COSMETIC_ID` (const String) → `ENABLED_COSMETIC_IDS` (Set: zig_jade + zig_obsidian); `when` branch `cosmetic.cosmeticId == ENABLED_COSMETIC_ID` → `in ENABLED_COSMETIC_IDS`; Cosmetics header copy now names Jade + Obsidian; stale `ENABLED_COSMETIC_ID` comment refs updated in StoreScreen.kt + CosmeticRepositoryImpl.kt (comment-only). Milestone skins (lapis/garden/sandals) deliberately left store-disabled.
+- Verification: `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL in 1m10s; 867 JVM unchanged (Compose-surface allow-list flip — no JVM-testable change; palette test already on `main`).
+- Doc sync per agent protocol: CHANGELOG.md (new `[Unreleased]` V1X-14 entry), `.kiro/steering/source-files.md` (CosmeticRepositoryImpl 4→5 palettes + zig_obsidian store-purchasable note), STATE.md (current objective + known-issues rewrite), RUN_LOG.md (this entry). No test-count change (867); AGENTS/README/structure/tech/schema unchanged.
+- Next: commit + push + open PR. After merge: resume closed-track soak (earliest production-access application 2026-06-09), or pick up V1X-12 cloud save.
+- Memory updated: STATE ✅ / RUN_LOG ✅

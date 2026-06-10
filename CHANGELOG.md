@@ -4,6 +4,11 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### V1X-14 — zig_obsidian becomes purchasable in the Store; V1X-14 COMPLETE (2026-06-10)
+
+- Completes V1X-14. The `zig_obsidian` renderer palette + its `CosmeticRepositoryImplTest` exact-value test already shipped on `main` in commit `5033b77` (2026-05-28), but that commit never flipped the Store allow-list — so despite the commit message ("first purchasable dark skin"), `zig_obsidian` still rendered a disabled "Coming Soon" button. This PR closes that gap: `StoreScreen.kt`'s single `ENABLED_COSMETIC_ID = "zig_jade"` constant becomes a `Set` `ENABLED_COSMETIC_IDS = setOf("zig_jade", "zig_obsidian")`, and the purchasability `when` branch changes from `== ENABLED_COSMETIC_ID` to `in ENABLED_COSMETIC_IDS`. `zig_obsidian` (100 💎) now shows a live "💎 100" Buy button; equipping it swaps the ziggurat layer colors to the obsidian palette via the existing C.2 override pipeline. The Cosmetics header copy now names both Jade and Obsidian; the milestone cosmetics (lapis_lazuli_skin, garden_ziggurat_skin, sandals_of_gilgamesh) stay deliberately store-disabled (milestone acquisition only). Stale `ENABLED_COSMETIC_ID` comment references updated in both `StoreScreen.kt` and `CosmeticRepositoryImpl.kt`.
+- `testDebugUnitTest` + `lintDebug` + `assembleDebug` BUILD SUCCESSFUL, 867 unchanged (the palette test was already on `main`; this is a Compose-surface allow-list flip with no JVM-testable change).
+
 ### V1X-13 i18n phase 1 (final) — HardcodedText lint-as-error guard; PHASE 1 COMPLETE (2026-06-04)
 
 - Final slice of V1X-13 (ADR-0014). Adds a `lint { error += "HardcodedText" }` block to `app/build.gradle.kts`, promoting Android Lint's `HardcodedText` check from warning to **error** so a hardcoded `android:text` in an XML resource fails the build. Fixed the only 3 existing violations in `res/layout/widget_step_counter.xml`: the static title now uses `@string/app_name`; the two runtime-populated `TextView`s (`widget_daily_steps`, `widget_balance`, set via `RemoteViews` by `WidgetUpdateHelper`) switched from `android:text` placeholders to design-time `tools:text`.

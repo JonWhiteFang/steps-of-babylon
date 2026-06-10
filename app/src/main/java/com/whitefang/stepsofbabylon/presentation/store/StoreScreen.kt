@@ -134,7 +134,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
         item {
             Spacer(Modifier.height(8.dp))
             Text("Cosmetics", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text("Most cosmetic visuals are still being finalized. Jade Ziggurat is available now.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text("More cosmetic visuals are still being finalized. Jade and Obsidian Ziggurat skins are available now.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
         items(state.cosmetics) { cosmetic ->
             Card(Modifier.fillMaxWidth()) {
@@ -147,10 +147,10 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                     when {
                         cosmetic.isEquipped -> OutlinedButton(onClick = { viewModel.unequipCosmetic(cosmetic.cosmeticId) }) { Text("Unequip") }
                         cosmetic.isOwned -> Button(onClick = { viewModel.equipCosmetic(cosmetic.cosmeticId) }) { Text("Equip") }
-                        // C.2 PR 2: only zig_jade has a shipped renderer palette. Remaining
-                        // cosmetics stay behind the R2-11 "Coming Soon" guard until their
-                        // palette ships in C.2 PR 3+.
-                        cosmetic.cosmeticId == ENABLED_COSMETIC_ID -> Button(
+                        // C.2 PR 2 + V1X-14: only cosmetics whose renderer palette has shipped
+                        // are purchasable (zig_jade, zig_obsidian). Remaining cosmetics stay
+                        // behind the R2-11 "Coming Soon" guard until their palette ships.
+                        cosmetic.cosmeticId in ENABLED_COSMETIC_IDS -> Button(
                             onClick = { viewModel.purchaseCosmetic(cosmetic.cosmeticId) },
                             enabled = !state.isPurchasing,
                         ) { Text("💎 ${cosmetic.priceGems}") }
@@ -171,5 +171,12 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
  * enabled in the store. Each entry here must have both a [data/repository/CosmeticRepositoryImpl]
  * SEED_COSMETICS row and a ZIGGURAT_COLOR_LOOKUP / category-appropriate palette entry.
  * See `docs/evolution/implementation_roadmap.md` §C.2 PR 2+.
+ *
+ * - `zig_jade` — C.2 PR 2, first shipped palette.
+ * - `zig_obsidian` — V1X-14, first purchasable dark skin (palette shipped in commit 5033b77;
+ *   this allow-list entry completes V1X-14 by dropping its "Coming Soon" badge).
+ *
+ * Milestone-reward cosmetics (lapis_lazuli_skin, garden_ziggurat_skin, sandals_of_gilgamesh)
+ * are deliberately NOT here — they have palettes but are acquired via milestones, not the Store.
  */
-private const val ENABLED_COSMETIC_ID = "zig_jade"
+private val ENABLED_COSMETIC_IDS = setOf("zig_jade", "zig_obsidian")
