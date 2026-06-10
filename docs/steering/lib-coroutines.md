@@ -1,8 +1,3 @@
----
-inclusion: fileMatch
-fileMatchPattern: "**/*Repository*,**/*ViewModel*,**/*UseCase*,**/usecase/**,**/repository/**,**/service/**"
----
-
 # Kotlin Coroutines & Flow — Reference Guide
 
 ## Structured Concurrency

@@ -1,25 +1,76 @@
-# AGENTS.md — Steps of Babylon
+# CLAUDE.md — Steps of Babylon
+
+This is the single canonical guide for working in this repository. It is auto-loaded every
+session. Authority lives here; *progress and decisions* live in the committed memory spine
+under `docs/agent/` (which points back here and never restates these rules).
+
+## Project Memory (read first)
+
+Treat these as the project source of truth — never rely on chat history.
+
+| File | Purpose |
+|---|---|
+| `docs/agent/START_HERE.md` | Agent contract — what this is, how to work here |
+| `docs/agent/STATE.md` | One-page live snapshot (current objective, priorities, next actions, fragile zones) |
+| `docs/agent/CONSTRAINTS.md` | Architecture invariants, security rules, "never do" list |
+| `docs/agent/RUN_LOG.md` | Append-only log of every work session |
+| `docs/agent/DECISIONS/` | Architecture Decision Records (ADRs) |
+| `docs/steering/` | Reference docs (tech stack, structure, source-file index, library guides) — read on demand |
+
+## Always-on memory rules
+
+- The memory spine (above) is truth. Do NOT rely on chat history as the project source of truth.
+- **Before** planning or changing code: read the spine + check git state. (The SessionStart
+  preflight hook injects git state + STATE.md's live sections automatically.)
+- **After** finishing work: update `docs/agent/STATE.md` + append `docs/agent/RUN_LOG.md`.
+- If you made/changed a meaningful decision: create/update an ADR in `docs/agent/DECISIONS/`.
+- Keep `STATE.md` to one page. Push detail into RUN_LOG / ADRs.
+- The end-of-session write is automated by the `/checkpoint` skill — run it to finish a session.
+
+## Agent protocol
+
+### Context Preflight (at session start)
+1. Read `docs/agent/START_HERE.md`, `STATE.md`, `CONSTRAINTS.md`.
+2. Review the latest `RUN_LOG.md` entry and any ADRs referenced in `STATE.md`.
+3. Check repo state: `git status`, `git log -n 10 --oneline`.
+4. Output a brief "Session Brief" (~10 bullets): what the project is, current state,
+   constraints/invariants, today's objective, risks/unknowns.
+
+### PR Task-List Convention (mandatory for every code-changing PR)
+Every task list for a PR that changes production code, tests, or configuration MUST include
+these two steps, in this order, immediately before the commit step:
+1. **Sync current-state docs** affected by the change (runs BEFORE the STATE/RUN_LOG update).
+2. **Update `docs/agent/STATE.md` + append `docs/agent/RUN_LOG.md`.**
+
+Current-state docs to audit for every PR (touch only if the PR actually invalidates them):
+- `CLAUDE.md` — test count, architecture, plan status, conventions. ALWAYS update when test count changes.
+- `CHANGELOG.md` — add a section for the PR; update the current-state block if phase status / test count / roadmap shifted.
+- `docs/steering/source-files.md` — add entries for new files; update existing entries when a file's responsibility shape changed.
+- `docs/steering/structure.md` — update when new modules/directories/architectural elements land.
+- `docs/database-schema.md` — only if the Room schema or a migration changed.
+- `docs/steering/tech.md`, `docs/steering/lib-*.md` — only if dependency versions/conventions/patterns changed.
+- `README.md` — only if user-facing build/run instructions changed.
+
+Historical artifacts — **NEVER modify** in a current-PR doc sweep:
+- `docs/agent/RUN_LOG.md` prior entries (appending the current PR's entry is fine; editing old ones is not).
+- `docs/plans/plan-R*.md`, `docs/plans/plan-R2*.md` — historical at authoring date.
+- `docs/external-reviews/*` — historical at review date.
+- `devdocs/*`, `smoke_tests/*` — historical per HEAD pin.
+- Individual `docs/agent/DECISIONS/ADR-*.md` files — amend status only if explicitly warranted.
+
+### End-of-Run memory writes (run `/checkpoint`)
+1. Current-state docs synced per the PR Task-List Convention above.
+2. Update `docs/agent/STATE.md` (what changed + what's next).
+3. Append `docs/agent/RUN_LOG.md` with what you did and what remains.
+4. Add/update an ADR if you made a non-trivial decision.
+
+---
 
 ## Project Overview
 
 Steps of Babylon is an Android mobile game that combines idle tower defense gameplay with a real-world step counter. Players earn **Steps** by physically walking, then spend them to upgrade an ancient ziggurat that fights wave-based battles against mythic enemies. Progression is gated entirely by physical activity.
 
 See `docs/StepsOfBabylon_GDD.md` for the full game design document.
-
-## Project Memory (read first)
-
-| File | Purpose |
-|---|---|
-| `docs/agent/START_HERE.md` | Agent contract — what this is, how to work here |
-| `docs/agent/STATE.md` | One-page project snapshot (current objective, priorities, next actions) |
-| `docs/agent/CONSTRAINTS.md` | Architecture invariants, security rules, "never do" list |
-| `docs/agent/RUN_LOG.md` | Append-only log of every agent session |
-| `docs/agent/DECISIONS/` | Architecture Decision Records (ADRs) |
-
-Operating rules:
-- Always do Context Preflight before planning (see `.kiro/steering/11-agent-protocol.md`).
-- Always update STATE.md + append RUN_LOG.md at end of run.
-- Record meaningful decisions as ADRs in `docs/agent/DECISIONS/`.
 
 ## Tech Stack
 
@@ -75,7 +126,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 
 Follow Clean Architecture layers: `presentation → domain ← data`. The domain layer has zero Android dependencies.
 
-See `.kiro/steering/source-files.md` for the full source file index.
+See `docs/steering/source-files.md` for the full source file index.
 
 ## Plans & Roadmap
 
@@ -293,4 +344,4 @@ The battle screen uses a custom `SurfaceView` with a game loop (not Compose). Ke
 - This is a solo-experience game — no multiplayer, no server backend required for v1.0.
 - All monetization is cosmetic or convenience. Steps are never purchasable with real money.
 - Accessibility is a priority for post-v1.0: TalkBack support, color-blind modes, Activity Minute Parity for non-ambulatory users (already implemented in Plan 05).
-- **Gradle in non-TTY environments:** Gradle buffers output when stdout isn't a terminal (e.g., Kiro CLI, CI). Use `./run-gradle.sh <task>` instead of `./gradlew <task>` to avoid hanging. The script is gitignored — see `README.md` for how to recreate it.
+- **Gradle in non-TTY environments:** Gradle buffers output when stdout isn't a terminal (e.g., CI or other non-TTY environments). Use `./run-gradle.sh <task>` instead of `./gradlew <task>` to avoid hanging. The script is gitignored — see `README.md` for how to recreate it.

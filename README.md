@@ -58,9 +58,9 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 ./gradlew bundleRelease
 ```
 
-Instrumented tests live under `app/src/androidTest/`. The harness was stood up in V1X-08 Phase 1A with one infrastructure smoke test (`InfrastructureSmokeTest.harnessBoots`); `BattleSurfaceLifecycleTest` (4 R3-01 lifecycle regression guards) + `DeepLinkIntentTest` (4 `navigate_to` deep-link contract guards incl. a real Parcel round-trip) layered on 2026-05-29; the third planned suite — `StoreIapFlowTest` — is formally deferred (no real-framework-only gap; see AGENTS.md). Run via `./gradlew connectedDebugAndroidTest` on a connected emulator (API 34+). All other coverage is JVM unit tests under `app/src/test/`. See [AGENTS.md](AGENTS.md) for the full coverage breakdown.
+Instrumented tests live under `app/src/androidTest/`. The harness was stood up in V1X-08 Phase 1A with one infrastructure smoke test (`InfrastructureSmokeTest.harnessBoots`); `BattleSurfaceLifecycleTest` (4 R3-01 lifecycle regression guards) + `DeepLinkIntentTest` (4 `navigate_to` deep-link contract guards incl. a real Parcel round-trip) layered on 2026-05-29; the third planned suite — `StoreIapFlowTest` — is formally deferred (no real-framework-only gap; see CLAUDE.md). Run via `./gradlew connectedDebugAndroidTest` on a connected emulator (API 34+). All other coverage is JVM unit tests under `app/src/test/`. See [CLAUDE.md](CLAUDE.md) for the full coverage breakdown.
 
-### Non-TTY Environments (Kiro CLI, CI, etc.)
+### Non-TTY Environments (CI, etc.)
 
 Gradle buffers output when stdout isn't a terminal, which can cause builds to appear hung. Use the wrapper script instead:
 
@@ -111,7 +111,7 @@ If you're picking this up cold, read [docs/agent/START_HERE.md](docs/agent/START
 |---|---|
 | [Game Design Document](docs/StepsOfBabylon_GDD.md) | Full game design spec |
 | [Architecture](docs/architecture.md) | Clean Architecture layers and conventions |
-| [AGENTS.md](AGENTS.md) | Full tech stack, conventions, status checklist, test coverage |
+| [CLAUDE.md](CLAUDE.md) | Full tech stack, conventions, status checklist, test coverage |
 | [CHANGELOG.md](CHANGELOG.md) | All notable changes, dated |
 | [Master Plan](docs/plans/master-plan.md) | 34-entry development roadmap |
 | [Battle Formulas](docs/battle-formulas.md) | All combat and economy math (incl. Lab outer multipliers) |
@@ -124,7 +124,7 @@ If you're picking this up cold, read [docs/agent/START_HERE.md](docs/agent/START
 
 Kotlin · Jetpack Compose · Hilt · Room · SQLCipher (database encryption) · WorkManager · Android Sensor API + Health Connect · Custom SurfaceView battle renderer · Google Play Billing v8 · Google Mobile Ads SDK v25 · UMP v4 (consent)
 
-See [AGENTS.md](AGENTS.md) for the full tech stack with versions and conventions, and [.kiro/steering/tech.md](.kiro/steering/tech.md) for the canonical version table.
+See [CLAUDE.md](CLAUDE.md) for the full tech stack with versions and conventions, and [docs/steering/tech.md](docs/steering/tech.md) for the canonical version table.
 
 ## License
 

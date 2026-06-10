@@ -35,7 +35,7 @@
 ## Build & tooling
 - All dependency versions in `gradle/libs.versions.toml` — never hardcode.
 - KSP for annotation processing (not kapt).
-- Use `./run-gradle.sh` in non-TTY environments (Kiro CLI, CI).
+- Use `./run-gradle.sh` in non-TTY environments (CI, etc.).
 - Room schema exports to `app/schemas/` — commit these files.
 
 ## "Never do" list
