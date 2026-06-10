@@ -22,8 +22,11 @@ import com.whitefang.stepsofbabylon.domain.usecase.TrackWeeklyChallenge
 import com.whitefang.stepsofbabylon.service.SupplyDropNotificationManager
 import com.whitefang.stepsofbabylon.service.WidgetUpdateHelper
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -66,17 +69,41 @@ class DailyStepManager @Inject constructor(
         private val DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE
     }
 
+    /**
+     * #120 (audit #6 + #12): this @Singleton is mutated by two genuinely-concurrent producers —
+     * the foreground StepCounterService sensor collector (Dispatchers.Default) and the periodic
+     * StepSyncWorker (CoroutineWorker, also a multi-threaded pool). Every mutating entry point
+     * ([recordSteps], [recordActivityMinutes], [ensureInitializedLocked]) runs its full
+     * read-check-write body under this Mutex, so the non-atomic ceiling RMW
+     * (`DAILY_CEILING - dailyCreditedTotal` … `dailyCreditedTotal += credited`) can no longer
+     * interleave to overshoot the 50k cap or double-credit. The Mutex is NOT reentrant, so the
+     * init step is factored into [ensureInitializedLocked] which is only ever called while the
+     * lock is already held. Mirrors the repo's existing `RealConsentManager.initMutex` /
+     * `FakeWorkshopRepository.atomicMutex` idiom.
+     */
+    private val mutex = Mutex()
+
+    /**
+     * Test-only suspend seam (#120). Invoked between the ceiling read and the credit RMW in
+     * [recordSteps] so a concurrency test can deterministically park one coroutine mid-critical-
+     * section and prove the lock serialises the read-check-write. Default no-op in production.
+     */
+    internal var onBeforeCreditCommit: suspend () -> Unit = {}
+
     private var currentDate: String = todayDate()
-    private var dailySensorTotal: Long = 0L
-    private var dailySensorCredited: Long = 0L
-    private var dailyCreditedTotal: Long = 0L
-    private var dailyActivityMinuteTotal: Long = 0L
-    private var initialized = false
+    @Volatile private var dailySensorTotal: Long = 0L
+    @Volatile private var dailySensorCredited: Long = 0L
+    @Volatile private var dailyCreditedTotal: Long = 0L
+    @Volatile private var dailyActivityMinuteTotal: Long = 0L
+    @Volatile private var initialized = false
 
     private val generateSupplyDrop = GenerateSupplyDrop()
     private var dropState = DropGeneratorState()
 
-    private val stepsPerMinute = mutableMapOf<Long, Long>()
+    // #120: ConcurrentHashMap so getSensorStepsPerMinute().toMap() (read on the worker thread) can
+    // never throw ConcurrentModificationException against a concurrent recordSteps write. The
+    // size-trim RMW below still runs under [mutex] for correctness.
+    private val stepsPerMinute = ConcurrentHashMap<Long, Long>()
 
     private val trackDailyLogin by lazy { TrackDailyLogin(dailyLoginDao, playerRepository) }
     private val trackWeeklyChallenge by lazy { TrackWeeklyChallenge(weeklyChallengeDao, dailyStepDao, playerRepository) }
@@ -87,7 +114,11 @@ class DailyStepManager @Inject constructor(
 
     fun todayDate(): String = LocalDate.now().format(DATE_FMT)
 
-    private suspend fun ensureInitialized() {
+    /**
+     * #120: caller MUST already hold [mutex] (the Mutex is non-reentrant). Called only from
+     * within the locked bodies of [recordSteps] / [recordActivityMinutes].
+     */
+    private suspend fun ensureInitializedLocked() {
         val today = todayDate()
         if (today != currentDate) {
             currentDate = today
@@ -117,46 +148,54 @@ class DailyStepManager @Inject constructor(
     suspend fun recordSteps(rawDelta: Long, timestampMs: Long) {
         if (rawDelta <= 0) return
 
-        ensureInitialized()
+        // #120: hold the lock across the WHOLE read-check-write so the ceiling check and the
+        // credit increment are atomic w.r.t. a concurrent recordSteps / recordActivityMinutes.
+        mutex.withLock {
+            ensureInitializedLocked()
 
-        val rateLimited = rateLimiter.credit(rawDelta, timestampMs)
-        val rateRejected = rawDelta - rateLimited
-        if (rateRejected > 0) antiCheatPrefs.incrementRateRejected(rateRejected)
-        if (rateLimited <= 0) return
+            val rateLimited = rateLimiter.credit(rawDelta, timestampMs)
+            val rateRejected = rawDelta - rateLimited
+            if (rateRejected > 0) antiCheatPrefs.incrementRateRejected(rateRejected)
+            if (rateLimited <= 0) return
 
-        // Velocity analysis — penalize unnatural patterns
-        val velocityMultiplier = velocityAnalyzer.analyze(rawDelta, timestampMs)
-        val velocityAdjusted = (rateLimited * velocityMultiplier).toLong()
-        val velocityPenalized = rateLimited - velocityAdjusted
-        if (velocityPenalized > 0) antiCheatPrefs.incrementVelocityPenalized(velocityPenalized)
-        if (velocityAdjusted <= 0) return
+            // Velocity analysis — penalize unnatural patterns
+            val velocityMultiplier = velocityAnalyzer.analyze(rawDelta, timestampMs)
+            val velocityAdjusted = (rateLimited * velocityMultiplier).toLong()
+            val velocityPenalized = rateLimited - velocityAdjusted
+            if (velocityPenalized > 0) antiCheatPrefs.incrementVelocityPenalized(velocityPenalized)
+            if (velocityAdjusted <= 0) return
 
-        // STEP_MULTIPLIER Workshop upgrade applies AFTER anti-cheat (so the bonus only ever
-        // multiplies legitimately-walked steps that already passed rate-limit + velocity
-        // analysis) and BEFORE the 50k daily ceiling (so the absolute cap remains absolute).
-        // The cap on the multiplier itself is +100 %, matching the GDD §4.3 "Cap 100 %".
-        val multiplied = applyStepMultiplier(velocityAdjusted)
+            // STEP_MULTIPLIER Workshop upgrade applies AFTER anti-cheat (so the bonus only ever
+            // multiplies legitimately-walked steps that already passed rate-limit + velocity
+            // analysis) and BEFORE the 50k daily ceiling (so the absolute cap remains absolute).
+            // The cap on the multiplier itself is +100 %, matching the GDD §4.3 "Cap 100 %".
+            val multiplied = applyStepMultiplier(velocityAdjusted)
 
-        val remainingCeiling = (DAILY_CEILING - dailyCreditedTotal).coerceAtLeast(0)
-        val credited = multiplied.coerceAtMost(remainingCeiling)
-        if (credited <= 0) return
+            val remainingCeiling = (DAILY_CEILING - dailyCreditedTotal).coerceAtLeast(0)
+            // #120 test seam: parks a coroutine here so a test can prove the lock serialises the
+            // read→commit gap (no-op in production). It runs INSIDE the lock, so a second
+            // coroutine blocks at withLock above rather than interleaving the RMW.
+            onBeforeCreditCommit()
+            val credited = multiplied.coerceAtMost(remainingCeiling)
+            if (credited <= 0) return
 
-        dailySensorTotal += rawDelta
-        dailyCreditedTotal += credited
+            dailySensorTotal += rawDelta
+            dailyCreditedTotal += credited
 
-        stepRepository.updateDailySteps(currentDate, dailySensorTotal, dailySensorCredited + credited)
-        dailySensorCredited += credited
-        playerRepository.addSteps(credited)
+            stepRepository.updateDailySteps(currentDate, dailySensorTotal, dailySensorCredited + credited)
+            dailySensorCredited += credited
+            playerRepository.addSteps(credited)
 
-        // Per-minute tracking for overlap deduction
-        val epochMin = timestampMs / 60_000
-        stepsPerMinute[epochMin] = (stepsPerMinute[epochMin] ?: 0) + credited
-        if (stepsPerMinute.size > 1440) {
-            val oldest = stepsPerMinute.keys.min()
-            stepsPerMinute.remove(oldest)
+            // Per-minute tracking for overlap deduction
+            val epochMin = timestampMs / 60_000
+            stepsPerMinute[epochMin] = (stepsPerMinute[epochMin] ?: 0) + credited
+            if (stepsPerMinute.size > 1440) {
+                val oldest = stepsPerMinute.keys.min()
+                stepsPerMinute.remove(oldest)
+            }
+
+            runFollowOnPipeline(timestampMs)
         }
-
-        runFollowOnPipeline(timestampMs)
     }
 
     suspend fun recordActivityMinutes(
@@ -166,30 +205,33 @@ class DailyStepManager @Inject constructor(
     ) {
         if (stepEquivalents <= 0) return
 
-        ensureInitialized()
+        // #120: same lock as recordSteps — the two share dailyCreditedTotal and the ceiling RMW.
+        mutex.withLock {
+            ensureInitializedLocked()
 
-        val delta = stepEquivalents - dailyActivityMinuteTotal
-        if (delta <= 0) return
+            val delta = stepEquivalents - dailyActivityMinuteTotal
+            if (delta <= 0) return
 
-        // STEP_MULTIPLIER intentionally does NOT apply here. The GDD §4.3 wording is
-        // "+1 % bonus steps earned from walking" — sensor steps are walking; activity
-        // minutes are converted from cycling / swimming / treadmill exercise sessions
-        // via Health Connect's exercise-session aggregation. Restricting the multiplier
-        // to the sensor path also keeps the existing `dailyActivityMinuteTotal +=
-        // credited` source-tracking semantics intact (a multiplier > 1 would inflate
-        // the source-side counter and under-credit subsequent HC deltas).
+            // STEP_MULTIPLIER intentionally does NOT apply here. The GDD §4.3 wording is
+            // "+1 % bonus steps earned from walking" — sensor steps are walking; activity
+            // minutes are converted from cycling / swimming / treadmill exercise sessions
+            // via Health Connect's exercise-session aggregation. Restricting the multiplier
+            // to the sensor path also keeps the existing `dailyActivityMinuteTotal +=
+            // credited` source-tracking semantics intact (a multiplier > 1 would inflate
+            // the source-side counter and under-credit subsequent HC deltas).
 
-        val remainingCeiling = (DAILY_CEILING - dailyCreditedTotal).coerceAtLeast(0)
-        val credited = delta.coerceAtMost(remainingCeiling)
-        if (credited <= 0) return
+            val remainingCeiling = (DAILY_CEILING - dailyCreditedTotal).coerceAtLeast(0)
+            val credited = delta.coerceAtMost(remainingCeiling)
+            if (credited <= 0) return
 
-        dailyActivityMinuteTotal += credited
-        dailyCreditedTotal += credited
+            dailyActivityMinuteTotal += credited
+            dailyCreditedTotal += credited
 
-        stepRepository.updateActivityMinutes(currentDate, activityMinutes, dailyActivityMinuteTotal)
-        playerRepository.addSteps(credited)
+            stepRepository.updateActivityMinutes(currentDate, activityMinutes, dailyActivityMinuteTotal)
+            playerRepository.addSteps(credited)
 
-        runFollowOnPipeline(timestampMs)
+            runFollowOnPipeline(timestampMs)
+        }
     }
 
     private suspend fun runFollowOnPipeline(timestampMs: Long) {
