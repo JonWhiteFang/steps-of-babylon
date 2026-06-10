@@ -239,4 +239,67 @@ class SimulationMathTest {
         val l100 = SimulationMath.stepMultiplierBonus(100)
         assertTrue(l100 > l99, "L100 must give more bonus than L99 (dead-content fix)")
     }
+
+    // ---- Fixed-timestep accumulator clamp (#126, spiral of death) ----
+
+    @Test
+    fun `clampAccumulator passes a normal sub-tick accumulator through unchanged`() {
+        // A typical frame leaves a fractional remainder below one tick — never clamped.
+        val tick = 16_666_667L
+        val acc = tick / 2
+        assertEquals(acc, SimulationMath.clampAccumulator(acc, tick))
+    }
+
+    @Test
+    fun `clampAccumulator passes a healthy multi-tick burst through unchanged`() {
+        // A 4x-speed frame legitimately demands a few catch-up ticks; below the ceiling
+        // the accumulator is untouched so normal catch-up still works.
+        val tick = 16_666_667L
+        val acc = tick * (SimulationMath.MAX_CATCHUP_TICKS - 1)
+        assertEquals(acc, SimulationMath.clampAccumulator(acc, tick))
+    }
+
+    @Test
+    fun `clampAccumulator caps a runaway accumulator at MAX_CATCHUP_TICKS`() {
+        // The spiral-of-death case: a long GC pause / starved loop (amplified by 4x speed)
+        // leaves an accumulator demanding hundreds of update() calls in one iteration.
+        // The clamp bounds it so the loop renders a frame instead of freezing.
+        val tick = 16_666_667L
+        val runaway = tick * 500
+        val clamped = SimulationMath.clampAccumulator(runaway, tick)
+        assertEquals(tick * SimulationMath.MAX_CATCHUP_TICKS, clamped)
+    }
+
+    @Test
+    fun `clampAccumulator caps exactly at the ceiling boundary`() {
+        // Exactly MAX ticks is allowed; one tick over is clamped down to MAX.
+        val tick = 16_666_667L
+        val atCeiling = tick * SimulationMath.MAX_CATCHUP_TICKS
+        assertEquals(atCeiling, SimulationMath.clampAccumulator(atCeiling, tick))
+        val overByOneTick = tick * (SimulationMath.MAX_CATCHUP_TICKS + 1)
+        assertEquals(atCeiling, SimulationMath.clampAccumulator(overByOneTick, tick))
+    }
+
+    @Test
+    fun `clampAccumulator preserves the sub-tick remainder when clamping`() {
+        // When clamping, keep the fractional remainder so post-clamp time accounting stays
+        // smooth (the ceiling is MAX whole ticks PLUS whatever partial tick was pending).
+        val tick = 16_666_667L
+        val remainder = 5_000_000L // < tick
+        val runaway = tick * 500 + remainder
+        val clamped = SimulationMath.clampAccumulator(runaway, tick)
+        assertEquals(tick * SimulationMath.MAX_CATCHUP_TICKS + remainder, clamped)
+    }
+
+    @Test
+    fun `clampAccumulator handles a zero accumulator`() {
+        assertEquals(0L, SimulationMath.clampAccumulator(0L, 16_666_667L))
+    }
+
+    @Test
+    fun `MAX_CATCHUP_TICKS is a small positive bound`() {
+        // Guard the contract: the ceiling must be > 1 (so normal catch-up survives) and
+        // small enough to bound worst-case per-iteration work (so the loop can't spiral).
+        assertTrue(SimulationMath.MAX_CATCHUP_TICKS in 2..20)
+    }
 }

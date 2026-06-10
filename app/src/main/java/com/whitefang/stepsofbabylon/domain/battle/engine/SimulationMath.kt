@@ -179,4 +179,53 @@ object SimulationMath {
         val bonus = 1.0 - Math.pow(1.0 - STEP_MULTIPLIER_DECAY_FACTOR, level.toDouble())
         return bonus.coerceIn(0.0, STEP_MULTIPLIER_BONUS_CAP)
     }
+
+    // ---- Fixed-timestep accumulator clamp (#126, spiral of death) ----
+
+    /**
+     * Maximum number of fixed-timestep catch-up ticks the loop may run in a single
+     * iteration before it MUST render a frame.
+     *
+     * The game loop accumulates `elapsed × speedMultiplier` and drains it one tick at a
+     * time (`while (accumulator >= TICK_NS) engine.update(...)`). Without a ceiling, any
+     * long frame — a GC pause, the main thread starving the loop, or a heavy
+     * `engine.update` itself — leaves an accumulator demanding dozens-to-hundreds of
+     * `update()` calls before the next render. Each catch-up tick moves entities and runs
+     * collision, so a slow tick begets more catch-up ticks: the classic spiral of death
+     * where the screen visibly freezes. The `× speedMultiplier` (up to 4×) lowers the
+     * threshold for entering the spiral by the same factor.
+     *
+     * 8 ticks ≈ 133 ms of simulated time per render. The ceiling is chosen so it engages
+     * ONLY on a genuine multi-frame stall, never on a slow-but-steady device: a 30 fps
+     * render at 4× speed legitimately demands ~7.9 ticks/frame (33 ms × 4), which passes
+     * through unclamped, while a GC pause / starved loop demanding dozens-to-hundreds of
+     * ticks is bounded to 8. The loop can therefore never trade an unbounded burst of update
+     * work for a single rendered frame. Tuned alongside the [clampAccumulator] tests; see #126.
+     */
+    const val MAX_CATCHUP_TICKS = 8
+
+    /**
+     * Clamps a fixed-timestep accumulator so the catch-up loop runs at most
+     * [MAX_CATCHUP_TICKS] whole ticks this iteration (#126).
+     *
+     * Excess whole ticks beyond the ceiling are discarded (the simulation deliberately
+     * drops that backlog of time rather than spiral), while the sub-tick remainder is
+     * preserved so post-clamp time accounting stays smooth across iterations. Accumulators
+     * already at or below the ceiling pass through unchanged, so normal multi-tick catch-up
+     * at 2×/4× speed is untouched.
+     *
+     * Pure arithmetic — no Android, no clock reads — so it is exercised directly by
+     * `SimulationMathTest` without standing up `GameLoopThread` or a SurfaceView.
+     *
+     * @param accumulatorNs Pending simulated time in nanoseconds (≥ 0).
+     * @param tickNs Length of one fixed timestep in nanoseconds (> 0).
+     * @return The accumulator capped at `MAX_CATCHUP_TICKS × tickNs` plus any sub-tick remainder.
+     */
+    fun clampAccumulator(accumulatorNs: Long, tickNs: Long): Long {
+        if (tickNs <= 0L) return accumulatorNs
+        val ceiling = tickNs * MAX_CATCHUP_TICKS
+        if (accumulatorNs <= ceiling) return accumulatorNs
+        val remainder = accumulatorNs % tickNs
+        return ceiling + remainder
+    }
 }

@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.battle
 
 import android.view.SurfaceHolder
+import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath
 import com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine
 
 class GameLoopThread(
@@ -37,6 +38,12 @@ class GameLoopThread(
 
             if (!isPaused) {
                 accumulator += (elapsed * speedMultiplier).toLong()
+                // #126: bound the catch-up backlog so a long frame (GC pause, starved loop,
+                // or a heavy update itself) — amplified up to 4× by speedMultiplier — can't
+                // demand an unbounded burst of update() calls before the next render. Without
+                // this clamp each slow tick begets more catch-up ticks (spiral of death) and
+                // the screen visibly freezes; the clamp drops the excess backlog instead.
+                accumulator = SimulationMath.clampAccumulator(accumulator, TICK_NS)
                 while (accumulator >= TICK_NS) {
                     engine.update(TICK_NS / 1_000_000_000f)
                     accumulator -= TICK_NS

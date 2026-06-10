@@ -529,7 +529,103 @@ class GameEngineTest {
         )
     }
 
+    // ---- #125: getAliveEnemies allocation refactor — behaviour-preserving guards ----
+    //
+    // #125 halves the per-frame allocation in getAliveEnemies() (one single-pass build
+    // instead of filterIsInstance{}.filter{} = two lists). It must NOT become a shared
+    // per-frame cache: EnemyEntity.takeDamage is NOT idempotent on a dead enemy — it
+    // re-fires onDeath → handleEnemyDeath (re-credits cash/steps, re-spawns SCATTER
+    // children). BLACK_HOLE and POISON_SWAMP both kill enemies mid-frame and each iterate
+    // the alive set, so a stale cached list would let POISON re-hit BLACK_HOLE's corpses
+    // and double-credit the kill. These guards pin that invariant so the refactor (and any
+    // future "optimisation" of it) cannot regress it.
+
+    @Test
+    fun `R125 getAliveEnemies returns only alive enemy entities`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        val alive = makeStationaryEnemy(zig, hp = 1000.0)
+        val dead = makeStationaryEnemy(zig, hp = 1000.0).apply { takeDamage(1000.0) }
+        eng.addEntity(alive)
+        eng.addEntity(dead)
+        eng.addEntity(ProjectileEntity(zig.x, zig.y, zig.x, zig.y + 50f, 600f)) // non-enemy
+        // Flush pendingAdd into the live list without running a full tick.
+        flushPendingAdd(eng)
+
+        val result = invokeGetAliveEnemies(eng)
+        assertEquals(1, result.size, "only the single alive EnemyEntity should be returned")
+        assertTrue(result.all { it.isAlive }, "every returned enemy must be alive")
+        assertTrue(result.contains(alive), "the alive enemy must be present")
+        assertFalse(result.contains(dead), "the dead enemy must be excluded")
+    }
+
+    @Test
+    fun `R125 overlapping BLACK_HOLE and POISON_SWAMP fire each enemy's onDeath exactly once`() {
+        // The no-double-credit invariant. Two ongoing-damage UWs run in the SAME updateUWs
+        // pass; an enemy killed by BLACK_HOLE must not be re-killed by POISON_SWAMP.
+        // EnemyEntity.takeDamage re-fires onDeath every time it is called on an already-dead
+        // enemy, so a shared/stale alive list would double-fire onDeath (= double-credit the
+        // kill in production via handleEnemyDeath). The live per-call isAlive re-filter
+        // prevents that. Counting onDeath directly captures the mechanism without depending
+        // on the engine's private kill wiring.
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        eng.initUWs(
+            listOf(
+                OwnedWeapon(UltimateWeaponType.BLACK_HOLE, damageLevel = 10, secondaryLevel = 10, cooldownLevel = 1, isUnlocked = true, isEquipped = true),
+                OwnedWeapon(UltimateWeaponType.POISON_SWAMP, damageLevel = 10, secondaryLevel = 10, cooldownLevel = 1, isUnlocked = true, isEquipped = true),
+            ),
+        )
+        // Fragile enemies that both UWs would one-shot this tick, each counting its own deaths.
+        val n = 4
+        val deathCounts = IntArray(n)
+        repeat(n) { i -> eng.addEntity(makeStationaryEnemy(zig, hp = 0.01, onDeath = { deathCounts[i]++ })) }
+        flushPendingAdd(eng)
+        // Prime both UWs into the active ongoing-effect state, then run one ongoing tick.
+        eng.activateUW(0)
+        eng.activateUW(1)
+        invokeUpdateUWs(eng, deltaTime = 1f)
+
+        assertTrue(
+            deathCounts.all { it == 1 },
+            "each enemy's onDeath must fire exactly once even with two overlapping " +
+                "ongoing-damage UWs in the same frame (no double-credit via a stale alive " +
+                "list); got per-enemy counts ${deathCounts.toList()}",
+        )
+    }
+
     // ---- Helpers: reach into private state via reflection ----
+
+    /** A stationary, non-aggressive enemy directly below the ziggurat for alive-set tests. */
+    private fun makeStationaryEnemy(
+        zig: com.whitefang.stepsofbabylon.presentation.battle.entities.ZigguratEntity,
+        hp: Double,
+        onDeath: (EnemyEntity) -> Unit = { },
+    ): EnemyEntity = EnemyEntity(
+        enemyType = EnemyType.BASIC,
+        currentHp = hp, maxHp = hp,
+        speed = 0f, damage = 0.0,
+        targetX = zig.originX, targetY = zig.originY,
+        onDeath = onDeath,
+    ).apply { x = zig.originX; y = zig.originY + 300f; initDistance() }
+
+    /** Reflectively flushes `pendingAdd` into the live `entities` list (no full tick). */
+    private fun flushPendingAdd(eng: GameEngine) {
+        val entitiesField = GameEngine::class.java.getDeclaredField("entities").apply { isAccessible = true }
+        val pendingField = GameEngine::class.java.getDeclaredField("pendingAdd").apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        val entities = entitiesField.get(eng) as MutableList<Any>
+        @Suppress("UNCHECKED_CAST")
+        val pending = pendingField.get(eng) as MutableList<Any>
+        entities.addAll(pending); pending.clear()
+    }
+
+    /** Reflectively invokes the private `getAliveEnemies()` helper. */
+    @Suppress("UNCHECKED_CAST")
+    private fun invokeGetAliveEnemies(eng: GameEngine): List<EnemyEntity> {
+        val method = GameEngine::class.java.getDeclaredMethod("getAliveEnemies").apply { isAccessible = true }
+        return method.invoke(eng) as List<EnemyEntity>
+    }
 
     /** Reflectively reads the engine's private `effectiveLevels` map for the given type. */
     private fun readEffectiveLevel(eng: GameEngine, type: UpgradeType): Int {

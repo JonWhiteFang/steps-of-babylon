@@ -4,6 +4,33 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Perf — battle game-loop frame clamp (#126) + getAliveEnemies allocation (#125) (2026-06-10)
+
+- Two self-contained audit-Low battle-performance fixes (TDD), no schema change, no behaviour
+  change to gameplay outcomes. Test count **890 → 899 JVM** (+9); instrumented unchanged at 9.
+- **#126 — fixed-timestep spiral of death.** The game loop accumulated `elapsed ×
+  speedMultiplier` and drained it one tick at a time with no ceiling, so a long frame (GC pause,
+  starved loop, heavy update) — amplified up to 4× by the speed multiplier — could demand
+  dozens-to-hundreds of `engine.update()` calls before the next render, each catch-up tick
+  begetting more (the screen visibly freezes). Added a pure `SimulationMath.clampAccumulator(
+  accumulatorNs, tickNs)` + `MAX_CATCHUP_TICKS = 8` that bounds the per-iteration catch-up backlog
+  (preserving the sub-tick remainder) and wired it into `GameLoopThread` after the
+  speed-scaled accumulate. Ceiling tuned to engage ONLY on a genuine multi-frame stall: a 30 fps
+  render at 4× legitimately needs ~7.9 ticks/frame and passes through unclamped. +7 pure-JVM
+  `SimulationMathTest`.
+- **#125 — getAliveEnemies per-frame double allocation.** `getAliveEnemies()` is called multiple
+  times per tick (UW auto-trigger gate + each active BLACK_HOLE/POISON_SWAMP ongoing effect + once
+  per orb) and allocated two intermediate lists each call (`filterIsInstance<EnemyEntity>().filter
+  { it.isAlive }`). Rewrote it as a single-pass `ArrayList` build (one allocation). **Deliberately
+  NOT cached across the frame:** `EnemyEntity.takeDamage` re-fires `onDeath` on an already-dead
+  enemy, and BLACK_HOLE/POISON_SWAMP both kill enemies mid-frame — a shared/stale snapshot would
+  let one ongoing effect re-hit another's corpses and **double-credit the kill**. The live per-call
+  `isAlive` re-filter is load-bearing; +2 `GameEngineTest` `R125` guards pin the no-double-credit
+  invariant (one counts per-enemy `onDeath` invocations across overlapping ongoing UWs) so the
+  refactor can't be "completed" into the cache bug later.
+- **Verification:** `./run-gradle.sh testDebugUnitTest` → **899/0/0/0**; `./run-gradle.sh lintDebug
+  assembleDebug` → BUILD SUCCESSFUL (lint clean, incl. the `HardcodedText`-as-error guard).
+
 ### Build — Dependabot dependency wave (6 bumps, combined-verified) (2026-06-10)
 
 - Consolidated the 6 open Dependabot bumps into one branch (`deps/dependabot-wave-2026-06-10`)
