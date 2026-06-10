@@ -1,8 +1,3 @@
----
-inclusion: fileMatch
-fileMatchPattern: "**/data/local/**,**/data/repository/**,**/di/DatabaseModule*,**/AppDatabase*"
----
-
 # Room Database — Reference Guide
 
 ## Core Annotations

@@ -1,8 +1,3 @@
----
-inclusion: fileMatch
-fileMatchPattern: "**/presentation/**,**/*Screen*,**/*ViewModel*"
----
-
 # Jetpack Compose — Reference Guide
 
 ## State Management
