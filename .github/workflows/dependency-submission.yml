@@ -1,5 +1,15 @@
 # Plan 32 / ADR-0018 — submits the resolved Gradle dependency graph so GitHub security
 # alerts (Dependabot alerts) can see transitive dependencies. Runs on main only.
+#
+# Scoped to RUNTIME classpaths (see env on the submission step): without this filter the
+# action submits the ENTIRE Gradle graph including the buildscript/plugin classpath, which
+# drags in the Google-API-client stack behind the Play Publisher plugin + AGP/bundletool
+# (netty, protobuf-java, bouncycastle, jose4j, jdom2, httpclient, commons-lang3). None of
+# those ship in the AAB — they run only on the build machine — yet they generated ~30
+# build-only Dependabot alerts attributed to settings.gradle.kts. Restricting the submitted
+# graph to `*RuntimeClasspath` configurations makes the security graph reflect what actually
+# ships (release/debug/test runtime), so alerts track real production exposure. Verified
+# 2026-06-10: of the flagged packages, only guava is in releaseRuntimeClasspath.
 name: Dependency Submission
 
 on:
@@ -21,3 +31,9 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
       - uses: gradle/actions/dependency-submission@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        env:
+          # Java regex matched against configuration names. `.*RuntimeClasspath` keeps the
+          # app's release/debug/test runtime dependencies (what ships + dev runtime) and
+          # excludes the buildscript `classpath` configuration that pulls the build-tool-only
+          # plugin transitives. See the header comment for the rationale.
+          DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS: ".*RuntimeClasspath"
