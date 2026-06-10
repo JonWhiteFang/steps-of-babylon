@@ -4,6 +4,26 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — #119 GOLDEN_ZIGGURAT expiry discarded in-round upgrades (2026-06-10)
+
+- Fixes audit finding #2 (Major). When GOLDEN_ZIGGURAT activated it snapshotted `preGoldenStats =
+  stats` and applied a damage multiplier; on expiry it restored `applyStats(preGoldenStats)`. But an
+  in-round upgrade bought *while* GOLDEN was active went through `updateZigguratStats → applyStats`,
+  which overwrote `stats` but never re-captured `preGoldenStats` — so on expiry the ziggurat rolled
+  back to the stale pre-GOLDEN snapshot, silently discarding every stat-bearing upgrade purchased
+  during the window. Because GOLDEN auto-fires on cooldown (R4-06), the loss recurred every cycle.
+- **Fix:** model GOLDEN as a re-derived damage *layer* instead of a one-shot snapshot. Added a
+  `goldenDamageMult` field captured at activation (SECONDARY path) and reset to `1.0` on expiry/`init`.
+  Made `updateZigguratStats` (the in-round-purchase channel) GOLDEN-aware: while GOLDEN is active it
+  re-captures `preGoldenStats` to the new base and re-applies `goldenDamageMult` on top, so the
+  purchase survives expiry AND the player keeps the GOLDEN buff over the upgraded base until it ends.
+  `setStats` (init-time push) is unchanged — it runs before GOLDEN can be active. `applyStats` stays a
+  dumb single mutation point (no double-multiplication). The 2 existing fortune-stacking
+  `GameEngineTest` guards are untouched (they read `fortuneMultiplier`, independent of `preGoldenStats`).
+- **Tests:** 2 new `GameEngineTest` cases — expiry preserves a mid-GOLDEN DAMAGE purchase (999), and
+  the GOLDEN multiplier stays layered over the new base while active. Both fail pre-fix. Full JVM suite
+  green, **869 → 871 JVM** (+2).
+
 ### Fix — #118 cross-thread `GameEngine.entities` mutation crash (2026-06-10)
 
 - Fixes the one **High** finding from the 2026-06-10 audit (report #1 + #15). `GameEngine.entities`

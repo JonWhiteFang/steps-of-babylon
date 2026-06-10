@@ -265,6 +265,16 @@ class GameEngine {
     private var goldenZigActive = false
     private var preGoldenStats: ResolvedStats? = null
 
+    /**
+     * Active GOLDEN_ZIGGURAT damage multiplier (#119). Captured at [activateUW] from the
+     * SECONDARY path and reset to `1.0` on expiry / [init]. GOLDEN is modelled as a damage
+     * *layer* re-derived over the current base stats rather than a one-shot snapshot: when an
+     * in-round upgrade lands while GOLDEN is active, [updateZigguratStats] re-captures
+     * [preGoldenStats] to the new base and re-applies this multiplier, so the purchase
+     * survives GOLDEN expiry instead of being rolled back to the stale activation snapshot.
+     */
+    private var goldenDamageMult: Double = 1.0
+
     companion object {
         const val BASE_CASH_PER_WAVE = 20L
         const val FLAT_BONUS_PER_WAVE_LEVEL = 5L
@@ -300,7 +310,7 @@ class GameEngine {
             simulation.reset(); roundOver = false
             fortuneMultiplier = 1.0
             secondWindUsed = false
-            uwStates.clear(); chronoActive = false; chronoSlowFactor = 1f; goldenZigActive = false; preGoldenStats = null
+            uwStates.clear(); chronoActive = false; chronoSlowFactor = 1f; goldenZigActive = false; preGoldenStats = null; goldenDamageMult = 1.0
             recoveryTimer = 0f
             rapidFireTimer = 0f
             rapidFireActiveRemaining = 0f
@@ -355,7 +365,24 @@ class GameEngine {
 
     fun setStats(resolvedStats: ResolvedStats) { applyStats(resolvedStats) }
 
-    fun updateZigguratStats(newStats: ResolvedStats) { applyStats(newStats) }
+    /**
+     * In-round-purchase stats channel (called by `BattleViewModel.purchaseInRoundUpgrade`).
+     *
+     * #119: when GOLDEN_ZIGGURAT is active, treat [newStats] as the new BASE: re-capture it
+     * into [preGoldenStats] (so expiry restores the upgraded base, not the stale activation
+     * snapshot) and re-apply the active [goldenDamageMult] on top, so the player keeps the
+     * GOLDEN damage buff over their just-purchased upgrade until GOLDEN expires. When GOLDEN is
+     * inactive this is the plain pre-#119 behaviour. [setStats] (init-time push) deliberately
+     * does NOT re-layer — it runs before GOLDEN can be active, so the multiplier is 1.0× there.
+     */
+    fun updateZigguratStats(newStats: ResolvedStats) {
+        if (goldenZigActive) {
+            preGoldenStats = newStats
+            applyStats(newStats.copy(damage = newStats.damage * goldenDamageMult))
+        } else {
+            applyStats(newStats)
+        }
+    }
 
     /**
      * Single mutation point for [stats]. Replaces any direct `stats = …` assignment so
@@ -621,7 +648,10 @@ class GameEngine {
                 val cashMult = uw.type.damageAtLevel(uw.damageLevel)
                 fortuneMultiplier = fortuneMultiplier.coerceAtLeast(cashMult)
                 // Damage multiplier comes from SECONDARY path (replaces hard-coded 1.5×).
+                // #119: persist the multiplier so an in-round purchase mid-GOLDEN can re-layer
+                // it over the new base (see [updateZigguratStats]).
                 val dmgMult = uw.type.secondaryAtLevel(uw.secondaryLevel)
+                goldenDamageMult = dmgMult
                 applyStats(stats.copy(damage = stats.damage * dmgMult))
             }
         }
@@ -647,7 +677,11 @@ class GameEngine {
                             chronoSlowFactor = 1f
                         }
                         UltimateWeaponType.GOLDEN_ZIGGURAT -> {
+                            // #119: preGoldenStats now reflects any in-round upgrade bought
+                            // during the GOLDEN window (re-captured by updateZigguratStats), so
+                            // restoring it preserves the purchase instead of discarding it.
                             goldenZigActive = false; preGoldenStats?.let { applyStats(it) }; preGoldenStats = null
+                            goldenDamageMult = 1.0
                             // R4-01 / R4-06: GOLDEN is the sole writer of fortuneMultiplier
                             // post-R4-01 (Step Overdrive removed). Per-path damage value
                             // determines activation strength but expiry always resets to 1.0×
