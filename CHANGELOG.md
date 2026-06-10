@@ -4,6 +4,28 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Docs — multi-agent code audit + CLAUDE.md rewrite (2026-06-10)
+
+- **Reachability-aware multi-agent code audit.** Ran an orchestrated 8-specialist audit (correctness,
+  concurrency, data/Room, sensor/anti-cheat, security, async, performance, supply-chain) with adversarial
+  per-finding verification: 50 raw findings → **45 confirmed, 5 rejected** (1 High, 14 Medium, 30 Low).
+  Report at `docs/external-reviews/2026-06-10-multi-agent-code-audit.md` (historical artifact). Filed the
+  Medium-and-above findings as GitHub issues **#118–#127** (root-cause deduped) + a consolidated Low tracker
+  **#128**; cross-referenced epics #21/#22/#26. Top finding (#118): a reachable cross-thread `GameEngine.entities`
+  mutation crash on in-round ORBS purchase. No production code change in this work — analysis + tracking only.
+- **CLAUDE.md rewrite (drift fix + de-bloat).** Cut CLAUDE.md from ~48 KB/347 lines to ~18 KB/267 lines
+  (−63%) with zero loss of authority. Removed ~18 KB of changelog-style "Current coverage" prose, the
+  duplicated per-plan "Current Status" checklist, the inline version/migration history, and the full plan
+  index/dependency-graph/critical-path (all now one-line pointers to `master-plan.md` / `STATE.md` /
+  `CHANGELOG.md`). Fixed factual drift: regenerated the architecture map from the real tree (added the
+  missing `domain/battle/` simulation layer, `data/ads|billing|anticheat|time`, `presentation/audio|help|store`,
+  the full 8-module `di/` list), removed all dead Step Overdrive / Card Dust / `ActivateOverdrive` references,
+  dropped stale type counts (now "read the enum"), reconciled the 36-vs-38 plan-entry contradiction, and
+  pointed Version at `build.gradle.kts` instead of a frozen value. Added two anti-drift guards: a "Keeping
+  this file honest" section (belongs-here vs. lives-elsewhere rule) and a "Known fragile zones & active risk"
+  pointer to the open `severity:major` issues + `docs/external-reviews/`. Resolved the START_HERE.md overlap
+  (framed as quick-contract vs. full-manual). Headline test count unchanged at 867 JVM + 9 instrumented.
+
 ### Tooling
 
 - Converted agent tooling from Kiro-CLI to Claude Code (ADR-0019). Removed `.kiro/`; added
