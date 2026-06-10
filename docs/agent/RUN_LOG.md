@@ -12,6 +12,8 @@
 - **Doc sync:** CLAUDE.md (new guide), docs/steering/* (moved), README, CONSTRAINTS, STATE (this rotation), this RUN_LOG entry, CHANGELOG, ADR-0019.
 - **Dogfood note:** the `/checkpoint` protocol was applied to this very change by executing the skill's checklist step-by-step. A skill created mid-session isn't hot-loaded, so it wasn't invoked via the slash command this time; from the next session it is slash/model-invocable. This is the end-to-end check that the checklist is correct and produces the right writes.
 - **Next:** open the PR for `feat/kiro-to-claude-code`; on merge, the SessionStart hook + `/checkpoint` skill become the project's read/write memory loop.
+- **Merged:** PR #117 via merge commit `1d5e303` 2026-06-10 — both required CI checks green (`build-and-test` 4m30s: lint + unit tests + debug build + Room schema-drift guard; `connected` 6m47s: emulator instrumented tests). `main` fast-forwarded `5c20bcb..1d5e303` (clean merge, strict mode satisfied — branch was 0 behind `main`); feature branch deleted local + remote. Post-merge layout on `main` verified: `CLAUDE.md` present, `.kiro/` + `AGENTS.md` gone, 8 docs under `docs/steering/`, the 3 `.claude/` deliverables tracked. The committed read/write memory loop is now live — this very post-merge sync is the first manual `/checkpoint` run against it.
+- **Memory updated:** STATE ✅ / RUN_LOG ✅ (CHANGELOG `[Unreleased]` Tooling entry already current from the conversion PR; no code/test/schema/arch change → no other current-state doc invalidated).
 
 ---
 
