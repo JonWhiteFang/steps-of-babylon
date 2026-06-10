@@ -70,7 +70,7 @@ data/repository/CosmeticRepositoryImpl.kt        # Cosmetic store items + privat
 data/sensor/StepSensorDataSource.kt  # TYPE_STEP_COUNTER wrapper, emits deltas via callbackFlow
 data/sensor/StepRateLimiter.kt       # Rolling 1-min window rate limiter (200/min, 250 burst)
 data/sensor/StepVelocityAnalyzer.kt  # Unnatural step pattern detection (shaker/spoof), penalty multiplier
-data/sensor/StepIngestionPreferences.kt # Service heartbeat + day-start counter for worker/service coordination
+data/sensor/StepIngestionPreferences.kt # Service heartbeat + day-start counter for worker/service coordination. #123: +sensorStepsAtDayStart offset (set alongside the baseline, getSensorStepsAtDayStart) so the worker measures the credited-steps gap relative to the baseline — survives a mid-day reboot re-anchor
 data/sensor/DailyStepManager.kt      # Orchestrates: rate limit → velocity analysis → STEP_MULTIPLIER (Workshop) + STEP_EFFICIENCY (Lab) bonus combined under shared +100 % cap (sensor walking only, RO-08 + RO-11 #A.3) → 50k ceiling → Room persist + activity minutes; constructor takes WorkshopRepository + LabRepository. #120: recordSteps/recordActivityMinutes run their full read-check-write under a kotlinx Mutex (ensureInitializedLocked is the non-reentrant init split) so the ceiling RMW is atomic across the service + worker threads; stepsPerMinute is a ConcurrentHashMap, counters @Volatile. Guarded by DailyStepManagerConcurrencyTest (deterministic onBeforeCreditCommit seam)
 ```
 
@@ -344,7 +344,7 @@ service/StepCounterService.kt        # Foreground service (health type), START_S
 service/StepNotificationManager.kt   # Notification channel + builder, 30s throttled updates
 service/SupplyDropNotificationManager.kt # Supply drop notification channel + deep-link to inbox
 service/BootReceiver.kt              # BOOT_COMPLETED → restart StepCounterService
-service/StepSyncWorker.kt            # @HiltWorker CoroutineWorker, 15-min periodic: sensor catch-up + HC sync
+service/StepSyncWorker.kt            # @HiltWorker CoroutineWorker, 15-min periodic: sensor catch-up + HC sync. #123: catch-up arithmetic extracted to a pure companion `computeCatchUp(dayStart,currentCounter,alreadyCredited,sensorStepsAtDayStart)` → CatchUpDecision (Establish/Rebaseline/Credit/Skip); detects a mid-day reboot (currentCounter < dayStart) and re-anchors the baseline + offset so post-reboot steps credit instead of being dropped. Guarded by StepIngestionTest (now delegating to the real computeCatchUp)
 service/StepSyncScheduler.kt         # Enqueues periodic WorkManager request
 service/SmartReminderManager.kt      # Upgrade proximity reminders (piggybacked on StepSyncWorker)
 service/MilestoneNotificationManager.kt # Wave record and step milestone notifications

@@ -96,18 +96,26 @@ class FakeStepIngestionPreferences {
     private var heartbeat: Long = 0L
     private var dayStartDate: String? = null
     private var dayStartCounter: Long = -1L
+    private var sensorStepsAtDayStart: Long = 0L
 
     fun updateServiceHeartbeat(timestampMs: Long) { heartbeat = timestampMs }
     fun getServiceHeartbeat(): Long = heartbeat
     fun isServiceAlive(nowMs: Long): Boolean = nowMs - heartbeat < 2 * 60 * 1000L
 
-    fun setCounterAtDayStart(date: String, counterValue: Long) {
+    // #123: mirrors the real prefs — sensorStepsAtDayStart offset defaults to 0.
+    fun setCounterAtDayStart(date: String, counterValue: Long, sensorStepsAtDayStart: Long = 0L) {
         dayStartDate = date
         dayStartCounter = counterValue
+        this.sensorStepsAtDayStart = sensorStepsAtDayStart
     }
 
     fun getCounterAtDayStart(date: String): Long? {
         if (dayStartDate != date) return null
         return dayStartCounter.takeIf { it >= 0 }
+    }
+
+    fun getSensorStepsAtDayStart(date: String): Long {
+        if (dayStartDate != date) return 0L
+        return sensorStepsAtDayStart
     }
 }

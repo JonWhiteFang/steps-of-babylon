@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.data.sensor
 
+import com.whitefang.stepsofbabylon.service.StepSyncWorker
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,8 +27,9 @@ class StepIngestionTest {
     }
 
     /**
-     * Simulates the worker's sensorCatchUp logic.
-     * Returns the gap credited (0 if skipped).
+     * Drives the worker's sensorCatchUp logic through the REAL production decision
+     * [StepSyncWorker.computeCatchUp] (#123 — no mirror-drift copy), applying the same Room/prefs
+     * side-effects the worker applies. Returns the gap credited (0 if skipped / baseline-only).
      */
     private fun workerCatchUp(
         today: String,
@@ -37,21 +39,25 @@ class StepIngestionTest {
         if (prefs.isServiceAlive(nowMs)) return 0
 
         val dayStart = prefs.getCounterAtDayStart(today)
-        if (dayStart == null) {
-            prefs.setCounterAtDayStart(today, currentCounter)
-            return 0
+        val sensorStepsAtDayStart = prefs.getSensorStepsAtDayStart(today)
+        return when (
+            val decision = StepSyncWorker.computeCatchUp(dayStart, currentCounter, roomSensorSteps, sensorStepsAtDayStart)
+        ) {
+            is StepSyncWorker.CatchUpDecision.Establish -> {
+                prefs.setCounterAtDayStart(today, decision.counter, roomSensorSteps)
+                0
+            }
+            is StepSyncWorker.CatchUpDecision.Rebaseline -> {
+                prefs.setCounterAtDayStart(today, decision.counter, roomSensorSteps)
+                0
+            }
+            is StepSyncWorker.CatchUpDecision.Credit -> {
+                roomSensorSteps += decision.gap
+                totalCredited += decision.gap
+                decision.gap
+            }
+            StepSyncWorker.CatchUpDecision.Skip -> 0
         }
-
-        val rawToday = currentCounter - dayStart
-        if (rawToday <= 0) return 0
-
-        val gap = rawToday - roomSensorSteps
-        if (gap > 0) {
-            roomSensorSteps += gap
-            totalCredited += gap
-            return gap
-        }
-        return 0
     }
 
     /**
@@ -179,5 +185,31 @@ class StepIngestionTest {
         // After device reboot, counter resets to a low value
         val credited = workerCatchUp(today, 100, baseTime)
         assertEquals(0, credited)
+    }
+
+    // #123 (audit #7): a mid-day reboot must RE-BASELINE (not just swallow the negative) so steps
+    // walked after the reboot still credit. Pre-fix the stale baseline left rawToday negative for
+    // the rest of the day and every post-reboot step was lost.
+    @Test
+    fun `worker re-baselines and credits correctly after a mid-day reboot`() {
+        val today = "2026-03-11"
+        // Pre-reboot: baseline 8000, and 8000 raw steps already credited live by the service.
+        prefs.setCounterAtDayStart(today, 8000)
+        roomSensorSteps = 8000
+        totalCredited = 8000 // those 8000 were credited live before the reboot
+
+        // Step 1: post-reboot worker run — counter restarted near 0. Must re-baseline to 120 and
+        // credit nothing for the discontinuity (pre-reboot steps were already credited live).
+        val c1 = workerCatchUp(today, 120, baseTime)
+        assertEquals(0, c1, "the reboot discontinuity itself must credit nothing")
+        assertEquals(120L, prefs.getCounterAtDayStart(today), "baseline must re-anchor to the post-reboot counter")
+
+        // Step 2: 180 steps walked after the reboot (counter 120 -> 300). Must credit exactly 180,
+        // measured from the NEW baseline — NOT swallowed by the stale pre-reboot cumulative.
+        val c2 = workerCatchUp(today, 300, baseTime + 15 * 60 * 1000)
+        assertEquals(180, c2, "post-reboot steps must credit from the re-anchored baseline")
+
+        // No loss, no double-credit: 8000 pre-reboot + 180 post-reboot.
+        assertEquals(8180, totalCredited)
     }
 }
