@@ -4,6 +4,13 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Security — Plan 32 follow-ups: release-only dependency graph + patched transitive guava (2026-06-10)
+
+- Follow-up to the dependency-graph scoping. Two changes that together drive the Dependabot dashboard to **0**:
+  - **Tightened the dependency-graph scope** from `.*RuntimeClasspath` to a regex anchored to `releaseRuntimeClasspath` only, in `dependency-submission.yml`. The broader scope still surfaced test-only deps (notably `bcprov-jdk18on` via Robolectric in `debugUnitTestRuntimeClasspath` — high severity but never shipped). Anchoring to the production AAB runtime classpath makes the security graph reflect exactly what ships. The 2 build-only `bcprov` alerts (#22/#23) leave the graph and auto-dismiss on the next `push:main` submission.
+  - **Forced transitive guava to a patched version.** guava is not a direct dependency — it shipped transitively at `31.1-android` (via kotlinx-coroutines-guava + Play Services), flagged by Dependabot (CVE-2023-2976 / CVE-2020-8908, insecure temp-dir). Added `guava = "33.4.0-android"` to the version catalog + a `constraints { implementation(libs.guava) }` block in `app/build.gradle.kts`, raising the resolved version without adding a direct dependency. Verified: `releaseRuntimeClasspath` now resolves `31.1-android` up to `33.4.0-android`. Clears alerts #4/#5.
+- `testDebugUnitTest` + `lintDebug` + `assembleDebug` BUILD SUCCESSFUL, 867 unchanged (CI-config + a transitive-version constraint; no source/test behaviour change). Net effect after merge: 4 to 0 open Dependabot alerts.
+
 ### Security — scope dependency submission to runtime classpaths (clears build-only Dependabot noise) (2026-06-10)
 
 - The `dependency-submission.yml` workflow (Plan 32 / ADR-0018) submitted the **entire** Gradle dependency graph, including the buildscript/plugin classpath. That dragged the Google-API-client stack behind the Play Publisher plugin + AGP/bundletool (netty ×19, protobuf-java, bouncycastle, jose4j, jdom2, httpclient, commons-lang3) into GitHub's security graph as **30 Dependabot alerts (14 high / 3 low / 13 medium) attributed to `settings.gradle.kts`** — none of which ship in the AAB (build-machine-only). Verified 2026-06-10 against `:app` `releaseRuntimeClasspath`: of all flagged packages, **only guava ships** (transitive, `31.1-android`, 2 medium alerts).

@@ -219,6 +219,17 @@ dependencies {
     implementation(libs.play.services.ads)
     implementation(libs.user.messaging.platform)
 
+    // Security: transitive-dependency floor. guava is NOT a direct dependency — it ships
+    // transitively via kotlinx-coroutines-guava + Play Services at 31.1-android, which is
+    // flagged by Dependabot (CVE-2023-2976 / CVE-2020-8908, insecure temp-dir). A constraint
+    // raises the resolved version without adding a direct dependency. (Plan 32 security
+    // follow-up, 2026-06-10.)
+    constraints {
+        implementation(libs.guava) {
+            because("Force transitive guava >=32-android to clear CVE-2023-2976 / CVE-2020-8908 (default is 31.1-android)")
+        }
+    }
+
     // Testing
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

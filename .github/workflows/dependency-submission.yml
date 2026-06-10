@@ -1,15 +1,16 @@
 # Plan 32 / ADR-0018 — submits the resolved Gradle dependency graph so GitHub security
 # alerts (Dependabot alerts) can see transitive dependencies. Runs on main only.
 #
-# Scoped to RUNTIME classpaths (see env on the submission step): without this filter the
-# action submits the ENTIRE Gradle graph including the buildscript/plugin classpath, which
-# drags in the Google-API-client stack behind the Play Publisher plugin + AGP/bundletool
-# (netty, protobuf-java, bouncycastle, jose4j, jdom2, httpclient, commons-lang3). None of
-# those ship in the AAB — they run only on the build machine — yet they generated ~30
-# build-only Dependabot alerts attributed to settings.gradle.kts. Restricting the submitted
-# graph to `*RuntimeClasspath` configurations makes the security graph reflect what actually
-# ships (release/debug/test runtime), so alerts track real production exposure. Verified
-# 2026-06-10: of the flagged packages, only guava is in releaseRuntimeClasspath.
+# Scoped to the RELEASE runtime classpath (see env on the submission step): without a
+# filter the action submits the ENTIRE Gradle graph including the buildscript/plugin
+# classpath, which drags in the Google-API-client stack behind the Play Publisher plugin +
+# AGP/bundletool (netty, protobuf-java, bouncycastle, jose4j, jdom2, httpclient,
+# commons-lang3). None of those ship in the AAB — they run only on the build machine — yet
+# they generated ~28 build-only Dependabot alerts attributed to settings.gradle.kts.
+# Scoping to releaseRuntimeClasspath makes the security graph reflect exactly what ships to
+# production. (A broader .*RuntimeClasspath scope also surfaced test-only deps such as
+# bcprov via Robolectric in debugUnitTestRuntimeClasspath — high severity but never shipped;
+# release-only drops that noise too.) Verified 2026-06-10 against :app releaseRuntimeClasspath.
 name: Dependency Submission
 
 on:
@@ -32,8 +33,8 @@ jobs:
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
       - uses: gradle/actions/dependency-submission@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
         env:
-          # Java regex matched against configuration names. `.*RuntimeClasspath` keeps the
-          # app's release/debug/test runtime dependencies (what ships + dev runtime) and
-          # excludes the buildscript `classpath` configuration that pulls the build-tool-only
-          # plugin transitives. See the header comment for the rationale.
-          DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS: ".*RuntimeClasspath"
+          # Java regex matched against configuration names. Anchored to the production AAB
+          # runtime config only; excludes the buildscript `classpath` config (build-tool
+          # plugin transitives) and the debug/test runtime classpaths (e.g. Robolectric ->
+          # bcprov). See the header comment for rationale.
+          DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS: "^releaseRuntimeClasspath$"

@@ -21,6 +21,10 @@ junit5 = "5.11.4"
 coroutinesTest = "1.10.1"
 mockitoKotlin = "5.4.0"
 robolectric = "4.14.1"
+# Transitive-dependency security floor (not a direct dep — applied via a constraint in
+# app/build.gradle.kts). guava ships transitively (kotlinx-coroutines-guava + Play Services)
+# at 31.1-android; force >=32 to clear CVE-2023-2976 / CVE-2020-8908.
+guava = "33.4.0-android"
 # Instrumented (androidTest) — V1X-08 Phase 1A
 androidxTestRunner = "1.6.2"
 androidxTestExtJunit = "1.2.1"
@@ -76,6 +80,10 @@ billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", versi
 # user-messaging-platform is Google's UMP SDK, required for GDPR/DSA consent on ad requests.
 play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }
 user-messaging-platform = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "userMessagingPlatform" }
+
+# Transitive security constraint (applied via `constraints { }` in app/build.gradle.kts,
+# NOT a direct dependency). Forces the transitive guava up to a patched version.
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 
 # Testing
 junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit5" }
