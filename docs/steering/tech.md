@@ -85,7 +85,7 @@ Data flow: `presentation → domain ← data`. Domain has no Android dependencie
 ./gradlew clean               # Clean build
 ```
 
-In non-TTY environments (Kiro CLI, CI), use `./run-gradle.sh <task>` instead of `./gradlew` to avoid output buffering. See `README.md` for the script.
+In non-TTY environments (CI, etc.), use `./run-gradle.sh <task>` instead of `./gradlew` to avoid output buffering. See `README.md` for the script.
 
 ## Continuous Integration
 
