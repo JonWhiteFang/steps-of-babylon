@@ -72,24 +72,66 @@ class StepSyncWorker @AssistedInject constructor(
         val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) ?: return
         val currentCounter = readCurrentCounter(sensor) ?: return
 
-        // Get or establish the day-start baseline
         val dayStart = stepIngestionPrefs.getCounterAtDayStart(today)
-        if (dayStart == null) {
-            // First read today — establish baseline, no delta to credit
-            stepIngestionPrefs.setCounterAtDayStart(today, currentCounter)
-            return
+        // Read Room's same-day sensor cumulative up front so the pure decision can subtract the
+        // baseline-relative offset (#123).
+        val alreadyCredited = stepRepository.getDailyRecord(today)?.sensorSteps ?: 0L
+        val sensorStepsAtDayStart = stepIngestionPrefs.getSensorStepsAtDayStart(today)
+
+        when (val decision = computeCatchUp(dayStart, currentCounter, alreadyCredited, sensorStepsAtDayStart)) {
+            is CatchUpDecision.Establish ->
+                // First read today — anchor the baseline; offset is the current Room cumulative
+                // (0 on a clean day) so future gaps are measured from here.
+                stepIngestionPrefs.setCounterAtDayStart(today, decision.counter, alreadyCredited)
+            is CatchUpDecision.Rebaseline ->
+                // #123: device reboot detected (counter reset below the baseline). Re-anchor to the
+                // post-reboot counter AND capture the current Room cumulative as the new offset, so
+                // post-reboot steps credit from here instead of being swallowed by the stale
+                // pre-reboot cumulative. Credit nothing for the discontinuity itself.
+                stepIngestionPrefs.setCounterAtDayStart(today, decision.counter, alreadyCredited)
+            is CatchUpDecision.Credit -> dailyStepManager.recordSteps(decision.gap, now)
+            CatchUpDecision.Skip -> Unit
         }
+    }
 
-        // Compute how many raw sensor steps have occurred today
-        val rawToday = currentCounter - dayStart
-        if (rawToday <= 0) return
+    /**
+     * The pure decision for [Sensor.TYPE_STEP_COUNTER] catch-up (#123). Kept side-effect-free so it
+     * is JVM-testable against the REAL production arithmetic (no mirror-drift copy).
+     *
+     * @param dayStart the stored day-start baseline (null when not yet set today).
+     * @param currentCounter the current hardware counter reading.
+     * @param alreadyCredited Room's same-day `sensorSteps` cumulative.
+     * @param sensorStepsAtDayStart Room's `sensorSteps` cumulative captured when the baseline was set.
+     */
+    sealed interface CatchUpDecision {
+        /** No baseline yet today — establish one at [counter], credit nothing. */
+        data class Establish(val counter: Long) : CatchUpDecision
+        /** Counter reset (reboot) below the baseline — re-anchor to [counter], credit nothing. */
+        data class Rebaseline(val counter: Long) : CatchUpDecision
+        /** Credit [gap] uncredited steps walked since the baseline. */
+        data class Credit(val gap: Long) : CatchUpDecision
+        /** Nothing to do (no new steps since the last credit). */
+        data object Skip : CatchUpDecision
+    }
 
-        // Check how many sensor steps have already been credited via Room
-        val record = stepRepository.getDailyRecord(today)
-        val alreadyCredited = record?.sensorSteps ?: 0L
-        val gap = rawToday - alreadyCredited
-        if (gap > 0) {
-            dailyStepManager.recordSteps(gap, now)
+    companion object {
+        fun computeCatchUp(
+            dayStart: Long?,
+            currentCounter: Long,
+            alreadyCredited: Long,
+            sensorStepsAtDayStart: Long,
+        ): CatchUpDecision {
+            if (dayStart == null) return CatchUpDecision.Establish(currentCounter)
+            // currentCounter < dayStart can ONLY mean the hardware counter restarted (reboot) —
+            // dayStart was itself a same-day reading from the same monotonic sensor.
+            if (currentCounter < dayStart) return CatchUpDecision.Rebaseline(currentCounter)
+
+            val rawSinceBaseline = currentCounter - dayStart
+            // Steps already credited SINCE this baseline (excludes the pre-baseline cumulative that
+            // survives a reboot in Room's sensorSteps).
+            val creditedSinceBaseline = alreadyCredited - sensorStepsAtDayStart
+            val gap = rawSinceBaseline - creditedSinceBaseline
+            return if (gap > 0) CatchUpDecision.Credit(gap) else CatchUpDecision.Skip
         }
     }
 

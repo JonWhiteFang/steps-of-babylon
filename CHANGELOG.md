@@ -4,6 +4,35 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — #123 mid-day reboot loses steps (stale day-start baseline) (2026-06-10)
+
+- Fixes audit finding #7 (Major). `TYPE_STEP_COUNTER` resets to 0 on device reboot, but
+  `StepSyncWorker.sensorCatchUp` captured the `day_start_counter` baseline once per local day and
+  never re-captured it. After a mid-day reboot the live counter restarts near 0 while the stored
+  baseline still holds the large pre-reboot value, so `rawToday = currentCounter - dayStart` went
+  negative, hit the `if (rawToday <= 0) return` guard, and **silently dropped every step walked
+  after the reboot for the rest of the local day** (on the worker catch-up path, while the
+  foreground service was not alive and Health Connect couldn't backfill).
+- **Fix:** detect the counter reset (`currentCounter < dayStart` — only possible via a reboot, since
+  the baseline was itself a same-day reading from the same monotonic sensor) and **re-anchor** the
+  baseline to the post-reboot counter, crediting 0 for the discontinuity (pre-reboot steps were
+  already credited live). The load-bearing subtlety (caught in review): Room `sensorSteps` is a
+  same-day cumulative that *survives* the reboot, so re-baselining `dayStart` alone would still make
+  `gap = rawToday - alreadyCredited` negative. Added a `sensorStepsAtDayStart` offset
+  (SharedPreferences, captured when the baseline is set) so the gap is measured **relative to the
+  baseline** (`gap = (counter - dayStart) - (alreadyCredited - sensorStepsAtDayStart)`) — post-reboot
+  steps now credit correctly. The catch-up arithmetic was extracted into a pure, side-effect-free
+  `StepSyncWorker.computeCatchUp(...)` (`Establish` / `Rebaseline` / `Credit` / `Skip`) so it is
+  JVM-tested against the **real** production logic (no mirror-drift copy).
+- **No Room schema change / no migration** — `sensorStepsAtDayStart` is a SharedPreferences key
+  (`step_ingestion`), absent-key defaults to 0 gracefully.
+- **Tests:** `StepIngestionTest.workerCatchUp` was retargeted to delegate to the real
+  `computeCatchUp` (closing the long-standing logic-duplication-drift gap). New
+  `worker re-baselines and credits correctly after a mid-day reboot` test (re-anchors to the
+  post-reboot counter, credits 0 for the discontinuity, then credits exactly the post-reboot delta —
+  confirmed RED against the pre-fix logic). `FakeStepIngestionPreferences` mirrors the new offset.
+  Full JVM suite green, **889 → 890 JVM** (+1).
+
 ### Fix — #120 DailyStepManager singleton data race (2026-06-10)
 
 - Fixes audit findings #6 + #12 (Major). `DailyStepManager` is an app-wide `@Singleton` mutated by
