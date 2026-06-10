@@ -4,6 +4,14 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Tooling
+
+- Converted agent tooling from Kiro-CLI to Claude Code (ADR-0019). Removed `.kiro/`; added
+  `CLAUDE.md` (single canonical guide, folds the former `AGENTS.md`), `.claude/hooks/session-preflight.sh`
+  (SessionStart read-at-start), `.claude/skills/checkpoint/SKILL.md` (end-of-run write), and
+  `.claude/settings.json`. Moved `.kiro/steering` reference docs to `docs/steering/`. No production
+  code, build, or schema change.
+
 ### Security — Plan 32 follow-ups: release-only dependency graph + patched transitive guava (2026-06-10)
 
 - Follow-up to the dependency-graph scoping. Two changes that together drive the Dependabot dashboard to **0**:

@@ -1,3 +1,20 @@
+## 2026-06-10 — Converted Kiro-CLI → Claude Code + completed the committed memory spine
+
+- **Goal:** convert the project's agent tooling from Kiro-CLI to Claude Code, and in doing so finish the committed project-memory spine (SessionStart preflight hook + `/checkpoint` skill).
+- **What changed:**
+  - Deleted `.kiro/` (steering + settings/LSP) and `AGENTS.md`.
+  - New `CLAUDE.md` = always-on memory rules + agent protocol (absorbed from `.kiro/steering/10` + `11`) + the folded `AGENTS.md` body + spine pointer. AGENTS.md's own spine table + operating-rule bullets were merged, not duplicated.
+  - Moved the 8 reference docs to `docs/steering/`; stripped dead `inclusion: fileMatch` front-matter from `lib-coroutines`/`lib-jetpack-compose`/`lib-room`.
+  - Added `.claude/hooks/session-preflight.sh` (plain stdout; injects branch + status + last 10 commits + STATE.md's newest objective bullet + Top priorities + Next actions + Do-not-touch; 6216 chars measured, under the 10k additionalContext cap; dependency-free; exits 0), `.claude/skills/checkpoint/SKILL.md`, `.claude/settings.json` (SessionStart, matcher `*`, additive).
+  - Repointed live cross-refs: README (`AGENTS.md` → `CLAUDE.md`, `.kiro/steering/tech.md` → `docs/steering/tech.md`, "Kiro CLI" reword), `docs/steering/tech.md` line 88, `docs/agent/CONSTRAINTS.md` line 38.
+  - ADR-0019 records the decision.
+- **Verification:** hook smoke-test `wc -c` = 6216 < 10000 with all content assertions green + graceful degradation outside a git repo; `jq` valid `settings.json`; `/checkpoint` SKILL.md front-matter valid; fold-completeness gate (every AGENTS.md `##` section preserved in CLAUDE.md, body byte-identical modulo the 2 intended ref rewrites); concrete-pathspec greps show 0 live `.kiro/`/`AGENTS.md` refs (history excepted); no `.kt`/`.kts`/`.toml`/schema file touched; each task spec- and quality-reviewed by independent subagents.
+- **Doc sync:** CLAUDE.md (new guide), docs/steering/* (moved), README, CONSTRAINTS, STATE (this rotation), this RUN_LOG entry, CHANGELOG, ADR-0019.
+- **Dogfood note:** the `/checkpoint` protocol was applied to this very change by executing the skill's checklist step-by-step. A skill created mid-session isn't hot-loaded, so it wasn't invoked via the slash command this time; from the next session it is slash/model-invocable. This is the end-to-end check that the checklist is correct and produces the right writes.
+- **Next:** open the PR for `feat/kiro-to-claude-code`; on merge, the SessionStart hook + `/checkpoint` skill become the project's read/write memory loop.
+
+---
+
 ## 2026-06-04 — First CI-driven release (v1.0.1) + automated Play "What's new" notes
 
 - **Goal:** "push" the first `v*` tag, then "i noticed on the new app there were no release notes for the update, can we automate that?"
