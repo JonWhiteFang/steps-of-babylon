@@ -4,6 +4,31 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — #122 economy spend/claim atomicity gaps (2026-06-10)
+
+- Fixes audit findings #4 + #5 + #9 + #10 (Major) — a recurring "guarded DAO exists, caller ignores
+  its result" shape that let a stale snapshot grant an item/claim a reward without the currency
+  actually being deducted. See **ADR-0020**. Four parts:
+  - **Spend returns Boolean (#4/#5).** `PlayerRepository.spendGems` / `spendPowerStones` now return
+    `rowsAffected > 0` (propagated from the existing `spendGemsAtomic` / `spendPowerStonesAtomic`);
+    every consuming use case (`UnlockUltimateWeapon`, `UpgradeUltimateWeapon`, `UnlockLabSlot`,
+    `OpenCardPack`, `RushResearch`, `StoreViewModel.purchaseCosmetic`) now grants only when the
+    deduct succeeds. `StartResearch` (the only un-migrated Step-spend) routes through a new
+    `spendStepsIfSufficient(): Boolean` (backed by `adjustStepBalanceIfSufficient`). `spendSteps`
+    deliberately keeps its `MAX(0,…)` clamp — it's the anti-cheat escrow clawback path.
+  - **Idempotent claims (#9/#10).** `WalkingEncounterDao.markClaimed` and `DailyMissionDao.markClaimed`
+    gained `AND claimed = 0` + `Int` rows-affected; `WalkingEncounterRepository.claimDrop` returns
+    `Boolean`. `ClaimSupplyDrop` is reordered to **mark-first** (credit only when the guarded claim
+    returns true). The mission claim is extracted into a new `ClaimMission` use case (mirrors
+    `ClaimMilestone`) and `MissionsViewModel` delegates to it.
+  - **No schema change / no migration** — only `AND claimed = 0` added to existing UPDATEs +
+    Kotlin return-type changes; Room schema hash unchanged, schema-drift gate stays green.
+  - **Tests:** +17 JVM (**871 → 888**). New `GuardedClaimDaoTest` (real-SQLite guard validation),
+    `ClaimMissionTest`, per-use-case "stale snapshot does not grant for free" tests, double-claim
+    tests for supply drops + missions, `spend*` Boolean-propagation tests, and an updated
+    `CurrencyGuardTest` reflecting the new guarded semantics. The `StartResearch` TOCTOU test was
+    confirmed RED against the reverted gate. Full JVM suite `BUILD SUCCESSFUL`.
+
 ### Fix — #119 GOLDEN_ZIGGURAT expiry discarded in-round upgrades (2026-06-10)
 
 - Fixes audit finding #2 (Major). When GOLDEN_ZIGGURAT activated it snapshotted `preGoldenStats =

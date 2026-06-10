@@ -24,8 +24,16 @@ interface DailyMissionDao {
     @Query("UPDATE daily_mission SET progress = :progress, completed = :completed WHERE id = :id")
     suspend fun updateProgress(id: Int, progress: Int, completed: Boolean)
 
-    @Query("UPDATE daily_mission SET claimed = 1 WHERE id = :id")
-    suspend fun markClaimed(id: Int)
+    /**
+     * Atomic guarded claim (#122). The `AND claimed = 0` clause + rows-affected return make the
+     * claim idempotent — only the first call for [id] transitions it to claimed and returns `1`;
+     * a concurrent/duplicate call returns `0`. Callers credit the reward only when this returns
+     * `1`, closing the double-credit window on a rapid double-tap of the Claim button.
+     *
+     * @return rows affected — `1` on the first claim, `0` if already claimed / not found.
+     */
+    @Query("UPDATE daily_mission SET claimed = 1 WHERE id = :id AND claimed = 0")
+    suspend fun markClaimed(id: Int): Int
 
     @Query("SELECT COUNT(*) FROM daily_mission WHERE date = :date AND completed = 1 AND claimed = 0")
     fun countClaimable(date: String): Flow<Int>

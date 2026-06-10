@@ -31,10 +31,15 @@ class FakeDailyMissionDao : DailyMissionDao {
         }
     }
 
-    override suspend fun markClaimed(id: Int) {
+    // #122: mirrors the guarded DAO (AND claimed = 0). Returns 1 only when this call transitions
+    // an unclaimed row → claimed; 0 if already claimed / not found.
+    override suspend fun markClaimed(id: Int): Int {
+        val target = data.value.find { it.id == id } ?: return 0
+        if (target.claimed) return 0
         data.value = data.value.map {
             if (it.id == id) it.copy(claimed = true) else it
         }
+        return 1
     }
 
     override fun countClaimable(date: String): Flow<Int> =

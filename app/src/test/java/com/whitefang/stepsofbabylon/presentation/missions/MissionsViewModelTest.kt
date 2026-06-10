@@ -8,6 +8,8 @@ import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestone
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestoneResult
+import com.whitefang.stepsofbabylon.domain.usecase.ClaimMission
+import com.whitefang.stepsofbabylon.domain.usecase.ClaimMissionResult
 import com.whitefang.stepsofbabylon.domain.usecase.GenerateDailyMissions
 import com.whitefang.stepsofbabylon.fakes.FakeCosmeticRepository
 import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
@@ -57,12 +59,15 @@ class MissionsViewModelTest {
 
     @Test
     fun `claim mission credits gems`() = runTest {
+        // #122: claim now goes through the atomic ClaimMission use case (mark-first guarded claim),
+        // exercising the same path MissionsViewModel.claimMission delegates to.
         missionDao.insert(DailyMissionEntity(date = today, missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 5000, completed = true, rewardGems = 5))
-        val missions = missionDao.getByDateOnce(today)
-        val m = missions.first()
-        playerRepo.addGems(0) // ensure profile exists
-        if (m.rewardGems > 0) playerRepo.addGems(m.rewardGems.toLong())
-        missionDao.markClaimed(m.id)
+        val m = missionDao.getByDateOnce(today).first()
+        val claimMission = ClaimMission(missionDao, playerRepo)
+
+        val result = claimMission(m.id, today)
+
+        assertEquals(ClaimMissionResult.Success, result)
         assertEquals(55, playerRepo.profile.value.gems)
         assertTrue(missionDao.getByDateOnce(today).first().claimed)
     }

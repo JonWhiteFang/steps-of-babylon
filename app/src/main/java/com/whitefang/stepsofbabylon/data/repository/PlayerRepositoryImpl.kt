@@ -26,20 +26,21 @@ class PlayerRepositoryImpl @Inject constructor(
 
     override suspend fun addSteps(amount: Long) = dao.adjustStepBalance(amount)
     override suspend fun spendSteps(amount: Long) = dao.adjustStepBalance(-amount)
+    // #122: propagate the guarded DAO's rows-affected so callers can gate the grant.
+    override suspend fun spendStepsIfSufficient(amount: Long): Boolean =
+        dao.adjustStepBalanceIfSufficient(amount) > 0
     override suspend fun addGems(amount: Long) {
         dao.adjustGems(amount)
         dao.incrementGemsEarned(amount)
     }
-    override suspend fun spendGems(amount: Long) {
-        dao.spendGemsAtomic(amount)
-    }
+    override suspend fun spendGems(amount: Long): Boolean =
+        dao.spendGemsAtomic(amount) > 0
     override suspend fun addPowerStones(amount: Long) {
         dao.adjustPowerStones(amount)
         dao.incrementPowerStonesEarned(amount)
     }
-    override suspend fun spendPowerStones(amount: Long) {
-        dao.spendPowerStonesAtomic(amount)
-    }
+    override suspend fun spendPowerStones(amount: Long): Boolean =
+        dao.spendPowerStonesAtomic(amount) > 0
     override suspend fun addCardDust(amount: Long) = dao.adjustCardDust(amount)
     override suspend fun spendCardDust(amount: Long) = dao.adjustCardDust(-amount)
     override suspend fun updateTier(tier: Int) = dao.updateTier(tier)

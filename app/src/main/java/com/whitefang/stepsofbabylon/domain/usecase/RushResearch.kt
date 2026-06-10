@@ -27,7 +27,8 @@ class RushResearch(
         if (wallet.gems < cost) return Result.InsufficientGems
 
         val level = labRepository.getResearchLevel(type)
-        playerRepository.spendGems(cost)
+        // #122: only complete the research when the guarded deduct actually charged the Gems.
+        if (!playerRepository.spendGems(cost)) return Result.InsufficientGems
         labRepository.completeResearch(type)
         return Result.Rushed(cost, newLevel = level + 1)
     }

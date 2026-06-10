@@ -65,6 +65,22 @@ class OpenCardPackTest {
         assertEquals(1000L, playerRepo.profile.value.gems)
     }
 
+    // #122 (audit #5): stale snapshot says affordable but the wallet is empty — the guarded deduct
+    // no-ops, so NO cards may be granted and the result must be InsufficientGems. Pre-fix the
+    // discarded rows-affected meant the pack opened for free.
+    @Test
+    fun `R122 stale snapshot does not grant a free pack`() = runTest {
+        // On-disk balance is 0, but the caller passes a stale snapshot of 1000 gems.
+        playerRepo.profile.value = PlayerProfile(gems = 0)
+        val result = useCase(PackTier.COMMON, gems = 1000)
+        assertTrue(
+            result is OpenCardPack.Result.InsufficientGems,
+            "a pack must not open when the guarded deduct fails (got $result)",
+        )
+        assertTrue(cardRepo.cards.value.isEmpty(), "no cards may be granted for a failed deduct")
+        assertEquals(0L, playerRepo.profile.value.gems, "balance must stay at 0")
+    }
+
     @Test
     fun `issue 18 regression - owned cards are persisted even when queried fresh from DB`() = runTest {
         // Pre-populate repo with some cards (simulates player who already owns cards)

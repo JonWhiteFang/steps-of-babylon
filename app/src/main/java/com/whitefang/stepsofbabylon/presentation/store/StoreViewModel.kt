@@ -105,8 +105,9 @@ class StoreViewModel @Inject constructor(
             _purchasing.value = true
             try {
                 val cosmetic = uiState.value.cosmetics.find { it.cosmeticId == cosmeticId } ?: return@launch
-                if (uiState.value.gems >= cosmetic.priceGems) {
-                    playerRepository.spendGems(cosmetic.priceGems)
+                // #122: gate the cosmetic grant on the guarded deduct's success rather than the
+                // stale uiState snapshot, so a concurrent spend can't yield a free cosmetic.
+                if (playerRepository.spendGems(cosmetic.priceGems)) {
                     cosmeticRepository.purchase(cosmeticId)
                 } else {
                     _userMessage.value = "Not enough Gems"
