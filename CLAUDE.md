@@ -231,8 +231,11 @@ from game logic — the simulation has been extracted to a pure-domain core:
 - **Wave timing:** 26s spawn phase + 9s cooldown between waves. **Speed controls:** 1x / 2x / 4x.
 
 > ⚠️ **Thread-safety:** the game loop runs on its own thread while the UI/main thread can mutate engine
-> state. Structural mutation of shared engine collections (e.g. `GameEngine.entities`) must be confined
-> to the loop thread — see the open `severity:major` battle issues and `docs/external-reviews/`.
+> state. `GameEngine.entities` is now guarded by a private `entitiesLock` monitor — every region that
+> structurally mutates or iterates it (`update`, `init`, `applyStats` orb-reconcile, `render` via an
+> under-lock snapshot) holds the lock (#118 fix). Any NEW structural mutation of a shared engine
+> collection must take the same lock or be confined to the loop thread — see `docs/external-reviews/`
+> and the remaining `severity:major` battle issues.
 
 ## Known fragile zones & active risk
 
@@ -250,7 +253,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh connectedDebugAndroidTest` (instrumented).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 867 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 869 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Notable guards:** `architecture/DomainPurityTest` (fails if `domain/` imports any Android package);
   `SimulationTest` (the extracted pure-domain game-loop core); `BattleSurfaceLifecycleTest` +

@@ -46,6 +46,20 @@ class GameEngine {
 
     private val entities = mutableListOf<Entity>()
     private val pendingAdd = mutableListOf<Entity>()
+
+    /**
+     * Issue #118 (audit #1 + #15): `entities` is structurally mutated AND iterated from two
+     * threads — the dedicated GameLoopThread runs [update] / [render] every tick, while the
+     * UI/main thread can re-init the engine ([init], playAgain) or reconcile orbs after an
+     * in-round ORBS purchase ([applyStats] via [updateZigguratStats]). A plain `ArrayList`
+     * structurally modified by one thread while another iterates it throws
+     * [java.util.ConcurrentModificationException] / corrupts iteration. Every region that
+     * structurally mutates or iterates `entities` is guarded by this monitor so the two
+     * threads can never collide. Java monitors are reentrant, so the loop-thread GOLDEN path
+     * ([activateUW] → [applyStats]) re-entering the lock is safe. [render] snapshots under the
+     * lock then draws outside it, to avoid holding the monitor across the Canvas draw window.
+     */
+    private val entitiesLock = Any()
     private val healthBarRenderer = HealthBarRenderer()
     private val calculateDamage = CalculateDamage()
     private val calculateDefense = CalculateDefense()
@@ -54,7 +68,9 @@ class GameEngine {
     var screenHeight: Float = 0f; private set
     var ziggurat: ZigguratEntity? = null; private set
     var waveSpawner: WaveSpawner? = null; private set
-    private var stats: ResolvedStats = ResolvedStats()
+    // @Volatile: written by [applyStats] from the main thread (in-round purchase) and read by
+    // the loop thread every tick (#118).
+    @Volatile private var stats: ResolvedStats = ResolvedStats()
     private var tier: Int = 1
     private var conditions: BattleConditionEffects = BattleConditionEffects()
     /**
@@ -272,61 +288,69 @@ class GameEngine {
          */
         startWave: Int = 1,
     ) {
-        screenWidth = width; screenHeight = height
-        entities.clear(); pendingAdd.clear()
-        simulation.reset(); roundOver = false
-        fortuneMultiplier = 1.0
-        secondWindUsed = false
-        uwStates.clear(); chronoActive = false; chronoSlowFactor = 1f; goldenZigActive = false; preGoldenStats = null
-        recoveryTimer = 0f
-        rapidFireTimer = 0f
-        rapidFireActiveRemaining = 0f
-        lifestealAccumulator = 0.0
-        stats = resolvedStats; tier = playerTier; effectiveLevels = wsLevels
-        reducedMotion = isReducedMotion
-        conditions = BattleConditionEffects.fromTier(tier)
-        biomeTheme = BiomeTheme.forBiome(Biome.forTier(tier))
-        backgroundRenderer = BackgroundRenderer(width, height, biomeTheme)
+        // #118: init() runs on the main thread (playAgain) and structurally rebuilds the
+        // shared `entities` / `pendingAdd` / `uwStates` collections while the GameLoopThread
+        // may still be running. Guard the whole rebuild with [entitiesLock] so a concurrent
+        // [update] tick either completes before the rebuild starts or blocks until it finishes
+        // — it can never iterate a half-cleared list. [update]'s `if (roundOver) return` guard
+        // reads happen before its own lock acquisition, so a ticker simply waits here.
+        synchronized(entitiesLock) {
+            screenWidth = width; screenHeight = height
+            entities.clear(); pendingAdd.clear()
+            simulation.reset(); roundOver = false
+            fortuneMultiplier = 1.0
+            secondWindUsed = false
+            uwStates.clear(); chronoActive = false; chronoSlowFactor = 1f; goldenZigActive = false; preGoldenStats = null
+            recoveryTimer = 0f
+            rapidFireTimer = 0f
+            rapidFireActiveRemaining = 0f
+            lifestealAccumulator = 0.0
+            stats = resolvedStats; tier = playerTier; effectiveLevels = wsLevels
+            reducedMotion = isReducedMotion
+            conditions = BattleConditionEffects.fromTier(tier)
+            biomeTheme = BiomeTheme.forBiome(Biome.forTier(tier))
+            backgroundRenderer = BackgroundRenderer(width, height, biomeTheme)
 
-        // Initialize effect engine
-        val fx = EffectEngine(reducedMotion)
-        effectEngine = fx
-        lastWave = 0
+            // Initialize effect engine
+            val fx = EffectEngine(reducedMotion)
+            effectEngine = fx
+            lastWave = 0
 
-        val zigColors = cosmeticOverrides[CosmeticCategory.ZIGGURAT_SKIN]?.overrideColors
-            ?: biomeTheme.zigguratColors
-        val zig = ZigguratEntity(width, height, stats, ::findNearestEnemies, layerColors = zigColors) { sx, sy, tx, ty ->
-            pendingAdd.add(ProjectileEntity(sx, sy, tx, ty, ZigguratBaseStats.PROJECTILE_SPEED, bouncesRemaining = stats.bounceCount))
-            val intervalMs = ((1.0 / (ziggurat?.stats?.attackSpeed ?: 1.0)) * 1000).toLong()
-            soundManager?.play(SoundEffect.SHOOT, intervalMs)
+            val zigColors = cosmeticOverrides[CosmeticCategory.ZIGGURAT_SKIN]?.overrideColors
+                ?: biomeTheme.zigguratColors
+            val zig = ZigguratEntity(width, height, stats, ::findNearestEnemies, layerColors = zigColors) { sx, sy, tx, ty ->
+                pendingAdd.add(ProjectileEntity(sx, sy, tx, ty, ZigguratBaseStats.PROJECTILE_SPEED, bouncesRemaining = stats.bounceCount))
+                val intervalMs = ((1.0 / (ziggurat?.stats?.attackSpeed ?: 1.0)) * 1000).toLong()
+                soundManager?.play(SoundEffect.SHOOT, intervalMs)
+            }
+            ziggurat = zig
+            entities.add(zig)
+
+            spawnOrbs()
+
+            val safeStartWave = startWave.coerceAtLeast(1)
+
+            waveSpawner = WaveSpawner(
+                onSpawnEnemy = { pendingAdd.add(it) },
+                zigguratX = zig.originX, zigguratY = zig.originY,
+                onEnemyDeath = ::handleEnemyDeath,
+                // R3-02: forward the attacker reference so applyThorn can reflect damage back
+                // to the melee enemy. Pre-R3-02 this was `{ dmg -> ... null }` and THORN_DAMAGE
+                // never fired on melee hits despite being plumbed through ResolvedStats.
+                onMeleeHit = { atk, dmg -> applyDamageToZiggurat(dmg, atk) },
+                onEnemyFireProjectile = { shooter, sx, sy, tx, ty, dmg ->
+                    pendingAdd.add(EnemyProjectileEntity(sx, sy, tx, ty, damage = dmg, shooter = shooter))
+                },
+                onWaveComplete = ::handleWaveComplete,
+                conditions = conditions,
+                enemyTint = biomeTheme.enemyTint,
+                startWave = safeStartWave,
+                tierMultiplier = TierConfig.forTier(tier).cashMultiplier,
+            )
+
+            // Initial wave announcement
+            triggerWaveAnnouncement(safeStartWave)
         }
-        ziggurat = zig
-        entities.add(zig)
-
-        spawnOrbs()
-
-        val safeStartWave = startWave.coerceAtLeast(1)
-
-        waveSpawner = WaveSpawner(
-            onSpawnEnemy = { pendingAdd.add(it) },
-            zigguratX = zig.originX, zigguratY = zig.originY,
-            onEnemyDeath = ::handleEnemyDeath,
-            // R3-02: forward the attacker reference so applyThorn can reflect damage back
-            // to the melee enemy. Pre-R3-02 this was `{ dmg -> ... null }` and THORN_DAMAGE
-            // never fired on melee hits despite being plumbed through ResolvedStats.
-            onMeleeHit = { atk, dmg -> applyDamageToZiggurat(dmg, atk) },
-            onEnemyFireProjectile = { shooter, sx, sy, tx, ty, dmg ->
-                pendingAdd.add(EnemyProjectileEntity(sx, sy, tx, ty, damage = dmg, shooter = shooter))
-            },
-            onWaveComplete = ::handleWaveComplete,
-            conditions = conditions,
-            enemyTint = biomeTheme.enemyTint,
-            startWave = safeStartWave,
-            tierMultiplier = TierConfig.forTier(tier).cashMultiplier,
-        )
-
-        // Initial wave announcement
-        triggerWaveAnnouncement(safeStartWave)
     }
 
     fun setStats(resolvedStats: ResolvedStats) { applyStats(resolvedStats) }
@@ -361,8 +385,15 @@ class GameEngine {
             zig.currentHp = newStats.maxHealth * hpRatio
         }
         if (newStats.orbCount != oldStats.orbCount) {
-            entities.removeAll { it is OrbEntity }
-            spawnOrbs()
+            // #118: this runs on the main thread (in-round ORBS purchase via
+            // updateZigguratStats) and structurally mutates `entities`. Guard it with the same
+            // monitor the loop thread holds across [update] so the two can't collide. Reentrant
+            // for the loop-thread GOLDEN path (activateUW→applyStats, which preserves orbCount
+            // so this branch is skipped there, but the lock is harmless if re-entered).
+            synchronized(entitiesLock) {
+                entities.removeAll { it is OrbEntity }
+                spawnOrbs()
+            }
         }
     }
 
@@ -371,52 +402,60 @@ class GameEngine {
     fun update(deltaTime: Float) {
         if (roundOver) return
         val zig = ziggurat ?: return
-        simulation.tickElapsed(deltaTime)
-        backgroundRenderer?.update(deltaTime)
-        effectEngine?.update(deltaTime)
+        // #118: the entire tick reads and structurally mutates `entities` (addAll/removeAll
+        // here, plus iteration in updateUWs→getAliveEnemies, the projectile-trail loop,
+        // CollisionSystem, and the simulation entity tick). Hold [entitiesLock] for the whole
+        // tick so a main-thread [applyStats] orb-reconcile or [init] rebuild can never mutate
+        // the list mid-iteration. The lock is reentrant, so the loop-thread GOLDEN path
+        // (updateUWs→activateUW→applyStats) re-acquiring it is safe.
+        synchronized(entitiesLock) {
+            simulation.tickElapsed(deltaTime)
+            backgroundRenderer?.update(deltaTime)
+            effectEngine?.update(deltaTime)
 
-        updateUWs(deltaTime)
-        tickRecoveryPackages(deltaTime)
-        tickRapidFire(deltaTime)
+            updateUWs(deltaTime)
+            tickRecoveryPackages(deltaTime)
+            tickRapidFire(deltaTime)
 
-        // Check for new wave to trigger announcement
-        val currentWave = waveSpawner?.currentWave ?: 1
-        if (currentWave != lastWave) {
-            lastWave = currentWave
-            triggerWaveAnnouncement(currentWave)
-        }
+            // Check for new wave to trigger announcement
+            val currentWave = waveSpawner?.currentWave ?: 1
+            if (currentWave != lastWave) {
+                lastWave = currentWave
+                triggerWaveAnnouncement(currentWave)
+            }
 
-        waveSpawner?.update(deltaTime, screenWidth, screenHeight)
-        entities.addAll(pendingAdd); pendingAdd.clear()
-        // RO-09 #1 / R4-06 / V1X-09 Phase 3: tick every entity, slowing chrono-slowable
-        // entities (enemies) to [chronoSlowFactor] while CHRONO_FIELD is active. The loop
-        // now lives in the pure-domain [Simulation]; the engine just supplies the active
-        // slow factor (1f when inactive). Projectiles, orbs, and the ziggurat tick at full
-        // `deltaTime` because they report `isChronoSlowable = false`.
-        simulation.tickEntities(entities, deltaTime, if (chronoActive) chronoSlowFactor else 1f)
+            waveSpawner?.update(deltaTime, screenWidth, screenHeight)
+            entities.addAll(pendingAdd); pendingAdd.clear()
+            // RO-09 #1 / R4-06 / V1X-09 Phase 3: tick every entity, slowing chrono-slowable
+            // entities (enemies) to [chronoSlowFactor] while CHRONO_FIELD is active. The loop
+            // now lives in the pure-domain [Simulation]; the engine just supplies the active
+            // slow factor (1f when inactive). Projectiles, orbs, and the ziggurat tick at full
+            // `deltaTime` because they report `isChronoSlowable = false`.
+            simulation.tickEntities(entities, deltaTime, if (chronoActive) chronoSlowFactor else 1f)
 
-        // Spawn projectile trails
-        if (!reducedMotion) {
-            val fx = effectEngine
-            if (fx != null) {
-                for (e in entities) {
-                    if (e is ProjectileEntity && e.isAlive) {
-                        ProjectileTrailEffect.spawn(fx.pool, e.x, e.y, biomeTheme.particleColor)
+            // Spawn projectile trails
+            if (!reducedMotion) {
+                val fx = effectEngine
+                if (fx != null) {
+                    for (e in entities) {
+                        if (e is ProjectileEntity && e.isAlive) {
+                            ProjectileTrailEffect.spawn(fx.pool, e.x, e.y, biomeTheme.particleColor)
+                        }
                     }
                 }
             }
-        }
 
-        CollisionSystem.checkCollisions(
-            simulation,
-            entities, zig.x, zig.y, zig.width,
-            onProjectileHitEnemy = ::onProjectileHitEnemy,
-            onEnemyProjectileHitZiggurat = { proj ->
-                applyDamageToZiggurat(proj.damage, proj.shooter)
-                proj.isAlive = false
-            },
-        )
-        entities.removeAll { !it.isAlive }
+            CollisionSystem.checkCollisions(
+                simulation,
+                entities, zig.x, zig.y, zig.width,
+                onProjectileHitEnemy = ::onProjectileHitEnemy,
+                onEnemyProjectileHitZiggurat = { proj ->
+                    applyDamageToZiggurat(proj.damage, proj.shooter)
+                    proj.isAlive = false
+                },
+            )
+            entities.removeAll { !it.isAlive }
+        }
         if (zig.currentHp <= 0.0) {
             roundOver = true
             soundManager?.play(SoundEffect.ROUND_END)
@@ -430,7 +469,11 @@ class GameEngine {
         // Screen shake
         if (fx != null && !reducedMotion) fx.screenShake.apply(canvas)
 
-        entities.forEach { it.render(canvas) }
+        // #118: snapshot `entities` under [entitiesLock] then draw outside the lock, so the
+        // render iteration can't collide with a concurrent structural mutation (a main-thread
+        // ORBS reconcile / re-init) and we don't hold the monitor across the Canvas draw.
+        val renderSnapshot = synchronized(entitiesLock) { entities.toList() }
+        renderSnapshot.forEach { it.render(canvas) }
 
         // Render effects (particles, floating text, UW visuals, auras, announcements)
         fx?.render(canvas)
@@ -446,7 +489,7 @@ class GameEngine {
         // V1X-15b: ENEMY_INTEL L5+ per-enemy HP-% label above each enemy's HP bar. Drawn here
         // (not in EnemyEntity.render) so the level gate stays out of the entity constructor.
         if (enemyIntelLevel >= 5) {
-            for (e in entities) {
+            for (e in renderSnapshot) {
                 if (e is EnemyEntity && e.isAlive) {
                     val pct = ((e.currentHp / e.maxHp).coerceIn(0.0, 1.0) * 100).toInt()
                     canvas.drawText("$pct%", e.x, e.y - e.height / 2f - 14f, hpPercentPaint)

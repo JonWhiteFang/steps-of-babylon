@@ -4,6 +4,27 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — #118 cross-thread `GameEngine.entities` mutation crash (2026-06-10)
+
+- Fixes the one **High** finding from the 2026-06-10 audit (report #1 + #15). `GameEngine.entities`
+  was a plain unsynchronized `mutableListOf` structurally mutated AND iterated from two threads: the
+  dedicated `GameLoopThread` runs `update()`/`render()` every tick, while the UI/main thread can
+  reconcile orbs after an in-round ORBS purchase (`updateZigguratStats → applyStats`:
+  `entities.removeAll { it is OrbEntity }` + `spawnOrbs()`) or rebuild the list on playAgain
+  (`init()`: `entities.clear()/add()`). The collision throws `ConcurrentModificationException` (ORBS
+  purchase) or `IndexOutOfBoundsException` (re-init mid-iteration) — a reachable in-game crash.
+- **Fix:** added a private `entitiesLock` monitor and confined every region that structurally mutates
+  or iterates `entities` behind it — the whole `update()` tick, the `applyStats` orb-reconcile branch,
+  the full `init()` rebuild, and `render()` (which now snapshots under the lock and draws the snapshot
+  outside it, so the monitor isn't held across the Canvas draw). Marked `stats` `@Volatile` (now
+  written from the main thread, read from the loop thread). The monitor is reentrant, so the
+  loop-thread GOLDEN path (`updateUWs → activateUW → applyStats`) re-acquiring it is safe. Game
+  behavior is unchanged — the same orbs are removed/respawned, just under a lock.
+- **Tests:** new `GameEngineConcurrencyTest` (2 stress tests) drives `update()` on a background thread
+  while the test thread mutates `entities` via the public main-thread channels (ORBS purchase + re-init)
+  over 200k/50k iterations, asserting no throwable surfaces. Both fail on pre-fix code (CME / IOOBE
+  within ms) and pass after. `testDebugUnitTest` BUILD SUCCESSFUL, **867 → 869 JVM** (+2).
+
 ### Docs — multi-agent code audit + CLAUDE.md rewrite (2026-06-10)
 
 - **Reachability-aware multi-agent code audit.** Ran an orchestrated 8-specialist audit (correctness,
