@@ -4,6 +4,33 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — daily_step_record lost-update via column-targeted upserts (#121) (2026-06-11)
+
+- Fixes audit finding #3 (Medium, data-integrity). The four `daily_step_record` per-field
+  writers in `StepRepositoryImpl` (`updateDailySteps` / `updateHealthConnectSteps` /
+  `updateActivityMinutes` / `updateEscrow`) were each a non-atomic read-copy-upsert
+  (`getByDateOnce(date)` → `upsert(existing.copy(field=…))`). Because `@Upsert` rewrites
+  **every** column from the read snapshot, two independent components writing the **same** date
+  row concurrently — the foreground `StepCounterService` (sensor, `Dispatchers.Default`), the
+  15-min `StepSyncWorker`, and `StepCrossValidator` (HC), all on different threads with no
+  shared lock — clobbered each other: the second writer persisted the *other* columns at the
+  stale value it had read, silently reverting the first writer's column. Impact was accounting
+  drift in the daily columns (50k/day ceiling reload, `sumCreditedSteps` weekly-challenge
+  undercount, stats/history) — not wallet loss (the wallet is a separate atomic table).
+- **Fix:** added four column-targeted `INSERT … ON CONFLICT(date) DO UPDATE SET <only-its-columns>`
+  DAO queries (`setSensorAndCreditedSteps` / `setHealthConnectSteps` / `setActivityMinutes` /
+  `setEscrow`), mirroring the existing `incrementBattleSteps` template (INSERT half supplies all
+  NOT NULL columns; UPDATE half touches only this writer's columns). The repo now delegates to
+  them. Each writer mutates a **disjoint** column set, so concurrent writers can no longer
+  overwrite each other — **no Mutex, no schema change** (entity/table unchanged → no migration).
+- **Tests:** +9 `DailyStepDaoTest` (real Robolectric Room — proves the actual SQL): per-method
+  create-on-empty-table + the core lost-update repro (four disjoint-column writers from a stale
+  snapshot all survive) + battle/boss-counter preservation + SET-not-increment semantics. The 3
+  `StepRepositoryImplTest` mock tests that verified the old read-copy-upsert were rewritten to
+  verify the new delegation contract (+1 net). Test count **899 → 908 JVM**.
+- **Verification:** `./run-gradle.sh testDebugUnitTest` → **908/0/0/0**; `lintDebug assembleDebug`
+  → BUILD SUCCESSFUL; no `app/schemas` drift (entity unchanged).
+
 ### Perf — battle game-loop frame clamp (#126) + getAliveEnemies allocation (#125) (2026-06-10)
 
 - Two self-contained audit-Low battle-performance fixes (TDD), no schema change, no behaviour
