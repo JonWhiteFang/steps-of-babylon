@@ -1,3 +1,24 @@
+## 2026-06-11 — post-sweep housekeeping: branch prune + balance-report regen
+
+- **Goal:** two follow-ups from the doc-sweep PR — (1) prune the 5 stale merged `fix/*` local branches,
+  (2) actually regenerate `balance-report.md` rather than leave it banner-labelled-historical.
+- **Branch prune:** verified all 5 (`fix/118-battle-entities-race`, `119-golden-upgrade-loss`,
+  `120-dailystepmanager-race`, `122-economy-atomicity`, `123-reboot-step-loss`) are full ancestors of
+  `main` (merge-commit PRs, confirmed via `git merge-base --is-ancestor`), then `git branch -d` each.
+  Remote already clean (no `origin/fix/*`); `git remote prune` no-op. Only `main` remains.
+- **Balance regen:** ran `testDebugUnitTest --tests "…balance.*"` → **38 tests, 0 failures** (XML-verified:
+  Enemy6/Cost5/Step5/Tier5/SupplyDrop5/Cash3/UW5/Card4). Rewrote the report body from the actual current
+  test assertions: §2 premium set 5→3 types (Multishot/Bounce moved off Workshop in R4-02b);
+  §5 Cash 4→3 tests (dropped the removed Fortune-Overdrive bullet); §6 Cards Lv5→Lv7 framing + Second
+  Wind Lv7=100%; §7 "UW & Overdrive"→UW-only per-path (Death Wave L10, Golden 8×, cooldown L10 ≥50%
+  shorter, monotonic interpolation); §1 & §3 tables changed from stale precise values to the asserted
+  *bounds* (won't re-drift); fixed the stale project-wide "283 tests" footer → "38 balance tests, see
+  STATE for headline". Banner updated from "historical, not re-derived" to "regenerated 2026-06-11".
+  Residual stale-mechanic grep clean.
+- **Verification:** balance suite green (38/0); no Overdrive/Card-Dust/Lv5/283 refs outside removal-context.
+- **Next:** commit (docs-only, direct to `main` per checkpoint convention). Memory: RUN_LOG ✅ (STATE
+  unaffected — balance-report isn't referenced in STATE's live sections).
+
 ## 2026-06-11 — full documentation drift sweep (PR #155, merged 8f1b5bc)
 
 - **Goal:** "do a full doc sweep to catch anything outdated; advise on missing docs / restructuring."
