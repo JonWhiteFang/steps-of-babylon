@@ -54,14 +54,32 @@ fun UpgradeCard(info: UpgradeDisplayInfo, onClick: () -> Unit) {
 
     Card(
         onClick = {
+            // Guarded redundantly with `enabled` below: at cap (or when unaffordable) the Card is
+            // disabled so this never fires, but keep the predicate so a future `enabled` change
+            // can't silently re-open the spend path. (#154)
             if (info.canAfford && !info.isMaxed) {
                 pulseActive = true
                 onClick()
             }
         },
+        // #154: a maxed (or unaffordable) upgrade must be genuinely un-clickable — not just a no-op
+        // inside onClick. Disabling the Card also removes the ripple/press feedback so it *looks*
+        // disabled, matching the in-round menu / UW / Cards surfaces (consistent "can't buy more" UX).
+        enabled = info.canAfford && !info.isMaxed,
         modifier = Modifier.fillMaxWidth().alpha(alpha).graphicsLayer(scaleX = scale, scaleY = scale),
-        colors = if (info.isMaxed) CardDefaults.cardColors(containerColor = Gold.copy(alpha = 0.15f))
-                 else CardDefaults.cardColors(),
+        // The dim treatment is owned by `alpha` above, so pin disabledContainerColor == containerColor:
+        // otherwise a disabled (maxed/unaffordable) Card would swap to Material3's theme-default
+        // disabled background and lose the Gold "MAX" tint / normal surface. (#154)
+        colors = if (info.isMaxed) {
+            CardDefaults.cardColors(
+                containerColor = Gold.copy(alpha = 0.15f),
+                disabledContainerColor = Gold.copy(alpha = 0.15f),
+            )
+        } else {
+            CardDefaults.cardColors(
+                disabledContainerColor = CardDefaults.cardColors().containerColor,
+            )
+        },
     ) {
         Row(
             Modifier.padding(16.dp).fillMaxWidth(),

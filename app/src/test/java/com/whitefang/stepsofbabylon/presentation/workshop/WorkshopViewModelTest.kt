@@ -139,4 +139,50 @@ class WorkshopViewModelTest {
         val item = vm.uiState.value.upgrades.find { it.type == typeWithMax }!!
         assertTrue(item.isMaxed)
     }
+
+    // #154: at cap, the buy control must be disabled (canAfford == false) regardless of how much
+    // currency the player has — the UI uses canAfford to drive `enabled`, so an unaffordable-at-cap
+    // flag is what makes the button both un-clickable AND visually disabled. Visible-on-Workshop
+    // capped types (ORBS is the issue's headline example) must all satisfy this.
+    @Test
+    fun `R154 maxed upgrade is not affordable even with a huge balance`() = runTest(dispatcher) {
+        playerRepo.profile.value = PlayerProfile(stepBalance = Long.MAX_VALUE)
+        // ORBS (cap 6) is the issue's headline example; assert it specifically plus every
+        // Workshop-visible capped type for the "future capped item inherits it" guarantee.
+        val cappedVisible = UpgradeType.entries.filter {
+            it.config.maxLevel != null && it.isWorkshopVisible &&
+                it != UpgradeType.STEP_MULTIPLIER && it != UpgradeType.RECOVERY_PACKAGES
+        }
+        // max out every capped visible upgrade
+        workshopRepo.upgrades.value = workshopRepo.upgrades.value +
+            cappedVisible.associateWith { it.config.maxLevel!! }
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        assertTrue(cappedVisible.any { it == UpgradeType.ORBS }, "ORBS must be a Workshop-visible capped type")
+        for (type in cappedVisible) {
+            vm.selectCategory(type.category)
+            advanceUntilIdle()
+            val item = vm.uiState.value.upgrades.find { it.type == type }!!
+            assertTrue(item.isMaxed, "${type.name} should be maxed")
+            assertFalse(item.canAfford, "${type.name} at cap must NOT be affordable (drives disabled buy control) even with MAX_VALUE balance")
+        }
+    }
+
+    // #154: purchasing a maxed upgrade must be a true no-op (no spend, level unchanged) — the
+    // state contract above stops the click, this guards the spend path behind it.
+    @Test
+    fun `R154 purchasing a maxed upgrade does not spend or change level`() = runTest(dispatcher) {
+        playerRepo.profile.value = PlayerProfile(stepBalance = Long.MAX_VALUE)
+        val orbs = UpgradeType.ORBS
+        workshopRepo.upgrades.value = workshopRepo.upgrades.value + (orbs to orbs.config.maxLevel!!)
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val balanceBefore = playerRepo.profile.value.stepBalance
+        vm.purchase(orbs)
+        advanceUntilIdle()
+        assertEquals(orbs.config.maxLevel, workshopRepo.upgrades.value[orbs], "maxed level must be unchanged")
+        assertEquals(balanceBefore, playerRepo.profile.value.stepBalance, "no Steps spent at cap")
+    }
 }
