@@ -3,7 +3,7 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** v1.0.2 (versionCode 18) · **933 JVM + 9 instrumented tests** green · `main` clean ·
+**Headline:** v1.0.2 (versionCode 18) · **945 JVM + 9 instrumented tests** green · `main` clean ·
 schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
@@ -15,16 +15,21 @@ schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
   *after* promotion to closed — it does not gate the work now. All in-repo release plumbing is done
   (CI release lane live; v1.0.1 fired green).
 - **In-repo work = the Closed-Test Readiness Gate** (`plan-FORWARD.md`, A–G). First wave shipped a
-  quick-clear of 8 audit Lows + the latent #35 crash (Gate B + D — see Recently shipped). Still open
-  in **Gate D**: **#124** (billing signature verify — user chose **fix it** next, half-day), **#146**
-  (enemy counter drifts negative mid/late run — battle/economy correctness, no schema, sibling of #125;
-  slot after #124), **#127** (duplicate daily missions — needs schema v11→v12), **#128** (remaining
-  ~21 Lows: perf/anti-cheat/security groups, deferred to v1.1 per the audit grouping). Bigger gate
-  items: **#24** onboarding (Gate C, schema), **#29** decision-support (Gate F), **#26** perf/battery
+  quick-clear of 8 audit Lows + the latent #35 crash (Gate B + D); **#124** billing signature verify
+  shipped next (Gate D — see Recently shipped). Still open in **Gate D**: **#146** (enemy counter
+  drifts negative mid/late run — battle/economy correctness, no schema, sibling of #125; *next
+  pickup*), **#127** (duplicate daily missions — needs schema v11→v12), **#128** (remaining ~21 Lows:
+  perf/anti-cheat/security groups, deferred to v1.1 per the audit grouping). Bigger gate items:
+  **#24** onboarding (Gate C, schema), **#29** decision-support (Gate F), **#26** perf/battery
   (Gate G, device-measured).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-11 — #124 billing signature verification** (branch `fix/124-billing-signature-verification`).
+  New `PurchaseVerifier` seam: client-side `SHA1withRSA` Play-signature check + signed-product/token
+  binding, gating both grant paths before `grantOnceAtomic`. Release-build fail-closed Gradle guard +
+  CI `PLAY_LICENSE_KEY` secret so fail-open can't ship. TDD'd; two rounds of adversarial review (2
+  confirmed findings — release fail-open + product binding — fixed and confirmed closed). 933→945 JVM. No schema change.
 - **2026-06-11 — quick-clear audit-Low wave** (branch `fix/quick-clear-gate-b-d`). 8 trivial Lows
   (#16/#17/#20/#21/#22/#30/#33/#43) + the latent #35 card-pack crash, TDD'd + adversarially reviewed.
   HC moved off alpha → 1.1.0 stable (#33). No schema change. 908→933 JVM.
@@ -56,10 +61,10 @@ schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
 - **Promotion gate (developer judgment):** the Closed-Test Readiness Gate (`plan-FORWARD.md` A–G) is
   the call to promote internal → closed. Google's ≥12-tester + ≥14-day-soak policy is a downstream
   Phase-2 step that only begins after that promotion (not the current gate).
-- **Open audit Lows:** #124 (no purchase signature verification — local-only, mitigation bypassable on a
-  repackaged APK; user chose to fix), #146 (enemy counter drifts negative — battle/economy correctness),
+- **Open audit Lows:** #146 (enemy counter drifts negative — battle/economy correctness),
   #127 (duplicate daily missions — needs a unique index + schema bump, deferred), #128 (remaining ~21
-  Lows — perf/anti-cheat/security groups, deferred to v1.1).
+  Lows — perf/anti-cheat/security groups, deferred to v1.1). (#124 purchase signature verification
+  fixed 2026-06-11.)
 - **RO-09 deferred (v1.x backlog):** #3 STEP_MULTIPLIER × cross-validator unit mismatch (needs schema migration);
   #4 currency lifetime-counter desync (display-only); #5 TOCTOU on gem/PS spend (lifetime drift, wallet correct);
   #6 per-kill credit on `viewModelScope` (≤1 step lost on mid-round nav-away).
@@ -72,11 +77,10 @@ schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **#124** billing signature verification (Gate D) — user chose **fix it** (~half-day, no schema). *Next pickup.*
-2. **#146** enemy counter drifts negative (Gate D) — derive count from live entities + guard `takeDamage`; *after #124*.
-3. **Schema wave:** #127 duplicate daily missions (v11→v12) + migration-test Low #23.
-4. **Bigger gate items:** #24 onboarding (Gate C), #29 decision-support (Gate F), #26 device perf/battery (Gate G).
-5. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
+1. **#146** enemy counter drifts negative (Gate D) — derive count from live entities + guard `takeDamage`. *Next pickup.*
+2. **Schema wave:** #127 duplicate daily missions (v11→v12) + migration-test Low #23.
+3. **Bigger gate items:** #24 onboarding (Gate C), #29 decision-support (Gate F), #26 device perf/battery (Gate G).
+4. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 
 Phase 2 (only AFTER the developer promotes internal → closed):
 6. **(External)** Recruit ≥12 testers; ≥14-day closed soak; apply for production access; staged rollout; tag `v1.0.0`.
@@ -101,6 +105,7 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **`GameEngine.getAliveEnemies()` must NOT be cached across a frame (#125)** — `takeDamage` re-fires `onDeath` on a dead enemy; a shared snapshot double-credits kills. Guarded by `R125` GameEngineTest.
 - **Game-loop frame clamp (#126)** — `SimulationMath.clampAccumulator` (`MAX_CATCHUP_TICKS = 8`); don't lower below ~8 (a 30fps@4× render legitimately needs ~7.9 ticks/frame). Guarded by `SimulationMathTest`.
 - **`daily_step_record` writers must stay column-targeted (#121)** — disjoint-column `ON CONFLICT(date) DO UPDATE SET` upserts, NOT a whole-row read-copy-`@Upsert`. Guarded by `DailyStepDaoTest` + `StepRepositoryImplTest`.
+- **Billing signature verification (#124, ADR-0005 amendment)** — every wallet grant goes through `PurchaseVerifier.isValidPurchase(originalJson, signature, expectedProductId, expectedPurchaseToken)` BEFORE `grantOnceAtomic`, on BOTH paths. The product+token binding is load-bearing (blocks replaying a signed cheap receipt for an expensive product) — don't credit off the caller's `product` without verifying first. `PLAY_LICENSE_KEY` blank → fail-open is debug/CI only; a **release** build with a blank key is hard-failed by the `app/build.gradle.kts` `taskGraph` guard + the `release.yml` `PLAY_LICENSE_KEY` secret step — don't weaken either or fail-open could ship. Guarded by `RealPurchaseVerifierTest` + `BillingManagerImplTest`.
 
 ## References
 

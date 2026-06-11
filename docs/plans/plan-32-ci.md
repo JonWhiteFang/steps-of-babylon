@@ -122,8 +122,9 @@ Configure under **Settings → Secrets and variables → Actions** (and the `rel
 | `KEYSTORE_KEY_PASSWORD` | release | signing key password |
 | `PLAY_SERVICE_ACCOUNT_JSON` | release | Play Developer API service-account JSON |
 | `ADMOB_APP_ID` + `ADMOB_AD_UNIT_*` | release | optional; absent ⇒ test-ID fallback |
+| `PLAY_LICENSE_KEY` | release | **required** — Base64 Play "Licensing" RSA public key for #124 purchase-signature verification. Written to `local.properties` as `play.licenseKey`. **NOT optional**: unlike AdMob (test-ID fallback), a blank key makes verification fail-open, so the release lane hard-fails (the `Write Play license key` step exits 1) and a Gradle guard fails `bundleRelease`/`assembleRelease`. Source: Play Console → Monetise → Monetisation setup → "Licensing" → base64-encoded RSA public key. **Paste the WHOLE key** — the blank-only guard does not validate key shape, so a truncated/placeholder value (e.g. `TODO`) builds fine but fails *every* purchase closed (a monetisation outage caught in internal testing, not a fraud hole). |
 
-CI/instrumented lanes need **no** secrets.
+CI/instrumented lanes need **no** secrets (the `play.licenseKey` guard is scoped to `bundleRelease`/`assembleRelease`, so the PR gate's `assembleDebug` is unaffected).
 
 ### Task 6: Branch protection & required checks
 

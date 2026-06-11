@@ -1,3 +1,44 @@
+## 2026-06-11 — #124 billing purchase signature verification (branch fix/124-billing-signature-verification)
+
+- **Goal:** the chosen next Gate-D pickup. Add client-side Google Play purchase **signature
+  verification** to the billing pipeline, which previously trusted any `SdkPurchase` with
+  `purchaseState == PURCHASED` (the SDK-neutral projection even dropped Google's signed payload).
+- **Approach (TDD throughout):** new `PurchaseVerifier` seam mirroring the `BillingClientAdapter`
+  seam — interface + pure-JVM `RealPurchaseVerifier` doing standard Play `SHA1withRSA` verification
+  (port of the Play Billing `Security.verifyPurchase` sample) against the Base64 Play "Licensing"
+  key. `SdkPurchase` extended with `originalJson` + `signature` (populated by
+  `RealBillingClientAdapter.toSdk()`). Both grant paths (`handleCompletedPurchase` live +
+  `reconcileType` reconcile) gate on `verifier.isValidPurchase(...)` before `grantOnceAtomic`.
+  Key wired via `BuildConfig.PLAY_LICENSE_KEY` from gitignored `local.properties`, Hilt
+  `@Provides` in `BillingInternalModule`'s companion. Each step was red→green (watched the verifier
+  positive-path tests + the 3 gating tests fail first).
+- **Fail policy:** blank key → fail-open (debug/CI — they use Play license-test accounts whose
+  signatures can't be verified offline; preserves pre-#124 behaviour); unparseable key → fail-closed.
+- **Adversarial review (2 rounds, multi-agent workflow):** round 1 surfaced 2 confirmed-real findings
+  (and correctly refuted 3, incl. an idempotency-ordering concern I'd pre-traced):
+  - **HIGH — fix shipped *disabled* in production.** The release CI lane injected keystore + AdMob
+    secrets but never `play.licenseKey`, so every CI-built release AAB got `PLAY_LICENSE_KEY=""` →
+    fail-open → verification a no-op in the build that reaches users. **Fixed:** `release.yml` now
+    has a `Write Play license key` step (exits 1 on empty secret), + a `app/build.gradle.kts`
+    `taskGraph.whenReady` guard that hard-fails any `*Release` assemble/bundle task when the key is
+    blank. Verified all 3 cases (assembleDebug passes, bundleRelease-no-key fails, bundleRelease-with-key passes).
+  - **MEDIUM — signature not bound to the grant.** `creditWallet` keyed off the caller's `product`,
+    not the signed `productId`, so a genuinely-signed cheap receipt could be replayed for an
+    expensive product. **Fixed:** verifier now also requires signed `productId` + `purchaseToken` to
+    equal the grant's; both call sites pass `product.skuId()` + `purchase.purchaseToken`.
+  - Round 2 confirmed BOTH findings **closed** (high confidence) and a fresh full-diff adversarial
+    pass found **no new reachable problems** ("the complete change is SOUND"). Acted on 2 low residuals:
+    hardened the Gradle guard predicate to match any `*Release` task (not just the 2 hardcoded names),
+    and added a placeholder-key caveat to the `plan-32-ci.md` secrets note.
+- **Tests:** +12 JVM (9 `RealPurchaseVerifierTest` against a real RSA keypair incl. the replay-attack
+  case; 3 `BillingManagerImplTest` gating cases + harness rewire). **933 → 945 JVM**, 9 instrumented
+  unchanged. Full `testDebugUnitTest` green; `assembleDebug` green. No schema change.
+- **Doc sync:** ADR-0005 amendment (#124 section), `plan-32-ci.md` secrets table (`PLAY_LICENSE_KEY`),
+  `source-files.md` (new + updated billing entries), CHANGELOG (Security section), CLAUDE.md headline
+  count, STATE.md (headline / shipped / open-Lows / priorities / new fragile-zone entry).
+- **Next:** **#146** (enemy counter drifts negative — derive count from live entities + guard
+  `takeDamage`), now the top Gate-D pickup.
+
 ## 2026-06-11 — Triage new issue #146 (enemy counter negative) into the Readiness Gate (docs-only, direct to main)
 
 - **Goal:** user filed a new GitHub issue and asked where it belongs in the plans (no fix requested yet).

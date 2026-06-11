@@ -55,7 +55,7 @@ C.5 PR 1 locked in the following concrete commitments.
 
 ## Non-goals / future work
 
-- **No server-side receipt verification.** Forbidden by `CONSTRAINTS.md` for v1.0. Client-side receipt validation (`BillingClient.acknowledgePurchaseAsync` for non-consumables, `consumeAsync` for consumables, subscription state from `queryPurchasesAsync`) is the ceiling. Server-side validation is a known post-v1.0 hardening step tracked separately.
+- **No server-side receipt verification.** Forbidden by `CONSTRAINTS.md` for v1.0. Client-side receipt validation (`BillingClient.acknowledgePurchaseAsync` for non-consumables, `consumeAsync` for consumables, subscription state from `queryPurchasesAsync`) is the ceiling. Server-side validation is a known post-v1.0 hardening step tracked separately. **(Amended by #124 — see Amendment below: client-side *RSA signature* verification is now ALSO done, and is distinct from the forbidden server-side verification.)**
 - **No custom subscription-renewal UI.** The Season Pass renewal flows through Google's standard subscription management; the app only reads current state.
 - **No Real-Time Developer Notifications (RTDN).** Would require a backend. Post-v1.0.
 - **No price-tier experiments.** Prices are fixed in `BillingProduct` enum. A/B pricing is a post-v1.0 growth concern.
@@ -63,6 +63,20 @@ C.5 PR 1 locked in the following concrete commitments.
 - **No promotional codes, intro pricing, or region-specific pricing in v1.0.** Play Console supports these but they compound the testing matrix; post-v1.0.
 - **No caching of `ProductDetails` in `BillingManagerImpl`.** Every `purchase()` re-queries (~100 ms on normal networks). Sidesteps cache-invalidation-on-price-change bugs. Revisit post-v1.0 if latency becomes user-visible.
 - **Do not refactor `BillingManager` interface.** Adding new methods (like `reconcilePendingPurchases` with a default body) is fine. Breaking existing signatures is not.
+
+## Amendment — #124 client-side purchase signature verification (2026-06-11)
+
+**Context.** The original ADR listed "no client-side signature verification" implicitly under the no-server ceiling, and the shipped C.5 pipeline trusted any `SdkPurchase` with `purchaseState == PURCHASED`. The audit (`docs/external-reviews/2026-06-10-multi-agent-code-audit.md`, #124) showed that *client-side* RSA signature verification needs **no backend** and is therefore NOT covered by the `CONSTRAINTS.md` no-server-side-verification rule. The developer chose to fix it as Closed-Test Readiness-Gate (Gate D) hardening.
+
+**Decision.**
+
+1. **New `PurchaseVerifier` seam** (`data/billing/internal/`), mirroring the `BillingClientAdapter` seam: an interface + pure-JVM `RealPurchaseVerifier` doing standard Play `SHA1withRSA` verification (a local port of the Play Billing sample's `Security.verifyPurchase`) against the Base64 Play "Licensing" public key. JVM-unit-tested against a real RSA keypair.
+2. **`SdkPurchase` carries `originalJson` + `signature`** (populated by `RealBillingClientAdapter.toSdk()` from Play's `getOriginalJson()`/`getSignature()`; previously dropped).
+3. **Both grant paths gated** — `handleCompletedPurchase` (live) and `reconcileType` (reconcile) call `verifier.isValidPurchase(...)` before `grantOnceAtomic`. A failed check rejects with no receipt, no wallet credit, no consume/acknowledge.
+4. **Signature bound to the grant.** The verifier also requires the *signed* `productId` + `purchaseToken` to equal the product/token being granted, so a genuinely-signed cheap receipt can't be replayed for an expensive product (audit finding 2 from the adversarial review of this fix).
+5. **Key wiring + fail policy.** `BuildConfig.PLAY_LICENSE_KEY` sourced from gitignored `local.properties` (`play.licenseKey`), mirroring the AdMob prod-ID pattern. **Blank key → fail-open** (debug/CI, which use Play Console license-test accounts whose signatures can't be verified offline — preserves pre-#124 behaviour). **Configured-but-unparseable key → fail-closed.** A **release** build (`bundleRelease`/`assembleRelease`) with a blank key is **hard-failed by a Gradle `taskGraph.whenReady` guard** so fail-open can never ship; the release CI lane injects the key from a required `PLAY_LICENSE_KEY` secret (`.github/workflows/release.yml`, and the secrets table in `plan-32-ci.md`).
+
+**Residual risk (unchanged from the audit).** Client-side verification is defence-in-depth — bypassable on a fully-repackaged APK (patch the embedded key). All grants are local-only (no server economy), so this raises the bar against casual local IAP fraud but is not a complete fix for a determined local attacker. Server-side verification remains the post-v1.0 ceiling, still gated by the no-backend constraint.
 
 ## Resolved open questions
 

@@ -4,6 +4,34 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Security — #124 client-side Play purchase signature verification (Gate D) (2026-06-11)
+
+Closed-Test Readiness-Gate (Gate D) hardening. The billing pipeline previously trusted any
+`SdkPurchase` with `purchaseState == PURCHASED`; the SDK-neutral projection even dropped Google's
+signed payload, so client-side verification was impossible. Now every wallet grant is gated on a
+client-side RSA signature check. **933 → 945 JVM tests** (+12), schema unchanged, lint +
+assembleDebug clean. The diff was run through two rounds of adversarial multi-agent review; the two
+confirmed findings from round 1 (below) were fixed and confirmed closed in round 2.
+
+- **New `PurchaseVerifier` seam** (`data/billing/internal/`) — interface + pure-JVM
+  `RealPurchaseVerifier` doing standard Play `SHA1withRSA` verification (a port of the Play Billing
+  sample's `Security.verifyPurchase`) against the Base64 Play "Licensing" public key. No backend —
+  distinct from the server-side verification forbidden by `CONSTRAINTS.md`. JVM-tested against a real
+  RSA keypair (9 tests).
+- **`SdkPurchase` now carries `originalJson` + `signature`**, populated by `RealBillingClientAdapter`
+  from Play's `getOriginalJson()`/`getSignature()` (previously discarded).
+- **Both grant paths gated** — `handleCompletedPurchase` (live) and `reconcileType` (reconcile) verify
+  before `grantOnceAtomic`. A failed check rejects with no receipt, no wallet credit, no consume/ack.
+- **Signature bound to the grant (round-1 finding 2, MEDIUM):** the verifier also requires the *signed*
+  `productId` + `purchaseToken` to equal the product/token being granted, so a genuinely Google-signed
+  cheap receipt can't be replayed (via a hooked Billing client) to grant an expensive product.
+- **Release lane can't ship fail-open (round-1 finding 1, HIGH):** key sourced from `local.properties`
+  (`play.licenseKey`) into `BuildConfig.PLAY_LICENSE_KEY`. Blank key → fail-open (debug/CI only,
+  preserves pre-#124 behaviour); unparseable key → fail-closed. A **release** build with a blank key is
+  now hard-failed by a Gradle `taskGraph` guard, and the release CI lane injects the key from a required
+  `PLAY_LICENSE_KEY` secret (exits 1 if empty). So fail-open can never reach the Play Store.
+- ADR-0005 amended; `plan-32-ci.md` secrets table + `source-files.md` updated.
+
 ### Fixed — quick-clear audit-Low wave: 8 Lows + the latent card-pack crash (Gate B + D) (2026-06-11)
 
 First Closed-Test Readiness-Gate work wave (`plan-FORWARD.md`). Cleared eight trivial audit Lows

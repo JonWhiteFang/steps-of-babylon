@@ -68,6 +68,22 @@ jobs:
           if [ -n "$ADMOB_POST_ROUND_DOUBLE_PS" ]; then echo "admob.adUnit.postRoundDoublePs=$ADMOB_POST_ROUND_DOUBLE_PS" >> local.properties; fi
           if [ -n "$ADMOB_DAILY_FREE_CARD_PACK" ]; then echo "admob.adUnit.dailyFreeCardPack=$ADMOB_DAILY_FREE_CARD_PACK" >> local.properties; fi
 
+      # Play "Licensing" RSA public key (Base64) for #124 client-side purchase-signature
+      # verification. UNLIKE the AdMob fallback (which degrades to harmless test IDs), a missing
+      # license key would make verification fail-OPEN, so the release build is hard-failed by a
+      # Gradle guard (app/build.gradle.kts) when this is blank — there is no silent fallback.
+      - name: Write Play license key
+        env:
+          PLAY_LICENSE_KEY: ${{ secrets.PLAY_LICENSE_KEY }}
+        run: |
+          if [ -z "$PLAY_LICENSE_KEY" ]; then
+            echo "::error::PLAY_LICENSE_KEY secret is empty. #124 purchase-signature verification" \
+              "would ship fail-open. Set the PLAY_LICENSE_KEY secret in the 'release' environment" \
+              "(Play Console → Monetisation setup → Licensing public key)."
+            exit 1
+          fi
+          echo "play.licenseKey=$PLAY_LICENSE_KEY" >> local.properties
+
       - name: Build release bundle
         run: ./gradlew bundleRelease
 
