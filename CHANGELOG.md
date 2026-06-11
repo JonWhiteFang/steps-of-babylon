@@ -4,6 +4,33 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fixed — #127 duplicate daily missions (schema v11→v12, Gate D) (2026-06-11)
+
+Closed-Test Readiness-Gate (Gate D) data-integrity fix. `GenerateDailyMissions` did a check-then-insert
+(`getByDateOnce(date).isEmpty()` then a plain `@Insert` of 3 rows) with **no DB-level uniqueness**, so two
+concurrent generations — Home + Missions ViewModel inits, each in its own `viewModelScope` — could both
+pass the emptiness check (TOCTOU) and each insert a full batch → **6 independently-claimable daily missions
+for one day**, inflating Gem/Power-Stone payouts. **948 → 955 JVM tests** (+7), **schema v11 → v12**, lint +
+assembleDebug clean. TDD'd (real-Room RED captured the 6-rows defect: `expected:<3> but was:<6>`); run through
+a 5-lens adversarial review (11 findings, 4 minor/nit confirmed — all four fixed: comment accuracy, migration
+claim-resurrection edge, test fragility, transaction test gap).
+
+- **Unique index on `(date, missionType)`** (`DailyMissionEntity`) — the authoritative guard. Each
+  `MissionCategory` picks one of its (uniquely-named) candidates per day, so this key permits the 3 legitimate
+  distinct missions/day while rejecting the duplicate-insert race. The date-seeded RNG makes a raced second
+  batch byte-identical, so the index collapses it cleanly.
+- **`@Insert(onConflict = IGNORE)`** + a new **`@Transaction generateForDate(date, missions)`** — the insert
+  tolerates the unique-index collision gracefully (no `SQLiteConstraintException`); the transaction batches the
+  check + 3 inserts so a partial set is never observed. (The index, not the transaction, is what closes the
+  TOCTOU window — Room's WAL pool uses `DEFERRED` transactions; documented load-bearingly.)
+- **Migration `MIGRATION_11_12`** — recreate-table dedup mirroring v10→v11: collapse `(date, missionType)`
+  groups via `GROUP BY` keeping `MIN(id)` as the PK and `MAX()` of each state column, drop + rename, add the
+  unique index. `MAX(claimed)` ensures an already-claimed pre-existing duplicate can't be resurrected into a
+  re-claimable row through the upgrade.
+- **First migration with a dedicated test** (`Migration11To12Test`, drives `migrate()` directly via
+  `FrameworkSQLiteOpenHelper` — also closes the migration-test gap tracked as audit Low #23 for this wave) +
+  real-Room `DailyMissionDaoTest`. Both mutation-verified.
+
 ### Fixed — #146 enemy counter drifts negative mid/late run (Gate D) (2026-06-11)
 
 Closed-Test Readiness-Gate (Gate D) battle/economy-correctness fix. The HUD wave-header enemy count

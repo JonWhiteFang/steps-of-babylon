@@ -17,6 +17,9 @@ class FakeDailyMissionDao : DailyMissionDao {
         data.value.filter { it.date == date }
 
     override suspend fun insert(entity: DailyMissionEntity) {
+        // #127: model the real DAO's `onConflict = IGNORE` on the (date, missionType) unique index
+        // — a duplicate tuple is silently dropped rather than producing a second claimable row.
+        if (data.value.any { it.date == entity.date && it.missionType == entity.missionType }) return
         val withId = entity.copy(id = nextId++)
         data.value = data.value + withId
     }

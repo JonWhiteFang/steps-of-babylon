@@ -146,14 +146,18 @@ Walking milestone claim state.
 
 ### DailyMission
 
-Daily mission tracking, refreshed at midnight.
+Daily mission tracking, refreshed at midnight. Unique index on `(date, missionType)` added in
+v11→v12 (#127) — the authoritative guard against duplicate daily missions.
 
 | Column | Type | Notes |
 |---|---|---|
 | id | Int (PK, auto) | |
-| missionType | String | DailyMissionType enum name |
-| date | String | ISO date generated |
+| date | String | ISO date generated. Part of the `(date, missionType)` UNIQUE index (#127). |
+| missionType | String | DailyMissionType enum name. Part of the `(date, missionType)` UNIQUE index (#127). |
+| target | Int | Goal value for the mission |
 | progress | Int | Current progress toward target |
+| rewardGems | Int | Gems granted on claim |
+| rewardPowerStones | Int | Power Stones granted on claim |
 | completed | Boolean | Whether target was reached |
 | claimed | Boolean | Whether reward was claimed |
 
@@ -234,8 +238,8 @@ Each entity gets its own DAO:
 - Write manual migrations for complex changes (column renames, data transforms)
 - Version numbering: increment by 1 per plan that touches the schema
 - Test migrations with `MigrationTestHelper` in instrumented tests
-- Current schema version: 11
-- Active migrations: `MIGRATION_7_8` (adds `battleStepsEarned`), `MIGRATION_8_9` (adds `billing_receipt` table, C.5 PR 1), `MIGRATION_9_10` (recreates `ultimate_weapon_state` table with per-path columns + adds `bossPsEarnedToday` to `daily_step_record`, R4-06 + R4-07 / ADR-0008 + ADR-0009), `MIGRATION_10_11` (recreates `card_inventory` aggregating duplicate rows by `cardType` into `copyCount` + adds unique index on `cardType`, R4-08 / ADR-0010)
+- Current schema version: 12
+- Active migrations: `MIGRATION_7_8` (adds `battleStepsEarned`), `MIGRATION_8_9` (adds `billing_receipt` table, C.5 PR 1), `MIGRATION_9_10` (recreates `ultimate_weapon_state` table with per-path columns + adds `bossPsEarnedToday` to `daily_step_record`, R4-06 + R4-07 / ADR-0008 + ADR-0009), `MIGRATION_10_11` (recreates `card_inventory` aggregating duplicate rows by `cardType` into `copyCount` + adds unique index on `cardType`, R4-08 / ADR-0010), `MIGRATION_11_12` (recreates `daily_mission` deduping duplicate `(date, missionType)` rows + adds unique index, #127)
 - v1→v2: Added `highestUnlockedTier` column to `player_profile` (Plan 13). Uses `fallbackToDestructiveMigration` during development.
 - v2→v3: Added `labSlotCount` column to `player_profile` (Plan 16). Uses `fallbackToDestructiveMigration` during development.
 - v3→v4: Added `WeeklyChallengeEntity`, `DailyLoginEntity`, streak fields on `player_profile` (Plan 20). Uses `fallbackToDestructiveMigration`.
@@ -246,6 +250,7 @@ Each entity gets its own DAO:
 - v8→v9: Added `billing_receipt` table (Play Billing idempotency store, C.5 PR 1 / ADR-0005). `MIGRATION_8_9` creates the table with all 10 columns.
 - v9→v10: Recreated `ultimate_weapon_state` table (R4-06 / ADR-0008). Recreate-table dance: create `_new` table with per-path columns (`damageLevel`, `secondaryLevel`, `cooldownLevel`, `isUnlocked`), copy existing rows mapping old `level` → `damageLevel` and `level > 0` → `isUnlocked = 1`, drop old table, rename `_new` to `ultimate_weapon_state`. Same migration also adds `bossPsEarnedToday` column to `daily_step_record` (R4-07 / ADR-0009 — boss-drop Power Stones daily cap tracking, folded into the same migration).
 - v10→v11: Recreated `card_inventory` table (R4-08 / ADR-0010). Recreate-table dance: aggregate duplicate rows by `cardType` via `MAX(level)`/`MAX(isEquipped)`/`COUNT(*) AS copyCount`, drop old table, rename `_new`, add `UNIQUE INDEX index_card_inventory_cardType`. Card Dust is deprecated by copy-based progression — the migration also zero-clears `player_profile.cardDust`. `MIGRATION_10_11` in `data/local/Migrations.kt`.
+- v11→v12: Recreated `daily_mission` table (#127). Recreate-table dance: collapse duplicate `(date, missionType)` rows via `GROUP BY date, missionType` keeping `MIN(id)` as the PK and `MAX()` of each state column (so `MAX(claimed)` can't resurrect an already-claimed duplicate into a re-claimable row), drop old table, rename `_new`, add `UNIQUE INDEX index_daily_mission_date_missionType`. The unique index is the authoritative guard against duplicate daily missions; the generator's read-then-insert check is racy on its own (Home + Missions VM inits can both pass it). `MIGRATION_11_12` in `data/local/Migrations.kt`. First migration with a dedicated test (`Migration11To12Test` — drives `migrate()` directly via `FrameworkSQLiteOpenHelper`).
 
 ## Type Converters
 
