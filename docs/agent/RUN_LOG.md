@@ -1,3 +1,23 @@
+## 2026-06-11 — #124 merged + deploy prerequisite satisfied (PR #148, direct-to-main checkpoint)
+
+- **Goal:** monitor PR #148 (the #124 billing-signature fix) to green, merge, and wire the one
+  deploy prerequisite.
+- **CI:** both required checks passed — `build-and-test` (4m25s) + `connected` (5m2s). PR was
+  `MERGEABLE` / `CLEAN`.
+- **Merge:** squash-merged to `main` as `c610f46`; feature branch deleted (local + remote); local
+  `main` fast-forwarded and clean. Issue **#124 auto-closed** (COMPLETED).
+- **Deploy prerequisite DONE:** user added the **`PLAY_LICENSE_KEY`** secret to the GitHub `release`
+  environment (verified present, timestamp 2026-06-11T10:42:46Z). The release lane is now fully
+  wired — the next `v*` tag injects the key, the Gradle `taskGraph` guard passes, and the shipped
+  AAB has #124 signature verification active rather than fail-open. (Until it existed, the lane
+  would have intentionally hard-failed rather than ship verification disabled.)
+- **Doc sync (this checkpoint):** STATE.md Recently-shipped entry updated to PR #148/merged + secret
+  satisfied. The bulk current-state sync (CLAUDE.md count 945, CHANGELOG Security section,
+  source-files, ADR-0005 amendment, STATE fragile-zone entry) already landed inside PR #148, so no
+  re-edit needed. CHANGELOG stays `[Unreleased]` (no `v*` tag yet).
+- **Next:** **#146** (enemy counter drifts negative — derive `enemyCount` from the live `EnemyEntity`
+  list + guard `EnemyEntity.takeDamage` with `if (!isAlive) return 0.0`), the top Gate-D pickup.
+
 ## 2026-06-11 — #124 billing purchase signature verification (branch fix/124-billing-signature-verification)
 
 - **Goal:** the chosen next Gate-D pickup. Add client-side Google Play purchase **signature

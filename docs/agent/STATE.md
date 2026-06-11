@@ -25,11 +25,13 @@ schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
-- **2026-06-11 — #124 billing signature verification** (branch `fix/124-billing-signature-verification`).
+- **2026-06-11 — #124 billing signature verification** (PR #148, squash `c610f46`; issue closed).
   New `PurchaseVerifier` seam: client-side `SHA1withRSA` Play-signature check + signed-product/token
   binding, gating both grant paths before `grantOnceAtomic`. Release-build fail-closed Gradle guard +
   CI `PLAY_LICENSE_KEY` secret so fail-open can't ship. TDD'd; two rounds of adversarial review (2
-  confirmed findings — release fail-open + product binding — fixed and confirmed closed). 933→945 JVM. No schema change.
+  confirmed findings — release fail-open + product binding — fixed and confirmed closed). 933→945 JVM.
+  No schema change. **Deploy prerequisite satisfied:** `PLAY_LICENSE_KEY` secret set in the GitHub
+  `release` environment — the next `v*` tag ships with verification active.
 - **2026-06-11 — quick-clear audit-Low wave** (branch `fix/quick-clear-gate-b-d`). 8 trivial Lows
   (#16/#17/#20/#21/#22/#30/#33/#43) + the latent #35 card-pack crash, TDD'd + adversarially reviewed.
   HC moved off alpha → 1.1.0 stable (#33). No schema change. 908→933 JVM.
