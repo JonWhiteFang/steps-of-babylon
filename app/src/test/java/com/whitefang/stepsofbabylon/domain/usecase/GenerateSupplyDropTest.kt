@@ -96,6 +96,43 @@ class GenerateSupplyDropTest {
         }
     }
 
+    // #22: the STEP_THRESHOLD branch computed
+    //   checks = ((stepsAfterBoundary + delta).coerceAtMost(delta) / 100).coerceAtLeast(1)
+    // Because stepsAfterBoundary >= 0, `(stepsAfterBoundary + delta).coerceAtMost(delta)` is
+    // always exactly `delta`, so the whole expression reduces to `(delta / 100).coerceAtLeast(1)`
+    // and the `stepsAfterBoundary` term is dead. The fix removes the dead computation while
+    // preserving the shipped cadence (delta/100 rolls). These tests pin the number of 5%-roll
+    // opportunities by seeding a Random that NEVER triggers (every nextDouble() >= 0.05) and
+    // asserting null — and a counting Random that records exactly how many rolls were attempted.
+
+    /** A Random whose nextDouble() always returns 1.0 (never < 0.05) but counts each call. */
+    private class CountingNeverTriggerRandom : kotlin.random.Random() {
+        var doubleCalls = 0
+        override fun nextBits(bitCount: Int): Int = 0
+        override fun nextDouble(): Double { doubleCalls++; return 1.0 }
+    }
+
+    @Test
+    fun `R22 threshold roll count equals delta over 100 across a boundary crossing`() {
+        // delta = 400 (1900 → 2300), crosses the 2000 boundary. Pre- and post-fix the number of
+        // 5% roll opportunities is delta/100 = 4, independent of stepsAfterBoundary (= 300).
+        val rng = CountingNeverTriggerRandom()
+        val sut = GenerateSupplyDrop(rng)
+        val drop = sut(dailyCreditedSteps = 2300, lastCheckSteps = 1900, timestampMs = 1000, unclaimedCount = 0)
+        assertNull(drop, "never-trigger RNG must yield no drop")
+        assertEquals(4, rng.doubleCalls, "threshold rolls must equal delta/100 = 4 (dead stepsAfterBoundary removed)")
+    }
+
+    @Test
+    fun `R22 threshold roll count is at least one even for a small crossing`() {
+        // delta = 50 (1980 → 2030) still crosses the boundary; coerceAtLeast(1) guarantees one roll.
+        val rng = CountingNeverTriggerRandom()
+        val sut = GenerateSupplyDrop(rng)
+        val drop = sut(dailyCreditedSteps = 2030, lastCheckSteps = 1980, timestampMs = 1000, unclaimedCount = 0)
+        assertNull(drop)
+        assertEquals(1, rng.doubleCalls, "a boundary crossing always rolls at least once")
+    }
+
     @Test
     fun `drop has id 0 and correct timestamp`() {
         val sut = GenerateSupplyDrop(Random(42))

@@ -100,6 +100,47 @@ class StatsViewModelTest {
         assertEquals(8, vm.uiState.value.totalWorkshopLevels)
     }
 
+    // #30: the QUARTER branch re-parsed every history row's date inside each of 12 weekly
+    // buckets (up to 12×90 LocalDate.parse calls per emission). The fix parses each row once.
+    // It is behaviour-preserving — these tests pin the 12-bucket shape and the per-week sums so
+    // the single-pass refactor cannot change what the user sees.
+
+    @Test
+    fun `builds 12 bars for quarter period`() = runTest(dispatcher) {
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        vm.selectPeriod(StatsPeriod.QUARTER)
+        advanceUntilIdle()
+        assertEquals(12, vm.uiState.value.bars.size)
+    }
+
+    @Test
+    fun `R30 quarter buckets sum the week containing each record`() = runTest(dispatcher) {
+        val today = LocalDate.now()
+        val fmt = DateTimeFormatter.ISO_LOCAL_DATE
+        // Put two records in THIS week (the last bucket) and one ~5 weeks back (an earlier bucket).
+        val thisWeekA = today
+        val thisWeekB = today.minusDays(1).let { if (it.isBefore(today.with(java.time.DayOfWeek.MONDAY))) today else it }
+        stepRepo.records.value = mapOf(
+            thisWeekA.format(fmt) to DailyStepSummary(thisWeekA.format(fmt), creditedSteps = 5000, stepEquivalents = 1000),
+            today.minusDays(35).format(fmt) to DailyStepSummary(today.minusDays(35).format(fmt), creditedSteps = 2000, stepEquivalents = 0),
+        )
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        vm.selectPeriod(StatsPeriod.QUARTER)
+        advanceUntilIdle()
+        val bars = vm.uiState.value.bars
+        assertEquals(12, bars.size)
+        // Total credited across all buckets must equal the sum of all in-window records'
+        // (sensorSteps + stepEquivalents) = creditedSteps. 5000 (this week) + 2000 (5 weeks ago).
+        val totalCredited = bars.sumOf { it.sensorSteps + it.stepEquivalents }
+        assertEquals(7000L, totalCredited, "every in-window record must land in exactly one weekly bucket")
+        // The last bucket is the current week and must contain the 5000-credited record.
+        assertEquals(5000L, bars.last().let { it.sensorSteps + it.stepEquivalents }, "this week's record lands in the final bucket")
+    }
+
     @Test
     fun `days active counted from history`() = runTest(dispatcher) {
         val today = LocalDate.now()

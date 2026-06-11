@@ -1,3 +1,36 @@
+## 2026-06-11 — Quick-clear audit-Low wave: 8 Lows + latent #35 crash (branch fix/quick-clear-gate-b-d)
+
+- **Goal:** "what's next?" under the new judgment-gated launch model. Ran a 7-agent readiness
+  assessment over every open Closed-Test Readiness-Gate item (#24/#29/#26/#124/#127/#128/#44), then —
+  per the user's pick — executed the **quick-clear PR** (#128 Group A trivial Lows + #44-adjacent
+  honesty wasn't needed; #35 crash) and confirmed the user's second decision: **fix #124 next** (not defer).
+- **Scope shipped (9 fixes, all TDD red→green):** #16 doubled wave announcement (`GameEngine` seeds
+  `lastWave=safeStartWave`); #17 lifesteal/knockback on armor-absorbed hits (`EnemyEntity.takeDamage`
+  now returns dealt Double, two hit handlers gate on `dealt>0`); #20 CARD_COPY supply label (resolved
+  name + "x1"); #21 IRON_SKIN `%`→flat label; #22 dead `stepsAfterBoundary` removed; #30 StatsViewModel
+  QUARTER single-pass week bucketing (1080→90 `LocalDate.parse`); #33 Health Connect `1.2.0-alpha02`
+  → **1.1.0 stable** (alpha04/03 needed compileSdk 37 / extension 19 — too far for a launch-gated app;
+  1.1.0 builds against compileSdk 36 + covers the full API surface, which is the audit's own rec);
+  #35 `OpenCardPack.pickCardType` two-stage fallback (bucket→COMMON→roster) + set-coverage invariant;
+  #43 `StepCounterService` `resolveDisplayBalance` never coerces a failed balance read to 0.
+- **Adversarial review (43-agent, 7-angle, 1-vote recall-biased):** 36 raw → 9 refuted. Caught two
+  **self-introduced** issues, both fixed before commit: (1) #43 cold-start — gating the whole
+  notification on `balance != null` froze the daily-step display on a transient first-read failure;
+  decoupled so daily steps always refresh and only the balance falls back. (2) #35 — the COMMON
+  fallback wasn't itself guarded; added the roster final-fallback. Also actioned the **reuse** finding:
+  three identical private `formatName` copies → shared `String.toDisplayName()` in `presentation/ui`.
+  Left pre-existing/out-of-scope findings (StatsViewModel unguarded `LocalDate.parse`, W30 label
+  ambiguity, SmartReminderManager unguarded read) as notes — not regressions from this PR.
+- **Verification:** `:app:testDebugUnitTest` green = **933 JVM** (908+25); `:app:lintDebug` +
+  `:app:assembleDebug` clean; `compileDebugKotlin --rerun-tasks` confirms the HC code recompiles against
+  1.1.0. No schema change (no migration). Schema stays v11.
+- **Doc sync:** CHANGELOG new section; STATE.md (headline 908→933, objective reframed to the Gate,
+  recently-shipped entry); CLAUDE.md headline 933; tech.md HC row → 1.1.0; source-files.md new
+  `EnumDisplayName.kt` entry. No ADR (no architecture decision — the HC-version call is documented inline).
+- **Next:** commit + PR this wave. Then **#124** (billing signature verification — user chose fix-now,
+  ~half-day, no schema). After that the schema-touching wave (#127 + the migration-test Low #23), then
+  the bigger gate items (#24 onboarding, #29 decision-support, #26 device perf pass).
+
 ## 2026-06-11 — Planning reset EXECUTED: archive pre-Claude work + forward plan with Closed-Test Readiness Gate (branch docs/planning-reset)
 
 - **Goal:** user asked to redo project planning — archive the pre-Claude planning work and map the way

@@ -29,7 +29,7 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | JUnit (Jupiter) | 6.1.0 | Unit testing framework — junit-jupiter 6.x (catalog key still `junit5`) |
 | kotlinx-coroutines-test | 1.10.1 | Coroutine test utilities |
 | SQLCipher | 4.16.0 | Database encryption |
-| Health Connect | 1.2.0-alpha02 | Step cross-validation, Activity Minute Parity |
+| Health Connect | 1.1.0 (stable) | Step cross-validation, Activity Minute Parity (off alpha per audit #33; 1.2.x needs compileSdk 37) |
 | SQLite KTX | 2.4.0 | SQLite support library |
 | Core KTX | 1.17.0 | Kotlin extensions for Android |
 | Activity Compose | 1.12.3 | Compose Activity integration |

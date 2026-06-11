@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
+import com.whitefang.stepsofbabylon.domain.model.CardRarity
 import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.domain.model.OwnedCard
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
@@ -79,6 +80,42 @@ class OpenCardPackTest {
         )
         assertTrue(cardRepo.cards.value.isEmpty(), "no cards may be granted for a failed deduct")
         assertEquals(0L, playerRepo.profile.value.gems, "balance must stay at 0")
+    }
+
+    // #35: OpenCardPack picks a rarity, filters CardType.entries to it, then indexes with
+    // `candidates[random.nextInt(candidates.size)]`. kotlin.random.Random.nextInt(0) throws
+    // IllegalArgumentException, so an empty rarity bucket (a future content rebalance, or a new
+    // CardRarity with no members) would crash a pack open AFTER gems were spent. These guards
+    // pin (a) the roster invariant and (b) the defensive fallback so the crash can never ship.
+
+    @Test
+    fun `R35 every CardRarity has at least one CardType`() {
+        // Fails the instant a rarity bucket goes empty — before it can crash a live pack open.
+        for (rarity in CardRarity.entries) {
+            assertTrue(
+                CardType.entries.any { it.rarity == rarity },
+                "CardRarity.$rarity has no CardType members — OpenCardPack would crash rolling it",
+            )
+        }
+    }
+
+    @Test
+    fun `R35 pickCardType falls back to a COMMON card when the rarity bucket is empty`() {
+        // Directly exercises the empty-bucket path the live roster cannot reach today. A naive
+        // `candidates[random.nextInt(candidates.size)]` throws on an empty list; the fallback
+        // must return a real card instead of crashing.
+        val picked = useCase.pickCardType(emptyList())
+        assertTrue(
+            picked.rarity == CardRarity.COMMON,
+            "an empty candidate bucket must fall back to a COMMON card, got $picked",
+        )
+    }
+
+    @Test
+    fun `R35 pickCardType returns a card from a non-empty bucket`() {
+        val bucket = CardType.entries.filter { it.rarity == CardRarity.EPIC }
+        val picked = useCase.pickCardType(bucket)
+        assertTrue(picked in bucket, "a non-empty bucket must yield one of its own cards, got $picked")
     }
 
     @Test

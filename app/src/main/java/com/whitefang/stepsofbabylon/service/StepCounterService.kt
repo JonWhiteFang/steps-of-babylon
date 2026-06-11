@@ -25,6 +25,15 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
+/**
+ * Folds a freshly-read step balance (null = the read failed) against the last-known-good value
+ * for the always-on notification (#43). A successful read (including a genuine `0`) is taken as
+ * the new value; a failed read retains [lastKnown]; a failed read with no prior good value yields
+ * `null` so the caller skips that notification refresh rather than inventing a "0". Pure +
+ * top-level for unit coverage (StepBalanceDisplayTest).
+ */
+internal fun resolveDisplayBalance(fresh: Long?, lastKnown: Long?): Long? = fresh ?: lastKnown
+
 @AndroidEntryPoint
 class StepCounterService : Service() {
 
@@ -37,6 +46,10 @@ class StepCounterService : Service() {
     @Inject lateinit var notificationPreferences: NotificationPreferences
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    // #43: last successfully-read step balance, so a transient read failure retains the last
+    // good value on the notification instead of coercing to 0 ("Balance: 0" looks like total loss).
+    private var lastKnownBalance: Long? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -62,10 +75,19 @@ class StepCounterService : Service() {
                 dailyStepManager.recordSteps(delta, now)
                 stepIngestionPrefs.updateServiceHeartbeat(now)
 
-                val balance = try { playerRepository.observeProfile().first().stepBalance } catch (_: Exception) { 0L }
+                // #43: a transient balance-read failure must NOT coerce the displayed balance to 0
+                // (that reads as "you lost all your Steps" on the always-on notification). Read into
+                // a nullable (null = failed) and fold against the last good value. The daily-step
+                // count is independent of this read, so the notification ALWAYS refreshes — only the
+                // balance falls back: to the last good value, or 0 on a cold start before any
+                // successful read (matching the initial onCreate notification, so it never regresses
+                // a known non-zero balance to 0).
+                val fresh = try { playerRepository.observeProfile().first().stepBalance } catch (_: Exception) { null }
+                val balance = resolveDisplayBalance(fresh = fresh, lastKnown = lastKnownBalance)
+                if (balance != null) lastKnownBalance = balance
                 notificationManager.updateNotification(
                     dailySteps = dailyStepManager.getDailyCredited(),
-                    balance = balance,
+                    balance = balance ?: 0L,
                 )
             }
         }

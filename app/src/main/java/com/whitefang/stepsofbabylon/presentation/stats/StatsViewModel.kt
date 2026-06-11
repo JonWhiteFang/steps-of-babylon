@@ -17,6 +17,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
 
@@ -100,19 +101,31 @@ class StatsViewModel @Inject constructor(
                 )
             }
             StatsPeriod.QUARTER -> {
-                // Aggregate into 12 weekly buckets ending this week
+                // Aggregate into 12 weekly buckets ending this week.
+                // #30: parse each history row's date ONCE and bucket it by week-index in a single
+                // O(history) pass, instead of re-parsing all rows inside each of the 12 buckets
+                // (the old `history.filter { LocalDate.parse(...) }`-per-bucket was up to 12×90
+                // LocalDate.parse calls per emission of a main-thread-bound StateFlow mapper).
                 val thisMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                (11 downTo 0).map { weeksAgo ->
-                    val weekStart = thisMonday.minusWeeks(weeksAgo.toLong())
-                    val weekEnd = weekStart.plusDays(6)
-                    val weekRecords = history.filter { rec ->
-                        val d = LocalDate.parse(rec.date, fmt)
-                        !d.isBefore(weekStart) && !d.isAfter(weekEnd)
+                val sensorByWeek = LongArray(12)
+                val equivByWeek = LongArray(12)
+                for (rec in history) {
+                    val recMonday = LocalDate.parse(rec.date, fmt)
+                        .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                    // weeksAgo: 0 = this week … 11 = eleven weeks back. Out-of-window rows skipped.
+                    val weeksAgo = ChronoUnit.WEEKS.between(recMonday, thisMonday).toInt()
+                    if (weeksAgo in 0..11) {
+                        val idx = 11 - weeksAgo // bar index: oldest week first, current week last
+                        sensorByWeek[idx] += rec.creditedSteps - rec.stepEquivalents
+                        equivByWeek[idx] += rec.stepEquivalents
                     }
+                }
+                (0..11).map { idx ->
+                    val weekStart = thisMonday.minusWeeks((11 - idx).toLong())
                     DailyBarData(
                         label = "W${weekStart.dayOfMonth}",
-                        sensorSteps = weekRecords.sumOf { it.creditedSteps - it.stepEquivalents },
-                        stepEquivalents = weekRecords.sumOf { it.stepEquivalents },
+                        sensorSteps = sensorByWeek[idx],
+                        stepEquivalents = equivByWeek[idx],
                     )
                 }
             }

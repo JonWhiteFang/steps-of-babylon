@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.whitefang.stepsofbabylon.domain.model.ResearchType
+import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 
 @Composable
 fun LabsScreen(viewModel: LabsViewModel = hiltViewModel()) {
@@ -156,8 +157,7 @@ private fun ResearchCard(
     }
 }
 
-private fun formatName(type: ResearchType): String =
-    type.name.split("_").joinToString(" ") { it.lowercase().replaceFirstChar { c -> c.uppercase() } }
+private fun formatName(type: ResearchType): String = type.name.toDisplayName()
 
 private fun formatTime(ms: Long): String {
     if (ms <= 0) return "Done!"
