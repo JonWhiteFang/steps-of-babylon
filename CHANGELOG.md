@@ -4,6 +4,32 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fixed — #146 enemy counter drifts negative mid/late run (Gate D) (2026-06-11)
+
+Closed-Test Readiness-Gate (Gate D) battle/economy-correctness fix. The HUD wave-header enemy count
+(`Wave N — M enemies`) drifted below zero mid/late run from two independent causes, the second of
+which also double-credited kill rewards. Root-caused both, fixed at the source. **945 → 948 JVM
+tests** (+3), schema unchanged, lint + assembleDebug clean. TDD'd (RED captured both mechanisms as
+value mismatches: `1→0`, `1→2`, `5→10`) and run through a 4-lens adversarial multi-agent review
+(8 findings, 0 confirmed real — cause-#2 guard mutation-verified by the reviewers).
+
+- **Cause #1 — counter-only leak (SCATTER children bypassed the only increment).** SCATTER death
+  spawns 2–3 BASIC children straight into `pendingAdd` wired `onDeath = ::handleEnemyDeath`,
+  bypassing `WaveSpawner.spawnEnemy()` (the sole `enemiesAlive++`). Each child's later death still
+  decremented → net `−childCount` per SCATTER (first seen at wave 31+).
+- **Cause #2 — `EnemyEntity.takeDamage` re-fired `onDeath` on a corpse.** No `isAlive` guard, and
+  the projectile collision sweep (`Simulation.detectProjectileEnemyHits`) iterates a once-per-frame
+  alive snapshot with no mid-sweep recheck; dead enemies are removed only at frame end. Two
+  projectiles overlapping one front-line enemy in a frame → second hit re-fired `onDeath` → extra
+  decrement **and** re-credited the whole reward block (cash + capped battle Steps). The #125 fix
+  covered only the UW ongoing-damage path, not the projectile path.
+- **Fix — make the count authoritative + guard the corpse hit.** New `GameEngine.aliveEnemyCount()`
+  derives the count live from the entity list (`count { it is EnemyEntity && it.isAlive }`) under
+  `entitiesLock` (#118); `BattleViewModel` reads it; the desync-prone `WaveSpawner.enemiesAlive`
+  field, its `++`, `onEnemyKilled()`, and its `handleEnemyDeath` call are **removed**. Plus
+  `EnemyEntity.takeDamage` gains `if (!isAlive) return 0.0` (fixes cause #2 + the economy
+  double-credit; defense-in-depth complementing #125). Three new `GameEngineTest` R146 guards.
+
 ### Security — #124 client-side Play purchase signature verification (Gate D) (2026-06-11)
 
 Closed-Test Readiness-Gate (Gate D) hardening. The billing pipeline previously trusted any

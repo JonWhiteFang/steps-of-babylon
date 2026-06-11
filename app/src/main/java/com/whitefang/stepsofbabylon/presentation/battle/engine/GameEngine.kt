@@ -544,6 +544,18 @@ class GameEngine {
     fun addEntity(entity: Entity) { pendingAdd.add(entity) }
 
     /**
+     * Authoritative live count of on-screen enemies for the HUD wave header (#146). Derived
+     * from the live entity list — NOT a hand-kept tally — so it is immune to spawn paths that
+     * bypass [WaveSpawner.spawnEnemy] (e.g. SCATTER children added straight to `pendingAdd`)
+     * and to onDeath re-fires; it can never drift negative. Counts entities currently in the
+     * live list (post-`pendingAdd` flush), matching what the player sees on screen. Held under
+     * [entitiesLock] (#118) because the loop thread structurally mutates `entities` concurrently.
+     */
+    fun aliveEnemyCount(): Int = synchronized(entitiesLock) {
+        entities.count { it is EnemyEntity && it.isAlive }
+    }
+
+    /**
      * R4-06: populates [uwStates] from the player's equipped UWs, mapping each
      * [OwnedWeapon]'s 3 path levels onto a [UWState] and zeroing the active timers.
      * Called by [BattleViewModel] after loading the equipped-UW set from the repository.
@@ -1102,7 +1114,11 @@ class GameEngine {
         val killCash = (baseCash * tierMult * cashBonus * fortuneMultiplier *
             (1.0 + cashBonusPercent / 100.0) * cashResearchMultiplier).toLong()
         simulation.creditCash(killCash)
-        waveSpawner?.onEnemyKilled()
+        // #146: the on-screen enemy count is now derived live by [aliveEnemyCount] from the
+        // entity list, so there is no hand-kept WaveSpawner tally to decrement here (the old
+        // tally drifted negative — SCATTER children bypassed its only increment, and onDeath
+        // re-fires double-decremented). The enemy is marked `!isAlive` by `takeDamage` before
+        // this runs and is swept from `entities` at end of frame.
 
         soundManager?.play(SoundEffect.ENEMY_DEATH)
 

@@ -70,6 +70,12 @@ class EnemyEntity(
      * the intended damage regardless of absorption, granting free healing/CC on armored hits.
      */
     fun takeDamage(amount: Double): Double {
+        // #146 cause #2: an already-dead enemy is removed from `entities` only at end of frame,
+        // so a second projectile in the same collision sweep (or any post-death hit) can land on
+        // the corpse. Without this guard `currentHp <= 0.0` is still true and onDeath re-fires —
+        // double-decrementing the enemy counter AND re-crediting the kill reward (cash + battle
+        // Steps). Defense-in-depth complementing the #125 getAliveEnemies live re-derive.
+        if (!isAlive) return 0.0
         if (armorHits > 0) { armorHits--; return 0.0 }
         currentHp -= amount
         if (currentHp <= 0.0) { isAlive = false; onDeath(this) }

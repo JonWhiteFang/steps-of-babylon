@@ -31,7 +31,6 @@ class WaveSpawner(
 ) {
     var currentWave: Int = startWave; private set
     var phase: WavePhase = WavePhase.SPAWNING; private set
-    var enemiesAlive: Int = 0; private set
 
     var phaseTimer = 0f; private set
     private var spawnTimer = 0f
@@ -52,8 +51,6 @@ class WaveSpawner(
         enemiesSpawned = 0
         totalToSpawn = enemiesPerWave(currentWave)
     }
-
-    fun onEnemyKilled() { enemiesAlive-- }
 
     fun update(deltaTime: Float, screenWidth: Float, screenHeight: Float) {
         phaseTimer += deltaTime
@@ -102,7 +99,6 @@ class WaveSpawner(
             enemyTint = enemyTint,
         ).apply { x = sx; y = sy; initDistance() }
 
-        enemiesAlive++
         enemiesSpawned++
         onSpawnEnemy(enemy)
     }
