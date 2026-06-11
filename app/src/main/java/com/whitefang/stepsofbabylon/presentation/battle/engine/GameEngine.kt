@@ -802,8 +802,27 @@ class GameEngine {
         }
     }
 
-    private fun getAliveEnemies(): List<EnemyEntity> =
-        entities.filterIsInstance<EnemyEntity>().filter { it.isAlive }
+    /**
+     * Live alive-enemy snapshot for this frame. Called multiple times per tick — by the
+     * UW auto-trigger gate, each active BLACK_HOLE / POISON_SWAMP ongoing effect, and once
+     * per [OrbEntity] (its `getEnemies` callback) — so allocation here is hot-path GC churn
+     * at 60fps × up to 4× catch-up (#125).
+     *
+     * #125: build the result in a single pass (one `ArrayList`) instead of
+     * `filterIsInstance<EnemyEntity>().filter { it.isAlive }`, which allocated two
+     * intermediate lists per call. The list is re-derived live on every call (NOT cached
+     * across the frame) on purpose: [EnemyEntity.takeDamage] re-fires `onDeath` if called on
+     * an already-dead enemy, and BLACK_HOLE/POISON_SWAMP both kill enemies mid-frame — a
+     * shared/stale snapshot would let one ongoing effect re-hit another's corpses and
+     * double-credit the kill. Guarded by the `R125` GameEngineTest entries.
+     */
+    private fun getAliveEnemies(): List<EnemyEntity> {
+        val result = ArrayList<EnemyEntity>()
+        for (e in entities) {
+            if (e is EnemyEntity && e.isAlive) result.add(e)
+        }
+        return result
+    }
 
     private fun onOrbHitEnemy(enemy: EnemyEntity, damage: Double) {
         enemy.takeDamage(damage)
