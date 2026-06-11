@@ -1,0 +1,6 @@
+// Fix for #23 (High conf) Missing migration runtime test
+fun migrateDatabase() {
+    // ...
+    // Add migration test
+    // ...
+}
