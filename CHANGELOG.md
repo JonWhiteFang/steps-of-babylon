@@ -4,6 +4,47 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fixed — quick-clear audit-Low wave: 8 Lows + the latent card-pack crash (Gate B + D) (2026-06-11)
+
+First Closed-Test Readiness-Gate work wave (`plan-FORWARD.md`). Cleared eight trivial audit Lows
+from the #128 tracker + the latent #35 crash, in one PR. **908 → 933 JVM tests** (+25), schema
+unchanged (no migration), lint + assembleDebug clean.
+
+- **#16 — doubled first-wave announcement** (`GameEngine`). `init()` set `lastWave = 0` then announced
+  the start wave; the first `update()` tick re-detected the "change" and announced again (doubled
+  wave-start sound + stacked overlay every round). Now seeds `lastWave = safeStartWave`.
+- **#17 — lifesteal/knockback on armor-absorbed hits** (`EnemyEntity` + `GameEngine`). `takeDamage` now
+  returns the damage actually dealt (`0.0` when an armor charge absorbs the hit); the two player hit
+  handlers gate lifesteal + knockback on `dealt > 0`, so armored hits no longer grant free healing/CC.
+- **#20 — misleading CARD_COPY supply-drop label** (`UnclaimedSuppliesScreen`). `rewardAmount` is a
+  card-TYPE index for CARD_COPY (always 1 copy awarded), but the inbox rendered it as a quantity
+  ("+0 Card Copy" read as empty). Now shows the resolved card name + "x1".
+- **#21 — IRON_SKIN unit mismatch** (`CardType`). Card labeled "+10% Defense Absolute" but applies a
+  flat value (defenseAbsolute is flat damage blocked). Dropped the `%` glyph; gameplay math unchanged.
+- **#22 — dead supply-drop computation** (`GenerateSupplyDrop`). The threshold roll-count reduced to
+  `(delta/100).coerceAtLeast(1)`; the `stepsAfterBoundary` term was provably dead. Simplified, cadence
+  preserved.
+- **#30 — StatsViewModel QUARTER re-parse storm**. The 12 weekly buckets each re-parsed all ~90 history
+  rows (up to 1080 `LocalDate.parse` per emission of a main-thread StateFlow). Now parses each row once
+  and buckets by `ChronoUnit.WEEKS` distance in a single O(history) pass. Behaviour-preserving.
+- **#33 — alpha Health Connect in a shipping app**. Moved `connect-client` off `1.2.0-alpha02` to the
+  **1.1.0 stable** release (the 1.2.x alphas now require compileSdk 37; 1.1.0 builds against our
+  compileSdk 36 and covers the full API surface in use). Removes the only alpha dependency before v1.0.0.
+- **#35 — latent card-pack crash on an empty rarity bucket** (`OpenCardPack`). `candidates[random.nextInt(size)]`
+  would throw on an empty bucket (a future content rebalance / new rarity). Extracted `pickCardType`
+  with a two-stage fallback (requested bucket → COMMON → full roster) so a pack open can never crash
+  after the gem deduct; plus a set-coverage invariant test.
+- **#43 — "Balance: 0" on a transient read failure** (`StepCounterService`). The always-on notification
+  coerced a failed balance read to `0` (reads as total Step loss). Now folds through `resolveDisplayBalance`
+  (never coerces a failure to 0 — retains the last good value); the daily-step count refreshes
+  independently so a transient failure never freezes the notification.
+- **Reuse cleanup (from the PR's own code review):** consolidated the three identical private
+  `formatName` copies (CardsScreen / LabsScreen / UnclaimedSuppliesScreen) into a shared
+  `String.toDisplayName()` in `presentation/ui`.
+- Each fix is TDD'd with a regression guard; the diff was run through a 7-angle adversarial code review
+  (43 agents) and the two confirmed self-introduced issues (#43 cold-start freeze, #35 fallback gap)
+  were fixed before commit.
+
 ### Docs — planning reset: pre-Claude work archived + forward plan with Closed-Test Readiness Gate (2026-06-11)
 
 - Executed the planning-reset implementation plan (`docs/superpowers/plans/2026-06-11-planning-reset.md`).

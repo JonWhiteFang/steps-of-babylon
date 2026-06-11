@@ -324,7 +324,6 @@ class GameEngine {
             // Initialize effect engine
             val fx = EffectEngine(reducedMotion)
             effectEngine = fx
-            lastWave = 0
 
             val zigColors = cosmeticOverrides[CosmeticCategory.ZIGGURAT_SKIN]?.overrideColors
                 ?: biomeTheme.zigguratColors
@@ -358,7 +357,11 @@ class GameEngine {
                 tierMultiplier = TierConfig.forTier(tier).cashMultiplier,
             )
 
-            // Initial wave announcement
+            // Initial wave announcement. #16: seed lastWave to the opening wave so the first
+            // update() tick does not re-detect a wave change (currentWave == lastWave) and
+            // announce the same wave twice — pre-fix lastWave stayed 0 here, so every round
+            // start fired a doubled wave-start sound + a stacked WaveAnnouncement overlay.
+            lastWave = safeStartWave
             triggerWaveAnnouncement(safeStartWave)
         }
     }
@@ -825,16 +828,17 @@ class GameEngine {
     }
 
     private fun onOrbHitEnemy(enemy: EnemyEntity, damage: Double) {
-        enemy.takeDamage(damage)
+        // #17: gate knockback + lifesteal on damage actually dealt (0.0 when armor-absorbed).
+        val dealt = enemy.takeDamage(damage)
         val zig = ziggurat ?: return
-        if (stats.knockbackForce > 0f) {
+        if (dealt > 0.0 && stats.knockbackForce > 0f) {
             val dx = enemy.x - zig.originX; val dy = enemy.y - zig.originY
             val d = hypot(dx, dy).coerceAtLeast(1f)
             val kb = stats.knockbackForce * 0.5f * conditions.knockbackMultiplier
             enemy.applyKnockback(dx / d * kb, dy / d * kb)
         }
-        if (stats.lifestealPercent > 0) {
-            applyLifesteal(damage * stats.lifestealPercent)
+        if (dealt > 0.0 && stats.lifestealPercent > 0) {
+            applyLifesteal(dealt * stats.lifestealPercent)
         }
     }
 
@@ -974,20 +978,23 @@ class GameEngine {
         val dist = hypot(zig.originX - enemy.x, zig.originY - enemy.y)
         val result = calculateDamage(stats, dist)
 
-        enemy.takeDamage(result.amount)
+        // #17: gate knockback + lifesteal on damage actually dealt — takeDamage returns 0.0
+        // when the hit is fully absorbed by an armor charge, so an armored enemy no longer
+        // grants free healing/CC on a hit that did no HP damage.
+        val dealt = enemy.takeDamage(result.amount)
         proj.hitEnemies.add(enemy)
         proj.isAlive = false
 
         soundManager?.play(SoundEffect.HIT)
 
-        if (stats.knockbackForce > 0f) {
+        if (dealt > 0.0 && stats.knockbackForce > 0f) {
             val dx = enemy.x - zig.originX; val dy = enemy.y - zig.originY
             val d = hypot(dx, dy).coerceAtLeast(1f)
             val kb = stats.knockbackForce * conditions.knockbackMultiplier
             enemy.applyKnockback(dx / d * kb, dy / d * kb)
         }
-        if (stats.lifestealPercent > 0) {
-            applyLifesteal(result.amount * stats.lifestealPercent)
+        if (dealt > 0.0 && stats.lifestealPercent > 0) {
+            applyLifesteal(dealt * stats.lifestealPercent)
         }
 
         // Bounce shot

@@ -35,8 +35,12 @@ class GenerateSupplyDrop(private val random: Random = Random) {
         val prevBoundary = lastCheckSteps / STEP_THRESHOLD_INTERVAL
         val currBoundary = dailyCreditedSteps / STEP_THRESHOLD_INTERVAL
         if (currBoundary > prevBoundary) {
-            val stepsAfterBoundary = dailyCreditedSteps - (currBoundary * STEP_THRESHOLD_INTERVAL)
-            val checks = ((stepsAfterBoundary + delta).coerceAtMost(delta) / 100).coerceAtLeast(1)
+            // #22: one 5%-roll opportunity per 100-step sub-interval of this delta (min one).
+            // Pre-fix this was `((stepsAfterBoundary + delta).coerceAtMost(delta) / 100)…`, but
+            // since stepsAfterBoundary >= 0 the coerceAtMost always selected `delta`, making the
+            // stepsAfterBoundary term dead. Simplified to the equivalent expression — identical
+            // shipped cadence, dead boundary-relative math removed.
+            val checks = (delta / 100).coerceAtLeast(1)
             for (i in 0 until checks) {
                 if (random.nextDouble() < THRESHOLD_CHANCE_PER_100) {
                     return if (random.nextBoolean()) {

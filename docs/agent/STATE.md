@@ -3,8 +3,8 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** v1.0.2 (versionCode 18) · **908 JVM + 9 instrumented tests** green · `main` clean ·
-schema v11 · the launch is externally gated (closed-track soak).
+**Headline:** v1.0.2 (versionCode 18) · **933 JVM + 9 instrumented tests** green · `main` clean ·
+schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
@@ -12,12 +12,18 @@ schema v11 · the launch is externally gated (closed-track soak).
   has **elapsed** (resumed 2026-05-26 from v14; 14 days passed 2026-06-09). The only remaining launch
   gate is **≥12 opted-in testers** — verify in Play Console → Closed testing → Testers, then apply for
   production access. All in-repo release plumbing is done (CI release lane live; v1.0.1 fired green).
-- **In-repo work during the soak = remaining audit Lows.** #121/#125/#126 are fixed + merged. Still
-  open: #124 (billing signature verify — local-only, bypassable mitigation), #127 (duplicate daily
-  missions — needs a schema v11→v12 bump, defer to a schema-touching wave), #128 (30-Low tracker).
+- **In-repo work = the Closed-Test Readiness Gate** (`plan-FORWARD.md`, A–G). First wave shipped a
+  quick-clear of 8 audit Lows + the latent #35 crash (Gate B + D — see Recently shipped). Still open:
+  **#124** (billing signature verify — user chose **fix it** next, half-day), **#127** (duplicate daily
+  missions — needs schema v11→v12), **#128** (remaining ~21 Lows: perf/anti-cheat/security groups,
+  deferred to v1.1 per the audit grouping). Bigger gate items: **#24** onboarding (Gate C, schema),
+  **#29** upgrade decision-support (Gate F), **#26** perf/battery (Gate G, device-measured).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-11 — quick-clear audit-Low wave** (branch `fix/quick-clear-gate-b-d`). 8 trivial Lows
+  (#16/#17/#20/#21/#22/#30/#33/#43) + the latent #35 card-pack crash, TDD'd + adversarially reviewed.
+  HC moved off alpha → 1.1.0 stable (#33). No schema change. 908→933 JVM.
 - **2026-06-11 — #121 `daily_step_record` lost-update** (PR #144). Column-targeted DAO upserts replace
   the read-copy-`@Upsert`; concurrent sensor/worker/HC writers no longer clobber. 899→908 JVM. No schema change.
 - **2026-06-10 — #125 + #126 battle-perf** (PR #143). Game-loop catch-up clamp (#126) + single-pass

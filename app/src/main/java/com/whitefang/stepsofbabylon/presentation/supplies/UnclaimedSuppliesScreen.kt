@@ -27,9 +27,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.domain.model.SupplyDrop
 import com.whitefang.stepsofbabylon.domain.model.SupplyDropReward
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
+import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 
 @Composable
 fun UnclaimedSuppliesScreen(
@@ -77,7 +79,7 @@ private fun SupplyDropCard(drop: SupplyDrop, onClaim: () -> Unit) {
                 Text(drop.trigger.message, style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = formatReward(drop),
+                    text = formatSupplyReward(drop),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Gold,
@@ -95,14 +97,23 @@ private fun SupplyDropCard(drop: SupplyDrop, onClaim: () -> Unit) {
     }
 }
 
-private fun formatReward(drop: SupplyDrop): String {
-    val label = when (drop.reward) {
-        SupplyDropReward.STEPS -> "Steps"
-        SupplyDropReward.GEMS -> "Gems"
-        SupplyDropReward.POWER_STONES -> "Power Stones"
-        SupplyDropReward.CARD_COPY -> "Card Copy"
+/**
+ * Renders a supply drop's reward line. #20: for CARD_COPY, `rewardAmount` is NOT a quantity — it
+ * is a card-TYPE index (0..8), and ClaimSupplyDrop always awards exactly ONE copy of
+ * `CardType.entries[rewardAmount % size]`. Rendering it as "+N Card Copy" produced misleading
+ * labels ("+0 Card Copy" reads as an empty reward). CARD_COPY now renders the resolved card name
+ * + a fixed "x1"; the genuine-quantity rewards keep the "+N <label>" shape. Pure + top-level for
+ * unit coverage (SupplyRewardFormatTest).
+ */
+internal fun formatSupplyReward(drop: SupplyDrop): String = when (drop.reward) {
+    SupplyDropReward.STEPS -> "+${drop.rewardAmount} Steps"
+    SupplyDropReward.GEMS -> "+${drop.rewardAmount} Gems"
+    SupplyDropReward.POWER_STONES -> "+${drop.rewardAmount} Power Stones"
+    SupplyDropReward.CARD_COPY -> {
+        // Resolve the SAME card type ClaimSupplyDrop awards so the display matches the grant.
+        val cardType = CardType.entries[drop.rewardAmount % CardType.entries.size]
+        "${cardType.name.toDisplayName()} x1"
     }
-    return "+${drop.rewardAmount} $label"
 }
 
 private fun formatTimeAgo(timestampMs: Long): String {

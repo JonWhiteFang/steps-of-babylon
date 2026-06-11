@@ -9,6 +9,7 @@ import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.presentation.battle.effects.Effect
 import com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine
 import com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText
+import com.whitefang.stepsofbabylon.presentation.battle.effects.WaveAnnouncement
 import com.whitefang.stepsofbabylon.presentation.battle.entities.EnemyEntity
 import com.whitefang.stepsofbabylon.presentation.battle.entities.ProjectileEntity
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -594,7 +595,149 @@ class GameEngineTest {
         )
     }
 
+    // ---- #16: first-wave announcement must fire exactly once per round start ----
+    //
+    // Pre-fix init() set lastWave = 0 then called triggerWaveAnnouncement(safeStartWave) but
+    // never updated lastWave, so the very first update() tick saw currentWave (= startWave) !=
+    // lastWave (= 0) and announced the same wave a SECOND time — a doubled wave-start sound and
+    // a stacked WaveAnnouncement overlay on every round start / playAgain. The fix sets
+    // lastWave = safeStartWave in init() so the opening wave is not re-detected as a change.
+
+    @Test
+    fun `R16 first wave is announced exactly once after init and one update tick`() {
+        val eng = freshEngine() // init() opens on wave 1 and queues the initial announcement
+        // Sanity: init queued exactly one WaveAnnouncement.
+        assertEquals(
+            1,
+            countWaveAnnouncements(eng),
+            "init() must queue exactly one opening WaveAnnouncement",
+        )
+        // One update tick on the unchanged opening wave must NOT re-announce.
+        eng.update(0.016f)
+        assertEquals(
+            1,
+            countWaveAnnouncements(eng),
+            "the opening wave must be announced exactly once — init() must seed lastWave to the " +
+                "start wave so the first update() tick does not re-detect a wave change (#16)",
+        )
+    }
+
+    @Test
+    fun `R16 first wave announced once when round opens past wave 1 via startWave`() {
+        // WAVE_SKIP research can open a round on a later wave; the double-announce bug fired
+        // for any opening wave, not just wave 1. Pin the single-announce contract there too.
+        val eng = GameEngine()
+        eng.init(width = 1080f, height = 1920f, resolvedStats = ResolvedStats(), playerTier = 1, startWave = 5)
+        assertEquals(1, countWaveAnnouncements(eng), "init() must queue one announcement for wave 5")
+        eng.update(0.016f)
+        assertEquals(
+            1,
+            countWaveAnnouncements(eng),
+            "opening past wave 1 must still announce exactly once (#16)",
+        )
+    }
+
+    // ---- #17: lifesteal / knockback must be gated on damage actually dealt ----
+    //
+    // EnemyEntity.takeDamage consumes an armor hit and deals ZERO HP damage while armorHits > 0.
+    // Pre-fix the lifesteal heal and knockback in onProjectileHitEnemy / onOrbHitEnemy fired off
+    // the INTENDED damage regardless of whether the hit landed, so the ziggurat healed (and the
+    // enemy was knocked back) on fully armor-absorbed hits — free healing/CC the design gates on
+    // damage dealt. The fix has takeDamage return the dealt amount (0 when absorbed) and gates
+    // lifesteal/knockback on dealt > 0.
+
+    @Test
+    fun `R17 lifesteal does not heal on a fully armor-absorbed projectile hit`() {
+        val eng = freshEngineWithStats(ResolvedStats(lifestealPercent = 0.15))
+        val zig = eng.ziggurat!!
+        zig.currentHp = zig.maxHp * 0.5
+        val hpBefore = zig.currentHp
+
+        // armorHits = 1 → the first hit is fully absorbed (0 HP damage dealt).
+        val armored = EnemyEntity(
+            enemyType = EnemyType.TANK,
+            currentHp = 100.0, maxHp = 100.0,
+            speed = 0f, damage = 0.0,
+            targetX = zig.originX, targetY = zig.originY,
+            onDeath = { },
+            armorHits = 1,
+        ).apply { x = zig.originX; y = zig.originY + 50f }
+
+        val proj = ProjectileEntity(
+            startX = zig.originX, startY = zig.originY,
+            targetX = armored.x, targetY = armored.y,
+            speed = 100f,
+        )
+
+        invokeOnProjectileHitEnemy(eng, proj, armored)
+
+        assertEquals(
+            hpBefore,
+            zig.currentHp,
+            0.0001,
+            "lifesteal must not heal the ziggurat on a hit that dealt 0 damage (armor absorbed) — #17",
+        )
+        // And no `+X HP` floating text should have been queued for a zero-damage hit.
+        assertFalse(
+            readPendingFloatingTextSnippets(eng).any { it.startsWith("+") && it.endsWith("HP") },
+            "no lifesteal floating text may be emitted for a fully armor-absorbed hit (#17)",
+        )
+    }
+
+    @Test
+    fun `R17 lifesteal still heals once armor is gone`() {
+        // Guards against an over-broad fix that gates lifesteal off entirely: after the armor
+        // hit is consumed, a real damaging hit must heal as before.
+        val eng = freshEngineWithStats(ResolvedStats(lifestealPercent = 0.15))
+        val zig = eng.ziggurat!!
+        zig.currentHp = zig.maxHp * 0.5
+        val hpBefore = zig.currentHp
+
+        val armored = EnemyEntity(
+            enemyType = EnemyType.TANK,
+            currentHp = 100.0, maxHp = 100.0,
+            speed = 0f, damage = 0.0,
+            targetX = zig.originX, targetY = zig.originY,
+            onDeath = { },
+            armorHits = 1,
+        ).apply { x = zig.originX; y = zig.originY + 50f }
+
+        // First hit: absorbed (consumes the armor). Second hit: lands and heals.
+        invokeOnProjectileHitEnemy(
+            eng,
+            ProjectileEntity(zig.originX, zig.originY, armored.x, armored.y, 100f),
+            armored,
+        )
+        invokeOnProjectileHitEnemy(
+            eng,
+            ProjectileEntity(zig.originX, zig.originY, armored.x, armored.y, 100f),
+            armored,
+        )
+
+        assertTrue(
+            zig.currentHp > hpBefore,
+            "lifesteal must resume once the armor hit is consumed and real damage is dealt (#17)",
+        )
+    }
+
     // ---- Helpers: reach into private state via reflection ----
+
+    /**
+     * Counts queued [WaveAnnouncement] effects across both the EffectEngine's pending and
+     * live lists. init() queues into `pendingEffects`; update() flushes pending into `effects`
+     * then re-detects wave changes, so a double-announce shows up across the two lists.
+     */
+    private fun countWaveAnnouncements(eng: GameEngine): Int {
+        val fx = eng.effectEngine ?: return 0
+        var count = 0
+        for (fieldName in listOf("pendingEffects", "effects")) {
+            val field = EffectEngine::class.java.getDeclaredField(fieldName).apply { isAccessible = true }
+            @Suppress("UNCHECKED_CAST")
+            val list = field.get(fx) as List<Effect>
+            count += list.count { it is WaveAnnouncement }
+        }
+        return count
+    }
 
     /** A stationary, non-aggressive enemy directly below the ziggurat for alive-set tests. */
     private fun makeStationaryEnemy(

@@ -12,7 +12,9 @@ enum class CardType(
     val secondaryLv7: Double = 0.0,
     val maxLevel: Int = 7,
 ) {
-    IRON_SKIN(CardRarity.COMMON, "+10% Defense Absolute", "+42% Defense Absolute", 10.0, 42.0),
+    // #21: defenseAbsolute is FLAT damage blocked per hit (ApplyCardEffects adds the raw value,
+    // no /100), so the label drops the `%` glyph that misrepresented it as a percentage.
+    IRON_SKIN(CardRarity.COMMON, "+10 Defense Absolute", "+42 Defense Absolute", 10.0, 42.0),
     SHARP_SHOOTER(CardRarity.COMMON, "+15% Critical Chance", "+45% Critical Chance", 15.0, 45.0),
     CASH_GRAB(CardRarity.COMMON, "+20% Cash from kills", "+65% Cash from kills", 20.0, 65.0),
     VAMPIRIC_TOUCH(CardRarity.RARE, "+5% Lifesteal", "+20% Lifesteal", 5.0, 20.0),
@@ -59,7 +61,7 @@ enum class CardType(
         val v = effectAtLevel(level).toInt()
         val sv = secondaryAtLevel(level).toInt()
         return when (this) {
-            IRON_SKIN -> "+$v% Defense Absolute"
+            IRON_SKIN -> "+$v Defense Absolute" // #21: flat value, no percent glyph
             SHARP_SHOOTER -> "+$v% Critical Chance"
             CASH_GRAB -> "+$v% Cash from kills"
             VAMPIRIC_TOUCH -> "+$v% Lifesteal"

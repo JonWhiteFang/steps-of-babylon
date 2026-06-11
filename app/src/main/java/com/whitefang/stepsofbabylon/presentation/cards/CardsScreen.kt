@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.whitefang.stepsofbabylon.domain.model.CardRarity
+import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -145,8 +146,7 @@ private fun CardItem(
     }
 }
 
-private fun formatName(name: String): String =
-    name.split("_").joinToString(" ") { it.lowercase().replaceFirstChar { c -> c.uppercase() } }
+private fun formatName(name: String): String = name.toDisplayName()
 
 private fun rarityColor(rarity: CardRarity): Color = when (rarity) {
     CardRarity.COMMON -> Color.Gray

@@ -62,10 +62,18 @@ class EnemyEntity(
         x = state.x; y = state.y
     }
 
-    fun takeDamage(amount: Double) {
-        if (armorHits > 0) { armorHits--; return }
+    /**
+     * Applies [amount] HP damage and returns the damage actually dealt — `0.0` when the hit is
+     * fully absorbed by an armor charge (the charge is consumed but no HP is lost). Callers gate
+     * damage-proportional side-effects (lifesteal, knockback) on a positive return so they fire
+     * only on hits that landed (#17). Pre-fix this returned `Unit` and those side-effects ran off
+     * the intended damage regardless of absorption, granting free healing/CC on armored hits.
+     */
+    fun takeDamage(amount: Double): Double {
+        if (armorHits > 0) { armorHits--; return 0.0 }
         currentHp -= amount
         if (currentHp <= 0.0) { isAlive = false; onDeath(this) }
+        return amount
     }
 
     fun applyKnockback(forceX: Float, forceY: Float) {

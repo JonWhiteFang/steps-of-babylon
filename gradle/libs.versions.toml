@@ -13,7 +13,13 @@ activityCompose = "1.12.3"
 coreKtx = "1.17.0"
 sqlcipher = "4.16.0"
 sqliteKtx = "2.4.0"
-healthConnect = "1.2.0-alpha02"
+# #33: moved off the 1.2.0-alpha line to the 1.1.0 STABLE release before v1.0.0 — alpha AndroidX
+# artifacts carry no API-stability guarantee and Health Connect is load-bearing (cross-validation,
+# Activity Minute Parity, gap-filling). 1.1.0 builds against compileSdk 36 (1.2.x alphas now require
+# SDK 37 / compileSdkExtension 19) and covers the full API surface in use (HealthConnectClient,
+# PermissionController, HealthPermission, StepsRecord, ExerciseSessionRecord, Aggregate/ReadRecords
+# requests, TimeRangeFilter). Revisit a 1.2.x beta/stable post-launch when compileSdk moves to 37.
+healthConnect = "1.1.0"
 billingPlay = "8.3.0"
 playServicesAds = "25.3.0"
 userMessagingPlatform = "4.0.0"

@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.domain.model
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -37,22 +38,39 @@ class CardTypeTest {
     // IRON_SKIN — COMMON, primary-only
     // ──────────────────────────────────────────────────────────────────────────
 
+    // #21: IRON_SKIN adds a FLAT defenseAbsolute value (ApplyCardEffects: `defenseAbsolute + v`,
+    // no /100), and defenseAbsolute is definitionally flat "damage blocked per hit". The `%`
+    // glyph in the old label was a unit error — the player saw a percentage but got a flat
+    // value. The label is corrected to drop `%`; the gameplay math is unchanged.
+
     @Test
     fun `IRON_SKIN Lv1 description matches effectLv1`() {
-        assertEquals("+10% Defense Absolute", CardType.IRON_SKIN.effectDescriptionAtLevel(1))
+        assertEquals("+10 Defense Absolute", CardType.IRON_SKIN.effectDescriptionAtLevel(1))
         assertEquals(CardType.IRON_SKIN.effectLv1, CardType.IRON_SKIN.effectDescriptionAtLevel(1))
     }
 
     @Test
     fun `IRON_SKIN Lv4 shows interpolated value`() {
         // valueLv1=10, valueLv7=42 → at Lv4: 10 + 32 × 3/6 = 26
-        assertEquals("+26% Defense Absolute", CardType.IRON_SKIN.effectDescriptionAtLevel(4))
+        assertEquals("+26 Defense Absolute", CardType.IRON_SKIN.effectDescriptionAtLevel(4))
     }
 
     @Test
     fun `IRON_SKIN Lv7 description matches effectLv7`() {
-        assertEquals("+42% Defense Absolute", CardType.IRON_SKIN.effectDescriptionAtLevel(7))
+        assertEquals("+42 Defense Absolute", CardType.IRON_SKIN.effectDescriptionAtLevel(7))
         assertEquals(CardType.IRON_SKIN.effectLv7, CardType.IRON_SKIN.effectDescriptionAtLevel(7))
+    }
+
+    @Test
+    fun `R21 IRON_SKIN label has no percent sign because it applies a flat value`() {
+        // The flat-vs-percent unit fix (#21). defenseAbsolute is flat damage blocked; the `%`
+        // glyph misrepresented it. Guards against a future reintroduction of the unit error.
+        for (level in 1..CardType.IRON_SKIN.maxLevel) {
+            val desc = CardType.IRON_SKIN.effectDescriptionAtLevel(level)
+            assertFalse(desc.contains("%"), "IRON_SKIN Lv$level must not show a percent sign: \"$desc\"")
+        }
+        assertFalse(CardType.IRON_SKIN.effectLv1.contains("%"), "effectLv1 must not contain %")
+        assertFalse(CardType.IRON_SKIN.effectLv7.contains("%"), "effectLv7 must not contain %")
     }
 
     // ──────────────────────────────────────────────────────────────────────────

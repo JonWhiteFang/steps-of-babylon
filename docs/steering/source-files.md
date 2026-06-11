@@ -282,6 +282,7 @@ presentation/battle/ui/BiomeTransitionOverlay.kt   # Full-screen biome reveal ov
 presentation/battle/ui/UltimateWeaponBar.kt        # UW passive cooldown display (R4-06: no clickable activation buttons; auto-trigger replaces manual)
 presentation/battle/biome/BiomeTheme.kt            # 5 biome color palettes (sky, ground, ziggurat, enemy, particles)
 presentation/battle/biome/BackgroundRenderer.kt    # Gradient sky + ambient particle system per biome
+presentation/ui/EnumDisplayName.kt                 # String.toDisplayName() — UPPER_SNAKE → "Title Case" (shared by Cards/Labs/Supplies)
 presentation/ui/theme/Color.kt                     # Compose color definitions
 presentation/ui/theme/Theme.kt                     # Compose theme setup (Material3)
 presentation/weapons/UltimateWeaponViewModel.kt    # @HiltViewModel: UW unlock/upgrade/equip state (R4-06: UWPathDisplay + UWDisplayInfo.paths for per-path UI)
