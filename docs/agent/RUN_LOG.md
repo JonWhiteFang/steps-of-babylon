@@ -24,7 +24,9 @@
   `compileDebugKotlin` + `lintDebug` (HardcodedText-as-error) both BUILD SUCCESSFUL.
 - **Docs:** headline count 955→960 (CLAUDE.md, README ×2, STATE headline); CHANGELOG `[Unreleased]`
   entry; STATE recently-shipped + this RUN_LOG entry. No schema/source-index/structure change.
-- **Next:** commit on branch; open PR; CI; merge. Memory: STATE ✅ / RUN_LOG ✅.
+- **Merged:** PR #156 squash-merged to `main` as `592097b` 2026-06-11; both CI checks green
+  (build-and-test 4m39s, connected 5m0s); issue #154 auto-closed (COMPLETED); branch deleted.
+  Memory: STATE ✅ / RUN_LOG ✅.
 
 ## 2026-06-11 — post-sweep housekeeping: branch prune + balance-report regen
 

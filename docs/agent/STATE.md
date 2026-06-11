@@ -25,7 +25,7 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
-- **2026-06-11 — #154 disable "buy more" at max** (branch `fix/154-disable-buy-at-max`; Gate F UX).
+- **2026-06-11 — #154 disable "buy more" at max** (PR #156, squash `592097b`; issue closed; Gate F UX).
   At a purchasable's cap the buy control must be un-clickable + visually disabled, consistently. 3/4
   surfaces already correct; fixed the Workshop `UpgradeCard` outlier (`enabled = canAfford && !isMaxed`
   on the `Card`, + pinned `disabledContainerColor` so it keeps the Gold "MAX" tint). 5 regression tests
