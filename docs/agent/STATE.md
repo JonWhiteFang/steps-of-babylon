@@ -18,10 +18,10 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 - **In-repo work = the Closed-Test Readiness Gate** (`plan-FORWARD.md`, A–G). Shipped so far: a
   quick-clear of 8 audit Lows + the latent #35 crash (Gate B + D); **#124** billing signature verify;
   **#146** enemy-counter-drifts-negative; **#127** duplicate daily missions (schema v11→v12) — all
-  Gate D (see Recently shipped). Still open in **Gate D**: **#128** (remaining ~21 Lows:
-  perf/anti-cheat/security groups, deferred to v1.1 per the audit grouping). Bigger gate items (now
-  the live work): **#24** onboarding (Gate C, schema), **#29** decision-support (Gate F), **#26**
-  perf/battery (Gate G, device-measured).
+  Gate D; **#154** disable "buy more" at max consistently (Gate F UX polish) (see Recently shipped).
+  Still open in **Gate D**: **#128** (remaining ~21 Lows: perf/anti-cheat/security groups, deferred to
+  v1.1 per the audit grouping). Bigger gate items (now the live work): **#24** onboarding (Gate C,
+  schema), **#29** decision-support (Gate F), **#26** perf/battery (Gate G, device-measured).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 

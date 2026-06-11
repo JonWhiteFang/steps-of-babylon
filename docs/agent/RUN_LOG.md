@@ -23,10 +23,14 @@
 - **Verification:** balance + 3 VM suites green; **full `testDebugUnitTest` = 960 tests, 0 failures**;
   `compileDebugKotlin` + `lintDebug` (HardcodedText-as-error) both BUILD SUCCESSFUL.
 - **Docs:** headline count 955→960 (CLAUDE.md, README ×2, STATE headline); CHANGELOG `[Unreleased]`
-  entry; STATE recently-shipped + this RUN_LOG entry. No schema/source-index/structure change.
+  entry; STATE recently-shipped + this RUN_LOG entry. No schema/structure change.
 - **Merged:** PR #156 squash-merged to `main` as `592097b` 2026-06-11; both CI checks green
   (build-and-test 4m39s, connected 5m0s); issue #154 auto-closed (COMPLETED); branch deleted.
   Memory: STATE ✅ / RUN_LOG ✅.
+- **Checkpoint follow-up (post-merge):** added the `#154` behavior note to the
+  `presentation/workshop/UpgradeCard.kt` entry in `source-files.md` (genuine-disable invariant), and
+  added #154 to STATE's Gate-shipped list. Counts/schema re-audited against HEAD — all consistent
+  (960/960 JVM, schema v12). No code change.
 
 ## 2026-06-11 — post-sweep housekeeping: branch prune + balance-report regen
 
