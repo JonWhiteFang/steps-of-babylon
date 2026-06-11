@@ -1,9 +1,16 @@
 # Balance Validation Report
 
-**Date:** 2026-03-09
+> ⚠️ **Historical snapshot — generated 2026-03-09 (Plan 28).** Balance constants have shifted since
+> (R4 reworked Cards to 7-level copy progression, R4-06 redesigned Ultimate Weapons into per-path
+> interpolation, R4-03 added Rapid Fire, etc.). The numbers below reflect the pre-R4 economy. The
+> live balance contract is the regression suite under `app/src/test/.../balance/` — **re-run it to
+> regenerate this report** rather than trusting these values for current tuning. Test-file names and
+> counts on this page were corrected 2026-06-11 in the doc-drift sweep; the body math was not re-derived.
+
+**Date:** 2026-03-09 (historical)
 **Plan:** 28 — Balancing & Tuning
-**Method:** JUnit test-based validation (39 tests across 8 areas)
-**Result:** All constants validated. No changes needed.
+**Method:** JUnit test-based validation (38 tests across 8 areas, at authoring)
+**Result:** All constants validated against the pre-R4 economy. No changes needed at that date.
 
 ---
 
@@ -130,14 +137,14 @@ No game constants were modified during this balance pass. All existing values pr
 
 ## Regression Tests
 
-39 balance validation tests added to `app/src/test/java/com/whitefang/stepsofbabylon/balance/`:
+38 balance validation tests in `app/src/test/java/com/whitefang/stepsofbabylon/balance/`:
 - `StepEconomyTest.kt` — 5 tests
 - `CostCurveTest.kt` — 5 tests
 - `EnemyScalingTest.kt` — 6 tests
 - `TierProgressionTest.kt` — 5 tests
-- `CashEconomyTest.kt` — 4 tests
+- `CashEconomyTest.kt` — 3 tests
 - `CardBalanceTest.kt` — 4 tests
-- `UWOverdriveBalanceTest.kt` — 5 tests
+- `UWBalanceTest.kt` — 5 tests _(renamed from `UWOverdriveBalanceTest.kt` in R4-01 when Step Overdrive was removed)_
 - `SupplyDropEconomyTest.kt` — 5 tests
 
 Total test count: 283 (was 244).

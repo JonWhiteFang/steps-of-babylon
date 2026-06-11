@@ -19,13 +19,13 @@ HOW IT WORKS
 Your phone's step counter tracks your daily walking. Every step you take earns in-game Steps — the primary currency that fuels all progression. No grinding in-game. No waiting for timers to fill your wallet. Just walk.
 
 UPGRADE YOUR ZIGGURAT
-Spend Steps in the Workshop to permanently upgrade your tower across 23 upgrade types in three categories:
+Spend Steps in the Workshop to permanently upgrade your tower across 24 upgrade types in three categories:
 • Attack — damage, crit chance, projectile speed, multishot, orbs
 • Defense — HP, regen, damage reduction, block, thorn damage
 • Utility — attack speed, range, lifesteal, cash bonuses, interest
 
 BATTLE MYTHIC ENEMIES
-Launch wave-based tower defense battles against 6 enemy types — from fast scouts to massive bosses. Your ziggurat auto-fires projectiles while you manage in-round upgrades, activate Ultimate Weapons, and trigger Step Overdrive for a 60-second combat boost.
+Launch wave-based tower defense battles against 6 enemy types — from fast scouts to massive bosses. Your ziggurat auto-fires projectiles while you manage in-round upgrades and activate Ultimate Weapons for spectacular effects.
 
 PROGRESS THROUGH 10 TIERS
 Unlock harder tiers by reaching wave milestones. Higher tiers introduce battle conditions like armored enemies, knockback resistance, and orb immunity — plus higher cash multipliers for bigger in-round upgrades.
@@ -37,7 +37,7 @@ RESEARCH IN THE LABS
 Start real-time research projects that complete in the background — even when the app is closed. 10 research types provide permanent stat bonuses. Rush with Gems or unlock additional research slots.
 
 COLLECT & EQUIP CARDS
-Open Card Packs to collect 9 card types across 3 rarities. Equip up to 3 cards per battle for powerful per-round bonuses. Upgrade cards with Card Dust from duplicates.
+Open Card Packs to collect 9 card types across 3 rarities. Equip up to 3 cards per battle for powerful per-round bonuses. Collect duplicate copies to upgrade cards through 7 levels.
 
 ULTIMATE WEAPONS
 Unlock 6 devastating Ultimate Weapons with Power Stones earned from weekly step challenges. Equip up to 3 and activate them mid-battle for spectacular effects — Death Wave, Chain Lightning, Black Hole, and more.

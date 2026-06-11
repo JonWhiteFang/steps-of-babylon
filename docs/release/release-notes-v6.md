@@ -1,5 +1,9 @@
 # Release Notes — v1.0.0 (versionCode 6)
 
+> **Historical — internal build.** This documents an *internal-track build iteration* (versionCode 6)
+> during v1.0.0 closed-test prep on 2026-05-19, not a production semver release. The live production
+> versions are v1.0.1 (vc17) / v1.0.2 (vc18) — see `release-notes-v1.0.2.md`.
+
 **Build:** AAB at `app/build/outputs/bundle/release/app-release.aab` (~18.5 MB)
 **Tracks:** internal → closed (after smoke test PASS)
 **Date built:** 2026-05-19

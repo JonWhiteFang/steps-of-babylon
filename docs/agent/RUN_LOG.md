@@ -1,3 +1,55 @@
+## 2026-06-11 — full documentation drift sweep (branch docs/drift-sweep-2026-06-11)
+
+- **Goal:** "do a full doc sweep to catch anything outdated; advise on missing docs / restructuring."
+  Docs-only PR — no production code, test, or schema change.
+- **Method:** ran a 20-doc-cluster `Workflow` (one auditor per live doc/cluster verifying every
+  code-referencing claim against the repo; each finding adversarially re-verified by an independent
+  skeptic — 38 agents, 0 false-positives survived). Then a deeper **manual residual sweep** caught
+  ~12 more drift items the per-doc agents missed (their scoping left blind spots between docs).
+- **Cross-cutting fixes applied:** schema **v11→v12** (architecture, structure, lib-room, README);
+  test counts → **genericized to point at STATE/CLAUDE** (master-plan 206, plan-32 867, README 908,
+  release-checklist 397) or set to 955 where a live figure was wanted; **use cases 32→36**
+  (STATE, structure); **UpgradeType 23→24** (db-schema, source-files, GDD, product, play-listing);
+  **ResearchType** clarified (12 enum rows vs 10 surfaced in Labs UI); **SupplyDropTrigger 4→3**;
+  **SupplyDropReward** Card Dust→Card Copy; **nav routes 12→13** (added Help).
+- **Removed-mechanic ghosts purged:** **Step Overdrive** (deleted R4-01, replaced by Rapid Fire R4-03)
+  scrubbed from battle-formulas (§Overdrive→§Rapid Fire), GDD (pillar, §5.1, supply-drop, UI screen,
+  state model, risk table), CONSTRAINTS, product. **Card Dust** (removed R4-08/ADR-0010, copy-based)
+  corrected in GDD/structure/source-files/product/play-listing — but **kept** the legacy `cardDust` DB
+  column doc (verified it still exists on the entity, held at 0 for back-compat).
+- **Battle-formula correctness fixes (HIGH):** CRITICAL_RESEARCH multiplies `critMultiplier` not
+  `critChance` (ResolveStats:69-71); multishot/bounce are **additive** caps 11/10 not divisional 5/4;
+  kill-cash includes `fortuneMultiplier` (GOLDEN) + card `cashBonusPercent`; UW section rewritten for
+  the R4-06 per-path interpolation model (no more `0.05×(level-1)` cooldown / `500×level` damage).
+- **step-tracking fixes:** the overlap-deduction rule was **inverted** (activity minute credited only
+  when sensor `<50`/min, per `ActivityMinuteConverter`); removed the unimplemented outdoor-walking /
+  treadmill rows (only 7 exercise types in the rules map); HC availability is `getSdkStatus()`-gated;
+  WorkManager has no enqueue constraint.
+- **Other verified fixes:** plan-32 `jarsigner -verify -strict`→`-verify` (matches release.yml);
+  plan-32 toolchain row genericized (Gradle was 9.3.1, actually 9.5.1; KSP 2.3.6→2.3.9); V1X dead-link
+  (`2026-05-25-issue-triage.md`, removed in 12605b3) annotated + shipped-wave status note added;
+  V1X cloud-save migration corrected (assumed 11→12, but #127 consumed v12 → must target 12→13);
+  master-plan/plan-FORWARD v1.0.0-tag + soak-gating reframed per PR #145; monetization #124 verification
+  documented; source-files: 11 missing test entries added + stale RO-08 overdrive test description fixed.
+- **Restructures (per user opt-in):** CHANGELOG split — `[Unreleased]`(empty) / **`[1.0.2]`** /
+  **`[1.0.1]`** at the **git-verified** tag boundary (Plan-32 #100 and older = v1.0.1; "Release lane
+  What's new" #107 and newer = v1.0.2); balance-report got a "historical snapshot, regenerate" banner
+  + the 3 count/rename fixes (39→38, CashEconomyTest 4→3, UWOverdriveBalanceTest→UWBalanceTest);
+  release-checklist promoted to a reusable version-agnostic template; `docs/index.md` got an HTML
+  comment clarifying it's the Pages privacy-policy mirror (verified byte-identical to the canonical).
+- **New docs:** `docs/release/release-notes-v1.0.2.md` (covers v1.0.1+v1.0.2, the first production
+  release notes; v5/v6 banner-labelled as internal builds) and `docs/steering/security-model.md`
+  (consolidates SQLCipher/Keystore + anti-cheat + economy atomicity + #124 purchase verification;
+  linked from README + CLAUDE.md). Onboarding doc deliberately NOT created (START_HERE+CLAUDE cover it).
+- **Real infra bug found + fixed:** `.gitignore` `release/` was unanchored → matched `docs/release/`
+  too, silently ignoring the new release-notes file (and any future `docs/release/` doc). Anchored to
+  `/release/`; verified top-level keystore dir still ignored.
+- **Verification:** documented counts cross-checked against test assertions (UpgradeTypeTest=24,
+  CardType max Lv7); battle-formulas code fences balanced; CHANGELOG headers ordered; both new docs
+  un-ignored + on disk. No build run (docs-only). 27 files modified + 2 new.
+- **Next:** commit on branch; open PR; (developer) review the restructures (CHANGELOG split, gitignore
+  change) since those are judgment calls. Memory updated: STATE ✅ / RUN_LOG ✅.
+
 ## 2026-06-11 — v1.0.2 released to Play internal track (tag v1.0.2)
 
 - **Goal:** ship the batch accumulated since v1.0.1 (versionCode 17) — the #118–123 / #125 / #126 /

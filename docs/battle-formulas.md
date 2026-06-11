@@ -37,10 +37,9 @@ rawDamage = baseDamage
           × (1 + damageResearchLevel × 0.05)             // Lab DAMAGE_RESEARCH (RO-11)
 
 isCrit = random() < critChance
-critChance = min((critChanceLevel + inRoundCritChanceLevel) × 0.005
-                 + criticalResearchLevel × 0.03,           // Lab CRITICAL_RESEARCH (RO-11)
-                 0.80)
-critMultiplier = 2.0 + (critFactorLevel + inRoundCritFactorLevel) × 0.1
+critChance = min((critChanceLevel + inRoundCritChanceLevel) × 0.005, 0.80)
+critMultiplier = (2.0 + (critFactorLevel + inRoundCritFactorLevel) × 0.1)
+               × (1 + criticalResearchLevel × 0.03)        // Lab CRITICAL_RESEARCH (RO-11)
 
 finalDamage = isCrit ? rawDamage × critMultiplier : rawDamage
 ```
@@ -121,18 +120,22 @@ Orbs deal half the knockback force of direct projectile hits.
 ## Multishot & Bounce
 
 ```
-targets = 1 + floor(multishotLevel / 20)  // cap 5
-bounces = floor(bounceShotLevel / 15)      // cap 4
+targets = min(1 + multishotLevel + multishotResearchLevel, 11)   // additive; cap 11
+bounces = min(bounceShotLevel + bounceResearchLevel, 10)          // additive; cap 10
 ```
 
-Each bounce deals full damage to the next target.
+`multishotLevel` / `bounceShotLevel` are the combined Workshop + in-round totals;
+`multishotResearchLevel` / `bounceResearchLevel` are the Lab `MULTISHOT_RESEARCH` /
+`BOUNCE_RESEARCH` levels. Each bounce deals full damage to the next target.
 
 ## Cash Economy (In-Round)
 
 ```
 cashFromKill = baseKillCash
              × tierCashMultiplier
-             × (1 + cashBonusLevel × 0.03)
+             × (1 + cashBonusLevel × 0.03)               // Workshop CASH_BONUS
+             × fortuneMultiplier                         // GOLDEN_ZIGGURAT UW (1.0× when inactive)
+             × (1 + cardCashBonusPercent / 100)          // CASH_GRAB card (1.0× when not equipped)
              × cashResearchMultiplier                    // Lab CASH_RESEARCH outer multiplier (RO-11)
 cashPerWave  = (baseCashPerWave + cashPerWaveLevel × flatBonusPerLevel)
              × cashResearchMultiplier                    // Lab CASH_RESEARCH outer multiplier (RO-11)
@@ -140,7 +143,7 @@ interest = min(heldCash × interestLevel × 0.005, heldCash × 0.10)  // cap 10%
 freeUpgradeChance = min(freeUpgradeLevel × 0.01, 0.25)             // cap 25%
 ```
 
-`cashResearchMultiplier` is `1.0` at level 0; +5%/lvl wires onto `GameEngine.cashResearchMultiplier` from `BattleViewModel` once per round and applies on every kill cash credit + every wave-end cash payout.
+`cashResearchMultiplier` is `1.0` at level 0; +5%/lvl wires onto `GameEngine.cashResearchMultiplier` from `BattleViewModel` once per round and applies on every kill cash credit + every wave-end cash payout. `fortuneMultiplier` is the GOLDEN_ZIGGURAT UW's DAMAGE-path cash multiplier (1.0× when the UW is not active); `cardCashBonusPercent` comes from the CASH_GRAB card (`GameEngine.cashBonusPercent`, 0 when not equipped). Both stack multiplicatively on the per-kill credit only — `cashPerWave` is unaffected by them.
 
 ### Tier Cash Multipliers
 
@@ -233,49 +236,78 @@ Applied in engine:
 - Orb knockback: `knockbackForce × 0.5 × knockbackMultiplier`
 - Thorn damage: `incomingDamage × thornPercent × thornMultiplier`
 
-## Overdrive Effects
+## Rapid Fire (R4-03)
 
-| Type | Cost | Duration | Effect |
-|---|---|---|---|
-| Assault | 500 Steps | 60s | 2× Attack Speed + 1.5× Damage |
-| Fortress | 500 Steps | 60s | 2× Health Regen + 50% Damage Reduction |
-| Fortune | 300 Steps | 60s | 3× Cash earned |
-| Surge | 750 Steps | 60s | All UW cooldowns reset |
+> Step Overdrive (the old Assault/Fortress/Fortune/Surge once-per-round buffs) was
+> **removed in R4-01** and replaced by the **Rapid Fire** Workshop upgrade (`UpgradeType.RAPID_FIRE`).
 
-Once per round. Stacks multiplicatively with existing stats.
+Rapid Fire fires a periodic attack-speed burst during a wave's SPAWNING phase: every
+`interval` seconds the ziggurat's attack speed is multiplied by `multiplier` for
+`duration` seconds, then resets to 1.0× until the next pulse. Per-level values
+interpolate L1 → L10 (`RapidFireSchedule`):
+
+```
+interval(level)   = lerp(60s → 30s)    // bursts get more frequent
+duration(level)   = lerp(5s  → 30s)    // each burst lasts longer
+multiplier(level) = lerp(2.0× → 3.0×)  // attack-speed boost grows
+```
+
+At L10 `duration == interval` (both 30s) so the next pulse fires before the previous one
+expires — a permanent +3.0× attack-speed buff. The "Now → Next" UI renders
+`permanent/{m}×` once `isPermanent(level)` (duration ≥ interval).
 
 ## Ultimate Weapon Formulas
+
+> **R4-06 redesign (ADR-0008).** Each UW has **3 independent upgrade paths** (`UWPath`:
+> DAMAGE, SECONDARY, COOLDOWN), each levelled 0→10 separately. Per-level values are a
+> **linear interpolation** between the path's L1 and L10 endpoints stored on
+> `UltimateWeaponType` — there is no single shared `level` or `0.05 × (level-1)`
+> cooldown formula anymore.
 
 ### Unlock & Upgrade
 
 ```
-unlockCost = type.unlockCost (Power Stones)
-upgradeCost = unlockCost × 2 × currentLevel (Power Stones)
-maxLevel = 10
+unlockCost  = type.unlockCost (Power Stones)
+upgradeCost = unlockCost × 2 × currentPathLevel (Power Stones)   // per-path; L0→L1 is free
+maxPathLevel = 10                                                // MAX_PATH_LEVEL, per path
 ```
+
+Total cost to take one path L0→L10 is `90 × unlockCost`; all three paths is `270 × unlockCost`.
+
+### Per-Path Value Interpolation
+
+```
+valueAtLevel(path, level) = L1 + (L10 − L1) / 9 × (level − 1)
+```
+
+L1 maps to the path's L1 endpoint, L10 to its L10 endpoint, with 9 equal segments between.
 
 ### Cooldown Scaling
 
 ```
-cooldown = baseCooldownSeconds
-         × (1 - 0.05 × (level - 1))                       // per-UW level scaling
-         × uwCooldownMultiplier                            // Lab UW_COOLDOWN outer multiplier (RO-11)
+cooldown = type.cooldownAtLevel(cooldownPathLevel)               // = valueAtLevel(COOLDOWN, level)
+         × uwCooldownMultiplier                                  // Lab UW_COOLDOWN outer multiplier (RO-11)
 ```
 
-`uwCooldownMultiplier` is `1.0` at level 0; -5%/lvl reduces all UW cooldowns and the cooldown ring-fill UI tracks it. Wired onto `GameEngine.uwCooldownMultiplier` from `BattleViewModel` once per round.
+`cooldownAtLevel` interpolates the COOLDOWN path (L10 is the *lower*, better value).
+`uwCooldownMultiplier` is `1.0` at level 0; -5%/lvl reduces all UW cooldowns and the
+cooldown ring-fill UI tracks it. Wired onto `GameEngine.uwCooldownMultiplier` from
+`BattleViewModel` once per round.
 
-### Base Values
+### Per-Path Endpoints (L1 → L10)
 
-| UW Type | Unlock Cost | Base Cooldown | Duration | Effect |
-|---|---|---|---|---|
-| Death Wave | 50 PS | 60s | Instant | 500 × level damage to all enemies |
-| Chain Lightning | 75 PS | 45s | Instant | 300 × level damage to up to 8 enemies |
-| Black Hole | 100 PS | 90s | 5s | Pull enemies to center + 50 × level DPS |
-| Chrono Field | 75 PS | 75s | 8s | All enemies slowed to 10% speed |
-| Poison Swamp | 60 PS | 60s | 6s | 2% × level of enemy max HP per second |
-| Golden Ziggurat | 80 PS | 90s | 10s | 5× cash + 1.5× damage |
+| UW Type | Unlock | DAMAGE path | SECONDARY path | COOLDOWN path | Duration |
+|---|---|---|---|---|---|
+| Death Wave | 50 PS | 500 → 3,000 dmg | 0.50 → 1.00 screen radius | 60s → 20s | Instant |
+| Chain Lightning | 75 PS | 500 → 2,000 per-target | 3 → 12 chain targets | 30s → 6s | Instant |
+| Black Hole | 100 PS | 50 → 250 DPS | 30 → 200 px/s pull | 90s → 30s | 5s |
+| Chrono Field | 75 PS | 0.50 → 0.05 slow factor | 5s → 14s duration | 75s → 25s | (SECONDARY) |
+| Poison Swamp | 60 PS | 1% → 8% MaxHP/s | 0.50 → 1.00 area fraction | 60s → 20s | 6s |
+| Golden Ziggurat | 80 PS | 2× → 8× cash | 1.2× → 3.0× damage | 90s → 30s | 10s |
 
-SURGE Overdrive resets all UW cooldowns to 0 instantly.
+(For Chrono Field, the DAMAGE path *is* the slow factor — smaller is stronger — and the
+SECONDARY path *is* the effect duration; the Duration column's flat value is the L1
+fallback.)
 
 ## Lab Research Scaling
 

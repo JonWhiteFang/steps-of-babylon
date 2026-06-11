@@ -15,7 +15,7 @@ Primary player record. One row per player (single-player game).
 | currentStepBalance | Long | Spendable step balance |
 | gems | Long | Premium currency |
 | powerStones | Long | UW currency |
-| cardDust | Long | Card Dust currency |
+| cardDust | Long | Legacy Card Dust currency — retired in R4-08 (ADR-0010, copy-based progression); column retained at 0 for back-compat, no longer spent |
 | currentTier | Int | Selected play tier |
 | highestUnlockedTier | Int | Highest tier unlocked (default 1) |
 | labSlotCount | Int | Lab slots unlocked (default 1, max 4) |
@@ -39,7 +39,7 @@ Primary player record. One row per player (single-player game).
 
 ### WorkshopUpgrade
 
-One row per upgrade type (23 rows total).
+One row per upgrade type (24 rows total).
 
 | Column | Type | Notes |
 |---|---|---|
@@ -48,7 +48,7 @@ One row per upgrade type (23 rows total).
 
 ### LabResearch
 
-One row per research type (10 rows total).
+One row per research type (12 rows total).
 
 | Column | Type | Notes |
 |---|---|---|
@@ -262,7 +262,7 @@ Each entity gets its own DAO:
 
 - `RoundState` is NOT persisted — it's transient, held in ViewModel during battle
 - `Cash` is NOT persisted — it resets each round
-- `cardDust: Long` is stored on `PlayerProfile`
+- `cardDust: Long` is stored on `PlayerProfile` (legacy — retired in R4-08/ADR-0010; held at 0, not spent)
 
 ## Security
 

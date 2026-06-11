@@ -25,6 +25,20 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-11 — full doc-drift sweep** (branch `docs/drift-sweep-2026-06-11`, docs-only). 20-doc-cluster
+  workflow audit (each finding adversarially re-verified against code) + a deeper manual residual pass.
+  Fixed ~60 confirmed drift items across 25 docs: schema v11→v12 sweep, test-count → genericized/955,
+  use-cases 32→36, UpgradeType 23→24, SupplyDropTrigger 4→3, nav routes 12→13, **Step Overdrive ghosts**
+  (removed R4-01 → Rapid Fire) purged from GDD/battle-formulas/CONSTRAINTS/product, **Card Dust** refs
+  (removed R4-08 → copy-based) corrected (kept the legacy `cardDust` DB column note), battle-formula
+  errors (crit-research on multiplier not chance; multishot/bounce additive caps 11/10; cash
+  fortune+card multipliers; UW per-path R4-06 table), step-tracking overlap-rule inversion + exercise
+  types, jarsigner `-strict` contradiction, V1X dead-link + shipped-wave status. Restructures: CHANGELOG
+  split into `[1.0.2]`/`[1.0.1]` (git-verified boundary) + fresh `[Unreleased]`; balance-report
+  historical banner; release-checklist promoted version-agnostic; `docs/index.md` self-documenting
+  comment. New docs: `docs/release/release-notes-v1.0.2.md`, `docs/steering/security-model.md`.
+  **Also fixed a real infra bug:** `.gitignore` `release/` was unanchored (matched `docs/release/` too,
+  silently swallowing new release docs) → anchored to `/release/`.
 - **2026-06-11 — v1.0.2 released to Play internal track** (tag `v1.0.2` on `5298fae`). Shipped the
   whole batch since v1.0.1/code17 (#118–123, #125/126, #121, audit-Lows, #124, #146, #127). No bump
   needed — code 18 / 1.0.2 was already committed (PR #108) but never tagged. Release lane green:
@@ -109,7 +123,7 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 ## Do-not-touch / fragile zones
 
 - `domain/model/` — stable; balance constants validated by regression tests. `BillingProduct.skuId()` is a stable public API.
-- `domain/usecase/` — 32 use cases stable.
+- `domain/usecase/` — 36 use cases stable.
 - `presentation/battle/effects/` — particle pool, effect engine, all visual effects.
 - `gradle/libs.versions.toml` — single source for all dependency versions. `app/proguard-rules.pro` — hardened R8 rules.
 - `app/build.gradle.kts` — signing config + AdMob production-ID wiring (don't break the test-ID fallback) + `ndk { debugSymbolLevel = "FULL" }`.

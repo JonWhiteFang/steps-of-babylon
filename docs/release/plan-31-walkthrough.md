@@ -46,7 +46,7 @@ Project constants you will paste repeatedly:
 | Field | Value |
 |---|---|
 | Application ID | `com.whitefang.stepsofbabylon` |
-| Version | `1.0.0` (versionCode — see `app/build.gradle.kts`; was `1` originally, now `4` after smoke-test bumps) |
+| Version | `versionName` / `versionCode` — always read the current values from `app/build.gradle.kts` (this walkthrough is not the source of truth for the live version) |
 | Min SDK / Target SDK | 34 / 36 |
 | Category | Games → Strategy |
 | Contact email | `jonwhitefang@gmail.com` (per `play-store-listing.md`) |

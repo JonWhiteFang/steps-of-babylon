@@ -79,7 +79,7 @@ state — the checklist informs that call, it does not replace it.
 2. Recruit ≥12 testers; distribute the closed-track opt-in URL.
 3. Collect ≥14 days of closed-track feedback; triage issues filed against `JonWhiteFang/steps-of-babylon`.
 4. Apply for production access (Google review 1–3 days).
-5. Promote closed → production with a staged rollout; tag `v1.0.0` in git after rollout reaches 100%.
+5. Promote closed → production with a staged rollout; cut the production release tag after rollout reaches 100%. (Note: `v1.0.0` was never tagged — the versionName advanced to 1.0.1/1.0.2 to avoid a versionCode collision, and `v1.0.1`/`v1.0.2` tags already exist; the production tag will be whatever versionName ships at GA.)
 
 (Release mechanics — signing, CI release lane, "What's new" automation — are all live; see
 `docs/plans/plan-31-play-console.md` and `docs/plans/plan-32-ci.md`.)

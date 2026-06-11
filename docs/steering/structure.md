@@ -53,7 +53,7 @@ app/src/test/java/com/whitefang/stepsofbabylon/
 ├── fakes/              # In-memory fake repositories (FakePlayerRepository, FakeWorkshopRepository, FakeUltimateWeaponRepository, FakeLabRepository, FakeCardRepository, FakeWalkingEncounterRepository, FakeStepRepository, FakeCosmeticRepository, FakeBillingManager, FakeRewardAdManager, FakeMilestoneDao, FakeDailyMissionDao, FakeDailyLoginDao, FakeWeeklyChallengeDao, FakeDailyStepDao, FakeCosmeticDao, FakeTimeProvider)
 ├── domain/
 │   ├── model/          # Domain model invariant tests (TierConfig, Biome, Loadouts, UpgradeType, EnemyType, Milestone, DailyMissionType, BattleConditionEffects)
-│   └── usecase/        # All 32 use case tests
+│   └── usecase/        # All 36 use case tests
 ├── presentation/
 │   ├── battle/
 │   │   ├── engine/     # EnemyScaler tests
@@ -123,8 +123,8 @@ All in `domain/model/`:
 - `Biome`, `ResearchType`, `ActiveResearch` — Progression systems
 - `DailyStepSummary` — daily step record domain model
 - `SupplyDrop` — walking encounter supply drop
-- `SupplyDropTrigger` — 4 trigger types with notification messages
-- `SupplyDropReward` — 4 reward types (Steps, Gems, Power Stones, Card Dust)
+- `SupplyDropTrigger` — 3 trigger types with notification messages
+- `SupplyDropReward` — 4 reward types (Steps, Gems, Power Stones, Card Copy)
 - `DropGeneratorState` — generator state tracking
 - `Milestone` — 6 walking milestones with step thresholds and rewards
 - `MilestoneReward` — sealed class: Gems, PowerStones, Cosmetic
@@ -150,7 +150,7 @@ All in `domain/model/`:
 | `di/CoroutineScopeModule.kt` | Hilt module: provides @ApplicationScope CoroutineScope(SupervisorJob + Dispatchers.Default) that outlives VM cancellation (B.3 PR 2, RO-03) |
 | `domain/time/TimeProvider.kt` | Pure-Kotlin seam for wall-clock access; migrated 3 sites in B.1 PR 2 |
 | `data/time/SystemTimeProvider.kt` | Production TimeProvider: delegates to Instant.now() / LocalDate.now() |
-| `data/local/AppDatabase.kt` | Room database (13 entities, 13 DAOs, version 11; `billing_receipt` added in C.5 PR 1; `ultimate_weapon_state` recreated with per-path columns + `daily_step_record.bossPsEarnedToday` added in v9→10 R4-06 + R4-07; `card_inventory` recreated with `copyCount` aggregation + unique index on `cardType` in v10→11 R4-08) |
+| `data/local/AppDatabase.kt` | Room database (13 entities, 13 DAOs, version 12; `billing_receipt` added in C.5 PR 1; `ultimate_weapon_state` recreated with per-path columns + `daily_step_record.bossPsEarnedToday` added in v9→10 R4-06 + R4-07; `card_inventory` recreated with `copyCount` aggregation + unique index on `cardType` in v10→11 R4-08; `(date, missionType)` unique index on `daily_mission` added in v11→12 #127) |
 | `data/local/DatabaseKeyManager.kt` | SQLCipher passphrase via Android Keystore |
 | `data/local/Converters.kt` | TypeConverters for `Map<Int,Int>` and `Map<String,Int>` (JSON) |
 | `data/sensor/StepSensorDataSource.kt` | TYPE_STEP_COUNTER wrapper, emits deltas via callbackFlow |
@@ -168,7 +168,7 @@ All in `domain/model/`:
 | `domain/usecase/UnlockUltimateWeapon.kt` | Checks Power Stone balance, deducts, unlocks UW |
 | `domain/usecase/UpgradeUltimateWeapon.kt` | Cost scaling per level, max level 10 |
 | `presentation/MainActivity.kt` | Single Activity, Scaffold + NavHost + BottomNavBar (hidden during battle), permissions |
-| `presentation/navigation/Screen.kt` | 12 navigation routes (Home, Workshop, Battle, Labs, Stats, Weapons, Cards, Supplies, Economy, Missions, Settings, Store) |
+| `presentation/navigation/Screen.kt` | 13 navigation routes (Home, Workshop, Battle, Labs, Stats, Weapons, Cards, Supplies, Economy, Missions, Settings, Store, Help) |
 | `presentation/home/HomeViewModel.kt` | Combines profile + step flows into HomeUiState |
 | `presentation/battle/GameSurfaceView.kt` | SurfaceView managing game loop thread lifecycle |
 | `presentation/battle/GameLoopThread.kt` | Fixed timestep (60 UPS), accumulator, speed multiplier |

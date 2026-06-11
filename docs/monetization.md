@@ -104,14 +104,15 @@ Adapter seams (`data/billing/internal/BillingClientAdapter` + `data/ads/internal
 - Ad Removal — real Play Billing v8 non-consumable; `acknowledgePurchaseAsync` finalizes the purchase
 - Season Pass — real Play Billing v8 monthly subscription; `purchaseTime + 30 days` expiry rule; reconciliation sweep refreshes expiry on Play Store re-delivery; awards 10 bonus Gems/day via TrackDailyLogin, 1 free Lab rush/day
 - Idempotency — `BillingReceiptDao` table keyed by `purchaseToken`; `granted = true` row guarantees the wallet is credited at most once even across crashes / `PENDING → PURCHASED` transitions / repeat reconciliation sweeps
+- Client-side purchase signature verification (#124, ADR-0005 amendment) — every wallet grant first calls `PurchaseVerifier.isValidPurchase(originalJson, signature, expectedProductId, expectedPurchaseToken)` before `grantOnceAtomic`, on both the purchase and reconciliation paths. The product+token binding blocks replaying a signed cheap receipt for an expensive product. A blank `PLAY_LICENSE_KEY` fail-opens in debug/CI only; a release build with a blank key is hard-failed by the `app/build.gradle.kts` taskGraph guard + the `release.yml` secret step
 - Post-round reward ads — real AdMob rewarded ads with UMP consent gating; placement-aware ad-unit routing (`POST_ROUND_GEM` / `POST_ROUND_DOUBLE_PS` / `DAILY_FREE_CARD_PACK`)
 - UMP consent — prefetched on `MainActivity.onResume` in release builds (gated by `BuildConfig.USE_REAL_ADS`) so the first reward-ad tap doesn't pay the ~200–500 ms UMP init latency
-- Cosmetic store — 4 cosmetics with full visual application end-to-end (`zig_jade`, `lapis_lazuli_skin`, `garden_ziggurat_skin`, `sandals_of_gilgamesh`); 7 additional seeds with placeholder visuals pending content
+- Cosmetic store — 5 cosmetics with full visual application end-to-end (`zig_jade`, `lapis_lazuli_skin`, `garden_ziggurat_skin`, `sandals_of_gilgamesh`, `zig_obsidian`); 6 additional seeds with placeholder visuals pending content (11 SEED_COSMETICS total)
 - Live formatted prices on the Store screen — `BillingManager.getPriceDisplay()` queries `ProductDetails.priceDisplay` per product; `StoreViewModel` populates `StoreUiState.priceDisplays` on Store entry; `StoreScreen` falls back to the static `BillingProduct.priceDisplay` constant when a query returns null (Plan 31 PR B, 2026-05-18)
 
 ### What's Out-of-Scope for v1
 
-- Server-side receipt verification (forbidden by `CONSTRAINTS.md` for v1.0 — no backend).
+- **Server-side** receipt verification (forbidden by `CONSTRAINTS.md` for v1.0 — no backend). Note: *client-side* signature verification IS implemented (#124, see above); only the server round-trip is out of scope.
 - Real-time subscription renewal notifications (would require Real-time Developer Notifications + a backend; Season Pass relies on the reconciliation sweep refreshing expiry on Play Store re-delivery instead).
 - Ad mediation for fill rate optimization (deferred until live AdMob fill data justifies the integration cost).
 - Live-price refresh on app resume / locale change — prices are queried once on Store entry; the static `BillingProduct.priceDisplay` fallback covers locale changes mid-session (Plan 31 PR B v1.x deferral).

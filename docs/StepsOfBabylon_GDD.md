@@ -5,7 +5,7 @@
 An idle tower defense game where your real-world steps raise an ancient ziggurat.
 
 **Platform:** Android | **Experience:** Solo | **Battles:** Real-Time
-**Version:** 1.1 | **Date:** March 2026
+**Game Version:** 1.0.2 (versionCode 18) | **GDD last reconciled with code:** 2026-06-11
 
 ---
 
@@ -18,7 +18,7 @@ Steps of Babylon is an Android mobile game that fuses the addictive incremental 
 Beyond the core loop, Steps of Babylon deepens the connection between walking and gameplay through four signature systems:
 
 - **Narrative Biome Progression** — transforms the battlefield as players advance through themed worlds
-- **Step Overdrive** — lets players burn steps mid-battle for tactical bursts
+- **Rapid Fire** — a Workshop upgrade that fires periodic attack-speed bursts mid-wave (R4-03; replaced the removed Step Overdrive mechanic)
 - **Activity Minute Parity** — credits indoor workouts like cycling and rowing alongside traditional steps
 - **Walking Encounters** — delivers real-time Supply Drop rewards during physical activity via push notifications
 
@@ -72,9 +72,9 @@ Walking Encounters transform the real-world activity into a loot-driven experien
 | Trigger | Notification Example | Reward |
 |---|---|---|
 | Every 2,000 steps (5% chance per 100 steps after threshold) | "A supply crate was spotted on your path! Tap to claim." | 50–200 bonus Steps or 1–3 Gems |
-| Step burst (500+ steps in 5 min) | "Your pace is impressive! An energy surge flows into your ziggurat." | Overdrive Charge (see §5.1) |
+| Step burst (500+ steps in 5 min) | "Your pace is impressive! An energy surge flows into your ziggurat." | Bonus Steps |
 | 10,000 step daily milestone | "10K steps! A rare supply drop has materialized." | Rare Card Pack or 5 Gems + 3 Power Stones |
-| Random (1% per 500 steps) | "Something shimmers ahead on the trail..." | Random: Steps, Gems, Power Stones, or Card Dust |
+| Random (1% per 500 steps) | "Something shimmers ahead on the trail..." | Random: Steps, Gems, Power Stones, or a Card Copy |
 
 - Supply Drops are generated locally using a seeded random system based on step count and time of day.
 - **GPS / location tracking removed in v1.0.** Original GDD draft proposed an "Exploration Mode" with GPS-based 1.5km distance triggers; this was dropped per ADR-0016 (battery, privacy, and Play Console review-cost trade-off). Reserved as a v2.x meta-progression concept that may ship alongside V1X-25 long-term progression.
@@ -119,9 +119,10 @@ The Workshop is the primary progression system. Upgrades are purchased with Step
 | Critical Chance | +0.5% crit chance per level | 100 Steps | ×1.18/level | Cap 80% |
 | Critical Factor | +0.1× crit multiplier per level | 120 Steps | ×1.18/level | Unlimited |
 | Range | +2% attack radius | 80 Steps | ×1.14/level | Cap 300% |
-| Multishot | +1 additional target per 20 levels | 500 Steps | ×1.25/level | Cap 5 targets |
-| Bounce Shot | Projectiles bounce to +1 enemy per 15 levels | 1,000 Steps | ×1.30/level | Cap 4 bounces |
+| Multishot | +1 additional target per level | 5,000 Steps | ×1.5/level | Cap 11 targets (incl. baseline) |
+| Bounce Shot | +1 bounce per level | 8,000 Steps | ×1.5/level | Cap 10 bounces |
 | Damage/Meter | +1% bonus damage based on enemy distance | 200 Steps | ×1.16/level | Unlimited |
+| Rapid Fire | Periodic attack-speed burst (60s/5s/2.0× → permanent/3.0× at max) | 2,000 Steps | ×1.18/level | 10 |
 
 ### 4.2 Defense Upgrades
 
@@ -158,20 +159,24 @@ During active rounds, players spend Cash on temporary upgrades that reset when t
 
 **Strategic tension:** Invest cash in Damage to kill faster and earn more cash, or shore up Health/Defense to survive longer? Rush Cash Bonus early for compound returns, or invest in combat stats?
 
-### 5.1 Step Overdrive (Mid-Round Step Burn)
+### 5.1 Rapid Fire (Workshop, R4-03)
 
-Step Overdrive allows players to sacrifice permanent Steps for a powerful 60-second combat boost during a critical moment. Once per round.
+> **Step Overdrive was removed in R4-01** (the old once-per-round Assault/Fortress/Fortune/Surge
+> step-burn buffs). Its tactical-burst role is now served by the **Rapid Fire** permanent
+> Workshop upgrade — no mid-round Step burn exists in v1.0.
 
-| Overdrive Option | Step Cost | Effect (60 seconds) | Best Used When... |
+Rapid Fire (`UpgradeType.RAPID_FIRE`) fires a periodic attack-speed burst during a wave's
+spawn phase. Every `interval` seconds the ziggurat's attack speed multiplies by
+`multiplier` for `duration` seconds, then resets until the next pulse. Per-level values
+interpolate L1 → L10 (`RapidFireSchedule`):
+
+| Level | Interval | Burst Duration | Attack-Speed Multiplier |
 |---|---|---|---|
-| Assault Overdrive | 500 Steps | 2× Attack Speed + 1.5× Damage | A boss wave is overwhelming your DPS |
-| Fortress Overdrive | 500 Steps | 2× Health Regen + 50% Damage Reduction | Tower health is critical |
-| Fortune Overdrive | 300 Steps | 3× Cash earned from all sources | Early in a round to snowball cash economy |
-| Surge Overdrive | 750 Steps | All UW cooldowns reset instantly | Multiple UWs on cooldown during a crisis wave |
+| L1 | 60s | 5s | 2.0× |
+| L10 | 30s | 30s | 3.0× (permanent — duration meets interval) |
 
-- Walking Encounter "energy surge" Supply Drops can grant a free Overdrive charge.
-- Visual feedback: ziggurat glows with a pulsing aura (red=Assault, blue=Fortress, gold=Fortune, purple=Surge).
-- The Overdrive button shows current Step balance as a cost reminder.
+At max level the burst re-triggers before it expires, becoming a continuous +3.0×
+attack-speed buff. See `docs/battle-formulas.md` § Rapid Fire for the full interpolation.
 
 ---
 
@@ -258,19 +263,19 @@ Long-term research system using Steps to initiate and real time to complete. Pla
 
 ## 9. Simplified Cards
 
-Temporary per-round bonuses activated at round start. Equip up to 3 Cards. Acquired from Card Packs (Gems). 3 rarities: Common, Rare, Epic. Duplicates convert to Card Dust for upgrades (5 levels each).
+Temporary per-round bonuses activated at round start. Equip up to 3 Cards. Acquired from Card Packs (Gems). 3 rarities: Common, Rare, Epic. **Copy-based progression** (Card Dust was removed in R4-08, ADR-0010): duplicate pulls accumulate as additional copies, and copy count gates progression through **7 levels** (copies/level scale by rarity: 3 COMMON, 4 RARE, 5 EPIC).
 
-| Card Name | Rarity | Effect (Lv1) | Effect (Lv5) |
+| Card Name | Rarity | Effect (Lv1) | Effect (Lv7, max) |
 |---|---|---|---|
-| Iron Skin | Common | +10% Defense Absolute | +30% Defense Absolute |
-| Sharp Shooter | Common | +15% Critical Chance | +35% Critical Chance |
-| Cash Grab | Common | +20% Cash from kills | +50% Cash from kills |
-| Vampiric Touch | Rare | +5% Lifesteal | +15% Lifesteal |
-| Chain Reaction | Rare | +2 Bounce Shot targets | +4 Bounce Shot targets |
+| Iron Skin | Common | +10 Defense Absolute (flat) | +42 Defense Absolute (flat) |
+| Sharp Shooter | Common | +15% Critical Chance | +45% Critical Chance |
+| Cash Grab | Common | +20% Cash from kills | +65% Cash from kills |
+| Vampiric Touch | Rare | +5% Lifesteal | +20% Lifesteal |
+| Chain Reaction | Rare | +2 Bounce Shot targets | +5 Bounce Shot targets |
 | Second Wind | Rare | Revive once at 50% HP | Revive once at 100% HP |
-| Walking Fortress | Epic | +50% Health, -20% Attack Speed | +100% Health, -10% Attack Speed |
-| Glass Cannon | Epic | +80% Damage, -40% Health | +120% Damage, -20% Health |
-| Step Surge | Epic | Earn 2× Gems this round | Earn 4× Gems this round |
+| Walking Fortress | Epic | +50% Health, -20% Attack Speed | +125% Health, -5% Attack Speed |
+| Glass Cannon | Epic | +80% Damage, -40% Health | +140% Damage, -10% Health |
+| Step Surge | Epic | Earn 2× Gems this round | Earn 5× Gems this round |
 
 ---
 
@@ -336,7 +341,7 @@ Double-counting prevention: Step-equivalents only credited when step sensor reco
 ### 12.1 Main Screens
 
 - **Home / Dashboard:** Today's step count, total step balance, current tier/biome, best wave record. Quick-launch battle button. Biome-themed background. Unclaimed Supplies badge. Growing ziggurat illustration.
-- **Battle Screen:** Full-screen real-time tower defense. Biome-themed battlefield. Health bar, wave counter, Cash upgrade tabs (Attack/Defense/Utility), UW buttons, Step Overdrive button, speed controls (1×/2×/4×).
+- **Battle Screen:** Full-screen real-time tower defense. Biome-themed battlefield. Health bar, wave counter, Cash upgrade tabs (Attack/Defense/Utility), UW buttons, speed controls (1×/2×/4×). (No Step Overdrive button — that mechanic was removed in R4-01.)
 - **Workshop:** Three-tab layout (Attack/Defense/Utility). Shows level, effect, and step cost. Affordable upgrades highlighted green. "Quick Invest" button for recommended path.
 - **Labs & Cards:** Split-view. Top: active Lab research with timers. Bottom: Card collection grid with rarity-colored borders and loadout selection.
 - **Stats / History:** Walking history charts (daily/weekly/monthly), battle statistics, all-time stats.
@@ -385,7 +390,7 @@ Assumes ~8,000 steps/day.
 |---|---|---|
 | Day 1 | 8,000 | Tutorial complete. Workshop Lv3–5. Wave 15–20. Tier 1 (Hanging Gardens). |
 | Week 1 | 56,000 | Workshop Lv15–25. 2 UWs unlocked. First Lab. Wave 50+. Tier 2. First Supply Drops. |
-| Week 2–3 | 112k–168k | Workshop Lv30–50. 3 Lab slots. 3 Cards equipped. Tiers 4–5 (Burning Sands). Wave 80+. First Overdrive. |
+| Week 2–3 | 112k–168k | Workshop Lv30–50. 3 Lab slots. 3 Cards equipped. Tiers 4–5 (Burning Sands). Wave 80+. Rapid Fire leveled. |
 | Month 1 | 240,000 | Deep Workshop investment. Step Multiplier active. Tier 5–6. Wave 100+. |
 | Month 2–3 | 480k–720k | High-tier Workshop. Multiple UWs leveled. Full Card loadout. Tiers 7–8 (Frozen Ziggurats). |
 | Month 6+ | 1,440,000+ | Endgame Workshop. Tiers 9+ (Underworld of Kur). Optimizing for battle conditions. |
@@ -412,10 +417,10 @@ Assumes ~8,000 steps/day.
 - **PlayerProfile:** totalStepsEarned, currentStepBalance, currentTier, currentBiome, bestWavePerTier[], dailyStepHistory[], activityMinuteHistory[]
 - **WorkshopState:** Map<UpgradeType, level> for all permanent upgrades
 - **LabState:** activeResearch[], completedResearch Map<ResearchType, level>, labSlotCount
-- **CardCollection:** ownedCards[], equippedCards[3], cardDust
-- **UltimateWeaponState:** unlockedUWs[], uwLevels Map<UWType, level>, equippedUWs[3], powerStones
-- **RoundState (transient):** currentWave, cash, tempUpgrades, towerHP, enemies[], overdriveUsed, overdriveType
-- **WalkingEncounterState:** unclaimedDrops[], dropHistory[], freeOverdriveCharges
+- **CardCollection:** ownedCards[] (each with copyCount), equippedCards[3]
+- **UltimateWeaponState:** unlockedUWs[], per-path levels Map<UWType, {damage, secondary, cooldown}>, equippedUWs[3], powerStones (R4-06 per-path upgrades)
+- **RoundState (transient):** currentWave, cash, tempUpgrades, towerHP, enemies[] *(Step Overdrive fields removed in R4-01)*
+- **WalkingEncounterState:** unclaimedDrops[], dropHistory[]
 - **ActivityTracker:** dailySteps, dailyActivityMinutes Map<ActivityType, minutes>, dailyStepEquivalents, lastSyncTimestamp
 
 ---
@@ -479,7 +484,7 @@ Three random daily missions refresh at midnight:
 | Step cost balancing | Medium | Too easy/grindy | Playtesting with varied profiles. Server-side tuning capability. |
 | Activity Minute gaming | Medium | Inflated step-eq | Health Connect validation. Separate daily caps. Overlap deduction. |
 | Supply Drop notification fatigue | Low | Players disable notifications | Conservative rates. Unclaimed inbox fallback. Customizable frequency. |
-| Overdrive trivializing difficulty | Medium | Brute-force tiers | Once-per-round limit. Meaningful costs competing with permanent upgrades. |
+| Rapid Fire trivializing difficulty | Medium | Brute-force tiers | Per-level interpolation caps the burst; competes with other Attack upgrades for Steps. (Replaced the removed Step Overdrive risk.) |
 
 ---
 

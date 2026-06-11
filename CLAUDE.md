@@ -175,6 +175,7 @@ Key reference documents:
 | Step Tracking | `docs/step-tracking.md` |
 | Monetization | `docs/monetization.md` |
 | Architecture | `docs/architecture.md` |
+| Security Model (consolidated) | `docs/steering/security-model.md` |
 
 ## Key Domain Concepts
 
