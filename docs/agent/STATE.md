@@ -8,10 +8,12 @@ schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
 
 ## Current objective
 
-- **Launch is the critical path and it is externally gated.** The ≥14-day closed-track soak window
-  has **elapsed** (resumed 2026-05-26 from v14; 14 days passed 2026-06-09). The only remaining launch
-  gate is **≥12 opted-in testers** — verify in Play Console → Closed testing → Testers, then apply for
-  production access. All in-repo release plumbing is done (CI release lane live; v1.0.1 fired green).
+- **Launch is judgment-gated, not clock-gated** (reframed in PR #145; `plan-FORWARD.md`). v1.0 is live
+  on the Play Console **internal** track; we are deliberately staying in internal testing until the
+  developer judges the game good enough to promote to **closed** test, made concrete by the Closed-Test
+  Readiness Gate (A–G). The old ≥14-day-soak / ≥12-tester clock is a **Phase 2** concern that begins
+  *after* promotion to closed — it does not gate the work now. All in-repo release plumbing is done
+  (CI release lane live; v1.0.1 fired green).
 - **In-repo work = the Closed-Test Readiness Gate** (`plan-FORWARD.md`, A–G). First wave shipped a
   quick-clear of 8 audit Lows + the latent #35 crash (Gate B + D — see Recently shipped). Still open
   in **Gate D**: **#124** (billing signature verify — user chose **fix it** next, half-day), **#146**
@@ -51,10 +53,13 @@ schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
 
 ## Known issues / debt
 
-- **Launch gate (Google policy):** ≥12 testers opted-in + ≥14 days closed testing before production access.
-  Time gate met; tester count is the remaining unknown.
+- **Promotion gate (developer judgment):** the Closed-Test Readiness Gate (`plan-FORWARD.md` A–G) is
+  the call to promote internal → closed. Google's ≥12-tester + ≥14-day-soak policy is a downstream
+  Phase-2 step that only begins after that promotion (not the current gate).
 - **Open audit Lows:** #124 (no purchase signature verification — local-only, mitigation bypassable on a
-  repackaged APK), #127 (duplicate daily missions — needs a unique index + schema bump, deferred), #128 (30-Low tracker).
+  repackaged APK; user chose to fix), #146 (enemy counter drifts negative — battle/economy correctness),
+  #127 (duplicate daily missions — needs a unique index + schema bump, deferred), #128 (remaining ~21
+  Lows — perf/anti-cheat/security groups, deferred to v1.1).
 - **RO-09 deferred (v1.x backlog):** #3 STEP_MULTIPLIER × cross-validator unit mismatch (needs schema migration);
   #4 currency lifetime-counter desync (display-only); #5 TOCTOU on gem/PS spend (lifetime drift, wallet correct);
   #6 per-kill credit on `viewModelScope` (≤1 step lost on mid-round nav-away).
@@ -66,12 +71,17 @@ schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
 
 ## Top priorities / next actions
 
-1. **(External)** Recruit ≥12 testers; distribute the Play Console closed-track opt-in URL.
-2. **(External)** Apply for production access once ≥12 testers is met (time gate already elapsed). Google review 1–3 days.
-3. **(External)** Promote closed → production with staged rollout; tag `v1.0.0` after 100 %.
-4. **(In-repo, during soak)** Remaining audit Lows: #124, then #127 (bundle into a schema-touching wave), #128.
-5. **(Post-launch)** Plan V1X waves — see `docs/plans/plan-V1X-roadmap.md`: v1.0.1 polish (V1X-01/02/03),
-   v1.0.2 audio (V1X-04/05/06), v1.1 testing-infra + simulation + atomic-spend (V1X-07–11), v1.2 cloud save + i18n (V1X-12/13).
+Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
+1. **#124** billing signature verification (Gate D) — user chose **fix it** (~half-day, no schema). *Next pickup.*
+2. **#146** enemy counter drifts negative (Gate D) — derive count from live entities + guard `takeDamage`; *after #124*.
+3. **Schema wave:** #127 duplicate daily missions (v11→v12) + migration-test Low #23.
+4. **Bigger gate items:** #24 onboarding (Gate C), #29 decision-support (Gate F), #26 device perf/battery (Gate G).
+5. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
+
+Phase 2 (only AFTER the developer promotes internal → closed):
+6. **(External)** Recruit ≥12 testers; ≥14-day closed soak; apply for production access; staged rollout; tag `v1.0.0`.
+
+Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud save #36, i18n #34, telemetry #23, etc.).
 
 ## Do-not-touch / fragile zones
 

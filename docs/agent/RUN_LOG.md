@@ -1,3 +1,35 @@
+## 2026-06-11 — Triage new issue #146 (enemy counter negative) into the Readiness Gate (docs-only, direct to main)
+
+- **Goal:** user filed a new GitHub issue and asked where it belongs in the plans (no fix requested yet).
+- **Issue #146** (severity:minor, area:battle): the on-screen `Wave N — M enemies` counter drifts
+  negative mid/late run. Two independent causes, both verified against current `main` (post-#147):
+  (1) SCATTER death spawns 2–3 child enemies straight into `pendingAdd`, bypassing
+  `WaveSpawner.spawnEnemy()`'s `enemiesAlive++`, but each child's death still decrements → a leak of
+  childCount per SCATTER, first reachable at **wave 31+**; (2) `EnemyEntity.takeDamage` has no
+  `isAlive` guard, so a second hit on a not-yet-removed corpse re-fires `onDeath` — reachable on the
+  **projectile** collision path (the path #125's fix did NOT cover — #125 only re-derived the alive set
+  for the BLACK_HOLE/POISON_SWAMP UW ongoing-damage loop). Cause #2 also **double-credits** per-kill
+  cash + battle Steps (bounded by the 2,000/day cap), so it's economy-correctness, not purely cosmetic.
+- **Verification of the triage:** read `EnemyEntity.takeDamage` (no guard ✓), `WaveSpawner` (single
+  floorless `--`, single `++` ✓), `handleEnemyDeath` SCATTER child-spawn at GameEngine.kt:1139 ✓,
+  `enemyCount = spawner?.enemiesAlive ?: 0` copied raw in BattleViewModel ✓, and SCATTER's wave-31+
+  band in `WaveSpawner.pickType` ✓. All issue claims hold against current code.
+- **Placement (decided with user):** Phase 1 → Closed-Test Readiness Gate **item D** (correctness &
+  stability), alongside #124/#127/#128. **Sequence: after #124** (the chosen next pickup; #146 is cheap
+  while `EnemyEntity.takeDamage` is fresh from #147). **Approach: derive `enemyCount` authoritatively
+  from the live `EnemyEntity` list** (immune to both causes + any future bypass) **and guard
+  `takeDamage` with `if (!isAlive) return 0.0`** (also fixes the economy double-credit). Not a launch
+  blocker (counter feeds no gameplay) but cheap correctness to land before promotion.
+- **Doc sync:** recorded the item + sequence + approach in `plan-FORWARD.md` Gate D; updated STATE.md's
+  open-work line. Landed docs-only direct to `main` (`e9ecd64`) per user choice (matches prior docs
+  checkpoints; no code change so the PR gate adds nothing). No ADR (triage, not an architecture decision).
+- **Also this checkpoint:** swept STATE.md for reframe drift — the Current-objective bullet 1, the
+  Known-issues launch-gate line, and the entire Top-priorities block still carried the **pre-#145
+  clock-gate framing** ("≥12 testers / soak elapsed is the remaining gate") that contradicts the
+  judgment-gated model + the headline. Rewrote all three to lead with the Phase-1 Gate work and demote
+  the ≥12-tester/soak steps to Phase 2 (post-promotion). No code touched.
+- **Next:** start **#124** (billing signature verification — fix-now, ~half-day, no schema), then #146.
+
 ## 2026-06-11 — Quick-clear audit-Low wave: 8 Lows + latent #35 crash (branch fix/quick-clear-gate-b-d)
 
 - **Goal:** "what's next?" under the new judgment-gated launch model. Ran a 7-agent readiness
