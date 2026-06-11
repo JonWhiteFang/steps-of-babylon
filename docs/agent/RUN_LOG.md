@@ -1,3 +1,24 @@
+## 2026-06-11 — #146 + #127 merged (PRs #151, #152, direct-to-main checkpoint)
+
+- **Goal:** land the two Gate-D fixes built this session and record the post-merge state.
+- **#146 (PR #151, squash `6b5779a`):** both required checks green (`build-and-test` 4m25s +
+  `connected` 5m27s); `MERGEABLE`/`CLEAN`; squash-merged, branch deleted, issue auto-closed
+  (COMPLETED). Also pruned two older orphaned remote refs (#125/#126, quick-clear).
+- **#127 (PR #152, squash `605f0a9`):** both required checks green (`build-and-test` 4m26s +
+  `connected` 5m22s); `MERGEABLE`/`CLEAN`; squash-merged, branch deleted, issue auto-closed
+  (COMPLETED). (A transient GitHub GraphQL network blip hit the post-merge status query; merge +
+  close confirmed via `gh issue view`.)
+- **Local `main`** fast-forwarded to `605f0a9`, == `origin/main`, working tree clean; stale remote
+  refs pruned.
+- **Doc sync (this checkpoint):** content docs (CLAUDE.md count 955 + per-key-generator convention,
+  CHANGELOG, source-files, database-schema v12, STATE objective/fragile-zones) already landed inside
+  the #146/#127 PRs, so no re-edit needed. Only updated STATE's two Recently-shipped entries from
+  branch names → merged PR numbers + squash SHAs. CHANGELOG stays `[Unreleased]` (no `v*` tag yet).
+- **Next:** the schema-touching Gate-D work is cleared. Remaining Gate D = **#128** (~21 audit Lows,
+  deferred to v1.1). Live work is the bigger gate items — **#24 onboarding** (Gate C, schema) is the
+  likely next code pickup (larger/less-mechanical — worth a brainstorming pass on scope first), plus
+  the developer's manual play-feel gates (A audio, E balance).
+
 ## 2026-06-11 — #127 duplicate daily missions (branch fix/127-duplicate-daily-missions)
 
 - **Goal:** the next Gate-D pickup — the schema-touching data-integrity item. Stop daily missions

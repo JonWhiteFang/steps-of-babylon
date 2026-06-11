@@ -24,14 +24,14 @@ schema v12 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
-- **2026-06-11 — #127 duplicate daily missions** (branch `fix/127-duplicate-daily-missions`).
+- **2026-06-11 — #127 duplicate daily missions** (PR #152, squash `605f0a9`; issue closed).
   Check-then-insert generator with no DB uniqueness → two concurrent VM inits each inserted a full
   batch → 6 claimable missions/day. Fix: `(date, missionType)` unique index + `@Insert(IGNORE)` +
   `@Transaction generateForDate`; **schema v11→v12** migration (`MIGRATION_11_12`) dedups via
   `GROUP BY` + `MAX()` (incl. `MAX(claimed)` so a claimed duplicate isn't resurrected). First
   migration with a dedicated test. TDD'd (real-Room); 5-lens adversarial review (11 findings, 4
   minor confirmed + all fixed). 948→955 JVM.
-- **2026-06-11 — #146 enemy counter drifts negative** (branch `fix/146-enemy-counter-negative`).
+- **2026-06-11 — #146 enemy counter drifts negative** (PR #151, squash `6b5779a`; issue closed).
   Two confirmed causes: SCATTER children bypassed the only `enemiesAlive++`; `EnemyEntity.takeDamage`
   re-fired `onDeath` on a corpse (projectile path #125 didn't cover) → counter + cash/Step
   double-credit. Fix: new authoritative `GameEngine.aliveEnemyCount()` (derived from live entities
