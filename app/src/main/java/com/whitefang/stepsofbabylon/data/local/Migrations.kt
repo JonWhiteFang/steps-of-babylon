@@ -173,6 +173,72 @@ object AppMigrations {
         }
     }
 
+    /**
+     * v11 → v12: #127 adds a unique index on `daily_mission(date, missionType)` to stop duplicate
+     * daily missions (the check-then-insert generator had no DB-level uniqueness, so two concurrent
+     * generations could each insert a full batch → 6 independently-claimable rows for one day). Any
+     * pre-existing duplicates must be deduped before the unique index can be created, so this uses
+     * the same recreate-table dance as the v10→v11 card migration: create the table, collapse to one
+     * row per `(date, missionType)` via `GROUP BY`, drop + rename, then add the unique index.
+     *
+     * Dedup rule: aggregate each `(date, missionType)` group with `MAX()` per state column (mirroring
+     * v10→v11's `MAX(level)/MAX(isEquipped)`), keeping `MIN(id)` as the surviving PK. `MAX(claimed)`
+     * is load-bearing: if ANY duplicate of a mission was already claimed (each was independently
+     * claimable — that was the defect), the survivor stays claimed so the migration can't *resurrect*
+     * a claim and re-credit Gems/Power-Stones. `MAX(progress)/MAX(completed)` keep the furthest
+     * progress; `target`/reward columns are per-missionType constants so `MAX` is a no-op for them.
+     * The CREATE TABLE mirrors what Room generates from [DailyMissionEntity] (column order + types +
+     * NOT NULL) so the post-migration schema hash matches the v12 export in `app/schemas/`.
+     */
+    val MIGRATION_11_12 = object : Migration(11, 12) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            // 1. Create the v12-shaped table (same columns as v11 — the index is added separately).
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `daily_mission_new` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `date` TEXT NOT NULL,
+                    `missionType` TEXT NOT NULL,
+                    `target` INTEGER NOT NULL,
+                    `progress` INTEGER NOT NULL,
+                    `rewardGems` INTEGER NOT NULL,
+                    `rewardPowerStones` INTEGER NOT NULL,
+                    `completed` INTEGER NOT NULL,
+                    `claimed` INTEGER NOT NULL
+                )
+                """.trimIndent(),
+            )
+
+            // 2. Collapse each (date, missionType) group to one row: MIN(id) survives as the PK,
+            //    every state column carried forward as the group MAX so the strongest progress /
+            //    completed / claimed wins — MAX(claimed) guarantees an already-claimed duplicate is
+            //    never resurrected into a re-claimable row (no Gem/PS re-credit through the upgrade).
+            db.execSQL(
+                """
+                INSERT INTO `daily_mission_new`
+                    (`id`, `date`, `missionType`, `target`, `progress`,
+                     `rewardGems`, `rewardPowerStones`, `completed`, `claimed`)
+                SELECT MIN(`id`), `date`, `missionType`, MAX(`target`), MAX(`progress`),
+                       MAX(`rewardGems`), MAX(`rewardPowerStones`), MAX(`completed`), MAX(`claimed`)
+                FROM `daily_mission`
+                GROUP BY `date`, `missionType`
+                """.trimIndent(),
+            )
+
+            // 3. Drop the old table and rename the deduped one into place.
+            db.execSQL("DROP TABLE `daily_mission`")
+            db.execSQL("ALTER TABLE `daily_mission_new` RENAME TO `daily_mission`")
+
+            // 4. Create the unique index Room expects from the v12 entity.
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_daily_mission_date_missionType` " +
+                    "ON `daily_mission` (`date`, `missionType`)",
+            )
+        }
+    }
+
     /** All migrations in version order. Wire this into the Room builder. */
-    val ALL: Array<Migration> = arrayOf(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+    val ALL: Array<Migration> = arrayOf(
+        MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12,
+    )
 }

@@ -220,6 +220,12 @@ Key reference documents:
   ADR-0020). `spendSteps` is the exception: it keeps the `MAX(0,…)` clamp for the anti-cheat escrow
   clawback. One-shot claims (supply drops, daily missions) use a guarded `UPDATE … WHERE id AND
   claimed = 0` returning rows-affected and **mark-first** (credit only when it returns 1).
+- **Generators that "create once per key" need a DB-level unique index, not a read-then-insert check**
+  (#127). `GenerateDailyMissions` guarded on `getByDateOnce(date).isEmpty()` with no uniqueness, so two
+  concurrent VM inits both passed the check and inserted → duplicate, independently-claimable rows. The
+  fix is a `(date, missionType)` unique index + `@Insert(onConflict = IGNORE)` (the index is the
+  authoritative guard; the read-check is racy on a WAL connection pool). Apply the same pattern to any
+  new per-key generator.
 
 ## Battle Renderer
 
@@ -265,7 +271,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh connectedDebugAndroidTest` (instrumented).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 948 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 955 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Notable guards:** `architecture/DomainPurityTest` (fails if `domain/` imports any Android package);
   `SimulationTest` (the extracted pure-domain game-loop core); `BattleSurfaceLifecycleTest` +

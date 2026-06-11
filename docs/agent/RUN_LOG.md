@@ -1,3 +1,47 @@
+## 2026-06-11 — #127 duplicate daily missions (branch fix/127-duplicate-daily-missions)
+
+- **Goal:** the next Gate-D pickup — the schema-touching data-integrity item. Stop daily missions
+  from duplicating.
+- **Root cause (confirmed against live code):** `GenerateDailyMissions` guards on
+  `getByDateOnce(date).isEmpty()` then plain-`@Insert`s 3 rows, with NO DB-level uniqueness on
+  `daily_mission`. Two concurrent generations — HomeViewModel (2 call sites) + MissionsViewModel (2
+  sites), each in its own `viewModelScope` — can both pass the emptiness check (TOCTOU) and each
+  insert a full batch → 6 independently-claimable missions for one day (each claimable via the
+  per-id `markClaimed`, inflating Gem/PS payouts). Key insight: the generator's RNG is
+  `Random(date.hashCode())`, so a raced second batch is byte-identical per category → `(date,
+  missionType)` is the exact-right unique key (permits the 3 legit distinct missions, blocks the
+  dup race; a bare `date` index would wrongly reject missions 2–3).
+- **Fix (TDD, real-Room RED first):** (1) `(date, missionType)` unique index on `DailyMissionEntity`;
+  (2) `@Insert(onConflict = IGNORE)` + new `@Transaction generateForDate(date, missions)` on the DAO;
+  (3) `GenerateDailyMissions` builds the deterministic batch then calls `generateForDate`; (4) schema
+  **v11→v12** + `MIGRATION_11_12` recreate-table dedup mirroring v10→v11 (`GROUP BY date,missionType`
+  keeping `MIN(id)` PK + `MAX()` of state columns, drop+rename, create unique index). The unique
+  index — not the transaction — is the authoritative TOCTOU guard (Room's WAL pool uses DEFERRED
+  txns; documented load-bearingly). Also updated `FakeDailyMissionDao.insert` to model IGNORE.
+- **Tests:** new real-Room `DailyMissionDaoTest` (4) + `Migration11To12Test` (3 — **first migration
+  test in the project**, drives `migrate()` directly via `FrameworkSQLiteOpenHelper`; closes audit
+  Low #23 migration-test gap). RED captured the defect (`expected:<3> but was:<6>`, `<1> vs <2>`).
+  Both dedup-correctness migration tests **mutation-verified** (broke the dedup SQL → tests fail).
+- **Verification:** full gate green — `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL,
+  **955 JVM / 0 fail / 0 err** (948 + 7). v12 schema JSON exported with the unique index; schema-drift
+  guard satisfied (12.json committed, no existing schema modified).
+- **Adversarial review:** 5-lens background Workflow (migration / index-design / concurrency /
+  consumers / tests) → 11 findings, **4 confirmed (all minor/nit), 7 dismissed**. All 4 fixed:
+  (a) corrected comments overstating the transaction's role (index is load-bearing); (b) migration
+  now carries `MAX(claimed)` forward so a claimed pre-existing duplicate isn't resurrected (added a
+  reverse-direction migration test, mutation-verified); (c) test fragility (dynamic
+  `MissionCategory.entries.size` vs hardcoded batch → literal 3); (d) added a `generateForDate`
+  idempotence test. Two dismissed findings contained alarming claims (`WHERE 1=1` migration / missing
+  index) — verified those were **stale-Read artifacts** from the mutation-test window; on-disk state
+  is correct (re-confirmed via grep + a clean full-gate run).
+- **Doc sync (this checkpoint):** `database-schema.md` (v12, daily_mission table + columns + index,
+  MIGRATION_11_12 entry), CLAUDE.md (count 955 + per-key-generator convention), CHANGELOG
+  `[Unreleased]` Fixed section, `source-files.md` (5 entries + 2 new test entries), STATE.md (headline
+  v12/955 + objective rotate + recently-shipped + known-issues + next-actions + fragile zone). No ADR
+  (faithful implementation of the issue's settled approach + the established v10→v11 migration pattern).
+- **Next:** commit + PR. With #127 done, the schema-touching Gate-D work is cleared; **#24 onboarding**
+  (Gate C) is the likely next pickup, or the developer's manual play-feel gates (A audio, E balance).
+
 ## 2026-06-11 — #146 enemy counter drifts negative (branch fix/146-enemy-counter-negative)
 
 - **Goal:** the top Gate-D pickup. Fix the HUD wave-header enemy count (`Wave N — M enemies`)

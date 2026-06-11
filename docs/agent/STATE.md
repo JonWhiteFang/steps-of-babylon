@@ -3,8 +3,8 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** v1.0.2 (versionCode 18) · **948 JVM + 9 instrumented tests** green · `main` clean ·
-schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
+**Headline:** v1.0.2 (versionCode 18) · **955 JVM + 9 instrumented tests** green · `main` clean ·
+schema v12 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
@@ -14,16 +14,23 @@ schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
   Readiness Gate (A–G). The old ≥14-day-soak / ≥12-tester clock is a **Phase 2** concern that begins
   *after* promotion to closed — it does not gate the work now. All in-repo release plumbing is done
   (CI release lane live; v1.0.1 fired green).
-- **In-repo work = the Closed-Test Readiness Gate** (`plan-FORWARD.md`, A–G). First wave shipped a
-  quick-clear of 8 audit Lows + the latent #35 crash (Gate B + D); **#124** billing signature verify
-  shipped next, then **#146** enemy-counter-drifts-negative (both Gate D — see Recently shipped).
-  Still open in **Gate D**: **#127** (duplicate daily missions — needs schema v11→v12; *next
-  pickup*), **#128** (remaining ~21 Lows: perf/anti-cheat/security groups, deferred to v1.1 per the
-  audit grouping). Bigger gate items: **#24** onboarding (Gate C, schema), **#29** decision-support
-  (Gate F), **#26** perf/battery (Gate G, device-measured).
+- **In-repo work = the Closed-Test Readiness Gate** (`plan-FORWARD.md`, A–G). Shipped so far: a
+  quick-clear of 8 audit Lows + the latent #35 crash (Gate B + D); **#124** billing signature verify;
+  **#146** enemy-counter-drifts-negative; **#127** duplicate daily missions (schema v11→v12) — all
+  Gate D (see Recently shipped). Still open in **Gate D**: **#128** (remaining ~21 Lows:
+  perf/anti-cheat/security groups, deferred to v1.1 per the audit grouping). Bigger gate items (now
+  the live work): **#24** onboarding (Gate C, schema), **#29** decision-support (Gate F), **#26**
+  perf/battery (Gate G, device-measured).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-11 — #127 duplicate daily missions** (branch `fix/127-duplicate-daily-missions`).
+  Check-then-insert generator with no DB uniqueness → two concurrent VM inits each inserted a full
+  batch → 6 claimable missions/day. Fix: `(date, missionType)` unique index + `@Insert(IGNORE)` +
+  `@Transaction generateForDate`; **schema v11→v12** migration (`MIGRATION_11_12`) dedups via
+  `GROUP BY` + `MAX()` (incl. `MAX(claimed)` so a claimed duplicate isn't resurrected). First
+  migration with a dedicated test. TDD'd (real-Room); 5-lens adversarial review (11 findings, 4
+  minor confirmed + all fixed). 948→955 JVM.
 - **2026-06-11 — #146 enemy counter drifts negative** (branch `fix/146-enemy-counter-negative`).
   Two confirmed causes: SCATTER children bypassed the only `enemiesAlive++`; `EnemyEntity.takeDamage`
   re-fired `onDeath` on a corpse (projectile path #125 didn't cover) → counter + cash/Step
@@ -56,7 +63,7 @@ schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
   tier progression, biomes, walking encounters, anti-cheat, milestones/missions, stats/history.
 - **Battle engine:** simulation extracted to pure-domain `domain/battle/` (V1X-09 Phases 1–3 complete,
   ADR-0012) — `GameEngine` is a thin render shell delegating to `Simulation`.
-- **Persistence:** Room schema v11 (13 entities, SQLCipher-encrypted), migrations v7→11, decrypt-fail wipe recovery.
+- **Persistence:** Room schema v12 (13 entities, SQLCipher-encrypted), migrations v7→12, decrypt-fail wipe recovery.
 - **Monetization:** real Play Billing v8 + AdMob v25 + UMP v4, device-verified; live Store prices.
 - **Release infra:** Play Console listing live, internal track active; CI pipeline (Plan 32) — PR gate +
   instrumented emulator lane (both required on `main`) + `v*`-tag release lane to Play internal (ADR-0018);
@@ -69,9 +76,9 @@ schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
 - **Promotion gate (developer judgment):** the Closed-Test Readiness Gate (`plan-FORWARD.md` A–G) is
   the call to promote internal → closed. Google's ≥12-tester + ≥14-day-soak policy is a downstream
   Phase-2 step that only begins after that promotion (not the current gate).
-- **Open audit Lows:** #127 (duplicate daily missions — needs a unique index + schema bump),
-  #128 (remaining ~21 Lows — perf/anti-cheat/security groups, deferred to v1.1). (#124 purchase
-  signature verification + #146 enemy-counter drift both fixed 2026-06-11.)
+- **Open audit Lows:** #128 (remaining ~21 Lows — perf/anti-cheat/security groups, deferred to v1.1).
+  (#124 purchase signature verification, #146 enemy-counter drift, and #127 duplicate daily missions
+  all fixed 2026-06-11.)
 - **RO-09 deferred (v1.x backlog):** #3 STEP_MULTIPLIER × cross-validator unit mismatch (needs schema migration);
   #4 currency lifetime-counter desync (display-only); #5 TOCTOU on gem/PS spend (lifetime drift, wallet correct);
   #6 per-kill credit on `viewModelScope` (≤1 step lost on mid-round nav-away).
@@ -84,9 +91,9 @@ schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Schema wave:** #127 duplicate daily missions (v11→v12 + unique index on date) + migration-test Low #23. *Next pickup.*
-2. **Bigger gate items:** #24 onboarding (Gate C), #29 decision-support (Gate F), #26 device perf/battery (Gate G).
-3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
+1. **Bigger gate items (now the live work):** #24 onboarding (Gate C, schema), #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured). *#24 is the likely next pickup.*
+2. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
+3. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
 
 Phase 2 (only AFTER the developer promotes internal → closed):
 6. **(External)** Recruit ≥12 testers; ≥14-day closed soak; apply for production access; staged rollout; tag `v1.0.0`.
@@ -112,6 +119,7 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **HUD enemy count is derived, not tallied (#146)** — `GameEngine.aliveEnemyCount()` counts live `EnemyEntity` under `entitiesLock`; the desync-prone `WaveSpawner.enemiesAlive` tally was removed (SCATTER children bypassed its only `++`; `onDeath` re-fires double-counted). Don't reintroduce a hand-kept counter. `EnemyEntity.takeDamage` is guarded `if (!isAlive) return 0.0` (no corpse re-hit → no double-credit). Guarded by 3 `R146` GameEngineTest entries.
 - **Game-loop frame clamp (#126)** — `SimulationMath.clampAccumulator` (`MAX_CATCHUP_TICKS = 8`); don't lower below ~8 (a 30fps@4× render legitimately needs ~7.9 ticks/frame). Guarded by `SimulationMathTest`.
 - **`daily_step_record` writers must stay column-targeted (#121)** — disjoint-column `ON CONFLICT(date) DO UPDATE SET` upserts, NOT a whole-row read-copy-`@Upsert`. Guarded by `DailyStepDaoTest` + `StepRepositoryImplTest`.
+- **`daily_mission` uniqueness is DB-level (#127)** — `(date, missionType)` unique index + `@Insert(onConflict = IGNORE)` is the authoritative guard against duplicate daily missions; the generator's read-then-insert check is racy on a WAL pool. Don't weaken the index or relax `IGNORE` back to plain `@Insert`. Schema v12; `MIGRATION_11_12` dedups via `GROUP BY` + `MAX()` (keeps `MAX(claimed)`). Guarded by `DailyMissionDaoTest` + `Migration11To12Test`.
 - **Billing signature verification (#124, ADR-0005 amendment)** — every wallet grant goes through `PurchaseVerifier.isValidPurchase(originalJson, signature, expectedProductId, expectedPurchaseToken)` BEFORE `grantOnceAtomic`, on BOTH paths. The product+token binding is load-bearing (blocks replaying a signed cheap receipt for an expensive product) — don't credit off the caller's `product` without verifying first. `PLAY_LICENSE_KEY` blank → fail-open is debug/CI only; a **release** build with a blank key is hard-failed by the `app/build.gradle.kts` `taskGraph` guard + the `release.yml` `PLAY_LICENSE_KEY` secret step — don't weaken either or fail-open could ship. Guarded by `RealPurchaseVerifierTest` + `BillingManagerImplTest`.
 
 ## References
