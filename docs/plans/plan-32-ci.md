@@ -132,7 +132,7 @@ CI/instrumented lanes need **no** secrets.
 
 ### Task 7: Docs sync (current-state only — per agent protocol)
 
-Touch only docs the change invalidates. **Do NOT edit `devdocs/archaeology/*`, `philosophy.md`, or other historical artifacts** — their "No CI" statements were true at authoring date.
+Touch only docs the change invalidates. **Do NOT edit `docs/archive/pre-claude-devdocs/archaeology/*` or other archived historical artifacts** — their "No CI" statements were true at authoring date.
 
 - `docs/plans/master-plan.md` — Plan 32 row + dependency-graph node + status line (done in this authoring run).
 - `AGENTS.md` — Plan 32 in the index + status checklist (done in this run); on implementation, update the test-run guidance.

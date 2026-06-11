@@ -4,6 +4,12 @@ This document defines the ordered sequence of sub-plans required to bring Steps 
 
 See `docs/StepsOfBabylon_GDD.md` for the full game design document.
 
+> **Forward planning (2026-06-11):** v1.0 is complete; this document is the completion record. The
+> path from here (internal testing → closed test → launch) lives in `docs/plans/plan-FORWARD.md`,
+> keyed to a Closed-Test Readiness Gate. The completed plan *files* (Plans 01–30, 10b, R, R2, R3, R4,
+> RO-*) are archived under `docs/archive/completed-plans-v1.0/` — the links in the index below point
+> there. `plan-31`, `plan-32`, and `plan-V1X-roadmap` remain live in `docs/plans/`.
+
 ---
 
 ## Plan Index
