@@ -595,6 +595,109 @@ class GameEngineTest {
         )
     }
 
+    // ---- #146: enemy counter must never drift negative (two independent causes) ----
+    //
+    // The HUD wave header reads GameEngine.aliveEnemyCount(). Pre-#146 that was a hand-kept
+    // WaveSpawner.enemiesAlive tally (incremented in ONE place — spawnEnemy — but decremented
+    // by every onEnemyKilled), which drifts below zero mid/late run via two mechanisms:
+    //   #1 SCATTER children spawn straight into pendingAdd (bypassing the only ++), yet each
+    //      child's death decrements → net -childCount per SCATTER.
+    //   #2 EnemyEntity.takeDamage had no isAlive guard, so a second projectile landing on a
+    //      corpse in the same collision sweep re-fired onDeath → an extra decrement AND a
+    //      double-credit of the kill reward (cash + battle Steps).
+    // The fix makes aliveEnemyCount() authoritative (derived from live alive EnemyEntity) and
+    // guards takeDamage against re-firing. These guards pin both.
+
+    @Test
+    fun `R146 SCATTER death plus all its children leaves an authoritative non-negative enemy count`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        // A SCATTER whose death routes through the engine's real handleEnemyDeath (which spawns
+        // 2-3 BASIC children into pendingAdd, each wired onDeath = ::handleEnemyDeath).
+        val scatter = EnemyEntity(
+            enemyType = EnemyType.SCATTER,
+            currentHp = 100.0, maxHp = 100.0, speed = 0f, damage = 0.0,
+            targetX = zig.originX, targetY = zig.originY,
+            onDeath = engineDeathHandler(eng),
+        ).apply { x = zig.originX; y = zig.originY + 300f; initDistance() }
+        eng.addEntity(scatter)
+        flushPendingAdd(eng)
+        assertEquals(1, eng.aliveEnemyCount(), "one enemy on screen must read as a count of 1")
+
+        // Kill the SCATTER: marks it dead + fires handleEnemyDeath → spawns its children.
+        scatter.takeDamage(scatter.maxHp)
+        flushPendingAdd(eng)
+        assertTrue(
+            eng.aliveEnemyCount() in 2..3,
+            "after a SCATTER dies its 2-3 children must be counted (not bypassed); " +
+                "got ${eng.aliveEnemyCount()}",
+        )
+
+        // Kill every remaining child. Because the count is now derived from the live entity
+        // list, it settles at exactly 0 — the SCATTER children were counted while alive (the
+        // old tally bypassed them) and are gone once dead. A derived count cannot underflow.
+        invokeGetAliveEnemies(eng).forEach { it.takeDamage(it.maxHp) }
+        assertEquals(
+            0,
+            eng.aliveEnemyCount(),
+            "with every enemy dead the authoritative count must read 0 — children that were " +
+                "counted while alive are no longer counted once killed (#146 cause #1)",
+        )
+    }
+
+    @Test
+    fun `R146 two projectiles hitting one enemy in a single sweep fire its onDeath exactly once`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        var deaths = 0
+        val enemy = makeStationaryEnemy(zig, hp = 0.01, onDeath = { deaths++ })
+        eng.addEntity(enemy)
+        flushPendingAdd(eng)
+
+        // Two projectiles overlap the same front-line enemy in one collision sweep: the engine
+        // fires onProjectileHitEnemy once per projectile against the (frame-fixed) snapshot.
+        val proj1 = ProjectileEntity(zig.originX, zig.originY, enemy.x, enemy.y, 100f)
+        val proj2 = ProjectileEntity(zig.originX, zig.originY, enemy.x, enemy.y, 100f)
+        invokeOnProjectileHitEnemy(eng, proj1, enemy) // kills it
+        invokeOnProjectileHitEnemy(eng, proj2, enemy) // lands on the corpse
+
+        assertEquals(
+            1,
+            deaths,
+            "a second projectile hitting an already-dead enemy must NOT re-fire onDeath — " +
+                "takeDamage must guard on isAlive (#146 cause #2)",
+        )
+    }
+
+    @Test
+    fun `R146 a second projectile on a corpse does not re-credit the kill reward`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        val enemy = EnemyEntity(
+            enemyType = EnemyType.BASIC,
+            currentHp = 0.01, maxHp = 0.01, speed = 0f, damage = 0.0,
+            targetX = zig.originX, targetY = zig.originY,
+            onDeath = engineDeathHandler(eng), // route death through the real reward block
+        ).apply { x = zig.originX; y = zig.originY + 300f; initDistance() }
+        eng.addEntity(enemy)
+        flushPendingAdd(eng)
+
+        val cashBefore = eng.cash
+        val proj1 = ProjectileEntity(zig.originX, zig.originY, enemy.x, enemy.y, 100f)
+        val proj2 = ProjectileEntity(zig.originX, zig.originY, enemy.x, enemy.y, 100f)
+        invokeOnProjectileHitEnemy(eng, proj1, enemy) // kills it → credits the kill once
+        val cashAfterKill = eng.cash
+        invokeOnProjectileHitEnemy(eng, proj2, enemy) // lands on the corpse
+        val cashAfterCorpseHit = eng.cash
+
+        assertTrue(cashAfterKill > cashBefore, "the kill must credit cash exactly once")
+        assertEquals(
+            cashAfterKill,
+            cashAfterCorpseHit,
+            "a second projectile hitting the corpse must NOT re-credit the kill reward (#146 cause #2)",
+        )
+    }
+
     // ---- #16: first-wave announcement must fire exactly once per round start ----
     //
     // Pre-fix init() set lastWave = 0 then called triggerWaveAnnouncement(safeStartWave) but
@@ -761,6 +864,19 @@ class GameEngineTest {
         @Suppress("UNCHECKED_CAST")
         val pending = pendingField.get(eng) as MutableList<Any>
         entities.addAll(pending); pending.clear()
+    }
+
+    /**
+     * Returns an `onDeath` callback that routes through the engine's real private
+     * `handleEnemyDeath` — the same wiring [GameEngine.init] gives every spawned enemy. Lets a
+     * test enemy's death credit rewards / spawn SCATTER children exactly as production does
+     * (used by the #146 guards).
+     */
+    private fun engineDeathHandler(eng: GameEngine): (EnemyEntity) -> Unit {
+        val method = GameEngine::class.java
+            .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
+            .apply { isAccessible = true }
+        return { enemy -> method.invoke(eng, enemy) }
     }
 
     /** Reflectively invokes the private `getAliveEnemies()` helper. */

@@ -1,3 +1,43 @@
+## 2026-06-11 — #146 enemy counter drifts negative (branch fix/146-enemy-counter-negative)
+
+- **Goal:** the top Gate-D pickup. Fix the HUD wave-header enemy count (`Wave N — M enemies`)
+  drifting below zero mid/late run.
+- **Root cause (Phase 1, both confirmed against live code, not just trusted from the issue):**
+  - **#1 (counter-only leak):** `WaveSpawner.spawnEnemy()` was the *only* `enemiesAlive++`. SCATTER
+    death (`GameEngine.handleEnemyDeath`) spawns 2–3 BASIC children straight into `pendingAdd` wired
+    `onDeath = ::handleEnemyDeath`, bypassing that `++` — yet each child's death decremented. Net
+    `−childCount` per SCATTER (wave 31+).
+  - **#2 (counter + economy double-credit):** `EnemyEntity.takeDamage` had no `isAlive` guard, and
+    `Simulation.detectProjectileEnemyHits` iterates a once-per-frame alive snapshot with no mid-sweep
+    recheck (corpses removed only at frame end). Two projectiles on one front-line enemy in a frame →
+    second hit re-fired `onDeath` → extra decrement + re-credited the whole reward block (cash +
+    capped battle Steps). The #125 fix covered only the UW path, not the projectile path.
+- **Fix (TDD throughout):** RED first — 3 new `GameEngineTest` R146 guards captured both mechanisms
+  as value mismatches (`1→0` count-not-authoritative, `1→2` onDeath-re-fire, `5→10` cash-re-credit).
+  GREEN: (a) `EnemyEntity.takeDamage` opens `if (!isAlive) return 0.0`; (b) new authoritative
+  `GameEngine.aliveEnemyCount()` = `synchronized(entitiesLock) { entities.count { it is EnemyEntity
+  && it.isAlive } }`; `BattleViewModel` reads it; **removed** the `WaveSpawner.enemiesAlive` field +
+  `++` + `onEnemyKilled()` + its `handleEnemyDeath` call. Chose derive-from-entities over
+  patch-the-tally (the issue's preferred option) — kills the root design flaw (a parallel hand-kept
+  tally), not just the two symptoms.
+- **Verification:** full JVM suite **948 tests, 0 failures/0 errors** (945 + 3; counted from result
+  XMLs). `lintDebug` BUILD SUCCESSFUL. No dangling refs to removed symbols (grep clean). No schema
+  change. Confirmed the spawn `++` and `pendingAdd→entities` flush happen in the same under-lock tick
+  block, so the 200ms VM poll only ever sees an end-of-tick state == derived count (no semantic drift).
+- **Adversarial review:** 4-lens background Workflow (semantic / concurrency / consumer-completeness /
+  test-quality) → 8 findings, **0 confirmed real, 8 dismissed**. Verifiers mutation-checked the
+  cause-#2 guard (removing it fails both tests at the cited lines). 3 optional non-blocking
+  suggestions surfaced (lock-free count publish via @Volatile; cosmetic test-message reword; a
+  belt-and-suspenders BattleViewModelTest seam test) — took the free message reword, deferred the
+  rest per reviewer guidance.
+- **Doc sync (this checkpoint):** CLAUDE.md (count 948 + battle-thread-safety fragile note),
+  CHANGELOG `[Unreleased]` Fixed section, `source-files.md` (GameEngine / WaveSpawner / EnemyEntity /
+  BattleViewModel / GameEngineTest entries), STATE.md (headline + objective rotate + recently-shipped
+  + known-issues + next-actions + fragile zone). No ADR (faithful implementation of the issue's
+  settled approach, not a novel decision).
+- **Next:** commit on the branch; **#127** (duplicate daily missions — schema v11→v12 + unique index
+  on date) is the next Gate-D pickup. Consider whether to PR #146 solo or batch with #127.
+
 ## 2026-06-11 — #124 merged + deploy prerequisite satisfied (PR #148, direct-to-main checkpoint)
 
 - **Goal:** monitor PR #148 (the #124 billing-signature fix) to green, merge, and wire the one

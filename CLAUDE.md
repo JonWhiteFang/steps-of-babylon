@@ -238,9 +238,16 @@ from game logic — the simulation has been extracted to a pure-domain core:
 > ⚠️ **Thread-safety:** the game loop runs on its own thread while the UI/main thread can mutate engine
 > state. `GameEngine.entities` is now guarded by a private `entitiesLock` monitor — every region that
 > structurally mutates or iterates it (`update`, `init`, `applyStats` orb-reconcile, `render` via an
-> under-lock snapshot) holds the lock (#118 fix). Any NEW structural mutation of a shared engine
-> collection must take the same lock or be confined to the loop thread — see `docs/external-reviews/`
-> and the remaining `severity:major` battle issues.
+> under-lock snapshot, `aliveEnemyCount`) holds the lock (#118 fix). Any NEW structural mutation of a
+> shared engine collection must take the same lock or be confined to the loop thread — see
+> `docs/external-reviews/` and the remaining `severity:major` battle issues.
+>
+> ⚠️ **HUD enemy count is derived, not tallied (#146):** the wave-header "M enemies" reads
+> `GameEngine.aliveEnemyCount()` (counts live `EnemyEntity` in the entity list under `entitiesLock`).
+> Do NOT reintroduce a hand-kept counter — the removed `WaveSpawner.enemiesAlive` tally drifted
+> negative because SCATTER children bypassed its only increment and `onDeath` re-fires double-counted.
+> Relatedly, `EnemyEntity.takeDamage` is guarded by `if (!isAlive) return 0.0` so a second projectile
+> on a corpse can't re-fire `onDeath` (double-credit) — defense-in-depth complementing #125.
 
 ## Known fragile zones & active risk
 
@@ -258,7 +265,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh connectedDebugAndroidTest` (instrumented).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 945 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 948 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Notable guards:** `architecture/DomainPurityTest` (fails if `domain/` imports any Android package);
   `SimulationTest` (the extracted pure-domain game-loop core); `BattleSurfaceLifecycleTest` +

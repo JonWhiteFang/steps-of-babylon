@@ -224,7 +224,7 @@ class BattleViewModel @Inject constructor(
                     it.copy(
                         currentWave = spawner?.currentWave ?: 1,
                         currentHp = zig.currentHp, maxHp = zig.maxHp,
-                        cash = eng.cash, enemyCount = spawner?.enemiesAlive ?: 0,
+                        cash = eng.cash, enemyCount = eng.aliveEnemyCount(),
                         wavePhase = spawner?.phase?.name ?: "",
                         waveProgress = spawner?.let { s ->
                             val dur = if (s.phase == WavePhase.SPAWNING) WaveSpawner.SPAWN_DURATION else WaveSpawner.COOLDOWN_DURATION
