@@ -149,6 +149,6 @@ graph TD
 - [x] Plan R2: Remediation 2 (R2-01–R2-12)
 - [x] Plan R3: Remediation 3 (R3-01–R3-04 all merged)
 - [x] Plan R4: Remediation 4 — Internal Soak Feedback Bundle (8 sub-plans, 4 waves; complete 2026-05-24)
-- [ ] Plan 31: Play Console & Store Publication
+- [~] Plan 31: Play Console & Store Publication *(internal track live + on-device-verified; closed-track ≥14-day soak in progress — production access gated on ≥12 testers. Tag `v1.0.0` after the staged production rollout reaches 100 %.)*
 - [ ] Plan V1X: v1.x Roadmap (29 sub-plans, 4 waves; authored 2026-05-26 from 2026-05-25 issue triage; sequenced post-v1.0.0 production rollout)
-- [ ] Plan 32: CI/CD Pipeline (GitHub Actions) *(implemented + merged via PR #100 on 2026-06-03; ci + instrumented lanes live + required on `main`; secrets + `release` environment + branch protection + Play service account configured 2026-06-04; `versionCode` bumped 16 → 17. Pipeline fully live — first `v*`-tag release not yet fired)*
+- [x] Plan 32: CI/CD Pipeline (GitHub Actions) *(implemented + merged via PR #100 on 2026-06-03; ci + instrumented lanes live + required on `main`; secrets + `release` environment + branch protection + Play service account configured 2026-06-04. Fully live — first CI-driven release `v1.0.1` (versionCode 17) fired green end-to-end 2026-06-04; `versionCode` now 18 / `versionName` 1.0.2. ADR-0018.)*

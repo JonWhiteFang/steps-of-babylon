@@ -1,3 +1,37 @@
+## 2026-06-11 — Project-wide doc sweep + STATE.md tight rewrite (docs-only, direct to main)
+
+- **Goal:** user asked for a full document update across the project + to make STATE.md "more concise and
+  usable". Two user decisions locked up front: (1) STATE.md → tight rewrite (~70-90 line target); (2) sweep
+  scope → current-state docs only (leave historical artifacts per the checkpoint protocol).
+- **Diagnosis:** STATE.md had decayed to 202 lines against its own "one page" contract — 64 stacked
+  `Current objective` bullets (rotation prepended, never pruned), 45 `Last run`/`Previous run` lines
+  duplicating RUN_LOG verbatim, a stale 867 test count, per-PR detail in "What works". README was the worst
+  drift offender (a giant stale Status paragraph: 867 tests, AAB v15, versionCode 17, "i18n in progress").
+- **STATE.md rewrite (202 → ~95 lines):** headline line (v1.0.2 / 908 tests / launch-gated) + current
+  objective (launch gate + in-repo audit Lows) + "Recently shipped" (last 6, one line each, pointers to
+  RUN_LOG) + current-capability "What works" + known-issues + consolidated "Top priorities / next actions"
+  + the full fragile-zones list (kept — high-value, 14 entries incl. #118-#126/#121 invariants) + a compact
+  references block. All history preserved in RUN_LOG/CHANGELOG.
+- **SessionStart hook (`session-preflight.sh`) updated to match the new headers:** the rewrite merged the
+  old `## Top priorities (next 5)` + `## Next actions (explicit order)` into one `## Top priorities / next
+  actions`, which would have made the hook's exact-match awk silently drop the priorities injection. Fixed
+  the matcher to `## Top priorities / next actions` + `## Do-not-touch / fragile zones`; **ran the hook and
+  verified** it still injects the objective + priorities + fragile zones (the read-half of the memory loop).
+- **Drift fixes (current-state docs):** README (Status → evergreen pointer; 867→908; versionCode 17→18 /
+  v1.0.2; 34→38 master-plan entries; CLAUDE.md row description); tech.md (Test Ext JUnit 1.2.1→1.3.0,
+  per the Dependabot wave + catalog); structure.md (12→13 DAOs — verified against AppDatabase's 13 `*Dao()`
+  accessors; "01–30 / 30 plan files" → 38 entries); database-schema.md (CardDao "dust operations" → copy-count
+  per R4-08 ADR-0010; DailyStepDao → column-targeted writers per #121); master-plan.md (Plan 31 → `[~]`
+  soak-in-progress, Plan 32 → `[x]` done + v1.0.1 fired). CLAUDE.md headline already 908 from the prior session.
+- **Verification:** canonical facts now consistent across all current-state docs (grep-checked: no residual
+  867/890/899-as-current, no versionCode 16/17, no v1.0.0/1.0.1-as-current). The one `867→890` left in STATE
+  is a correct historical "recently shipped" delta line, not a current-count claim. No code/test/schema touched
+  → no build run needed (docs + a hook-script matcher; hook output verified by direct execution).
+- **Doc sync:** this is itself the sweep; CHANGELOG new Docs section + this RUN_LOG entry. No ADR (doc
+  hygiene, not an architecture decision).
+- **Next:** commit direct to `main` (docs-only, admin-exempt from branch protection per precedent). Launch
+  remains the external critical path; in-repo, the remaining audit Lows (#124/#127/#128) are the pickup.
+
 ## 2026-06-11 — Audit Low #121 daily_step_record lost-update fixed (TDD, branch fix/121-daily-step-lost-update)
 
 - **Context:** PR #143 (#125 + #126 battle-perf) merged to `main` at the top of this session (squash, commit `d45ffd9`; both issues auto-CLOSED, branch pruned; CI `build-and-test` 4m46s + `connected` 7m9s green). User then said "do an audit finding" — I picked **#121** over #124 (billing sig verify): self-contained data-layer, no external secret, no schema change, and it follows a hardening pattern the project already applied under RO-02 / #122. (Picking the finding I was mid-investigation on before the Dependabot pivot.)

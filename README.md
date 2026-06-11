@@ -10,9 +10,9 @@ An Android idle tower defense game where real-world walking drives all progressi
 
 ## Status
 
-Version 1.0.0 (versionCode 17) — V1X post-launch work in progress. AAB v15 uploaded to Play Console 2026-05-27 ~05:39 BST and on-device smoke test PASSED 2026-05-26 ~05:35 BST. Sixteen V1X sub-plans landed on `main` 2026-05-28 (Waves 1+2 complete; Wave 3 partial; ADR-0012 + ADR-0015 + ADR-0016 added); V1X-08 instrumented coverage landed `BattleSurfaceLifecycleTest` + `DeepLinkIntentTest` 2026-05-29 (`StoreIapFlowTest` formally deferred); V1X-15b ENEMY_INTEL combat foundation + L1/L5/L10 UI overlays merged 2026-05-29 (ADR-0017); V1X-15b overlays on-device verified 2026-05-29. **V1X-09 Phase 2 (battle-entity simulation extraction) complete (PRs #89–#92); Phase 3 (`GameEngine` → pure-domain `domain/battle/engine/Simulation`) COMPLETE 2026-06-03 — cash economy + round-progress counters + the chrono-aware entity-tick loop (via a pure `EntityProtocol` seam) + the collision sweep + the UW lifecycle timers + the `SimulationEvent` flow (replacing `GameEngine`'s two `@Volatile` callbacks with `Simulation.events: SharedFlow<SimulationEvent>` collected by `BattleViewModel`) all extracted across PRs #93–#97 + the final SimulationEvent slice.** 867 JVM unit tests + 9 instrumented tests green. A dependency-free `DomainPurityTest` now machine-enforces the zero-Android-imports `domain/` invariant (GitHub #27). **Plan 32 (CI/CD) landed 2026-06-03/04:** a SHA-pinned GitHub Actions pipeline — `ci.yml` PR-gate + `instrumented.yml` emulator suite (both required on `main`) + `release.yml` (`v*` tag → Play internal) — merged via PR #100, with the `release` environment, secrets, branch protection, and a Play service account configured; `versionCode` bumped 16 → 17 (ADR-0018). **V1X-13 i18n phase 1 in progress (2026-06-04):** notification strings (PR #109) + the `domain/Strings` engine-internal floating-text seam (PR #110, ADR-0014) merged to `main`; the battle + workshop Compose surfaces migrated to `stringResource` (~45 resources, PR #111) + the `HardcodedText` lint-as-error guard added (this PR; XML-only — empirically does NOT catch Compose `Text()`, documented in `docs/architecture.md`) — **V1X-13 i18n phase 1 COMPLETE**. **Next: resume closed-track soak (earliest production-access application 2026-06-09), or pick up V1X-12 cloud save.**
+Version 1.0.2 (versionCode 18) · 908 JVM + 9 instrumented tests green · live on the Play Console internal track. The CI pipeline (Plan 32) and `v*`-tag release lane are live; the launch is gated on the closed-track tester soak.
 
-For the live current state see [docs/agent/STATE.md](docs/agent/STATE.md). For recent changes see [CHANGELOG.md](CHANGELOG.md).
+For the live current state (objective, priorities, fragile zones) see [docs/agent/STATE.md](docs/agent/STATE.md). For the dated change history see [CHANGELOG.md](CHANGELOG.md). These move every session; this section stays deliberately brief to avoid drift.
 
 ## Privacy
 
@@ -45,7 +45,7 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 # Debug APK
 ./gradlew assembleDebug
 
-# Unit tests (867 JVM tests)
+# Unit tests (908 JVM tests)
 ./gradlew test
 
 # Lint
@@ -111,9 +111,9 @@ If you're picking this up cold, read [docs/agent/START_HERE.md](docs/agent/START
 |---|---|
 | [Game Design Document](docs/StepsOfBabylon_GDD.md) | Full game design spec |
 | [Architecture](docs/architecture.md) | Clean Architecture layers and conventions |
-| [CLAUDE.md](CLAUDE.md) | Full tech stack, conventions, status checklist, test coverage |
+| [CLAUDE.md](CLAUDE.md) | Operating guide: architecture, conventions, domain concepts, fragile zones |
 | [CHANGELOG.md](CHANGELOG.md) | All notable changes, dated |
-| [Master Plan](docs/plans/master-plan.md) | 34-entry development roadmap |
+| [Master Plan](docs/plans/master-plan.md) | 38-entry development roadmap |
 | [Battle Formulas](docs/battle-formulas.md) | All combat and economy math (incl. Lab outer multipliers) |
 | [Database Schema](docs/database-schema.md) | Room entities and migration strategy |
 | [Step Tracking](docs/step-tracking.md) | Sensor stack, anti-cheat, background service |

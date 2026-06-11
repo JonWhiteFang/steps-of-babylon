@@ -4,6 +4,28 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Docs — project-wide current-state sweep + STATE.md tight rewrite (2026-06-11)
+
+- Docs-only; no production code / test / schema change. Test count unchanged at **908 JVM + 9 instrumented**.
+- **STATE.md rewritten 202 → ~95 lines.** It had decayed badly against its own "one page" contract:
+  64 stacked `Current objective` bullets (the rotation prepended but never pruned), 45 `Last run` /
+  `Previous run` lines that duplicated `RUN_LOG.md` verbatim, a stale 867 test count, and per-PR
+  implementation detail in "What works". New shape: a headline line + current objective (launch gate) +
+  a short "Recently shipped" pointer list (last 6, one line each) + current-capabilities "What works" +
+  known-issues + consolidated priorities + the full fragile-zones list (high-value, kept) + references.
+  All history preserved in RUN_LOG / CHANGELOG — nothing lost.
+- **Drift fixes across current-state docs:** README Status block (replaced the giant stale paragraph
+  with an evergreen pointer; 867→908 tests, versionCode 17→18 / v1.0.2, 34→38 master-plan entries,
+  CLAUDE.md description); `tech.md` (AndroidX Test Ext JUnit 1.2.1→1.3.0); `structure.md` (12→13 DAOs,
+  "01–30 / 30 plan files" → 38 entries); `database-schema.md` (CardDao "dust operations" → copy-count
+  aggregation per R4-08; DailyStepDao column-targeted writers per #121); `master-plan.md` status tracker
+  (Plan 31 → in-progress/soak, Plan 32 → done + v1.0.1 fired).
+- **SessionStart hook updated to match the new STATE.md headers** (`session-preflight.sh`): the live-section
+  matcher now targets the consolidated `## Top priorities / next actions` + `## Do-not-touch / fragile
+  zones`; verified the hook still injects the objective + priorities + fragile zones correctly.
+- Historical artifacts (RUN_LOG past entries, plan-R*, external-reviews, devdocs) left untouched per the
+  checkpoint protocol.
+
 ### Fix — daily_step_record lost-update via column-targeted upserts (#121) (2026-06-11)
 
 - Fixes audit finding #3 (Medium, data-integrity). The four `daily_step_record` per-field

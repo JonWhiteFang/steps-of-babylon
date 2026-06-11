@@ -46,11 +46,11 @@ if [ -f "$STATE" ]; then
   ' "$STATE" | head -c 1500 | { iconv -f UTF-8 -t UTF-8//IGNORE 2>/dev/null || cat; }
   echo
   echo
-  # The three live, forward-looking sections in full.
+  # The two live, forward-looking sections in full.
   awk '
     /^## / {
       h=$0
-      keep = (h=="## Top priorities (next 5)" || h=="## Next actions (explicit order)" || h=="## Do-not-touch / fragile zones")
+      keep = (h=="## Top priorities / next actions" || h=="## Do-not-touch / fragile zones")
     }
     keep { print }
   ' "$STATE"

@@ -140,7 +140,7 @@ All in `domain/model/`:
 | File | Purpose |
 |---|---|
 | `StepsOfBabylonApp.kt` | `@HiltAndroidApp`, `Configuration.Provider` (HiltWorkerFactory) |
-| `di/DatabaseModule.kt` | Hilt module: Room DB (SQLCipher) + all 12 DAOs |
+| `di/DatabaseModule.kt` | Hilt module: Room DB (SQLCipher) + all 13 DAOs |
 | `di/RepositoryModule.kt` | Hilt module: binds all 8 repository interfaces to impls |
 | `di/StepModule.kt` | Hilt module: provides SensorManager |
 | `di/HealthConnectModule.kt` | Hilt module: Health Connect organizational module |
@@ -186,8 +186,8 @@ All in `domain/model/`:
 | `docs/release/store-assets/play-store-feature-graphic-1024x500.png` | Play Store feature graphic (1024×500, ~621 KB). Center-vertical-cropped + LANCZOS-downscaled from the source PNG |
 | `gradle/libs.versions.toml` | All dependency versions |
 | `app/schemas/` | Room schema exports (commit these) |
-| `docs/plans/` | Numbered implementation plans (01–30) |
+| `docs/plans/` | Numbered implementation plans (01–32) + 10b/R/R2/R3/R4/V1X (38 master-plan entries) |
 
 ## Development Plans
 
-Plans live in `docs/plans/` as `plan-NN-name.md`. The master plan is at `docs/plans/master-plan.md`. All 30 plan files are written. Always check the relevant plan file before implementing a feature.
+Plans live in `docs/plans/` as `plan-NN-name.md`. The master plan is at `docs/plans/master-plan.md` (38 entries: Plans 01–32 plus 10b/R/R2/R3/R4/V1X). Always check the relevant plan file before implementing a feature.

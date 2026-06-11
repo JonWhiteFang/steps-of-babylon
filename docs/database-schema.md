@@ -216,9 +216,9 @@ Each entity gets its own DAO:
 - `PlayerProfileDao` — CRUD + balance updates
 - `WorkshopDao` — get/update levels, bulk query by category
 - `LabDao` — active research queries, completion checks
-- `CardDao` — inventory, equipped loadout, dust operations
+- `CardDao` — inventory, equipped loadout, copy-count aggregation (Card Dust removed in R4-08, ADR-0010)
 - `UltimateWeaponDao` — unlocked list, equipped loadout
-- `DailyStepDao` — insert/update daily, history range queries
+- `DailyStepDao` — column-targeted daily upserts (sensor/HC/activity/escrow, #121), history range queries, atomic battle-step + boss-PS credit
 - `WalkingEncounterDao` — unclaimed list, claim, history
 - `WeeklyChallengeDao` — weekly challenge tracking, tier claims
 - `DailyLoginDao` — daily login tracking, streak queries
