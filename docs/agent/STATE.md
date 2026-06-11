@@ -3,8 +3,9 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** v1.0.2 (versionCode 18) · **955 JVM + 9 instrumented tests** green · `main` clean ·
-schema v12 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
+**Headline:** v1.0.2 (versionCode 18) **released to Play internal track** 2026-06-11 (tag `v1.0.2`) ·
+**955 JVM + 9 instrumented tests** green · `main` clean · schema v12 · launch is judgment-gated on the
+Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
@@ -24,6 +25,11 @@ schema v12 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-11 — v1.0.2 released to Play internal track** (tag `v1.0.2` on `5298fae`). Shipped the
+  whole batch since v1.0.1/code17 (#118–123, #125/126, #121, audit-Lows, #124, #146, #127). No bump
+  needed — code 18 / 1.0.2 was already committed (PR #108) but never tagged. Release lane green:
+  signed AAB uploaded with 5-bullet player-facing "What's new"; GitHub Release + AAB asset created.
+  #124 license-key guard passed (signature verification active in the shipped build).
 - **2026-06-11 — #127 duplicate daily missions** (PR #152, squash `605f0a9`; issue closed).
   Check-then-insert generator with no DB uniqueness → two concurrent VM inits each inserted a full
   batch → 6 claimable missions/day. Fix: `(date, missionType)` unique index + `@Insert(IGNORE)` +

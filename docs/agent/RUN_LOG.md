@@ -1,3 +1,26 @@
+## 2026-06-11 — v1.0.2 released to Play internal track (tag v1.0.2)
+
+- **Goal:** ship the batch accumulated since v1.0.1 (versionCode 17) — the #118–123 / #125 / #126 /
+  #121 / audit-Lows / #124 / #146 / #127 wave — as a release with player-facing notes on the listing.
+- **Versioning:** no bump needed. `app/build.gradle.kts` already carried versionCode **18** /
+  versionName **1.0.2** (committed in PR #108 but never tagged/released — only v1.0.1/code 17 had
+  shipped). Tagged `v1.0.2` as-is on `main` HEAD (`5298fae`). versionCode 18 was unused on Play, so
+  no reuse-rejection risk.
+- **Release notes:** the annotated tag message IS the Play "What's new" (workflow extracts it, caps at
+  `head -c 500` bytes → `distribution/whatsnew/whatsnew-en-US`). Wrote a 5-bullet player-facing note
+  (318 bytes post-truncation — under the 500 limit, nothing cut). Did NOT roll the CHANGELOG
+  `[Unreleased]` heading — this repo intentionally keeps `[Unreleased]` as a running multi-build log
+  (v1.0.1 was tagged the same way); the tag message is the single source for Play notes.
+- **Release lane (`release.yml`) run 27351791720 — SUCCESS.** All steps green incl. Unit-test guard,
+  **Write Play license key** (#124 fail-open hard-fail guard passed → signature verification active in
+  the shipped build), Verify signature, Build release bundle, **Upload to Play internal track** (notes
+  rendered verbatim, confirmed in step log), and GitHub Release (`v1.0.2` + `app-release.aab` asset).
+- **Verification:** `gh run view` per-step conclusions all `success`; `gh release view v1.0.2` shows
+  the AAB asset; whatsnew echo in the log matches the approved copy exactly.
+- **Next:** the AAB is on the **internal** track (per ADR-0018 decision #3 — the release lane targets
+  internal, not closed/production). Promotion internal → closed remains the developer-judgment Gate
+  call (Phase 2). On-device sanity check of v1.0.2 on the internal track is the natural follow-up.
+
 ## 2026-06-11 — #146 + #127 merged (PRs #151, #152, direct-to-main checkpoint)
 
 - **Goal:** land the two Gate-D fixes built this session and record the post-merge state.
