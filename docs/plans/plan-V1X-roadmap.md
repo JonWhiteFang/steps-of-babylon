@@ -6,11 +6,11 @@
 > plan-FORWARD's gate-keyed phases; treat the sub-plan specs as the live content and the wave ordering
 > as historical context.
 
-Post-launch work derived from the GitHub issue triage on 2026-05-25 (`docs/external-reviews/2026-05-25-issue-triage.md`). 33 open issues triaged; 16 verified-accurate findings, 4 already-tracked debt items, 11 strategic roadmap proposals, plus 2 closed-track-blocking fixes (#19, #20) excluded as they are landing on `main` via `fix/19-20-uw-autotrigger-and-seeding`.
+Post-launch work derived from a GitHub issue triage on 2026-05-25. (That source triage doc, `docs/external-reviews/2026-05-25-issue-triage.md`, was later removed in the "remove historical review artifacts" cleanup, commit 12605b3 — its conclusions are carried forward in the tables below.) 33 open issues triaged; 16 verified-accurate findings, 4 already-tracked debt items, 11 strategic roadmap proposals, plus 2 closed-track-blocking fixes (#19, #20) since landed on `main`.
 
-This plan is **post-launch**. It is not a release blocker. The closed-track ≥14-day window for AAB v14 is the active gating activity. V1X work begins after v1.0.0 ships to production and the staged rollout completes.
+This plan is **post-launch backlog**, not a release blocker. As of the PR #145 reframe (2026-06-11), the current gating activity is the Closed-Test Readiness Gate in `plan-FORWARD.md` (promotion internal → closed is judgment-gated); the ≥14-day soak is Phase 2, beginning after promotion. Several V1X waves have **already shipped** ahead of that promotion (see the Status notes below) — the original "V1X begins only after production rollout" sequencing is historical.
 
-Total scope: ~29 sub-plans across 6 versioned patch releases. Two Room migrations expected (one for #35/#51 atomic-spend wiring, one for #36 cloud save). One major architectural refactor (#37). Several content-bundle ships (#38, #45). Test count expected to move from 656 → ~910.
+Total scope: ~29 sub-plans across 6 versioned patch releases. Two Room migrations expected (one for #35/#51 atomic-spend wiring, one for #36 cloud save). One major architectural refactor (#37). Several content-bundle ships (#38, #45). (The old "656 → ~910" test-count projection is historical; the live count, already past that target, is in STATE.md / CLAUDE.md.)
 
 The triage document already proposed a 6-patch phasing; this plan inherits that structure and turns each patch into a wave.
 
@@ -66,6 +66,14 @@ The triage document already proposed a 6-patch phasing; this plan inherits that 
 | Proposals | V1X-20 through V1X-28 | varies | v1.x and v2.x | Strategic backlog; not yet specced as sub-plans below |
 
 Each wave produces a versioned release (v1.0.1, v1.0.2, v1.1, v1.2). Each wave gets its own AAB upload + smoke test before the next wave starts.
+
+> **Shipped status (as of 2026-06-11 — verify against git/issues, don't trust this note long-term):**
+> Wave 1 (V1X-01/02/03) and Wave 2 (V1X-04/05/06) **shipped** (merged 2026-05-28, PRs #64–#69).
+> From Wave 3, V1X-08 (instrumented harness, PR #80), V1X-09 (simulation extraction, completed
+> 2026-06-03 PR #98), and V1X-13 phase 1 (i18n, PRs #109–#112) have **shipped**; V1X-07/10/11 and
+> Wave 4 (V1X-12 cloud save, V1X-13 phase 2) plus most content/proposal items remain **pending**.
+> The per-item specs below are still the live content for the pending work; the wave→version mapping
+> in the table is historical (V1X-08/09/13 landed without waiting for the v1.1/v1.2 sequencing).
 
 ---
 
@@ -803,8 +811,8 @@ Migration v11 → v12 adds these 2 columns.
 - `domain/usecase/SyncToCloud.kt` — NEW. Aggregates entity flows into `SaveData`, calls `SnapshotManager.saveSnapshot`.
 - `domain/usecase/RestoreFromCloud.kt` — NEW. Calls `loadSnapshot`, runs conflict resolution, applies to local DB via `withTransaction { ... }`.
 - `data/local/PlayerProfileEntity.kt` — 2 new columns
-- `data/local/Migrations.kt` — `MIGRATION_11_12`
-- `data/local/AppDatabase.kt` — version 11 → 12
+- `data/local/Migrations.kt` — a NEW migration **`MIGRATION_12_13`** *(this plan was authored assuming `MIGRATION_11_12`/v12, but #127 has since consumed schema v12 — cloud save must target v12 → v13, or whatever the live version + 1 is at implementation time; read `AppDatabase.kt`)*
+- `data/local/AppDatabase.kt` — bump to the next version above the live one (v12 → v13 as of 2026-06-11)
 - `data/repository/PlayerRepositoryImpl.kt` — exposes `cloudLastSyncedAt` flow for Settings UI
 - `presentation/MainActivity.kt` — Google Sign-In button + sign-in result handler; wires `onPause` sync trigger
 - `presentation/settings/NotificationSettingsScreen.kt` — new "Cloud Save" section: sign-in status, last sync time, manual "Sync now" button
@@ -1552,7 +1560,7 @@ Some triage items map to existing tracked debt rather than V1X-NN sub-plans:
 
 ## Cross-references
 
-- Source triage: `docs/external-reviews/2026-05-25-issue-triage.md`
+- Source triage: `docs/external-reviews/2026-05-25-issue-triage.md` *(removed in commit 12605b3, "remove historical review artifacts" — recover from git history if needed; conclusions carried forward in this plan)*
 - Master plan registration entry: `docs/plans/master-plan.md` (to be updated when this plan is approved)
 - Closed-track-blocking #19 + #20 fixes: branch `fix/19-20-uw-autotrigger-and-seeding`, merged via PR #52 (commit `230309c`)
 - Plan R4 (predecessor — feedback bundle): `docs/archive/completed-plans-v1.0/plan-R4-feedback-bundle.md`

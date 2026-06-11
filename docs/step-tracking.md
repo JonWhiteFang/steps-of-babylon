@@ -26,7 +26,7 @@
 - Uses Room `sensorSteps` as authoritative baseline — only credits the uncredited gap (prevents double-crediting)
 - Reconciles local step count with Health Connect
 - Catches up on missed steps if the foreground service was killed
-- Constraint: requires Health Connect availability
+- No WorkManager constraints — the periodic job is enqueued on the 15-minute interval with no network/charging requirement; Health Connect availability is checked at read time (see `HealthConnectClientWrapper.getSdkStatus()`), not enforced as an enqueue constraint
 
 ### Service ↔ Worker Coordination
 
@@ -56,7 +56,7 @@ The foreground service and WorkManager worker share step ingestion responsibilit
 | Daily ceiling | 50,000 steps/day | Hard cap, no more steps credited |
 | Health Connect cross-validation | >20% discrepancy, graduated by offense count | Level 0: escrow; Level 1: faster discard; Level 2: cap at HC; Level 3: cap at HC −10% |
 | Activity minute validation | >4hr sessions, <2min micro-sessions, >5 types/day | Truncate, discard, or reject |
-| Overlap deduction | Sensor ≥50 steps/min during activity period | Credit only sensor steps, not activity minutes |
+| Overlap deduction | Sensor <50 steps/min → credit the activity minute; ≥50 steps/min → skip it (sensor already captured the motion) | Per-minute overlap check in `ActivityMinuteConverter` |
 
 ### Rate Limiting Implementation
 
@@ -91,15 +91,18 @@ When discrepancy resolves cleanly, escrow releases (restores deducted steps) and
 
 For non-ambulatory activities tracked by Health Connect:
 
-| Activity | Conversion | Daily Cap |
+Walking and running are counted natively by the step sensor, not via Activity Minute
+Parity. The converter (`ActivityMinuteConverter.rules`) maps exactly 7 Health Connect
+exercise types — outdoor walking/running and treadmill are intentionally **not** in the
+map (they would double-count the sensor):
+
+| Activity (Health Connect exercise type) | Conversion | Daily Cap |
 |---|---|---|
-| Outdoor walking/running | 1:1 native steps | 50,000 |
-| Treadmill | 1:1 | 50,000 |
-| Stationary cycling | 1 min = 100 Step-eq | 10,000 |
-| Rowing | 1 min = 100 Step-eq | 10,000 |
-| Swimming | 1 min = 120 Step-eq | 12,000 |
-| Wheelchair propulsion | 1 min = 110 Step-eq | 11,000 |
-| Yoga / Stretching | 1 min = 50 Step-eq | 5,000 |
+| Stationary cycling (`BIKING_STATIONARY`) | 1 min = 100 Step-eq | 10,000 |
+| Rowing machine (`ROWING_MACHINE`) | 1 min = 100 Step-eq | 10,000 |
+| Swimming (`SWIMMING_POOL`, `SWIMMING_OPEN_WATER`) | 1 min = 120 Step-eq | 12,000 |
+| Wheelchair (`WHEELCHAIR`) | 1 min = 110 Step-eq | 11,000 |
+| Yoga / Stretching (`YOGA`, `STRETCHING`) | 1 min = 50 Step-eq | 5,000 |
 
 ### Double-Counting Prevention
 
@@ -119,7 +122,7 @@ Sessions are filtered by `ActivityMinuteValidator` before conversion:
 ## Health Connect Integration
 
 Health Connect (replacing deprecated Google Fit) is used as the secondary data source:
-- `HealthConnectClient.getOrCreate()` — framework module on SDK 34+, always available
+- `HealthConnectClient.getOrCreate()` — wrapped by `HealthConnectClientWrapper`, which checks `getSdkStatus()` and returns a nullable client (Health Connect must be installed/available on the device; not guaranteed even on SDK 34+)
 - `aggregate()` with `StepsRecord.COUNT_TOTAL` for daily step totals
 - `readRecords()` with `ExerciseSessionRecord` for exercise sessions
 - Permissions: `android.permission.health.READ_STEPS`, `android.permission.health.READ_EXERCISE`

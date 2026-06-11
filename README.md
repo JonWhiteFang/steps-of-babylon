@@ -10,7 +10,7 @@ An Android idle tower defense game where real-world walking drives all progressi
 
 ## Status
 
-Version 1.0.2 (versionCode 18) · 908 JVM + 9 instrumented tests green · live on the Play Console internal track. The CI pipeline (Plan 32) and `v*`-tag release lane are live; the launch is gated on the closed-track tester soak.
+Version 1.0.2 (versionCode 18) · 955 JVM + 9 instrumented tests green · live on the Play Console internal track. The CI pipeline (Plan 32) and `v*`-tag release lane are live; promotion to the closed track is judgment-gated on the Closed-Test Readiness Gate (see [plan-FORWARD.md](docs/plans/plan-FORWARD.md)) — the tester soak is a Phase 2 concern that begins after promotion.
 
 For the live current state (objective, priorities, fragile zones) see [docs/agent/STATE.md](docs/agent/STATE.md). For the dated change history see [CHANGELOG.md](CHANGELOG.md). These move every session; this section stays deliberately brief to avoid drift.
 
@@ -45,7 +45,7 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 # Debug APK
 ./gradlew assembleDebug
 
-# Unit tests (908 JVM tests)
+# Unit tests (955 JVM tests)
 ./gradlew test
 
 # Lint
@@ -87,7 +87,7 @@ exit $EXIT_CODE
 ```
 app/src/main/java/com/whitefang/stepsofbabylon/
 ├── data/
-│   ├── local/         # Room entities, DAOs, SQLCipher key manager (13 entities, schema v11)
+│   ├── local/         # Room entities, DAOs, SQLCipher key manager (13 entities, schema v12)
 │   ├── repository/    # Repository implementations
 │   ├── sensor/        # Step sensor data source, rate limiter, daily step manager
 │   ├── healthconnect/ # Health Connect client, cross-validator, activity-minute parity
@@ -118,6 +118,7 @@ If you're picking this up cold, read [docs/agent/START_HERE.md](docs/agent/START
 | [Database Schema](docs/database-schema.md) | Room entities and migration strategy |
 | [Step Tracking](docs/step-tracking.md) | Sensor stack, anti-cheat, background service |
 | [Monetization](docs/monetization.md) | IAP, ads, and economy rules |
+| [Security Model](docs/steering/security-model.md) | Consolidated view: encryption, anti-cheat, economy atomicity, purchase verification |
 | [Privacy Policy](docs/release/privacy-policy.md) | Canonical privacy policy |
 
 ## Tech Stack

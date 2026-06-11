@@ -14,7 +14,8 @@
 - Upgrade cost formula: `baseCost * (scaling ^ level)` — no exceptions.
 - Loadout caps: 3 Ultimate Weapons, 3 Cards.
 - Cash resets each round. Steps/Gems/Power Stones are permanent.
-- Step Overdrive: once per round, 60-second duration.
+- Rapid Fire (Workshop upgrade, R4-03): periodic mid-wave attack-speed burst. (Replaced the removed
+  Step Overdrive mechanic — there is no once-per-round mid-round Step burn in v1.0.)
 
 ## Anti-cheat rules
 - Rate limit: 200 steps/min maximum (250 burst for running).
@@ -22,8 +23,8 @@
 - Daily ceiling: 50,000 steps/day.
 - Health Connect cross-validation: graduated response (4 offense levels: escrow → faster discard → cap at HC → cap minus 10%).
 - Activity minute validation: rejects micro-sessions (<2min), truncates extreme (>4hr), caps at 5 activity types/day.
-- Per-minute overlap deduction: sensor steps ≥50/min → credit only sensor steps, not activity minutes.
-- Battle Steps cap: 2,000/day, tracked on `DailyStepRecordEntity.battleStepsEarned` and enforced by `AwardBattleSteps`. Separate from the 50k walking ceiling — never additive. Flat per-enemy-type only; NOT multiplied by Fortune overdrive, Cash Bonus upgrade, or Golden Ziggurat UW. See ADR-0003.
+- Per-minute overlap deduction: an activity minute is credited only when sensor steps are **<50/min** that minute; at ≥50/min the sensor already captured the motion, so the activity minute is skipped (`ActivityMinuteConverter`, `MAX_SENSOR_STEPS_PER_MIN = 50`).
+- Battle Steps cap: 2,000/day (`AwardBattleSteps.DAILY_BATTLE_STEP_CAP`), tracked on `DailyStepRecordEntity.battleStepsEarned`. Separate from the 50k walking ceiling — never additive. Flat per-enemy-type only; NOT multiplied by any in-round source (Cash Bonus upgrade or the Golden Ziggurat UW's `fortuneMultiplier`, which affects Cash only). See ADR-0003. (The original "no Fortune-overdrive multiplier" wording is moot since R4-01 removed Step Overdrive.)
 - Step counting must work reliably when app is backgrounded or killed.
 
 ## Security

@@ -4,6 +4,30 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Docs — full documentation drift sweep + restructure (2026-06-11)
+
+Docs-only; no production code / test / schema change. A 20-doc-cluster workflow audit (each finding
+adversarially re-verified against code) plus a manual residual pass corrected ~60 confirmed drift items
+across 25 docs and added 2 new docs.
+
+- **Cross-cutting facts corrected:** schema v11→v12 (architecture/structure/lib-room/README); stale test
+  counts genericized to point at STATE/CLAUDE (206/867/908/397 → live figure); use cases 32→36;
+  UpgradeType 23→24; SupplyDropTrigger 4→3; nav routes 12→13.
+- **Removed-mechanic ghosts purged:** Step Overdrive (R4-01 → Rapid Fire) and Card Dust (R4-08 →
+  copy-based) scrubbed from GDD/battle-formulas/CONSTRAINTS/product/source-files/play-listing; the legacy
+  `cardDust` DB column doc was kept (column still exists at 0 for back-compat).
+- **Battle-formula correctness:** CRITICAL_RESEARCH on critMultiplier (not critChance); multishot/bounce
+  additive caps 11/10; kill-cash fortune+card multipliers; UW section rewritten for R4-06 per-path model.
+- **step-tracking:** corrected the inverted overlap-deduction rule; removed unimplemented walking/treadmill
+  activity rows; HC availability + WorkManager-constraint claims fixed.
+- **Restructures:** CHANGELOG split into `[1.0.2]` / `[1.0.1]` at the git-verified tag boundary + fresh
+  `[Unreleased]`; balance-report historical banner; release-checklist promoted version-agnostic;
+  `docs/index.md` self-documenting comment.
+- **New docs:** `docs/release/release-notes-v1.0.2.md`, `docs/steering/security-model.md`.
+- **Infra fix:** `.gitignore` `release/` anchored to `/release/` (was silently ignoring `docs/release/`).
+
+## [1.0.2] — 2026-06-11 (versionCode 18)
+
 ### Fixed — #127 duplicate daily missions (schema v11→v12, Gate D) (2026-06-11)
 
 Closed-Test Readiness-Gate (Gate D) data-integrity fix. `GenerateDailyMissions` did a check-then-insert
@@ -426,6 +450,13 @@ unchanged (no migration), lint + assembleDebug clean.
 ### V1X-13 i18n phase 1 (start) — notification string extraction (2026-06-04)
 
 - Begin V1X-13 (i18n string extraction, phase 1). First slice lifts every user-facing notification string out of Kotlin literals into `res/values/strings.xml` (16 new resources). The 3 notification managers (`StepNotificationManager`, `SupplyDropNotificationManager`, `MilestoneNotificationManager`) now read all channel names/descriptions, titles, content, and action labels via `context.getString(...)`. Positional format args (`%1$d` / `%2$s`) so future translations can reorder; the step notification title reuses `R.string.app_name`; `SupplyDrop.trigger.message` is left as-is (domain-sourced). No new abstraction needed — the managers already hold a `Context`, so this slice stays clear of the battle engine. Deferred to subsequent phase-1 PRs: the `domain/Strings` Hilt seam (for engine-internal floating-text strings), the battle + workshop screen surfaces, and the `HardcodedText` lint-as-error guard (added last, once all phase-1 surfaces are migrated). `testDebugUnitTest` + `assembleDebug` BUILD SUCCESSFUL, 867 unchanged (pure refactor, no behaviour change).
+
+## [1.0.1] — 2026-06-04 (versionCode 17)
+
+> First CI-driven release (the release lane fired green end-to-end to the Play internal track).
+> Note: `versionName` was still `"1.0.0"` at this tag; it advanced to `1.0.2` in the next release to
+> avoid a versionCode collision (vc17 was already consumed). Entries below ship in v1.0.1; everything
+> above the `[1.0.2]` header shipped in v1.0.2.
 
 ### Release lane — automated Play "What's new" notes (2026-06-04)
 

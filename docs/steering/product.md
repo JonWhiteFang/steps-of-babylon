@@ -10,19 +10,21 @@ Walk → Earn Steps → Spend Steps on Workshop upgrades → Fight battles → R
 
 | Currency | Source | Use |
 |---|---|---|
-| Steps | Real-world walking only | Workshop upgrades, Labs, Overdrive |
+| Steps | Real-world walking only | Workshop upgrades, Labs, Card packs, UW unlocks |
 | Cash | Killing enemies in-round | In-round upgrades (resets each round) |
 | Gems | Milestones, daily login | Card Packs, Lab rush |
 | Power Stones | Weekly challenges, wave milestones | Ultimate Weapon unlock/upgrade |
-| Card Dust | Duplicate card recycling | Card upgrades |
+
+> Duplicate cards accumulate as **copies** (copy count gates 7-level upgrades) — the old "Card Dust"
+> currency was removed in R4-08 (ADR-0010). A `cardDust` DB column persists at 0 for back-compat only.
 
 ## Key Systems
 
-- **Workshop** — 23 permanent upgrade types (Attack/Defense/Utility), purchased with Steps
-- **Labs** — 10 research projects, Step cost + real-time duration (background timer)
-- **Cards** — 9 types, 3 rarities, loadout of 3 max, acquired via Gem packs
-- **Ultimate Weapons** — 6 types, loadout of 3 max, Power Stone gated
-- **Step Overdrive** — 4 types, burns Steps for a 60s combat buff, once per round
+- **Workshop** — 24 permanent upgrade types (Attack/Defense/Utility), purchased with Steps
+- **Labs** — research projects (12 `ResearchType` enum rows; 10 surfaced in the Labs UI), Step cost + real-time duration (background timer)
+- **Cards** — 9 types, 3 rarities, loadout of 3 max, acquired via Gem packs; copy-based 7-level upgrades
+- **Ultimate Weapons** — 6 types, loadout of 3 max, Power Stone gated, per-path upgrades (R4-06)
+- **Rapid Fire** — Workshop upgrade firing periodic mid-wave attack-speed bursts (R4-03; replaced the removed Step Overdrive)
 - **Tiers** — 10+ difficulty levels with escalating battle conditions (Tier 6+)
 - **Biomes** — 5 narrative environments tied to tier ranges
 

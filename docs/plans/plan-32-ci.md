@@ -29,9 +29,9 @@ This closes the long-standing "No CI" gap noted across the project memory (the `
 
 | Aspect | Value | CI consequence |
 |---|---|---|
-| Toolchain | Gradle 9.3.1, AGP 9.0.1, Kotlin 2.3.0, KSP 2.3.6, JDK 17 | `setup-java` temurin 17 + `setup-gradle` cache |
+| Toolchain | Gradle + AGP + Kotlin + KSP per `gradle/libs.versions.toml` / the wrapper (the catalog is the single source — don't pin versions here), JDK 17 | `setup-java` temurin 17 + `setup-gradle` cache |
 | SDK | compileSdk/targetSdk 36, **minSdk 34** | emulator floor **API 34**; install platform 36 via `setup-android` |
-| JVM gate | `testDebugUnitTest` (867 tests, JUnit5), `lintDebug`, `assembleDebug` | one ubuntu job, **no secrets** |
+| JVM gate | `testDebugUnitTest` (JUnit5; live count in STATE.md/CLAUDE.md), `lintDebug`, `assembleDebug` | one ubuntu job, **no secrets** |
 | Instrumented | `connectedDebugAndroidTest` (9 tests, `HiltTestRunner`) | emulator + KVM |
 | Debug build secrets | **none** — AdMob falls back to Google test IDs; no `google-services` plugin | PRs build on a clean clone with zero config |
 | Release build | `bundleRelease` needs `keystore.properties` + `*.jks` (+ optional `local.properties` AdMob IDs) | inject from GH Secrets |
@@ -91,7 +91,7 @@ Signed AAB → Play internal track (decision #3).
   EOF
   ```
   AdMob production IDs written to `local.properties` from secrets (absent ⇒ build falls back to test IDs, so a misconfigured run never mints revenue — existing `build.gradle.kts` behaviour).
-- **Build + verify:** `./gradlew bundleRelease` → `jarsigner -verify -strict` (mirrors the manual release check).
+- **Build + verify:** `./gradlew bundleRelease` → `jarsigner -verify` (mirrors the manual release check; the live `release.yml` step uses `-verify` without `-strict`).
 - **Upload:** `r0adkll/upload-google-play@<sha>` — `packageName: com.whitefang.stepsofbabylon`, `releaseFiles: app/build/outputs/bundle/release/app-release.aab`, `track: internal`, `status: completed`, plus `mappingFile` (R8) and `debugSymbols` (the `debugSymbolLevel = FULL` native symbols already produced).
 - **GitHub Release:** attach the AAB + mapping as a release artifact via `softprops/action-gh-release@<sha>`.
 - **versionCode discipline:** CI builds the **committed** `versionCode`; it does not auto-bump (Play rejects reused codes — see the v13 rejection). Bump + commit before tagging.
@@ -142,7 +142,7 @@ Touch only docs the change invalidates. **Do NOT edit `docs/archive/pre-claude-d
 
 ### Task 8: Verification & rollout
 
-- Land `ci.yml` first on a branch; confirm the gate runs green against the current 867-test suite before wiring required checks.
+- Land `ci.yml` first on a branch; confirm the gate runs green against the full JVM test suite (867 tests at authoring, 2026-06-03) before wiring required checks.
 - Land `instrumented.yml`; confirm a full emulator run green; cache warm on the second run.
 - Land `release.yml` last; dry-run via `workflow_dispatch` with `status: draft` (or a throwaway tag) before trusting `track: internal, status: completed`.
 - Flip on branch protection once the first two lanes are proven.
