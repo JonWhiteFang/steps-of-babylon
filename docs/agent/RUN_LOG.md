@@ -1,3 +1,31 @@
+## 2026-06-11 — #154 disable "buy more" at max, consistently (branch fix/154-disable-buy-at-max)
+
+- **Goal:** new issue #154 (Gate F, UX/polish) — at a purchasable's cap the buy control must be both
+  un-clickable AND visually disabled, consistent across all four purchase surfaces. No economy risk
+  (the issue itself notes spend logic already refuses at cap); this is UX clarity + a regression guard.
+- **Audit:** read all 4 surfaces. **3 of 4 already correct** — `InRoundUpgradeMenu` (replaces button
+  with a "MAX" label), `UltimateWeaponScreen` UWPathRow (same), `CardsScreen` CardItem (hides Upgrade
+  button when `isMaxLevel`). **Outlier: Workshop `UpgradeCard`** — a `Card(onClick)` that no-op'd the
+  click *inside* the lambda, so at cap it still showed ripple/press feedback and didn't look disabled.
+- **Fix:** `UpgradeCard` now passes `enabled = info.canAfford && !info.isMaxed` to the Material3 `Card`
+  (genuine disable, not a no-op). Caveat handled: with `enabled=false`, `cardColors()` would swap to the
+  theme-default `disabledContainerColor` and lose the Gold "MAX" tint / normal surface — so pinned
+  `disabledContainerColor == containerColor` per branch. The dim treatment stays owned by the existing
+  `alpha` modifier (0.7 maxed / 0.5 unaffordable / 1.0 affordable). Kept the inner `onClick` predicate
+  as defense-in-depth.
+- **TDD / tests (+5, 955→960 JVM):** the testable seam is the ViewModel display-info layer (no Compose
+  UI-test infra exists in the JVM suite). Added: WorkshopVMTest ×2 (every Workshop-visible capped type
+  incl. ORBS reports `canAfford==false` at cap even with `MAX_VALUE` balance; maxed purchase changes
+  neither level nor balance), UltimateWeaponVMTest ×1 (all 3 paths `canAfford==false` at cap with
+  MAX_VALUE), CardsVMTest ×2 (max-level card `isMaxLevel` + `!canAffordUpgrade` with 999 surplus copies;
+  maxed upgrade is a no-op). All confirm the state contract that drives the disabled UI; the spend-path
+  guards (Workshop `level>=maxLevel`, `UpgradeCard.Result.MaxLevel`) already existed.
+- **Verification:** balance + 3 VM suites green; **full `testDebugUnitTest` = 960 tests, 0 failures**;
+  `compileDebugKotlin` + `lintDebug` (HardcodedText-as-error) both BUILD SUCCESSFUL.
+- **Docs:** headline count 955→960 (CLAUDE.md, README ×2, STATE headline); CHANGELOG `[Unreleased]`
+  entry; STATE recently-shipped + this RUN_LOG entry. No schema/source-index/structure change.
+- **Next:** commit on branch; open PR; CI; merge. Memory: STATE ✅ / RUN_LOG ✅.
+
 ## 2026-06-11 — post-sweep housekeeping: branch prune + balance-report regen
 
 - **Goal:** two follow-ups from the doc-sweep PR — (1) prune the 5 stale merged `fix/*` local branches,

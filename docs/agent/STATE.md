@@ -4,7 +4,7 @@ One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) a
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
 **Headline:** v1.0.2 (versionCode 18) **released to Play internal track** 2026-06-11 (tag `v1.0.2`) ·
-**955 JVM + 9 instrumented tests** green · `main` clean · schema v12 · launch is judgment-gated on the
+**960 JVM + 9 instrumented tests** green · `main` clean · schema v12 · launch is judgment-gated on the
 Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
@@ -25,6 +25,12 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-11 — #154 disable "buy more" at max** (branch `fix/154-disable-buy-at-max`; Gate F UX).
+  At a purchasable's cap the buy control must be un-clickable + visually disabled, consistently. 3/4
+  surfaces already correct; fixed the Workshop `UpgradeCard` outlier (`enabled = canAfford && !isMaxed`
+  on the `Card`, + pinned `disabledContainerColor` so it keeps the Gold "MAX" tint). 5 regression tests
+  pin the "canAfford==false at cap even with MAX_VALUE balance" state contract + no-op-spend guards.
+  No schema/economy change (spend logic already refused at cap). **955→960 JVM.**
 - **2026-06-11 — full doc-drift sweep** (PR #155, squash `8f1b5bc`; docs-only). 20-doc-cluster
   workflow audit (each finding adversarially re-verified against code) + a deeper manual residual pass.
   Fixed ~60 confirmed drift items across 25 docs: schema v11→v12 sweep, test-count → genericized/955,

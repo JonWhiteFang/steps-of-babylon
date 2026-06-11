@@ -4,6 +4,25 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fixed — #154 disable "buy more" at max, consistently (Gate F, UX) (2026-06-11)
+
+Closed-Test Readiness-Gate UX-consistency pass. At a purchasable's cap, the buy control must be both
+**un-clickable** and **visually disabled**, consistently across all four purchase surfaces. Audit found
+3 of 4 already correct (in-round menu, Ultimate Weapons, Cards each remove/replace the control at cap);
+the **Workshop `UpgradeCard`** was the outlier — its `Card(onClick)` no-op'd the click *inside* the
+lambda, so at cap it still showed ripple/press feedback and didn't look disabled. **955 → 960 JVM
+tests** (+5), no schema/economy change (the underlying spend logic already refused at cap).
+
+- **`UpgradeCard`** now passes `enabled = canAfford && !isMaxed` to the Material3 `Card` so a maxed/
+  unaffordable upgrade is genuinely un-clickable (not a no-op) and loses ripple/press feedback. Pinned
+  `disabledContainerColor == containerColor` per branch so disabling doesn't swap to the theme-default
+  disabled background (preserves the Gold "MAX" tint / normal surface; the dim stays owned by `alpha`).
+- **5 regression tests** pin the state contract that drives the disabled control — at cap `canAfford`/
+  `canAffordUpgrade` is `false` even with a `MAX_VALUE` balance / surplus copies (Workshop incl. ORBS +
+  every Workshop-visible capped type, UW all 3 paths, Cards), plus no-op-spend guards (maxed purchase
+  changes neither level nor balance). No new Compose-UI-test infra needed — the buy-enabled state is
+  derived in the ViewModel display-info layer.
+
 ### Docs — full documentation drift sweep + restructure (2026-06-11)
 
 Docs-only; no production code / test / schema change. A 20-doc-cluster workflow audit (each finding

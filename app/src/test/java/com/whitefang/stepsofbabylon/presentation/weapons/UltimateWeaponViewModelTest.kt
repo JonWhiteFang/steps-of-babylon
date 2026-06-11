@@ -111,4 +111,28 @@ class UltimateWeaponViewModelTest {
         val dw = vm.uiState.value.weapons.find { it.type == UltimateWeaponType.DEATH_WAVE }!!
         assertTrue(dw.paths[UWPath.DAMAGE]!!.isMaxed)
     }
+
+    // #154: a maxed path must report canAfford == false even with a huge balance — the screen
+    // uses canAfford to drive the upgrade button's `enabled`, so this is what disables it at cap.
+    @Test
+    fun `R154 maxed path is not affordable even with a huge balance`() = runTest(dispatcher) {
+        playerRepo.profile.value = PlayerProfile(powerStones = Long.MAX_VALUE)
+        uwRepo.weapons.value = mapOf(
+            UltimateWeaponType.DEATH_WAVE to OwnedWeapon(
+                UltimateWeaponType.DEATH_WAVE,
+                damageLevel = UltimateWeaponType.MAX_PATH_LEVEL,
+                secondaryLevel = UltimateWeaponType.MAX_PATH_LEVEL,
+                cooldownLevel = UltimateWeaponType.MAX_PATH_LEVEL,
+                isUnlocked = true,
+            ),
+        )
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val dw = vm.uiState.value.weapons.find { it.type == UltimateWeaponType.DEATH_WAVE }!!
+        for (path in UWPath.ALL) {
+            assertTrue(dw.paths[path]!!.isMaxed, "$path should be maxed")
+            assertFalse(dw.paths[path]!!.canAfford, "$path at cap must NOT be affordable even with MAX_VALUE balance")
+        }
+    }
 }

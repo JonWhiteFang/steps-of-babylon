@@ -84,6 +84,40 @@ class CardsViewModelTest {
         assertFalse(vm.uiState.value.ownedCards.first().isEquipped)
     }
 
+    // #154: a max-level card must report isMaxLevel == true and canAffordUpgrade == false even with
+    // a pile of copies — the screen hides the Upgrade button when isMaxLevel, and gates `enabled` on
+    // canAffordUpgrade otherwise. Both flags must hold at cap so the buy affordance is gone.
+    @Test
+    fun `R154 max-level card is maxed and not upgradeable even with surplus copies`() = runTest(dispatcher) {
+        val type = CardType.SHARP_SHOOTER
+        cardRepo.cards.value = listOf(
+            OwnedCard(1, type, type.maxLevel, false, copyCount = 999),
+        )
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val card = vm.uiState.value.ownedCards.first()
+        assertTrue(card.isMaxLevel, "card at maxLevel should report isMaxLevel")
+        assertFalse(card.canAffordUpgrade, "a maxed card must NOT be upgradeable even with surplus copies")
+    }
+
+    // #154: upgrading a maxed card must be a true no-op (level + copies unchanged).
+    @Test
+    fun `R154 upgrading a maxed card does not change level or copies`() = runTest(dispatcher) {
+        val type = CardType.SHARP_SHOOTER
+        cardRepo.cards.value = listOf(
+            OwnedCard(1, type, type.maxLevel, false, copyCount = 999),
+        )
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        vm.upgradeCard(1)
+        advanceUntilIdle()
+        val card = vm.uiState.value.ownedCards.first()
+        assertEquals(type.maxLevel, card.level, "maxed card level must be unchanged")
+        assertEquals(999, card.copyCount, "no copies consumed at cap")
+    }
+
     @Test
     fun `upgrade decrements copies and increments level`() = runTest(dispatcher) {
         cardRepo.cards.value = listOf(OwnedCard(1, CardType.SHARP_SHOOTER, 1, false, copyCount = 5))
