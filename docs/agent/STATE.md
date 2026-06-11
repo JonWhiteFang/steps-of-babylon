@@ -13,11 +13,13 @@ schema v11 · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-
   gate is **≥12 opted-in testers** — verify in Play Console → Closed testing → Testers, then apply for
   production access. All in-repo release plumbing is done (CI release lane live; v1.0.1 fired green).
 - **In-repo work = the Closed-Test Readiness Gate** (`plan-FORWARD.md`, A–G). First wave shipped a
-  quick-clear of 8 audit Lows + the latent #35 crash (Gate B + D — see Recently shipped). Still open:
-  **#124** (billing signature verify — user chose **fix it** next, half-day), **#127** (duplicate daily
-  missions — needs schema v11→v12), **#128** (remaining ~21 Lows: perf/anti-cheat/security groups,
-  deferred to v1.1 per the audit grouping). Bigger gate items: **#24** onboarding (Gate C, schema),
-  **#29** upgrade decision-support (Gate F), **#26** perf/battery (Gate G, device-measured).
+  quick-clear of 8 audit Lows + the latent #35 crash (Gate B + D — see Recently shipped). Still open
+  in **Gate D**: **#124** (billing signature verify — user chose **fix it** next, half-day), **#146**
+  (enemy counter drifts negative mid/late run — battle/economy correctness, no schema, sibling of #125;
+  slot after #124), **#127** (duplicate daily missions — needs schema v11→v12), **#128** (remaining
+  ~21 Lows: perf/anti-cheat/security groups, deferred to v1.1 per the audit grouping). Bigger gate
+  items: **#24** onboarding (Gate C, schema), **#29** decision-support (Gate F), **#26** perf/battery
+  (Gate G, device-measured).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 

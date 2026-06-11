@@ -48,6 +48,13 @@ state — the checklist informs that call, it does not replace it.
 - [ ] Audit Low #124 (billing signature verification) — fixed or accepted-with-rationale
 - [ ] Audit Low #127 (duplicate daily missions) — fixed (needs schema v11→v12 bump) or accepted
 - [ ] Audit Low #128 (30-Low tracker) — triaged; blockers fixed, rest logged
+- [ ] Bug #146 (enemy counter drifts negative mid/late run) — fixed. Two causes: untracked SCATTER
+  children + `onDeath` re-fire on corpses on the projectile path (the path #125 left uncovered);
+  cause #2 also double-credits per-kill cash + battle Steps. Display-correctness + minor economy
+  correctness, no schema; shares `EnemyEntity.takeDamage` with the #147 (#17) work — *severity:minor*.
+  **Sequence:** after #124. **Approach (decided):** derive `enemyCount` authoritatively from the live
+  `EnemyEntity` list (immune to both causes + any future bypass) **and** guard `takeDamage` with
+  `if (!isAlive) return 0.0` (also fixes the economy double-credit).
 - [ ] Clean fresh-install run; no known crashes
 
 ### E. Balance & progression feel
