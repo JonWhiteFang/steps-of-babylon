@@ -77,9 +77,9 @@ Current-state docs to audit for every PR (touch only if the PR actually invalida
 
 Historical artifacts — **NEVER modify** in a current-PR doc sweep:
 - `docs/agent/RUN_LOG.md` prior entries (appending the current PR's entry is fine; editing old ones is not).
-- `docs/plans/plan-R*.md`, `docs/plans/plan-R2*.md` — historical at authoring date.
+- `docs/archive/completed-plans-v1.0/*` — the shipped v1.0 plan files (Plans 01–30, 10b, R, R2, R3, R4, RO-*); historical at authoring date.
 - `docs/external-reviews/*` — historical at review date.
-- `devdocs/*`, `smoke_tests/*` — historical per HEAD pin.
+- `docs/archive/pre-claude-devdocs/*`, `docs/archive/smoke_tests/*` — pre-Claude analysis corpus; historical per HEAD pin.
 - Individual `docs/agent/DECISIONS/ADR-*.md` files — amend status only if explicitly warranted.
 
 ### End-of-Run memory writes (run `/checkpoint`)
