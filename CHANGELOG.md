@@ -4,6 +4,28 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Docs — planning reset: pre-Claude work archived + forward plan with Closed-Test Readiness Gate (2026-06-11)
+
+- Executed the planning-reset implementation plan (`docs/superpowers/plans/2026-06-11-planning-reset.md`).
+  Docs-only; the only `.kt` edits are KDoc comment-path fixes (no behaviour change). Test count
+  unchanged at **908 JVM + 9 instrumented**.
+- **Archived** (history-preserving `git mv`): `devdocs/` → `docs/archive/pre-claude-devdocs/`,
+  `smoke_tests/` → `docs/archive/smoke_tests/`, and 38 shipped plan files (Plans 01–30, 10b, R, R2,
+  R3, R4, RO-09/11/12) → `docs/archive/completed-plans-v1.0/`. Each archive area has a README index;
+  `git log --follow` traces every file across the move.
+- **New** `docs/plans/plan-FORWARD.md` — three phases keyed to a **Closed-Test Readiness Gate** (the
+  explicit A–G quality checklist gating internal → closed-test promotion, since promotion is
+  judgment-gated not tester-count-gated). `plan-V1X-roadmap.md` demoted to the backlog of record.
+  `master-plan`, `plan-31`, `plan-32`, `plan-V1X-roadmap` stay live in `docs/plans/`.
+- **Repointed** every live reference to a moved path: master-plan's 35 internal links, the CLAUDE.md +
+  checkpoint-skill historical-artifact lists, `plan-V1X-roadmap.md` + `plan-32-ci.md` refs, two source
+  KDoc comments (`UltimateWeaponType.kt`, `Migrations.kt`), and a `ci.yml` comment. A repo-wide sweep
+  with an explicit frozen-exemption list confirmed zero stray live refs.
+- **Accepted exception:** 7 `plan-R4` links inside frozen CHANGELOG entries 404 by design (editing
+  frozen history is disallowed; the archived file stays reachable + indexed).
+- The plan was hardened by a multi-agent adversarial review before execution (caught a `git mv`
+  blocker + the under-scoped repoint surface); see the plan's Self-Review section.
+
 ### Docs — project-wide current-state sweep + STATE.md tight rewrite (2026-06-11)
 
 - Docs-only; no production code / test / schema change. Test count unchanged at **908 JVM + 9 instrumented**.
