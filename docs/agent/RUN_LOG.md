@@ -1,4 +1,4 @@
-## 2026-06-11 — full documentation drift sweep (branch docs/drift-sweep-2026-06-11)
+## 2026-06-11 — full documentation drift sweep (PR #155, merged 8f1b5bc)
 
 - **Goal:** "do a full doc sweep to catch anything outdated; advise on missing docs / restructuring."
   Docs-only PR — no production code, test, or schema change.
@@ -47,8 +47,9 @@
 - **Verification:** documented counts cross-checked against test assertions (UpgradeTypeTest=24,
   CardType max Lv7); battle-formulas code fences balanced; CHANGELOG headers ordered; both new docs
   un-ignored + on disk. No build run (docs-only). 27 files modified + 2 new.
-- **Next:** commit on branch; open PR; (developer) review the restructures (CHANGELOG split, gitignore
-  change) since those are judgment calls. Memory updated: STATE ✅ / RUN_LOG ✅.
+- **Merged:** PR #155 squash-merged to `main` as `8f1b5bc` 2026-06-11; both CI checks green; branch
+  deleted (local + remote). The CHANGELOG split + `.gitignore` anchor were flagged for review and
+  accepted. Memory updated: STATE ✅ / RUN_LOG ✅.
 
 ## 2026-06-11 — v1.0.2 released to Play internal track (tag v1.0.2)
 

@@ -25,7 +25,7 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
-- **2026-06-11 — full doc-drift sweep** (branch `docs/drift-sweep-2026-06-11`, docs-only). 20-doc-cluster
+- **2026-06-11 — full doc-drift sweep** (PR #155, squash `8f1b5bc`; docs-only). 20-doc-cluster
   workflow audit (each finding adversarially re-verified against code) + a deeper manual residual pass.
   Fixed ~60 confirmed drift items across 25 docs: schema v11→v12 sweep, test-count → genericized/955,
   use-cases 32→36, UpgradeType 23→24, SupplyDropTrigger 4→3, nav routes 12→13, **Step Overdrive ghosts**
