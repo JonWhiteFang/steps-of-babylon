@@ -1,3 +1,36 @@
+## 2026-06-11 — Planning reset EXECUTED: archive pre-Claude work + forward plan with Closed-Test Readiness Gate (branch docs/planning-reset)
+
+- **Goal:** user asked to redo project planning — archive the pre-Claude planning work and map the way
+  forward, reframed around staying in **internal** testing until the game is judged good enough for
+  closed test (a quality gate, not the tester-count clock the old plan assumed). Brainstormed → spec
+  (`docs/superpowers/specs/2026-06-11-planning-reset-design.md`) → plan
+  (`docs/superpowers/plans/2026-06-11-planning-reset.md`) → multi-agent adversarial review → executed.
+- **Adversarial review first (key value):** a 5-lens workflow (28 findings, 10 confirmed) caught a
+  **BLOCKER** — Task 4's `git mv` would abort (exit 128) with no leaf dir — plus a **MAJOR**: the
+  "only 3 live files reference moved paths" scope claim was false (`plan-V1X-roadmap.md:1552`,
+  `plan-32-ci.md:135`, two source KDoc comments, a `ci.yml` comment all referenced moved paths). Both
+  fixed in the plan + re-verified against the live repo before execution.
+- **Executed 11 tasks, one commit each (history-preserving):** scaffold `docs/archive/` →
+  `git mv devdocs/ → docs/archive/pre-claude-devdocs/` → `git mv smoke_tests/ → docs/archive/smoke_tests/`
+  → `mkdir -p` + `git mv` 38 shipped plan files → `docs/archive/completed-plans-v1.0/` (+ index README)
+  → repoint master-plan's 35 links (validated sed) → repoint CLAUDE.md + checkpoint-skill historical
+  lists → author `plan-FORWARD.md` (3 phases + A–G gate; Category A reframed as in-play feel since the
+  audio code already shipped) → demote V1X to backlog + wire pointers + repoint `plan-V1X-roadmap`/`plan-32-ci`
+  → repoint 2 source KDoc comments + `ci.yml` → CHANGELOG + this entry → PR.
+- **Verification:** every task's grep/`ls`/`git log --follow` verify passed exactly as the plan
+  specified. The Task 9 **repo-wide sweep with an explicit frozen-exemption list converged clean
+  (zero stray live refs)**; `git log --follow` confirmed history preserved across the moves; the two
+  `.kt` edits are diff-confirmed comment-only (no compile needed; CI will compile on the PR). `docs/plans/`
+  now holds exactly 5 live files (master-plan, plan-FORWARD, plan-31, plan-32, plan-V1X-roadmap).
+- **Accepted exception (documented, not fixed):** 7 `plan-R4` links inside frozen CHANGELOG entries
+  404 by design — editing frozen history is disallowed; the archived file stays reachable + indexed.
+- **Doc sync:** CHANGELOG new section + this entry. No ADR (planning-process reorganization, not an
+  architecture decision; the design spec captures the rationale). STATE.md references block already
+  updated in Task 8.
+- **Next:** open the PR (doc-only). Then Phase 1 work begins against the Readiness Gate — first
+  candidate pickups: audit Lows (#124/#127/#128), the first-session UX gap (#24), and in-play
+  audio/balance/perf assessment.
+
 ## 2026-06-11 — Project-wide doc sweep + STATE.md tight rewrite (docs-only, direct to main)
 
 - **Goal:** user asked for a full document update across the project + to make STATE.md "more concise and

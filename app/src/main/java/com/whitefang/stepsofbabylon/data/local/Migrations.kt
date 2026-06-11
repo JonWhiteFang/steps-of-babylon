@@ -67,7 +67,7 @@ object AppMigrations {
      * new path columns via integer division so the sum of the three new levels equals
      * the old level. The split is `damageLevel = (L+2)/3, secondaryLevel = (L+1)/3,
      * cooldownLevel = L/3` — for the canonical mid-level case L=5 this produces 2/2/1
-     * (sum 5), matching the example in `docs/plans/plan-R4-feedback-bundle.md`. Rows
+     * (sum 5), matching the example in `docs/archive/completed-plans-v1.0/plan-R4-feedback-bundle.md`. Rows
      * with `level >= 1` are seeded `isUnlocked = 1` (the pre-R4-06 schema only created
      * a row when the player had paid the unlock cost, so any existing row is unlocked).
      *

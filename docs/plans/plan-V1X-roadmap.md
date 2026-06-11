@@ -1,5 +1,11 @@
 # Roadmap Plan V1X — v1.x Patch Sequence
 
+> **Role (as of 2026-06-11):** this roadmap is now the **backlog of record** — it holds per-sub-plan
+> detail. Phase sequencing toward closed test + launch lives in `docs/plans/plan-FORWARD.md`, which
+> pulls sub-plans from here. The "post-v1.0.0 production rollout" sequencing below is superseded by
+> plan-FORWARD's gate-keyed phases; treat the sub-plan specs as the live content and the wave ordering
+> as historical context.
+
 Post-launch work derived from the GitHub issue triage on 2026-05-25 (`docs/external-reviews/2026-05-25-issue-triage.md`). 33 open issues triaged; 16 verified-accurate findings, 4 already-tracked debt items, 11 strategic roadmap proposals, plus 2 closed-track-blocking fixes (#19, #20) excluded as they are landing on `main` via `fix/19-20-uw-autotrigger-and-seeding`.
 
 This plan is **post-launch**. It is not a release blocker. The closed-track ≥14-day window for AAB v14 is the active gating activity. V1X work begins after v1.0.0 ships to production and the staged rollout completes.
@@ -1549,7 +1555,7 @@ Some triage items map to existing tracked debt rather than V1X-NN sub-plans:
 - Source triage: `docs/external-reviews/2026-05-25-issue-triage.md`
 - Master plan registration entry: `docs/plans/master-plan.md` (to be updated when this plan is approved)
 - Closed-track-blocking #19 + #20 fixes: branch `fix/19-20-uw-autotrigger-and-seeding`, merged via PR #52 (commit `230309c`)
-- Plan R4 (predecessor — feedback bundle): `docs/plans/plan-R4-feedback-bundle.md`
+- Plan R4 (predecessor — feedback bundle): `docs/archive/completed-plans-v1.0/plan-R4-feedback-bundle.md`
 - Plan 31 (Play Console — currently active): `docs/plans/plan-31-play-console.md`
 - ADR-0003 (Battle Step Rewards): `docs/agent/DECISIONS/ADR-0003-battle-step-rewards.md`
 - Privacy policy (canonical, in repo): `docs/release/privacy-policy.md`

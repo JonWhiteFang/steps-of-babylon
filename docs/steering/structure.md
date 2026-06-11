@@ -190,4 +190,4 @@ All in `domain/model/`:
 
 ## Development Plans
 
-Plans live in `docs/plans/` as `plan-NN-name.md`. The master plan is at `docs/plans/master-plan.md` (38 entries: Plans 01–32 plus 10b/R/R2/R3/R4/V1X). Always check the relevant plan file before implementing a feature.
+Forward planning is in `docs/plans/plan-FORWARD.md` (path to closed test + launch, keyed to the Closed-Test Readiness Gate). `docs/plans/master-plan.md` is the v1.0 completion record (38 entries). `docs/plans/plan-V1X-roadmap.md` is the post-launch backlog of record. The completed v1.0 plan files (Plans 01–30, 10b, R*, RO-*) are archived under `docs/archive/completed-plans-v1.0/`. Live plan files in `docs/plans/`: master-plan, plan-FORWARD, plan-31-play-console, plan-32-ci, plan-V1X-roadmap.

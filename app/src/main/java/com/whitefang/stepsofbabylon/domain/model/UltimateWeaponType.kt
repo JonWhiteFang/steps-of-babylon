@@ -8,7 +8,7 @@ package com.whitefang.stepsofbabylon.domain.model
  * enum and the per-level value is a linear interpolation between them.
  *
  * Ranges for each path are defined in pairs (L1, L10) so the spec table from
- * `docs/plans/plan-R4-feedback-bundle.md` §R4-06 reads directly into the constructor:
+ * `docs/archive/completed-plans-v1.0/plan-R4-feedback-bundle.md` §R4-06 reads directly into the constructor:
  *
  * | Field | Meaning |
  * |---|---|

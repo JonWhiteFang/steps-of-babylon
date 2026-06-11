@@ -53,9 +53,9 @@ Apply the edits identified in step 1.
 ## Historical artifacts — NEVER modify
 Appending a new RUN_LOG entry is fine; editing the past is not. Leave these untouched:
 - Prior `docs/agent/RUN_LOG.md` entries.
-- `docs/plans/plan-R*.md`, `docs/plans/plan-R2*.md` and other dated plan detail blocks.
+- `docs/archive/completed-plans-v1.0/*` — the shipped v1.0 plan files (Plans 01–30, 10b, R, R2, R3, R4, RO-*); historical at authoring date.
 - `docs/external-reviews/*` — historical at review date.
-- `devdocs/*`, `smoke_tests/*` — historical per HEAD pin.
+- `docs/archive/pre-claude-devdocs/*`, `docs/archive/smoke_tests/*` — pre-Claude analysis corpus; historical per HEAD pin.
 - Existing `docs/agent/DECISIONS/ADR-*.md` bodies — amend status only if explicitly warranted.
 
 ## PR Task-List Convention
