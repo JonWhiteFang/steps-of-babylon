@@ -105,8 +105,11 @@ checklist makes that judgment explicit and reviewable ("what's still unchecked?"
 
 Categories (confirmed in brainstorming):
 
-- **A. Audio & game feel** — real SFX replacing placeholder sine tones (V1X-04, #38); frequency-aware
-  SFX throttle so RAPID_FIRE/MULTISHOT feel right (V1X-05, #46); background music (V1X-06, #39).
+- **A. Audio & game feel** — the audio overhaul **already shipped** (V1X-04/05/06, PRs #67/#68/#69;
+  issues #38/#46/#39 CLOSED): synthesized SFX, attack-speed-scaled throttle, `MusicManager` with audio
+  focus + volume control. The gate item is therefore an **in-play feel assessment** (do the synthesized
+  SFX/music actually sound good; any throttle/ducking glitches), not delivery — reopen V1X-04 for real
+  recorded assets only if the synthesized SFX disappoint.
 - **B. Content honesty** — no misleading "Coming Soon" in core flows; AUTO_UPGRADE_AI resolved
   (#44); cosmetic set coherent (remaining "Coming Soon" skins either ship or are clearly framed).
 - **C. First-session UX** — onboarding / first-walk celebration / a brand-new player understands the
@@ -161,11 +164,20 @@ Doc-only change, so validation is link- and consistency-checking, not build/test
 
 ## Risks
 
-- **Broken cross-references** — 21 inbound `devdocs/` refs + an unknown number of completed-plan-file
-  refs. Mitigation: grep-driven repoint pass + a final link-check sweep before commit.
-- **Archived-but-still-needed** — a completed plan file might be referenced as live context somewhere.
-  Mitigation: the completed-plans README is an index, and refs are repointed rather than dropped, so
-  nothing becomes unreachable.
+- **Broken cross-references** — inbound refs to moved paths exist in LIVE docs (CLAUDE.md + the
+  checkpoint skill historical lists), live plan files (`master-plan.md` 35 links, `plan-V1X-roadmap.md`,
+  `plan-32-ci.md`), and even two live source-code KDoc comments (`UltimateWeaponType.kt`,
+  `Migrations.kt`) + one CI comment (`ci.yml`). Mitigation: the plan repoints every LIVE ref (Tasks 5,
+  6, 8, 9) and runs a repo-wide sweep with an explicit frozen-exemption list before commit. (The
+  adversarial review of the implementation plan, 2026-06-11, surfaced the live-plan-file and
+  source-comment refs that an initial markdown-only scan missed.)
+- **Archived-but-still-needed** — a completed plan file might be referenced as live context. Mitigation:
+  the completed-plans README is an index, and LIVE refs are repointed rather than dropped. **Accepted
+  exception:** 7 markdown links to `plan-R4-feedback-bundle.md` inside FROZEN `CHANGELOG.md` entries
+  will 404 after the move — editing frozen history to fix link targets would violate the "never modify
+  historical artifacts" rule, and the archived file itself stays reachable + indexed, so the only
+  impact is dead in-doc hyperlinks in dated history. Not "nothing becomes unreachable" — the *files*
+  stay reachable; a handful of *historical hyperlinks* go stale by design.
 - **Gate scope creep** — the checklist could balloon into "make it perfect." Mitigation: A–G is the
   agreed ceiling; items get "deferred — not a blocker" rather than the gate growing new categories
   without a decision.
