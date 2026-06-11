@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.whitefang.stepsofbabylon.data.billing.internal.ActivityProvider
 import com.whitefang.stepsofbabylon.data.billing.internal.BillingClientAdapter
+import com.whitefang.stepsofbabylon.data.billing.internal.PurchaseVerifier
 import com.whitefang.stepsofbabylon.data.billing.internal.QueryProductDetailsResult
 import com.whitefang.stepsofbabylon.data.billing.internal.QueryPurchasesResult
 import com.whitefang.stepsofbabylon.data.billing.internal.SdkBillingResult
@@ -73,6 +74,7 @@ internal class BillingManagerImpl @Inject constructor(
     private val playerProfileDao: PlayerProfileDao,
     private val playerRepository: PlayerRepository,
     private val activityProvider: ActivityProvider,
+    private val verifier: PurchaseVerifier,
     @ApplicationContext private val context: Context,
 ) : BillingManager {
 
@@ -191,6 +193,22 @@ internal class BillingManagerImpl @Inject constructor(
             return PurchaseResult.Error("Purchase pending — complete payment to receive your items")
         }
 
+        // #124: verify Google's RSA signature over the purchase payload AND that the signed
+        // productId + purchaseToken match what we're about to grant, BEFORE any grant. A forged
+        // / tampered / replayed purchase (rooted device, hooked Play Billing, repackaged APK,
+        // or a genuinely-signed cheap receipt re-aimed at an expensive product) is rejected here
+        // — no receipt row, no wallet credit, no consume/acknowledge.
+        if (!verifier.isValidPurchase(
+                originalJson = purchase.originalJson,
+                signature = purchase.signature,
+                expectedProductId = product.skuId(),
+                expectedPurchaseToken = purchase.purchaseToken,
+            )
+        ) {
+            Log.w(TAG, "Rejecting purchase ${purchase.purchaseToken}: signature verification failed.")
+            return PurchaseResult.Error("Purchase could not be verified")
+        }
+
         // PURCHASED or UNSPECIFIED: grant atomically (upsert + wallet credit + granted flag).
         val receipt = BillingReceiptEntity(
             purchaseToken = purchase.purchaseToken,
@@ -297,6 +315,23 @@ internal class BillingManagerImpl @Inject constructor(
                 continue
             }
             if (purchase.purchaseState != SdkPurchaseState.PURCHASED) continue
+
+            // #124: same signature + product-binding gate as the live purchase path. A forged
+            // purchase injected into the queryPurchases() result — or a validly-signed receipt
+            // whose signed productId/token doesn't match — is skipped, never granted, never
+            // persisted. Note `product` here is derived from the UNSIGNED purchase.productId
+            // (line above), so binding the signed productId to product.skuId() is what closes
+            // the substitution on this path too.
+            if (!verifier.isValidPurchase(
+                    originalJson = purchase.originalJson,
+                    signature = purchase.signature,
+                    expectedProductId = product.skuId(),
+                    expectedPurchaseToken = purchase.purchaseToken,
+                )
+            ) {
+                Log.w(TAG, "reconcile: rejecting ${purchase.purchaseToken}: signature verification failed.")
+                continue
+            }
 
             val receipt = BillingReceiptEntity(
                 purchaseToken = purchase.purchaseToken,

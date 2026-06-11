@@ -127,9 +127,16 @@ internal sealed class QueryPurchasesResult {
  * Platform-neutral projection of Play Billing's `Purchase`. Carries only the fields the
  * impl actually needs, which keeps tests cheap to construct.
  *
- * @property rawRef Opaque back-reference to the original SDK object. Used by the real adapter
- *                  when a later RPC (consume / acknowledge) needs the SDK-level purchase
- *                  context. Tests pass `null`.
+ * @property originalJson Play Billing's `Purchase.getOriginalJson()` — the exact bytes Google
+ *                        signed. Carried (alongside [signature]) so the impl can run client-side
+ *                        RSA signature verification before granting (#124). Nullable because a
+ *                        forged / stripped purchase may not carry it, and tests that don't
+ *                        exercise verification omit it.
+ * @property signature    Play Billing's `Purchase.getSignature()` — the Base64 RSA-SHA1 signature
+ *                        over [originalJson]. See [originalJson].
+ * @property rawRef       Opaque back-reference to the original SDK object. Used by the real adapter
+ *                        when a later RPC (consume / acknowledge) needs the SDK-level purchase
+ *                        context. Tests pass `null`.
  */
 internal data class SdkPurchase(
     val productId: String,
@@ -139,6 +146,8 @@ internal data class SdkPurchase(
     val purchaseState: SdkPurchaseState,
     val isAcknowledged: Boolean,
     val isAutoRenewing: Boolean,
+    val originalJson: String? = null,
+    val signature: String? = null,
     val rawRef: Any? = null,
 )
 

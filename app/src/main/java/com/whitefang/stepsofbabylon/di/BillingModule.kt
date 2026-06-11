@@ -1,11 +1,15 @@
 package com.whitefang.stepsofbabylon.di
 
+import com.whitefang.stepsofbabylon.BuildConfig
 import com.whitefang.stepsofbabylon.data.billing.BillingManagerImpl
 import com.whitefang.stepsofbabylon.data.billing.internal.BillingClientAdapter
+import com.whitefang.stepsofbabylon.data.billing.internal.PurchaseVerifier
 import com.whitefang.stepsofbabylon.data.billing.internal.RealBillingClientAdapter
+import com.whitefang.stepsofbabylon.data.billing.internal.RealPurchaseVerifier
 import com.whitefang.stepsofbabylon.domain.repository.BillingManager
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
@@ -52,10 +56,12 @@ internal abstract class BillingModule {
  *
  * - [BillingManagerImpl]'s constructor takes [BillingClientAdapter]; this binding supplies
  *   the concrete [RealBillingClientAdapter].
- * - Unit tests mock [BillingClientAdapter] directly and construct [BillingManagerImpl] by
- *   hand — this module is not consulted there.
+ * - [BillingManagerImpl] also takes [PurchaseVerifier]; the companion `@Provides` constructs
+ *   the concrete [RealPurchaseVerifier] with the build-time Play license key (#124).
+ * - Unit tests mock [BillingClientAdapter] / substitute a fake [PurchaseVerifier] directly and
+ *   construct [BillingManagerImpl] by hand — this module is not consulted there.
  *
- * C.5 PR 1 / C.5 PR 2 / C.5 PR 3 / ADR-0005.
+ * C.5 PR 1 / C.5 PR 2 / C.5 PR 3 / #124 / ADR-0005.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -64,4 +70,19 @@ internal abstract class BillingInternalModule {
     @Binds
     @Singleton
     abstract fun bindBillingClientAdapter(impl: RealBillingClientAdapter): BillingClientAdapter
+
+    internal companion object {
+        /**
+         * Provides the client-side [PurchaseVerifier] (#124) seeded with the Base64 Play
+         * "Licensing" public key baked into the build at configure-time. Debug / CI builds get
+         * the empty default → verification is disabled (fail-open); a correctly-configured
+         * release embeds the real key (from gitignored `local.properties`) and rejects forged
+         * purchases. A `@Provides` (not `@Binds`) because the impl is built from a constant,
+         * not bound from another type. See `app/build.gradle.kts` `PLAY_LICENSE_KEY`.
+         */
+        @Provides
+        @Singleton
+        fun providePurchaseVerifier(): PurchaseVerifier =
+            RealPurchaseVerifier(BuildConfig.PLAY_LICENSE_KEY)
+    }
 }

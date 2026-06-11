@@ -65,6 +65,13 @@ android {
         // V1X-17: Play Store URL for text-share buttons (share-sheet templates).
         buildConfigField("String", "PLAY_STORE_URL", "\"https://play.google.com/store/apps/details?id=com.whitefang.stepsofbabylon\"")
 
+        // #124: Google Play "Licensing" RSA public key (Base64) for client-side purchase
+        // signature verification. Default is empty → verification is disabled (fail-open),
+        // which is the correct debug/CI behaviour: those builds use Play Console license-test
+        // accounts whose signatures we can't verify offline. Release overrides this from
+        // gitignored local.properties (`play.licenseKey`) below. See PurchaseVerifier + ADR-0005.
+        buildConfigField("String", "PLAY_LICENSE_KEY", "\"\"")
+
         // AdMob APPLICATION_ID manifest placeholder. Substituted into the
         // <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID"/> entry in
         // AndroidManifest.xml at build time. Debug uses Google's documented test app ID
@@ -126,6 +133,36 @@ android {
             buildConfigField("String", "AD_UNIT_POST_ROUND_DOUBLE_PS", "\"$realPostRoundDoublePs\"")
             buildConfigField("String", "AD_UNIT_DAILY_FREE_CARD_PACK", "\"$realDailyFreeCardPack\"")
             manifestPlaceholders["admobAppId"] = realAppId
+
+            // #124: real Play "Licensing" public key from gitignored local.properties. A
+            // correctly-configured release embeds the key and rejects forged purchases. A BLANK
+            // key would make RealPurchaseVerifier fail-open (verification disabled) — which must
+            // never ship — so the `whenReady` guard below FAILS the build when a release artifact
+            // is assembled with a blank key. (Debug / CI `assembleDebug` keep the "" fallback and
+            // fail-open by design; this field still needs a value here for them to compile.)
+            val realLicenseKey = localProperties.getProperty("play.licenseKey") ?: ""
+            buildConfigField("String", "PLAY_LICENSE_KEY", "\"$realLicenseKey\"")
+        }
+    }
+
+    // #124 fail-closed guard: refuse to PRODUCE a release AAB/APK with verification fail-open.
+    // Scoped to the task graph so it fires only when a release-producing task actually runs —
+    // debug builds, unit tests, and the PR gate's `assembleDebug` are unaffected (they configure
+    // the release block above but never assemble it). The release CI lane injects the key from
+    // the PLAY_LICENSE_KEY secret (see .github/workflows/release.yml).
+    gradle.taskGraph.whenReady {
+        // Match ANY release-artifact-producing task, not just the two the current lane uses, so a
+        // future product flavor (`bundleProdRelease`), `packageRelease`, or the umbrella `bundle`
+        // task can't silently bypass the guard. `assembleDebug` / `testDebugUnitTest` / the PR gate
+        // never match (they don't end in "Release"), so those lanes stay unaffected.
+        val releaseTask = Regex("^(bundle|assemble|package).*Release$")
+        val buildsRelease = allTasks.any { releaseTask.matches(it.name) }
+        if (buildsRelease && localProperties.getProperty("play.licenseKey").isNullOrBlank()) {
+            throw GradleException(
+                "Release build requires a non-blank 'play.licenseKey' in local.properties " +
+                    "(CI: the PLAY_LICENSE_KEY secret). A blank key makes #124 purchase-signature " +
+                    "verification fail-open — refusing to ship a release with it disabled.",
+            )
         }
     }
 

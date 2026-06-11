@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.whitefang.stepsofbabylon.data.billing.internal.ActivityProvider
 import com.whitefang.stepsofbabylon.data.billing.internal.BillingClientAdapter
+import com.whitefang.stepsofbabylon.data.billing.internal.PurchaseVerifier
 import com.whitefang.stepsofbabylon.data.billing.internal.QueryProductDetailsResult
 import com.whitefang.stepsofbabylon.data.billing.internal.QueryPurchasesResult
 import com.whitefang.stepsofbabylon.data.billing.internal.SdkBillingResult
@@ -36,6 +37,7 @@ import org.junit.runner.RunWith
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
@@ -67,6 +69,7 @@ class BillingManagerImplTest {
     private lateinit var playerRepository: PlayerRepository
     private lateinit var activityProvider: ActivityProvider
     private lateinit var activity: Activity
+    private lateinit var verifier: RecordingPurchaseVerifier
 
     private lateinit var profileFlow: MutableStateFlow<PlayerProfile>
 
@@ -87,6 +90,9 @@ class BillingManagerImplTest {
         playerRepository = mock()
         activityProvider = ActivityProvider()
         activity = mock()
+        // Default: verification passes, so all pre-#124 tests exercise the grant path unchanged.
+        // Individual #124 tests flip `accept = false` to assert the reject path.
+        verifier = RecordingPurchaseVerifier(accept = true)
         activityProvider.set(activity)
 
         profileFlow = MutableStateFlow(blankProfile())
@@ -98,8 +104,33 @@ class BillingManagerImplTest {
             playerProfileDao = playerDao,
             playerRepository = playerRepository,
             activityProvider = activityProvider,
+            verifier = verifier,
             context = ctx,
         )
+    }
+
+    /**
+     * Deterministic [PurchaseVerifier] for the billing pipeline tests (#124). Records every
+     * verification call so a test can assert the impl passed the purchase's signed payload AND
+     * the expected product/token it's about to grant; returns a fixed [accept].
+     */
+    private class RecordingPurchaseVerifier(var accept: Boolean) : PurchaseVerifier {
+        data class Call(
+            val originalJson: String?,
+            val signature: String?,
+            val expectedProductId: String,
+            val expectedPurchaseToken: String,
+        )
+        val seen = mutableListOf<Call>()
+        override fun isValidPurchase(
+            originalJson: String?,
+            signature: String?,
+            expectedProductId: String,
+            expectedPurchaseToken: String,
+        ): Boolean {
+            seen += Call(originalJson, signature, expectedProductId, expectedPurchaseToken)
+            return accept
+        }
     }
 
     @After
@@ -270,6 +301,81 @@ class BillingManagerImplTest {
         val receipt = receiptDao.getByToken("tok_pending")!!
         assertFalse("receipt granted stays false on PENDING", receipt.granted)
         assertNull(receipt.grantedAt)
+    }
+
+    // --- #124 signature verification ----------------------------------------------------
+
+    @Test
+    fun `purchase with invalid signature does not credit wallet or write granted receipt`() = runTest {
+        verifier.accept = false
+        stubHappyPath(
+            product = BillingProduct.GEM_PACK_LARGE,
+            productType = SdkProductType.INAPP,
+            purchaseToken = "tok_forged",
+            state = SdkPurchaseState.PURCHASED,
+        )
+
+        val result = impl.purchase(BillingProduct.GEM_PACK_LARGE)
+
+        assertTrue("forged purchase must surface an Error", result is PurchaseResult.Error)
+        val profile = playerDao.get().firstOrNull()!!
+        assertEquals("no gems credited on failed verification", 0L, profile.gems)
+        assertTrue("no receipt persisted on failed verification", receiptDao.getAll().isEmpty())
+        // Must not consume/acknowledge an unverified purchase (no finalize on the reject path).
+        verify(adapter, never()).consume(any())
+        verify(adapter, never()).acknowledge(any())
+    }
+
+    @Test
+    fun `purchase verifies the purchase signed payload before granting`() = runTest {
+        stubHappyPath(
+            product = BillingProduct.GEM_PACK_SMALL,
+            productType = SdkProductType.INAPP,
+            purchaseToken = "tok_checkme",
+            state = SdkPurchaseState.PURCHASED,
+            consumeResult = SdkBillingResult.Ok,
+        )
+
+        impl.purchase(BillingProduct.GEM_PACK_SMALL)
+
+        assertEquals("verifier called exactly once on the purchase path", 1, verifier.seen.size)
+        val call = verifier.seen.single()
+        assertEquals("""{"productId":"gem_pack_small","purchaseToken":"tok_checkme"}""", call.originalJson)
+        assertEquals("sig_tok_checkme", call.signature)
+        // #124 finding 2: the impl must tell the verifier WHICH product+token it's about to grant
+        // so the verifier can bind the signed payload to the grant.
+        assertEquals("gem_pack_small", call.expectedProductId)
+        assertEquals("tok_checkme", call.expectedPurchaseToken)
+    }
+
+    @Test
+    fun `reconcile does not credit wallet for a purchase with an invalid signature`() = runTest {
+        verifier.accept = false
+        adapter.stub {
+            onBlocking { connect() } doReturn SdkBillingResult.Ok
+            onBlocking { queryPurchases(SdkProductType.INAPP) } doReturn QueryPurchasesResult.Success(
+                listOf(
+                    SdkPurchase(
+                        productId = "gem_pack_large",
+                        orderId = "GPA.forged",
+                        purchaseToken = "tok_recon_forged",
+                        purchaseTime = 1L,
+                        purchaseState = SdkPurchaseState.PURCHASED,
+                        isAcknowledged = false,
+                        isAutoRenewing = false,
+                        originalJson = """{"productId":"gem_pack_large"}""",
+                        signature = "bad_sig",
+                    ),
+                ),
+            )
+            onBlocking { queryPurchases(SdkProductType.SUBS) } doReturn QueryPurchasesResult.Success(emptyList())
+        }
+
+        impl.reconcilePendingPurchases()
+
+        val profile = playerDao.get().firstOrNull()!!
+        assertEquals("reconcile must not credit an unverified forged purchase", 0L, profile.gems)
+        assertTrue("no granted receipt for a forged reconcile purchase", receiptDao.getAll().isEmpty())
     }
 
     // --- idempotency --------------------------------------------------------------------
@@ -483,6 +589,8 @@ class BillingManagerImplTest {
             purchaseState = state,
             isAcknowledged = false,
             isAutoRenewing = product == BillingProduct.SEASON_PASS,
+            originalJson = """{"productId":"${product.skuId()}","purchaseToken":"$purchaseToken"}""",
+            signature = "sig_$purchaseToken",
         )
         adapter.stub {
             onBlocking { connect() } doReturn SdkBillingResult.Ok

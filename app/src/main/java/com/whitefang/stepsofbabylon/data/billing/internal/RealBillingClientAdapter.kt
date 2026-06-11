@@ -286,6 +286,11 @@ internal class RealBillingClientAdapter @Inject constructor(
             purchaseState = state,
             isAcknowledged = isAcknowledged,
             isAutoRenewing = isAutoRenewing,
+            // originalJson + signature are the exact bytes Google signed + its RSA-SHA1
+            // signature; BillingManagerImpl runs client-side signature verification on them
+            // before crediting the wallet (#124).
+            originalJson = originalJson,
+            signature = signature,
             rawRef = this,
         )
     }
