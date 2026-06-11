@@ -28,6 +28,62 @@ interface DailyStepDao {
     @Query("SELECT COALESCE(SUM(creditedSteps), 0) FROM daily_step_record WHERE date BETWEEN :startDate AND :endDate")
     suspend fun sumCreditedSteps(startDate: String, endDate: String): Long
 
+    // ---- #121: column-targeted daily-step upserts (lost-update fix) ----
+    //
+    // Each of the four daily_step_record writers (sensor / Health Connect / activity-minute /
+    // escrow) used to go through a non-atomic read-copy-upsert in StepRepositoryImpl:
+    // `getByDateOnce(date) -> upsert(existing.copy(field=...))`. Because @Upsert rewrites
+    // EVERY column from the read snapshot, two INDEPENDENT components writing the SAME date
+    // row concurrently (the foreground sensor service, the 15-min sync worker, and the
+    // Health Connect cross-validator all run on different threads with no shared lock) would
+    // clobber each other: the second writer's upsert persisted the OTHER columns at the stale
+    // value it read, silently reverting the first writer's column. (#121 / audit finding #3.)
+    //
+    // These four UPSERTs mirror the [incrementBattleSteps] template — the INSERT half supplies
+    // every NOT NULL column explicitly (SQLite evaluates NOT NULL before ON CONFLICT can
+    // resolve the UNIQUE conflict, so a partial INSERT would abort with
+    // `NOT NULL constraint failed`), and the `ON CONFLICT(date) DO UPDATE SET ...` half touches
+    // ONLY this writer's own columns. Because each writer now mutates a disjoint column set,
+    // concurrent writers can no longer overwrite each other's data — no Mutex required.
+    // These overwrite (SET) their columns rather than increment, matching the original
+    // semantics: the daily-step writers persist cumulative running totals.
+
+    @Query(
+        "INSERT INTO daily_step_record " +
+            "(date, sensorSteps, healthConnectSteps, creditedSteps, escrowSteps, " +
+            "escrowSyncCount, activityMinutes, stepEquivalents, battleStepsEarned, bossPsEarnedToday) " +
+            "VALUES (:date, :sensorSteps, 0, :creditedSteps, 0, 0, '{}', 0, 0, 0) " +
+            "ON CONFLICT(date) DO UPDATE SET sensorSteps = :sensorSteps, creditedSteps = :creditedSteps",
+    )
+    suspend fun setSensorAndCreditedSteps(date: String, sensorSteps: Long, creditedSteps: Long)
+
+    @Query(
+        "INSERT INTO daily_step_record " +
+            "(date, sensorSteps, healthConnectSteps, creditedSteps, escrowSteps, " +
+            "escrowSyncCount, activityMinutes, stepEquivalents, battleStepsEarned, bossPsEarnedToday) " +
+            "VALUES (:date, 0, :healthConnectSteps, 0, 0, 0, '{}', 0, 0, 0) " +
+            "ON CONFLICT(date) DO UPDATE SET healthConnectSteps = :healthConnectSteps",
+    )
+    suspend fun setHealthConnectSteps(date: String, healthConnectSteps: Long)
+
+    @Query(
+        "INSERT INTO daily_step_record " +
+            "(date, sensorSteps, healthConnectSteps, creditedSteps, escrowSteps, " +
+            "escrowSyncCount, activityMinutes, stepEquivalents, battleStepsEarned, bossPsEarnedToday) " +
+            "VALUES (:date, 0, 0, 0, 0, 0, :activityMinutes, :stepEquivalents, 0, 0) " +
+            "ON CONFLICT(date) DO UPDATE SET activityMinutes = :activityMinutes, stepEquivalents = :stepEquivalents",
+    )
+    suspend fun setActivityMinutes(date: String, activityMinutes: Map<String, Int>, stepEquivalents: Long)
+
+    @Query(
+        "INSERT INTO daily_step_record " +
+            "(date, sensorSteps, healthConnectSteps, creditedSteps, escrowSteps, " +
+            "escrowSyncCount, activityMinutes, stepEquivalents, battleStepsEarned, bossPsEarnedToday) " +
+            "VALUES (:date, 0, 0, 0, :escrowSteps, :escrowSyncCount, '{}', 0, 0, 0) " +
+            "ON CONFLICT(date) DO UPDATE SET escrowSteps = :escrowSteps, escrowSyncCount = :escrowSyncCount",
+    )
+    suspend fun setEscrow(date: String, escrowSteps: Long, escrowSyncCount: Int)
+
     /**
      * Returns today's [DailyStepRecordEntity.battleStepsEarned], or 0 if no
      * row exists for [date] yet.

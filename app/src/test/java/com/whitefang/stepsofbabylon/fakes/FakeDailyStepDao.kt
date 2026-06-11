@@ -57,6 +57,30 @@ class FakeDailyStepDao(
     override suspend fun sumCreditedSteps(startDate: String, endDate: String): Long =
         data.value.values.filter { it.date in startDate..endDate }.sumOf { it.creditedSteps }
 
+    // #121: column-targeted upserts — each touches ONLY its own columns, mirroring the real
+    // SQL's `ON CONFLICT(date) DO UPDATE SET <those columns>`. The fake copies the existing
+    // row (or starts from a fresh default row) and overwrites only this writer's fields, so
+    // a disjoint-column writer cannot clobber another's data through the fake either.
+    override suspend fun setSensorAndCreditedSteps(date: String, sensorSteps: Long, creditedSteps: Long) {
+        val base = data.value[date] ?: DailyStepRecordEntity(date = date)
+        data.value = data.value + (date to base.copy(sensorSteps = sensorSteps, creditedSteps = creditedSteps))
+    }
+
+    override suspend fun setHealthConnectSteps(date: String, healthConnectSteps: Long) {
+        val base = data.value[date] ?: DailyStepRecordEntity(date = date)
+        data.value = data.value + (date to base.copy(healthConnectSteps = healthConnectSteps))
+    }
+
+    override suspend fun setActivityMinutes(date: String, activityMinutes: Map<String, Int>, stepEquivalents: Long) {
+        val base = data.value[date] ?: DailyStepRecordEntity(date = date)
+        data.value = data.value + (date to base.copy(activityMinutes = activityMinutes, stepEquivalents = stepEquivalents))
+    }
+
+    override suspend fun setEscrow(date: String, escrowSteps: Long, escrowSyncCount: Int) {
+        val base = data.value[date] ?: DailyStepRecordEntity(date = date)
+        data.value = data.value + (date to base.copy(escrowSteps = escrowSteps, escrowSyncCount = escrowSyncCount))
+    }
+
     override suspend fun getBattleStepsEarned(date: String): Long =
         data.value[date]?.battleStepsEarned ?: 0L
 

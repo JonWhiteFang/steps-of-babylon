@@ -8,14 +8,21 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 /**
  * Tests for [StepRepositoryImpl] — entity→domain mapping for daily step records,
- * upsert composition (read-existing + copy + write), and escrow lifecycle.
+ * delegation to the column-targeted DAO upserts (#121), and escrow lifecycle.
+ *
+ * #121: the per-field updates no longer read-copy-upsert the whole row; each delegates to a
+ * column-targeted DAO method (`setSensorAndCreditedSteps` / `setHealthConnectSteps` /
+ * `setActivityMinutes` / `setEscrow`) so concurrent writers touch disjoint columns and can't
+ * clobber each other. These tests verify the delegation contract; the actual
+ * column-preservation behaviour against real SQLite is proven in `DailyStepDaoTest`.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class StepRepositoryImplTest {
@@ -65,58 +72,49 @@ class StepRepositoryImplTest {
     }
 
     @Test
-    fun `updateDailySteps creates new record when none exists`() = runTest {
+    fun `updateDailySteps delegates to the column-targeted setSensorAndCreditedSteps`() = runTest {
         val dao = mock<DailyStepDao>()
-        whenever(dao.getByDateOnce("2026-05-28")).thenReturn(null)
-        val repo = StepRepositoryImpl(dao)
-
-        repo.updateDailySteps("2026-05-28", sensorSteps = 100, creditedSteps = 100)
-
-        val captor = argumentCaptor<DailyStepRecordEntity>()
-        verify(dao).upsert(captor.capture())
-        assertEquals("2026-05-28", captor.firstValue.date)
-        assertEquals(100L, captor.firstValue.sensorSteps)
-        assertEquals(100L, captor.firstValue.creditedSteps)
-    }
-
-    @Test
-    fun `updateDailySteps preserves other fields when updating existing record`() = runTest {
-        val dao = mock<DailyStepDao>()
-        val existing = DailyStepRecordEntity(
-            date = "2026-05-28",
-            sensorSteps = 100,
-            creditedSteps = 100,
-            healthConnectSteps = 95,
-            activityMinutes = mapOf("WALKING" to 10),
-        )
-        whenever(dao.getByDateOnce("2026-05-28")).thenReturn(existing)
         val repo = StepRepositoryImpl(dao)
 
         repo.updateDailySteps("2026-05-28", sensorSteps = 200, creditedSteps = 195)
 
-        val captor = argumentCaptor<DailyStepRecordEntity>()
-        verify(dao).upsert(captor.capture())
-        // sensorSteps + creditedSteps updated; healthConnectSteps + activityMinutes preserved
-        assertEquals(200L, captor.firstValue.sensorSteps)
-        assertEquals(195L, captor.firstValue.creditedSteps)
-        assertEquals(95L, captor.firstValue.healthConnectSteps)
-        assertEquals(mapOf("WALKING" to 10), captor.firstValue.activityMinutes)
+        // #121: no read-copy-upsert — the repo calls the column-targeted DAO query directly,
+        // so it touches only sensorSteps/creditedSteps and never the whole row.
+        verify(dao).setSensorAndCreditedSteps("2026-05-28", 200, 195)
+        verify(dao, never()).upsert(any())
     }
 
     @Test
-    fun `updateEscrow merges escrow fields onto existing record`() = runTest {
+    fun `updateHealthConnectSteps delegates to the column-targeted setHealthConnectSteps`() = runTest {
         val dao = mock<DailyStepDao>()
-        val existing = DailyStepRecordEntity(date = "2026-05-28", sensorSteps = 500)
-        whenever(dao.getByDateOnce("2026-05-28")).thenReturn(existing)
+        val repo = StepRepositoryImpl(dao)
+
+        repo.updateHealthConnectSteps("2026-05-28", healthConnectSteps = 4800)
+
+        verify(dao).setHealthConnectSteps("2026-05-28", 4800)
+        verify(dao, never()).upsert(any())
+    }
+
+    @Test
+    fun `updateActivityMinutes delegates to the column-targeted setActivityMinutes`() = runTest {
+        val dao = mock<DailyStepDao>()
+        val repo = StepRepositoryImpl(dao)
+
+        repo.updateActivityMinutes("2026-05-28", activityMinutes = mapOf("WALKING" to 10), stepEquivalents = 1000)
+
+        verify(dao).setActivityMinutes("2026-05-28", mapOf("WALKING" to 10), 1000)
+        verify(dao, never()).upsert(any())
+    }
+
+    @Test
+    fun `updateEscrow delegates to the column-targeted setEscrow`() = runTest {
+        val dao = mock<DailyStepDao>()
         val repo = StepRepositoryImpl(dao)
 
         repo.updateEscrow("2026-05-28", escrowSteps = 250, syncCount = 2)
 
-        val captor = argumentCaptor<DailyStepRecordEntity>()
-        verify(dao).upsert(captor.capture())
-        assertEquals(250L, captor.firstValue.escrowSteps)
-        assertEquals(2, captor.firstValue.escrowSyncCount)
-        assertEquals(500L, captor.firstValue.sensorSteps) // preserved
+        verify(dao).setEscrow("2026-05-28", 250, 2)
+        verify(dao, never()).upsert(any())
     }
 
     @Test
