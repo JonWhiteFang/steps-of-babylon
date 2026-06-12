@@ -30,10 +30,13 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
+import com.whitefang.stepsofbabylon.presentation.ui.EmptyState
+import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 
 @Composable
 fun WorkshopScreen(onNavigateToWeapons: () -> Unit = {}, onNavigateToCards: () -> Unit = {}, viewModel: WorkshopViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    if (state.isLoading) { LoadingBox(); return }
     val categories = UpgradeCategory.entries
     val selectedIndex = categories.indexOf(state.selectedCategory)
     val snackbarHostState = remember { SnackbarHostState() }
@@ -72,14 +75,20 @@ fun WorkshopScreen(onNavigateToWeapons: () -> Unit = {}, onNavigateToCards: () -
                 }
             }
 
-            // Upgrade list
-            LazyColumn(
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                items(state.upgrades, key = { it.type.name }) { info ->
-                    UpgradeCard(info = info, onClick = { viewModel.purchase(info.type) })
+            // Upgrade list. Defensive empty-state guards the pre-seed transient (observeAllUpgrades
+            // emitting before ensureUpgradesExist lands); every seeded category otherwise has ≥4
+            // Workshop-visible upgrades.
+            if (state.upgrades.isEmpty()) {
+                EmptyState(message = "No upgrades in this category yet.")
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    items(state.upgrades, key = { it.type.name }) { info ->
+                        UpgradeCard(info = info, onClick = { viewModel.purchase(info.type) })
+                    }
                 }
             }
         }
