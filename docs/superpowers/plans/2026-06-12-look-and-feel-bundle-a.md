@@ -332,9 +332,13 @@ git commit -m "refactor(domain): delete dead unreferenced Currency enum (#160)"
 
 - [ ] **Step 1: Add imports**
 
-After the existing import block (the `import androidx.compose.material3.Text` group), add:
+After the existing import block (the `import androidx.compose.material3.Text` group), add. (LabsScreen
+already imports `Row`/`Spacer`/`Column`/`Alignment` but NOT `Icon`/`Icons`/`size`/`width` — all new
+ones below are needed and non-duplicate; verified against the current file.)
 
 ```kotlin
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
@@ -448,9 +452,12 @@ git commit -m "feat(ui): de-emoji Labs — currency icons, star, clock (#160)"
 
 - [ ] **Step 1: Add imports**
 
-Add to the import block:
+Add to the import block. (CardsScreen already imports `Row`/`Spacer`/`Column`/`Alignment` but NOT
+`Icon`/`Icons`/`size`/`width` — all new ones below are needed and non-duplicate; verified.)
 
 ```kotlin
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.FiberNew
@@ -488,8 +495,7 @@ New:
                 Text("Free Pack (Ad)")
 ```
 
-> Add `import androidx.compose.foundation.layout.width` and `androidx.compose.foundation.layout.size`
-> if not present.
+(`size`/`width` imports were added in Step 1.)
 
 - [ ] **Step 4: Replace the pack-cost button label (line 78)**
 
@@ -815,14 +821,21 @@ git commit -m "feat(ui): de-emoji Missions — claim checks + reward currency ic
 - [ ] **Step 1: Add imports**
 
 ```kotlin
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Schedule
 ```
 
-(`Icons` and `Icon` are already imported.)
+(`Icons`, `Icon`, `androidx.compose.foundation.layout.size`, and `androidx.compose.ui.Alignment` are
+already imported in CurrencyDashboardScreen.kt; `Row`/`Spacer` too. Only the three icon vectors above
+are new. Note: the de-emoji here uses `Check` for the claimed/earned lines, so `CheckCircle` is NOT
+needed — do not add it.)
+
+> `Modifier.width` is used in the new code below; CurrencyDashboardScreen does NOT currently import
+> `androidx.compose.foundation.layout.width`. Add it:
+> ```kotlin
+> import androidx.compose.foundation.layout.width
+> ```
 
 - [ ] **Step 2: Replace the weekly "⏱ time remaining" (line 69)**
 
@@ -1185,14 +1198,14 @@ git commit -m "feat(ui): onboarding — de-emoji status line + page-dots a11y la
 
 - [ ] **Step 1: Add imports**
 
+> ⚠️ `BattleScreen.kt` **already imports** `androidx.compose.material3.Icon` (line 21) and
+> `androidx.compose.material.icons.Icons` (line 28). Re-adding either is a **duplicate-import compile
+> error.** Add ONLY the two new icon vectors:
+
 ```kotlin
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Icon
 ```
-
-(If `Icons`/`Icon` are already imported in this file, skip the duplicates.)
 
 - [ ] **Step 2: Replace the ▶/⏸ glyph (line 193)**
 
