@@ -92,7 +92,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                         Text("Ad Removal", fontWeight = FontWeight.Bold)
                         if (state.adRemoved) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Filled.CheckCircle, contentDescription = "Purchased", tint = com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Purchased", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -123,7 +123,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                             }
                             if (state.seasonPassActive) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Filled.CheckCircle, contentDescription = "Active", tint = com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess, modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(4.dp))
                                     Text("Active — ${state.seasonPassDaysRemaining ?: 0} days remaining", color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
