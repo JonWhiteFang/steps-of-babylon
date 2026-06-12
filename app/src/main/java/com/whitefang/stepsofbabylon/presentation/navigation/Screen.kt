@@ -31,33 +31,46 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     data object Store : Screen("store", "Store", Icons.Filled.ShoppingCart)
     data object Help : Screen("help", "Help", Icons.AutoMirrored.Filled.HelpOutline)
 
+    // First-run / replay-only route. NOT in `items`, `allScreens`, or `argumentFreeRoutes`
+    // (so it can't be reached as a public navigate_to deep-link target). The icon is
+    // unused — Onboarding never appears in the bottom nav. Reached only via literal
+    // Screen.Onboarding.route navigation (start destination on first launch; Settings replay).
+    data object Onboarding : Screen("onboarding", "Onboarding", Icons.AutoMirrored.Filled.HelpOutline)
+
     companion object {
         val items by lazy { listOf(Home, Workshop, Battle, Labs, Stats) }
 
-        // All 12 screens, needed for O(1) deep-link lookup. Uses `by lazy` for
-        // the same reason as `items` above — sealed-class init order can NPE if
-        // this list is evaluated before all data objects are constructed
-        // (see commit 1872af9).
+        // All 13 non-onboarding screens, needed for O(1) deep-link lookup. Uses `by lazy`
+        // for the same reason as `items` above — sealed-class init order can NPE if this
+        // list is evaluated before all data objects are constructed (see commit 1872af9).
+        // Onboarding is deliberately excluded: it must never be a public navigate_to target.
         private val allScreens by lazy {
             listOf(Home, Workshop, Battle, Labs, Stats, Weapons, Cards, Supplies, Economy, Missions, Settings, Store, Help)
         }
 
         /**
-         * Deep-link routes that can be navigated to directly from an Intent
-         * extra (`navigate_to=<route>`). Currently every screen in the app is
-         * argument-free — if a future screen accepts route args, exclude it
-         * here and route it through a dedicated deep-link handler instead of
-         * the generic whitelist.
+         * Deep-link routes that can be navigated to directly from an Intent extra
+         * (`navigate_to=<route>`). Onboarding is intentionally absent — it is a
+         * first-run/replay-only route, never a public deep-link target.
          */
         val argumentFreeRoutes: Set<String> by lazy { allScreens.map { it.route }.toSet() }
 
         /**
-         * Resolves a route name (e.g. `"workshop"`) to its [Screen], or null if
-         * no screen matches. Callers should typically gate navigation on
-         * [argumentFreeRoutes] to avoid launching a screen that expects args
-         * it has no way to provide from a deep-link.
+         * Resolves a route name to its [Screen], or null if no screen matches.
+         * Includes [Onboarding] (so internal navigation/tests can resolve it) even though
+         * Onboarding is excluded from [argumentFreeRoutes]; deep-link callers gate on
+         * [argumentFreeRoutes], so resolving Onboarding here does not make it a deep-link target.
          */
         fun fromRoute(name: String?): Screen? =
-            name?.let { n -> allScreens.firstOrNull { it.route == n } }
+            name?.let { n -> (allScreens + Onboarding).firstOrNull { it.route == n } }
+
+        /**
+         * The NavHost start destination, chosen from the synchronous onboarding-completion
+         * flag. Pure (route strings only) so it is unit-testable. NavHost captures
+         * startDestination only on first composition — callers MUST pass a synchronous read,
+         * not an async StateFlow default.
+         */
+        fun startDestination(hasCompletedOnboarding: Boolean): String =
+            if (hasCompletedOnboarding) Home.route else Onboarding.route
     }
 }
