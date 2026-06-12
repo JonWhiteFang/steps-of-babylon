@@ -131,7 +131,7 @@ to `main`** (PR #157, squash `48e8e63`) · launch is judgment-gated on the Close
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Bigger gate items (now the live work):** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured). *(#24 onboarding / Gate C shipped on `feat/onboarding-gate-c` — merge it, then #29 is the likely next pickup.)*
+1. **Bigger gate items (now the live work):** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured). *(#24 onboarding / Gate C shipped — merged via PR #157 and released as v1.0.3 to internal. #29 is the likely next pickup.)*
 2. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 3. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
 

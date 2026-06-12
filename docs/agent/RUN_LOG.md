@@ -1,3 +1,36 @@
+## 2026-06-12 — Ship onboarding to internal: merge #157 + release v1.0.3 (on `main`)
+
+- **Goal:** Follow CI on the onboarding PR, merge when green, then cut an internal-track release
+  (version bump + release notes + tag) — continuing directly from the onboarding feature entry below.
+- **What happened:**
+  - **PR #157** (onboarding, Gate C): both required checks green — `build-and-test` (PR gate; lint +
+    unit + assembleDebug + schema-drift) **and** `connected` (instrumented emulator lane). Squash-merged
+    to `main` as **`48e8e63`**; remote feature branch deleted.
+  - **Version bump → PR #158** (branch `release/v1.0.3`): `versionCode` 18→19, `versionName`
+    1.0.2→1.0.3 in `app/build.gradle.kts` (Play rejects reused codes; the release lane builds the
+    *committed* code — no auto-bump). Promoted CHANGELOG `[Unreleased]` → `[1.0.3] — 2026-06-12
+    (versionCode 19)`; added `docs/release/release-notes-v1.0.3.md` (Play "What's new" ≤500-char copy +
+    dev detail); updated STATE headline. CI green; squash-merged as **`6f3ed6e`**.
+  - **Released:** annotated tag **`v1.0.3`** created on `main` HEAD (`6f3ed6e`) — message = the 359-char
+    Play "What's new" (under the 500 cap) — and pushed, triggering `release.yml` (run `27405225464`).
+    The lane runs `bundleRelease` (R8 + signing) → `jarsigner -verify` → upload signed AAB to Play
+    **internal** track → GitHub Release.
+  - **versionName decision:** 1.0.3 (patch), not 1.1.0 — continues the internal-track patch cadence
+    (1.0.1 → 1.0.2 → 1.0.3) while launch stays judgment-gated; minor bump held in reserve for the
+    eventual closed→production promotion.
+- **Verification:** #157 + #158 both merged green (`build-and-test` + `connected` passed on each);
+  local `assembleDebug` green at versionCode 19. **973 JVM + 9 instrumented** unchanged (release was
+  collateral-only — no code/schema/test change since the onboarding merge). `main` clean at `6f3ed6e`.
+- **Doc-sync:** onboarding current-state docs were already synced pre-merge (see entry below);
+  release collateral (CHANGELOG `[1.0.3]`, release-notes-v1.0.3, STATE headline) landed in PR #158;
+  this entry + STATE next-action line updated post-merge. No ADR needed (ADR-0021 already covers the
+  only decision; this session was merge/release mechanics).
+- **Remains / next:** release lane (`27405225464`) was **still in progress** at checkpoint time — no
+  GitHub Release for `v1.0.3` yet; confirm the lane went green + the AAB landed on the Play internal
+  track (the "no debug symbols" Play warning is expected/informational). A manual on-device pass of the
+  onboarding carousel + live permission dialog on the internal build is still worth doing
+  (device-verified-only, no JVM seam). Then resume Phase-1 gate work: **#29** (Gate F) / **#26** (Gate G).
+
 ## 2026-06-12 — #24 first-launch onboarding (Gate C) (branch feat/onboarding-gate-c)
 
 - **Goal:** Close Readiness **Gate C** (first-session UX) — a brand-new player understands the
