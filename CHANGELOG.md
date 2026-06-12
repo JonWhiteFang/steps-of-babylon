@@ -4,6 +4,42 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Added — #24 first-launch onboarding (Gate C) (2026-06-12)
+
+Closes Readiness **Gate C** (first-session UX): a brand-new player now sees a one-time tutorial that
+teaches the **walk → spend → battle** loop and is asked for step-counting permission *with* context
+instead of a cold system dialog. This is the **Gate-C slice of #24 / V1X-22** — #24 stays open for the
+deferred retention scope (D2/D7 push, wave-5 celebration, projected-reward estimates; they pair with
+telemetry #23). **960 → 973 JVM tests** (+13). **No schema change** — the completion flag is a
+device-local `SharedPreferences` value, not Room (this corrects the earlier "Gate C needs a schema bump"
+assumption).
+
+- **First-launch carousel** (`presentation/onboarding/OnboardingScreen` + `OnboardingViewModel` +
+  `OnboardingSlide`/`OnboardingContent`): 4 swipeable slides (Walk→Steps, Workshop, Battle, permission
+  primer) via Compose `HorizontalPager`. **Skip** on slides 1–3 jumps to the permission primer (skips the
+  lessons, never the ask); the final slide has no Skip. Reduced-motion aware; decorative emoji hidden from
+  TalkBack via `clearAndSetSemantics`.
+- **Permission primer + recovery:** the final slide owns the first `ACTIVITY_RECOGNITION` request (asked
+  with rationale). A denial leaves an in-carousel "Open Settings" path; a *permanently-denied*
+  post-onboarding re-prompt surfaces a Snackbar → app-settings deep-link
+  (`ACTION_APPLICATION_DETAILS_SETTINGS`) instead of the prior silent no-op.
+- **`OnboardingPreferences`** (`data/onboarding/`): device-local `SharedPreferences` completion flag
+  (`@Singleton`, constructor-injected, no Hilt module), mirroring `MusicPreferences`. Reinstall correctly
+  re-shows the tutorial; intentionally does NOT sync (so a future cloud-save #36 restore won't re-onboard a
+  progressed player — gate noted for V1X-12).
+- **`MainActivity` wiring:** `startDestination` is chosen from a synchronous flag read via the pure
+  `Screen.startDestination(Boolean)` helper; **only** the cold-permission request branch is gated behind
+  onboarding-completion (service-start / Health-Connect chaining unchanged); the deep-link collector is
+  gated on live nav state so a `navigate_to` intent can't land on top of the carousel.
+- **Settings "Replay tutorial"** row (`NotificationSettingsScreen`) re-enters the carousel; the completion
+  flag is only ever set on genuine completion, so an abandoned replay can't strand a returning player.
+- **Explain-only (product decision, ADR-0021):** onboarding grants **no** currency — the original
+  V1X-22 "100 free Steps welcome bonus" was rejected because it violates the hard *Steps are never
+  generated in-game* invariant.
+- **Tests (+13):** `OnboardingPreferencesTest` (Robolectric round-trip), `OnboardingContentTest`
+  (slide-ordering invariant), `OnboardingRoutingTest` (start-destination + route-exclusion), 
+  `OnboardingViewModelTest` (Mockito), and 2 `navigate_to` guards in `DeepLinkRoutingTest`.
+
 ### Fixed — #154 disable "buy more" at max, consistently (Gate F, UX) (2026-06-11)
 
 Closed-Test Readiness-Gate UX-consistency pass. At a purchasable's cap, the buy control must be both

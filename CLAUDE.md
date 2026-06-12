@@ -125,6 +125,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── sensor/         # Step sensor data source, rate limiter, velocity analyzer, daily step manager
 │   ├── healthconnect/  # Health Connect client, step reader, cross-validator, gap filler, activity-minute converter
 │   ├── anticheat/      # Anti-cheat preferences / offense tracking
+│   ├── onboarding/     # OnboardingPreferences (device-local first-launch completion flag, SharedPreferences)
 │   ├── billing/        # Play Billing v8 (BillingManagerImpl + internal SDK adapters)
 │   ├── ads/            # AdMob v25 + UMP consent (RewardAdManagerImpl + internal adapters)
 │   └── time/           # TimeProvider abstraction (testable clock)
@@ -138,6 +139,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   └── time/           # Time domain abstractions
 ├── presentation/       # ViewModels, Compose screens, SurfaceView battle renderer
 │   ├── navigation/     # Screen routes, BottomNavBar
+│   ├── onboarding/     # First-launch tutorial carousel + permission primer (OnboardingScreen/ViewModel/Slide)
 │   ├── home/ workshop/ weapons/ labs/ cards/ supplies/ economy/ missions/ settings/ stats/ store/ help/
 │   ├── battle/         # BattleScreen, BattleViewModel, GameSurfaceView, GameLoopThread
 │   │   ├── engine/     #   GameEngine (render/presentation shell), WaveSpawner, EnemyScaler, CollisionSystem, Entity
@@ -272,7 +274,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh connectedDebugAndroidTest` (instrumented).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 960 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 973 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Notable guards:** `architecture/DomainPurityTest` (fails if `domain/` imports any Android package);
   `SimulationTest` (the extracted pure-domain game-loop core); `BattleSurfaceLifecycleTest` +

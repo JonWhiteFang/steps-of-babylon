@@ -14,8 +14,9 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── healthconnect/  # Health Connect client, step reader, cross-validator, gap filler, activity minutes
 │   ├── billing/        # BillingManagerImpl (real Play Billing v8, sole binding for both debug + release as of C.5 PR 3; StubBillingManager deleted after Phase G internal-track on-device verification PASSED 2026-05-18)
 │   │   └── internal/   # BillingClientAdapter (SDK-neutral seam) + RealBillingClientAdapter (concrete v8 glue) + ActivityProvider (set/cleared by MainActivity lifecycle, C.5 PR 2; also consumed by data/ads/RewardAdManagerImpl from C.6 PR 1)
-│   └── ads/            # RewardAdManagerImpl (real, sole binding for both debug + release as of C.6 PR 3; StubRewardAdManager deleted)
-│       └── internal/   # RewardedAdAdapter (SDK-neutral seam) + RealRewardedAdAdapter (concrete AdMob glue) + ConsentManager (UMP seam) + RealConsentManager (concrete UMP glue)
+│   ├── ads/            # RewardAdManagerImpl (real, sole binding for both debug + release as of C.6 PR 3; StubRewardAdManager deleted)
+│   │   └── internal/   # RewardedAdAdapter (SDK-neutral seam) + RealRewardedAdAdapter (concrete AdMob glue) + ConsentManager (UMP seam) + RealConsentManager (concrete UMP glue)
+│   └── onboarding/     # OnboardingPreferences — device-local first-launch completion flag (SharedPreferences, NOT Room — must not sync; #24)
 ├── domain/             # Pure Kotlin — no Android imports
 │   ├── model/          # Data classes and enums
 │   ├── repository/     # Repository interfaces (Flow-based)
@@ -26,6 +27,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │       └── entity/      # Pure entity-motion/simulation state (ProjectileState, OrbState, EnemyState, ZigguratState) + EntityProtocol seam (Phase 3 — exposes isAlive/x/y/width/update so Simulation can run the entity tick + collision sweep) — no Android imports; presentation entities delegate update()
 ├── presentation/       # Android/Compose layer
 │   ├── navigation/     # Screen routes, BottomNavBar
+│   ├── onboarding/     # First-launch tutorial: OnboardingScreen (HorizontalPager carousel + permission primer), OnboardingViewModel, OnboardingSlide/OnboardingContent (#24, Gate C)
 │   ├── home/           # Home screen, ViewModel, UiState
 │   ├── workshop/       # Workshop screen, ViewModel, UpgradeCard
 │   ├── battle/         # Battle renderer (SurfaceView, game loop, entities)
@@ -70,12 +72,15 @@ app/src/test/java/com/whitefang/stepsofbabylon/
 │   ├── stats/          # StatsViewModel tests
 │   ├── store/          # StoreViewModel tests
 │   ├── ux/             # CurrencyGuard, UserFeedback tests
-│   └── DeepLinkRoutingTest.kt
+│   ├── onboarding/     # OnboardingContentTest (slide-ordering invariant), OnboardingViewModelTest (Mockito)
+│   ├── navigation/     # OnboardingRoutingTest (startDestination helper + Onboarding route-exclusion guards)
+│   └── DeepLinkRoutingTest.kt  # + navigate_to deep-link guards incl. onboarding-not-a-target
 ├── data/
 │   ├── sensor/         # StepRateLimiter, StepVelocityAnalyzer, StepIngestionPreferences, StepIngestion, DailyStepManager tests
 │   ├── healthconnect/  # StepCrossValidator, ActivityMinuteValidator tests
 │   ├── local/          # RoomSchema round-trip tests
 │   ├── repository/     # CosmeticRepositoryImpl tests (C.2 PR 2)
+│   ├── onboarding/     # OnboardingPreferencesTest (Robolectric SharedPreferences round-trip)
 │   └── integration/    # Escrow lifecycle tests
 ├── balance/            # Step economy, cost curves, enemy scaling, tier progression, cash, cards, UW, supply drops
 └── service/            # StepWidgetProvider tests
