@@ -4,6 +4,39 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Changed — Look-&-feel Bundle A: correctness & accessibility cleanup (Gate C/F UX, #160) (2026-06-12)
+
+The second safe, presentation-only wave off the 2026-06-12 UX review (follow-up to the design-tokens
+pass below; spec + adversarially-reviewed plan in `docs/superpowers/`). No gameplay/economy/concurrency
+code touched (one Battle file changed — the Compose HUD pause-button glyph only, not the renderer/engine).
+**975 JVM tests** (was 973; +2 from the new `CurrencyDisplayTest`); build + lint green.
+
+- **Shared component layer** in `presentation/ui/`: `CurrencyDisplay.kt` (`CurrencyType` enum +
+  `icon()`/`tint()`/`label()` + `CurrencyValue`/`CurrencyCost` composables + `formatCurrency` thousands
+  grouping — the single source of truth for currency presentation, so themed-glyph art later is a one-file
+  swap), `LoadingBox.kt` (centered `CircularProgressIndicator`), `EmptyState.kt` (centered title+message,
+  extracted from the Cards inline empty-state).
+- **Finished the de-emoji sweep** — every UI-control/currency/status glyph in `presentation/` now uses a
+  Material vector: Labs (🦶/💎 balances, Free ⭐, Rush/Unlock/Start costs, ⏱), Cards (💎 header, 🎬 Free Pack,
+  pack cost, 🆕/♻ pack-result), Store (💎 ×3, ✅ Purchased/Active, ⭐ Season Pass), Missions (✓ claim checks +
+  💎/⚡ reward row), Economy (✓/✗ week + ⏱ + claim/earned), Weapons (✓ equipped), Onboarding ("enabled ✓"),
+  Battle HUD (▶/⏸ pause toggle). Decorative/narrative emoji (Help section headings, onboarding slide icons
+  incl. the 🏛️ — deferred to the onboarding-art bundle) intentionally left.
+- **Accessibility:** onboarding pagination dots now carry a single row-level `contentDescription`
+  ("Page N of M") — page position was previously conveyed by colour+size only (invisible to TalkBack, as
+  Compose `HorizontalPager` does not auto-announce it). New status icons get correct per-site
+  `contentDescription` (sole-status-carrier → labelled; adjacent-text → null).
+- **Screen-level loading spinners** via `LoadingBox` on Home/Workshop/Cards/Labs/Missions/Stats/Economy/
+  Supplies/Store/Weapons (added `isLoading` to `StoreUiState` + `UltimateWeaponUiState`, the two that lacked
+  it). Battle is intentionally excluded (its `isLoading` is a one-way engine-init gate over a SurfaceView).
+- **Workshop** gained a defensive empty-state (guards the pre-seed transient); **Cards** routes its existing
+  empty-state through the shared `EmptyState`.
+- **Settings rename:** `NotificationSettings{Screen,ViewModel,State}` → `Settings{Screen,ViewModel,State}`
+  and the screen title "Notification Settings" → "Settings" (it's the general settings hub). The nav route
+  string `"settings"` / `Screen.Settings` is unchanged — `DeepLinkRoutingTest` unaffected.
+- **Removed dead code:** deleted the unreferenced `domain/model/Currency.kt` enum (superseded by the
+  presentation `CurrencyType`).
+
 ### Changed — Look-&-feel polish pass: design tokens + visual-consistency fixes (Gate C/F UX) (2026-06-12)
 
 A presentation-only polish pass off a full UX/art-direction review (every Compose screen reviewed via a

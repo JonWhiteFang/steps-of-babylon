@@ -286,6 +286,9 @@ presentation/battle/ui/UltimateWeaponBar.kt        # UW passive cooldown display
 presentation/battle/biome/BiomeTheme.kt            # 5 biome color palettes (sky, ground, ziggurat, enemy, particles)
 presentation/battle/biome/BackgroundRenderer.kt    # Gradient sky + ambient particle system per biome
 presentation/ui/EnumDisplayName.kt                 # String.toDisplayName() — UPPER_SNAKE → "Title Case" (shared by Cards/Labs/Supplies)
+presentation/ui/CurrencyDisplay.kt                 # CurrencyType enum (STEPS/CASH/GEMS/POWER_STONES) + icon()/tint()/label() + CurrencyValue/CurrencyCost composables + formatCurrency(Long) thousands grouping. Single source of truth for currency presentation — swap icon() to adopt themed-glyph art (#160). Material icons approximate for now (Diamond/DirectionsWalk/OfflineBolt/Paid)
+presentation/ui/LoadingBox.kt                      # Full-screen centered CircularProgressIndicator; screen-level first-load gate across the menu screens (#160)
+presentation/ui/EmptyState.kt                      # Centered empty-state (optional title + supporting message); shared by Cards + Workshop (#160)
 presentation/ui/theme/Color.kt                     # Compose color tokens: 5 brand colours (Gold/LapisLazuli/SandStone/DeepBronze/Ivory) + derived role tokens (LapisLight for lapis-on-dark text, BronzeSurface, TextPrimary/Secondary, StatusSuccess/Warning/Danger, GemColor/PowerStoneColor/StepColor)
 presentation/ui/theme/Type.kt                      # SobTypography — deliberate Material3 type scale (weights/tracking/lineHeight); Roboto for now (custom font is a later step), wired via StepsOfBabylonTheme
 presentation/ui/theme/Shape.kt                     # SobShapes — small(8)/medium(14)/large(20) corner radii, wired via StepsOfBabylonTheme
