@@ -42,7 +42,7 @@ state — the checklist informs that call, it does not replace it.
 - [ ] No misleading "Coming Soon" in core flows; remaining locked cosmetics clearly framed — *satisfied-by known-issues cosmetic debt*
 
 ### C. First-session UX
-- [ ] A brand-new player understands the walk → spend → battle loop (onboarding / tutorial / first-walk moment) — *satisfied-by #24 (V1X-22)*
+- [x] A brand-new player understands the walk → spend → battle loop (onboarding / tutorial / first-walk moment) — *satisfied-by #24 (V1X-22), Gate-C slice shipped (branch `feat/onboarding-gate-c`): first-launch 4-slide carousel + permission primer + Settings replay; explain-only (no Steps grant). #24 stays open for the deferred retention scope.*
 
 ### D. Correctness & stability
 - [ ] Audit Low #124 (billing signature verification) — fixed or accepted-with-rationale

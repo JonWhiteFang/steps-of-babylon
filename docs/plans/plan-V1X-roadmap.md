@@ -786,6 +786,14 @@ NOT backed up:
 - Cosmetic ownership (re-derivable from milestone state)
 - Billing receipts (re-fetched from Play Billing on next launch)
 
+**Onboarding-gate interaction (carried from #24 onboarding, spec §7):** the first-launch onboarding
+flag lives in device-local `SharedPreferences` (`OnboardingPreferences`), NOT Room, and is deliberately
+NOT in the Snapshots backup set above — so it does not sync. When this sub-plan lands, the onboarding
+gate in `MainActivity` must change from `!hasCompletedOnboarding` to **`!hasCompletedOnboarding && totalStepsEarned == 0`**
+(`PlayerRepository` is already injected in `MainActivity`), so a cross-device progress *restore* doesn't
+re-onboard a player who already has progress on the new device. Until then (current `allowBackup="false"`
+build), reinstall-re-shows-tutorial is the correct behaviour.
+
 **Conflict resolution strategy (locked decision for ADR-0013):** highest `lifetimeStepsEarned` wins. Step lifetime is the single irreversible monotonic counter in the system. If two devices have diverged save data, the one with higher lifetime steps is treated as the canonical newer state.
 
 **Sync triggers:**

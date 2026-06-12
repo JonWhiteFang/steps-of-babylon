@@ -158,4 +158,19 @@ class DeepLinkRoutingTest {
             )
         }
     }
+
+    @Test
+    fun `navigate_to onboarding route is NOT a valid deep-link target`() {
+        val intent = Intent().putExtra("navigate_to", "onboarding")
+        assertEquals("onboarding", intent.getStringExtra("navigate_to"))
+        assertFalse("onboarding" in Screen.argumentFreeRoutes)
+    }
+
+    @Test
+    fun `navigate_to store remains a valid deep-link target`() {
+        val intent = Intent().putExtra("navigate_to", "store")
+        val route = intent.getStringExtra("navigate_to")
+        assertSame(Screen.Store, Screen.fromRoute(route))
+        assertTrue(route in Screen.argumentFreeRoutes)
+    }
 }

@@ -3,9 +3,10 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** v1.0.2 (versionCode 18) **released to Play internal track** 2026-06-11 (tag `v1.0.2`) ·
-**960 JVM + 9 instrumented tests** green · `main` clean · schema v12 · launch is judgment-gated on the
-Closed-Test Readiness Gate (`plan-FORWARD.md`).
+**Headline:** v1.0.2 (versionCode 18) live on Play internal track (tag `v1.0.2`) · **973 JVM + 9
+instrumented tests** green · schema v12 · **Gate C (onboarding) shipped on branch
+`feat/onboarding-gate-c`** (not yet merged) · launch is judgment-gated on the Closed-Test Readiness
+Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
@@ -18,13 +19,24 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 - **In-repo work = the Closed-Test Readiness Gate** (`plan-FORWARD.md`, A–G). Shipped so far: a
   quick-clear of 8 audit Lows + the latent #35 crash (Gate B + D); **#124** billing signature verify;
   **#146** enemy-counter-drifts-negative; **#127** duplicate daily missions (schema v11→v12) — all
-  Gate D; **#154** disable "buy more" at max consistently (Gate F UX polish) (see Recently shipped).
-  Still open in **Gate D**: **#128** (remaining ~21 Lows: perf/anti-cheat/security groups, deferred to
-  v1.1 per the audit grouping). Bigger gate items (now the live work): **#24** onboarding (Gate C,
-  schema), **#29** decision-support (Gate F), **#26** perf/battery (Gate G, device-measured).
+  Gate D; **#154** disable "buy more" at max consistently (Gate F UX polish); **#24** first-launch
+  onboarding (**Gate C ticked** — branch `feat/onboarding-gate-c`, no schema change) (see Recently
+  shipped). Still open in **Gate D**: **#128** (remaining ~21 Lows: perf/anti-cheat/security groups,
+  deferred to v1.1 per the audit grouping). Remaining bigger gate items (now the live work): **#29**
+  decision-support (Gate F), **#26** perf/battery (Gate G, device-measured).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-12 — #24 first-launch onboarding (Gate C)** (branch `feat/onboarding-gate-c`, not yet
+  merged). Gate-C slice of V1X-22: one-time 4-slide tutorial carousel (walk→spend→battle) + permission
+  primer + Settings "Replay tutorial". New `data/onboarding/OnboardingPreferences` (device-local
+  SharedPreferences flag — **no Room schema change**), `presentation/onboarding/*`. `MainActivity` chooses
+  start destination from a synchronous flag read via pure `Screen.startDestination()`; only the
+  cold-permission request branch is gated behind completion; permanent-denial recovery via
+  Snackbar→app-settings. **Explain-only — no Steps grant** (rejected welcome-bonus; ADR-0021). Built
+  spec-first + adversarially reviewed (spec & plan) before coding; subagent-driven with per-task
+  spec+quality review. **960→973 JVM.** #24 stays OPEN for deferred retention scope (D2/D7, wave-5
+  celebration, projected-reward estimates — pair with telemetry #23).
 - **2026-06-11 — #154 disable "buy more" at max** (PR #156, squash `592097b`; issue closed; Gate F UX).
   At a purchasable's cap the buy control must be un-clickable + visually disabled, consistently. 3/4
   surfaces already correct; fixed the Workshop `UpgradeCard` outlier (`enabled = canAfford && !isMaxed`
@@ -87,6 +99,8 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 - **Gameplay:** Plans 01–30 + 10b + R + R2 + R3 + R4 complete. Full battle loop, Workshop/Labs/Cards/UWs,
   tier progression, biomes, walking encounters, anti-cheat, milestones/missions, stats/history.
+- **First-launch onboarding (#24, Gate C — on `feat/onboarding-gate-c`):** 4-slide tutorial carousel +
+  contextual permission primer + Settings replay; explain-only (no Steps grant).
 - **Battle engine:** simulation extracted to pure-domain `domain/battle/` (V1X-09 Phases 1–3 complete,
   ADR-0012) — `GameEngine` is a thin render shell delegating to `Simulation`.
 - **Persistence:** Room schema v12 (13 entities, SQLCipher-encrypted), migrations v7→12, decrypt-fail wipe recovery.
@@ -117,7 +131,7 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Bigger gate items (now the live work):** #24 onboarding (Gate C, schema), #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured). *#24 is the likely next pickup.*
+1. **Bigger gate items (now the live work):** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured). *(#24 onboarding / Gate C shipped on `feat/onboarding-gate-c` — merge it, then #29 is the likely next pickup.)*
 2. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 3. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
 
@@ -147,6 +161,7 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **`daily_step_record` writers must stay column-targeted (#121)** — disjoint-column `ON CONFLICT(date) DO UPDATE SET` upserts, NOT a whole-row read-copy-`@Upsert`. Guarded by `DailyStepDaoTest` + `StepRepositoryImplTest`.
 - **`daily_mission` uniqueness is DB-level (#127)** — `(date, missionType)` unique index + `@Insert(onConflict = IGNORE)` is the authoritative guard against duplicate daily missions; the generator's read-then-insert check is racy on a WAL pool. Don't weaken the index or relax `IGNORE` back to plain `@Insert`. Schema v12; `MIGRATION_11_12` dedups via `GROUP BY` + `MAX()` (keeps `MAX(claimed)`). Guarded by `DailyMissionDaoTest` + `Migration11To12Test`.
 - **Billing signature verification (#124, ADR-0005 amendment)** — every wallet grant goes through `PurchaseVerifier.isValidPurchase(originalJson, signature, expectedProductId, expectedPurchaseToken)` BEFORE `grantOnceAtomic`, on BOTH paths. The product+token binding is load-bearing (blocks replaying a signed cheap receipt for an expensive product) — don't credit off the caller's `product` without verifying first. `PLAY_LICENSE_KEY` blank → fail-open is debug/CI only; a **release** build with a blank key is hard-failed by the `app/build.gradle.kts` `taskGraph` guard + the `release.yml` `PLAY_LICENSE_KEY` secret step — don't weaken either or fail-open could ship. Guarded by `RealPurchaseVerifierTest` + `BillingManagerImplTest`.
+- **Onboarding gating + flag location (#24, ADR-0021)** — the first-launch flag is device-local SharedPreferences (`OnboardingPreferences`), intentionally NOT Room (must not sync; reinstall re-shows). In `MainActivity`, `startDestination` reads it **synchronously** via pure `Screen.startDestination()`; **only** the cold-permission request branch is gated behind `onboardingComplete` (service-start/HC-chaining stay ungated — don't widen the gate or step counting breaks for granted users); the deep-link collector gates on live nav state (current route == Onboarding). `Screen.Onboarding` is deliberately **out of** `allScreens`/`argumentFreeRoutes`/`items` (not a public deep-link target) — keep it out (`DeepLinkRoutingTest` pins the exact-13 set). Onboarding is **explain-only — never grant Steps** (preserves the hard invariant). Guarded by `OnboardingRoutingTest` + `OnboardingPreferencesTest` + `OnboardingContentTest` + `OnboardingViewModelTest` + `DeepLinkRoutingTest` navigate_to guards.
 
 ## References
 

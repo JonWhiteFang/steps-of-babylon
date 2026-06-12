@@ -1,3 +1,50 @@
+## 2026-06-12 — #24 first-launch onboarding (Gate C) (branch feat/onboarding-gate-c)
+
+- **Goal:** Close Readiness **Gate C** (first-session UX) — a brand-new player understands the
+  walk → spend → battle loop and grants step-counting permission *with* context. Gate-C slice of
+  #24 / V1X-22; the retention half (D2/D7, wave-5 celebration, projected-reward estimates) stays
+  deferred (pairs with telemetry #23), so **#24 remains OPEN**.
+- **Process (spec-first + adversarial):** brainstormed → wrote spec (`docs/superpowers/specs/2026-06-11-onboarding-gate-c-design.md`)
+  → **adversarial spec review** (5-lens workflow, 40 findings → 37 confirmed/partial, all folded in;
+  caught a Skip-into-permission-dead-end + tightened the deny path) → wrote plan
+  (`docs/superpowers/plans/2026-06-11-onboarding-gate-c.md`) → **adversarial plan review** (6-lens,
+  39 findings → 19 confirmed; caught a missing spec-§4 permanent-denial recovery, an already-granted-
+  replay re-ask, and an a11y `contentDescription=""`-doesn't-hide bug) → **subagent-driven execution**
+  (fresh implementer per task + per-task spec-compliance AND code-quality review).
+- **What shipped (7 impl tasks):**
+  - `data/onboarding/OnboardingPreferences` — device-local SharedPreferences completion flag (no Room).
+  - `presentation/onboarding/` — `OnboardingSlide`+`OnboardingContent` (pure 4-slide list, final slide =
+    permission primer), `OnboardingViewModel` (@HiltViewModel), `OnboardingScreen` (HorizontalPager
+    carousel: Skip→primer, reduced-motion aware, `clearAndSetSemantics` decorative emoji, final-slide
+    `when{}` = granted→satisfied / not-asked→ask / denied→Settings-recovery).
+  - `navigation/Screen.kt` — `Onboarding` route + pure `startDestination(Boolean)` helper; kept OUT of
+    `items`/`allScreens`/`argumentFreeRoutes` (not a public deep-link target).
+  - `MainActivity` — start destination from a **synchronous** flag read; **only** the cold-permission
+    request branch gated behind `onboardingComplete`; deep-link collector gated on **live nav state**;
+    permanent-denial recovery via a Snackbar→`ACTION_APPLICATION_DETAILS_SETTINGS` in the launcher
+    callback (replaces the prior silent no-op, spec §4).
+  - `settings/NotificationSettingsScreen` — `onReplayTutorial` param + "Replay tutorial" row (re-navigate
+    only; flag flips only on genuine completion).
+- **Decision (ADR-0021):** onboarding is **explain-only — no Steps grant** (rejected the original
+  V1X-22 "100 free Steps" welcome bonus; preserves the Steps-never-generated invariant). Flag is
+  device-local SharedPreferences, **not Room** — this **corrects STATE.md's "(Gate C, schema)" tag**;
+  no schema change.
+- **Verification:** `./run-gradle.sh testDebugUnitTest` BUILD SUCCESSFUL — **960 → 973 JVM** (+13:
+  OnboardingPreferencesTest 2, OnboardingContentTest 2, OnboardingRoutingTest 5, OnboardingViewModelTest
+  2, DeepLinkRoutingTest +2 navigate_to guards). `./run-gradle.sh assembleDebug` BUILD SUCCESSFUL.
+  Per-task spec + code-quality reviews all passed (load-bearing gate polarity in MainActivity verified
+  correct by an independent reviewer). 13 entities, schema v12 (unchanged).
+- **Docs synced:** `plan-FORWARD.md` Gate C ticked; `CLAUDE.md` headline 960→973 + onboarding packages
+  in architecture tree; `CHANGELOG.md` `[Unreleased]` Added entry; `source-files.md` + `structure.md`
+  (data/onboarding, presentation/onboarding, test dirs, Screen/MainActivity responsibility); `STATE.md`
+  (#24 → Recently shipped, schema tag dropped, headline, capabilities, fragile-zone bullet);
+  `plan-V1X-roadmap.md` V1X-12 cloud-save restore-gate note; ADR-0021 added.
+- **Remains / next:** merge `feat/onboarding-gate-c` to `main` (PR); post a #24 scope-update comment
+  (Gate-C slice shipped, retention scope deferred) and keep #24 open. Remaining live Gate work: **#29**
+  decision-support (Gate F), **#26** perf/battery (Gate G, device-measured); manual play-feel gates
+  (A audio, E balance) are the developer's call. Onboarding carousel + live permission dialog are
+  device-verified-only (no JVM seam) — worth a manual on-device pass before merge.
+
 ## 2026-06-11 — #154 disable "buy more" at max, consistently (branch fix/154-disable-buy-at-max)
 
 - **Goal:** new issue #154 (Gate F, UX/polish) — at a purchasable's cap the buy control must be both

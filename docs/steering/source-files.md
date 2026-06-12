@@ -106,6 +106,7 @@ data/MilestoneNotificationPreferences.kt           # SharedPreferences wrapper f
 data/NotificationPreferences.kt                   # SharedPreferences wrapper for 4 notification toggles
 data/SoundPreferences.kt                          # SharedPreferences wrapper for sound mute/volume
 data/anticheat/AntiCheatPreferences.kt            # SharedPreferences wrapper for anti-cheat counters + CV offense tracking
+data/onboarding/OnboardingPreferences.kt          # SharedPreferences wrapper for the device-local first-launch onboarding-complete flag (NOT Room — must not sync)
 ```
 
 ## Data Layer — Time
@@ -237,9 +238,9 @@ domain/battle/entity/ZigguratState.kt # V1X-09 Phase 2 (ADR-0012, final entity).
 ## Presentation Layer
 
 ```
-presentation/MainActivity.kt                      # Single Activity, Scaffold + NavHost + BottomNavBar, permissions; onResume/onPause drive ActivityProvider.set/clear for Play Billing purchase flow (C.5 PR 2); onResume also fires a flag-gated one-shot UMP consent prefetch via injected ConsentManager so the first reward-ad tap doesn't pay the init latency (C.6 PR 2)
+presentation/MainActivity.kt                      # Single Activity, Scaffold + NavHost + BottomNavBar, permissions; onResume/onPause drive ActivityProvider.set/clear for Play Billing purchase flow (C.5 PR 2); onResume also fires a flag-gated one-shot UMP consent prefetch via injected ConsentManager so the first reward-ad tap doesn't pay the init latency (C.6 PR 2); first-launch onboarding (#24): startDestination = Screen.startDestination(synchronous OnboardingPreferences read), ONLY the cold-permission request branch gated behind onboardingComplete, deep-link collector gated on live nav state, permanent-denial recovery via Snackbar→ACTION_APPLICATION_DETAILS_SETTINGS in the launcher callback
 presentation/HealthConnectPermissionActivity.kt    # Scrollable privacy policy for Health Connect permissions
-presentation/navigation/Screen.kt                 # Sealed class: 13 routes (Home, Workshop, Battle, Labs, Stats, Weapons, Cards, Supplies, Economy, Missions, Settings, Store, Help)
+presentation/navigation/Screen.kt                 # Sealed class: 13 deep-linkable routes (Home, Workshop, Battle, Labs, Stats, Weapons, Cards, Supplies, Economy, Missions, Settings, Store, Help) + a 14th first-run/replay-only Onboarding route (deliberately excluded from items/allScreens/argumentFreeRoutes so it's not a public deep-link target); pure startDestination(hasCompletedOnboarding) helper
 presentation/navigation/BottomNavBar.kt            # Bottom navigation bar with 5 items
 presentation/home/HomeViewModel.kt                 # @HiltViewModel: combines profile + step flows → HomeUiState. #55 fix: `init` captures the `List<ResearchType>` returned by `CheckResearchCompletion(labRepository)()` and passes `completed.size` to a new `private val updateMissionProgress = UpdateCompleteResearchMissionProgress(dailyMissionDao)` field, mirroring the LabsViewModel R3-03 pattern. Pre-fix the return value was discarded so background-completed research never advanced the COMPLETE_RESEARCH daily mission. `dailyMissionDao` was already injected for the existing `countClaimable` consumer; no Hilt graph change.
 presentation/home/HomeUiState.kt                   # UI state: steps, balance, tier, biome, bestWave
@@ -309,7 +310,10 @@ presentation/stats/StatsUiState.kt                   # UI state: bars, periods, 
 presentation/stats/StatsScreen.kt                    # Stats screen: chart, today, battle, all-time sections
 presentation/stats/WalkingHistoryChart.kt            # Canvas-drawn bar chart with period toggle
 presentation/settings/NotificationSettingsViewModel.kt # @HiltViewModel: notification preference toggles
-presentation/settings/NotificationSettingsScreen.kt    # Settings screen: 4 notification toggles
+presentation/settings/NotificationSettingsScreen.kt    # Settings screen: 4 notification toggles + "Replay tutorial" row (onReplayTutorial callback → re-enters onboarding)
+presentation/onboarding/OnboardingSlide.kt             # Pure-Kotlin slide model + canonical 4-slide OnboardingContent list (final slide is the permission primer)
+presentation/onboarding/OnboardingViewModel.kt         # @HiltViewModel: exposes the slide list; completeOnboarding() persists the OnboardingPreferences flag
+presentation/onboarding/OnboardingScreen.kt            # First-launch tutorial carousel (HorizontalPager): swipeable slides, Skip→primer, permission-primer final slide w/ granted/ask/denied states + Settings recovery
 presentation/store/StoreViewModel.kt                   # @HiltViewModel: billing + cosmetic purchase actions; init calls billingManager.reconcilePendingPurchases() on Store entry (C.5 PR 2)
 presentation/store/StoreUiState.kt                     # UI state: gems, adRemoved, seasonPass, cosmetics, priceDisplays (Map<BillingProduct, String> populated from BillingManager.getPriceDisplay; missing keys signal UI fallback to BillingProduct.priceDisplay constant; Plan 31 PR B)
 presentation/store/StoreScreen.kt                      # Store screen: Gem packs, Ad Removal, Season Pass, Cosmetics

@@ -18,7 +18,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
-fun NotificationSettingsScreen(viewModel: NotificationSettingsViewModel = hiltViewModel()) {
+fun NotificationSettingsScreen(
+    onReplayTutorial: () -> Unit = {},
+    viewModel: NotificationSettingsViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     // 0 = hidden, 1 = first confirm, 2 = final confirm
     var deleteStep by remember { mutableIntStateOf(0) }
@@ -44,6 +47,21 @@ fun NotificationSettingsScreen(viewModel: NotificationSettingsViewModel = hiltVi
                     onValueChange = { viewModel.setMusicVolume(it) },
                     modifier = Modifier.weight(0.6f),
                 )
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        Text("Help", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        OutlinedCard(onClick = onReplayTutorial, modifier = Modifier.fillMaxWidth()) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column {
+                    Text("Replay tutorial", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Text(
+                        "See the first-launch walkthrough again",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         Spacer(Modifier.height(24.dp))
