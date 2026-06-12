@@ -26,13 +26,13 @@
 
 **Modified files:**
 - `app/src/main/java/com/whitefang/stepsofbabylon/presentation/navigation/Screen.kt` — add `Onboarding` data object + `startDestination()` helper; keep it out of `items`/`allScreens`/`argumentFreeRoutes`; fix stale "All 12 screens" comment.
-- `app/src/main/java/com/whitefang/stepsofbabylon/presentation/MainActivity.kt` — conditional start destination; gate the cold-request branch + deep-link collector; onboarding route composable + launcher state; pass `onReplayTutorial` to Settings.
+- `app/src/main/java/com/whitefang/stepsofbabylon/presentation/MainActivity.kt` — conditional start destination; gate the cold-request branch; gate the deep-link collector on live nav state; permanent-denial recovery (`shouldShowRequestPermissionRationale` → Snackbar → `ACTION_APPLICATION_DETAILS_SETTINGS`, spec §4) in the launcher callback + Scaffold snackbarHost; onboarding route composable + launcher state; pass `onReplayTutorial` to Settings.
 - `app/src/main/java/com/whitefang/stepsofbabylon/presentation/settings/NotificationSettingsScreen.kt` — `onReplayTutorial` param + "Replay tutorial" row.
 
 **Conventions to copy:**
 - SharedPreferences class shape: `MusicPreferences.kt` (`@Singleton class … @Inject constructor(@ApplicationContext context: Context)`, no Hilt module).
 - Robolectric prefs test: `MusicPreferencesTest.kt`.
-- JVM ViewModel test with mocked prefs: `HomeViewModelTest.kt` (`org.mockito.kotlin.mock`, JUnit Jupiter).
+- JVM test mocking a concrete final prefs class: `DailyStepManagerTest.kt` (`mock<AntiCheatPreferences>()`, JUnit Jupiter) — proves mockito-kotlin mocks final classes here. `HomeViewModelTest.kt` shows the Jupiter ViewModel-test shape (but uses `Dispatchers.setMain`, which the onboarding VM test does NOT need — see Task 4).
 - Robolectric `Screen` test: `DeepLinkRoutingTest.kt`.
 
 **Build commands** (non-TTY — always use `./run-gradle.sh`, never `./gradlew`):
@@ -334,7 +334,9 @@ In `Screen.kt`, add the `Onboarding` data object after `Help` (line 32). It need
     data object Onboarding : Screen("onboarding", "Onboarding", Icons.AutoMirrored.Filled.HelpOutline)
 ```
 
-Then update the companion. Fix the stale "All 12 screens" comment to "All 13 non-onboarding screens", and add `startDestination` + extend `fromRoute` to also match `Onboarding` without adding it to the allowlist:
+Then **replace the entire companion object (`Screen.kt` lines 34-62)** with the version below — it
+fixes the stale "All 12 screens" comment to "All 13 non-onboarding screens", adds `startDestination`,
+and extends `fromRoute` to also match `Onboarding` without adding it to the allowlist:
 
 ```kotlin
     companion object {
@@ -399,7 +401,12 @@ deep-link target; fromRoute resolves it for internal nav only."
 - Create: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/onboarding/OnboardingViewModel.kt`
 - Test: `app/src/test/java/com/whitefang/stepsofbabylon/presentation/onboarding/OnboardingViewModelTest.kt`
 
-> Tested with a Mockito mock of the concrete `OnboardingPreferences` (the project's mockito-kotlin already mocks concrete final classes — see `HomeViewModelTest`'s `mock<MilestoneNotificationManager>()`). No interface extraction.
+> Tested with a Mockito mock of the concrete `OnboardingPreferences` (the project's mockito-kotlin already mocks concrete final classes — see `DailyStepManagerTest`'s `mock<AntiCheatPreferences>()`). No interface extraction.
+>
+> **Runner note:** `OnboardingViewModel` extends `androidx.lifecycle.ViewModel`, whose no-arg
+> constructor does not touch Android — so this test runs as plain JVM under JUnit Jupiter with **no
+> Robolectric**. It also does no `viewModelScope` work, so deliberately omit the
+> `Dispatchers.setMain`/`runTest` `@BeforeEach` from the `HomeViewModelTest` template — don't copy it in.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -409,7 +416,6 @@ Create `OnboardingViewModelTest.kt`:
 package com.whitefang.stepsofbabylon.presentation.onboarding
 
 import com.whitefang.stepsofbabylon.data.onboarding.OnboardingPreferences
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -422,8 +428,9 @@ class OnboardingViewModelTest {
 
     @Test
     fun `exposes the canonical slide list`() {
+        // Identity (not value-equality) is the contract: the VM must expose the SAME list
+        // instance, never a copy — keeps the no-copy guarantee the screen relies on.
         assertSame(OnboardingContent.slides, viewModel.slides)
-        assertEquals(OnboardingContent.slides.size, viewModel.slides.size)
     }
 
     @Test
@@ -487,9 +494,10 @@ git commit -m "feat(onboarding): OnboardingViewModel (slides + completeOnboardin
 
 > No unit test (Compose UI is device-verified here, consistent with the rest of the app's screens). Verified by compilation in Task 6's build. The screen is driven entirely by parameters from `MainActivity` plus the injected `OnboardingViewModel` for the slide list + completion persistence.
 >
-> **Skip contract:** Skip is shown only on non-final slides and jumps to the final (permission) slide — it skips the lessons, never the permission ask. The final slide has no Skip.
-> **Recovery:** the final slide's button reflects permission state — ask → (granted: "✓ enabled, Done") / (denied: "Open Settings" + "Done"). A "Done"/"Start playing" finish is always available so a denying player still lands on Home.
-> **Accessibility/lifecycle:** `rememberPagerState` preserves the page across config change/process death; reduced motion uses `scrollToPage` (instant) vs `animateScrollToPage`; slide emoji are decorative.
+> **Skip contract:** Skip is shown only on non-final slides and jumps to the final (permission) slide — it skips the lessons, never the permission ask. The final slide has no Skip. (Backward swipe/Next remain available on the primer so lessons are re-readable; the completion flag is only ever set by the final-slide finish buttons, so the ask is never bypassed.)
+> **Final-slide states (ORDER MATTERS — spec §5):** the `when{}` checks `stepCountingGranted` FIRST (so an already-granted *replay* shows the satisfied "✓ / Start playing" state and does NOT re-ask), then `!permissionAsked` (the "Enable step counting" ask), then the asked-but-denied state (in-carousel "Open Settings" + "Continue without step counting"). A finish button is always present so a denying player still lands on Home.
+> **Post-onboarding denial** (permanently-denied on a *later* cold launch, off the carousel) is handled separately in `MainActivity`'s launcher callback (Task 6) via a Snackbar→Settings fallback — the in-carousel "Open Settings" only covers the on-carousel case.
+> **Accessibility/lifecycle:** `rememberPagerState` preserves the page across config change/process death; reduced motion uses `scrollToPage` (instant) vs `animateScrollToPage`; the decorative emoji uses `clearAndSetSemantics {}` (NOT `contentDescription = ""`, which would still announce) and the page dots carry no semantics.
 
 - [ ] **Step 1: Write the implementation**
 
@@ -509,6 +517,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.background
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
@@ -523,8 +532,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -588,10 +596,12 @@ fun OnboardingScreen(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     // Emoji icon is decorative — the title/body carry the meaning for TalkBack.
+                    // clearAndSetSemantics{} (NOT semantics{contentDescription=""}) actually
+                    // removes the auto-generated text node from the a11y tree.
                     Text(
                         slide.icon,
                         style = MaterialTheme.typography.displayMedium,
-                        modifier = Modifier.semantics { contentDescription = "" },
+                        modifier = Modifier.clearAndSetSemantics {},
                     )
                     Spacer(Modifier.height(24.dp))
                     Text(slide.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
@@ -612,20 +622,18 @@ fun OnboardingScreen(
             ) {
                 repeat(slides.size) { i ->
                     val active = i == pagerState.currentPage
+                    // Decorative dot — a single Box with a background, no inner Surface, no
+                    // semantics (it carries no text, so nothing to hide from TalkBack).
                     Box(
                         Modifier
                             .padding(horizontal = 4.dp)
                             .size(if (active) 10.dp else 8.dp)
                             .clip(CircleShape)
-                            .semantics { contentDescription = "" }
-                            .then(Modifier),
-                    ) {
-                        Surface(
-                            color = if (active) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.4f),
-                            shape = CircleShape,
-                            modifier = Modifier.fillMaxSize(),
-                        ) {}
-                    }
+                            .background(
+                                if (active) MaterialTheme.colorScheme.primary
+                                else Color.Gray.copy(alpha = 0.4f)
+                            ),
+                    )
                 }
             }
 
@@ -637,12 +645,10 @@ fun OnboardingScreen(
                 ) { Text("Next") }
             } else {
                 // Final (permission primer) slide.
+                // ORDER MATTERS: stepCountingGranted is checked FIRST so a replay where the
+                // permission is already held shows the satisfied state and does NOT re-ask
+                // (spec §5). Only if not granted do we branch on whether we've asked yet.
                 when {
-                    !permissionAsked -> {
-                        Button(onClick = onEnableStepCounting, modifier = Modifier.fillMaxWidth()) {
-                            Text("Enable step counting")
-                        }
-                    }
                     stepCountingGranted -> {
                         Text(
                             "Step counting enabled ✓",
@@ -653,6 +659,11 @@ fun OnboardingScreen(
                         )
                         Button(onClick = { finish() }, modifier = Modifier.fillMaxWidth()) {
                             Text("Start playing")
+                        }
+                    }
+                    !permissionAsked -> {
+                        Button(onClick = onEnableStepCounting, modifier = Modifier.fillMaxWidth()) {
+                            Text("Enable step counting")
                         }
                     }
                     else -> {
@@ -700,11 +711,12 @@ git commit -m "feat(onboarding): carousel + permission primer screen with skip/d
 
 > This is the load-bearing edit. Changes, precisely:
 > 1. Inject `OnboardingPreferences`; read it synchronously to compute `startDestination` via the pure helper.
-> 2. Hoist `mutableState` for `onboardingComplete`, `permissionAsked`, `stepCountingGranted`.
-> 3. Gate **only** the cold multi-permission request branch on `onboardingComplete` — leave service-start, HC-chain, and the deep-link push ungated.
-> 4. Update the `permissionLauncher` callback to record `permissionAsked`/`stepCountingGranted` (so the onboarding slide can react), keeping the existing granted-path behavior.
-> 5. Gate the deep-link collector so it does not navigate over onboarding (drops the route while incomplete — safe: a brand-new no-data install has no notifications scheduled to deep-link from).
-> 6. Add the `composable(Screen.Onboarding.route)` route, passing the callbacks; completion goes to Home (first launch) or back to Settings (replay) via `previousBackStackEntry`.
+> 2. Hoist `mutableState` for `onboardingComplete`, `permissionAsked`, `stepCountingGranted`, plus a `SnackbarHostState` and `showStepPermissionSettingsHint` for the permanently-denied recovery affordance (spec §4).
+> 3. Update the `permissionLauncher` callback to record `permissionAsked`/`stepCountingGranted`, keep the granted-path behavior, AND detect permanent denial (denied result + `!shouldShowRequestPermissionRationale`) on the post-onboarding path to trigger the Settings-recovery hint.
+> 4. Gate **only** the cold multi-permission request branch on `onboardingComplete` — leave service-start, HC-chain, and the deep-link push ungated. (Permanent-denial detection lives in the callback, which fires even on the silent no-op `launch()` returns for a permanently-denied permission — so a single detection point covers both the in-carousel ask and the cold re-prompt.)
+> 5. Wire the Scaffold `snackbarHost` + a `LaunchedEffect` that shows "Step counting is off — Enable in Settings" (deep-linking to `ACTION_APPLICATION_DETAILS_SETTINGS`) when the hint fires. This is the spec §4 fallback that replaces the current silent no-op.
+> 6. Gate the deep-link collector on the **live nav state** (current route == Onboarding) so it does not navigate over the carousel on first launch OR Settings replay.
+> 7. Add the `composable(Screen.Onboarding.route)` route, passing the callbacks; completion goes to Home (first launch) or back to Settings (replay) via `previousBackStackEntry`.
 
 - [ ] **Step 1: Add the import + injected preference**
 
@@ -714,12 +726,17 @@ Add to the import block (near the other `data.*` imports, e.g. after the `Health
 import com.whitefang.stepsofbabylon.data.onboarding.OnboardingPreferences
 import com.whitefang.stepsofbabylon.presentation.onboarding.OnboardingScreen
 import android.net.Uri
-import androidx.compose.runtime.getValue
+import androidx.core.app.ActivityCompat
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 ```
 
-> `getValue` may already be imported (it is, line 22). Skip duplicates — keep one of each. `setContent` already imports `remember` (line 23).
+> `getValue` is ALREADY imported (line 22) — do NOT re-add it (a duplicate import is a Kotlin
+> compile error). `remember` is already imported (line 23). `ContextCompat` is already imported
+> (line 26). Add only the lines above that are genuinely missing.
 
 Add to the `@Inject` block (after `musicPreferences`, line 72):
 
@@ -743,6 +760,10 @@ Inside `setContent { StepsOfBabylonTheme { … } }`, right after `val navControl
                         ) == PackageManager.PERMISSION_GRANTED
                     )
                 }
+                // Permanently-denied recovery (spec §4): when set, the Scaffold snackbar offers a
+                // deep-link to app settings instead of the current silent no-op. Reset after shown.
+                val snackbarHostState = remember { SnackbarHostState() }
+                var showStepPermissionSettingsHint by remember { mutableStateOf(false) }
 ```
 
 > `context` is defined at line 96 (`val context = LocalContext.current`) — these lines come after it. Move them below the `val context` line if ordering complains.
@@ -765,6 +786,17 @@ Replace the existing `permissionLauncher` block (lines 103-115) with:
                         if (healthConnectWrapper.isAvailable()) {
                             hcPermissionLauncher.launch(healthConnectWrapper.getRequiredPermissions())
                         }
+                    } else if (onboardingComplete &&
+                        !ActivityCompat.shouldShowRequestPermissionRationale(
+                            this@MainActivity, Manifest.permission.ACTIVITY_RECOGNITION
+                        )
+                    ) {
+                        // Permanently denied ("Don't ask again") AND past onboarding: a bare
+                        // launch() is now a silent no-op, so surface the Settings-recovery hint
+                        // instead of stranding the player (spec §4). During onboarding itself the
+                        // carousel's own "Open Settings" affordance handles this, so we don't
+                        // double up while !onboardingComplete.
+                        showStepPermissionSettingsHint = true
                     }
                 }
 ```
@@ -789,7 +821,9 @@ with:
                     // Gate ONLY the cold request: on a fresh install (onboarding not yet
                     // complete) the onboarding final slide owns the first ask, so we must
                     // not fire a context-free system dialog over the carousel. On later
-                    // launches (onboarding complete) this resumes its normal re-prompt role.
+                    // launches (onboarding complete) this resumes its normal re-prompt role —
+                    // and because permanent-denial recovery lives in the launcher callback
+                    // (Step 3), the previously-silent no-op now surfaces the Settings hint.
                     if (onboardingComplete && (!activityGranted || !notifGranted)) {
                         val needed = buildList {
                             if (!activityGranted) add(Manifest.permission.ACTIVITY_RECOGNITION)
@@ -801,18 +835,24 @@ with:
 
 > Leave the service-start (125-128), HC-chain (129-131), and deep-link push (142-143) exactly as they are — they no-op on a fresh install and must still run post-grant.
 
-- [ ] **Step 5: Gate the deep-link collector against onboarding**
+- [ ] **Step 5: Gate the deep-link collector on the live nav state (not the flag)**
 
-Replace the body of the `pendingNavigation.collect { route -> … }` block (lines 146-160) with:
+Replace the body of the `pendingNavigation.collect { route -> … }` block (lines 146-160) with the
+version below. It keys on the **current route**, not `onboardingComplete`, so a deep-link is dropped
+whenever the carousel is on top — covering BOTH first launch AND a Settings replay (where
+`onboardingComplete` is already `true` but the carousel is showing):
 
 ```kotlin
                 LaunchedEffect(Unit) {
                     pendingNavigation.collect { route ->
                         if (route != null) {
-                            // Don't navigate over the onboarding start destination. A brand-new
-                            // install has no scheduled notifications that could deep-link here, so
-                            // dropping (rather than buffering) while incomplete is safe.
-                            if (onboardingComplete) {
+                            // Don't navigate over the onboarding carousel (first launch OR replay).
+                            // A brand-new install has no scheduled notifications to deep-link from,
+                            // and during a replay the user is mid-tutorial — drop rather than
+                            // buffer; the route is reissued by the notification tap if it recurs.
+                            val onOnboarding = navController.currentBackStackEntry
+                                ?.destination?.route == Screen.Onboarding.route
+                            if (!onOnboarding) {
                                 Screen.fromRoute(route)
                                     ?.takeIf { it.route in Screen.argumentFreeRoutes }
                                     ?.let { navController.navigate(it.route) }
@@ -822,6 +862,44 @@ Replace the body of the `pendingNavigation.collect { route -> … }` block (line
                     }
                 }
 ```
+
+- [ ] **Step 5b: Wire the Scaffold snackbar host + the permanent-denial recovery hint**
+
+The existing `Scaffold(...)` (line 162) has only a `bottomBar`. Add a `snackbarHost` and a
+`LaunchedEffect` that shows the recovery snackbar when `showStepPermissionSettingsHint` fires. Add the
+`snackbarHost` parameter to the `Scaffold` call:
+
+```kotlin
+                Scaffold(
+                    snackbarHost = { SnackbarHost(snackbarHostState) },
+                    bottomBar = {
+```
+
+…and just inside the `Scaffold { innerPadding -> … }` content lambda (before the `NavHost`), add:
+
+```kotlin
+                    LaunchedEffect(showStepPermissionSettingsHint) {
+                        if (showStepPermissionSettingsHint) {
+                            val result = snackbarHostState.showSnackbar(
+                                message = "Step counting is off — enable it in Settings",
+                                actionLabel = "Settings",
+                            )
+                            if (result == SnackbarResult.ActionPerformed) {
+                                context.startActivity(
+                                    Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.fromParts("package", context.packageName, null),
+                                    )
+                                )
+                            }
+                            showStepPermissionSettingsHint = false
+                        }
+                    }
+```
+
+> This is the spec §4 fallback: it replaces the previously-silent post-onboarding no-op. The same
+> `ACTION_APPLICATION_DETAILS_SETTINGS` deep-link is reused by the in-carousel `onOpenAppSettings`
+> (Step 7), so the recovery action is identical on both paths.
 
 - [ ] **Step 6: Make the start destination conditional**
 
@@ -899,16 +977,51 @@ Expected: `BUILD SUCCESSFUL`.
 Run: `./run-gradle.sh testDebugUnitTest > /tmp/onb-test.log 2>&1; tail -n 25 /tmp/onb-test.log`
 Expected: `BUILD SUCCESSFUL`, all tests pass (including the pre-existing `DeepLinkRoutingTest`).
 
+- [ ] **Step 9b: Pin the `navigate_to` → `pendingNavigation` contract (spec §6)**
+
+The deep-link *push* (`intent.getStringExtra("navigate_to")` → `pendingNavigation.value`) must keep
+working regardless of onboarding state — the gating only affects the *collector*, not the push. The
+extraction half is already covered by `DeepLinkRoutingTest`. Add two explicit guard tests to it (it's
+the JVM/Robolectric home for this contract) documenting that the route string survives extraction so
+the (gated) collector can decide:
+
+In `app/src/test/java/com/whitefang/stepsofbabylon/presentation/DeepLinkRoutingTest.kt`, add:
+
+```kotlin
+    @Test
+    fun `navigate_to onboarding route is NOT a valid deep-link target`() {
+        // The push extracts any string, but the collector gates on argumentFreeRoutes —
+        // onboarding must never be reachable as a public deep-link even if injected.
+        val intent = Intent().putExtra("navigate_to", "onboarding")
+        assertEquals("onboarding", intent.getStringExtra("navigate_to"))
+        assertFalse("onboarding" in Screen.argumentFreeRoutes)
+    }
+
+    @Test
+    fun `navigate_to store remains a valid deep-link target`() {
+        // Regression: a real notification deep-link still resolves + passes the allowlist.
+        val intent = Intent().putExtra("navigate_to", "store")
+        val route = intent.getStringExtra("navigate_to")
+        assertSame(Screen.Store, Screen.fromRoute(route))
+        assertTrue(route in Screen.argumentFreeRoutes)
+    }
+```
+
+> `assertFalse`/`assertTrue`/`assertSame`/`assertEquals` and the `Screen` import are already present in
+> `DeepLinkRoutingTest`. Run: `./run-gradle.sh testDebugUnitTest --tests "com.whitefang.stepsofbabylon.presentation.DeepLinkRoutingTest"` → PASS.
+
 - [ ] **Step 10: Commit**
 
 ```bash
-git add app/src/main/java/com/whitefang/stepsofbabylon/presentation/MainActivity.kt
+git add app/src/main/java/com/whitefang/stepsofbabylon/presentation/MainActivity.kt \
+        app/src/test/java/com/whitefang/stepsofbabylon/presentation/DeepLinkRoutingTest.kt
 git commit -m "feat(onboarding): wire first-launch flow into MainActivity
 
 Conditional start destination via synchronous prefs read; gate only the
-cold-permission request branch + deep-link collector behind completion;
-onboarding route owns the first ask; completion -> Home (first launch) or
-back to Settings (replay)."
+cold-permission request branch behind completion + deep-link collector on
+live nav state; permanent-denial recovery via Snackbar->Settings in the
+launcher callback (spec §4); onboarding route owns the first ask;
+completion -> Home (first launch) or back to Settings (replay)."
 ```
 
 ---
@@ -1006,7 +1119,7 @@ Run the whole JVM suite + assemble one more time:
 ./run-gradle.sh assembleDebug > /tmp/onb-final-build.log 2>&1; tail -n 10 /tmp/onb-final-build.log
 ```
 
-Expected: both `BUILD SUCCESSFUL`. Record the new JVM test count (previous headline: **960**; this plan adds ~6: 2 prefs + 2 content + 2 viewmodel + 5 routing... recount from the log's reported test total and use the actual number).
+Expected: both `BUILD SUCCESSFUL`. Record the new JVM test count (previous headline: **960**; this plan adds **11**: 2 prefs + 2 content + 1 viewmodel + 5 routing + 1 deep-link pin (Task 6 Step 9b) → ~971, but **recount from the log's reported test total and use the actual number** — it is authoritative over this estimate).
 
 > **If `assembleDebug` ever reported `HorizontalPager` unresolved** in Task 5/6 (it should not — it's transitive via material3), add the explicit dependency now: in `gradle/libs.versions.toml` add `compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }` under `# Compose`, and in `app/build.gradle.kts` add `implementation(libs.compose.foundation)` near line 210. Re-run assemble. Skip this step if the build already succeeded.
 
@@ -1026,6 +1139,12 @@ In `docs/agent/STATE.md`:
 - Move #24 from "Top priorities / next actions" into "Recently shipped (newest first)".
 - **Remove the "(Gate C, schema)" qualifier** in BOTH places it appears: the "next actions" line (~120) and the objective paragraph (~23-24). #24 needed no schema bump.
 - Add a fragile-zone bullet: onboarding completion flag is device-local SharedPreferences (`OnboardingPreferences`), intentionally not Room; the cold-permission request branch in `MainActivity` is gated on completion — don't ungate it or the carousel collides with the system dialog.
+
+Also add the cloud-save follow-up where the #36 implementer will actually read it — in
+`docs/plans/plan-V1X-roadmap.md`, under the **V1X-12** (cloud save / #36) section, add a one-line
+restore note: *"Cloud restore must not re-onboard a progressed player — gate Onboarding on
+`!hasCompletedOnboarding && totalStepsEarned == 0` (PlayerRepository is injected in MainActivity),
+since OnboardingPreferences is device-local and does not sync. Per onboarding spec §7."*
 
 - [ ] **Step 4: Decide #24 issue disposition**
 
@@ -1061,7 +1180,7 @@ gh pr create --title "feat(onboarding): first-launch tutorial + permission prime
 
 ## Self-Review checklist (completed during authoring)
 
-- **Spec coverage:** carousel (Task 5) · permission primer + Skip contract + deny recovery (Tasks 5/6) · SharedPreferences flag no-schema (Task 1) · synchronous start-destination helper (Tasks 3/6) · gate only cold-request branch + deep-link collector (Task 6) · launcher-as-callback (Task 6) · Settings replay + no-flag-flip-at-tap (Task 7) · route kept out of allowlist (Task 3) · no Hilt module (Task 1) · reduced-motion + rememberPagerState (Task 5) · tests via Mockito mock + Robolectric prefs + pure content (Tasks 1-4) · doc sync incl. schema-tag correction + #24 stays open (Task 8). All spec sections map to a task.
-- **Type consistency:** `OnboardingPreferences.hasCompletedOnboarding()/setCompleted()/reset()` used identically across Tasks 1/3/4/6. `OnboardingViewModel.slides`/`completeOnboarding()` consistent Tasks 4/5. `Screen.startDestination(Boolean)`/`Screen.Onboarding.route` consistent Tasks 3/6. `OnboardingScreen(stepCountingGranted, permissionAsked, reducedMotion, onEnableStepCounting, onOpenAppSettings, onFinished, viewModel)` signature identical Tasks 5/6. `NotificationSettingsScreen(onReplayTutorial, viewModel)` consistent Tasks 7.
+- **Spec coverage:** carousel (Task 5) · permission primer + Skip contract + deny recovery — in-carousel "Open Settings" (Task 5) AND the post-onboarding permanent-denial Snackbar→Settings fallback in the launcher callback (Task 6 Steps 3/5b), satisfying spec §4 · SharedPreferences flag no-schema (Task 1) · synchronous start-destination helper (Tasks 3/6) · gate only cold-request branch + live-nav-state deep-link gate (Task 6 Steps 4/5) · launcher-as-callback (Task 6) · Settings replay + no-flag-flip-at-tap (Task 7) · already-granted replay shows satisfied state, no re-ask — `when{}` checks `stepCountingGranted` first (Task 5) · route kept out of allowlist (Task 3) · no Hilt module (Task 1) · reduced-motion + rememberPagerState + `clearAndSetSemantics` decorative emoji (Task 5) · tests via Mockito mock + Robolectric prefs + pure content + `navigate_to`→`pendingNavigation` pin (Tasks 1-4, 6 Step 9b) · cloud-save (#36) restore-gate note in V1X-12 + doc sync incl. schema-tag correction + #24 stays open (Task 8).
+- **Coverage honesty:** every spec §-item maps to a task EXCEPT the load-bearing MainActivity *runtime branches* (gate polarity, start-destination selection, deep-link drop-while-on-carousel, Snackbar fallback) which are **device/instrumented-verified only** — they live in `@Composable`/Activity code with no pure-JVM seam. The `startDestination()` decision is the one piece extracted to a JVM-tested pure helper (Task 3); the rest is verified by the assemble build + manual device check. This is a known under-test, called out rather than papered over.
+- **Type consistency:** `OnboardingPreferences.hasCompletedOnboarding()/setCompleted()/reset()` used identically across Tasks 1/3/4/6. `OnboardingViewModel.slides`/`completeOnboarding()` consistent Tasks 4/5. `Screen.startDestination(Boolean)`/`Screen.Onboarding.route` consistent Tasks 3/6. `OnboardingScreen(stepCountingGranted, permissionAsked, reducedMotion, onEnableStepCounting, onOpenAppSettings, onFinished, viewModel)` signature identical Tasks 5/6. `NotificationSettingsScreen(onReplayTutorial, viewModel)` consistent Task 7.
 - **No placeholders:** every code step shows complete code; every run step has a command + expected result.
-- **Deferred-by-design (not gaps):** post-onboarding *permanently-denied* recovery beyond the in-carousel "Open Settings" button is bounded to the replay path (re-opening onboarding from Settings re-shows the recovery) — expanding Settings into a full permission manager is out of Gate-C scope and noted as such in the spec.
