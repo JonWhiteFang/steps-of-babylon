@@ -52,7 +52,7 @@ import com.whitefang.stepsofbabylon.presentation.labs.LabsScreen
 import com.whitefang.stepsofbabylon.presentation.missions.MissionsScreen
 import com.whitefang.stepsofbabylon.presentation.navigation.BottomNavBar
 import com.whitefang.stepsofbabylon.presentation.navigation.Screen
-import com.whitefang.stepsofbabylon.presentation.settings.NotificationSettingsScreen
+import com.whitefang.stepsofbabylon.presentation.settings.SettingsScreen
 import com.whitefang.stepsofbabylon.presentation.stats.StatsScreen
 import com.whitefang.stepsofbabylon.presentation.store.StoreScreen
 import com.whitefang.stepsofbabylon.presentation.supplies.UnclaimedSuppliesScreen
@@ -353,7 +353,7 @@ class MainActivity : ComponentActivity() {
                             MissionsScreen()
                         }
                         composable(Screen.Settings.route) {
-                            NotificationSettingsScreen(
+                            SettingsScreen(
                                 onReplayTutorial = { navController.navigate(Screen.Onboarding.route) },
                             )
                         }

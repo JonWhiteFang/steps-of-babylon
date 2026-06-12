@@ -311,8 +311,8 @@ presentation/stats/StatsViewModel.kt                 # @HiltViewModel: walking h
 presentation/stats/StatsUiState.kt                   # UI state: bars, periods, battle/all-time stats
 presentation/stats/StatsScreen.kt                    # Stats screen: chart, today, battle, all-time sections
 presentation/stats/WalkingHistoryChart.kt            # Canvas-drawn bar chart with period toggle
-presentation/settings/NotificationSettingsViewModel.kt # @HiltViewModel: notification preference toggles
-presentation/settings/NotificationSettingsScreen.kt    # Settings screen: 4 notification toggles + "Replay tutorial" row (onReplayTutorial callback → re-enters onboarding)
+presentation/settings/SettingsViewModel.kt             # @HiltViewModel: notification preference toggles + sound/music prefs + data deletion
+presentation/settings/SettingsScreen.kt                # Settings screen: 4 notification toggles, sound/music controls, "Replay tutorial" row (onReplayTutorial callback → re-enters onboarding), Delete All Data
 presentation/onboarding/OnboardingSlide.kt             # Pure-Kotlin slide model + canonical 4-slide OnboardingContent list (final slide is the permission primer)
 presentation/onboarding/OnboardingViewModel.kt         # @HiltViewModel: exposes the slide list; completeOnboarding() persists the OnboardingPreferences flag
 presentation/onboarding/OnboardingScreen.kt            # First-launch tutorial carousel (HorizontalPager): swipeable slides, Skip→primer, permission-primer final slide w/ granted/ask/denied states + Settings recovery
