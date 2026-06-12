@@ -239,6 +239,10 @@ class MainActivity : ComponentActivity() {
                                     )
                                 )
                             }
+                            // Reset AFTER await (not before): resetting first would change this
+                            // effect's key true->false and cancel the in-flight showSnackbar. The
+                            // only cost is a possible re-show if the device rotates while the
+                            // snackbar is visible — cosmetic and rare; correctness wins here.
                             showStepPermissionSettingsHint = false
                         }
                     }
@@ -295,12 +299,17 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onFinished = {
                                     onboardingComplete = true
+                                    // previousBackStackEntry is null ONLY when Onboarding was the
+                                    // start destination, i.e. first launch.
                                     if (navController.previousBackStackEntry == null) {
+                                        // First launch: go to Home and clear Onboarding off the
+                                        // back stack so system Back doesn't re-enter the carousel.
                                         navController.navigate(Screen.Home.route) {
                                             popUpTo(Screen.Onboarding.route) { inclusive = true }
                                             launchSingleTop = true
                                         }
                                     } else {
+                                        // Replay from Settings: return to Settings.
                                         navController.popBackStack()
                                     }
                                 },
