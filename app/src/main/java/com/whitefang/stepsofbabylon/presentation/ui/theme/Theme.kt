@@ -10,15 +10,23 @@ private val DarkColorScheme = darkColorScheme(
     tertiary = SandStone,
     background = DeepBronze,
     surface = DeepBronze,
-    onPrimary = Ivory,
-    onBackground = Ivory,
-    onSurface = Ivory,
+    // Slightly elevated bronze so Material surfaces that use surfaceVariant (chips, tonal buttons,
+    // outlined-card containers) lift off the flat background instead of disappearing into it.
+    surfaceVariant = BronzeSurface,
+    onPrimary = DeepBronze,      // dark text on gold buttons reads better than ivory (gold is light)
+    onSecondary = Ivory,
+    onBackground = TextPrimary,  // Ivory: ~8.8:1 on DeepBronze (AAA)
+    onSurface = TextPrimary,
+    onSurfaceVariant = TextSecondary,
+    error = StatusDanger,
 )
 
 @Composable
 fun StepsOfBabylonTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = DarkColorScheme,
+        typography = SobTypography,
+        shapes = SobShapes,
         content = content,
     )
 }

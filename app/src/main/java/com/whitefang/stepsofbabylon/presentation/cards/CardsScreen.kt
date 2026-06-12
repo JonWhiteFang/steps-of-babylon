@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.whitefang.stepsofbabylon.domain.model.CardRarity
@@ -47,7 +48,9 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
     Column(Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("💎 ${state.gems}", style = MaterialTheme.typography.titleMedium)
+            // Left: how many cards the player owns. Right: the gem balance they spend on packs.
+            // (Previously both slots printed the gem balance — "💎 1 / 💎 1 Gems" — a copy bug.)
+            Text("${state.ownedCards.size} cards", style = MaterialTheme.typography.titleMedium)
             Text("💎 ${state.gems} Gems", style = MaterialTheme.typography.titleMedium)
         }
         Spacer(Modifier.height(8.dp))
@@ -78,13 +81,29 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
         Spacer(Modifier.height(12.dp))
 
         // Card collection
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(state.ownedCards) { card ->
-                CardItem(card, state.equippedCount,
-                    onEquip = { viewModel.equipCard(card.id) },
-                    onUnequip = { viewModel.unequipCard(card.id) },
-                    onUpgrade = { viewModel.upgradeCard(card.id) },
+        if (state.ownedCards.isEmpty() && !state.isLoading) {
+            Column(
+                Modifier.fillMaxWidth().padding(top = 48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text("No cards yet", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "Open a pack above to start your collection. Equip up to 3 cards for per-round bonuses in battle.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
                 )
+            }
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(state.ownedCards) { card ->
+                    CardItem(card, state.equippedCount,
+                        onEquip = { viewModel.equipCard(card.id) },
+                        onUnequip = { viewModel.unequipCard(card.id) },
+                        onUpgrade = { viewModel.upgradeCard(card.id) },
+                    )
+                }
             }
         }
     }
@@ -148,8 +167,11 @@ private fun CardItem(
 
 private fun formatName(name: String): String = name.toDisplayName()
 
+// Rarity colours tuned for legibility on the dark surface: COMMON was Color.Gray (low contrast on
+// bronze); a lighter stone-grey reads as "common" while staying visible. RARE/EPIC keep their
+// blue/purple identities but lifted slightly for contrast.
 private fun rarityColor(rarity: CardRarity): Color = when (rarity) {
-    CardRarity.COMMON -> Color.Gray
-    CardRarity.RARE -> Color(0xFF4488FF)
-    CardRarity.EPIC -> Color(0xFFAA44FF)
+    CardRarity.COMMON -> Color(0xFFB8B0A0)
+    CardRarity.RARE -> Color(0xFF6FA8DC)
+    CardRarity.EPIC -> Color(0xFFB57EDC)
 }

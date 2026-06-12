@@ -33,10 +33,15 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun UpgradeCard(info: UpgradeDisplayInfo, onClick: () -> Unit) {
-    val alpha = when {
-        info.isMaxed -> 0.7f
+    // Whole-card dim is reserved for the MAXED state (paired with the Gold tint below). An
+    // *unaffordable* card now stays fully opaque so its title/description remain readable — only
+    // the cost/stat readout dims (see `valueAlpha`). Previously the entire card dropped to 0.5f
+    // when unaffordable, which made the upgrade NAME barely legible at a 0-Step balance.
+    val cardAlpha = if (info.isMaxed) 0.85f else 1f
+    val valueAlpha = when {
+        info.isMaxed -> 1f
         info.canAfford -> 1f
-        else -> 0.5f
+        else -> 0.55f
     }
 
     val context = LocalContext.current
@@ -66,7 +71,7 @@ fun UpgradeCard(info: UpgradeDisplayInfo, onClick: () -> Unit) {
         // inside onClick. Disabling the Card also removes the ripple/press feedback so it *looks*
         // disabled, matching the in-round menu / UW / Cards surfaces (consistent "can't buy more" UX).
         enabled = info.canAfford && !info.isMaxed,
-        modifier = Modifier.fillMaxWidth().alpha(alpha).graphicsLayer(scaleX = scale, scaleY = scale),
+        modifier = Modifier.fillMaxWidth().alpha(cardAlpha).graphicsLayer(scaleX = scale, scaleY = scale),
         // The dim treatment is owned by `alpha` above, so pin disabledContainerColor == containerColor:
         // otherwise a disabled (maxed/unaffordable) Card would swap to Material3's theme-default
         // disabled background and lose the Gold "MAX" tint / normal surface. (#154)
@@ -98,7 +103,9 @@ fun UpgradeCard(info: UpgradeDisplayInfo, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Column(horizontalAlignment = Alignment.End) {
+            // The level/stat/cost readout carries the affordability dim, so the upgrade name +
+            // description (left column) stay fully legible even when the player can't afford it.
+            Column(horizontalAlignment = Alignment.End, modifier = Modifier.alpha(valueAlpha)) {
                 Text(
                     text = if (info.isMaxed) stringResource(R.string.upgrade_max) else stringResource(R.string.upgrade_level, info.level),
                     style = MaterialTheme.typography.labelLarge,

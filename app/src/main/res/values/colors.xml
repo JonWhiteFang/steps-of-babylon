@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        XML-side colour resources for theme/window use only (the Compose design system lives in
+        presentation/ui/theme/Color.kt). Keep these in sync with the brand palette: brand_deep_bronze
+        is the app windowBackground (see themes.xml), matching DeepBronze (#6B3A2A).
+    -->
+    <color name="brand_deep_bronze">#6B3A2A</color>
+</resources>

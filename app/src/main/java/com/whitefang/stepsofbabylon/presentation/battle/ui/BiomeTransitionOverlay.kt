@@ -38,7 +38,11 @@ fun BiomeTransitionOverlay(info: BiomeTransitionInfo, onContinue: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.biome_welcome), style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.7f))
             Text(
-                info.biome.name.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() },
+                // Title-case every word: "HANGING_GARDENS" -> "Hanging Gardens".
+                // (The old replaceFirstChar only capitalised the first word -> "Hanging gardens".)
+                info.biome.name.split('_').joinToString(" ") { word ->
+                    word.lowercase().replaceFirstChar { it.uppercase() }
+                },
                 style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(8.dp))

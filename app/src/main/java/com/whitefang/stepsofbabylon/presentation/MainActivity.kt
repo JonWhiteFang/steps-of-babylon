@@ -220,7 +220,12 @@ class MainActivity : ComponentActivity() {
                                 musicManager.playWalking()
                             }
                         }
-                        if (currentRoute != Screen.Battle.route) {
+                        // Hide the bottom nav on the immersive battle screen AND on the
+                        // first-launch/replay onboarding carousel — the tutorial must read as a
+                        // self-contained first impression, not a tab the player can escape from.
+                        if (currentRoute != Screen.Battle.route &&
+                            currentRoute != Screen.Onboarding.route
+                        ) {
                             BottomNavBar(navController)
                         }
                     }

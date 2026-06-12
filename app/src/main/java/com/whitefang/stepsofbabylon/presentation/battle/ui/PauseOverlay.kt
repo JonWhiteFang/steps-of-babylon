@@ -30,7 +30,7 @@ fun PauseOverlay(
     onQuitRound: () -> Unit,
 ) {
     Box(
-        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)),
+        Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.72f)),
         contentAlignment = Alignment.Center,
     ) {
         Card(
@@ -41,7 +41,7 @@ fun PauseOverlay(
                 Modifier.padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(stringResource(R.string.pause_title), style = MaterialTheme.typography.headlineMedium, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.pause_title), style = MaterialTheme.typography.headlineLarge, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(24.dp))
                 Button(onClick = onResume, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_resume)) }
                 Spacer(Modifier.height(8.dp))

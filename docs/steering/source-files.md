@@ -286,8 +286,10 @@ presentation/battle/ui/UltimateWeaponBar.kt        # UW passive cooldown display
 presentation/battle/biome/BiomeTheme.kt            # 5 biome color palettes (sky, ground, ziggurat, enemy, particles)
 presentation/battle/biome/BackgroundRenderer.kt    # Gradient sky + ambient particle system per biome
 presentation/ui/EnumDisplayName.kt                 # String.toDisplayName() — UPPER_SNAKE → "Title Case" (shared by Cards/Labs/Supplies)
-presentation/ui/theme/Color.kt                     # Compose color definitions
-presentation/ui/theme/Theme.kt                     # Compose theme setup (Material3)
+presentation/ui/theme/Color.kt                     # Compose color tokens: 5 brand colours (Gold/LapisLazuli/SandStone/DeepBronze/Ivory) + derived role tokens (LapisLight for lapis-on-dark text, BronzeSurface, TextPrimary/Secondary, StatusSuccess/Warning/Danger, GemColor/PowerStoneColor/StepColor)
+presentation/ui/theme/Type.kt                      # SobTypography — deliberate Material3 type scale (weights/tracking/lineHeight); Roboto for now (custom font is a later step), wired via StepsOfBabylonTheme
+presentation/ui/theme/Shape.kt                     # SobShapes — small(8)/medium(14)/large(20) corner radii, wired via StepsOfBabylonTheme
+presentation/ui/theme/Theme.kt                     # Compose theme setup (Material3): DarkColorScheme + SobTypography + SobShapes. onPrimary=DeepBronze (dark-on-gold contrast), surfaceVariant=BronzeSurface
 presentation/weapons/UltimateWeaponViewModel.kt    # @HiltViewModel: UW unlock/upgrade/equip state (R4-06: UWPathDisplay + UWDisplayInfo.paths for per-path UI)
 presentation/weapons/UltimateWeaponScreen.kt       # UW management: 6 cards with lock/unlock/equip + 3 per-path Upgrade buttons (R4-06)
 presentation/labs/LabsViewModel.kt                  # @HiltViewModel: research state + wallet + countdown ticker. R3-03: replaced the private `updateResearchMission()` helper with `private val updateMissionProgress = UpdateCompleteResearchMissionProgress(dailyMissionDao)`; all 3 call sites (init / rushResearch / freeRush) pass an explicit count (init: `completed.size` from CheckResearchCompletion; rush: 1 on Result.Rushed; freeRush: 1 after manual completeResearch). The DailyMissionType import was removed.
@@ -329,6 +331,8 @@ drawable/ic_launcher_foreground.xml     # 5-tier stepped-ziggurat silhouette vec
 mipmap-anydpi-v26/ic_launcher.xml       # <adaptive-icon> pointing at the drawable/ background + foreground pair.
 mipmap-anydpi-v26/ic_launcher_round.xml # Same contents as ic_launcher.xml — Android handles round masking from the adaptive source; no separate round asset needed.
 values/strings.xml                      # String resources. app_name + 16 notification strings + 5 fx_* battle floating-text strings (engine-internal, via domain/Strings) + ~45 battle/workshop Compose-surface strings (V1X-13 i18n phase 1: workshop_*, upgrade_*, battle_*, cash_amount, steps_earned_banner, inround_*, pause_*, action_resume/continue, biome_*, postround_*).
+values/themes.xml                       # App theme Theme.StepsOfBabylon — NoActionBar parent + windowBackground=@color/brand_deep_bronze (kills the default ActionBar app-wide + cold-start white flash). Referenced by AndroidManifest android:theme.
+values/colors.xml                       # XML-side colour resources for theme/window use only (Compose colours live in ui/theme/Color.kt). brand_deep_bronze (#6B3A2A) = window background.
 xml/network_security_config.xml         # Network security config (cleartext blocked).
 xml/step_widget_info.xml                # AppWidget provider info for the 2×2 step widget.
 raw/                                    # Placeholder sine-wave sound assets.

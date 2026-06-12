@@ -27,6 +27,19 @@ to `main`** (PR #157, squash `48e8e63`) · launch is judgment-gated on the Close
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-12 — Look-&-feel polish pass (presentation-only; Gate C/F UX)** (working tree, not yet
+  committed). Off a full UX/art-direction review (15-agent fan-out + adversarial verify + live on-device
+  emulator walkthrough). Headline fixes: **removed the redundant platform ActionBar app-wide** (new
+  `res/values/themes.xml` `NoActionBar` + `windowBackground`; `AndroidManifest` `android:theme`;
+  pixel-verified the old #1A1B20 bar is now DeepBronze); **hid the bottom nav during onboarding**;
+  added **design tokens** (`ui/theme/Type.kt` `SobTypography` + `Shape.kt` `SobShapes` + role/currency/
+  status tokens in `Color.kt`, wired in `Theme.kt`); **fixed the LapisLazuli-as-text WCAG fail (1.45:1)**
+  via a `LapisLight` token on the Home headline; **de-emoji'd** Home/Economy controls → Material icons;
+  **palette-aligned** currency colours; fixed verified bugs (Cards double-Gems header, Stats legend label
+  + `toArgb`, biome-title capitalization, Store "1 Gems" plural, thousands separators). **973 JVM
+  unchanged** (presentation-only); build + lint green. 12 files changed + 4 new (themes.xml, colors.xml,
+  Type.kt, Shape.kt) — zero engine/economy/concurrency touched. Remaining recs (not done): custom font,
+  UW/Card rarity visuals, haptics, claim/Post-Round reward animation, onboarding per-slide theming.
 - **2026-06-12 — #24 first-launch onboarding (Gate C)** (branch `feat/onboarding-gate-c`, not yet
   merged). Gate-C slice of V1X-22: one-time 4-slide tutorial carousel (walk→spend→battle) + permission
   primer + Settings "Replay tutorial". New `data/onboarding/OnboardingPreferences` (device-local

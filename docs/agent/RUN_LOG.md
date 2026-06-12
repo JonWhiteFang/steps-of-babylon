@@ -1,3 +1,45 @@
+## 2026-06-12 — Look-&-feel / UX review + safe polish pass (presentation-only; working tree)
+
+- **Goal:** Senior UX/art-direction review of the whole app's look & feel, then implement the
+  highest-impact *safe* improvements (favour `presentation/` + `ui/theme/`; no engine/economy/concurrency).
+- **Method:** read the spine; **built + installed the debug APK on the attached emulator** (API 36,
+  1080×2400) and walked every screen with real screenshots + UI-dump text; ran a **15-agent Workflow
+  fan-out** (one reviewer per screen/cross-cutting dimension) with an **adversarial verify stage** — which
+  caught and down-rated **7 over-claimed** High/Critical findings (e.g. "emoji lack labels" — the rows DO
+  carry text labels; "Gold/Ivory fail WCAG everywhere" — my own WCAG math: Ivory 8.76:1 pass, Gold 4.19:1
+  / SandStone 4.41:1 large-text pass). 150 findings catalogued (7 Critical / 42 High / 65 Medium / 36 Low).
+- **Key device-only findings (static review would have missed):** a **redundant platform ActionBar on
+  every screen** (no `themes.xml` → default ActionBar theme; even eats the top of the immersive battle
+  screen — `BattleScreen`'s `top=80.dp` HUD pad was a workaround); **bottom nav bar bleeding through the
+  onboarding carousel**; the genuine WCAG failure is **LapisLazuli-as-text (1.45:1)**, not the colours the
+  agents flagged; the onboarding "ziggurat" is the 🏛️ Greco-Roman **temple** emoji (wrong building).
+- **Implemented (12 modified + 4 new files, all presentation/res):**
+  - **C1 ActionBar:** new `res/values/themes.xml` (`Theme.StepsOfBabylon`, `NoActionBar` + bronze
+    `windowBackground`) + `res/values/colors.xml`; `AndroidManifest` `android:theme`. *Pixel-verified
+    on-device:* old ActionBar row #1A1B20 → DeepBronze #6B3A2A.
+  - **C2 onboarding nav:** `MainActivity` bottomBar now also excludes `Screen.Onboarding`. *Verified*
+    (UI-dump no longer lists the 5 nav tabs on the carousel).
+  - **C3 tokens:** new `Type.kt` (`SobTypography`) + `Shape.kt` (`SobShapes`); `Color.kt` role/currency/
+    status tokens; `Theme.kt` wires both + `onPrimary=DeepBronze` (dark-on-gold 2.1→4.2:1) + `surfaceVariant`.
+  - **C4 contrast:** Home "Today/{n} steps" uses `LapisLight` (5.3:1) + Gold value.
+  - **De-emoji:** Home menu rows + Economy Store link → Material icons (verified labels render
+    "Missions/Settings/Help/Store" with no emoji).
+  - **Palette currencies + verified bug fixes:** Economy/Store currency colours; Cards double-Gems header
+    → owned-count; Stats legend "Activity Minutes"→"Activity Steps" + `hashCode()`→`toArgb()`;
+    biome-title title-casing; Store "1 Gems" plural; thousands separators; Workshop dim-only-value;
+    Cards empty-state + COMMON rarity contrast; Pause veil/title bump.
+- **Verification:** `./run-gradle.sh assembleDebug` ✅; `testDebugUnitTest lintDebug` ✅ — **973 JVM /
+  0 fail / 0 error** (unchanged baseline; presentation-only, no new tests warranted), lint clean.
+- **Doc sync (PR Task-List Convention):** CHANGELOG `[Unreleased]` entry; `docs/steering/source-files.md`
+  (Color/Theme amended + Type/Shape + themes.xml/colors.xml added); CLAUDE.md `ui/theme/` line; STATE.md
+  (Recently-shipped). No schema/structure/tech change. **ADR-0022** added (de-emoji + design-token
+  decision; ActionBar-removal rationale).
+- **Next / remaining recommendations (NOT done — bigger or riskier):** custom display font in `res/font/`;
+  UW + Card rarity visual system; a haptics utility wired to purchase/claim/equip/BATTLE; Post-Round +
+  claim reward animation/SFX (placeholder sine audio is known debt); onboarding per-slide biome theming +
+  real ziggurat art; investigate the bottom-nav "restore wrong saved screen" repro.
+- Memory updated: STATE ✅ / RUN_LOG ✅ / ADR-0022 ✅
+
 ## 2026-06-12 — Ship onboarding to internal: merge #157 + release v1.0.3 (on `main`)
 
 - **Goal:** Follow CI on the onboarding PR, merge when green, then cut an internal-track release

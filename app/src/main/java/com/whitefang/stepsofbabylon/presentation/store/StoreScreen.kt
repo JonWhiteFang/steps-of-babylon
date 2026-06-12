@@ -25,12 +25,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.whitefang.stepsofbabylon.domain.model.BillingProduct
+import com.whitefang.stepsofbabylon.presentation.ui.theme.GemColor
 
 @Composable
 fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
@@ -48,7 +48,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
     ) {
         item {
             Text("Store", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("💎 ${state.gems} Gems", style = MaterialTheme.typography.titleMedium, color = Color(0xFF2196F3))
+            Text("💎 %,d %s".format(state.gems, if (state.gems == 1L) "Gem" else "Gems"), style = MaterialTheme.typography.titleMedium, color = GemColor)
             Spacer(Modifier.height(8.dp))
         }
 
@@ -59,10 +59,10 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
             Card(Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text("${product.gemAmount} 💎 Gems", fontWeight = FontWeight.Bold)
+                        Text("%,d 💎 Gems".format(product.gemAmount), fontWeight = FontWeight.Bold)
                         // Live Play Billing price; fall back to the static constant if the
                         // ProductDetails query hasn't completed yet (or failed). Plan 31 PR B.
-                        Text(state.priceDisplays[product] ?: product.priceDisplay, color = Color.Gray)
+                        Text(state.priceDisplays[product] ?: product.priceDisplay, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Button(onClick = { viewModel.purchaseGemPack(product) }) { Text("Buy") }
                 }
@@ -75,14 +75,14 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
             Text("Premium", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         }
         item {
-            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = if (state.adRemoved) Color(0xFF1B5E20) else CardDefaults.cardColors().containerColor)) {
+            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = if (state.adRemoved) com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess.copy(alpha = 0.18f) else CardDefaults.cardColors().containerColor)) {
                 Row(Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
                         Text("Ad Removal", fontWeight = FontWeight.Bold)
                         Text(
                             if (state.adRemoved) "✅ Purchased"
                             else state.priceDisplays[BillingProduct.AD_REMOVAL] ?: BillingProduct.AD_REMOVAL.priceDisplay,
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     if (!state.adRemoved) {
@@ -94,7 +94,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
 
         // Season Pass
         item {
-            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = if (state.seasonPassActive) Color(0xFF1A237E) else CardDefaults.cardColors().containerColor)) {
+            Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = if (state.seasonPassActive) com.whitefang.stepsofbabylon.presentation.ui.theme.LapisLazuli.copy(alpha = 0.28f) else CardDefaults.cardColors().containerColor)) {
                 Column(Modifier.padding(16.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
@@ -104,7 +104,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                                     state.seasonPassActive -> "✅ Active — ${state.seasonPassDaysRemaining ?: 0} days remaining"
                                     else -> state.priceDisplays[BillingProduct.SEASON_PASS] ?: BillingProduct.SEASON_PASS.priceDisplay
                                 },
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         if (!state.seasonPassActive) {
@@ -134,14 +134,14 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
         item {
             Spacer(Modifier.height(8.dp))
             Text("Cosmetics", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            Text("More cosmetic visuals are still being finalized. Jade and Obsidian Ziggurat skins are available now.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text("More cosmetic visuals are still being finalized. Jade and Obsidian Ziggurat skins are available now.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         items(state.cosmetics) { cosmetic ->
             Card(Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(Modifier.weight(1f)) {
                         Text(cosmetic.name, fontWeight = FontWeight.Bold)
-                        Text(cosmetic.description, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        Text(cosmetic.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(cosmetic.category.replace("_", " "), style = MaterialTheme.typography.labelSmall)
                     }
                     when {

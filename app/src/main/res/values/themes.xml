@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        App theme for the single Compose Activity.
+
+        Before this file existed the app declared no `android:theme`, so MainActivity inherited the
+        platform default theme — which ships an ActionBar. That rendered a redundant black
+        "Steps of Babylon" title bar above the Compose content on EVERY screen (including the
+        immersive battle screen, where BattleScreen.kt had to add a top=80.dp HUD pad to dodge it).
+
+        We use a NoActionBar parent so Compose owns the whole window, and set windowBackground to
+        the brand DeepBronze (#6B3A2A) so cold start shows the game's colour instead of a white
+        flash before the first Compose frame. Status/navigation bars stay transparent because
+        MainActivity calls enableEdgeToEdge().
+    -->
+    <style name="Theme.StepsOfBabylon" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/brand_deep_bronze</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+</resources>

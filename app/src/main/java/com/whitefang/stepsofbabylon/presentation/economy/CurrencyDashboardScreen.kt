@@ -24,9 +24,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.presentation.ui.theme.GemColor
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
+import com.whitefang.stepsofbabylon.presentation.ui.theme.PowerStoneColor
+import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusDanger
+import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess
 
 @Composable
 fun CurrencyDashboardScreen(
@@ -40,13 +47,17 @@ fun CurrencyDashboardScreen(
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("Premium Currencies", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            androidx.compose.material3.TextButton(onClick = onStoreClick) { Text("🏪 Store") }
+            androidx.compose.material3.TextButton(onClick = onStoreClick) {
+                Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.size(6.dp))
+                Text("Store")
+            }
         }
 
-        // Balances
+        // Balances — palette-aligned currency colours (were raw Material green/purple).
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            BalanceCard("Gems", state.gems, Color(0xFF4CAF50))
-            BalanceCard("Power Stones", state.powerStones, Color(0xFF9C27B0))
+            BalanceCard("Gems", state.gems, GemColor)
+            BalanceCard("Power Stones", state.powerStones, PowerStoneColor)
         }
 
         // Weekly Challenge
@@ -59,7 +70,7 @@ fun CurrencyDashboardScreen(
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                Text("${state.weeklySteps} / 100,000 steps", style = MaterialTheme.typography.bodyMedium)
+                Text("%,d / 100,000 steps".format(state.weeklySteps), style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(4.dp))
                 LinearProgressIndicator(
                     progress = { (state.weeklySteps / 100_000f).coerceAtMost(1f) },
@@ -128,7 +139,7 @@ fun CurrencyDashboardScreen(
 private fun BalanceCard(label: String, amount: Long, color: Color) {
     Card(colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.15f))) {
         Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("$amount", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = color)
+            Text("%,d".format(amount), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = color)
             Text(label, style = MaterialTheme.typography.labelMedium)
         }
     }
@@ -146,7 +157,7 @@ private fun ThresholdRow(steps: String, ps: Int, claimed: Boolean, reached: Bool
             },
             style = MaterialTheme.typography.bodySmall,
             fontWeight = if (reached && !claimed) FontWeight.Bold else FontWeight.Normal,
-            color = if (claimed) Color(0xFF4CAF50) else if (reached) Gold else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (claimed) StatusSuccess else if (reached) Gold else MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -160,7 +171,7 @@ private fun HistoryRow(week: WeeklyResult) {
             Text(
                 if (met) "✓" else "✗",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (met) Color(0xFF4CAF50) else Color(0xFFE53935),
+                color = if (met) StatusSuccess else StatusDanger,
                 fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.size(8.dp))
