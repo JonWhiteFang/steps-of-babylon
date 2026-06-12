@@ -40,10 +40,12 @@ import com.whitefang.stepsofbabylon.domain.model.BillingProduct
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyCost
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
+import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 
 @Composable
 fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
+    if (state.isLoading) { LoadingBox(); return }
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state.userMessage) {
