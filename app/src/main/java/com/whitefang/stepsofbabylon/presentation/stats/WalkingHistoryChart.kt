@@ -10,6 +10,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -56,7 +57,7 @@ fun WalkingHistoryChart(
 
             // Y-axis labels
             val paint = android.graphics.Paint().apply {
-                color = labelColor.hashCode()
+                color = labelColor.toArgb()
                 textSize = 9.sp.toPx()
                 textAlign = android.graphics.Paint.Align.RIGHT
             }
@@ -80,7 +81,7 @@ fun WalkingHistoryChart(
 
             // Bars
             val labelPaint = android.graphics.Paint().apply {
-                color = labelColor.hashCode()
+                color = labelColor.toArgb()
                 textSize = 8.sp.toPx()
                 textAlign = android.graphics.Paint.Align.CENTER
             }
@@ -108,7 +109,9 @@ fun WalkingHistoryChart(
         // Legend
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             LegendDot(primaryColor, "Steps")
-            LegendDot(secondaryColor, "Activity Minutes")
+            // The tertiary series plots activity-derived step-equivalents (cycling, etc.), NOT
+            // raw minutes — the old "Activity Minutes" label contradicted the data.
+            LegendDot(secondaryColor, "Activity Steps")
         }
     }
 }

@@ -148,7 +148,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   │   ├── biome/      #   BiomeTheme, BackgroundRenderer
 │   │   └── ui/         #   InRoundUpgradeMenu, PostRoundOverlay, PauseOverlay, HealthBarRenderer, UltimateWeaponBar, …
 │   ├── audio/          # Sound/music playback
-│   └── ui/theme/       # Color, Theme
+│   └── ui/theme/       # Design tokens: Color (brand + role tokens), Type (SobTypography), Shape (SobShapes), Theme
 ├── di/                 # Hilt modules: Database, Repository, Step, HealthConnect, Ad, Billing, CoroutineScope, Time
 └── service/            # Foreground step service, WorkManager workers, boot receiver, notifications, widget
 ```

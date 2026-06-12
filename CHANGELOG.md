@@ -4,6 +4,47 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Changed — Look-&-feel polish pass: design tokens + visual-consistency fixes (Gate C/F UX) (2026-06-12)
+
+A presentation-only polish pass off a full UX/art-direction review (every Compose screen reviewed via a
+15-agent fan-out with adversarial verification, plus a live on-device walkthrough on the emulator). No
+gameplay/economy/concurrency/engine code touched. **973 JVM tests unchanged** (0 new — presentation-layer
+only; build + lint green). Highest-impact safe fixes:
+
+- **Removed the redundant platform ActionBar app-wide.** The app declared no `android:theme`, so every
+  screen (including the immersive battle screen) inherited a default theme with an ActionBar — a black
+  "Steps of Babylon" title bar above the Compose content. New `res/values/themes.xml`
+  (`Theme.StepsOfBabylon`, a `NoActionBar` parent with `windowBackground = DeepBronze` to kill the cold-
+  start white flash) + new `res/values/colors.xml` (`brand_deep_bronze`); `AndroidManifest` now sets
+  `android:theme`. *Pixel-verified on-device:* the old ActionBar row (#1A1B20) is now DeepBronze (#6B3A2A).
+- **Hid the bottom nav bar during onboarding.** The first-launch carousel was rendering the 5-tab bar
+  underneath it; `MainActivity` now excludes `Screen.Onboarding` (as it already did `Battle`).
+- **Design-system tokens.** New `presentation/ui/theme/Type.kt` (`SobTypography` — a deliberate type scale
+  with weights/tracking/lineHeight) and `Shape.kt` (`SobShapes` — small/medium/large radii), both wired
+  into `StepsOfBabylonTheme`. `Color.kt` gained derived role tokens (`LapisLight`, `BronzeSurface`,
+  `TextPrimary/Secondary`, `StatusSuccess/Warning/Danger`, `GemColor/PowerStoneColor/StepColor`). `Theme.kt`
+  now maps `onPrimary = DeepBronze` (dark text on gold buttons: ~2.1:1 → ~4.2:1) and `surfaceVariant =
+  BronzeSurface`.
+- **Contrast fix (WCAG).** `LapisLazuli` as *text* on DeepBronze is ~1.45:1 (hard AA fail). The Home
+  "Today / {n} steps" headline now uses `LapisLight` (~5.3:1) for the label and Gold for the value; deep
+  Lapis is retained for fills/containers only.
+- **De-emoji'd controls** on Home (📋/⚙️/❓/🏪/⭐ → Material `Flag`/`Settings`/`HelpOutline`/`ShoppingCart`/
+  `Star` icons + labels) and the Economy Store link (🏪 → `ShoppingCart`). Emoji remain only in decorative/
+  reward text.
+- **Palette-aligned currency colours** (were raw Material green/purple/blue): Economy Gems/Power Stones
+  cards and Store gem balance now use `GemColor`/`PowerStoneColor`; status colours use the new semantic
+  tokens; Store purchased/active card tints use palette alphas instead of Material green/indigo; gray
+  prices → `onSurfaceVariant`.
+- **Verified bug fixes:** Cards header showed the gem balance twice ("💎 1 / 💎 1 Gems") → left slot now
+  shows owned-card count; Stats chart legend mislabeled "Activity Minutes" → "Activity Steps" and its axis
+  labels used `Color.hashCode()` instead of `.toArgb()` (wrong colour int) → fixed; biome-transition title
+  lower-cased non-first words ("Hanging gardens") → title-cases each word; Store "1 Gems" pluralization;
+  thousands separators on Home/Economy/Store currency values.
+- **Smaller polish:** Workshop `UpgradeCard` now dims only the cost/stat readout when unaffordable (the
+  title/description stay legible at a 0-Step balance) instead of dimming the whole card; Cards empty-state
+  message; Cards COMMON rarity colour lifted off low-contrast gray; Pause overlay veil 0.6→0.72 + title
+  `headlineMedium`→`headlineLarge`.
+
 ## [1.0.3] — 2026-06-12 (versionCode 19)
 
 ### Added — #24 first-launch onboarding (Gate C) (2026-06-12)
