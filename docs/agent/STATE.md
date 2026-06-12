@@ -3,10 +3,10 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** v1.0.2 (versionCode 18) live on Play internal track (tag `v1.0.2`) · **973 JVM + 9
-instrumented tests** green · schema v12 · **Gate C (onboarding) shipped on branch
-`feat/onboarding-gate-c`** (not yet merged) · launch is judgment-gated on the Closed-Test Readiness
-Gate (`plan-FORWARD.md`).
+**Headline:** **v1.0.3 (versionCode 19) releasing to Play internal track** (tag `v1.0.3`; supersedes
+v1.0.2/code18) · **973 JVM + 9 instrumented tests** green · schema v12 · **Gate C (onboarding) merged
+to `main`** (PR #157, squash `48e8e63`) · launch is judgment-gated on the Closed-Test Readiness Gate
+(`plan-FORWARD.md`).
 
 ## Current objective
 
