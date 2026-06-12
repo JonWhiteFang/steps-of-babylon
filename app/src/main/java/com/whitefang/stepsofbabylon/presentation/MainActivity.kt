@@ -348,7 +348,9 @@ class MainActivity : ComponentActivity() {
                             MissionsScreen()
                         }
                         composable(Screen.Settings.route) {
-                            NotificationSettingsScreen()
+                            NotificationSettingsScreen(
+                                onReplayTutorial = { navController.navigate(Screen.Onboarding.route) },
+                            )
                         }
                         composable(Screen.Store.route) {
                             StoreScreen()
