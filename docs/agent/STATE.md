@@ -3,9 +3,10 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.3 (versionCode 19) releasing to Play internal track** (tag `v1.0.3`; supersedes
-v1.0.2/code18) · **973 JVM + 9 instrumented tests** green · schema v12 · **Gate C (onboarding) merged
-to `main`** (PR #157, squash `48e8e63`) · launch is judgment-gated on the Closed-Test Readiness Gate
+**Headline:** **v1.0.3 (versionCode 19) on Play internal track** (tag `v1.0.3`; supersedes
+v1.0.2/code18) · **975 JVM + 9 instrumented tests** green · schema v12 · **Gate C (onboarding) merged**
+(PR #157) · two look-&-feel waves merged/in-flight (#159 merged; **#160 Bundle A on branch
+`feat/look-and-feel-bundle-a`**) · launch is judgment-gated on the Closed-Test Readiness Gate
 (`plan-FORWARD.md`).
 
 ## Current objective
@@ -27,8 +28,25 @@ to `main`** (PR #157, squash `48e8e63`) · launch is judgment-gated on the Close
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
-- **2026-06-12 — Look-&-feel polish pass (presentation-only; Gate C/F UX)** (working tree, not yet
-  committed). Off a full UX/art-direction review (15-agent fan-out + adversarial verify + live on-device
+- **2026-06-12 — Look-&-feel Bundle A: correctness & a11y cleanup (#160)** (branch
+  `feat/look-and-feel-bundle-a`, 17 commits, not yet PR'd). Second safe presentation-only wave off the
+  2026-06-12 UX review (spec → adversarially-reviewed plan → subagent-driven execution with per-task
+  spec+quality review + a final whole-branch Opus review). **New shared `presentation/ui/` layer:**
+  `CurrencyDisplay.kt` (`CurrencyType` + `icon()/tint()/label()` + `CurrencyValue`/`CurrencyCost` +
+  `formatCurrency` — single source of truth for currency presentation, themed-glyph art later = one-file
+  swap), `LoadingBox.kt`, `EmptyState.kt`. **Finished the de-emoji sweep** — every UI-control/currency/
+  status glyph across Labs/Cards/Store/Missions/Economy/Weapons/Onboarding/Battle-HUD → Material icons
+  (decorative Help headings + onboarding slide icons incl. 🏛️ intentionally left → Bundle E). **a11y:**
+  onboarding page-dots row-level `contentDescription` ("Page N of M"); correct per-site descriptions on
+  new status icons. **Loading spinners** on 10 menu screens (added `isLoading` to Store + Weapons UiState;
+  Battle excluded). **Workshop** defensive empty-state; **Settings** renamed `NotificationSettings*`→
+  `Settings*` + retitled (route string unchanged). **Deleted dead `domain/model/Currency.kt`.** Other 4
+  bundles tracked: #161 nav (+restore bug), #162 haptics/feel, #163 rarity visuals, #164 font/onboarding-art.
+  **973→975 JVM** (+2 `CurrencyDisplayTest`); `testDebugUnitTest lintDebug` + `assembleDebug` green; the
+  Battle file touched is the HUD pause glyph only (no engine/renderer). Instrumented + on-device
+  navigate-away loading check pending (CI `connected` lane + manual).
+- **2026-06-12 — Look-&-feel polish pass (presentation-only; Gate C/F UX)** (PR #159, squash `2dc9a08`;
+  merged). Off a full UX/art-direction review (15-agent fan-out + adversarial verify + live on-device
   emulator walkthrough). Headline fixes: **removed the redundant platform ActionBar app-wide** (new
   `res/values/themes.xml` `NoActionBar` + `windowBackground`; `AndroidManifest` `android:theme`;
   pixel-verified the old #1A1B20 bar is now DeepBronze); **hid the bottom nav during onboarding**;
@@ -36,10 +54,8 @@ to `main`** (PR #157, squash `48e8e63`) · launch is judgment-gated on the Close
   status tokens in `Color.kt`, wired in `Theme.kt`); **fixed the LapisLazuli-as-text WCAG fail (1.45:1)**
   via a `LapisLight` token on the Home headline; **de-emoji'd** Home/Economy controls → Material icons;
   **palette-aligned** currency colours; fixed verified bugs (Cards double-Gems header, Stats legend label
-  + `toArgb`, biome-title capitalization, Store "1 Gems" plural, thousands separators). **973 JVM
-  unchanged** (presentation-only); build + lint green. 12 files changed + 4 new (themes.xml, colors.xml,
-  Type.kt, Shape.kt) — zero engine/economy/concurrency touched. Remaining recs (not done): custom font,
-  UW/Card rarity visuals, haptics, claim/Post-Round reward animation, onboarding per-slide theming.
+  + `toArgb`, biome-title capitalization, Store "1 Gems" plural, thousands separators). 12 files changed
+  + 4 new — zero engine/economy/concurrency touched. ADR-0022. (Bundle A above continues this work.)
 - **2026-06-12 — #24 first-launch onboarding (Gate C)** (branch `feat/onboarding-gate-c`, not yet
   merged). Gate-C slice of V1X-22: one-time 4-slide tutorial carousel (walk→spend→battle) + permission
   primer + Settings "Replay tutorial". New `data/onboarding/OnboardingPreferences` (device-local
@@ -144,9 +160,10 @@ to `main`** (PR #157, squash `48e8e63`) · launch is judgment-gated on the Close
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Bigger gate items (now the live work):** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured). *(#24 onboarding / Gate C shipped — merged via PR #157 and released as v1.0.3 to internal. #29 is the likely next pickup.)*
-2. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
-3. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
+1. **Look-&-feel follow-ups (Gate C/F UX):** **#160 Bundle A** done on `feat/look-and-feel-bundle-a` — open the PR, let CI (PR gate + `connected`) go green, merge & close #160. Remaining bundles queued as specs: **#161** nav back-affordances + bottom-nav restore-wrong-screen bug, **#162** haptics + reward/claim animation, **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset.
+2. **Bigger gate items:** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured).
+3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
+4. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
 
 Phase 2 (only AFTER the developer promotes internal → closed):
 6. **(External)** Recruit ≥12 testers; ≥14-day closed soak; apply for production access; staged rollout; tag `v1.0.0`.
@@ -174,6 +191,12 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **`daily_step_record` writers must stay column-targeted (#121)** — disjoint-column `ON CONFLICT(date) DO UPDATE SET` upserts, NOT a whole-row read-copy-`@Upsert`. Guarded by `DailyStepDaoTest` + `StepRepositoryImplTest`.
 - **`daily_mission` uniqueness is DB-level (#127)** — `(date, missionType)` unique index + `@Insert(onConflict = IGNORE)` is the authoritative guard against duplicate daily missions; the generator's read-then-insert check is racy on a WAL pool. Don't weaken the index or relax `IGNORE` back to plain `@Insert`. Schema v12; `MIGRATION_11_12` dedups via `GROUP BY` + `MAX()` (keeps `MAX(claimed)`). Guarded by `DailyMissionDaoTest` + `Migration11To12Test`.
 - **Billing signature verification (#124, ADR-0005 amendment)** — every wallet grant goes through `PurchaseVerifier.isValidPurchase(originalJson, signature, expectedProductId, expectedPurchaseToken)` BEFORE `grantOnceAtomic`, on BOTH paths. The product+token binding is load-bearing (blocks replaying a signed cheap receipt for an expensive product) — don't credit off the caller's `product` without verifying first. `PLAY_LICENSE_KEY` blank → fail-open is debug/CI only; a **release** build with a blank key is hard-failed by the `app/build.gradle.kts` `taskGraph` guard + the `release.yml` `PLAY_LICENSE_KEY` secret step — don't weaken either or fail-open could ship. Guarded by `RealPurchaseVerifierTest` + `BillingManagerImplTest`.
+- **Currency presentation is centralized (#160)** — all currency glyphs render via
+  `presentation/ui/CurrencyDisplay.kt` (`CurrencyType.icon()/tint()` + `CurrencyValue`/`CurrencyCost`).
+  Adopt themed-glyph art by swapping `icon()` in ONE place; don't reintroduce inline emoji/`%,d` currency
+  text on screens. `formatCurrency` uses `Locale.US` grouping for deterministic output (pinned by
+  `CurrencyDisplayTest`). The domain `Currency` enum was deleted as dead — `CurrencyType` is the
+  presentation-layer home (carries Compose `icon()/tint()`, can't live in the Android-free domain).
 - **Onboarding gating + flag location (#24, ADR-0021)** — the first-launch flag is device-local SharedPreferences (`OnboardingPreferences`), intentionally NOT Room (must not sync; reinstall re-shows). In `MainActivity`, `startDestination` reads it **synchronously** via pure `Screen.startDestination()`; **only** the cold-permission request branch is gated behind `onboardingComplete` (service-start/HC-chaining stay ungated — don't widen the gate or step counting breaks for granted users); the deep-link collector gates on live nav state (current route == Onboarding). `Screen.Onboarding` is deliberately **out of** `allScreens`/`argumentFreeRoutes`/`items` (not a public deep-link target) — keep it out (`DeepLinkRoutingTest` pins the exact-13 set). Onboarding is **explain-only — never grant Steps** (preserves the hard invariant). Guarded by `OnboardingRoutingTest` + `OnboardingPreferencesTest` + `OnboardingContentTest` + `OnboardingViewModelTest` + `DeepLinkRoutingTest` navigate_to guards.
 
 ## References
