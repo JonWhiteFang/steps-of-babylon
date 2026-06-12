@@ -3,6 +3,7 @@ package com.whitefang.stepsofbabylon.presentation
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -18,11 +19,17 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.health.connect.client.PermissionController
 import androidx.navigation.compose.NavHost
@@ -33,6 +40,8 @@ import com.whitefang.stepsofbabylon.BuildConfig
 import com.whitefang.stepsofbabylon.data.ads.internal.ConsentManager
 import com.whitefang.stepsofbabylon.data.billing.internal.ActivityProvider
 import com.whitefang.stepsofbabylon.data.healthconnect.HealthConnectClientWrapper
+import com.whitefang.stepsofbabylon.data.onboarding.OnboardingPreferences
+import com.whitefang.stepsofbabylon.presentation.onboarding.OnboardingScreen
 import com.whitefang.stepsofbabylon.presentation.audio.MusicManager
 import com.whitefang.stepsofbabylon.presentation.audio.MusicPreferences
 import com.whitefang.stepsofbabylon.presentation.battle.BattleScreen
@@ -70,6 +79,7 @@ class MainActivity : ComponentActivity() {
     @Inject internal lateinit var activityProvider: ActivityProvider
     @Inject internal lateinit var consentManager: ConsentManager
     @Inject lateinit var musicPreferences: MusicPreferences
+    @Inject lateinit var onboardingPreferences: OnboardingPreferences
 
     private lateinit var musicManager: MusicManager
 
@@ -96,6 +106,22 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 val navController = rememberNavController()
 
+                var onboardingComplete by remember {
+                    mutableStateOf(onboardingPreferences.hasCompletedOnboarding())
+                }
+                var permissionAsked by remember { mutableStateOf(false) }
+                var stepCountingGranted by remember {
+                    mutableStateOf(
+                        ContextCompat.checkSelfPermission(
+                            context, Manifest.permission.ACTIVITY_RECOGNITION
+                        ) == PackageManager.PERMISSION_GRANTED
+                    )
+                }
+                // Permanently-denied recovery (spec §4): when set, the Scaffold snackbar offers a
+                // deep-link to app settings instead of the current silent no-op. Reset after shown.
+                val snackbarHostState = remember { SnackbarHostState() }
+                var showStepPermissionSettingsHint by remember { mutableStateOf(false) }
+
                 val hcPermissionLauncher = rememberLauncherForActivityResult(
                     PermissionController.createRequestPermissionResultContract()
                 ) { }
@@ -104,6 +130,8 @@ class MainActivity : ComponentActivity() {
                     ActivityResultContracts.RequestMultiplePermissions()
                 ) { results ->
                     val activityGranted = results[Manifest.permission.ACTIVITY_RECOGNITION] == true
+                    permissionAsked = true
+                    stepCountingGranted = activityGranted
                     if (activityGranted) {
                         context.startForegroundService(
                             Intent(context, StepCounterService::class.java)
@@ -111,6 +139,17 @@ class MainActivity : ComponentActivity() {
                         if (healthConnectWrapper.isAvailable()) {
                             hcPermissionLauncher.launch(healthConnectWrapper.getRequiredPermissions())
                         }
+                    } else if (onboardingComplete &&
+                        !ActivityCompat.shouldShowRequestPermissionRationale(
+                            this@MainActivity, Manifest.permission.ACTIVITY_RECOGNITION
+                        )
+                    ) {
+                        // Permanently denied ("Don't ask again") AND past onboarding: a bare
+                        // launch() is now a silent no-op, so surface the Settings-recovery hint
+                        // instead of stranding the player (spec §4). During onboarding itself the
+                        // carousel's own "Open Settings" affordance handles this, so we don't
+                        // double up while !onboardingComplete.
+                        showStepPermissionSettingsHint = true
                     }
                 }
 
@@ -131,7 +170,13 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    if (!activityGranted || !notifGranted) {
+                    // Gate ONLY the cold request: on a fresh install (onboarding not yet
+                    // complete) the onboarding final slide owns the first ask, so we must
+                    // not fire a context-free system dialog over the carousel. On later
+                    // launches (onboarding complete) this resumes its normal re-prompt role —
+                    // and because permanent-denial recovery lives in the launcher callback
+                    // (Step 3), the previously-silent no-op now surfaces the Settings hint.
+                    if (onboardingComplete && (!activityGranted || !notifGranted)) {
                         val needed = buildList {
                             if (!activityGranted) add(Manifest.permission.ACTIVITY_RECOGNITION)
                             if (!notifGranted) add(Manifest.permission.POST_NOTIFICATIONS)
@@ -146,20 +191,24 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     pendingNavigation.collect { route ->
                         if (route != null) {
-                            // Generic deep-link handler for argument-free routes
-                            // (currently all 12). Unknown route strings fall
-                            // through to the start destination silently rather
-                            // than crashing; this matches the prior 4-route
-                            // `when` behaviour for unmapped values.
-                            Screen.fromRoute(route)
-                                ?.takeIf { it.route in Screen.argumentFreeRoutes }
-                                ?.let { navController.navigate(it.route) }
+                            // Don't navigate over the onboarding carousel (first launch OR replay).
+                            // A brand-new install has no scheduled notifications to deep-link from,
+                            // and during a replay the user is mid-tutorial — drop rather than
+                            // buffer; the route is reissued by the notification tap if it recurs.
+                            val onOnboarding = navController.currentBackStackEntry
+                                ?.destination?.route == Screen.Onboarding.route
+                            if (!onOnboarding) {
+                                Screen.fromRoute(route)
+                                    ?.takeIf { it.route in Screen.argumentFreeRoutes }
+                                    ?.let { navController.navigate(it.route) }
+                            }
                             pendingNavigation.value = null
                         }
                     }
                 }
 
                 Scaffold(
+                    snackbarHost = { SnackbarHost(snackbarHostState) },
                     bottomBar = {
                         val backStackEntry by navController.currentBackStackEntryAsState()
                         val currentRoute = backStackEntry?.destination?.route
@@ -176,6 +225,23 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) { innerPadding ->
+                    LaunchedEffect(showStepPermissionSettingsHint) {
+                        if (showStepPermissionSettingsHint) {
+                            val result = snackbarHostState.showSnackbar(
+                                message = "Step counting is off — enable it in Settings",
+                                actionLabel = "Settings",
+                            )
+                            if (result == SnackbarResult.ActionPerformed) {
+                                context.startActivity(
+                                    Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.fromParts("package", context.packageName, null),
+                                    )
+                                )
+                            }
+                            showStepPermissionSettingsHint = false
+                        }
+                    }
                     val reducedMotion = remember {
                         Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
                     }
@@ -184,7 +250,7 @@ class MainActivity : ComponentActivity() {
 
                     NavHost(
                         navController = navController,
-                        startDestination = Screen.Home.route,
+                        startDestination = Screen.startDestination(onboardingComplete),
                         modifier = Modifier.padding(innerPadding),
                         enterTransition = { enterAnim },
                         exitTransition = { exitAnim },
@@ -200,6 +266,44 @@ class MainActivity : ComponentActivity() {
                                 onSettingsClick = { navController.navigate(Screen.Settings.route) },
                                 onStoreClick = { navController.navigate(Screen.Store.route) },
                                 onHelpClick = { navController.navigate(Screen.Help.route) },
+                            )
+                        }
+                        composable(Screen.Onboarding.route) {
+                            val reducedMotion = remember {
+                                com.whitefang.stepsofbabylon.presentation.battle.effects
+                                    .ReducedMotionCheck.isReducedMotionEnabled(context)
+                            }
+                            OnboardingScreen(
+                                stepCountingGranted = stepCountingGranted,
+                                permissionAsked = permissionAsked,
+                                reducedMotion = reducedMotion,
+                                onEnableStepCounting = {
+                                    permissionLauncher.launch(
+                                        arrayOf(
+                                            Manifest.permission.ACTIVITY_RECOGNITION,
+                                            Manifest.permission.POST_NOTIFICATIONS,
+                                        )
+                                    )
+                                },
+                                onOpenAppSettings = {
+                                    context.startActivity(
+                                        Intent(
+                                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                            Uri.fromParts("package", context.packageName, null),
+                                        )
+                                    )
+                                },
+                                onFinished = {
+                                    onboardingComplete = true
+                                    if (navController.previousBackStackEntry == null) {
+                                        navController.navigate(Screen.Home.route) {
+                                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                                            launchSingleTop = true
+                                        }
+                                    } else {
+                                        navController.popBackStack()
+                                    }
+                                },
                             )
                         }
                         composable(Screen.Workshop.route) {
