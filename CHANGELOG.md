@@ -4,6 +4,8 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+## [1.0.3] — 2026-06-12 (versionCode 19)
+
 ### Added — #24 first-launch onboarding (Gate C) (2026-06-12)
 
 Closes Readiness **Gate C** (first-session UX): a brand-new player now sees a one-time tutorial that
