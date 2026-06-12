@@ -44,6 +44,7 @@ data class UltimateWeaponUiState(
     val weapons: List<UWDisplayInfo> = emptyList(),
     val powerStones: Long = 0,
     val equippedCount: Int = 0,
+    val isLoading: Boolean = true,
 )
 
 @HiltViewModel
@@ -91,6 +92,7 @@ class UltimateWeaponViewModel @Inject constructor(
             },
             powerStones = wallet.powerStones,
             equippedCount = owned.count { it.isEquipped && it.isUnlocked },
+            isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UltimateWeaponUiState())
 
