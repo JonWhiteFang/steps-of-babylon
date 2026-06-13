@@ -4,6 +4,35 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Changed — Look-&-feel Bundle B PR-B1: navigation back affordances (Gate C/F UX, #161) (2026-06-13)
+
+First of two sequential PRs for Bundle B (navigation); PR-B2 (the bottom-nav restore-wrong-screen bug)
+follows on a separate branch. Presentation-only, no gameplay/economy/concurrency code touched. Spec +
+adversarially-reviewed plan in `docs/superpowers/` (the plan review caught and corrected a wrong
+`WindowInsets(0)` inset approach — see below). **979 JVM tests** (was 975; +4 from the new
+`ScreenSecondaryTitleTest`); build + lint green; verified on-device across all 8 screens.
+
+- **Shared `presentation/ui/SobTopAppBar.kt`** — a `CenterAlignedTopAppBar` wrapper (centered title +
+  back arrow, `contentDescription = "Back"`). Rendered **once** in MainActivity's outer `Scaffold`
+  `topBar` slot, gated by the new pure `Screen.secondaryTitle(route)` companion helper, so the bar
+  appears on exactly the 8 push-navigated secondary screens (Weapons, Cards, Supplies, Economy,
+  Missions, Settings, Store, Help) and nowhere else (tabs, Battle, Onboarding → null → no bar). No
+  per-screen param threading; no change to `Screen`'s `by lazy` route lists or the pinned deep-link set.
+- **Back action = `navController.navigateUp()`** — mirrors system/predictive back (verified equivalent
+  to `popBackStack()` for these push-children; correct parent on every screen, incl. Store→Economy vs
+  Store→Home by entry point).
+- **Inset handling:** the bar uses the default `TopAppBarDefaults.windowInsets` (it self-pads the
+  status bar; the Scaffold sets `innerPadding.top = topBarHeight`). On-device confirmed the title/arrow
+  sit fully below the status bar on all 8 screens.
+- **Titles centralized:** explicit per-screen titles (e.g. Weapons → "Ultimate Weapons", Economy →
+  "Premium Currencies") live in the bar; the now-duplicated inline headers were deleted from Settings,
+  Help, Store, Economy, Supplies. Missions keeps its two **section** headers ("Daily Missions" /
+  "Walking Milestones"). Economy/Supplies action rows switched `SpaceBetween → End` (right-aligned), and
+  the Supplies action row + spacer are now hidden on the empty state (no phantom gap).
+- **Test:** `ScreenSecondaryTitleTest` (Robolectric, 4 methods) pins the `secondaryTitle` map; the bar
+  composable has no JVM test (thin visual helper). `DeepLinkRoutingTest` / `OnboardingRoutingTest` pass
+  unchanged.
+
 ### Changed — Look-&-feel Bundle A: correctness & accessibility cleanup (Gate C/F UX, #160) (2026-06-12)
 
 The second safe, presentation-only wave off the 2026-06-12 UX review (follow-up to the design-tokens
