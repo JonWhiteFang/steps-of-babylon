@@ -56,6 +56,7 @@ import com.whitefang.stepsofbabylon.presentation.settings.SettingsScreen
 import com.whitefang.stepsofbabylon.presentation.stats.StatsScreen
 import com.whitefang.stepsofbabylon.presentation.store.StoreScreen
 import com.whitefang.stepsofbabylon.presentation.supplies.UnclaimedSuppliesScreen
+import com.whitefang.stepsofbabylon.presentation.ui.SobTopAppBar
 import com.whitefang.stepsofbabylon.presentation.ui.theme.StepsOfBabylonTheme
 import com.whitefang.stepsofbabylon.presentation.weapons.UltimateWeaponScreen
 import com.whitefang.stepsofbabylon.presentation.workshop.WorkshopScreen
@@ -209,6 +210,16 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     snackbarHost = { SnackbarHost(snackbarHostState) },
+                    topBar = {
+                        val topBarEntry by navController.currentBackStackEntryAsState()
+                        val topBarRoute = topBarEntry?.destination?.route
+                        Screen.secondaryTitle(topBarRoute)?.let { title ->
+                            SobTopAppBar(
+                                title = title,
+                                onNavigateBack = { navController.navigateUp() },
+                            )
+                        }
+                    },
                     bottomBar = {
                         val backStackEntry by navController.currentBackStackEntryAsState()
                         val currentRoute = backStackEntry?.destination?.route
