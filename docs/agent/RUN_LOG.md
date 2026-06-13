@@ -1,3 +1,54 @@
+## 2026-06-13 — Look-&-feel Bundle B PR-B1: navigation back affordances (#161; branch `feat/look-and-feel-bundle-b`)
+
+- **Goal:** Bundle B = navigation. Two halves with different risk → **two sequential PRs**: **PR-B1**
+  (this — back affordances, presentation-only) merges first; **PR-B2** (the bottom-nav
+  restore-wrong-screen bug — a NavHost back-stack logic defect) follows on a separate branch only after
+  PR-B1 lands. Issue **#161** stays OPEN until both ship.
+- **Process:** brainstorm → design spec (`docs/superpowers/specs/2026-06-13-look-and-feel-bundle-b-design.md`)
+  → **5-lens adversarial design review** (26 findings, 23 confirmed; decompiled nav-compose 2.9.8 to
+  confirm the PR-B2 bug mechanism + that the obvious `popUpTo(start)` fix is a no-op) → implementation
+  plan (PR-B1) → **5-lens adversarial plan review** (15 findings, 11 confirmed) → subagent-driven
+  execution (fresh implementer per task + per-task spec-compliance and code-quality review subagents) →
+  on-device verification.
+- **Plan review caught two real defects before any code was written:** (1) **HIGH** — the draft set the
+  bar's `windowInsets = WindowInsets(0)`, which inverts the Material3 Scaffold contract (the topBar owns
+  its own status-bar inset; zeroing it draws the title *under* the status bar). Fixed to the default
+  `TopAppBarDefaults.windowInsets`. (2) **MED** — the headline test count is per-`@Test`-method not
+  per-class, so the new 4-method test is 975→**979**, not 976. Both fixed in spec+plan pre-build.
+- **What shipped (7 source files, presentation-only):**
+  - New `presentation/ui/SobTopAppBar.kt` — `CenterAlignedTopAppBar` (centered title + ArrowBack,
+    `contentDescription="Back"`), default insets. Rendered ONCE in MainActivity's outer Scaffold
+    `topBar`, gated by the new pure `Screen.secondaryTitle(route)` companion helper → bar shows on the 8
+    push-nav secondary screens only (Weapons/Cards/Supplies/Economy/Missions/Settings/Store/Help), null
+    for tabs/Battle/Onboarding. Back = `navController.navigateUp()`. No per-screen param; no `Screen.kt`
+    route-list change.
+  - Deleted the now-duplicated inline title headers from Settings/Help/Store/Economy/Supplies (the bar
+    carries them); Missions keeps its two **section** headers. Economy/Supplies action rows
+    `SpaceBetween → End`; Supplies action row + spacer now hidden on the empty state (a code-review
+    catch — no phantom gap).
+- **Verification:**
+  - `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` → BUILD SUCCESSFUL; **979 JVM tests, 0
+    failures** (test-results XML authoritative; +4 from `ScreenSecondaryTitleTest`, Robolectric).
+    `DeepLinkRoutingTest`/`OnboardingRoutingTest` green.
+  - **On-device (emulator-5554, Pixel 6, debug APK):** drove all 8 secondary screens by tapping
+    tiles/Workshop buttons + cold deep-link (Economy/Supplies). Every one shows the centered title + back
+    arrow **fully below the status bar** (confirms the inset fix), correct title (incl. "Ultimate
+    Weapons"/"Premium Currencies"/"Unclaimed Supplies"), no duplicate body title, back returns to the
+    correct parent. Negative cases confirmed: Home + Workshop tabs show NO bar. Supplies empty state has
+    no phantom gap; Economy "Store" button right-aligned.
+- **Per-task review notes:** Task 1 — code review flagged a redundant Battle assertion (Battle ∈
+  `items`, already covered) → fixed. Task 3 — review flagged the topBar's second
+  `currentBackStackEntryAsState()` (benign, marginally *more* recomposition-efficient) → added a
+  clarifying comment, declined the hoist. Task 4 — review caught the Supplies empty-state gap → fixed.
+- **Doc sync:** CLAUDE.md test count 975→979; CHANGELOG `[Unreleased]` PR-B1 subsection; source-files
+  (+`SobTopAppBar.kt`, `secondaryTitle` on Screen.kt); STATE.md (headline, Recently-shipped, priorities,
+  + new "top-bar back affordance is centralized" fragile-zone). **No ADR** for PR-B1 (implements the
+  ADR-0022 UX direction); the bottom-nav back-stack-contract ADR lands with PR-B2.
+- **Remains / next:** open the PR-B1 PR; after it merges, start **PR-B2** (the restore-wrong-screen bug)
+  — `systematic-debugging` + on-device repro first, JVM-Robolectric guard via an extracted Hilt-free
+  `AppNavHost` (the spec already pins the approach + must-preserve invariants), + a back-stack-contract
+  ADR. Then bundles #162/#163/#164.
+
 ## 2026-06-13 — Bundle A (#160) merged via PR #165
 
 - **Event:** opened **PR #165** for the `feat/look-and-feel-bundle-a` work (entry below), monitored CI,

@@ -24,8 +24,6 @@ fun HelpScreen() {
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Help", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-
         HelpSection("💰 Currencies") {
             "• Steps — earned only by walking. Spent on Workshop upgrades and Labs research.\n" +
             "• Cash — earned by killing enemies in battle. Resets each round. Spent on in-round upgrades.\n" +

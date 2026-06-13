@@ -72,5 +72,28 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
          */
         fun startDestination(hasCompletedOnboarding: Boolean): String =
             if (hasCompletedOnboarding) Home.route else Onboarding.route
+
+        /**
+         * The top-app-bar title for the 8 secondary (push-navigated) screens that get a back
+         * affordance (Bundle B / #161, ADR-0022 follow-up). Returns null for bottom-nav tabs,
+         * Battle (a tab with its own exit affordance), Onboarding (a self-contained carousel),
+         * and unknown routes — those render NO SobTopAppBar.
+         *
+         * Pure (route strings only) so it is unit-testable and so adding the bar never touches the
+         * `by lazy` route lists or the pinned deep-link set. Titles are deliberately explicit, NOT
+         * derived from `label` (e.g. Supplies → "Unclaimed Supplies", Economy → "Premium Currencies"
+         * read better as headers than their narrow tab labels).
+         */
+        fun secondaryTitle(route: String?): String? = when (route) {
+            Weapons.route -> "Ultimate Weapons"
+            Cards.route -> "Cards"
+            Supplies.route -> "Unclaimed Supplies"
+            Economy.route -> "Premium Currencies"
+            Missions.route -> "Missions"
+            Settings.route -> "Settings"
+            Store.route -> "Store"
+            Help.route -> "Help"
+            else -> null
+        }
     }
 }
