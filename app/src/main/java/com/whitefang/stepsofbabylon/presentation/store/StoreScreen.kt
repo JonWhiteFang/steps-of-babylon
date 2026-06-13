@@ -58,7 +58,6 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Text("Store", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             CurrencyValue(CurrencyType.GEMS, state.gems)
             Spacer(Modifier.height(8.dp))
         }
