@@ -1,3 +1,49 @@
+## 2026-06-13 — Look-&-feel Bundle B PR-B2: bottom-nav restore-wrong-screen bug fix (#161; branch `fix/bundle-b-nav-restore`)
+
+- **Goal:** Fix the bottom-nav "restore wrong saved screen" bug — the second, logic-defect half of
+  Bundle B (PR-B1 back affordances merged via #166). Spec mandated `systematic-debugging` + an
+  on-device repro **before** any code change.
+- **Phase 1 (repro) — the device corrected the reported bug.** The original #161 report said "from
+  Cards, tap Home → returns to Cards." That path did **not** reproduce (Home→Workshop→Cards→Home gave
+  clean Home). Driving systematically, the bug reproduced on returning to the **owning tab**:
+  `Home → Workshop(tab) → Cards(push) → Stats(tab) → Workshop(tab)` lands on **Cards**, byte-identical
+  screenshot to the Cards screen. Also confirmed **no cross-tab leak** (tapping Home/Stats/Labs after
+  drilling into Cards each show their own clean root). This is exactly why the Iron Law matters — a fix
+  aimed at the reported Home path would have missed the real defect.
+- **Root cause (Phase 2-3):** `BottomNavBar`'s `popUpTo(Home){saveState}` + `restoreState` is the
+  canonical multi-back-stack idiom, which saves/restores each tab's whole nested sub-stack — correct only
+  when nested screens live in the tab's own nav graph. This is a **flat** NavHost (no nested
+  `navigation{}`; verified), so Cards/Weapons (push-children of Workshop) get folded into "Workshop's
+  saved branch" and `restoreState` resurrects the child on Workshop re-entry.
+- **Fix:** tab tap → tab root: `popUpTo(Home.route)` + `launchSingleTop`, **no** save/restore. Extracted
+  into a shared `NavOptionsBuilder.bottomNavOptions()` so the regression test drives the exact options the
+  bar uses. Verified on-device first (candidate fix built/installed, repro now lands on Workshop root,
+  system-Back from Cards still → Workshop, tab cycling clean), THEN locked with a test.
+- **What the fix is NOT:** `popUpTo(graph.findStartDestination().id)` — confirmed a no-op (Home IS the
+  flat-graph start), as the design review predicted at the bytecode level. Dropped.
+- **Test harness — abandoned the Compose-UI-rule path after 6 infra failures.** Tried
+  `createComposeRule`/`createAndroidComposeRule<ComponentActivity>` under Robolectric; all failed with
+  "Unable to resolve activity … ComponentActivity" / manifest-config errors (Robolectric `ActivityScenario`
+  host-activity issue, robolectric#4736). Pivoted to **`TestNavHostController`** (what the spec actually
+  named) — drives navigation programmatically against the real `Screen` routes + the shared
+  `bottomNavOptions()`, no Compose rule/activity. **`BottomNavRestoreTest`** (2 tests): proved **red**
+  against a temporarily-buggy `bottomNavOptions()` (`expected:<[workshop]> but was:<[cards]>`), then
+  **green** with the fix. Sanity test guards ordinary tab switching.
+- **Verification:** full suite **981 JVM** (was 979; +2), 0 failures; `lintDebug` + `assembleDebug` green;
+  fix re-verified on the rebuilt APK on-device (`G4 == G1` Workshop root, `≠ G2` Cards).
+- **Deps:** +`navigation-testing` (pinned to the existing nav `2.9.8`) as `testImplementation`. The
+  briefly-added `compose-ui-test-*` deps + `src/test/AndroidManifest.xml` were removed when the harness
+  was abandoned — final diff is 4 files (BottomNavBar, libs.versions.toml, build.gradle.kts, the test).
+- **Decision:** with the user's OK, did **not** extract the Hilt-free `AppNavHost` the spec's D7 suggested
+  — the bug needs only the real `BottomNavBar` NavOptions + real routes, which `TestNavHostController`
+  covers without refactoring the fragile MainActivity. Smaller, lower-risk PR. **ADR-0023** records the
+  back-stack contract.
+- **Doc sync:** CLAUDE.md 979→981; CHANGELOG `[Unreleased]` PR-B2 `Fixed` subsection; source-files
+  (BottomNavBar shared-builder note); STATE.md (headline, Recently-shipped, priorities, + new
+  bottom-nav-back-stack-contract fragile-zone); ADR-0023.
+- **Remains / next:** open the PR-B2 PR; after it merges, **close #161** (both Bundle-B PRs shipped).
+  Then bundles #162/#163/#164.
+
 ## 2026-06-13 — Look-&-feel Bundle B PR-B1: navigation back affordances (#161; branch `feat/look-and-feel-bundle-b`)
 
 - **Goal:** Bundle B = navigation. Two halves with different risk → **two sequential PRs**: **PR-B1**

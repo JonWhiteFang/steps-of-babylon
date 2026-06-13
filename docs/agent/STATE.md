@@ -4,10 +4,11 @@ One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) a
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
 **Headline:** **v1.0.3 (versionCode 19) on Play internal track** (tag `v1.0.3`; supersedes
-v1.0.2/code18) · **979 JVM + 9 instrumented tests** green · schema v12 · **Gate C (onboarding) merged**
-(PR #157) · **two look-&-feel waves merged to `main`** (#159 squash `2dc9a08`; **#160 Bundle A** squash
-`491815b`, PR #165) · **Bundle B PR-B1 (#161 nav back affordances) done on branch, PR open** · launch is
-judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
+v1.0.2/code18) · **981 JVM + 9 instrumented tests** green · schema v12 · **Gate C (onboarding) merged**
+(PR #157) · **three look-&-feel waves merged to `main`** (#159 squash `2dc9a08`; **#160 Bundle A** squash
+`491815b`, PR #165; **#161 Bundle B PR-B1** PR #166) · **Bundle B PR-B2 (#161 nav-restore bug fix) done
+on branch `fix/bundle-b-nav-restore`, PR pending** · launch is judgment-gated on the Closed-Test
+Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
@@ -28,9 +29,25 @@ judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
-- **2026-06-13 — Look-&-feel Bundle B PR-B1: navigation back affordances (#161)** (branch
-  `feat/look-and-feel-bundle-b`, PR open; **not yet merged**). First of **two sequential** Bundle-B PRs
-  (PR-B2 = the bottom-nav restore-wrong-screen bug, separate branch, must wait until PR-B1 merges).
+- **2026-06-13 — Look-&-feel Bundle B PR-B2: bottom-nav restore-wrong-screen bug fix (#161)** (branch
+  `fix/bundle-b-nav-restore`, PR pending; **not yet merged**). Second of the two Bundle-B PRs (PR-B1
+  merged via #166). Done under `systematic-debugging` — **reproduced on-device before any fix**. The
+  device repro *corrected the reported symptom*: the original "Cards → tap Home → Cards" path did NOT
+  reproduce; the bug actually surfaces on returning to the **owning** tab
+  (`Home→Workshop→Cards→Stats→Workshop` → lands on Cards). **Root cause:** the canonical multi-back-stack
+  idiom (`popUpTo(Home){saveState}`+`restoreState`) saves/restores each tab's whole nested sub-stack, but
+  in this flat NavHost Cards/Weapons are push-children of Workshop → folded into Workshop's saved branch
+  → resurrected on tab re-entry. **Fix:** tab tap → tab root (`popUpTo(Home)`+`launchSingleTop`, no
+  save/restore), extracted to a shared `bottomNavOptions()` builder. The obvious
+  `popUpTo(graph.startDestination)` "fix" was confirmed a no-op (Home *is* the flat-graph start).
+  System-Back + Home-tile pushes unaffected (don't route through BottomNavBar); cross-tab scroll no
+  longer preserved (accepted). Guard: **`BottomNavRestoreTest`** (JVM `TestNavHostController` — drives the
+  real shared NavOptions, no Compose rule), **red-before-green verified**; +`navigation-testing` test dep.
+  (The Robolectric+Compose-UI-rule harness was abandoned after 6 infra failures — `ActivityScenario`
+  can't resolve a host activity under Robolectric, PR-4736; `TestNavHostController` sidesteps it.)
+  **979→981 JVM**; lint + assemble green; fix re-verified on-device. **ADR-0023.**
+- **2026-06-13 — Look-&-feel Bundle B PR-B1: navigation back affordances (#161)** (PR #166, merged to
+  `main`). First of **two sequential** Bundle-B PRs (PR-B2 above is the second).
   Spec → adversarially-reviewed plan (the plan review caught a wrong `WindowInsets(0)` inset approach and
   a per-class vs per-method test-count error — both fixed pre-build) → subagent-driven execution with
   per-task spec+quality review. **New shared `presentation/ui/SobTopAppBar.kt`** (`CenterAlignedTopAppBar`:
@@ -178,7 +195,7 @@ judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Look-&-feel follow-ups (Gate C/F UX):** **#160 Bundle A merged** (PR #165). **#161 Bundle B PR-B1 (nav back affordances) done — PR open, awaiting merge; then start PR-B2** (the bottom-nav restore-wrong-screen bug — separate branch, `systematic-debugging` + on-device repro first, JVM-Robolectric guard via an extracted Hilt-free `AppNavHost`, + a back-stack-contract ADR; spec already written). Remaining bundles, each needing its own spec → plan → PR: **#162** haptics + reward/claim animation, **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. Also pending from #160: navigate-away loading no-reflash spot-check (manual).
+1. **Look-&-feel follow-ups (Gate C/F UX):** **#160 Bundle A merged** (PR #165); **#161 Bundle B PR-B1 merged** (PR #166); **#161 Bundle B PR-B2 (nav-restore bug fix) done — PR pending, awaiting merge; then close #161**. Remaining bundles, each needing its own spec → plan → PR: **#162** haptics + reward/claim animation, **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. Also pending from #160: navigate-away loading no-reflash spot-check (manual).
 2. **Bigger gate items:** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured).
 3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 4. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
@@ -225,6 +242,16 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
   topBar self-pads the status bar; do **NOT** set `windowInsets = WindowInsets(0)` (that draws the
   title under the status bar — caught in plan review). Back = `navigateUp()`. `secondaryTitle` must
   NOT touch `Screen`'s `by lazy` route lists (no route change → `DeepLinkRoutingTest` unaffected).
+- **Bottom-nav back-stack contract (#161, PR-B2, ADR-0023)** — a bottom-nav tab tap goes to the tab
+  ROOT, via the shared `NavOptionsBuilder.bottomNavOptions()` (`BottomNavBar.kt`): `popUpTo(Home.route)`
+  + `launchSingleTop`, **NO** `saveState`/`restoreState`. The save/restore idiom resurrected push-children
+  (Cards/Weapons are flat-graph children of Workshop, not a nested sub-graph) on tab re-entry. Don't
+  re-add save/restore unless you first restructure the graph so each tab owns a nested `navigation{}`
+  sub-graph. `popUpTo(graph.startDestination)` is a no-op here (Home IS the flat-graph start — don't
+  mistake it for a fix). The regression guard `BottomNavRestoreTest` reuses `bottomNavOptions()` to drive
+  the exact NavOptions; keep the builder shared so the test can't drift from the bar. (Note: Compose-UI
+  test rules don't work under Robolectric here — `ActivityScenario` can't resolve a host activity, PR-4736;
+  use `TestNavHostController` for nav tests.)
 
 ## References
 
