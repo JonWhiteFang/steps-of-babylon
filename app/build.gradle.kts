@@ -277,6 +277,9 @@ dependencies {
     testImplementation(libs.room.testing)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.workmanager.testing)
+    // TestNavHostController for the #161 nav-restore regression guard (BottomNavRestoreTest) —
+    // drives the real shared NavOptions on the JVM, no Compose UI rule / activity needed.
+    testImplementation(libs.navigation.testing)
 
     // Instrumented testing (androidTest source set) — V1X-08 Phase 1A.
     // Hilt instrumented DI requires kspAndroidTest so the @HiltAndroidTest classes get

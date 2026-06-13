@@ -4,6 +4,30 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fixed — Look-&-feel Bundle B PR-B2: bottom-nav restore-wrong-screen bug (Gate C/F UX, #161) (2026-06-13)
+
+Second of the two sequential Bundle-B PRs (PR-B1 — back affordances — shipped in #166). A logic
+defect in the bottom-nav back-stack handling, fixed under `systematic-debugging` with an on-device
+repro **before** any code change. **981 JVM tests** (was 979; +2 from the new `BottomNavRestoreTest`);
+build + lint green; fix re-verified on-device.
+
+- **Bug:** the bottom nav used the canonical multi-back-stack idiom (`popUpTo(Home){saveState}` +
+  `restoreState`), which saves/restores each tab's whole nested sub-stack. In this **flat** NavHost,
+  Cards/Weapons are push-children of Workshop, so they got folded into "Workshop's saved branch" and
+  `restoreState` resurrected the detail screen on tab re-entry. Reachable repro:
+  `Home → Workshop → Cards → Stats → Workshop` landed back on **Cards** instead of the Workshop root.
+  (The original report's "Cards → Home → Cards" path did *not* reproduce — the defect surfaces on
+  returning to the **owning** tab; the device repro corrected the reported symptom.)
+- **Fix:** a tab tap now goes to that tab's root — `popUpTo(Home)` + `launchSingleTop`, **no**
+  save/restore. System Back and Home-tile pushes are unchanged (they don't route through
+  `BottomNavBar`). The NavOptions are extracted into a shared `NavOptionsBuilder.bottomNavOptions()`
+  so the regression guard drives the exact options the bar uses. The discarded
+  `popUpTo(graph.startDestination)` "fix" was confirmed a no-op (Home *is* the flat-graph start).
+  Trade-off: cross-tab scroll position is no longer preserved (acceptable; short screens). See ADR-0023.
+- **Guard:** `BottomNavRestoreTest` (JVM, `TestNavHostController` — drives the real shared NavOptions,
+  no Compose UI rule/activity needed), red-before-green verified. New `navigation-testing` test dep
+  (pinned to the existing nav `2.9.8`).
+
 ### Changed — Look-&-feel Bundle B PR-B1: navigation back affordances (Gate C/F UX, #161) (2026-06-13)
 
 First of two sequential PRs for Bundle B (navigation); PR-B2 (the bottom-nav restore-wrong-screen bug)
