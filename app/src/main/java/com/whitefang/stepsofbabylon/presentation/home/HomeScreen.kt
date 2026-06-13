@@ -48,6 +48,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.presentation.battle.biome.BiomeTheme
+import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
 import com.whitefang.stepsofbabylon.presentation.ui.theme.LapisLazuli
 import com.whitefang.stepsofbabylon.presentation.ui.theme.LapisLight
@@ -65,6 +66,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    if (state.isLoading) { LoadingBox(); return }
     val theme = BiomeTheme.forBiome(state.currentBiome)
     val lifecycleOwner = LocalLifecycleOwner.current
 

@@ -9,6 +9,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.FiberNew
+import androidx.compose.material.icons.filled.Slideshow
+import androidx.compose.material3.Icon
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -25,10 +32,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.whitefang.stepsofbabylon.domain.model.CardRarity
+import com.whitefang.stepsofbabylon.presentation.ui.CurrencyCost
+import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
+import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
+import com.whitefang.stepsofbabylon.presentation.ui.EmptyState
+import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -39,6 +50,7 @@ import androidx.compose.runtime.remember
 @Composable
 fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
+    if (state.isLoading) { LoadingBox(); return }
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state.userMessage) {
@@ -51,7 +63,7 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
             // Left: how many cards the player owns. Right: the gem balance they spend on packs.
             // (Previously both slots printed the gem balance — "💎 1 / 💎 1 Gems" — a copy bug.)
             Text("${state.ownedCards.size} cards", style = MaterialTheme.typography.titleMedium)
-            Text("💎 ${state.gems} Gems", style = MaterialTheme.typography.titleMedium)
+            CurrencyValue(CurrencyType.GEMS, state.gems)
         }
         Spacer(Modifier.height(8.dp))
         Text("Equipped: ${state.equippedCount}/3", style = MaterialTheme.typography.titleSmall)
@@ -60,7 +72,9 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
         // Free pack ad button
         if (state.freePackAvailable) {
             OutlinedButton(onClick = { viewModel.watchFreePackAd() }, modifier = Modifier.fillMaxWidth()) {
-                Text("🎬 Free Pack (Ad)")
+                Icon(Icons.Filled.Slideshow, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Free Pack (Ad)")
             }
             Spacer(Modifier.height(4.dp))
         } else if (!state.adRemoved) {
@@ -75,26 +89,22 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
                     onClick = { viewModel.openPack(pack.tier) },
                     enabled = pack.canAfford,
                     modifier = Modifier.weight(1f),
-                ) { Text("${pack.tier.name}\n${pack.tier.gemCost}💎") }
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(pack.tier.name)
+                        CurrencyCost(CurrencyType.GEMS, pack.tier.gemCost)
+                    }
+                }
             }
         }
         Spacer(Modifier.height(12.dp))
 
         // Card collection
         if (state.ownedCards.isEmpty() && !state.isLoading) {
-            Column(
-                Modifier.fillMaxWidth().padding(top = 48.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text("No cards yet", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    "Open a pack above to start your collection. Equip up to 3 cards for per-round bonuses in battle.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
+            EmptyState(
+                title = "No cards yet",
+                message = "Open a pack above to start your collection. Equip up to 3 cards for per-round bonuses in battle.",
+            )
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(state.ownedCards) { card ->
@@ -116,8 +126,18 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
             text = {
                 Column {
                     results.forEach { r ->
-                        val label = if (r.isNew) "🆕 ${formatName(r.type.name)}" else "♻ ${formatName(r.type.name)} +1 Copy"
-                        Text(label, color = rarityColor(r.type.rarity))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (r.isNew) {
+                                Icon(Icons.Filled.FiberNew, contentDescription = "New", tint = rarityColor(r.type.rarity), modifier = Modifier.size(18.dp))
+                            } else {
+                                Icon(Icons.Filled.Autorenew, contentDescription = "Duplicate", tint = rarityColor(r.type.rarity), modifier = Modifier.size(18.dp))
+                            }
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                if (r.isNew) formatName(r.type.name) else "${formatName(r.type.name)} +1 Copy",
+                                color = rarityColor(r.type.rarity),
+                            )
+                        }
                     }
                 }
             },

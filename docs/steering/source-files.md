@@ -286,6 +286,9 @@ presentation/battle/ui/UltimateWeaponBar.kt        # UW passive cooldown display
 presentation/battle/biome/BiomeTheme.kt            # 5 biome color palettes (sky, ground, ziggurat, enemy, particles)
 presentation/battle/biome/BackgroundRenderer.kt    # Gradient sky + ambient particle system per biome
 presentation/ui/EnumDisplayName.kt                 # String.toDisplayName() — UPPER_SNAKE → "Title Case" (shared by Cards/Labs/Supplies)
+presentation/ui/CurrencyDisplay.kt                 # CurrencyType enum (STEPS/CASH/GEMS/POWER_STONES) + icon()/tint()/label() + CurrencyValue/CurrencyCost composables + formatCurrency(Long) thousands grouping. Single source of truth for currency presentation — swap icon() to adopt themed-glyph art (#160). Material icons approximate for now (Diamond/DirectionsWalk/OfflineBolt/Paid)
+presentation/ui/LoadingBox.kt                      # Full-screen centered CircularProgressIndicator; screen-level first-load gate across the menu screens (#160)
+presentation/ui/EmptyState.kt                      # Centered empty-state (optional title + supporting message); shared by Cards + Workshop (#160)
 presentation/ui/theme/Color.kt                     # Compose color tokens: 5 brand colours (Gold/LapisLazuli/SandStone/DeepBronze/Ivory) + derived role tokens (LapisLight for lapis-on-dark text, BronzeSurface, TextPrimary/Secondary, StatusSuccess/Warning/Danger, GemColor/PowerStoneColor/StepColor)
 presentation/ui/theme/Type.kt                      # SobTypography — deliberate Material3 type scale (weights/tracking/lineHeight); Roboto for now (custom font is a later step), wired via StepsOfBabylonTheme
 presentation/ui/theme/Shape.kt                     # SobShapes — small(8)/medium(14)/large(20) corner radii, wired via StepsOfBabylonTheme
@@ -311,8 +314,8 @@ presentation/stats/StatsViewModel.kt                 # @HiltViewModel: walking h
 presentation/stats/StatsUiState.kt                   # UI state: bars, periods, battle/all-time stats
 presentation/stats/StatsScreen.kt                    # Stats screen: chart, today, battle, all-time sections
 presentation/stats/WalkingHistoryChart.kt            # Canvas-drawn bar chart with period toggle
-presentation/settings/NotificationSettingsViewModel.kt # @HiltViewModel: notification preference toggles
-presentation/settings/NotificationSettingsScreen.kt    # Settings screen: 4 notification toggles + "Replay tutorial" row (onReplayTutorial callback → re-enters onboarding)
+presentation/settings/SettingsViewModel.kt             # @HiltViewModel: notification preference toggles + sound/music prefs + data deletion
+presentation/settings/SettingsScreen.kt                # Settings screen: 4 notification toggles, sound/music controls, "Replay tutorial" row (onReplayTutorial callback → re-enters onboarding), Delete All Data
 presentation/onboarding/OnboardingSlide.kt             # Pure-Kotlin slide model + canonical 4-slide OnboardingContent list (final slide is the permission primer)
 presentation/onboarding/OnboardingViewModel.kt         # @HiltViewModel: exposes the slide list; completeOnboarding() persists the OnboardingPreferences flag
 presentation/onboarding/OnboardingScreen.kt            # First-launch tutorial carousel (HorizontalPager): swipeable slides, Skip→primer, permission-primer final slide w/ granted/ask/denied states + Settings recovery

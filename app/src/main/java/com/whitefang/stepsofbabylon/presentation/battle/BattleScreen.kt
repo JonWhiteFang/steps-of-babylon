@@ -27,6 +27,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Upgrade
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -190,7 +192,7 @@ fun BattleScreen(
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = if (state.isPaused) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)),
                     modifier = Modifier.semantics { contentDescription = pauseDesc },
-                ) { Text(if (state.isPaused) "▶" else "⏸", color = Color.White) }
+                ) { Icon(if (state.isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause, contentDescription = null, tint = Color.White) }
 
                 val upgradesDesc = stringResource(R.string.battle_cd_upgrades)
                 FilledTonalButton(onClick = { viewModel.toggleUpgradeMenu() },

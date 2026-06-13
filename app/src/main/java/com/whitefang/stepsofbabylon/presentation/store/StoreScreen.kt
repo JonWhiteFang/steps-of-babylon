@@ -8,11 +8,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -24,17 +30,22 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.whitefang.stepsofbabylon.domain.model.BillingProduct
-import com.whitefang.stepsofbabylon.presentation.ui.theme.GemColor
+import com.whitefang.stepsofbabylon.presentation.ui.CurrencyCost
+import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
+import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
+import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 
 @Composable
 fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
+    if (state.isLoading) { LoadingBox(); return }
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state.userMessage) {
@@ -48,7 +59,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
     ) {
         item {
             Text("Store", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("💎 %,d %s".format(state.gems, if (state.gems == 1L) "Gem" else "Gems"), style = MaterialTheme.typography.titleMedium, color = GemColor)
+            CurrencyValue(CurrencyType.GEMS, state.gems)
             Spacer(Modifier.height(8.dp))
         }
 
@@ -59,7 +70,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
             Card(Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text("%,d 💎 Gems".format(product.gemAmount), fontWeight = FontWeight.Bold)
+                        CurrencyValue(CurrencyType.GEMS, product.gemAmount, style = MaterialTheme.typography.titleMedium)
                         // Live Play Billing price; fall back to the static constant if the
                         // ProductDetails query hasn't completed yet (or failed). Plan 31 PR B.
                         Text(state.priceDisplays[product] ?: product.priceDisplay, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -79,11 +90,18 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                 Row(Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
                         Text("Ad Removal", fontWeight = FontWeight.Bold)
-                        Text(
-                            if (state.adRemoved) "✅ Purchased"
-                            else state.priceDisplays[BillingProduct.AD_REMOVAL] ?: BillingProduct.AD_REMOVAL.priceDisplay,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        if (state.adRemoved) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Purchased", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        } else {
+                            Text(
+                                state.priceDisplays[BillingProduct.AD_REMOVAL] ?: BillingProduct.AD_REMOVAL.priceDisplay,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                     if (!state.adRemoved) {
                         Button(onClick = { viewModel.purchaseAdRemoval() }) { Text("Buy") }
@@ -98,14 +116,23 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                 Column(Modifier.padding(16.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
-                            Text("⭐ Season Pass", fontWeight = FontWeight.Bold)
-                            Text(
-                                when {
-                                    state.seasonPassActive -> "✅ Active — ${state.seasonPassDaysRemaining ?: 0} days remaining"
-                                    else -> state.priceDisplays[BillingProduct.SEASON_PASS] ?: BillingProduct.SEASON_PASS.priceDisplay
-                                },
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Season Pass", fontWeight = FontWeight.Bold)
+                            }
+                            if (state.seasonPassActive) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Active — ${state.seasonPassDaysRemaining ?: 0} days remaining", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            } else {
+                                Text(
+                                    state.priceDisplays[BillingProduct.SEASON_PASS] ?: BillingProduct.SEASON_PASS.priceDisplay,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                         if (!state.seasonPassActive) {
                             Button(onClick = { viewModel.purchaseSeasonPass() }) { Text("Subscribe") }
@@ -153,7 +180,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                         cosmetic.cosmeticId in ENABLED_COSMETIC_IDS -> Button(
                             onClick = { viewModel.purchaseCosmetic(cosmetic.cosmeticId) },
                             enabled = !state.isPurchasing,
-                        ) { Text("💎 ${cosmetic.priceGems}") }
+                        ) { CurrencyCost(CurrencyType.GEMS, cosmetic.priceGems) }
                         else -> Button(
                             onClick = { },
                             enabled = false,

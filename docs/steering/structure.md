@@ -42,7 +42,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── supplies/       # UnclaimedSuppliesScreen, UnclaimedSuppliesViewModel
 │   ├── economy/        # CurrencyDashboardScreen, CurrencyDashboardViewModel
 │   ├── missions/       # MissionsScreen, MissionsViewModel
-│   ├── settings/       # NotificationSettingsScreen, NotificationSettingsViewModel
+│   ├── settings/       # SettingsScreen, SettingsViewModel
 │   ├── stats/          # StatsScreen, StatsViewModel, WalkingHistoryChart
 │   ├── store/          # StoreScreen, StoreViewModel
 │   ├── audio/          # SoundManager (SoundPool wrapper, 7 effects, volume/mute)

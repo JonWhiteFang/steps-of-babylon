@@ -1,3 +1,53 @@
+## 2026-06-12 — Look-&-feel Bundle A: correctness & accessibility cleanup (#160; branch `feat/look-and-feel-bundle-a`)
+
+- **Goal:** Second safe, presentation-only wave off the 2026-06-12 UX review (PR #159 was the first).
+  Finish de-emoji of all UI-control/currency/status glyphs via a shared component, add loading + empty
+  states, fix the onboarding-dots a11y gap, retitle/rename Settings — issue **#160**.
+- **Bundle decomposition first:** the review's remaining recs split into 5 independent bundles; filed
+  all 5 as cross-linked GitHub issues so none is lost — **#160 A** (this; correctness/a11y), **#161 B**
+  (nav back-affordances + bottom-nav restore-wrong-screen bug), **#162 C** (haptics + reward/claim
+  animation), **#163 D** (UW/Card rarity visuals), **#164 E** (custom font + onboarding per-slide
+  theming + real ziggurat asset). Brainstormed A depth-first.
+- **Process:** brainstorm → design spec (`docs/superpowers/specs/2026-06-12-look-and-feel-bundle-a-design.md`)
+  → **adversarial spec review** (5-lens Workflow, 45 findings → 31 confirmed/partial, 14 refuted; the
+  scariest claims — spinner re-flash, Store-catalog hidden, onboarding-dots redundant, delete-icon
+  needs label — were all *refuted* against real code; the real fixes were folded in) → implementation
+  plan (`docs/superpowers/plans/2026-06-12-look-and-feel-bundle-a.md`, 17 tasks) → **adversarial plan
+  review** (the orchestrated fan-out *stalled* on too-heavy verbatim-compare; pivoted to direct
+  inspection — caught a real **BLOCKER**: Task 12 re-added `Icon`/`Icons` imports BattleScreen already
+  had → duplicate-import compile error; fixed the plan) → **subagent-driven execution** (fresh
+  implementer per task + per-task spec & code-quality review) → **final whole-branch Opus review**.
+- **Shipped (16 commits, `5c4f588`…`1b407a1`):**
+  - **New shared `presentation/ui/` layer:** `CurrencyDisplay.kt` (`CurrencyType` enum + `icon()/tint()/
+    label()` + `CurrencyValue`/`CurrencyCost` composables + `formatCurrency` US-grouping; the single
+    source of truth — themed-glyph art later is a one-file `icon()` swap), `LoadingBox.kt`,
+    `EmptyState.kt`. `CurrencyDisplayTest` (2 JVM tests) pins `label()` + `formatCurrency`.
+  - **De-emoji sweep (exhaustive over live UI):** Labs (🦶/💎 balances, Free ⭐, Unlock/Rush/Start costs,
+    ⏱), Cards (💎 header, 🎬 Free Pack, pack cost, 🆕/♻ pack-result), Store (💎 ×3, ✅ Purchased/Active,
+    ⭐ Season Pass), Missions (✓ claims + 💎/⚡ reward `buildString` → `Row` of `CurrencyValue`), Economy
+    (✓/✗ week + ⏱ + claim/earned), Weapons (✓ equipped), Onboarding ("enabled ✓"), Battle HUD (▶/⏸).
+    Decorative Help headings + `OnboardingSlide` icons (incl. 🏛️) intentionally left → Bundle E.
+  - **a11y:** onboarding page-dots row carries one `contentDescription` "Page N of M" (was colour+size
+    only — `HorizontalPager` doesn't auto-announce); new status icons use sole-carrier→labelled,
+    adjacent-text→null. (Final review caught two Store status icons over-labelled → fixed to null,
+    commit `1b407a1`.)
+  - **Loading spinners** via `LoadingBox` on 10 menu screens; added `isLoading` to `StoreUiState` +
+    `UltimateWeaponUiState`. Battle excluded (its `isLoading` is an engine-init gate). **Workshop**
+    defensive empty-state; **Cards** routes through shared `EmptyState`.
+  - **Settings rename** `NotificationSettings{Screen,ViewModel,State}` → `Settings*` + title
+    "Notification Settings" → "Settings"; route string `"settings"` unchanged (`DeepLinkRoutingTest`
+    unaffected). **Deleted dead `domain/model/Currency.kt`.**
+- **Verification:** `./run-gradle.sh testDebugUnitTest lintDebug` → BUILD SUCCESSFUL, **975 JVM tests**
+  (was 973; +2 `CurrencyDisplayTest`), lint clean; `assembleDebug` green; per-task builds + targeted
+  guard suites (Onboarding/Weapons/Store-VM/DeepLinkRouting/Battle/Simulation) all green. Final
+  whole-branch Opus review: **Ready to merge** (only finding was the Store contentDescription nit, fixed).
+- **Doc sync:** CHANGELOG `[Unreleased]` Bundle-A entry; CLAUDE.md headline 973→975; source-files.md
+  (+3 ui components, Settings rename); structure.md (Settings rename). No ADR (implements ADR-0022's
+  design-tokens direction; no new architectural decision).
+- **Remains / next:** open the #160 PR → CI (PR gate + `connected` instrumented lane) → squash-merge →
+  close #160. On-device visual + navigate-away-and-return loading check still pending (manual/CI). Then
+  the queued bundles #161–#164 each get their own spec → plan → PR.
+
 ## 2026-06-12 — Look-&-feel / UX review + safe polish pass (presentation-only; working tree)
 
 - **Goal:** Senior UX/art-direction review of the whole app's look & feel, then implement the

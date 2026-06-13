@@ -10,11 +10,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.background
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,6 +29,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -107,15 +113,18 @@ fun OnboardingScreen(
                 }
             }
 
-            // Page dots.
+            // Page dots. The dots convey page position via colour+size only — invisible to TalkBack
+            // (HorizontalPager does not auto-announce "page X of N"), so the ROW carries a single
+            // semantic label and the individual dots stay decorative.
             Row(
-                Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp)
+                    .semantics { contentDescription = "Page ${pagerState.currentPage + 1} of ${slides.size}" },
                 horizontalArrangement = Arrangement.Center,
             ) {
                 repeat(slides.size) { i ->
                     val active = i == pagerState.currentPage
-                    // Decorative dot — a single Box with a background, no inner Surface, no
-                    // semantics (it carries no text, so nothing to hide from TalkBack).
                     Box(
                         Modifier
                             .padding(horizontal = 4.dp)
@@ -142,13 +151,19 @@ fun OnboardingScreen(
                 // (spec §5). Only if not granted do we branch on whether we've asked yet.
                 when {
                     stepCountingGranted -> {
-                        Text(
-                            "Step counting enabled ✓",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                            textAlign = TextAlign.Center,
-                        )
+                        Row(
+                            Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                "Step counting enabled",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                         Button(onClick = { finish() }, modifier = Modifier.fillMaxWidth()) {
                             Text("Start playing")
                         }

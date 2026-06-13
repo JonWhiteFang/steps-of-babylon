@@ -70,6 +70,7 @@ class StoreViewModel @Inject constructor(
                 CosmeticDisplayInfo(it.cosmeticId, it.category.name, it.name, it.description, it.priceGems, it.isOwned, it.isEquipped)
             },
             isPurchasing = purchasing,
+            isLoading = false,
             userMessage = message,
             priceDisplays = priceDisplays,
         )

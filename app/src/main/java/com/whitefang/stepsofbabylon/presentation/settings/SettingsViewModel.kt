@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
-data class NotificationSettingsState(
+data class SettingsState(
     val persistentSteps: Boolean = true,
     val supplyDrops: Boolean = true,
     val smartReminders: Boolean = true,
@@ -24,14 +24,14 @@ data class NotificationSettingsState(
 )
 
 @HiltViewModel
-class NotificationSettingsViewModel @Inject constructor(
+class SettingsViewModel @Inject constructor(
     private val prefs: NotificationPreferences,
     private val soundPrefs: SoundPreferences,
     private val musicPrefs: MusicPreferences,
     private val dataDeletionManager: DataDeletionManager,
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(NotificationSettingsState(
+    private val _state = MutableStateFlow(SettingsState(
         persistentSteps = prefs.isPersistentEnabled(),
         supplyDrops = prefs.isSupplyDropsEnabled(),
         smartReminders = prefs.isSmartRemindersEnabled(),
@@ -40,7 +40,7 @@ class NotificationSettingsViewModel @Inject constructor(
         musicMuted = musicPrefs.isMuted(),
         musicVolume = musicPrefs.getVolume(),
     ))
-    val state: StateFlow<NotificationSettingsState> = _state.asStateFlow()
+    val state: StateFlow<SettingsState> = _state.asStateFlow()
 
     fun setPersistent(enabled: Boolean) { prefs.setPersistentEnabled(enabled); _state.update { it.copy(persistentSteps = enabled) } }
     fun setSupplyDrops(enabled: Boolean) { prefs.setSupplyDropsEnabled(enabled); _state.update { it.copy(supplyDrops = enabled) } }

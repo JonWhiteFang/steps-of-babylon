@@ -3,6 +3,8 @@ package com.whitefang.stepsofbabylon.presentation.missions
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -15,12 +17,16 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.domain.model.Milestone
+import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
+import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import java.text.NumberFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    if (state.isLoading) { LoadingBox(); return }
     val fmt = NumberFormat.getNumberInstance()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -73,7 +79,7 @@ private fun MissionCard(mission: MissionDisplayInfo, onClaim: () -> Unit, fmt: N
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(mission.description, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                 if (mission.claimed) {
-                    Text("✓", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Icon(Icons.Filled.CheckCircle, contentDescription = "Claimed", tint = MaterialTheme.colorScheme.primary)
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -85,14 +91,19 @@ private fun MissionCard(mission: MissionDisplayInfo, onClaim: () -> Unit, fmt: N
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("${fmt.format(mission.progress)} / ${fmt.format(mission.target)}",
                     style = MaterialTheme.typography.bodySmall)
-                val reward = buildString {
-                    if (mission.rewardGems > 0) append("${mission.rewardGems} 💎")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (mission.rewardGems > 0) {
+                        CurrencyValue(CurrencyType.GEMS, mission.rewardGems.toLong(), style = MaterialTheme.typography.bodySmall)
+                    }
                     if (mission.rewardPowerStones > 0) {
-                        if (isNotEmpty()) append(" + ")
-                        append("${mission.rewardPowerStones} ⚡")
+                        if (mission.rewardGems > 0) {
+                            Spacer(Modifier.width(6.dp))
+                            Text("+", style = MaterialTheme.typography.bodySmall)
+                            Spacer(Modifier.width(6.dp))
+                        }
+                        CurrencyValue(CurrencyType.POWER_STONES, mission.rewardPowerStones.toLong(), style = MaterialTheme.typography.bodySmall)
                     }
                 }
-                Text(reward, style = MaterialTheme.typography.bodySmall)
             }
             if (mission.completed && !mission.claimed) {
                 Spacer(Modifier.height(8.dp))
@@ -118,7 +129,7 @@ private fun MilestoneCard(ms: MilestoneDisplayInfo, onClaim: () -> Unit, fmt: Nu
         Column(Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(milestone.displayName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                if (ms.isClaimed) Text("✓", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                if (ms.isClaimed) Icon(Icons.Filled.CheckCircle, contentDescription = "Claimed", tint = MaterialTheme.colorScheme.primary)
             }
             Text("${fmt.format(milestone.requiredSteps)} steps", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)

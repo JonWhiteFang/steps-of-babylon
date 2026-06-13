@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -26,9 +27,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.theme.GemColor
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
 import com.whitefang.stepsofbabylon.presentation.ui.theme.PowerStoneColor
@@ -41,6 +46,7 @@ fun CurrencyDashboardScreen(
     onStoreClick: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    if (state.isLoading) { LoadingBox(); return }
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
@@ -66,7 +72,11 @@ fun CurrencyDashboardScreen(
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text("Weekly Step Challenge", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     if (state.weeklyTimeRemaining.isNotBlank()) {
-                        Text("⏱ ${state.weeklyTimeRemaining}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(state.weeklyTimeRemaining, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
                 Spacer(Modifier.height(8.dp))
@@ -112,11 +122,15 @@ fun CurrencyDashboardScreen(
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    if (state.todayGemsClaimed) "✓ Today's Gems claimed" else "Open the app daily for Gems!",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (state.todayGemsClaimed) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = StatusSuccess, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Today's Gems claimed", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else {
+                    Text("Open the app daily for Gems!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
 
@@ -125,11 +139,15 @@ fun CurrencyDashboardScreen(
             Column(Modifier.padding(16.dp)) {
                 Text("Daily Power Stone", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    if (state.todayPsClaimed) "✓ Earned today (walked 1,000+ steps)"
-                    else "Walk 1,000 steps today for 1 Power Stone",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                if (state.todayPsClaimed) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = StatusSuccess, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Earned today (walked 1,000+ steps)", style = MaterialTheme.typography.bodyMedium)
+                    }
+                } else {
+                    Text("Walk 1,000 steps today for 1 Power Stone", style = MaterialTheme.typography.bodyMedium)
+                }
             }
         }
     }
@@ -149,16 +167,20 @@ private fun BalanceCard(label: String, amount: Long, color: Color) {
 private fun ThresholdRow(steps: String, ps: Int, claimed: Boolean, reached: Boolean) {
     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
         Text("$steps steps → $ps PS", style = MaterialTheme.typography.bodySmall)
-        Text(
-            when {
-                claimed -> "✓ Claimed"
-                reached -> "Ready!"
-                else -> "—"
-            },
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = if (reached && !claimed) FontWeight.Bold else FontWeight.Normal,
-            color = if (claimed) StatusSuccess else if (reached) Gold else MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        if (claimed) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Check, contentDescription = null, tint = StatusSuccess, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Claimed", style = MaterialTheme.typography.bodySmall, color = StatusSuccess)
+            }
+        } else {
+            Text(
+                if (reached) "Ready!" else "—",
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = if (reached) FontWeight.Bold else FontWeight.Normal,
+                color = if (reached) Gold else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -168,11 +190,11 @@ private fun HistoryRow(week: WeeklyResult) {
     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(week.weekStartDate, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Row {
-            Text(
-                if (met) "✓" else "✗",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (met) StatusSuccess else StatusDanger,
-                fontWeight = FontWeight.Bold,
+            Icon(
+                if (met) Icons.Default.Check else Icons.Default.Close,
+                contentDescription = if (met) "Goal met" else "Goal missed",
+                tint = if (met) StatusSuccess else StatusDanger,
+                modifier = Modifier.size(16.dp),
             )
             Spacer(Modifier.size(8.dp))
             Text(

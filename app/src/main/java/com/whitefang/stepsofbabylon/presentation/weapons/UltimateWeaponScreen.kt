@@ -25,12 +25,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.Icon
 import com.whitefang.stepsofbabylon.domain.model.UWPath
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
+import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 
 @Composable
 fun UltimateWeaponScreen(viewModel: UltimateWeaponViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    if (state.isLoading) { LoadingBox(); return }
 
     Column(Modifier.fillMaxSize()) {
         Text(
@@ -92,11 +97,10 @@ private fun UWCard(
                     )
                 }
                 if (info.isEquipped) {
-                    Text(
-                        "✓",
-                        color = Color(0xFF4CAF50),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleLarge,
+                    Icon(
+                        Icons.Filled.CheckCircle,
+                        contentDescription = "Equipped",
+                        tint = Color(0xFF4CAF50),
                     )
                 }
             }
