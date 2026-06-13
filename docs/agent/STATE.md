@@ -5,9 +5,8 @@ One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) a
 
 **Headline:** **v1.0.3 (versionCode 19) on Play internal track** (tag `v1.0.3`; supersedes
 v1.0.2/code18) · **975 JVM + 9 instrumented tests** green · schema v12 · **Gate C (onboarding) merged**
-(PR #157) · two look-&-feel waves merged/in-flight (#159 merged; **#160 Bundle A on branch
-`feat/look-and-feel-bundle-a`**) · launch is judgment-gated on the Closed-Test Readiness Gate
-(`plan-FORWARD.md`).
+(PR #157) · **two look-&-feel waves merged to `main`** (#159 squash `2dc9a08`; **#160 Bundle A** squash
+`491815b`, PR #165) · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
@@ -28,8 +27,9 @@ v1.0.2/code18) · **975 JVM + 9 instrumented tests** green · schema v12 · **Ga
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
-- **2026-06-12 — Look-&-feel Bundle A: correctness & a11y cleanup (#160)** (branch
-  `feat/look-and-feel-bundle-a`, 17 commits, not yet PR'd). Second safe presentation-only wave off the
+- **2026-06-13 — Look-&-feel Bundle A: correctness & a11y cleanup (#160)** (PR #165, squash `491815b`;
+  merged to `main`; issue #160 closed; CI PR gate + `connected` instrumented lane both green). Second
+  safe presentation-only wave off the
   2026-06-12 UX review (spec → adversarially-reviewed plan → subagent-driven execution with per-task
   spec+quality review + a final whole-branch Opus review). **New shared `presentation/ui/` layer:**
   `CurrencyDisplay.kt` (`CurrencyType` + `icon()/tint()/label()` + `CurrencyValue`/`CurrencyCost` +
@@ -160,7 +160,7 @@ v1.0.2/code18) · **975 JVM + 9 instrumented tests** green · schema v12 · **Ga
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Look-&-feel follow-ups (Gate C/F UX):** **#160 Bundle A** done on `feat/look-and-feel-bundle-a` — open the PR, let CI (PR gate + `connected`) go green, merge & close #160. Remaining bundles queued as specs: **#161** nav back-affordances + bottom-nav restore-wrong-screen bug, **#162** haptics + reward/claim animation, **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset.
+1. **Look-&-feel follow-ups (Gate C/F UX):** **#160 Bundle A merged** (PR #165). Remaining bundles, each needing its own spec → plan → PR: **#161** nav back-affordances + bottom-nav restore-wrong-screen bug, **#162** haptics + reward/claim animation, **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. Also pending from #160: on-device visual + navigate-away loading no-reflash spot-check (manual).
 2. **Bigger gate items:** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured).
 3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 4. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).

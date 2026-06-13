@@ -1,3 +1,22 @@
+## 2026-06-13 — Bundle A (#160) merged via PR #165
+
+- **Event:** opened **PR #165** for the `feat/look-and-feel-bundle-a` work (entry below), monitored CI,
+  squash-merged, closed the issue.
+- **CI:** PR gate `build-and-test` ✅ (4m38s) + `connected` instrumented lane ✅ (4m33s); merge state CLEAN.
+- **Merge:** squash `491815b` on `main` (parent `2dc9a08` / #159). Remote branch deleted. **Issue #160
+  closed** manually (PR title used a `(#160)` reference, not a `Closes` keyword, so no auto-close).
+- **Local-git note:** this session's spec/plan doc commits had been made directly on local `main`
+  (`b1573b8`…`755c8ef`) before branching; the squash folded them — and the 18 impl commits — into
+  `491815b` atop the already-advanced remote `main`. Local `main` had diverged, so post-merge it was
+  hard-reset to `origin/main` after confirming (a) the spec/plan doc files were byte-identical in the
+  squash and (b) `origin/main` carries the implementation. Nothing lost; `main` now `0 0` vs `origin/main`.
+- **Doc state:** CHANGELOG `[Unreleased]` Bundle-A entry, CLAUDE.md 975 count, source-files (+3 ui
+  components), structure (Settings rename) were all already on `main` via the squash — this checkpoint
+  only flipped STATE.md/RUN_LOG status from "on branch" → "merged."
+- **Remains / next:** manual on-device visual + navigate-away loading no-reflash spot-check (the one
+  gate CI can't cover). Then the queued bundles #161 (nav + restore bug), #162 (haptics/feel), #163
+  (rarity visuals), #164 (font/onboarding-art) — each its own spec → plan → PR.
+
 ## 2026-06-12 — Look-&-feel Bundle A: correctness & accessibility cleanup (#160; branch `feat/look-and-feel-bundle-a`)
 
 - **Goal:** Second safe, presentation-only wave off the 2026-06-12 UX review (PR #159 was the first).
