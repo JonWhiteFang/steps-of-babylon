@@ -50,7 +50,7 @@ Recorded so a future reviewer doesn't re-raise them:
 |---|---|
 | Back arrow `popBackStack()` becomes a dead button / cold-launch exit trap on deep-linked Store/Supplies/Missions | **Refuted.** NavHost commits `startDestination = Home` synchronously *before* the deep-link collector fires (`MainActivity.kt:191-208`), so the target is always pushed on top of Home — a parent always exists. D3 (`navigateUp()`) makes it moot regardless. |
 | "Same Store screen, two back destinations" is a defect | **Refuted.** Returning to the actual previous screen is correct push-nav behavior; no notification currently deep-links to `store` (verified: deep-link producers target only `supplies/workshop/missions/battle`). |
-| `WindowInsets(0)` fragile-coupling is a live bug | **Refuted as a *current* defect** (the bar doesn't exist yet) — but folded into §4.1 as a forward design constraint with a parity check. |
+| `WindowInsets(0)` fragile-coupling is a live bug | **Refuted as a *current* defect** (the bar doesn't exist yet). The plan-review then found the *opposite*: zeroing the bar's insets is wrong — the topBar must self-pad the status bar (default `TopAppBarDefaults.windowInsets`). §4.1 now specifies the default; see plan §Task 2. |
 | B2 fix = `popUpTo(graph.findStartDestination().id)` | **Confirmed no-op.** Flat graph + Home IS the start destination ⇒ identical to `popUpTo(Home.route)`. Dropped as "the fix" (§5.2). |
 | B2 root-cause "saves into Workshop's slot" | **Corrected.** The sub-stack is keyed under **Home's** id (Home is the graph start), restored on the first **Home**-tab tap — not Workshop's. Symptom statement fixed (§5.1). |
 | Instrumented test is *required* (real framework) | **Down-rated.** `saveState`/`restoreState` live in `navigation-common` (JVM-testable); D7 uses the JVM lane. |
@@ -72,7 +72,7 @@ fun SobTopAppBar(
 - `navigationIcon` = `IconButton(onClick = onNavigateBack)` with `Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")` (the arrow is already used in `BattleScreen.kt:141`).
 - `title` = centered `Text(title)` using the token typography (one place → fixes "inconsistent title sizes").
 - **No `actions` slot** (YAGNI — D2). Economy's "go to Store" CTA stays in the screen body; only its title moves to the bar.
-- **`windowInsets = WindowInsets(0)`** — the outer Scaffold already consumes the top status-bar inset via `Modifier.padding(innerPadding)` on the NavHost (`MainActivity.kt:263`), so the bar must not double-pad. Because the bar lives in the **same** outer Scaffold as the content (D2), there is exactly **one** inset path for all 8 screens — the insets-layout review's "two divergent paths" risk is structurally eliminated, not merely worked around.
+- **Default `TopAppBarDefaults.windowInsets`** (i.e. `windowInsets` is NOT overridden) — in a Material3 `Scaffold` the `topBar` slot **owns its own top inset**: the bar self-pads the status bar, and the Scaffold sets `innerPadding.top = topBarHeight` (height *including* that inset), which the NavHost consumes via `Modifier.padding(innerPadding)` (`MainActivity.kt:263`). So there is exactly **one** coherent inset path for all 8 screens. (Do **not** zero the bar's insets — that draws the arrow/title under the status bar and strips the status-bar offset from content; the plan-review caught an earlier `WindowInsets(0)` draft that inverted the Scaffold contract.)
 - **What it does / why / depends on:** maps (title, back-action) → a styled, inset-correct app bar. One component, applied once in MainActivity. Depends only on Material3 + the token typography. Themed-bar art (later) becomes a one-file change.
 
 ### 4.2 Placement — outer Scaffold `topBar`, gated to push-children
@@ -116,7 +116,7 @@ Cards, Missions, Store (and tabs Workshop, Labs) each own an **inner** `Scaffold
 
 ### 4.5 PR-B1 risk & tests
 - **Risk: Low.** Pure presentation. No `Screen.kt` route changes → `DeepLinkRoutingTest`/`OnboardingRoutingTest` unaffected (re-run green as a guard). No economy/concurrency/renderer touch. Honors every STATE.md fragile zone.
-- **New JVM test — `ScreenSecondaryTitleTest`:** pins `Screen.secondaryTitle(route)` → returns the exact title for each of the 8 push-children and `null` for every tab + Battle + Onboarding + unknown route. This is the load-bearing logic (which screens get a bar); the bar composable itself is a thin visual helper (no JVM test, per the Bundle-A norm). Headline JVM count **975 → 976**.
+- **New JVM test — `ScreenSecondaryTitleTest`:** pins `Screen.secondaryTitle(route)` → returns the exact title for each of the 8 push-children and `null` for every tab + Battle + Onboarding + unknown route. This is the load-bearing logic (which screens get a bar); the bar composable itself is a thin visual helper (no JVM test, per the Bundle-A norm). Headline JVM count **975 → 979** (+4 `@Test` methods — the headline counts methods, not classes).
 - **On-device (emulator API 36):** each of the 8 screens shows the bar + correct centered title; back arrow returns to the correct parent (Weapons/Cards → Workshop; Store → Economy *or* Home depending on entry; others → Home); no title double-renders; no status-bar overlap or gap; tabs/Battle/Onboarding show **no** bar.
 
 ---
@@ -204,7 +204,7 @@ Headline JVM count rises with B2's test(s); **instrumented stays at 9** (the gua
 ## 7. Docs (PR Task-List Convention — both PRs)
 
 Sync current-state docs BEFORE the STATE/RUN_LOG update:
-- **PR-B1:** `docs/steering/source-files.md` (add `SobTopAppBar.kt`, note header moves); `CLAUDE.md` test-count (975 → 976); `CHANGELOG.md` `[Unreleased]`. No ADR (implements ADR-0022 token direction).
+- **PR-B1:** `docs/steering/source-files.md` (add `SobTopAppBar.kt`, note header moves); `CLAUDE.md` test-count (975 → 979); `CHANGELOG.md` `[Unreleased]`. No ADR (implements ADR-0022 token direction).
 - **PR-B2:** `docs/steering/source-files.md` (add `AppNavHost.kt`, `BottomNavRestoreTest`); `docs/steering/structure.md` (AppNavHost extraction); `CLAUDE.md` test-count + fragile-zone note (bottom-nav back-stack contract); `CHANGELOG.md`; `docs/plans/master-plan.md` status if tracked; **new ADR** for the back-stack contract.
 - Both: `docs/agent/STATE.md` + `docs/agent/RUN_LOG.md` via `/checkpoint`.
 - On merge: comment on #161; close it only after **both** PRs land.

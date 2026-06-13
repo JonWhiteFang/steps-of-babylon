@@ -4,7 +4,7 @@
 
 **Goal:** Give the 8 secondary (push-navigated) screens a visible back affordance and a consistent, correctly-styled title via a single shared `SobTopAppBar` rendered in MainActivity's outer Scaffold — eliminating the "no way up except system back" gap and the "inconsistent title sizes" finding from the 2026-06-12 UX review.
 
-**Architecture:** ONE `SobTopAppBar` (Material3 `CenterAlignedTopAppBar`) lives in MainActivity's existing outer `Scaffold`'s `topBar` slot. A pure, unit-testable `Screen.secondaryTitle(route)` helper returns the bar title for exactly the 8 push-children and `null` for everything else (tabs, Battle, Onboarding, unknown) — so the bar renders only where it should, with no per-screen param threading and no change to the `by lazy` route lists. The back arrow calls `navController.navigateUp()` (mirrors system/predictive back). The 5 screens that currently render their own inline title header delete it (the bar now carries it); Weapons/Cards gain a title they never had; Missions keeps its two *section* headers.
+**Architecture:** ONE `SobTopAppBar` (Material3 `CenterAlignedTopAppBar`, using the default `TopAppBarDefaults.windowInsets` so the bar self-pads the status bar) lives in MainActivity's existing outer `Scaffold`'s `topBar` slot. A pure, unit-testable `Screen.secondaryTitle(route)` helper returns the bar title for exactly the 8 push-children and `null` for everything else (tabs, Battle, Onboarding, unknown) — so the bar renders only where it should, with no per-screen param threading and no change to the `by lazy` route lists. The back arrow calls `navController.navigateUp()` (mirrors system/predictive back). The 5 screens that currently render their own inline title header delete it (the bar now carries it); Weapons/Cards gain a title they never had; Missions keeps its two *section* headers.
 
 **Tech Stack:** Kotlin, Jetpack Compose (Material3 — `CenterAlignedTopAppBar`, `ExperimentalMaterial3Api`), `Icons.AutoMirrored.Filled.ArrowBack` (already used at `BattleScreen.kt:141`), Robolectric + JUnit4 for the one JVM test (mirrors `OnboardingRoutingTest`, required because `Screen.kt` imports `ImageVector`). Build via `./run-gradle.sh`.
 
@@ -145,7 +145,6 @@ Create `app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/SobTopApp
 ```kotlin
 package com.whitefang.stepsofbabylon.presentation.ui
 
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -160,10 +159,14 @@ import androidx.compose.runtime.Composable
  * (Bundle B / #161). Rendered once in MainActivity's outer Scaffold `topBar`, gated by
  * [com.whitefang.stepsofbabylon.presentation.navigation.Screen.secondaryTitle].
  *
- * `windowInsets = WindowInsets(0, 0, 0, 0)`: the outer Scaffold already consumes the top
- * status-bar inset via `Modifier.padding(innerPadding)` on the NavHost, so this bar must NOT
- * re-pad the top inset. Because the bar lives in the same outer Scaffold as the content, there
- * is exactly one inset path for all 8 screens. Adopting themed-bar art later is a one-file change.
+ * Inset handling: the bar deliberately uses the DEFAULT `TopAppBarDefaults.windowInsets`
+ * (status-bar Top + Horizontal) — i.e. `windowInsets` is NOT overridden. In a Material3
+ * `Scaffold`, the `topBar` slot owns its own top inset: the bar self-pads the status bar, and the
+ * Scaffold then sets `innerPadding.top = topBarHeight` (height INCLUDING that inset), which the
+ * NavHost consumes via `Modifier.padding(innerPadding)`. So there is one coherent inset path — the
+ * bar pushes its arrow/title below the status bar and the content below the bar. Do NOT zero the
+ * insets: that would draw the arrow/title under the status bar (clipped) and strip the status-bar
+ * offset from content. Adopting themed-bar art later is a one-file change.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -181,7 +184,6 @@ fun SobTopAppBar(
                 )
             }
         },
-        windowInsets = WindowInsets(0, 0, 0, 0),
     )
 }
 ```
@@ -261,18 +263,12 @@ Weapons, Cards, Missions are NOT touched (no title header today; Missions keeps 
 
 - [ ] **Step 1: SettingsScreen — delete the title + its spacer**
 
-Replace:
+Delete exactly these two consecutive lines (SettingsScreen.kt:31-32) — the `Column(...)` opener above and the `ToggleRow("Live Step Updates", …)` line below them stay unchanged:
 ```kotlin
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Settings", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        ToggleRow("Live Step Updates",
 ```
-with:
-```kotlin
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        ToggleRow("Live Step Updates",
-```
+So the `Column { … }` body now opens directly onto the first `ToggleRow(...)`. (Do NOT include the `ToggleRow` line in the match string — it is unchanged context, and its full real line is long.)
 
 - [ ] **Step 2: HelpScreen — delete the title**
 
@@ -357,7 +353,7 @@ with:
 - [ ] **Step 6: Build + lint to verify no unused imports / no compile error**
 
 Run: `./run-gradle.sh assembleDebug lintDebug`
-Expected: BUILD SUCCESSFUL; lint green. (`FontWeight` remains used by other headers in every edited file, so no unused-import error.)
+Expected: BUILD SUCCESSFUL; lint green. (Note: the project's lint only promotes `HardcodedText` to an error — it does NOT flag unused imports, and Kotlin doesn't fail the build on them either. But all five edits genuinely leave every affected import still in use — `FontWeight`/`Text`/`Spacer`/`MaterialTheme`/`Alignment`/`Icons.Default.ShoppingCart`/`CurrencyValue` each remain referenced by other code in their file — so `assembleDebug` is the real guard and stays green.)
 
 - [ ] **Step 7: Commit**
 
@@ -379,14 +375,15 @@ git commit -m "feat(ui): move 5 screens' titles into SobTopAppBar; right-align t
 - [ ] **Step 1: Full JVM suite + lint + assemble**
 
 Run: `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug`
-Expected: BUILD SUCCESSFUL; all tests green; **JVM count 975 → 976** (one new class, `ScreenSecondaryTitleTest`). `DeepLinkRoutingTest` + `OnboardingRoutingTest` pass unchanged (route set untouched — regression guard).
+Expected: BUILD SUCCESSFUL; all tests green; **JVM count 975 → 979** (+4 `@Test` methods from the one new class `ScreenSecondaryTitleTest` — the headline counts test *methods*, not classes; cf. CHANGELOG's `+2 from CurrencyDisplayTest`). `DeepLinkRoutingTest` + `OnboardingRoutingTest` pass unchanged (route set untouched — regression guard).
 
 - [ ] **Step 2: On-device (emulator API 36) visual check**
 
 Install (`./run-gradle.sh installDebug` or via the existing run flow) and verify:
 - Each of the 8 screens (Weapons, Cards, Supplies, Economy, Missions, Settings, Store, Help) shows the centered-title bar with a working back arrow.
 - Back arrow returns to the correct parent: Weapons/Cards → Workshop; Store → Economy *and* (from Home tile) Home; Economy/Missions/Settings/Supplies/Help → Home.
-- No title renders twice; no status-bar overlap and no wasted gap above the bar.
+- No title renders twice; the bar's back arrow + title sit fully **below** the status bar (not clipped/overlapping the clock/battery — the key check that the default `TopAppBarDefaults.windowInsets` is doing its job); no wasted gap above the bar.
+- **Inner-Scaffold screens (Cards, Missions, Store):** confirm there is no double top-gap between the bar and the first content row (they each host their own `Scaffold`; the outer bar should reserve its height once, with content flush below it).
 - The 5 bottom-nav tabs (Home/Workshop/Battle/Labs/Stats), the Battle screen, and the Onboarding carousel show **NO** bar.
 - Economy's "Store" button and Supplies' "Claim All" button are right-aligned and still work.
 
@@ -406,11 +403,11 @@ Add an entry for `presentation/ui/SobTopAppBar.kt` (shared back-affordance app b
 
 - [ ] **Step 2: `CLAUDE.md` test-count line**
 
-Update the headline count `975 JVM` → `976 JVM` (instrumented unchanged at 9). Touch nothing else in CLAUDE.md (no stable architecture/convention changed).
+Update the headline count `975 JVM` → `979 JVM` (instrumented unchanged at 9). Touch nothing else in CLAUDE.md (no stable architecture/convention changed).
 
 - [ ] **Step 3: `CHANGELOG.md`**
 
-Add a `[Unreleased]` entry: Bundle B PR-B1 — shared `SobTopAppBar` back affordances on the 8 secondary screens; titles centralized into the bar; `Screen.secondaryTitle` helper + `ScreenSecondaryTitleTest`; 975 → 976 JVM tests.
+Add a `[Unreleased]` entry: Bundle B PR-B1 — shared `SobTopAppBar` back affordances on the 8 secondary screens; titles centralized into the bar; `Screen.secondaryTitle` helper + `ScreenSecondaryTitleTest` (+4 methods); 975 → 979 JVM tests.
 
 - [ ] **Step 4: `/checkpoint`**
 
@@ -431,6 +428,6 @@ Push the branch and open a PR for PR-B1 only (B2 is a separate later PR on a sep
 
 ## Self-Review (completed by plan author)
 
-- **Spec coverage (§4):** SobTopAppBar component (Task 2) ✓; outer-Scaffold placement gated by `secondaryTitle` (Tasks 1+3) ✓; `navigateUp()` back action (Task 3) ✓; explicit per-screen title map + delete duplicated headers, Missions keeps section headers (Tasks 1+4) ✓; `WindowInsets(0,0,0,0)` single inset path (Task 2) ✓; no `Screen.kt` route-list change / DeepLinkRoutingTest unaffected (Task 1 note + Task 5) ✓; `ScreenSecondaryTitleTest`, 975→976 (Tasks 1+5) ✓; docs per convention (Task 6) ✓. PR-B2 (bug fix) is intentionally a separate plan.
+- **Spec coverage (§4):** SobTopAppBar component (Task 2) ✓; outer-Scaffold placement gated by `secondaryTitle` (Tasks 1+3) ✓; `navigateUp()` back action (Task 3) ✓; explicit per-screen title map + delete duplicated headers, Missions keeps section headers (Tasks 1+4) ✓; default `TopAppBarDefaults.windowInsets` so the topBar self-pads the status bar — one coherent inset path (Task 2) ✓; no `Screen.kt` route-list change / DeepLinkRoutingTest unaffected (Task 1 note + Task 5) ✓; `ScreenSecondaryTitleTest`, 975→979 (Tasks 1+5) ✓; docs per convention (Task 6) ✓. PR-B2 (bug fix) is intentionally a separate plan.
 - **Placeholders:** none — every code step shows exact before/after.
 - **Type/name consistency:** `secondaryTitle(route: String?): String?` defined in Task 1, called identically in Task 3 and tested in Task 1. `SobTopAppBar(title, onNavigateBack)` defined in Task 2, called with those exact params in Task 3. Title strings match between Task 1's map, Task 1's test assertions, and the spec's §4.3 table.
