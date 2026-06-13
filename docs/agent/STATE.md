@@ -4,9 +4,10 @@ One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) a
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
 **Headline:** **v1.0.3 (versionCode 19) on Play internal track** (tag `v1.0.3`; supersedes
-v1.0.2/code18) · **975 JVM + 9 instrumented tests** green · schema v12 · **Gate C (onboarding) merged**
+v1.0.2/code18) · **979 JVM + 9 instrumented tests** green · schema v12 · **Gate C (onboarding) merged**
 (PR #157) · **two look-&-feel waves merged to `main`** (#159 squash `2dc9a08`; **#160 Bundle A** squash
-`491815b`, PR #165) · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
+`491815b`, PR #165) · **Bundle B PR-B1 (#161 nav back affordances) done on branch, PR open** · launch is
+judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
@@ -27,6 +28,23 @@ v1.0.2/code18) · **975 JVM + 9 instrumented tests** green · schema v12 · **Ga
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-13 — Look-&-feel Bundle B PR-B1: navigation back affordances (#161)** (branch
+  `feat/look-and-feel-bundle-b`, PR open; **not yet merged**). First of **two sequential** Bundle-B PRs
+  (PR-B2 = the bottom-nav restore-wrong-screen bug, separate branch, must wait until PR-B1 merges).
+  Spec → adversarially-reviewed plan (the plan review caught a wrong `WindowInsets(0)` inset approach and
+  a per-class vs per-method test-count error — both fixed pre-build) → subagent-driven execution with
+  per-task spec+quality review. **New shared `presentation/ui/SobTopAppBar.kt`** (`CenterAlignedTopAppBar`:
+  centered title + ArrowBack) rendered ONCE in MainActivity's outer Scaffold `topBar`, gated by the new
+  pure `Screen.secondaryTitle(route)` helper → appears on exactly the 8 push-nav secondary screens
+  (Weapons/Cards/Supplies/Economy/Missions/Settings/Store/Help), null elsewhere (tabs/Battle/Onboarding).
+  Back = `navigateUp()`. Default `TopAppBarDefaults.windowInsets` (bar self-pads the status bar — verified
+  on-device the title/arrow sit below the status bar on all 8). Inline titles deleted from
+  Settings/Help/Store/Economy/Supplies (now carried by the bar); Missions keeps its two section headers;
+  Economy/Supplies actions right-aligned (+ Supplies action row hidden on empty state). **975→979 JVM**
+  (+4 `ScreenSecondaryTitleTest`, Robolectric); `testDebugUnitTest lintDebug assembleDebug` green;
+  on-device verified all 8 screens + negative cases (no bar on tabs/Battle/Onboarding). No
+  engine/economy/concurrency touched; no `Screen.kt` route-list change. No ADR (the back-stack-contract
+  ADR lands with PR-B2).
 - **2026-06-13 — Look-&-feel Bundle A: correctness & a11y cleanup (#160)** (PR #165, squash `491815b`;
   merged to `main`; issue #160 closed; CI PR gate + `connected` instrumented lane both green). Second
   safe presentation-only wave off the
@@ -160,7 +178,7 @@ v1.0.2/code18) · **975 JVM + 9 instrumented tests** green · schema v12 · **Ga
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Look-&-feel follow-ups (Gate C/F UX):** **#160 Bundle A merged** (PR #165). Remaining bundles, each needing its own spec → plan → PR: **#161** nav back-affordances + bottom-nav restore-wrong-screen bug, **#162** haptics + reward/claim animation, **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. Also pending from #160: on-device visual + navigate-away loading no-reflash spot-check (manual).
+1. **Look-&-feel follow-ups (Gate C/F UX):** **#160 Bundle A merged** (PR #165). **#161 Bundle B PR-B1 (nav back affordances) done — PR open, awaiting merge; then start PR-B2** (the bottom-nav restore-wrong-screen bug — separate branch, `systematic-debugging` + on-device repro first, JVM-Robolectric guard via an extracted Hilt-free `AppNavHost`, + a back-stack-contract ADR; spec already written). Remaining bundles, each needing its own spec → plan → PR: **#162** haptics + reward/claim animation, **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. Also pending from #160: navigate-away loading no-reflash spot-check (manual).
 2. **Bigger gate items:** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured).
 3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 4. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
@@ -198,6 +216,15 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
   `CurrencyDisplayTest`). The domain `Currency` enum was deleted as dead — `CurrencyType` is the
   presentation-layer home (carries Compose `icon()/tint()`, can't live in the Android-free domain).
 - **Onboarding gating + flag location (#24, ADR-0021)** — the first-launch flag is device-local SharedPreferences (`OnboardingPreferences`), intentionally NOT Room (must not sync; reinstall re-shows). In `MainActivity`, `startDestination` reads it **synchronously** via pure `Screen.startDestination()`; **only** the cold-permission request branch is gated behind `onboardingComplete` (service-start/HC-chaining stay ungated — don't widen the gate or step counting breaks for granted users); the deep-link collector gates on live nav state (current route == Onboarding). `Screen.Onboarding` is deliberately **out of** `allScreens`/`argumentFreeRoutes`/`items` (not a public deep-link target) — keep it out (`DeepLinkRoutingTest` pins the exact-13 set). Onboarding is **explain-only — never grant Steps** (preserves the hard invariant). Guarded by `OnboardingRoutingTest` + `OnboardingPreferencesTest` + `OnboardingContentTest` + `OnboardingViewModelTest` + `DeepLinkRoutingTest` navigate_to guards.
+- **Top-bar back affordance is centralized (#161, PR-B1)** — the back/up bar renders via ONE
+  `presentation/ui/SobTopAppBar.kt` in MainActivity's **outer** Scaffold `topBar`, gated by the pure
+  `Screen.secondaryTitle(route)` helper (returns the title for the 8 push-nav secondary screens, null
+  for tabs/Battle/Onboarding/unknown). Don't reintroduce per-screen bars or thread an `onNavigateBack`
+  param into screens; add/remove a screen's bar by editing `secondaryTitle` in ONE place (pinned by
+  `ScreenSecondaryTitleTest`). The bar uses the **default** `TopAppBarDefaults.windowInsets` — the
+  topBar self-pads the status bar; do **NOT** set `windowInsets = WindowInsets(0)` (that draws the
+  title under the status bar — caught in plan review). Back = `navigateUp()`. `secondaryTitle` must
+  NOT touch `Screen`'s `by lazy` route lists (no route change → `DeepLinkRoutingTest` unaffected).
 
 ## References
 
