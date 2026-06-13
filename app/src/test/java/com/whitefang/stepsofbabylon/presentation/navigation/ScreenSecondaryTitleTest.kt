@@ -32,9 +32,9 @@ class ScreenSecondaryTitleTest {
     }
 
     @Test
-    fun `secondaryTitle is null for Battle and Onboarding`() {
-        // Battle is a tab with its own exit affordance; Onboarding is a self-contained carousel.
-        assertNull(Screen.secondaryTitle(Screen.Battle.route))
+    fun `secondaryTitle is null for Onboarding`() {
+        // Onboarding is a self-contained carousel — not a tab (so not covered by the items
+        // loop above) and not a secondary screen. Battle IS a tab, already covered above.
         assertNull(Screen.secondaryTitle(Screen.Onboarding.route))
     }
 
