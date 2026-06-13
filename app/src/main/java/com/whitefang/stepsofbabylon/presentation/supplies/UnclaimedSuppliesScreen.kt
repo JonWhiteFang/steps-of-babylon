@@ -42,14 +42,14 @@ fun UnclaimedSuppliesScreen(
     if (state.isLoading) { LoadingBox(); return }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-            if (state.drops.isNotEmpty()) {
+        if (state.drops.isNotEmpty()) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                 Button(onClick = viewModel::claimAll, colors = ButtonDefaults.buttonColors(containerColor = Gold)) {
                     Text("Claim All")
                 }
             }
+            Spacer(Modifier.height(12.dp))
         }
-        Spacer(Modifier.height(12.dp))
 
         if (state.drops.isEmpty() && !state.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
