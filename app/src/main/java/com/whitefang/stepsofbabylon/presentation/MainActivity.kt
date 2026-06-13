@@ -211,6 +211,8 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     snackbarHost = { SnackbarHost(snackbarHostState) },
                     topBar = {
+                        // Independent back-stack subscription (same backing StateFlow as bottomBar's
+                        // backStackEntry); named distinctly to avoid shadowing across the two slot lambdas.
                         val topBarEntry by navController.currentBackStackEntryAsState()
                         val topBarRoute = topBarEntry?.destination?.route
                         Screen.secondaryTitle(topBarRoute)?.let { title ->
