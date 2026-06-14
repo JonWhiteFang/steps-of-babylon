@@ -114,8 +114,14 @@ fun BattleScreen(
     Box(Modifier.fillMaxSize()) {
         AndroidView(factory = { surfaceView }, modifier = Modifier.fillMaxSize())
 
-        // Top-left: wave info + cash + battle-step counter
-        Column(Modifier.align(Alignment.TopStart).padding(start = 16.dp, top = 80.dp)) {
+        // Top-left: wave info + cash + battle-step counter.
+        // top = 40.dp clears the engine-rendered ziggurat health bar (HealthBarRenderer draws it
+        // at 40px..72px ≈ 36dp@2x density) with a small margin. This is intentionally NOT the old
+        // 80.dp: that value bundled a status-bar (~24dp) + platform-ActionBar (~56dp) offset that
+        // no longer applies — MainActivity is edge-to-edge and the Scaffold already supplies the
+        // status-bar inset via innerPadding, and the ActionBar was removed app-wide in #159. The
+        // stale 80.dp left the HUD text floating ~53dp below the health bar (verified on-device).
+        Column(Modifier.align(Alignment.TopStart).padding(start = 16.dp, top = 40.dp)) {
             Text(stringResource(R.string.battle_wave_header, state.currentWave, state.enemyCount), color = Color.White, style = MaterialTheme.typography.titleMedium)
             Text(state.wavePhase.lowercase().replaceFirstChar { it.uppercase() }, color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
             LinearProgressIndicator(
@@ -137,7 +143,7 @@ fun BattleScreen(
         }
 
         if (roundActive) {
-            IconButton(onClick = { viewModel.quitRound() }, modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = 72.dp)) {
+            IconButton(onClick = { viewModel.quitRound() }, modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = 32.dp)) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.battle_cd_quit_round), tint = Color.White)
             }
         }

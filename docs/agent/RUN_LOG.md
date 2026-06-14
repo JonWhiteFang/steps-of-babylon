@@ -1,3 +1,38 @@
+## 2026-06-14 — Post-v1.0.4 follow-ups: Battle HUD offset + `release.yml` `track`→`tracks` (branch `fix/battle-hud-offset-and-release-track`)
+
+- **Goal:** Fix the two follow-ups logged from the v1.0.4 release audit, with an emulator connected.
+- **`release.yml` `track`→`tracks` (Phase 1–3 then minimal fix):** the `r0adkll/upload-google-play`
+  step warned `track` is deprecated. Before editing, fetched the action's `action.yml` **at the pinned
+  SHA `e738b9dd` (v1.1.5)** and confirmed BOTH `track` and `tracks` inputs exist there (both
+  `required: false`) and `tracks` is the documented successor (single comma-separated string). So the
+  rename `track: internal` → `tracks: internal` is verified non-breaking at the current pin. YAML
+  re-validated (ruby parser). No behaviour change; silences the warning next release.
+- **Battle HUD offset (systematic-debugging — reproduced BEFORE fixing; the Iron Law paid off):**
+  - **Repro:** built+installed the debug APK, drove the emulator (1080×2400 @ 420dpi) Home→BATTLE,
+    screenshotted. Confirmed a large dead gap between the engine-rendered health bar (`1000/1000`,
+    top-centre) and the Compose HUD wave header (`Wave 1 · N enemies`, sitting ~53dp lower).
+  - **Root cause:** `MainActivity` is `enableEdgeToEdge()` + wraps the NavHost in a `Scaffold` whose
+    `innerPadding` already supplies the status-bar inset to BattleScreen; the engine draws the ziggurat
+    health bar at `HealthBarRenderer` `barTop=40f..72f` px (≈36dp@2x). The HUD `Column` then added a
+    hardcoded `top = 80.dp` = "status-bar (~24) + ActionBar (~56)" — but #159 removed the ActionBar and
+    the Scaffold handles the status bar, so 80.dp **double-counts removed chrome**.
+  - **Disproved the audit's suggested fix:** the v1.0.4 audit guessed "−56dp → 24.dp". 24dp is ABOVE
+    the ~27dp health-bar bottom → would collide. Reproducing first caught this.
+  - **Fix:** HUD `Column` `80.dp → 40.dp` (clears the engine health bar across densities with margin);
+    paired quit button `72.dp → 32.dp` (keeps the existing 8dp differential so the back arrow stays
+    aligned with the wave header). Added an explanatory comment citing the edge-to-edge + #159 history.
+  - **Re-verified on-device:** rebuilt+reinstalled; the wave header now tucks cleanly just under the
+    health bar, no collision, back arrow aligned. Before/after screenshots compared.
+- **No test added:** consistent with the file's standing convention (Compose-UI-surface layout, no JVM
+  seam; grep confirmed no test pins these dp values). **981 JVM** unchanged, 0 failures; `lintDebug` green.
+- **Doc sync:** CHANGELOG `[Unreleased]` Fixed entry (both items); STATE Known-issues (moved both to a
+  Resolved line) + priorities (HUD spot-check struck, navigate-away loading still pending). No CLAUDE.md
+  change (test count unchanged); no ADR (no architectural decision — fixes, not new direction).
+- **Remains / next:** open the PR; after the CI gate (PR `build-and-test` + instrumented `connected`)
+  greens, merge to `main`. These ride to Play on the **next** `v*` tag (they're in `[Unreleased]`, not
+  v1.0.4 which already shipped) — no immediate re-release needed unless the developer wants one. Still
+  pending: navigate-away loading no-reflash spot-check (#160); look-&-feel bundles #162/#163/#164.
+
 ## 2026-06-14 — v1.0.4 (versionCode 20) released to Play internal track (release PR #168, tag `v1.0.4`)
 
 - **Goal:** Bump the release version and ship an update to the Play internal track, covering the four
