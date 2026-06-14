@@ -1,3 +1,41 @@
+## 2026-06-14 — full doc-drift sweep (post-v1.0.5; docs-only, in `[Unreleased]`)
+
+- **Goal:** "full ultracode doc sweep" — find and fix every stale/contradictory claim across the doc
+  corpus after the v1.0.3/4/5 releases landed, without touching frozen historical artifacts.
+- **Method (multi-agent Workflow, 67 agents, ~14m, ~3.6M subagent tokens):** inline scout (153 tracked
+  `.md`, clean tree, baseline ground truth: v1.0.5/vc21, 981+9 tests, schema v12, 21 ADRs) → Workflow
+  `doc-drift-sweep`: (1) 4 parallel ground-truth extractors (build/version, domain enums, tests/CI guards,
+  data-schema/release) → 75 facts; (2) 11-lane audit fan-out across the LIVE doc corpus + a cross-doc
+  numeric-coherence lane + a link-integrity lane (archive/external-reviews/old-RUN_LOG excluded as edit
+  targets per CLAUDE.md); (3) per-finding adversarial verifier that re-read each doc + source and
+  defaulted to reject; (4) synthesis with dedup + false-positive appendix. **50 candidates → 47 verified
+  → 31 confirmed (3 high / 16 med / 12 low), 3 rejected.**
+- **Lead re-verification before applying:** independently confirmed the high-leverage ground truth via
+  grep/ls/test — `ResearchType` = 12 entries with only `AUTO_UPGRADE_AI` `isComingSoon`; `Currency.kt`
+  absent + `CurrencyType` in `presentation/ui/CurrencyDisplay.kt`; 13 DAO providers; `tracks: internal`
+  in `release.yml`; `.fallbackToDestructiveMigrationOnDowngrade` present; 4 instrumented files; tags
+  v1.0.1–v1.0.5; #167/#157 merge commits.
+- **Applied: 31 fixes across 19 files** — README, STATE, plan-FORWARD, master-plan, structure,
+  source-files, battle-formulas, database-schema, lib-room, lib-hilt, plan-V1X-roadmap, plan-31, plan-32,
+  ADR-0005 (status-only amendment), play-store-listing, plan-31-walkthrough, release-notes-v1.0.2, GDD,
+  CHANGELOG. (The report named 14 files for the *content* findings; the link-integrity + coherence lanes
+  added a few more touched files — 19 modified in total.)
+- **Verification evidence:** post-edit residual scan clean — zero `versionCode 18`/`vc 18`/`960 JVM`
+  stragglers in current-state docs; R4 CHANGELOG links 0 still in `docs/plans/`, 7 relocated to
+  `docs/archive/completed-plans-v1.0/`; no `10 research types`/`ten ResearchType` left in live docs.
+  Docs-only change — no build/test run needed; **981 JVM unchanged.**
+- **False positives (correctly NOT applied):** 3 dangling `plan-RO-11/RO-12` path references inside
+  `release-notes-v5.md`/`-v6.md` — banner-marked frozen historical snapshots, correct as-of authoring
+  date; verifier refused to edit them per the archive rules.
+- **Doc sync:** CHANGELOG `[Unreleased]` (new Docs section), STATE.md (headline + new Recently-shipped
+  entry), this RUN_LOG entry. No CLAUDE.md change (test count unchanged at 981; nothing stable drifted).
+  No new ADR (correction sweep, not a decision); ADR-0005 status line amended to reflect the
+  fully-rolled-out billing binding.
+- **Remains / next:** unchanged from v1.0.5 — look-&-feel bundles #162/#163/#164 (each its own
+  spec → plan → PR); bigger gate items #29 (Gate F decision-support) + #26 (Gate G perf/battery,
+  device-measured); manual play-feel gates A/E. This sweep's edits sit in `[Unreleased]` and ride the
+  next `v*` tag (no version bump for docs-only).
+
 ## 2026-06-14 — v1.0.5 (versionCode 21) released to Play internal track (release PR #170, tag `v1.0.5`)
 
 - **Goal:** Push the next release — ship the two post-v1.0.4 fixes sitting in CHANGELOG `[Unreleased]`

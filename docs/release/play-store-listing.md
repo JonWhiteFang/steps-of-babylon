@@ -19,8 +19,8 @@ HOW IT WORKS
 Your phone's step counter tracks your daily walking. Every step you take earns in-game Steps — the primary currency that fuels all progression. No grinding in-game. No waiting for timers to fill your wallet. Just walk.
 
 UPGRADE YOUR ZIGGURAT
-Spend Steps in the Workshop to permanently upgrade your tower across 24 upgrade types in three categories:
-• Attack — damage, crit chance, projectile speed, multishot, orbs
+Spend Steps in the Workshop to permanently upgrade your tower across 22 Steps-purchasable upgrade types in three categories:
+• Attack — damage, crit chance, projectile speed, orbs
 • Defense — HP, regen, damage reduction, block, thorn damage
 • Utility — attack speed, range, lifesteal, cash bonuses, interest
 
@@ -34,7 +34,7 @@ EXPLORE 5 BIOMES
 Journey from the Hanging Gardens through Burning Sands, Frozen Ziggurats, and the Underworld of Kur to the Celestial Gate. Each biome transforms the battlefield with unique visuals and enemy themes.
 
 RESEARCH IN THE LABS
-Start real-time research projects that complete in the background — even when the app is closed. 10 research types provide permanent stat bonuses. Rush with Gems or unlock additional research slots.
+Start real-time research projects that complete in the background — even when the app is closed. 12 research types provide permanent stat bonuses. Rush with Gems or unlock additional research slots.
 
 COLLECT & EQUIP CARDS
 Open Card Packs to collect 9 card types across 3 rarities. Equip up to 3 cards per battle for powerful per-round bonuses. Collect duplicate copies to upgrade cards through 7 levels.
@@ -83,10 +83,9 @@ Recommended rating: **Everyone (E)** / **PEGI 3**
 
 `jonwhitefang@gmail.com`
 
-## Visual Assets (Deferred to Plan 31)
+## Visual Assets
 
-The following are needed for Play Console upload but deferred:
-- App icon: 512×512 PNG (hi-res)
-- Feature graphic: 1024×500 PNG
-- Screenshots: minimum 2, recommended 8 (phone)
+- [x] App icon: 512×512 PNG (hi-res) — `docs/release/store-assets/play-store-icon-512.png`
+- [x] Feature graphic: 1024×500 PNG — `docs/release/store-assets/play-store-feature-graphic-1024x500.png`
+- [ ] Screenshots: minimum 2, recommended 8 (phone) — still pending
   - Home screen, Workshop, Battle (multiple biomes), Labs, Cards, Stats

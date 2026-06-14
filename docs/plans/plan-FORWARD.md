@@ -42,19 +42,16 @@ state — the checklist informs that call, it does not replace it.
 - [ ] No misleading "Coming Soon" in core flows; remaining locked cosmetics clearly framed — *satisfied-by known-issues cosmetic debt*
 
 ### C. First-session UX
-- [x] A brand-new player understands the walk → spend → battle loop (onboarding / tutorial / first-walk moment) — *satisfied-by #24 (V1X-22), Gate-C slice shipped (branch `feat/onboarding-gate-c`): first-launch 4-slide carousel + permission primer + Settings replay; explain-only (no Steps grant). #24 stays open for the deferred retention scope.*
+- [x] A brand-new player understands the walk → spend → battle loop (onboarding / tutorial / first-walk moment) — *satisfied-by #24 (V1X-22), Gate-C slice shipped in v1.0.3 (PR #157): first-launch 4-slide carousel + permission primer + Settings replay; explain-only (no Steps grant). #24 stays open for the deferred retention scope.*
 
 ### D. Correctness & stability
-- [ ] Audit Low #124 (billing signature verification) — fixed or accepted-with-rationale
-- [ ] Audit Low #127 (duplicate daily missions) — fixed (needs schema v11→v12 bump) or accepted
+- [x] Audit Low #124 (billing signature verification) — fixed (PR #148, ADR-0005 amendment)
+- [x] Audit Low #127 (duplicate daily missions) — fixed (PR #152, schema v11→v12, `MIGRATION_11_12`, `(date, missionType)` unique index)
 - [ ] Audit Low #128 (30-Low tracker) — triaged; blockers fixed, rest logged
-- [ ] Bug #146 (enemy counter drifts negative mid/late run) — fixed. Two causes: untracked SCATTER
-  children + `onDeath` re-fire on corpses on the projectile path (the path #125 left uncovered);
-  cause #2 also double-credits per-kill cash + battle Steps. Display-correctness + minor economy
-  correctness, no schema; shares `EnemyEntity.takeDamage` with the #147 (#17) work — *severity:minor*.
-  **Sequence:** after #124. **Approach (decided):** derive `enemyCount` authoritatively from the live
-  `EnemyEntity` list (immune to both causes + any future bypass) **and** guard `takeDamage` with
-  `if (!isAlive) return 0.0` (also fixes the economy double-credit).
+- [x] Bug #146 (enemy counter drifts negative mid/late run) — fixed (PR #151): derived
+  `GameEngine.aliveEnemyCount()` from the live `EnemyEntity` list (immune to both causes — untracked
+  SCATTER children + `onDeath` re-fire on corpses — and any future bypass) plus the `EnemyEntity.takeDamage`
+  guard `if (!isAlive) return 0.0` (also fixes the per-kill cash + battle-Steps double-credit). No schema.
 - [ ] Clean fresh-install run; no known crashes
 
 ### E. Balance & progression feel
@@ -79,7 +76,7 @@ state — the checklist informs that call, it does not replace it.
 2. Recruit ≥12 testers; distribute the closed-track opt-in URL.
 3. Collect ≥14 days of closed-track feedback; triage issues filed against `JonWhiteFang/steps-of-babylon`.
 4. Apply for production access (Google review 1–3 days).
-5. Promote closed → production with a staged rollout; cut the production release tag after rollout reaches 100%. (Note: `v1.0.0` was never tagged — the versionName advanced to 1.0.1/1.0.2 to avoid a versionCode collision, and `v1.0.1`/`v1.0.2` tags already exist; the production tag will be whatever versionName ships at GA.)
+5. Promote closed → production with a staged rollout; cut the production release tag after rollout reaches 100%. (Note: `v1.0.0` was never tagged — the versionName advanced past 1.0.0 to avoid a versionCode collision, and several `v1.0.x` tags already exist — see CHANGELOG; the production tag will be whatever versionName ships at GA.)
 
 (Release mechanics — signing, CI release lane, "What's new" automation — are all live; see
 `docs/plans/plan-31-play-console.md` and `docs/plans/plan-32-ci.md`.)

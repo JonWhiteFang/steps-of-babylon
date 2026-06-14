@@ -4,6 +4,36 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Docs — full doc-drift sweep (post-v1.0.5) (2026-06-14)
+
+Multi-agent doc-drift audit (67 agents: ground-truth extraction → 11-lane fan-out across the live doc
+corpus + cross-doc-coherence + link-integrity lanes → per-finding adversarial verification →
+synthesis). 50 candidate findings → 47 verified → **31 confirmed drift fixes across 19 files** (3
+false positives correctly cleared — dangling paths inside frozen historical release-notes, left
+untouched per the archive rules). Docs-only — no source/build/test impact; **981 JVM tests
+unchanged**. Frozen artifacts (archive/, external-reviews/, prior RUN_LOG entries) untouched; ADR-0005
+got a permitted **status-only** amendment.
+
+Dominant themes corrected:
+- **Version/test-count lag** — README status + Build-&-Run comment, GDD header, master-plan Plan 31/32
+  status lines all still said v1.0.2 / vc 18 / 960 JVM → now v1.0.5 / vc 21 / 981.
+- **Shipped-but-still-pending statuses** — STATE.md #161 nav fix ("PR pending" → merged PR #167, shipped
+  v1.0.4) + onboarding #24 (branch refs → shipped v1.0.3); plan-FORWARD Gate-D items #124/#127/#146
+  ticked (shipped v1.0.2); plan-31 AAB-v3/v5/v6 framing → current CI-driven reality.
+- **`ResearchType` count** — it's **12, not 10**, and only `AUTO_UPGRADE_AI` is `isComingSoon` (ENEMY_INTEL
+  wired in V1X-15b): fixed across battle-formulas, play-store-listing, source-files, GDD Labs table
+  (added the 2 missing rows + corrected the ENEMY_INTEL row + annotated AUTO_UPGRADE_AI).
+- **Deleted `domain/model/Currency.kt`** — still documented as a live enum in structure.md + source-files.md
+  → corrected to the `PlayerWallet` fields + presentation-side `CurrencyType`.
+- **Cloud-save migration version** — master-plan + plan-V1X-roadmap said v11→v12; that slot was consumed
+  by #127, so cloud save targets **v12→v13** (live schema is already v12).
+- **Other:** lib-room destructive-migration claim (the downgrade fallback IS wired); lib-hilt example
+  `PlayerDao`→`PlayerProfileDao` + SQLCipher/migration wiring; structure.md instrumented-file count
+  (2→4) + missing `help/` + `ui/` packages; DAO provider count (12→13); database-schema reward
+  `CardDust`→`CardCopy`; plan-32 `track`→`tracks`; play-store-listing 24→22 Steps-purchasable upgrades +
+  visual-assets-done; plan-31-walkthrough contact email; release-notes-v1.0.2 git-tag-read wording; GDD
+  footer version ambiguity; CHANGELOG broken links (7 Plan R4 → archive path, 1 deleted issue-triage de-linked).
+
 ## [1.0.5] — 2026-06-14 (versionCode 21)
 
 ### Fixed — Battle HUD vertical offset + `release.yml` `track`→`tracks` deprecation (2026-06-14)
@@ -962,7 +992,7 @@ The #19 + #20 fix bundle (PR #52, commit `230309c`) is now confirmed working on 
 
 ### Plan V1X (v1.x Roadmap) authored (2026-05-26 early hours)
 
-New planning document `docs/plans/plan-V1X-roadmap.md` derived from the [2026-05-25 GitHub issue triage](docs/external-reviews/2026-05-25-issue-triage.md) of all 33 open issues. Captures the post-launch patch sequence as 29 sub-plans across 6 versioned releases (v1.0.1 polish → v1.0.2 audio → v1.1 testing-infra + simulation extraction → v1.2 cloud save + i18n) plus content/balance/docs ships and 9 strategic v2.x proposals. **Pure planning — no source / build / test impact.**
+New planning document `docs/plans/plan-V1X-roadmap.md` derived from the 2026-05-25 GitHub issue triage (source doc `docs/external-reviews/2026-05-25-issue-triage.md` removed in commit `12605b3` — recover from git history) of all 33 open issues. Captures the post-launch patch sequence as 29 sub-plans across 6 versioned releases (v1.0.1 polish → v1.0.2 audio → v1.1 testing-infra + simulation extraction → v1.2 cloud save + i18n) plus content/balance/docs ships and 9 strategic v2.x proposals. **Pure planning — no source / build / test impact.**
 
 **4 user decisions locked 2026-05-26:**
 
@@ -1020,7 +1050,7 @@ Fixed a bug where watching a reward ad for a free card pack would show the cards
 
 ### R4-08: Cards copy-based 7-level progression (2026-05-24)
 
-Wave 3 of [Plan R4](docs/plans/plan-R4-feedback-bundle.md). Replaces Card Dust with copy-based upgrades. Cards now upgrade by collecting copies (3 COMMON / 4 RARE / 5 EPIC per level). Max level raised from 5 to 7 (~30% stronger at cap). ADR-0010 records the decision.
+Wave 3 of [Plan R4](docs/archive/completed-plans-v1.0/plan-R4-feedback-bundle.md). Replaces Card Dust with copy-based upgrades. Cards now upgrade by collecting copies (3 COMMON / 4 RARE / 5 EPIC per level). Max level raised from 5 to 7 (~30% stronger at cap). ADR-0010 records the decision.
 
 **Schema:** Room v10 → v11. `card_inventory` table recreated with `copyCount` column, duplicate rows aggregated, unique index on `cardType`.
 
@@ -1038,7 +1068,7 @@ Wave 3 of [Plan R4](docs/plans/plan-R4-feedback-bundle.md). Replaces Card Dust w
 
 ### R4-07: Boss-drop Power Stones (2026-05-24)
 
-Third and final Wave 2 sub-plan of [Plan R4](docs/plans/plan-R4-feedback-bundle.md). Boss kills now award tier-scaled Power Stones (T1=1 PS, T2=2 PS, … T10=10 PS) with a 100 PS/day cap. Addresses the PS scarcity created by R4-06's expanded 3-path UW upgrade system. ADR-0009 records the decision.
+Third and final Wave 2 sub-plan of [Plan R4](docs/archive/completed-plans-v1.0/plan-R4-feedback-bundle.md). Boss kills now award tier-scaled Power Stones (T1=1 PS, T2=2 PS, … T10=10 PS) with a 100 PS/day cap. Addresses the PS scarcity created by R4-06's expanded 3-path UW upgrade system. ADR-0009 records the decision.
 
 **Schema:** `bossPsEarnedToday` column added to `daily_step_record` table (folded into existing v9→v10 migration).
 
@@ -1060,7 +1090,7 @@ Third and final Wave 2 sub-plan of [Plan R4](docs/plans/plan-R4-feedback-bundle.
 
 ### R4-06: UW auto-trigger + per-path upgrades (2026-05-24)
 
-Second Wave 2 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Redesigns Ultimate Weapons from a single-level upgrade with manual activation to a 3-path upgrade system (DAMAGE, SECONDARY, COOLDOWN) with automatic cooldown-based triggering. Source feedback: *"UWs should auto-trigger on cooldown and have per-path upgrades instead of a single level."* ADR-0008 records the decision.
+Second Wave 2 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/archive/completed-plans-v1.0/plan-R4-feedback-bundle.md). Redesigns Ultimate Weapons from a single-level upgrade with manual activation to a 3-path upgrade system (DAMAGE, SECONDARY, COOLDOWN) with automatic cooldown-based triggering. Source feedback: *"UWs should auto-trigger on cooldown and have per-path upgrades instead of a single level."* ADR-0008 records the decision.
 
 **Schema:** Room v9 → v10. `ultimate_weapon_state` table recreated via `MIGRATION_9_10` (recreate-table dance) — single `level` column replaced by `damageLevel`, `secondaryLevel`, `cooldownLevel`, `isUnlocked` columns.
 
@@ -1097,7 +1127,7 @@ Second Wave 2 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/p
 
 ### R4-03: Rapid Fire upgrade (2026-05-23)
 
-First Wave 2 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Adds a new `RAPID_FIRE` Workshop upgrade in the ATTACK category that fires a periodic attack-speed burst during a wave's SPAWNING phase. Source feedback: *"Add 'Rapid Fire', upgradable duration and speed, auto triggers at time interval (max upgrade should be constant)."* Locked decision (2026-05-22T20:27 BST): periodic-pulse engine pattern mirroring `RECOVERY_PACKAGES`.
+First Wave 2 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/archive/completed-plans-v1.0/plan-R4-feedback-bundle.md). Adds a new `RAPID_FIRE` Workshop upgrade in the ATTACK category that fires a periodic attack-speed burst during a wave's SPAWNING phase. Source feedback: *"Add 'Rapid Fire', upgradable duration and speed, auto triggers at time interval (max upgrade should be constant)."* Locked decision (2026-05-22T20:27 BST): periodic-pulse engine pattern mirroring `RECOVERY_PACKAGES`.
 
 **Spec:**
 
@@ -1196,7 +1226,7 @@ Amendment to R4-02 in response to user request: *"multishot and bounce shot shou
 
 ### R4-04: in-round upgrade button icon (2026-05-23)
 
-Third and final Wave 1 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Replaces the Unicode glyph `⬆` on the in-round upgrade button with the Material `Icons.Filled.Upgrade` vector icon for clearer affordance. Source feedback: "Make round upgrade button have a more obvious icon."
+Third and final Wave 1 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/archive/completed-plans-v1.0/plan-R4-feedback-bundle.md). Replaces the Unicode glyph `⬆` on the in-round upgrade button with the Material `Icons.Filled.Upgrade` vector icon for clearer affordance. Source feedback: "Make round upgrade button have a more obvious icon."
 
 **Files changed:**
 - `gradle/libs.versions.toml` — added `compose-material-icons-extended` library entry. The existing `compose-material-icons` covers `material-icons-core` (small built-in set, used for `ArrowBack`); the extended package supplies the full Material catalogue. R8 minification effectively tree-shakes unused icons in release builds, so the runtime cost in the shipped AAB is bounded.
@@ -1213,7 +1243,7 @@ Third and final Wave 1 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](doc
 
 ### R4-02: Multishot/Bounce 4-level scaling (2026-05-23)
 
-Second Wave 1 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Replaces the per-20-levels / per-15-levels grind formulas for `MULTISHOT` / `BOUNCE_SHOT` with flat 4-level upgrades that grant +1 target / +1 bounce per level. Source feedback: "Multishot and bounce shot shouldn't be multiple levels for no benefit, make 1 level give 1 bonus but make it an expensive upgrade."
+Second Wave 1 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/archive/completed-plans-v1.0/plan-R4-feedback-bundle.md). Replaces the per-20-levels / per-15-levels grind formulas for `MULTISHOT` / `BOUNCE_SHOT` with flat 4-level upgrades that grant +1 target / +1 bounce per level. Source feedback: "Multishot and bounce shot shouldn't be multiple levels for no benefit, make 1 level give 1 bonus but make it an expensive upgrade."
 
 **Spec change:**
 
@@ -1252,7 +1282,7 @@ Resulting cost curve to max each upgrade is exactly 4 purchases:
 
 ### R4-01: remove Step Overdrive (2026-05-23)
 
-First Wave 1 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/plans/plan-R4-feedback-bundle.md). Deletes the entire Step Overdrive feature — 4 enums, 4 standalone files, ~600 LOC, ~50 references across the battle stack — in response to user-soak feedback that the mechanic was "not fun and wastes steps for not a lot of benefit". R4-06 (Wave 2) will redesign the Ultimate Weapon system with auto-trigger + per-path upgrades; the visual feedback hooks Overdrive used (`overdriveColor` / `overdriveProgress`) are removed here and will be replaced as part of that redesign.
+First Wave 1 sub-plan of [Plan R4 (Internal Soak Feedback Bundle)](docs/archive/completed-plans-v1.0/plan-R4-feedback-bundle.md). Deletes the entire Step Overdrive feature — 4 enums, 4 standalone files, ~600 LOC, ~50 references across the battle stack — in response to user-soak feedback that the mechanic was "not fun and wastes steps for not a lot of benefit". R4-06 (Wave 2) will redesign the Ultimate Weapon system with auto-trigger + per-path upgrades; the visual feedback hooks Overdrive used (`overdriveColor` / `overdriveProgress`) are removed here and will be replaced as part of that redesign.
 
 **Files deleted:**
 - `domain/model/OverdriveType.kt` (4-entry enum: ASSAULT/FORTRESS/FORTUNE/SURGE)

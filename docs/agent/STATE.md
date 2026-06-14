@@ -7,8 +7,9 @@ One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) a
 release lane green 2026-06-14, signed AAB uploaded; supersedes v1.0.4/code20) · **981 JVM + 9
 instrumented tests** green · schema v12 · **shipped the two post-v1.0.4 fixes** (Battle HUD vertical
 offset + `release.yml` `track`→`tracks` — the deprecation annotation is now gone; PR #169 squash
-`85ce889`) · v1.0.4 shipped the four look-&-feel waves (#159/#160/#161, #161 fully closed) · launch is
-judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
+`85ce889`) · v1.0.4 shipped the four look-&-feel waves (#159/#160/#161, #161 fully closed) · **docs
+spine reconciled post-v1.0.5** (31-fix multi-agent drift sweep across 19 live docs, 2026-06-14;
+in `[Unreleased]`) · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
@@ -22,13 +23,24 @@ judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
   quick-clear of 8 audit Lows + the latent #35 crash (Gate B + D); **#124** billing signature verify;
   **#146** enemy-counter-drifts-negative; **#127** duplicate daily missions (schema v11→v12) — all
   Gate D; **#154** disable "buy more" at max consistently (Gate F UX polish); **#24** first-launch
-  onboarding (**Gate C ticked** — branch `feat/onboarding-gate-c`, no schema change) (see Recently
+  onboarding (**Gate C ticked** — shipped in v1.0.3, no schema change) (see Recently
   shipped). Still open in **Gate D**: **#128** (remaining ~21 Lows: perf/anti-cheat/security groups,
   deferred to v1.1 per the audit grouping). Remaining bigger gate items (now the live work): **#29**
   decision-support (Gate F), **#26** perf/battery (Gate G, device-measured).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-14 — full doc-drift sweep (post-v1.0.5; docs-only, in `[Unreleased]`).** Multi-agent audit
+  (67 agents: ground-truth extraction → 11-lane fan-out + cross-doc-coherence + link-integrity lanes →
+  per-finding adversarial verification → synthesis). 50 candidates → 47 verified → **31 confirmed fixes
+  across 19 live docs**; 3 false positives cleared (dangling paths inside frozen release-notes — left
+  untouched). Themes: version/test-count lag (v1.0.2/vc18/960 → v1.0.5/vc21/981 in README/GDD/master-plan);
+  shipped-but-pending statuses (#161→PR #167/v1.0.4, #24→v1.0.3, Gate-D #124/#127/#146→v1.0.2 ticked in
+  plan-FORWARD); `ResearchType` is **12 not 10** + only AUTO_UPGRADE_AI coming-soon (ENEMY_INTEL wired
+  V1X-15b); deleted `Currency.kt` purged from structure/source-files; cloud-save migration v11→v12 → **v12→v13**
+  (v11→v12 consumed by #127); lib-room destructive-fallback claim, lib-hilt example DAO names, instrumented
+  file count 2→4, DAO providers 12→13, `track`→`tracks`, CardDust→CardCopy, CHANGELOG broken links (8).
+  ADR-0005 got a permitted status-only amendment (StubBillingManager deleted). **981 JVM unchanged.**
 - **2026-06-14 — v1.0.5 (versionCode 21) released to Play internal track** (tag `v1.0.5` on `92a66f8`,
   via release PR #170). Shipped the two post-v1.0.4 fixes from PR #169: the **Battle HUD vertical-offset**
   fix (player-visible) + the **`release.yml` `track`→`tracks`** deprecation rename. Release collateral
@@ -60,8 +72,8 @@ judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
   both green on #168; release lane green (signed AAB uploaded, `jarsigner -verify` + #124 license-key
   step passed; GitHub Release with AAB asset). Approved warm player-facing "What's new" (426 chars).
   Two follow-ups + one spot-check it surfaced were all closed the same day (see the #169 entry above).
-- **2026-06-13 — Look-&-feel Bundle B PR-B2: bottom-nav restore-wrong-screen bug fix (#161)** (branch
-  `fix/bundle-b-nav-restore`, PR pending; **not yet merged**). Second of the two Bundle-B PRs (PR-B1
+- **2026-06-13 — Look-&-feel Bundle B PR-B2: bottom-nav restore-wrong-screen bug fix (#161)** (PR #167,
+  merged 2026-06-13 — merge commit `b4f2a2b`; shipped in v1.0.4). Second of the two Bundle-B PRs (PR-B1
   merged via #166). Done under `systematic-debugging` — **reproduced on-device before any fix**. The
   device repro *corrected the reported symptom*: the original "Cards → tap Home → Cards" path did NOT
   reproduce; the bug actually surfaces on returning to the **owning** tab
@@ -122,8 +134,8 @@ judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
   **palette-aligned** currency colours; fixed verified bugs (Cards double-Gems header, Stats legend label
   + `toArgb`, biome-title capitalization, Store "1 Gems" plural, thousands separators). 12 files changed
   + 4 new — zero engine/economy/concurrency touched. ADR-0022. (Bundle A above continues this work.)
-- **2026-06-12 — #24 first-launch onboarding (Gate C)** (branch `feat/onboarding-gate-c`, not yet
-  merged). Gate-C slice of V1X-22: one-time 4-slide tutorial carousel (walk→spend→battle) + permission
+- **2026-06-12 — #24 first-launch onboarding (Gate C)** (PR #157, merged 2026-06-12; released in
+  v1.0.3). Gate-C slice of V1X-22: one-time 4-slide tutorial carousel (walk→spend→battle) + permission
   primer + Settings "Replay tutorial". New `data/onboarding/OnboardingPreferences` (device-local
   SharedPreferences flag — **no Room schema change**), `presentation/onboarding/*`. `MainActivity` chooses
   start destination from a synchronous flag read via pure `Screen.startDestination()`; only the
@@ -194,7 +206,7 @@ judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 - **Gameplay:** Plans 01–30 + 10b + R + R2 + R3 + R4 complete. Full battle loop, Workshop/Labs/Cards/UWs,
   tier progression, biomes, walking encounters, anti-cheat, milestones/missions, stats/history.
-- **First-launch onboarding (#24, Gate C — on `feat/onboarding-gate-c`):** 4-slide tutorial carousel +
+- **First-launch onboarding (#24, Gate C — shipped in v1.0.3):** 4-slide tutorial carousel +
   contextual permission primer + Settings replay; explain-only (no Steps grant).
 - **Battle engine:** simulation extracted to pure-domain `domain/battle/` (V1X-09 Phases 1–3 complete,
   ADR-0012) — `GameEngine` is a thin render shell delegating to `Simulation`.

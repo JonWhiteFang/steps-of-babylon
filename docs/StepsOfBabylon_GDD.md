@@ -5,7 +5,7 @@
 An idle tower defense game where your real-world steps raise an ancient ziggurat.
 
 **Platform:** Android | **Experience:** Solo | **Battles:** Real-Time
-**Game Version:** 1.0.2 (versionCode 18) | **GDD last reconciled with code:** 2026-06-11
+**Game Version:** 1.0.5 (versionCode 21) | **GDD last reconciled with code:** 2026-06-14
 
 ---
 
@@ -253,11 +253,13 @@ Long-term research system using Steps to initiate and real time to complete. Pla
 | Cash Research | +5% cash earned multiplier | 1,500 Steps | 3 hours | 20 |
 | Step Efficiency | +2% bonus steps from walking | 5,000 Steps | 8 hours | 10 |
 | Wave Skip | Start rounds at Wave X instead of Wave 1 | 10,000 Steps | 24 hours | 10 |
-| Auto-Upgrade AI | Auto-spends Cash on optimal upgrades during rounds | 8,000 Steps | 12 hours | 5 |
+| Auto-Upgrade AI | *Coming soon (v1.x) — not yet implemented; research disabled in the Labs UI (`isComingSoon=true`).* Planned: auto-spends Cash on optimal upgrades during rounds | 8,000 Steps | 12 hours | 5 |
 | UW Cooldown | -3% Ultimate Weapon cooldown | 4,000 Steps | 6 hours | 15 |
 | Critical Research | +3% critical damage multiplier | 3,000 Steps | 5 hours | 15 |
 | Regen Research | +4% health regen multiplier | 2,500 Steps | 4.5 hours | 15 |
-| Enemy Intel | Show enemy health bars and incoming wave preview | 3,000 Steps | 6 hours | 3 |
+| Enemy Intel | +2% damage per level; reveals next wave at L1, enemy HP at L5, boss timing at L10 (wired V1X-15b) | 8,000 Steps | 4 hours | 10 |
+| Multishot Research | +1 multishot target per level | 5,000 Steps | 6 hours | 10 |
+| Bounce Research | +1 projectile bounce per level | 8,000 Steps | 6 hours | 10 |
 
 ---
 
@@ -488,4 +490,4 @@ Three random daily missions refresh at midnight:
 
 ---
 
-*End of Design Document — Steps of Babylon v1.1*
+*End of Design Document — GDD revision v1.1 (game build 1.0.5; see the header for the authoritative game version)*

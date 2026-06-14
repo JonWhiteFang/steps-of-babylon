@@ -45,8 +45,10 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── settings/       # SettingsScreen, SettingsViewModel
 │   ├── stats/          # StatsScreen, StatsViewModel, WalkingHistoryChart
 │   ├── store/          # StoreScreen, StoreViewModel
+│   ├── help/           # HelpScreen
 │   ├── audio/          # SoundManager (SoundPool wrapper, 7 effects, volume/mute)
-│   └── ui/theme/       # Compose theme, colors (Material3)
+│   ├── ui/             # shared composables: SobTopAppBar, LoadingBox, EmptyState, EnumDisplayName, CurrencyDisplay
+│   │   └── theme/      # Compose theme, colors (Material3)
 ├── di/                 # Hilt modules (DatabaseModule, RepositoryModule, StepModule, HealthConnectModule, BillingModule, AdModule, TimeModule, CoroutineScopeModule)
 └── service/            # Foreground step-counting service, WorkManager workers, boot receiver
 
@@ -86,7 +88,7 @@ app/src/test/java/com/whitefang/stepsofbabylon/
 └── service/            # StepWidgetProvider tests
 ```
 
-The instrumented (`androidTest`) source set lives at `app/src/androidTest/java/com/whitefang/stepsofbabylon/` and was stood up in V1X-08 Phase 1A. Two files: `HiltTestRunner.kt` and `InfrastructureSmokeTest.kt`. Run with `./run-gradle.sh connectedDebugAndroidTest` against a connected emulator (API 34+).
+The instrumented (`androidTest`) source set lives at `app/src/androidTest/java/com/whitefang/stepsofbabylon/` and was stood up in V1X-08 Phase 1A. Four files: `HiltTestRunner.kt`, `InfrastructureSmokeTest.kt`, `BattleSurfaceLifecycleTest.kt`, and `DeepLinkIntentTest.kt` (9 `@Test` total; the two real regression suites were layered in on 2026-05-29). Run with `./run-gradle.sh connectedDebugAndroidTest` against a connected emulator (API 34+).
 
 ## Layer Rules
 
@@ -113,8 +115,7 @@ The instrumented (`androidTest`) source set lives at `app/src/androidTest/java/c
 
 All in `domain/model/`:
 
-- `Currency` — enum: STEPS, CASH, GEMS, POWER_STONES
-- `PlayerWallet` — holds currency balances
+- `PlayerWallet` — holds currency balances (the four currencies: Steps, Cash, Gems, Power Stones). The presentation-layer `CurrencyType` enum lives in `presentation/ui/CurrencyDisplay.kt`; the old domain `Currency` enum was deleted as dead in PR #165.
 - `PlayerProfile` — full player profile (maps from `PlayerProfileEntity`)
 - `Tier`, `TierConfig` — difficulty tier definitions
 - `UpgradeType`, `UpgradeCategory`, `UpgradeConfig` — Workshop upgrade system

@@ -259,7 +259,7 @@ keystore signs uploads.
 | Tablet screenshots | Optional; skip unless you have them |
 | Category | Games → Strategy |
 | Tags | "Casual", "Strategy", "Tower defense" |
-| Contact email | Update `play-store-listing.md` if `support@whitefanggames.com` is a placeholder |
+| Contact email | `jonwhitefang@gmail.com` (per `play-store-listing.md`) |
 | Privacy policy URL | From Phase B |
 
 ### E3. Content rating

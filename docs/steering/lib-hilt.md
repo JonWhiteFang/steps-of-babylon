@@ -19,12 +19,15 @@
 object DatabaseModule {
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
+    fun provideDatabase(@ApplicationContext context: Context, keyManager: DatabaseKeyManager): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "steps_of_babylon.db")
+            .openHelperFactory(SupportOpenHelperFactory(keyManager.getPassphrase()))  // SQLCipher
+            .addMigrations(*AppMigrations.ALL)
+            .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)  // dev/QA only
             .build()
 
     @Provides
-    fun providePlayerDao(db: AppDatabase): PlayerDao = db.playerDao()
+    fun providePlayerProfileDao(db: AppDatabase): PlayerProfileDao = db.playerProfileDao()
 }
 
 // Binding interface to implementation

@@ -6,7 +6,7 @@ All paths relative to `app/src/main/java/com/whitefang/stepsofbabylon/`.
 
 ```
 StepsOfBabylonApp.kt              # @HiltAndroidApp, Configuration.Provider (HiltWorkerFactory)
-di/DatabaseModule.kt               # Hilt: Room DB (SQLCipher) + 12 DAO providers
+di/DatabaseModule.kt               # Hilt: Room DB (SQLCipher) + 13 DAO providers
 di/RepositoryModule.kt             # Hilt: 8 repository interface → impl bindings (@Singleton)
 di/StepModule.kt                   # Hilt: SensorManager provider
 di/HealthConnectModule.kt          # Hilt: Health Connect organizational module
@@ -139,8 +139,7 @@ domain/battle/engine/SimulationEvent.kt # V1X-09 Phase 3 final slice (ADR-0012).
 ## Domain Layer — Models
 
 ```
-domain/model/Currency.kt              # Enum: STEPS, CASH, GEMS, POWER_STONES
-domain/model/PlayerWallet.kt          # Currency balances data class
+domain/model/PlayerWallet.kt          # Currency balances data class (Steps, Cash, Gems, Power Stones). Presentation-layer CurrencyType enum lives in presentation/ui/CurrencyDisplay.kt; the old domain Currency enum was deleted as dead (PR #165).
 domain/model/PlayerProfile.kt         # Full profile (maps from PlayerProfileEntity)
 domain/model/ActiveResearch.kt        # In-progress lab research
 domain/model/OwnedCard.kt             # Player-owned card instance
@@ -153,8 +152,7 @@ domain/model/SupplyDropReward.kt         # 4 reward types (Steps, Gems, Power St
 domain/model/DropGeneratorState.kt       # Generator state tracking (lastCheckSteps, milestoneTriggered)
 domain/model/Milestone.kt               # 6 walking milestones with step thresholds and rewards
 domain/model/MilestoneReward.kt          # Sealed class: Gems, PowerStones, Cosmetic
-domain/model/DailyMissionType.kt         # 6 daily mission types (walking/battle/upgrade)
-domain/model/MissionCategory.kt          # Mission categories: WALKING, BATTLE, UPGRADE (in DailyMissionType.kt)
+domain/model/DailyMissionType.kt         # 6 daily mission types (walking/battle/upgrade); also declares the inline `enum class MissionCategory { WALKING, BATTLE, UPGRADE }`
 domain/model/BillingProduct.kt           # 5 billing products + PurchaseResult sealed class + public `skuId()` returning `name.lowercase()` (Plan 31 Phase F unblocker, refines ADR-0005 decision #6 to the lowercase wire format Play Console requires) + opt-in Companion for data-layer `BillingProduct.fromSkuIdOrNull(skuId)` reverse lookup (C.5 PR 1)
 domain/model/AdPlacement.kt              # 3 ad placements + AdResult sealed class
 domain/model/CosmeticCategory.kt         # 3 cosmetic categories (ziggurat, projectile, enemy)
@@ -323,6 +321,7 @@ presentation/onboarding/OnboardingScreen.kt            # First-launch tutorial c
 presentation/store/StoreViewModel.kt                   # @HiltViewModel: billing + cosmetic purchase actions; init calls billingManager.reconcilePendingPurchases() on Store entry (C.5 PR 2)
 presentation/store/StoreUiState.kt                     # UI state: gems, adRemoved, seasonPass, cosmetics, priceDisplays (Map<BillingProduct, String> populated from BillingManager.getPriceDisplay; missing keys signal UI fallback to BillingProduct.priceDisplay constant; Plan 31 PR B)
 presentation/store/StoreScreen.kt                      # Store screen: Gem packs, Ad Removal, Season Pass, Cosmetics
+presentation/help/HelpScreen.kt                        # Help / how-to-play screen (backs the Help nav route; registered in MainActivity's NavHost)
 ```
 
 ## Resources
@@ -433,7 +432,7 @@ domain/model/UltimateWeaponLoadoutTest.kt         # Max 3, no duplicates, add/re
 domain/model/UpgradeTypeTest.kt                   # 24 entries, category counts (9 attack / 9 defense / 6 utility), valid configs
 domain/model/EnemyTypeTest.kt                     # 6 entries, multiplier correctness
 domain/model/BattleConditionEffectsTest.kt        # All tier condition modifiers verified
-domain/model/ResearchTypeTest.kt                  # RO-11 #B.2 set-equality contract: only AUTO_UPGRADE_AI + ENEMY_INTEL are flagged `isComingSoon`. Catches both directions of regression — a deferred enum silently flipping back to wired (re-introduces the dead-enum gap), or a wired enum silently getting marked Coming Soon (regresses the UI to suppressed state).
+domain/model/ResearchTypeTest.kt                  # RO-11 #B.2 set-equality contract: only AUTO_UPGRADE_AI is flagged `isComingSoon` (ENEMY_INTEL was flipped to wired in V1X-15b). Catches both directions of regression — a deferred enum silently flipping back to wired (re-introduces the dead-enum gap), or a wired enum silently getting marked Coming Soon (regresses the UI to suppressed state).
 presentation/battle/engine/EnemyScalerTest.kt     # Wave scaling, speed, cash rewards
 presentation/battle/engine/WaveSpawnerTest.kt     # RO-11 #B.1 regression guard: `currentWave` reads from the constructor's `startWave` argument so BattleViewModel can map a WAVE_SKIP lab-research level to a higher initial wave (L10 → wave 11). The default `startWave = 1` path is implicitly covered by every existing GameEngineTest — a regression there would surface in unrelated tests. R3-02 updated `onMeleeHit` lambda type to the 2-arg `(EnemyEntity, Double) -> Unit` shape. v15-soak updated `onEnemyFireProjectile` to the 6-arg `(EnemyEntity, Float, Float, Float, Float, Double) -> Unit` shape for ranged thorn damage (#61). V1X-15b +3: `getWaveComposition` early non-boss deterministic, boss wave includes exactly one BOSS, `wavesUntilNextBoss` counts forward from currentWave.
 presentation/battle/engine/GameEngineConcurrencyTest.kt # #118: GameEngine.entities thread-safety — structural mutation/iteration behind entitiesLock; concurrent loop-thread + UI-thread access doesn't corrupt the list

@@ -141,7 +141,7 @@ V1X-07 (repo tests) lays the groundwork for V1X-08 (instrumented tests) by estab
 
 **Schema migrations:**
 
-- v11 → v12: V1X-12 cloud-save tracking columns (`cloudLastSyncedAt`, `cloudConflictCount` on `PlayerProfileEntity`)
+- v12 → v13: V1X-12 cloud-save tracking columns (`cloudLastSyncedAt`, `cloudConflictCount` on `PlayerProfileEntity`) — v11 → v12 was consumed by #127 (daily-missions dedup); target the live `AppDatabase.kt` version + 1 at implementation time
 
 Migration requires Room schema export commit (`app/schemas/`).
 
@@ -809,7 +809,7 @@ build), reinstall-re-shows-tutorial is the correct behaviour.
 - `cloudLastSyncedAt: Long = 0` — wall-clock ms of last successful sync
 - `cloudConflictCount: Int = 0` — diagnostic counter incremented on each conflict-resolution event
 
-Migration v11 → v12 adds these 2 columns.
+Migration v12 → v13 adds these 2 columns (v11 → v12 was consumed by #127; see the `MIGRATION_12_13` note under "Files affected").
 
 **Files affected:**
 

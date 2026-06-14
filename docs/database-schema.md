@@ -107,7 +107,7 @@ Unclaimed and historical supply drops.
 |---|---|---|
 | id | Int (PK, auto) | |
 | triggerType | String | What triggered the drop |
-| rewardType | String | Steps/Gems/PowerStones/CardDust |
+| rewardType | String | Steps/Gems/PowerStones/CardCopy (`SupplyDropReward.name`) |
 | rewardAmount | Int | |
 | claimed | Boolean | |
 | createdAt | Long | Epoch millis |

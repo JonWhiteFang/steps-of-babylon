@@ -92,7 +92,7 @@ Signed AAB → Play internal track (decision #3).
   ```
   AdMob production IDs written to `local.properties` from secrets (absent ⇒ build falls back to test IDs, so a misconfigured run never mints revenue — existing `build.gradle.kts` behaviour).
 - **Build + verify:** `./gradlew bundleRelease` → `jarsigner -verify` (mirrors the manual release check; the live `release.yml` step uses `-verify` without `-strict`).
-- **Upload:** `r0adkll/upload-google-play@<sha>` — `packageName: com.whitefang.stepsofbabylon`, `releaseFiles: app/build/outputs/bundle/release/app-release.aab`, `track: internal`, `status: completed`, plus `mappingFile` (R8) and `debugSymbols` (the `debugSymbolLevel = FULL` native symbols already produced).
+- **Upload:** `r0adkll/upload-google-play@<sha>` — `packageName: com.whitefang.stepsofbabylon`, `releaseFiles: app/build/outputs/bundle/release/app-release.aab`, `tracks: internal`, `status: completed`, plus `mappingFile` (R8) and `debugSymbols` (the `debugSymbolLevel = FULL` native symbols already produced).
 - **GitHub Release:** attach the AAB + mapping as a release artifact via `softprops/action-gh-release@<sha>`.
 - **versionCode discipline:** CI builds the **committed** `versionCode`; it does not auto-bump (Play rejects reused codes — see the v13 rejection). Bump + commit before tagging.
 - **Prerequisites (one-time, manual):** app shell created in Play Console; the **first** AAB uploaded manually (Play requires it); a Play service-account JSON with "Release to testing tracks" permission; `release` environment + secrets configured.
@@ -144,7 +144,7 @@ Touch only docs the change invalidates. **Do NOT edit `docs/archive/pre-claude-d
 
 - Land `ci.yml` first on a branch; confirm the gate runs green against the full JVM test suite (867 tests at authoring, 2026-06-03) before wiring required checks.
 - Land `instrumented.yml`; confirm a full emulator run green; cache warm on the second run.
-- Land `release.yml` last; dry-run via `workflow_dispatch` with `status: draft` (or a throwaway tag) before trusting `track: internal, status: completed`.
+- Land `release.yml` last; dry-run via `workflow_dispatch` with `status: draft` (or a throwaway tag) before trusting `tracks: internal, status: completed`.
 - Flip on branch protection once the first two lanes are proven.
 
 ---

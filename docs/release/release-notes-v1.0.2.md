@@ -15,7 +15,8 @@
 ## What's new — Play Console "What's new in this version" (≤500 chars)
 
 This is the message published to the Play internal track via the annotated tag (`release.yml`
-reads `git tag -a -m "…"` into `distribution/whatsnew/whatsnew-en-US`). Verbatim:
+reads the annotated-tag message via `git tag -l --format='%(contents)'` into
+`distribution/whatsnew/whatsnew-en-US`, capped at Play's 500-char limit). Verbatim:
 
 ```
 Stability & fairness update:

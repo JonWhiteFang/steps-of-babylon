@@ -1,7 +1,7 @@
 # ADR-0005: Real Google Play Billing Library integration
 
 **Date:** 2026-05-08 (Proposed), 2026-05-11 (Accepted via C.5 PR 1)
-**Status:** Accepted — concrete decisions landed in C.5 PR 1 (`BillingManagerImpl` + `billing_receipts` Room table + MIGRATION_8_9 + unit tests). Stub `@Binds` remains in place until C.5 PR 2 flips the flag-gated binding.
+**Status:** Accepted — concrete decisions landed in C.5 PR 1 (`BillingManagerImpl` + `billing_receipts` Room table + MIGRATION_8_9 + unit tests). **Fully rolled out:** C.5 PR 2 flipped the flag-gated `@Binds` (`BuildConfig.USE_REAL_BILLING`), and C.5 PR 3 (commit `79fb381`) deleted `StubBillingManager` and removed the now-dead flag — `BillingModule` binds `BillingManagerImpl` directly for both debug and release. The `FakeBillingManager` test fake is retained on the test classpath as designed. (Signature verification added later in #148 — see the ADR-0005-amendment note in CLAUDE.md / STATE.md.)
 
 ## Context
 

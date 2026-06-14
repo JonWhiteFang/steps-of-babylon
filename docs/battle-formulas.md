@@ -344,9 +344,10 @@ Enemy scaling at the higher wave is automatic via `EnemyScaler` — a player at 
 
 ## Lab Research — Coming Soon
 
-Two of the ten `ResearchType` enums are explicitly v1.x-deferred via `isComingSoon = true` (RO-11 #B.2):
+One of the twelve `ResearchType` enums is explicitly v1.x-deferred via `isComingSoon = true` (RO-11 #B.2 / V1X-15b):
 
 - `AUTO_UPGRADE_AI` — reserved for v1.x, research progress preserved
-- `ENEMY_INTEL` — reserved for v1.x, research progress preserved
 
-The Labs UI renders a "COMING SOON" badge and suppresses Start / Rush controls for these rows; `LabsViewModel.startResearch` has a defensive guard that early-returns + emits a snackbar if a Coming Soon type ever reaches the VM via a future entry point.
+(`ENEMY_INTEL` was wired in V1X-15b — ADR-0017 — and is no longer Coming Soon: +2%/level damage plus L1/L5/L10 information overlays.)
+
+The Labs UI renders a "COMING SOON" badge and suppresses Start / Rush controls for this row; `LabsViewModel.startResearch` has a defensive guard that early-returns + emits a snackbar if a Coming Soon type ever reaches the VM via a future entry point.
