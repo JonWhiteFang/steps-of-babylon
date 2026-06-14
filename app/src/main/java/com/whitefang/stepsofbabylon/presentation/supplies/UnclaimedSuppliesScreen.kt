@@ -20,7 +20,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -28,6 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.domain.model.CardType
+import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebration
+import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.domain.model.SupplyDrop
 import com.whitefang.stepsofbabylon.domain.model.SupplyDropReward
@@ -40,28 +46,34 @@ fun UnclaimedSuppliesScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     if (state.isLoading) { LoadingBox(); return }
+    var celebration by remember { mutableStateOf<ClaimCelebrationEvent?>(null) }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        if (state.drops.isNotEmpty()) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-                Button(onClick = viewModel::claimAll, colors = ButtonDefaults.buttonColors(containerColor = Gold)) {
-                    Text("Claim All")
+    LaunchedEffect(Unit) { viewModel.celebration.collect { celebration = it } }
+
+    Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().padding(16.dp)) {
+            if (state.drops.isNotEmpty()) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                    Button(onClick = viewModel::claimAll, colors = ButtonDefaults.buttonColors(containerColor = Gold)) {
+                        Text("Claim All")
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
+            if (state.drops.isEmpty() && !state.isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No supply drops yet — keep walking!", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(state.drops, key = { it.id }) { drop ->
+                        SupplyDropCard(drop = drop, onClaim = { viewModel.claimDrop(drop) })
+                    }
                 }
             }
-            Spacer(Modifier.height(12.dp))
         }
-
-        if (state.drops.isEmpty() && !state.isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No supply drops yet — keep walking!", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(state.drops, key = { it.id }) { drop ->
-                    SupplyDropCard(drop = drop, onClaim = { viewModel.claimDrop(drop) })
-                }
-            }
-        }
+        ClaimCelebration(celebration) { celebration = null }
     }
 }
 
