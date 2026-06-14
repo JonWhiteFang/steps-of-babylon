@@ -1,3 +1,27 @@
+## 2026-06-14 — Spot-check: navigate-away loading no-reflash (#160) — verified PASS on emulator (docs-only)
+
+- **Goal:** Close the last pending #160-era manual spot-check — confirm the Bundle A loading spinners
+  don't *reflash* when navigating away from a menu tab and back (the #161 PR-B2 bottom-nav fix recreates
+  a tab's ViewModel on re-entry, whose `uiState` starts at `isLoading = true`, so a reflash was plausible).
+- **Method (a flash can be sub-frame → screenshots alone insufficient):** `adb screenrecord` while
+  cycling Home→Workshop→Labs→Stats→**Workshop (re-entry)**→**Home (re-entry)** on the emulator
+  (1080×2400 @ 420dpi). Extracted frames with a static ffmpeg (imageio-ffmpeg in a venv) and computed a
+  per-frame "near-empty" metric (fraction of DeepBronze #6B3A2A pixels + colour complexity in the content
+  region) to flag spinner frames objectively, then visually confirmed via a contact-sheet montage.
+- **Result:** the full-screen `LoadingBox` spinner signature (≈100% bronze, <60 distinct colours) appears
+  **only on first cold entry** to each tab (Workshop/Labs/Stats), for ~0.5s while that ViewModel's Room
+  flow makes its first emission — the intended behaviour. **Re-entry shows NO spinner**, even sampled at
+  **30fps (33ms)**: content slides straight to content within the 200ms nav animation (warm Room WAL pool
+  returns the cached query before `isLoading=true` can paint). Montage visually confirmed: re-entry frames
+  are all populated; the isolated gold arc only appears in the first-entry contrast row.
+- **Decision:** no code change. The current behaviour is correct (and better than force-suppressing the
+  spinner on re-entry, which would risk a blank frame if a query were ever slow). #160 spot-checks fully
+  cleared.
+- **Doc sync:** STATE priorities (both #160 spot-checks marked cleared). No CHANGELOG/CLAUDE.md/ADR (a
+  verification result, not a code change). Docs-only → committed straight to `main`.
+- **Remains / next:** look-&-feel bundles #162/#163/#164. The two `[Unreleased]` fixes (Battle HUD,
+  `release.yml`) ride the next `v*` tag.
+
 ## 2026-06-14 — Post-v1.0.4 follow-ups: Battle HUD offset + `release.yml` `track`→`tracks` (branch `fix/battle-hud-offset-and-release-track`)
 
 - **Goal:** Fix the two follow-ups logged from the v1.0.4 release audit, with an emulator connected.
