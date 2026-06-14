@@ -13,6 +13,17 @@ in `[Unreleased]`) · launch is judgment-gated on the Closed-Test Readiness Gate
 
 ## Current objective
 
+- **Look-&-feel Bundle C (#162 feedback/feel) — spec + plan complete and adversarially reviewed; ready to
+  implement.** Spec `docs/superpowers/specs/2026-06-14-look-and-feel-bundle-c-design.md` and plan
+  `docs/superpowers/plans/2026-06-14-look-and-feel-bundle-c.md` both passed the **Adversarial Review Gate**
+  (spec: 29 findings/25 surviving → applied; plan: 36 findings/29 surviving, incl. 1 CRITICAL test-hang →
+  applied). Next action: execute the 12-task plan via subagent-driven-development. Scope: haptics
+  (`HapticsPreferences` + `Haptics` + Settings toggle), shared 1.12× `PurchasePulse`, Post-Round entrance +
+  staggered reward sting, one-shot claim celebrations. Presentation-only; no engine/economy/domain change.
+- **NEW standing protocol — Adversarial Review Gate** (CLAUDE.md → Agent protocol): every design spec and
+  implementation plan passes a code-grounded multi-dimension review → adversarial refute → confirmed-only
+  synthesis Workflow **before** the next stage. Default-on under ultracode; if ultracode is off, flag the
+  artifact as unreviewed and ask (don't silently skip).
 - **Launch is judgment-gated, not clock-gated** (reframed in PR #145; `plan-FORWARD.md`). v1.0 is live
   on the Play Console **internal** track; we are deliberately staying in internal testing until the
   developer judges the game good enough to promote to **closed** test, made concrete by the Closed-Test
@@ -30,6 +41,15 @@ in `[Unreleased]`) · launch is judgment-gated on the Closed-Test Readiness Gate
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-14 — Bundle C (#162) spec + plan + the Adversarial Review Gate protocol (docs-only, uncommitted to a PR yet).**
+  Brainstormed Bundle C (feedback/feel) → spec (`95234a9`) → **spec adversarial review** (29 findings,
+  25 surviving, 4 refuted; fixes `67cdbe1`) → 12-task TDD plan (`2fb26c8`) → **plan adversarial review**
+  (36 findings, 29 surviving incl. 1 CRITICAL — bare `runTest{}` would hang on the Missions VM `while(true)`
+  ticker; fixes `d068ce1`). Plan-review fixes: extracted pure `missionRewardLabel`/`supplyLabel` fns
+  (testable without the VM), `@VisibleForTesting cancelForTest()` to stop the ticker, Success-arm-only
+  milestone edit (preserve smart-quote escapes), explicit `remember`-import delete-list. **Codified the
+  review process** into CLAUDE.md + START_HERE as the standing **Adversarial Review Gate** (`ce70351`),
+  with the ultracode-off fallback (flag + ask). No production code yet — implementation is the next session.
 - **2026-06-14 — full doc-drift sweep (post-v1.0.5; docs-only, in `[Unreleased]`).** Multi-agent audit
   (67 agents: ground-truth extraction → 11-lane fan-out + cross-doc-coherence + link-integrity lanes →
   per-finding adversarial verification → synthesis). 50 candidates → 47 verified → **31 confirmed fixes
@@ -243,7 +263,7 @@ in `[Unreleased]`) · launch is judgment-gated on the Closed-Test Readiness Gate
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Look-&-feel follow-ups (Gate C/F UX):** **Bundles #159/#160/#161 all merged AND released in v1.0.4** (PR #168, tag `v1.0.4`); **#161 fully closed** (both Bundle-B PRs shipped). Remaining bundles, each needing its own spec → plan → PR: **#162** haptics + reward/claim animation, **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. (Battle HUD offset fixed 2026-06-14 — see `[Unreleased]`.) **Both #160-era spot-checks now cleared on-device** (navigate-away loading no-reflash **verified PASS** 2026-06-14 via 30fps screen-recording — spinner shows only on first cold tab entry, never on re-entry).
+1. **Look-&-feel follow-ups (Gate C/F UX):** **Bundles #159/#160/#161 all merged AND released in v1.0.4** (PR #168, tag `v1.0.4`); **#161 fully closed** (both Bundle-B PRs shipped). **#162 (Bundle C, feedback/feel) is spec'd + planned + adversarially-reviewed — IMPLEMENTATION IS THE NEXT ACTION** (execute the 12-task plan via subagent-driven-development; see Current objective). Remaining bundles after C, each needing its own spec → plan → PR: **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. (Battle HUD offset fixed 2026-06-14 — see `[Unreleased]`.) **Both #160-era spot-checks now cleared on-device** (navigate-away loading no-reflash **verified PASS** 2026-06-14 via 30fps screen-recording — spinner shows only on first cold tab entry, never on re-entry).
 2. **Bigger gate items:** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured).
 3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 4. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
@@ -303,7 +323,8 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 
 ## References
 
-- **Memory loop:** `CLAUDE.md` (canonical guide) · `docs/agent/START_HERE.md` (contract) · `docs/agent/CONSTRAINTS.md` · SessionStart hook + `/checkpoint` skill.
+- **Memory loop:** `CLAUDE.md` (canonical guide; now incl. the **Adversarial Review Gate** for specs/plans) · `docs/agent/START_HERE.md` (contract) · `docs/agent/CONSTRAINTS.md` · SessionStart hook + `/checkpoint` skill.
+- **Bundle C (#162) in-flight:** spec `docs/superpowers/specs/2026-06-14-look-and-feel-bundle-c-design.md` · plan `docs/superpowers/plans/2026-06-14-look-and-feel-bundle-c.md` (both review-passed; implementation pending).
 - **Plans:** `docs/plans/plan-FORWARD.md` (forward plan + Closed-Test Readiness Gate — start here) · `docs/plans/master-plan.md` (v1.0 completion record) · `docs/plans/plan-V1X-roadmap.md` (backlog of record). Completed v1.0 plan files archived under `docs/archive/completed-plans-v1.0/`.
 - **Reference docs:** `docs/steering/` (tech, structure, source-files, lib-*) · `docs/architecture.md` · `docs/database-schema.md` · `docs/battle-formulas.md`.
 - **Audit:** `docs/external-reviews/2026-06-10-multi-agent-code-audit.md` (findings #118–#128 + regression specs).

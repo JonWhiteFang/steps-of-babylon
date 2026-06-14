@@ -1,3 +1,53 @@
+## 2026-06-14 — Bundle C (#162) spec + plan + Adversarial Review Gate protocol (docs-only)
+
+- **Goal:** "do phase C" → Bundle C of the 2026-06-12 look-&-feel review (#162, *feedback/feel*): a
+  haptics utility wired to purchase/equip/claim/battle-start/pause, a bigger shared purchase pulse, a
+  Post-Round entrance + reward sting, and one-shot claim celebrations. Then (user request) codify the
+  "adversarially review every spec & plan" practice into CLAUDE.md. **No production code this session** —
+  spec + plan + protocol only; implementation is the next session.
+- **Method (brainstorm → spec → review → plan → review, the now-codified gate):**
+  - **Ground truth first:** a 5-lane parallel Explore workflow mapped every Bundle-C surface (zero
+    haptics today; `ReducedMotionCheck`; `SoundPreferences` prefs pattern; `UpgradeCard` 1.05× pulse;
+    `PostRoundOverlay` has no animation, hosted at `BattleScreen.kt:226`; claim flows in Missions/Supplies
+    VMs discard their `Result`s; the Missions VM `init` `while(true)` ticker).
+  - **4 scope decisions taken to the user** (AskUserQuestion): Settings haptics toggle (vs system-only),
+    entrance+staggered sting (vs simple), shared-pulse-on-all-buttons (vs Workshop-only), haptic+animation
+    claim (vs haptic-only) — all chose the fuller option.
+  - **Spec** (`docs/superpowers/specs/2026-06-14-look-and-feel-bundle-c-design.md`, `95234a9`) →
+    **spec adversarial review** (6-dimension code-grounded fan-out → per-finding refute → confirmed-only;
+    **29 findings, 25 surviving, 4 refuted**) → fixes `67cdbe1`. Surviving fixes: defined the undefined
+    `ClaimCelebrationEvent`; corrected the false "all pulsed controls are enablement-guarded" claim (3
+    real-money Store buttons aren't); `claimAll` gated on ≥1 Success; Play-Again haptic added; stagger over
+    the *present* reward subset; label built from VM state (Success is payload-less); MusicPreferences
+    package + REJECT/no-op-haptic notes.
+  - **Plan** (`docs/superpowers/plans/2026-06-14-look-and-feel-bundle-c.md`, 12 tasks, TDD, `2fb26c8`) →
+    **plan adversarial review** (**36 findings, 29 surviving, 7 refuted**, incl. **1 CRITICAL**) → fixes
+    `d068ce1`.
+- **The critical (caught before any code):** Task 8's Missions VM test. Verified against
+  kotlinx-coroutines-test internals — bare `runTest{}` adopts the Main `UnconfinedTestDispatcher`, and its
+  end-of-test `advanceUntilIdleOr{false}` spins **forever** on the VM's `while(true){delay(1000)}` ticker →
+  the test *hangs*; the `viewModelScope` cancel was load-bearing (not optional cleanup) and was missing its
+  import. **Fix:** extracted pure `missionRewardLabel`/`supplyLabel` top-level `internal` fns tested
+  directly (label content, no VM/dispatcher) + a `@VisibleForTesting cancelForTest()` on the VM the test
+  calls to stop the ticker; VM tests assert emission *count* only. Also: edit only the milestone `Success`
+  arm (preserve `“”` escapes), explicit `remember`-import delete-list (lint=error), `SUPER_WALKER`→
+  `GLOBE_TROTTER` comment. **7 refuted** (the `@Composable` lambda-list, dispatcher/conflated-channel
+  mechanics, economy atomicity #122/ADR-0020, and Post-Round HUD-only safety were all positively verified).
+- **Protocol codified** (`ce70351`): new **Adversarial Review Gate** subsection in `CLAUDE.md` → Agent
+  protocol (+ pointer in `START_HERE.md`). Standing default: every spec and every plan passes a
+  code-grounded multi-dimension review → adversarial refute → confirmed-only synthesis Workflow before the
+  next stage; severity-scale the fan-out; never advance with unaddressed critical/major. **Ultracode-off
+  fallback:** flag the artifact as unreviewed and ask (turn ultracode on / lighter inline review / proceed)
+  — never silently skip.
+- **Verification:** docs-only; no build/test run (no production code touched). The plan's own gradle
+  commands + the ticker-hang analysis are the forward verification plan. Working tree clean; 5 commits
+  (`95234a9`/`67cdbe1`/`2fb26c8`/`d068ce1` Bundle C; `ce70351` protocol).
+- **Doc-sync:** `CLAUDE.md` + `START_HERE.md` (the gate); `STATE.md` (current objective rotated to Bundle C
+  impl + the new protocol; recently-shipped + priority-1 + references updated). No test-count/schema/
+  source-file/structure drift (no code). **No ADR** — codifying an existing practice into the protocol is
+  not a new architectural decision; the gate doc records its own rationale.
+- **Next:** execute the 12-task Bundle C plan via subagent-driven-development (Task 1 = `HapticsPreferences`).
+
 ## 2026-06-14 — full doc-drift sweep (post-v1.0.5; docs-only, in `[Unreleased]`)
 
 - **Goal:** "full ultracode doc sweep" — find and fix every stale/contradictory claim across the doc
