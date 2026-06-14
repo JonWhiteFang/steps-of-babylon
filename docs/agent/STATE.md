@@ -3,12 +3,11 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.4 (versionCode 20) live on Play internal track** (tag `v1.0.4` on `1972f1a`;
-release lane green 2026-06-14, signed AAB uploaded; supersedes v1.0.3/code19) · **981 JVM + 9
-instrumented tests** green · schema v12 · **four look-&-feel waves shipped in v1.0.4** (#159 squash
-`2dc9a08`; **#160 Bundle A** squash `491815b`, PR #165; **#161 Bundle B PR-B1** PR #166; **#161 Bundle B
-PR-B2** nav-restore fix, PR #167 squash `b4f2a2b`) · **#161 fully closed** · launch is judgment-gated on
-the Closed-Test Readiness Gate (`plan-FORWARD.md`).
+**Headline:** **v1.0.5 (versionCode 21) releasing to Play internal track** (tag `v1.0.5`; supersedes
+v1.0.4/code20) · **981 JVM + 9 instrumented tests** green · schema v12 · **ships the two post-v1.0.4
+fixes** (Battle HUD vertical offset + `release.yml` `track`→`tracks`, PR #169 squash `85ce889`) · v1.0.4
+shipped the four look-&-feel waves (#159/#160/#161, #161 fully closed) · launch is judgment-gated on the
+Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
@@ -213,7 +212,7 @@ the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 - **Phase B debt:** B.4 FollowOnPipeline + B.5 UpdateMissionProgress extraction (ADR-0004, ~1 week, zero user benefit — deferred).
 - `BuildConfig.USE_REAL_ADS` consent-prefetch branch is JVM-untested (device-verified). Play "no debug symbols"
   warning persists on every upload (pre-stripped .so files — informational).
-- _(Resolved 2026-06-14, post-v1.0.4 — pending in `[Unreleased]`, will ship in the next release.)_
+- _(Resolved 2026-06-14, post-v1.0.4 — shipping in v1.0.5/code21.)_
   **`release.yml` `track`→`tracks`** deprecation rename (verified non-breaking at the pinned action SHA);
   **Battle HUD vertical offset** — the stale `top = 80.dp` HUD pad double-counted the removed status-bar +
   ActionBar chrome (`MainActivity` is edge-to-edge + Scaffold supplies the inset); fixed to `40.dp` /

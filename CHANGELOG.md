@@ -4,6 +4,8 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+## [1.0.5] — 2026-06-14 (versionCode 21)
+
 ### Fixed — Battle HUD vertical offset + `release.yml` `track`→`tracks` deprecation (2026-06-14)
 
 Two post-v1.0.4 follow-ups surfaced by the release audit. Both reproduced/verified before fixing.
