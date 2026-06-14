@@ -3,12 +3,12 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.3 (versionCode 19) on Play internal track** (tag `v1.0.3`; supersedes
-v1.0.2/code18) · **981 JVM + 9 instrumented tests** green · schema v12 · **Gate C (onboarding) merged**
-(PR #157) · **three look-&-feel waves merged to `main`** (#159 squash `2dc9a08`; **#160 Bundle A** squash
-`491815b`, PR #165; **#161 Bundle B PR-B1** PR #166) · **Bundle B PR-B2 (#161 nav-restore bug fix) done
-on branch `fix/bundle-b-nav-restore`, PR pending** · launch is judgment-gated on the Closed-Test
-Readiness Gate (`plan-FORWARD.md`).
+**Headline:** **v1.0.4 (versionCode 20) releasing to Play internal track** (tag `v1.0.4`; supersedes
+v1.0.3/code19) · **981 JVM + 9 instrumented tests** green · schema v12 · **Gate C (onboarding) merged**
+(PR #157) · **four look-&-feel waves merged to `main` and shipping in v1.0.4** (#159 squash `2dc9a08`;
+**#160 Bundle A** squash `491815b`, PR #165; **#161 Bundle B PR-B1** PR #166; **#161 Bundle B PR-B2**
+nav-restore fix, PR #167 squash `b4f2a2b`) · **#161 fully closed** · launch is judgment-gated on the
+Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
