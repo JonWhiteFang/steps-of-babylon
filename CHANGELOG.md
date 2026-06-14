@@ -4,6 +4,16 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Look & Feel Bundle D (#163) — Collectibles rarity visual system
+
+Presentation-only. Shared 3-tier rarity palette (sand → sky-lapis → gold) for Ultimate Weapons + Cards
+via new `presentation/ui/Rarity.kt` (+ `RaritySand` token). Cards keep COMMON/RARE/EPIC; UWs derive
+RARE/EPIC/LEGENDARY from `unlockCost`. Prominent treatment (3dp rarity border + left accent bar +
+filled pill badge, clipped to the card shape), explicit EQUIPPED chip replacing the tiny ✓ / background
+tint, header loadout-cap hint ("3/3 — unequip one to swap"), locked UWs show dimmed rarity. Fixes the
+latent Epic/Power-Stone amethyst colour collision. +6 JVM tests (RarityTest → 996 JVM total). Zero
+engine/economy/domain/loadout change.
+
 ## [1.0.6] — 2026-06-14 (versionCode 22)
 
 Shipped to the Play Console **internal** track (tag `v1.0.6`). Contains Look & Feel Bundle C (#162,
