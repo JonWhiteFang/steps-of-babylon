@@ -11,20 +11,28 @@ import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestoneResult
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMission
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMissionResult
 import com.whitefang.stepsofbabylon.domain.usecase.GenerateDailyMissions
+import com.whitefang.stepsofbabylon.data.local.DailyStepDao
 import com.whitefang.stepsofbabylon.fakes.FakeCosmeticRepository
 import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
 import com.whitefang.stepsofbabylon.fakes.FakeMilestoneDao
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
+import com.whitefang.stepsofbabylon.fakes.FakeTimeProvider
+import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.time.LocalDate
 
@@ -92,5 +100,69 @@ class MissionsViewModelTest {
         // Player has 5000 steps — FIRST_STEPS requires 1000
         val achievable = Milestone.entries.filter { it.requiredSteps <= 5000 }
         assertTrue(achievable.contains(Milestone.FIRST_STEPS))
+    }
+
+    // --- Bundle C Task 8: claim celebration event (Success-gated) ---------------------------------
+    // The VM's init launches a viewModelScope while(true) ticker on Main (the test dispatcher); a
+    // bare runTest{} would HANG on end-of-test cleanup spinning the rescheduling ticker. Every test
+    // that constructs the VM therefore calls vm.cancelForTest() as its LAST statement. Label *content*
+    // is covered by the pure missionRewardLabel test below (no VM); the VM tests assert emission COUNT.
+
+    private fun createVm() = MissionsViewModel(
+        dailyMissionDao = missionDao,
+        milestoneDao = milestoneDao,
+        dailyStepDao = mock<DailyStepDao> { onBlocking { sumCreditedSteps(any(), any()) } doReturn 0L },
+        playerRepository = playerRepo,
+        playerProfileDao = mock<PlayerProfileDao>(),
+        cosmeticRepository = FakeCosmeticRepository(),
+        timeProvider = FakeTimeProvider(fixedDate = LocalDate.parse(today)),
+    )
+
+    @Test
+    fun `missionRewardLabel formats gems, power-stones, both, and fallback`() {
+        assertEquals("+5 Gems claimed!", missionRewardLabel(infoWith(gems = 5, ps = 0)))
+        assertEquals("+2 Power Stones claimed!", missionRewardLabel(infoWith(gems = 0, ps = 2)))
+        assertEquals("+5 Gems +2 Power Stones claimed!", missionRewardLabel(infoWith(gems = 5, ps = 2)))
+        assertEquals("Reward claimed!", missionRewardLabel(null))
+    }
+
+    private fun infoWith(gems: Int, ps: Int) = MissionDisplayInfo(
+        id = 1, description = "d", target = 1, progress = 1, rewardGems = gems, rewardPowerStones = ps,
+        completed = true, claimed = false,
+    )
+
+    @Test
+    fun `claiming a completed mission emits one celebration`() = runTest {
+        missionDao.insert(DailyMissionEntity(date = today, missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 5000, completed = true, rewardGems = 5))
+        val vm = createVm()
+        val events = mutableListOf<ClaimCelebrationEvent>()
+        backgroundScope.launch { vm.celebration.toList(events) }
+        val id = missionDao.getByDateOnce(today).first().id
+        vm.claimMission(id)
+        runCurrent()
+        assertEquals(1, events.size)
+        vm.cancelForTest()   // stop the while(true) ticker or runTest cleanup hangs
+    }
+
+    @Test
+    fun `claiming an achieved milestone emits one celebration`() = runTest {
+        val vm = createVm()
+        val events = mutableListOf<ClaimCelebrationEvent>()
+        backgroundScope.launch { vm.celebration.toList(events) }
+        vm.claimMilestone(Milestone.FIRST_STEPS)   // player has >= FIRST_STEPS requirement (5000 >= 1000)
+        runCurrent()
+        assertEquals(1, events.size)
+        vm.cancelForTest()
+    }
+
+    @Test
+    fun `claiming an unachievable milestone emits no celebration`() = runTest {
+        val vm = createVm()
+        val events = mutableListOf<ClaimCelebrationEvent>()
+        backgroundScope.launch { vm.celebration.toList(events) }
+        vm.claimMilestone(Milestone.entries.maxBy { it.requiredSteps })   // 5_000_000 ≫ 5000 → InsufficientSteps
+        runCurrent()
+        assertTrue(events.isEmpty())
+        vm.cancelForTest()
     }
 }
