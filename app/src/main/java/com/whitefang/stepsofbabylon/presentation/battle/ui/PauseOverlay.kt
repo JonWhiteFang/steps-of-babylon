@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whitefang.stepsofbabylon.R
+import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 
 @Composable
 fun PauseOverlay(
@@ -37,13 +38,14 @@ fun PauseOverlay(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF2A1F14)),
         ) {
+            val haptics = rememberHaptics()
             Column(
                 Modifier.padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(stringResource(R.string.pause_title), style = MaterialTheme.typography.headlineLarge, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(24.dp))
-                Button(onClick = onResume, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_resume)) }
+                Button(onClick = { haptics.tap(); onResume() }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_resume)) }
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(onClick = onQuitRound, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.pause_quit_round)) }
             }

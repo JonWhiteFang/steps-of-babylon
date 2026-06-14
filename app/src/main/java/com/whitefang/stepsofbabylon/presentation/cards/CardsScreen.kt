@@ -41,10 +41,14 @@ import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import com.whitefang.stepsofbabylon.presentation.ui.EmptyState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
+import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
+import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
+import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 
 @Composable
@@ -85,14 +89,18 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
         // Pack buttons
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             state.packOptions.forEach { pack ->
-                Button(
-                    onClick = { viewModel.openPack(pack.tier) },
-                    enabled = pack.canAfford,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(pack.tier.name)
-                        CurrencyCost(CurrencyType.GEMS, pack.tier.gemCost)
+                key(pack.tier) {
+                    val packPulse = rememberPulse()
+                    val packHaptics = rememberHaptics()
+                    Button(
+                        onClick = { packPulse.trigger(); packHaptics.tap(); viewModel.openPack(pack.tier) },
+                        enabled = pack.canAfford,
+                        modifier = Modifier.weight(1f).pulseScale(packPulse),
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(pack.tier.name)
+                            CurrencyCost(CurrencyType.GEMS, pack.tier.gemCost)
+                        }
                     }
                 }
             }
@@ -152,6 +160,8 @@ private fun CardItem(
     card: CardDisplayInfo, equippedCount: Int,
     onEquip: () -> Unit, onUnequip: () -> Unit, onUpgrade: () -> Unit,
 ) {
+    val haptics = rememberHaptics()
+    val upgradePulse = rememberPulse()
     Card(
         Modifier.fillMaxWidth(),
         border = BorderStroke(2.dp, rarityColor(card.type.rarity)),
@@ -171,12 +181,16 @@ private fun CardItem(
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (card.isEquipped) {
-                    OutlinedButton(onClick = onUnequip, modifier = Modifier.weight(1f)) { Text("Unequip") }
+                    OutlinedButton(onClick = { haptics.tap(); onUnequip() }, modifier = Modifier.weight(1f)) { Text("Unequip") }
                 } else {
-                    Button(onClick = onEquip, enabled = equippedCount < 3, modifier = Modifier.weight(1f)) { Text("Equip") }
+                    Button(onClick = { haptics.tap(); onEquip() }, enabled = equippedCount < 3, modifier = Modifier.weight(1f)) { Text("Equip") }
                 }
                 if (!card.isMaxLevel) {
-                    Button(onClick = onUpgrade, enabled = card.canAffordUpgrade, modifier = Modifier.weight(1f)) {
+                    Button(
+                        onClick = { upgradePulse.trigger(); haptics.tap(); onUpgrade() },
+                        enabled = card.canAffordUpgrade,
+                        modifier = Modifier.weight(1f).pulseScale(upgradePulse),
+                    ) {
                         Text("Upgrade (${card.copyCount}/${card.copiesNeeded})")
                     }
                 }

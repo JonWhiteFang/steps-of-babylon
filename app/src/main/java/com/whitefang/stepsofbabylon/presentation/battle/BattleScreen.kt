@@ -56,6 +56,7 @@ import com.whitefang.stepsofbabylon.presentation.battle.ui.InRoundUpgradeMenu
 import com.whitefang.stepsofbabylon.presentation.battle.ui.UltimateWeaponBar
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PauseOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PostRoundOverlay
+import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 
 @Composable
 fun BattleScreen(
@@ -170,6 +171,7 @@ fun BattleScreen(
             //     the buttons (and only the buttons), not the full viewport.
             // Pure layout change — no behaviour change to any individual button. Verified
             // on-device on the next AAB; no JVM regression test (Compose UI surface).
+            val haptics = rememberHaptics()
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -194,7 +196,7 @@ fun BattleScreen(
                     }
                 }
                 val pauseDesc = stringResource(if (state.isPaused) R.string.action_resume else R.string.battle_cd_pause)
-                FilledTonalButton(onClick = { viewModel.togglePause() },
+                FilledTonalButton(onClick = { haptics.tap(); viewModel.togglePause() },
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = if (state.isPaused) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)),
                     modifier = Modifier.semantics { contentDescription = pauseDesc },

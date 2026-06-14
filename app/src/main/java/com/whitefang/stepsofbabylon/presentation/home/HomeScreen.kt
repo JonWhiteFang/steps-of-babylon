@@ -49,6 +49,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.presentation.battle.biome.BiomeTheme
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
 import com.whitefang.stepsofbabylon.presentation.ui.theme.LapisLazuli
 import com.whitefang.stepsofbabylon.presentation.ui.theme.LapisLight
@@ -152,7 +153,8 @@ fun HomeScreen(
 
             Spacer(Modifier.weight(1f))
 
-            Button(onClick = onBattleClick, modifier = Modifier.fillMaxWidth().height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = Gold)) {
+            val haptics = rememberHaptics()
+            Button(onClick = { haptics.tap(); onBattleClick() }, modifier = Modifier.fillMaxWidth().height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = Gold)) {
                 Text("BATTLE", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             }
         }
