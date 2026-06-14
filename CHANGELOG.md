@@ -4,6 +4,8 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+## [1.0.4] — 2026-06-14 (versionCode 20)
+
 ### Fixed — Look-&-feel Bundle B PR-B2: bottom-nav restore-wrong-screen bug (Gate C/F UX, #161) (2026-06-13)
 
 Second of the two sequential Bundle-B PRs (PR-B1 — back affordances — shipped in #166). A logic
