@@ -3,11 +3,12 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.5 (versionCode 21) releasing to Play internal track** (tag `v1.0.5`; supersedes
-v1.0.4/code20) · **981 JVM + 9 instrumented tests** green · schema v12 · **ships the two post-v1.0.4
-fixes** (Battle HUD vertical offset + `release.yml` `track`→`tracks`, PR #169 squash `85ce889`) · v1.0.4
-shipped the four look-&-feel waves (#159/#160/#161, #161 fully closed) · launch is judgment-gated on the
-Closed-Test Readiness Gate (`plan-FORWARD.md`).
+**Headline:** **v1.0.5 (versionCode 21) live on Play internal track** (tag `v1.0.5` on `92a66f8`;
+release lane green 2026-06-14, signed AAB uploaded; supersedes v1.0.4/code20) · **981 JVM + 9
+instrumented tests** green · schema v12 · **shipped the two post-v1.0.4 fixes** (Battle HUD vertical
+offset + `release.yml` `track`→`tracks` — the deprecation annotation is now gone; PR #169 squash
+`85ce889`) · v1.0.4 shipped the four look-&-feel waves (#159/#160/#161, #161 fully closed) · launch is
+judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
@@ -28,6 +29,15 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-14 — v1.0.5 (versionCode 21) released to Play internal track** (tag `v1.0.5` on `92a66f8`,
+  via release PR #170). Shipped the two post-v1.0.4 fixes from PR #169: the **Battle HUD vertical-offset**
+  fix (player-visible) + the **`release.yml` `track`→`tracks`** deprecation rename. Release collateral
+  only (versionCode 20→21, versionName 1.0.4→1.0.5, CHANGELOG `[Unreleased]`→`[1.0.5]`, new
+  `release-notes-v1.0.5.md`). CI PR gate + instrumented lane green on #170; release lane green in 7m27s
+  (signed AAB, `jarsigner -verify` + #124 license-key step passed; GitHub Release with AAB asset).
+  **First release to exercise the new `tracks:` input — and the `track`-deprecation annotation that
+  appeared on the v1.0.4 run is now GONE**, confirming the fix end-to-end. Approved player-facing
+  "What's new" (188 bytes).
 - **2026-06-14 — Post-v1.0.4 follow-ups + spot-check (PR #169 squash `85ce889`; docs `07429fc`).** Cleared
   every open item from the v1.0.4 release audit. **(1) Battle HUD vertical offset** — the in-round HUD
   `Column` carried a stale `top = 80.dp` (quit button `72.dp`) that double-counted a removed status-bar +

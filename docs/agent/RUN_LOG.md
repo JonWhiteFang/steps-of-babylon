@@ -1,3 +1,31 @@
+## 2026-06-14 — v1.0.5 (versionCode 21) released to Play internal track (release PR #170, tag `v1.0.5`)
+
+- **Goal:** Push the next release — ship the two post-v1.0.4 fixes sitting in CHANGELOG `[Unreleased]`
+  (Battle HUD vertical offset + `release.yml` `track`→`tracks`) to the Play internal track.
+- **Process (same proven path as v1.0.4 / #168):** confirmed v1.0.5/code21 is the correct next version
+  (code 21 never used on any branch → no Play reused-code rejection); JVM gate green (**981, 0 failures**);
+  branch `release/v1.0.5` → collateral commit `bae6afc` (versionCode 20→21, versionName 1.0.4→1.0.5,
+  CHANGELOG `[Unreleased]`→`[1.0.5]`, new `release-notes-v1.0.5.md`, STATE headline) → PR #170 → **CI PR
+  gate `build-and-test` green (4m48s) + instrumented `connected` lane green (6m14s)** → squash-merge to
+  `main` (`92a66f8`) → annotated tag `v1.0.5` on `92a66f8` (message = approved player-facing "What's
+  new", 188 bytes / 182 chars — under the `head -c 500` byte limit) → push.
+- **Release lane result:** run `27490068652` **green in 7m27s** — unit-test guard, signed `bundleRelease`,
+  `jarsigner -verify`, **uploaded to Play internal track**, GitHub Release `v1.0.5` with `app-release.aab`.
+  #124 license-key step passed.
+- **`track`→`tracks` validated end-to-end:** this is the first release to run the renamed `tracks: internal`
+  upload input. Verified via `gh run watch` + the job-level annotations API that the **`'track' is
+  deprecated` warning that appeared on the v1.0.4 run is GONE** — the very release that ships the fix
+  proves it. The upload succeeded with the new input.
+- **"What's new" (approved by user):** "Polish update: • Tidied up the battle screen — the wave and cash
+  info now sits neatly at the top instead of floating below the tower's health bar. Thanks for playing —
+  keep walking!" (scoped honestly to the one player-visible change; the `release.yml` rename is dev infra.)
+- **Doc sync:** `app/build.gradle.kts` (version), CHANGELOG `[1.0.5]`, `docs/release/release-notes-v1.0.5.md`
+  (new), STATE.md (headline → "live", Recently-shipped entry, Resolved line → "shipping in v1.0.5"). No
+  CLAUDE.md change (test count unchanged at 981); no ADR (routine release per ADR-0018).
+- **Remains / next:** look-&-feel bundles #162/#163/#164 (each its own spec → plan → PR); bigger gate
+  items #29 (Gate F) + #26 (Gate G). All post-v1.0.4 audit follow-ups now shipped. Promotion
+  internal→closed stays developer-judgment-gated (Phase 2).
+
 ## 2026-06-14 — Spot-check: navigate-away loading no-reflash (#160) — verified PASS on emulator (docs-only)
 
 - **Goal:** Close the last pending #160-era manual spot-check — confirm the Bundle A loading spinners
