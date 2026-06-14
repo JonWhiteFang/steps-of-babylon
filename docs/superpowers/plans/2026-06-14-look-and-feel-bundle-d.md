@@ -234,9 +234,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -249,6 +246,10 @@ import androidx.compose.ui.unit.sp
 import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess
 ```
 
+(`androidx.compose.ui.graphics.Color` is already imported in Step 3, so the `Color(0xFF…)` literals
+below resolve without re-import. No Material `Icon` import is needed — `EquippedChip` renders the
+checkmark as a literal "✓" glyph in `Text`, not an `Icon`.)
+
 Append these declarations at the end of the file:
 
 ```kotlin
@@ -256,18 +257,18 @@ Append these declarations at the end of the file:
 /**
  * Filled pill badge in the tier colour, dark text for contrast on the light tier colours.
  * [label] is supplied by the caller ([cardRarityLabel] / [uwRarityLabel]) so the same badge serves
- * both screens' naming.
+ * both screens' naming. [alpha] dims the badge for a locked UW (spec D6); default 1f = full opacity.
  */
 @Composable
-fun RarityBadge(tier: RarityTier, label: String) {
+fun RarityBadge(tier: RarityTier, label: String, alpha: Float = 1f) {
     Text(
         text = label,
-        color = Color(0xFF1A1A2E),
+        color = Color(0xFF1A1A2E).copy(alpha = alpha),
         fontWeight = FontWeight.Bold,
         fontSize = 10.5.sp,
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(tier.color())
+            .background(tier.color().copy(alpha = alpha))
             .padding(horizontal = 9.dp, vertical = 3.dp),
     )
 }
@@ -289,13 +290,14 @@ fun EquippedChip() {
 
 /**
  * 3dp rarity border + a left accent bar in the tier colour. Plain Modifier extension — resolves the
- * colour itself via [color], so call-sites stay the bare `Modifier.rarityBorder(tier)`.
+ * colour itself via [color], so call-sites stay the bare `Modifier.rarityBorder(tier)`. [alpha] dims
+ * the whole treatment for a locked UW (spec D6); default 1f = full opacity (Cards always use default).
  *
  * The accent bar is drawn ON TOP of content via [drawWithContent] (the spec pins this: a `drawBehind`
  * bar would be occluded by the Material3 card container fill). 5dp wide, full height, left edge.
  */
-fun Modifier.rarityBorder(tier: RarityTier): Modifier {
-    val c = tier.color()
+fun Modifier.rarityBorder(tier: RarityTier, alpha: Float = 1f): Modifier {
+    val c = tier.color().copy(alpha = alpha)
     return this
         .border(width = 3.dp, color = c, shape = RoundedCornerShape(12.dp))
         .drawWithContent {
@@ -469,7 +471,9 @@ private fun CardItem(
 }
 ```
 
-> **Note:** the old header showed `Lv N/M` (or `MAX`) on the right and the rarity text inline on the left. The rewrite moves `Lv/MAX` to the right slot (replaced by the chip when equipped) and the rarity name is now the badge — so no level info is lost. The `effectDescription` line keeps the level context via the card body. `BorderStroke` import becomes unused — remove `import androidx.compose.foundation.BorderStroke` (line 3) if the compiler/lint flags it.
+> **Note:** the old header showed `Lv N/M` (or `MAX`) on the right and the rarity text inline on the left. The rewrite moves `Lv/MAX` to the right slot (replaced by the chip when equipped) and the rarity name is now the badge — so no level info is lost. The `effectDescription` line keeps the level context via the card body.
+>
+> **Dead imports after this rewrite:** the rewritten `CardItem` drops both the `border = BorderStroke(...)` param and the `colors = CardDefaults.cardColors(...)` equipped branch, so **two** imports go unused — remove `import androidx.compose.foundation.BorderStroke` (line 3) **and** `import androidx.compose.material3.CardDefaults` (line 24). Leave `import androidx.compose.ui.graphics.Color` (line 34) in place — it's still needed for `color = Color.Gray` at CardsScreen.kt:85, which this rewrite doesn't touch. (Unused imports are warnings, not build breaks — only `HardcodedText` is error-promoted, and that's XML-only — but remove them to match the plan's dead-import discipline.)
 
 - [ ] **Step 5: Build + lint to confirm it compiles cleanly**
 
@@ -551,8 +555,11 @@ Replace the `Card(...)` opening + header `Row` (current lines ~83–110):
 ```kotlin
     val haptics = rememberHaptics()
     val tier = uwRarityTier(info.type.unlockCost)
+    // Locked UWs still show their rarity, but dimmed (spec D6) — the rarity affordances share the
+    // same alpha so border + badge dim together with the locked container.
+    val rarityAlpha = if (info.isUnlocked) 1f else 0.5f
     Card(
-        modifier = Modifier.fillMaxWidth().rarityBorder(tier),
+        modifier = Modifier.fillMaxWidth().rarityBorder(tier, alpha = rarityAlpha),
         colors = CardDefaults.cardColors(
             containerColor = if (info.isUnlocked) Color(0xFF2A2A3E) else Color(0xFF1A1A2E),
         ),
@@ -561,7 +568,7 @@ Replace the `Card(...)` opening + header `Row` (current lines ~83–110):
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        RarityBadge(tier, uwRarityLabel(tier))
+                        RarityBadge(tier, uwRarityLabel(tier), alpha = rarityAlpha)
                         Text(
                             info.type.name.replace('_', ' '),
                             fontWeight = FontWeight.Bold,
@@ -695,3 +702,23 @@ Expected: BUILD SUCCESSFUL; all unit tests green (incl. `RarityTest`'s 6); lint 
 - If `./run-gradle.sh` is missing, recreate it per `README.md` (it's gitignored).
 - Save every `brazil`/gradle build to a temp log and `tail`/`grep` it (long, verbose output) — the run commands above already redirect.
 - The `RarityBadge`/`EquippedChip` use literal display strings ("✓ EQUIPPED", rarity labels). Lint's `HardcodedText` check applies to XML, not Compose `Text` — these will not trip it (consistent with the existing Compose screens). i18n of all strings is tracked separately in #34.
+
+---
+
+## Adversarial Review Record (2026-06-14)
+
+Per the CLAUDE.md **Adversarial Review Gate**, this plan passed a multi-agent review before any
+implementation: 5 code-grounded reviewers (compile-correctness · TDD-soundness · Compose-API ·
+spec-coverage · line-refs/consistency), each finding adversarially verified by a skeptic
+(default-to-refuted). **6 findings raised → 5 survived (1 minor + 4 nits; the 4 nits were 2 distinct
+issues, one reported by three reviewers) → 1 refuted.** All applied above:
+- **(minor) Locked-UW rarity now dims** — added an `alpha` param to `RarityBadge` + `rarityBorder`
+  (default 1f; `0.5f` for locked UWs in Task 4), so the code matches spec D6 + the Final-Verification
+  "dimmed" item. Cards always use the default. RarityTest unaffected (pure fns untouched).
+- **(nit) Removed 3 unused icon imports** from Task 2 Step 5 (`Icons`/`CheckCircle`/`Icon`) —
+  `EquippedChip` uses a literal "✓" `Text` glyph, not an `Icon`.
+- **(nit) Extended Task 3's dead-import note** to cover `CardDefaults` (orphaned alongside
+  `BorderStroke` by the `CardItem` rewrite).
+
+Refuted (1): an over-stated finding the code disproved. No unaddressed critical/major findings —
+cleared to implement.
