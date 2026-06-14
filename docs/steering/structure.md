@@ -47,7 +47,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── store/          # StoreScreen, StoreViewModel
 │   ├── help/           # HelpScreen
 │   ├── audio/          # SoundManager (SoundPool wrapper, 7 effects, volume/mute)
-│   ├── ui/             # shared composables: SobTopAppBar, LoadingBox, EmptyState, EnumDisplayName, CurrencyDisplay
+│   ├── ui/             # shared composables: SobTopAppBar, LoadingBox, EmptyState, EnumDisplayName, CurrencyDisplay; feel-layer trio Haptics, PurchasePulse, ClaimCelebration (#162)
 │   │   └── theme/      # Compose theme, colors (Material3)
 ├── di/                 # Hilt modules (DatabaseModule, RepositoryModule, StepModule, HealthConnectModule, BillingModule, AdModule, TimeModule, CoroutineScopeModule)
 └── service/            # Foreground step-counting service, WorkManager workers, boot receiver

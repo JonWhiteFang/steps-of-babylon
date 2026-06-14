@@ -13,13 +13,17 @@ in `[Unreleased]`) · launch is judgment-gated on the Closed-Test Readiness Gate
 
 ## Current objective
 
-- **Look-&-feel Bundle C (#162 feedback/feel) — spec + plan complete and adversarially reviewed; ready to
-  implement.** Spec `docs/superpowers/specs/2026-06-14-look-and-feel-bundle-c-design.md` and plan
-  `docs/superpowers/plans/2026-06-14-look-and-feel-bundle-c.md` both passed the **Adversarial Review Gate**
-  (spec: 29 findings/25 surviving → applied; plan: 36 findings/29 surviving, incl. 1 CRITICAL test-hang →
-  applied). Next action: execute the 12-task plan via subagent-driven-development. Scope: haptics
-  (`HapticsPreferences` + `Haptics` + Settings toggle), shared 1.12× `PurchasePulse`, Post-Round entrance +
-  staggered reward sting, one-shot claim celebrations. Presentation-only; no engine/economy/domain change.
+- **Look-&-feel Bundle C (#162 feedback/feel) — IMPLEMENTED on `feat/162-look-and-feel-bundle-c`; pending
+  developer feel-sign-off + PR.** All 12 plan tasks executed via subagent-driven-development (fresh
+  implementer + spec-review + quality-review per task; Opus for the CRITICAL ticker-safe Task 8).
+  `testDebugUnitTest lintDebug assembleDebug` green; **981→990 JVM**, 0 failures. Shipped (presentation-only,
+  zero engine/economy/domain change): haptics infra (`data/HapticsPreferences` + `presentation/ui/Haptics`
+  + `rememberHaptics` + Settings "Haptic Feedback" toggle), shared 1.12× `presentation/ui/PurchasePulse`
+  wired across all spend buttons, `presentation/ui/ClaimCelebration` chip fed by conflated `celebration`
+  events on the Missions/Supplies VMs (Success-gated), Post-Round entrance + staggered reward sting +
+  Play-Again haptic. On-device smoke passed (toggle persists; Workshop spend works). **Next action:**
+  developer does the tactile/visual feel sign-off on device (haptic buzz, 1.12× pulse on tight grids,
+  4-line sting cadence, reduced-motion) → open the PR (close #162; SFX sub-item stays on the audio-debt track).
 - **NEW standing protocol — Adversarial Review Gate** (CLAUDE.md → Agent protocol): every design spec and
   implementation plan passes a code-grounded multi-dimension review → adversarial refute → confirmed-only
   synthesis Workflow **before** the next stage. Default-on under ultracode; if ultracode is off, flag the
@@ -41,6 +45,18 @@ in `[Unreleased]`) · launch is judgment-gated on the Closed-Test Readiness Gate
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-14 — Bundle C (#162) IMPLEMENTATION (presentation-only; on `feat/162-look-and-feel-bundle-c`, pre-PR).**
+  Executed the 12-task adversarially-reviewed plan via subagent-driven-development (per-task spec+quality
+  review; Opus for the CRITICAL Task 8 ticker-safe harness). Greenfield haptics (`HapticsPreferences` +
+  `Haptics`/`rememberHaptics` + Settings toggle), shared 1.12× `PurchasePulse` across all spend buttons,
+  `ClaimCelebration` chip fed by conflated `celebration` events on the Missions/Supplies VMs (emit on
+  `Result.Success` only — `claimAll` once if ≥1 Success; the 3 `UnknownCosmetic` milestones never
+  celebrate), Post-Round entrance (keyed on the round-end nullability, not identity) + staggered reward
+  sting + Play-Again haptic. **Reverted a Task-7 implementer deviation** (SharedFlow → spec-mandated
+  `Channel.CONFLATED`); Task 8's `while(true)` ticker hang avoided via `@VisibleForTesting cancelForTest()`
+  + pure top-level label builders. `testDebugUnitTest lintDebug assembleDebug` green; **981→990 JVM**, 0
+  failures; on-device smoke passed (toggle persists, Workshop spend works). Tactile/visual feel sign-off +
+  PR pending. No ADR (implements ADR-0022 feel direction; reuses the conflated-event + economy patterns).
 - **2026-06-14 — Bundle C (#162) spec + plan + the Adversarial Review Gate protocol (docs-only, uncommitted to a PR yet).**
   Brainstormed Bundle C (feedback/feel) → spec (`95234a9`) → **spec adversarial review** (29 findings,
   25 surviving, 4 refuted; fixes `67cdbe1`) → 12-task TDD plan (`2fb26c8`) → **plan adversarial review**
@@ -263,7 +279,7 @@ in `[Unreleased]`) · launch is judgment-gated on the Closed-Test Readiness Gate
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Look-&-feel follow-ups (Gate C/F UX):** **Bundles #159/#160/#161 all merged AND released in v1.0.4** (PR #168, tag `v1.0.4`); **#161 fully closed** (both Bundle-B PRs shipped). **#162 (Bundle C, feedback/feel) is spec'd + planned + adversarially-reviewed — IMPLEMENTATION IS THE NEXT ACTION** (execute the 12-task plan via subagent-driven-development; see Current objective). Remaining bundles after C, each needing its own spec → plan → PR: **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. (Battle HUD offset fixed 2026-06-14 — see `[Unreleased]`.) **Both #160-era spot-checks now cleared on-device** (navigate-away loading no-reflash **verified PASS** 2026-06-14 via 30fps screen-recording — spinner shows only on first cold tab entry, never on re-entry).
+1. **Look-&-feel follow-ups (Gate C/F UX):** **Bundles #159/#160/#161 all merged AND released in v1.0.4** (PR #168, tag `v1.0.4`); **#161 fully closed** (both Bundle-B PRs shipped). **#162 (Bundle C, feedback/feel) is IMPLEMENTED on `feat/162-look-and-feel-bundle-c` (981→990 JVM, build/lint/assemble green) — NEXT ACTION is the developer's on-device tactile/visual feel sign-off, then open the PR** (close #162; SFX sub-item → audio-debt track; see Current objective). Remaining bundles after C, each needing its own spec → plan → PR: **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. (Battle HUD offset fixed 2026-06-14 — see `[Unreleased]`.) **Both #160-era spot-checks now cleared on-device** (navigate-away loading no-reflash **verified PASS** 2026-06-14 via 30fps screen-recording — spinner shows only on first cold tab entry, never on re-entry).
 2. **Bigger gate items:** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured).
 3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 4. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
@@ -320,11 +336,25 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
   the exact NavOptions; keep the builder shared so the test can't drift from the bar. (Note: Compose-UI
   test rules don't work under Robolectric here — `ActivityScenario` can't resolve a host activity, PR-4736;
   use `TestNavHostController` for nav tests.)
+- **Haptics + feel are centralized (#162, Bundle C)** — `Haptics`/`PurchasePulse`/`ClaimCelebration` live
+  in `presentation/ui/`. Haptics fire via `View.performHapticFeedback` gated by `HapticsPreferences`
+  (Settings toggle, default ON, read at *call* time so a toggle takes effect on the next tap — don't
+  capture `isEnabled()` at `remember`). The shared 1.12× `PurchasePulse` is `graphicsLayer` scale (no
+  reflow) — add it via `Modifier.pulseScale(rememberPulse())`; don't reintroduce a per-screen inline pulse.
+  **Claim celebrations fire from a conflated `Channel` VM event** (`MissionsViewModel`/
+  `UnclaimedSuppliesViewModel`.`celebration`), gated on `Result.Success` (never on failure/`UnknownCosmetic`;
+  `claimAll` only on ≥1 Success via a left-of-`||` fold) — keep it a conflated `Channel`, NOT a
+  `SharedFlow`/`StateFlow` (a replay=0 SharedFlow drops pre-subscriber emits + breaks the test harness).
+  The Missions VM's `while(true)` init ticker means JVM tests that construct it MUST call the
+  `@VisibleForTesting cancelForTest()` or `runTest` cleanup hangs; label *content* is covered by the pure
+  top-level `missionRewardLabel`/`supplyLabel` builders (VM tests assert emission *count*). Post-Round
+  entrance is hosted in `BattleScreen` keyed on the round-end **nullability** transition, NOT
+  `RoundEndState` identity — watch-ad copies must not re-trigger it.
 
 ## References
 
 - **Memory loop:** `CLAUDE.md` (canonical guide; now incl. the **Adversarial Review Gate** for specs/plans) · `docs/agent/START_HERE.md` (contract) · `docs/agent/CONSTRAINTS.md` · SessionStart hook + `/checkpoint` skill.
-- **Bundle C (#162) in-flight:** spec `docs/superpowers/specs/2026-06-14-look-and-feel-bundle-c-design.md` · plan `docs/superpowers/plans/2026-06-14-look-and-feel-bundle-c.md` (both review-passed; implementation pending).
+- **Bundle C (#162) implemented (pre-PR on `feat/162-look-and-feel-bundle-c`):** spec `docs/superpowers/specs/2026-06-14-look-and-feel-bundle-c-design.md` · plan `docs/superpowers/plans/2026-06-14-look-and-feel-bundle-c.md` (both review-passed; 12 tasks executed, green build, feel-sign-off + PR pending).
 - **Plans:** `docs/plans/plan-FORWARD.md` (forward plan + Closed-Test Readiness Gate — start here) · `docs/plans/master-plan.md` (v1.0 completion record) · `docs/plans/plan-V1X-roadmap.md` (backlog of record). Completed v1.0 plan files archived under `docs/archive/completed-plans-v1.0/`.
 - **Reference docs:** `docs/steering/` (tech, structure, source-files, lib-*) · `docs/architecture.md` · `docs/database-schema.md` · `docs/battle-formulas.md`.
 - **Audit:** `docs/external-reviews/2026-06-10-multi-agent-code-audit.md` (findings #118–#128 + regression specs).
