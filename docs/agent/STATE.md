@@ -3,13 +3,13 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.5 (versionCode 21) live on Play internal track** (tag `v1.0.5` on `92a66f8`;
-release lane green 2026-06-14, signed AAB uploaded; supersedes v1.0.4/code20) · **981 JVM + 9
-instrumented tests** green · schema v12 · **shipped the two post-v1.0.4 fixes** (Battle HUD vertical
-offset + `release.yml` `track`→`tracks` — the deprecation annotation is now gone; PR #169 squash
-`85ce889`) · v1.0.4 shipped the four look-&-feel waves (#159/#160/#161, #161 fully closed) · **docs
-spine reconciled post-v1.0.5** (31-fix multi-agent drift sweep across 19 live docs, 2026-06-14;
-in `[Unreleased]`) · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
+**Headline:** **v1.0.6 (versionCode 22) shipping to Play internal track** (tag `v1.0.6` on the Bundle C
+merge `5f0d5bf`; release collateral in PR; supersedes v1.0.5/code21) · **990 JVM + 9 instrumented
+tests** green · schema v12 · **v1.0.6 = Look & Feel Bundle C (#162, PR #172)** — greenfield haptics +
+claim/Post-Round celebrations + shared 1.12× purchase pulse (presentation-only) + the post-v1.0.5
+doc-drift sweep · v1.0.5 shipped the Battle HUD offset fix + `release.yml` `track`→`tracks`; v1.0.4
+shipped the four look-&-feel waves (#159/#160/#161) · launch is judgment-gated on the Closed-Test
+Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 

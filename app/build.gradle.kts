@@ -35,8 +35,8 @@ android {
         applicationId = "com.whitefang.stepsofbabylon"
         minSdk = 34
         targetSdk = 36
-        versionCode = 21
-        versionName = "1.0.5"
+        versionCode = 22
+        versionName = "1.0.6"
 
         // V1X-08 Phase 1A: instrumented tests use a custom AndroidJUnitRunner that swaps
         // StepsOfBabylonApp → HiltTestApplication so Hilt-rooted DI works in androidTest.
