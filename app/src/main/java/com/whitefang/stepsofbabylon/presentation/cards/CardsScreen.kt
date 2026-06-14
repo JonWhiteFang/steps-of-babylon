@@ -54,6 +54,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusWarning
 
 @Composable
 fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
@@ -78,7 +79,7 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
             Text(
                 "Equipped: 3/3 — unequip one to swap",
                 style = MaterialTheme.typography.titleSmall,
-                color = com.whitefang.stepsofbabylon.presentation.ui.theme.StatusWarning,
+                color = StatusWarning,
                 fontWeight = FontWeight.Bold,
             )
         } else {
@@ -147,16 +148,17 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
             text = {
                 Column {
                     results.forEach { r ->
+                        val rowColor = cardRarityTier(r.type.rarity).color()
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (r.isNew) {
-                                Icon(Icons.Filled.FiberNew, contentDescription = "New", tint = cardRarityTier(r.type.rarity).color(), modifier = Modifier.size(18.dp))
+                                Icon(Icons.Filled.FiberNew, contentDescription = "New", tint = rowColor, modifier = Modifier.size(18.dp))
                             } else {
-                                Icon(Icons.Filled.Autorenew, contentDescription = "Duplicate", tint = cardRarityTier(r.type.rarity).color(), modifier = Modifier.size(18.dp))
+                                Icon(Icons.Filled.Autorenew, contentDescription = "Duplicate", tint = rowColor, modifier = Modifier.size(18.dp))
                             }
                             Spacer(Modifier.width(4.dp))
                             Text(
                                 if (r.isNew) formatName(r.type.name) else "${formatName(r.type.name)} +1 Copy",
-                                color = cardRarityTier(r.type.rarity).color(),
+                                color = rowColor,
                             )
                         }
                     }
