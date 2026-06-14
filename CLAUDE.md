@@ -56,6 +56,31 @@ Treat these as the project source of truth — never rely on chat history.
 4. Output a brief "Session Brief" (~10 bullets): what the project is, current state,
    constraints/invariants, today's objective, risks/unknowns.
 
+### Adversarial Review Gate (mandatory before acting on a spec or a plan)
+Every **design spec** and every **implementation plan** MUST pass a full adversarial review before the
+next stage begins — review the spec before writing the plan; review the plan before any implementation.
+This is the standing default; the developer should not have to ask for it each time.
+
+The review is a multi-agent `Workflow` (see the Workflow tool's quality patterns), shaped as:
+1. **Code-grounded multi-dimension fan-out** — one reviewer per dimension (e.g. code-grounding of every
+   `file:line` claim, API/framework correctness, fragile-zone & invariant safety, scope completeness vs
+   the issue/review, test-strategy feasibility, internal consistency/ambiguity). Each finding must cite
+   the **actual code** it checked, not just the spec's prose.
+2. **Adversarial verify** — a skeptic re-checks each finding against spec + code and tries to **refute**
+   it; only `confirmed`/`partial` findings survive (default-to-refuted discipline).
+3. **Synthesis** — apply every surviving finding to the artifact, then commit the amendments with a
+   message summarising findings (total / surviving / refuted) and the substantive fixes.
+
+Severity-scale the response: a quick spec gets a leaner fan-out; "be thorough"/audit-grade work gets the
+full pattern with 3–5-vote verification. Do **not** advance to the next stage with unaddressed
+`critical`/`major` findings.
+
+**If ultracode is OFF** (a session reminder will say so), this gate's multi-agent form is disabled by the
+opt-in rules — do **not** silently skip it. **Flag to the developer that the artifact is unreviewed and
+ask** whether to (a) turn ultracode on for the review, (b) run a lighter single-agent review inline, or
+(c) proceed without one. Never advance spec→plan→implementation on an unreviewed artifact without that
+explicit choice.
+
 ### PR Task-List Convention (mandatory for every code-changing PR)
 Every task list for a PR that changes production code, tests, or configuration MUST include
 these two steps, in this order, immediately before the commit step:
