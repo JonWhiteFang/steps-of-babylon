@@ -107,8 +107,9 @@ package com.whitefang.stepsofbabylon.presentation.ui
  *  NOT a domain concept — UWs have no rarity field; this is derived in the UI (see [uwRarityTier]). */
 enum class RarityTier { TIER_0, TIER_1, TIER_2 }
 
-/** Tier → theme colour token. Sand / sky-lapis / gold ramp (D3). */
-@Composable
+/** Tier → theme colour token. Sand / sky-lapis / gold ramp (D3). PLAIN fun (not @Composable):
+ *  reads only top-level `val Color` tokens, so it is JVM-unit-testable and callable from a Modifier
+ *  extension. Color(0xFF…) is a value class (ULong bit-math) — no Android runtime needed. */
 fun RarityTier.color(): Color = when (this) {
     RarityTier.TIER_0 -> RaritySand     // #C2B280
     RarityTier.TIER_1 -> LapisLight      // #A7C7E7 (existing token)
@@ -143,21 +144,31 @@ fun uwRarityLabel(tier: RarityTier): String = when (tier) {
 /** Filled "✓ EQUIPPED" chip (StatusSuccess token). */
 @Composable fun EquippedChip() { /* … */ }
 
-/** 3dp border + left accent bar in the tier colour. */
-fun Modifier.rarityBorder(tier: RarityTier): Modifier  // (reads tier colour via composition or a passed Color)
+/** 3dp border + left accent bar in the tier colour. Plain Modifier extension — resolves the colour
+ *  itself via the plain `tier.color()`, so the call-site stays the bare `Modifier.rarityBorder(tier)`. */
+fun Modifier.rarityBorder(tier: RarityTier): Modifier  // resolves tier.color() internally
 ```
 
-- **What/why/depends:** the pure functions (`cardRarityTier`, `uwRarityTier`, the two label fns) carry
-  all the logic and are JVM-unit-tested. The `@Composable` pieces are dumb renderers depending only on
-  Compose + theme tokens. No new dependency (Material3 + theme already present).
-- **Exhaustiveness:** `cardRarityTier` / `cardRarityLabel` use exhaustive `when` over `CardRarity`
-  (compiler-enforced). `uwRarityTier` uses ranges so it total-functions over any `Int`.
-
-> **Note for the planner — `rarityBorder` colour access.** `Modifier.color()` is `@Composable`; a
-> `Modifier` extension is not. Resolve the tier colour at the call-site (`val c = tier.color()`) and
-> pass it into `rarityBorder(color = c)` (or implement the border via `Modifier.drawBehind`/`border`
-> inside a composable that has the colour). Pin the exact signature in the plan; do not leave it as a
-> bare `Modifier.rarityBorder(tier)` if that forces a `@Composable` modifier.
+- **`color()` is a plain `fun`, not `@Composable` (review finding `rarity-color-needless-composable`).**
+  It reads only top-level `val Color` tokens (`RaritySand`/`LapisLight`/`Gold`) and touches no
+  composition-local — exactly like the non-composable `CardsScreen.rarityColor()` it replaces. Keeping
+  it plain (a) lets `Modifier.rarityBorder(tier)` call `tier.color()` directly (no `@Composable`
+  modifier, no call-site colour-threading), and (b) makes `color()` itself JVM-unit-testable (§5 #4).
+  (Contrast: the existing `CurrencyType.tint()` is gratuitously `@Composable` — we deliberately don't
+  copy that. If a `@Composable` variant is ever wanted for parity, make it delegate to the plain
+  `color()`, which stays the source of truth.)
+- **What/why/depends:** the pure functions (`color`, `cardRarityTier`, `uwRarityTier`, the two label
+  fns) carry all the logic and are JVM-unit-tested. The `@Composable` pieces (`RarityBadge`,
+  `EquippedChip`) are dumb renderers depending only on Compose + theme tokens. No new dependency
+  (Material3 + theme already present).
+- **Exhaustiveness:** `cardRarityTier` / `cardRarityLabel` / `color` use exhaustive `when` over their
+  enum (compiler-enforced). `uwRarityTier` uses ranges so it total-functions over any `Int`.
+- **Accent-bar draw order (pin for the planner):** the left accent bar must render **on top of** the
+  Card's container fill — e.g. an inner `Box` overlay or `Modifier.drawWithContent { drawContent();
+  drawRect(color, size = …) }` — **not** via `drawBehind` on the Card's outer modifier, which the
+  Material3 Surface container fill occludes. Since the equipped `primaryContainer` tint is dropped
+  (§4.3), the bar only ever coexists with the default card surface; state the chosen mechanism in the
+  plan so the bar can't end up invisible or clipped.
 
 ### 4.2 `theme/Color.kt` — one new token
 
@@ -169,11 +180,23 @@ val RaritySand = Color(0xFFC2B280)
 (`LapisLight` and `Gold` already serve tier-1 / tier-2.)
 
 ### 4.3 `CardsScreen.kt` edits
-- **Delete** the private `rarityColor()` (lines 207–211). Route through `cardRarityTier(...).color()`.
-- `CardItem`: border `2.dp → rarityBorder(tier)` (3dp + accent bar); add `RarityBadge(tier,
-  cardRarityLabel(...))` in the header; replace the implicit `primaryContainer` equipped tint with an
-  explicit `EquippedChip` in the header when `card.isEquipped` (keep or drop the subtle tint per the
-  plan — chip is the authoritative signal now).
+- **Delete** the private `rarityColor()` (lines 207–211) **AND its now-unused
+  `import com.whitefang.stepsofbabylon.domain.model.CardRarity` (line 37)** — after the delete, that
+  import is dead (the call sites pass `card.type.rarity` / `r.type.rarity`, whose type is inferred).
+  Route through `cardRarityTier(...).color()`. (Not a gate failure — only `HardcodedText` is errored —
+  but pin it so no dead-import warning is left dangling.)
+- `CardItem` border: **REMOVE** the Card's `border = BorderStroke(2.dp, rarityColor(...))` param
+  (CardsScreen.kt:167) entirely and apply `Modifier.rarityBorder(tier)` on the Card instead.
+  `rarityBorder` is a `Modifier`, not a `BorderStroke`, and owns the full 3dp stroke — do **not**
+  value-swap the existing `border=` param, or two strokes conflict.
+- `CardItem` header: add `RarityBadge(tier, cardRarityLabel(...))`; **remove the inline rarity-name
+  text label** `Text(" • ${card.type.rarity.name}", …)` at the current `:177` — the badge now carries
+  the rarity name (`cardRarityLabel == rarity.name`, the identical string), so keeping both would ship
+  two redundant rarity signifiers in one header, against the prominent/cohesive goal (§1, D4).
+- `CardItem` equipped state: **drop the `primaryContainer` background tint** (the `colors = if
+  (card.isEquipped) …primaryContainer…` at `:168-169`) and show an explicit `EquippedChip` in the
+  header when `card.isEquipped`. D4 mandates no background tint; the chip is the **sole** equipped
+  signal. (This pins the decision — no "keep or drop per the plan".)
 - Header: when `equippedCount == 3`, render the cap hint (warning color + " — unequip one to swap").
 - The pack-result dialog keeps its layout but its `rarityColor(r.type.rarity)` calls become
   `cardRarityTier(r.type.rarity).color()` (same call-through; Epic now reads gold).
@@ -205,14 +228,17 @@ New `presentation/ui/RarityTest.kt` — pure JVM (JUnit Jupiter), mirroring `Enu
 2. **`cardRarityTier` exhaustive over all 3 `CardRarity.entries`** → expected tier.
 3. **Both label functions** over every tier / rarity → expected string (incl. UW TIER_0 → "RARE",
    never "COMMON").
-4. **Distinctness guard:** the three tiers map to three *distinct* colours is asserted indirectly via
-   the tier→token mapping being injective (kept as a pure `tierColorName(tier)` test helper or asserted
-   on the `Color` values if the test has Compose access; if `@Composable color()` isn't JVM-reachable,
-   assert distinctness on a parallel pure `tierToken(tier)` mapping the composable delegates to).
+4. **Distinctness guard:** assert the three tier colours are pairwise-distinct on the **real** plain
+   `color()` (now non-`@Composable`, §4.1): `assertEquals(3, RarityTier.entries.map { it.color() }
+   .toSet().size)`. This is a writable pure-JVM assertion — `Color` is a value class on the unit-test
+   classpath via the `compose-ui-graphics` `implementation` dep (`app/build.gradle.kts:208`), so no
+   Compose composition / test rule is needed and no parallel "shadow" mapping is involved (the test
+   exercises the same function the UI renders, so a future drift in `color()` actually fails it).
 
-The `@Composable` pieces (`RarityBadge`, `EquippedChip`, `rarityBorder`) are visual — verified by the
-on-device feel sign-off, consistent with how Bundle C's pulse/celebration visuals were handled (not
-unit-tested). Existing `CardsViewModelTest` / `UltimateWeaponViewModelTest` stay green untouched.
+The genuinely Compose-bound pieces (`RarityBadge`, `EquippedChip`, `rarityBorder`) are visual —
+verified by the on-device feel sign-off, consistent with how Bundle C's pulse/celebration visuals were
+handled (not unit-tested). Existing `CardsViewModelTest` / `UltimateWeaponViewModelTest` stay green
+untouched.
 
 **Headline count:** ~990 JVM → ~990 + N (the `RarityTest` cases). Update `CLAUDE.md`'s headline line +
 `CHANGELOG.md` when the exact count lands.
@@ -227,5 +253,28 @@ One PR, on a `feat/163-look-and-feel-bundle-d` branch. Build order: (1) `RarityS
 `presentation/ui/Rarity.kt`, STATE/RUN_LOG per the PR Task-List Convention). Gate: `./run-gradle.sh
 testDebugUnitTest lintDebug assembleDebug` green, then on-device feel sign-off (rarity reads at a
 glance; EQUIPPED chip unmistakable; cap hint appears at 3/3; locked UWs show dimmed rarity).
-```
+
+---
+
+## 7. Adversarial Review Record (2026-06-14)
+
+Per the CLAUDE.md **Adversarial Review Gate**, this spec passed a multi-agent review before the plan:
+6 code-grounded reviewers (code-grounding · API/framework · fragile-zone/invariant · scope-completeness
+· test-feasibility · consistency/ambiguity), each finding adversarially verified by a skeptic
+(default-to-refuted). **14 findings raised → 8 survived (all minor/nit; 0 critical/major) → 6 refuted.**
+
+Surviving findings, all applied above:
+- **`color()` made a plain `fun` (not `@Composable`)** — root cause of four findings. Dissolves the
+  `Modifier.rarityBorder` colour-access workaround (note deleted) and makes the distinctness test
+  exercise the real function (§4.1, §5 #4).
+- **Accent-bar draw-order pinned** — render on top of the container fill, not `drawBehind` (§4.1).
+- **`CardsScreen` border** — remove the `border=` `BorderStroke` param entirely; `rarityBorder` owns
+  the 3dp stroke (§4.3).
+- **Redundant inline `" • RARE"` text label removed** — the `RarityBadge` carries the name (§4.3).
+- **Equipped `primaryContainer` tint dropped** — chip is the sole equipped signal; the previously
+  deferred "keep or drop per the plan" wording is now pinned to agree with D4 (§4.3).
+- **Unused `import CardRarity` removed** with `rarityColor()` (§4.3, nit).
+
+Refuted (6): over-stated/style findings the spec already handled or that the code disproved. No
+unaddressed critical/major findings — cleared to advance to the implementation plan.
 
