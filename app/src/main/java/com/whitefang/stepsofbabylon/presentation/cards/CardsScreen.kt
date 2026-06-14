@@ -1,6 +1,5 @@
 package com.whitefang.stepsofbabylon.presentation.cards
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,7 +20,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -32,14 +30,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.whitefang.stepsofbabylon.domain.model.CardRarity
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyCost
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import com.whitefang.stepsofbabylon.presentation.ui.EmptyState
+import com.whitefang.stepsofbabylon.presentation.ui.EquippedChip
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.RarityBadge
+import com.whitefang.stepsofbabylon.presentation.ui.cardRarityLabel
+import com.whitefang.stepsofbabylon.presentation.ui.cardRarityTier
+import com.whitefang.stepsofbabylon.presentation.ui.color
+import com.whitefang.stepsofbabylon.presentation.ui.rarityBorder
 import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
@@ -70,7 +74,16 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
             CurrencyValue(CurrencyType.GEMS, state.gems)
         }
         Spacer(Modifier.height(8.dp))
-        Text("Equipped: ${state.equippedCount}/3", style = MaterialTheme.typography.titleSmall)
+        if (state.equippedCount >= 3) {
+            Text(
+                "Equipped: 3/3 — unequip one to swap",
+                style = MaterialTheme.typography.titleSmall,
+                color = com.whitefang.stepsofbabylon.presentation.ui.theme.StatusWarning,
+                fontWeight = FontWeight.Bold,
+            )
+        } else {
+            Text("Equipped: ${state.equippedCount}/3", style = MaterialTheme.typography.titleSmall)
+        }
         Spacer(Modifier.height(8.dp))
 
         // Free pack ad button
@@ -136,14 +149,14 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
                     results.forEach { r ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (r.isNew) {
-                                Icon(Icons.Filled.FiberNew, contentDescription = "New", tint = rarityColor(r.type.rarity), modifier = Modifier.size(18.dp))
+                                Icon(Icons.Filled.FiberNew, contentDescription = "New", tint = cardRarityTier(r.type.rarity).color(), modifier = Modifier.size(18.dp))
                             } else {
-                                Icon(Icons.Filled.Autorenew, contentDescription = "Duplicate", tint = rarityColor(r.type.rarity), modifier = Modifier.size(18.dp))
+                                Icon(Icons.Filled.Autorenew, contentDescription = "Duplicate", tint = cardRarityTier(r.type.rarity).color(), modifier = Modifier.size(18.dp))
                             }
                             Spacer(Modifier.width(4.dp))
                             Text(
                                 if (r.isNew) formatName(r.type.name) else "${formatName(r.type.name)} +1 Copy",
-                                color = rarityColor(r.type.rarity),
+                                color = cardRarityTier(r.type.rarity).color(),
                             )
                         }
                     }
@@ -162,19 +175,22 @@ private fun CardItem(
 ) {
     val haptics = rememberHaptics()
     val upgradePulse = rememberPulse()
+    val tier = cardRarityTier(card.type.rarity)
     Card(
-        Modifier.fillMaxWidth(),
-        border = BorderStroke(2.dp, rarityColor(card.type.rarity)),
-        colors = if (card.isEquipped) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-        else CardDefaults.cardColors(),
+        Modifier.fillMaxWidth().rarityBorder(tier),
     ) {
         Column(Modifier.padding(12.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(formatName(card.type.name), style = MaterialTheme.typography.titleSmall)
-                Row {
-                    if (card.isMaxLevel) Text("MAX", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                    else Text("Lv ${card.level}/${card.type.maxLevel}", style = MaterialTheme.typography.labelMedium)
-                    Text(" • ${card.type.rarity.name}", style = MaterialTheme.typography.labelSmall, color = rarityColor(card.type.rarity))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    RarityBadge(tier, cardRarityLabel(card.type.rarity))
+                    Text(formatName(card.type.name), style = MaterialTheme.typography.titleSmall)
+                }
+                if (card.isEquipped) {
+                    EquippedChip()
+                } else if (card.isMaxLevel) {
+                    Text("MAX", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                } else {
+                    Text("Lv ${card.level}/${card.type.maxLevel}", style = MaterialTheme.typography.labelMedium)
                 }
             }
             Text(card.effectDescription, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -200,12 +216,3 @@ private fun CardItem(
 }
 
 private fun formatName(name: String): String = name.toDisplayName()
-
-// Rarity colours tuned for legibility on the dark surface: COMMON was Color.Gray (low contrast on
-// bronze); a lighter stone-grey reads as "common" while staying visible. RARE/EPIC keep their
-// blue/purple identities but lifted slightly for contrast.
-private fun rarityColor(rarity: CardRarity): Color = when (rarity) {
-    CardRarity.COMMON -> Color(0xFFB8B0A0)
-    CardRarity.RARE -> Color(0xFF6FA8DC)
-    CardRarity.EPIC -> Color(0xFFB57EDC)
-}
