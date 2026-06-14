@@ -4,6 +4,12 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+## [1.0.6] — 2026-06-14 (versionCode 22)
+
+Shipped to the Play Console **internal** track (tag `v1.0.6`). Contains Look & Feel Bundle C (#162,
+PR #172) + the post-v1.0.5 doc-drift sweep. Presentation-only — no gameplay/economy/concurrency/
+persistence/engine code. **990 JVM tests** (up from 981), 0 failures.
+
 ### Added — Look & Feel Bundle C (#162): feedback / feel — haptics + celebrations + bigger purchase pulse (2026-06-14)
 
 Presentation-only "make it feel tactile" wave off the 2026-06-12 UX review. Spec → adversarial review
