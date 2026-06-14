@@ -31,6 +31,11 @@
 
 **Untouched (fragile zones):** `presentation/battle/{engine,entities,effects}`, `BattleViewModel.kt`, `RoundEndState`/`BattleUiState`, all `data/` except the new prefs file, `service/`, `domain/`, `Screen.kt` routes.
 
+> **Imports are additive guidance.** Each task lists imports to add; if one is **already present** in the
+> target file, do not re-add it (a duplicate import fails Task 11's `lintDebug` `UnusedImports`=error gate).
+> When deleting imports (Task 3), remove **only** symbols no longer referenced. The build+lint step (Task 11)
+> is the backstop, but get the obvious ones right in-task.
+
 **Task ordering rationale:** shared helpers first (Tasks 1–3), then wire them (Tasks 4–5, 9–10), VM event logic with its tests interleaved (Tasks 6–8). Each task is independently committable.
 
 ---
@@ -261,7 +266,7 @@ fun Modifier.pulseScale(pulse: PulseState): Modifier =
 
 - [ ] **Step 2: Refactor `UpgradeCard` to consume the shared pulse**
 
-In `app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop/UpgradeCard.kt`, delete the inline pulse (current lines 47–58: the `context`/`reducedMotion`/`pulseActive`/`scale`/`LaunchedEffect` block) and the now-unused imports (`animateFloatAsState`, `snap`, `tween`, `LaunchedEffect`, `mutableStateOf`, `getValue`/`setValue` if unused elsewhere, `graphicsLayer`, `LocalContext`, `ReducedMotionCheck`, `kotlinx.coroutines.delay`). Replace with the shared pulse + haptics. The new top of the composable body:
+In `app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop/UpgradeCard.kt`, delete the inline pulse (current lines 47–58: the `context`/`reducedMotion`/`pulseActive`/`scale`/`LaunchedEffect` block) and the now-unused imports. **Delete exactly these** (each is used only by the removed block — verified): `animateFloatAsState`, `snap`, `tween`, `LaunchedEffect`, `mutableStateOf`, `remember`, `getValue`, `setValue`, `graphicsLayer`, `LocalContext`, `ReducedMotionCheck`, `kotlinx.coroutines.delay`. **Keep** `import androidx.compose.ui.draw.alpha` (still used by `cardAlpha`/`valueAlpha`). (Task 11's `lintDebug` has `UnusedImports = error`, so a missed one fails the build — `remember` is the easy one to forget since the inline pulse was its only user.) Replace with the shared pulse + haptics. The new top of the composable body:
 
 ```kotlin
 @Composable
@@ -541,10 +546,21 @@ git commit -m "feat(haptics): ClaimCelebration one-shot reward chip + event type
 
 This VM has **no ticker** → it's directly constructible (it already is in the existing test). Do this one before Missions to bank the simpler harness.
 
-- [ ] **Step 1: Write the failing tests** (live-count via `backgroundScope`, per §8)
+- [ ] **Step 1: Write the failing tests** (live-count via `backgroundScope`, per §8, + a pure label test)
 
-Append to `UnclaimedSuppliesViewModelTest.kt` (add imports `import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent`, `import kotlinx.coroutines.flow.toList`):
+Append to `UnclaimedSuppliesViewModelTest.kt` (add imports `import com.whitefang.stepsofbabylon.presentation.supplies.supplyLabel`, `import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent`, `import kotlinx.coroutines.flow.toList`, `import com.whitefang.stepsofbabylon.domain.model.SupplyDrop`):
 ```kotlin
+    // Pure label-builder test — no VM, no dispatcher. Covers the LABEL CONTENT path
+    // (the VM count tests below assert emission count only).
+    @Test
+    fun `supplyLabel formats each reward type`() {
+        fun drop(r: SupplyDropReward, amt: Int) = SupplyDrop(id = 1, trigger = SupplyDropTrigger.RANDOM, reward = r, rewardAmount = amt, claimed = false, createdAt = 0L)
+        assertEquals("+100 Steps claimed!", supplyLabel(drop(SupplyDropReward.STEPS, 100)))
+        assertEquals("+5 Gems claimed!", supplyLabel(drop(SupplyDropReward.GEMS, 5)))
+        assertEquals("+2 Power Stones claimed!", supplyLabel(drop(SupplyDropReward.POWER_STONES, 2)))
+        assertEquals("Card claimed!", supplyLabel(drop(SupplyDropReward.CARD_COPY, 0)))
+    }
+
     @Test
     fun `claimDrop emits one celebration on success`() = runTest(dispatcher) {
         encounterRepo.createDrop(SupplyDropTrigger.DAILY_MILESTONE, SupplyDropReward.GEMS, 5)
@@ -588,11 +604,11 @@ Append to `UnclaimedSuppliesViewModelTest.kt` (add imports `import com.whitefang
 - [ ] **Step 2: Run to verify it fails**
 
 Run: `./run-gradle.sh :app:testDebugUnitTest --tests "com.whitefang.stepsofbabylon.presentation.supplies.UnclaimedSuppliesViewModelTest"`
-Expected: FAIL — `vm.celebration` unresolved.
+Expected: FAIL — `vm.celebration` / `supplyLabel` unresolved.
 
-- [ ] **Step 3: Implement the event on the VM**
+- [ ] **Step 3: Implement the event on the VM + extract the label builder**
 
-`UnclaimedSuppliesViewModel.kt` (add imports `import com.whitefang.stepsofbabylon.domain.usecase.ClaimSupplyDrop.Result`, `import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent`, `import kotlinx.coroutines.channels.Channel`, `import kotlinx.coroutines.flow.receiveAsFlow`):
+`UnclaimedSuppliesViewModel.kt` (add imports `import com.whitefang.stepsofbabylon.domain.usecase.ClaimSupplyDrop.Result`, `import com.whitefang.stepsofbabylon.domain.model.SupplyDropReward`, `import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent`, `import kotlinx.coroutines.channels.Channel`, `import kotlinx.coroutines.flow.receiveAsFlow`):
 ```kotlin
     private val _celebration = Channel<ClaimCelebrationEvent>(Channel.CONFLATED)
     val celebration = _celebration.receiveAsFlow()
@@ -613,20 +629,23 @@ Expected: FAIL — `vm.celebration` unresolved.
             if (anySuccess) _celebration.trySend(ClaimCelebrationEvent(label = "All supplies claimed!"))
         }
     }
-
-    private fun supplyLabel(drop: SupplyDrop): String = when (drop.reward) {
-        SupplyDropReward.STEPS -> "+${drop.rewardAmount} Steps claimed!"
-        SupplyDropReward.GEMS -> "+${drop.rewardAmount} Gems claimed!"
-        SupplyDropReward.POWER_STONES -> "+${drop.rewardAmount} Power Stones claimed!"
-        SupplyDropReward.CARD_COPY -> "Card claimed!"
-    }
 ```
-Add `import com.whitefang.stepsofbabylon.domain.model.SupplyDropReward`. Note: in `claimAll`, use `fold` (not `any { }`) so **every** drop is actually claimed — `any` would short-circuit after the first Success and skip the rest.
+And add a **top-level** pure function (file scope, after the class) so it is unit-testable without the VM:
+```kotlin
+/** Pure celebration-label builder for a single supply drop (testable without the VM). */
+internal fun supplyLabel(drop: SupplyDrop): String = when (drop.reward) {
+    SupplyDropReward.STEPS -> "+${drop.rewardAmount} Steps claimed!"
+    SupplyDropReward.GEMS -> "+${drop.rewardAmount} Gems claimed!"
+    SupplyDropReward.POWER_STONES -> "+${drop.rewardAmount} Power Stones claimed!"
+    SupplyDropReward.CARD_COPY -> "Card claimed!"
+}
+```
+Note: in `claimAll`, use `fold` (not `any { }`) so **every** drop is actually claimed — `any` would short-circuit after the first Success and skip the rest.
 
 - [ ] **Step 4: Run to verify it passes**
 
 Run: `./run-gradle.sh :app:testDebugUnitTest --tests "com.whitefang.stepsofbabylon.presentation.supplies.UnclaimedSuppliesViewModelTest"`
-Expected: PASS (6 tests: 3 existing + 3 new).
+Expected: PASS (7 tests: 3 existing + 4 new — `supplyLabel` + 3 VM emission tests).
 
 - [ ] **Step 5: Commit**
 
@@ -644,23 +663,45 @@ git commit -m "feat(haptics): supplies claim celebration event, gated on >=1 Suc
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/missions/MissionsViewModel.kt`
 - Test: `app/src/test/java/com/whitefang/stepsofbabylon/presentation/missions/MissionsViewModelTest.kt`
 
-**⚠ Ticker hazard (§8):** `MissionsViewModel.init` runs `while(true){ delay(1000) … }`. The existing test never constructs the VM. We construct it with an injected `FakeTimeProvider`, collect on `backgroundScope`, and **never call `advanceUntilIdle()`** (the loop is never idle) — drain only the claim with `runCurrent()`, then cancel the VM scope in teardown. `backgroundScope` coroutines are exempt from `runTest`'s uncompleted-coroutines check.
+**⚠ Ticker hazard (plan-review CRITICAL — confirmed against kotlinx-coroutines-test internals):**
+`MissionsViewModel.init` launches `viewModelScope.launch { while(true){ delay(1000) … } }` on Main
+(the class's `UnconfinedTestDispatcher`). `runTest`'s end-of-test cleanup calls
+`advanceUntilIdleOr { false }`, which spins **forever** on the rescheduling ticker → the test HANGS.
+`backgroundScope`'s exemption only covers the collectors, **not** the `viewModelScope` ticker. So the
+ticker MUST be cancelled in-body before the test returns. To avoid reaching into `viewModelScope` from
+the test (which needs an extra import and is brittle), the VM exposes a `@VisibleForTesting` cancel
+method and the test calls **that**. Label *content* is covered by **pure functions** tested without the
+VM (so the `WhileSubscribed` uiState-not-subscribed gap can't hide a wrong label); the VM tests assert
+emission **count** only.
 
 - [ ] **Step 1: Write the failing tests**
 
-Append to `MissionsViewModelTest.kt` (add imports `import com.whitefang.stepsofbabylon.fakes.FakeTimeProvider`, `import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent`, `import kotlinx.coroutines.flow.toList`, `import kotlinx.coroutines.launch`, `import kotlinx.coroutines.test.runCurrent`, `import org.mockito.kotlin.mock`, `import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao`, `import com.whitefang.stepsofbabylon.fakes.FakeCosmeticRepository`):
+Append to `MissionsViewModelTest.kt` (add imports: `import com.whitefang.stepsofbabylon.fakes.FakeTimeProvider`, `import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent`, `import kotlinx.coroutines.flow.toList`, `import kotlinx.coroutines.launch`, `import kotlinx.coroutines.test.runCurrent`, `import org.mockito.kotlin.mock`, `import com.whitefang.stepsofbabylon.data.local.DailyStepDao`, `import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao`, `import com.whitefang.stepsofbabylon.fakes.FakeCosmeticRepository`). **No `androidx.lifecycle.viewModelScope` import** — the test uses the VM's own cancel method.
 
 ```kotlin
     private fun createVm() = MissionsViewModel(
         dailyMissionDao = missionDao,
         milestoneDao = milestoneDao,
-        dailyStepDao = mock(),
+        dailyStepDao = mock<DailyStepDao>(),          // sumCreditedSteps → mockito default 0L (no NPE; Long is non-null primitive — verify in Step 4)
         playerRepository = playerRepo,
         playerProfileDao = mock<PlayerProfileDao>(),
         cosmeticRepository = FakeCosmeticRepository(),
         timeProvider = FakeTimeProvider(fixedDate = java.time.LocalDate.parse(today)),
     )
 
+    // --- Pure label builders (no VM, no dispatcher) — these cover LABEL CONTENT ---
+    @Test
+    fun `missionRewardLabel formats gems, power-stones, both, and fallback`() {
+        assertEquals("+5 Gems claimed!", missionRewardLabel(infoWith(gems = 5, ps = 0)))
+        assertEquals("+2 Power Stones claimed!", missionRewardLabel(infoWith(gems = 0, ps = 2)))
+        assertEquals("+5 Gems +2 Power Stones claimed!", missionRewardLabel(infoWith(gems = 5, ps = 2)))
+        assertEquals("Reward claimed!", missionRewardLabel(null))
+    }
+    private fun infoWith(gems: Int, ps: Int) = MissionDisplayInfo(
+        id = 1, description = "d", target = 1, progress = 1, rewardGems = gems, rewardPowerStones = ps, completed = true, claimed = false,
+    )
+
+    // --- VM emission COUNT tests (construct the VM → MUST cancel the ticker before returning) ---
     @Test
     fun `claiming a completed mission emits one celebration`() = runTest {
         missionDao.insert(DailyMissionEntity(date = today, missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 5000, completed = true, rewardGems = 5))
@@ -671,7 +712,7 @@ Append to `MissionsViewModelTest.kt` (add imports `import com.whitefang.stepsofb
         vm.claimMission(id)
         runCurrent()
         assertEquals(1, events.size)
-        vm.viewModelScope.coroutineContext[kotlinx.coroutines.Job]?.cancel()
+        vm.cancelForTest()   // stop the while(true) ticker or runTest cleanup hangs
     }
 
     @Test
@@ -679,34 +720,34 @@ Append to `MissionsViewModelTest.kt` (add imports `import com.whitefang.stepsofb
         val vm = createVm()
         val events = mutableListOf<ClaimCelebrationEvent>()
         backgroundScope.launch { vm.celebration.toList(events) }
-        vm.claimMilestone(Milestone.FIRST_STEPS)   // player has 5000 steps >= FIRST_STEPS req
+        vm.claimMilestone(Milestone.FIRST_STEPS)   // player has 5000 steps >= FIRST_STEPS (1000)
         runCurrent()
         assertEquals(1, events.size)
-        vm.viewModelScope.coroutineContext[kotlinx.coroutines.Job]?.cancel()
+        vm.cancelForTest()
     }
 
     @Test
     fun `claiming an unachievable milestone emits no celebration`() = runTest {
-        // SUPER_WALKER requires far more than 5000 steps → InsufficientSteps, snackbar only.
+        // GLOBE_TROTTER (max, 5,000,000) ≫ the player's 5000 steps → InsufficientSteps, snackbar only.
         val vm = createVm()
         val events = mutableListOf<ClaimCelebrationEvent>()
         backgroundScope.launch { vm.celebration.toList(events) }
         vm.claimMilestone(Milestone.entries.maxBy { it.requiredSteps })
         runCurrent()
         assertTrue(events.isEmpty())
-        vm.viewModelScope.coroutineContext[kotlinx.coroutines.Job]?.cancel()
+        vm.cancelForTest()
     }
 ```
-(`runTest` here uses the class's `UnconfinedTestDispatcher` set as Main in `@BeforeEach`. `viewModelScope` runs on Main; cancelling its `Job` in-body stops the ticker so the test completes. The `import androidx.lifecycle.viewModelScope`-equivalent: `viewModelScope` is accessible because it's a public extension — if not visible, add a `@VisibleForTesting fun cancelScope()` to the VM that calls `viewModelScope.cancel()` and call that instead.)
+> Why this shape: `runTest {}` (bare) creates its own scheduler but adopts the Main `UnconfinedTestDispatcher` set in `@BeforeEach`; the claim's `viewModelScope.launch` runs **eagerly** (Unconfined) so the `trySend` fires during the `claimMission`/`claimMilestone` call, before the `backgroundScope` collector starts — the **CONFLATED** channel buffers that one value, and `runCurrent()` then starts the collector which receives it. The label-content path is NOT exercised here (uiState isn't subscribed → `find{}` is null → fallback) — that's deliberate: the pure `missionRewardLabel` test above covers content, these assert count. `vm.cancelForTest()` cancels the ticker so `runTest` cleanup terminates.
 
 - [ ] **Step 2: Run to verify it fails**
 
 Run: `./run-gradle.sh :app:testDebugUnitTest --tests "com.whitefang.stepsofbabylon.presentation.missions.MissionsViewModelTest"`
-Expected: FAIL — `vm.celebration` unresolved.
+Expected: FAIL — `vm.celebration` / `missionRewardLabel` / `vm.cancelForTest` unresolved.
 
-- [ ] **Step 3: Implement the event on the VM**
+- [ ] **Step 3: Implement on the VM (event + pure label fn + test-cancel hook)**
 
-`MissionsViewModel.kt` (add imports `import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent`, `import com.whitefang.stepsofbabylon.domain.usecase.ClaimMissionResult`, `import kotlinx.coroutines.channels.Channel`, `import kotlinx.coroutines.flow.receiveAsFlow`):
+`MissionsViewModel.kt` (add imports: `import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent`, `import com.whitefang.stepsofbabylon.domain.usecase.ClaimMissionResult`, `import kotlinx.coroutines.channels.Channel`, `import kotlinx.coroutines.flow.receiveAsFlow`, `import androidx.annotation.VisibleForTesting`):
 ```kotlin
     private val _celebration = Channel<ClaimCelebrationEvent>(Channel.CONFLATED)
     val celebration = _celebration.receiveAsFlow()
@@ -720,34 +761,38 @@ Expected: FAIL — `vm.celebration` unresolved.
         }
     }
 
-    private fun missionRewardLabel(m: MissionDisplayInfo?): String {
-        if (m == null) return "Reward claimed!"
-        val parts = buildList {
-            if (m.rewardGems > 0) add("+${m.rewardGems} Gems")
-            if (m.rewardPowerStones > 0) add("+${m.rewardPowerStones} Power Stones")
-        }
-        return if (parts.isEmpty()) "Reward claimed!" else parts.joinToString(" ") + " claimed!"
-    }
+    /** Cancels viewModelScope (incl. the init ticker) so JVM tests that construct the VM terminate. */
+    @VisibleForTesting
+    fun cancelForTest() { viewModelScope.coroutineContext[kotlinx.coroutines.Job]?.cancel() }
 ```
-And in `claimMilestone`, change the Success arm from `Unit` to emit (build the label from the milestone's `rewardsSummary()`):
+And add the **top-level** pure label builder (file scope, after the class — testable without the VM):
 ```kotlin
-            when (val result = claimMilestoneUseCase.invoke(milestone)) {
+/** Pure celebration-label builder for a claimed mission (testable without the VM). */
+internal fun missionRewardLabel(m: MissionDisplayInfo?): String {
+    if (m == null) return "Reward claimed!"
+    val parts = buildList {
+        if (m.rewardGems > 0) add("+${m.rewardGems} Gems")
+        if (m.rewardPowerStones > 0) add("+${m.rewardPowerStones} Power Stones")
+    }
+    return if (parts.isEmpty()) "Reward claimed!" else parts.joinToString(" ") + " claimed!"
+}
+```
+Then in `claimMilestone`, change **only the `Success` arm** from `-> Unit` to the `trySend` — **do not retype the three failure arms** (they contain `“`/`”` unicode-escapes that a re-quote would corrupt). Apply this as a single-line replacement of:
+```kotlin
+                ClaimMilestoneResult.Success -> Unit // claim state updates via flow
+```
+with:
+```kotlin
                 ClaimMilestoneResult.Success ->
                     _celebration.trySend(ClaimCelebrationEvent(label = "${milestone.rewardsSummary()} claimed!"))
-                ClaimMilestoneResult.InsufficientSteps -> userMessage.value = "You haven't walked enough steps yet."
-                ClaimMilestoneResult.AlreadyClaimed -> userMessage.value = "Milestone already claimed."
-                is ClaimMilestoneResult.UnknownCosmetic -> userMessage.value = "Reward temporarily unavailable (cosmetic “${result.cosmeticId}” is being finalised). Try again after the next update."
-            }
 ```
-> The failure arms keep `userMessage` — the 3 `UnknownCosmetic` milestones must never celebrate.
-> `uiState.value.missions` is the post-claim snapshot; for the celebration label we read `rewardGems`/
-> `rewardPowerStones`, which are unchanged by claiming (only `claimed` flips), so the lookup is valid
-> whether or not the Room flow has re-emitted yet.
+> The failure arms (`InsufficientSteps`/`AlreadyClaimed`/`UnknownCosmetic`) are left **byte-for-byte
+> unchanged** — they keep `userMessage`, so the 3 `UnknownCosmetic` milestones never celebrate.
 
 - [ ] **Step 4: Run to verify it passes**
 
 Run: `./run-gradle.sh :app:testDebugUnitTest --tests "com.whitefang.stepsofbabylon.presentation.missions.MissionsViewModelTest"`
-Expected: PASS (existing + 3 new; no `UncompletedCoroutinesError`).
+Expected: PASS (existing + 4 new: 1 pure-label + 3 VM count; **no hang, no `UncompletedCoroutinesError`**). If `mock<DailyStepDao>()` causes an issue (the init `updateWalkingMissionProgress` calls `dailyStepDao.sumCreditedSteps` → mockito returns `0L` for the non-null `Long` primitive, which is fine), confirm green; if not, stub `whenever(dailyStepDao.sumCreditedSteps(any(), any())).thenReturn(0L)`.
 
 - [ ] **Step 5: Commit**
 
@@ -817,7 +862,7 @@ state.roundEndState?.let { roundEnd ->
     }
 }
 ```
-Add imports: `androidx.compose.animation.AnimatedVisibility`, `androidx.compose.animation.fadeIn`, `androidx.compose.animation.fadeOut`, `androidx.compose.animation.scaleIn`, `androidx.compose.animation.core.MutableTransitionState`, `androidx.compose.runtime.remember`.
+Add imports (only the ones not already present): `androidx.compose.animation.AnimatedVisibility`, `androidx.compose.animation.fadeIn`, `androidx.compose.animation.fadeOut`, `androidx.compose.animation.scaleIn`, `androidx.compose.animation.core.MutableTransitionState`. (`androidx.compose.runtime.remember` and `…LaunchedEffect` are **already imported** in `BattleScreen.kt` — don't re-add them.)
 > The `let` content leaves composition when `roundEndState` becomes null (Play Again resets it) — this is the intended **entrance-only** behavior (the exit fade plays only while the data lingers; the design is entrance-only, §3 D3).
 
 - [ ] **Step 2: Add the Play-Again haptic + staggered sting inside `PostRoundOverlay.kt`**
@@ -849,7 +894,7 @@ LaunchedEffect(Unit) {
 }
 // Render: highlights.take(visibleCount).forEach { Spacer(Modifier.height(8.dp)); it() }
 ```
-Imports: `androidx.compose.runtime.mutableIntStateOf`, `androidx.compose.runtime.LaunchedEffect`, `androidx.compose.runtime.getValue`/`setValue`, `kotlinx.coroutines.delay`, `com.whitefang.stepsofbabylon.presentation.battle.effects.ReducedMotionCheck`, `androidx.compose.ui.platform.LocalContext` (already imported). Move the 4 conditional `Text` blocks into the `highlights` lambdas (preserve their exact existing content/colors). The stat block + buttons (`:91+`) render after, unchanged.
+Imports to add to `PostRoundOverlay.kt` (only those not already present): `androidx.compose.runtime.mutableIntStateOf`, `androidx.compose.runtime.getValue`, `androidx.compose.runtime.setValue`, `kotlinx.coroutines.delay`, `com.whitefang.stepsofbabylon.presentation.battle.effects.ReducedMotionCheck`. (`androidx.compose.runtime.LaunchedEffect`, `androidx.compose.runtime.remember`, and `androidx.compose.ui.platform.LocalContext` are **already imported** in `PostRoundOverlay.kt` — don't re-add.) Move the 4 conditional `Text` blocks into the `highlights` lambdas (preserve their exact existing content/colors). The stat block + buttons (`:91+`) render after, unchanged.
 > Stagger over `highlights` (present subset), NOT a fixed index 0–3 — a typical round renders 1–2 lines.
 
 - [ ] **Step 3: Verify it compiles + suite green**
@@ -912,5 +957,15 @@ git add -A && git commit -m "docs: Bundle C (#162) — sync current-state docs +
 - **§1 in-scope items** → Tasks 1–10 (haptics infra T1–2; pulse T3–4; battle-start incl. Play-Again T4/T10; pause T4; Post-Round T10; claim celebration T6–9; Settings toggle T5). ✓
 - **§3 decisions** → D1 (T5), D2 (T2), D3 present-subset stagger (T10), D4 1.12× everywhere (T3–4), D5/D6 (T7–8), D7 ≥1-Success `claimAll` (T7), D9 (T3), D10 `ClaimCelebrationEvent` (T6). ✓
 - **§6 wiring map** → T4 (real-money Store launch-path guard; equip haptic-only; Labs sites) + T10 (Play-Again). WorkshopScreen correctly NOT touched. ✓
-- **§8 test harness** → Supplies live-count (T7); Missions ticker-safe `backgroundScope`+`runCurrent`+scope-cancel (T8); `HapticsPreferences` Robolectric (T1); no Compose-helper tests (house norm). ✓
+- **§8 test harness** → Supplies live-count (T7); Missions ticker-safe `backgroundScope`+`runCurrent`+`cancelForTest()` (T8); `HapticsPreferences` Robolectric (T1); no Compose-helper tests (house norm). ✓
 - **Fragile zones** → no engine/economy/domain/`Screen.kt`/`BattleViewModel` change; Post-Round is HUD-only. ✓
+
+## Plan-review fixes applied (adversarial review, 36 findings → 29 surviving / 7 refuted)
+
+The plan-review gate caught these before implementation (all now folded into the tasks above):
+- **[CRITICAL] Task 8 ticker hang + missing import.** Bare `runTest{}` adopts the Main `UnconfinedTestDispatcher`; its end-of-test `advanceUntilIdleOr{false}` spins forever on the `while(true){delay}` ticker. Fixed: the VM exposes `@VisibleForTesting cancelForTest()` (no `viewModelScope` import in the test), called as the last line of each VM test; the ticker cancel is **load-bearing, not optional**.
+- **[MAJOR×, MINOR×] uiState-not-subscribed → fallback label.** The VM count tests don't subscribe `uiState` (`WhileSubscribed`), so `find{}` is null → fallback label; the real label path wasn't exercised. Fixed: extracted `missionRewardLabel`/`supplyLabel` as **pure `internal` top-level functions** tested directly (label *content*); the VM tests assert emission *count* only.
+- **[MINOR] Task 8 smart-quotes.** The milestone `when` failure arms use `“`/`”` escapes; re-quoting the whole block would corrupt them. Fixed: edit **only** the `Success` arm (single-line replace), leave failure arms byte-for-byte.
+- **[NIT] Task 3 unused `remember` import** → would fail `lintDebug`. Fixed: explicit delete-list incl. `remember`; added the global additive-imports note.
+- **[NIT] non-existent `SUPER_WALKER` comment** → corrected to `GLOBE_TROTTER` (the actual `maxBy`).
+- **Refuted (7):** the `@Composable` lambda-list pattern, dispatcher mechanics, milestone-label-includes-cosmetic-name, economy-atomicity, and fragile-zone safety were all positively verified — no change needed.
