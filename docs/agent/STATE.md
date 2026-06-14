@@ -205,18 +205,16 @@ the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 - **Phase B debt:** B.4 FollowOnPipeline + B.5 UpdateMissionProgress extraction (ADR-0004, ~1 week, zero user benefit — deferred).
 - `BuildConfig.USE_REAL_ADS` consent-prefetch branch is JVM-untested (device-verified). Play "no debug symbols"
   warning persists on every upload (pre-stripped .so files — informational).
-- **`release.yml` deprecation (non-blocking):** the `r0adkll/upload-google-play` step uses the deprecated
-  `track:` input — the action now warns "migrate to `tracks`". The v1.0.4 upload still succeeded; migrate
-  the input on the next `release.yml` touch.
-- **Battle HUD vertical offset (visual-only, surfaced in the v1.0.4 audit):** `BattleScreen.kt:119` has a
-  hardcoded `top = 80.dp` HUD pad (+ `top = 72.dp` quit button) that pre-dated #159's app-wide ActionBar
-  removal and wasn't adjusted → the in-round HUD likely sits ~56dp higher than intended. No
-  gameplay/economy/persistence impact; fix in a future presentation bundle after an on-device confirm.
+- _(Resolved 2026-06-14, post-v1.0.4 — pending in `[Unreleased]`, will ship in the next release.)_
+  **`release.yml` `track`→`tracks`** deprecation rename (verified non-breaking at the pinned action SHA);
+  **Battle HUD vertical offset** — the stale `top = 80.dp` HUD pad double-counted the removed status-bar +
+  ActionBar chrome (`MainActivity` is edge-to-edge + Scaffold supplies the inset); fixed to `40.dp` /
+  quit-button `32.dp`, reproduced + re-verified on the emulator.
 
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Look-&-feel follow-ups (Gate C/F UX):** **Bundles #159/#160/#161 all merged AND released in v1.0.4** (PR #168, tag `v1.0.4`); **#161 fully closed** (both Bundle-B PRs shipped). Remaining bundles, each needing its own spec → plan → PR: **#162** haptics + reward/claim animation, **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. Manual spot-checks pending on the v1.0.4 internal build: navigate-away loading no-reflash (from #160) + **Battle HUD `top=80.dp` offset** (likely ~56dp high after #159's ActionBar removal — visual-only; fold into a future presentation bundle).
+1. **Look-&-feel follow-ups (Gate C/F UX):** **Bundles #159/#160/#161 all merged AND released in v1.0.4** (PR #168, tag `v1.0.4`); **#161 fully closed** (both Bundle-B PRs shipped). Remaining bundles, each needing its own spec → plan → PR: **#162** haptics + reward/claim animation, **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. (Battle HUD offset fixed 2026-06-14 — see `[Unreleased]`.) Manual spot-check still pending on the v1.0.4 internal build: navigate-away loading no-reflash (from #160).
 2. **Bigger gate items:** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured).
 3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 4. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).

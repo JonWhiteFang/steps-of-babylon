@@ -4,6 +4,30 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fixed — Battle HUD vertical offset + `release.yml` `track`→`tracks` deprecation (2026-06-14)
+
+Two post-v1.0.4 follow-ups surfaced by the release audit. Both reproduced/verified before fixing.
+Presentation + CI config only — no gameplay/economy/concurrency/persistence/engine code touched.
+**981 JVM tests unchanged** (0 new — the HUD change is a Compose-UI-surface layout tweak with no JVM
+seam, per the file's established "verify on-device" convention); `testDebugUnitTest` + `lintDebug` green.
+
+- **Battle HUD floated ~53dp below the ziggurat health bar.** The in-round HUD `Column`
+  (`BattleScreen.kt`) carried a hardcoded `top = 80.dp` (and the quit button `top = 72.dp`) calibrated
+  for a status-bar (~24dp) + platform-ActionBar (~56dp) offset that no longer applies: `MainActivity`
+  is edge-to-edge and its `Scaffold` already supplies the status-bar inset via `innerPadding`, and the
+  ActionBar was removed app-wide in #159. The stale offset double-counted removed chrome, leaving a
+  dead gap between the engine-rendered health bar and the wave header. **Fix:** `80.dp → 40.dp` (clears
+  the engine health bar — `HealthBarRenderer` draws it at 40px..72px ≈ 36dp@2x — with a small margin)
+  and the paired quit button `72.dp → 32.dp` (preserves the 8dp differential so the back arrow stays
+  aligned with the wave header). **Reproduced and re-verified on the emulator** (1080×2400 @ 420dpi):
+  the wave header now tucks cleanly under the health bar with no collision. (The release audit's
+  suggested "−56dp → 24.dp" was discarded — 24dp would have collided with the ~27dp health-bar bottom.)
+- **`release.yml` upload step used the deprecated `track:` input.** The `r0adkll/upload-google-play`
+  action (pinned `v1.1.5` / `e738b9dd`) warns "`track` is deprecated, use `tracks`". **Fix:** renamed
+  `track: internal` → `tracks: internal`. Verified against the action's `action.yml` **at the pinned
+  SHA** that both inputs exist and `tracks` is the documented successor (single comma-separated string)
+  — a non-breaking rename. Silences the warning on the next release; no behaviour change.
+
 ## [1.0.4] — 2026-06-14 (versionCode 20)
 
 ### Fixed — Look-&-feel Bundle B PR-B2: bottom-nav restore-wrong-screen bug (Gate C/F UX, #161) (2026-06-13)
