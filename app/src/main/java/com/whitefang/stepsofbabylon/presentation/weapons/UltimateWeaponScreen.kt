@@ -31,6 +31,9 @@ import androidx.compose.material3.Icon
 import com.whitefang.stepsofbabylon.domain.model.UWPath
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
+import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
+import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 
 @Composable
 fun UltimateWeaponScreen(viewModel: UltimateWeaponViewModel = hiltViewModel()) {
@@ -76,6 +79,7 @@ private fun UWCard(
     onUpgrade: (UWPath) -> Unit,
     onToggleEquip: () -> Unit,
 ) {
+    val haptics = rememberHaptics()
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -105,14 +109,16 @@ private fun UWCard(
                 }
             }
             if (!info.isUnlocked) {
+                val unlockPulse = rememberPulse()
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Button(
-                        onClick = onUnlock,
+                        onClick = { unlockPulse.trigger(); haptics.tap(); onUnlock() },
                         enabled = info.canAffordUnlock,
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A5ACD)),
+                        modifier = Modifier.pulseScale(unlockPulse),
                     ) {
                         Text("Unlock (${info.type.unlockCost} PS)")
                     }
@@ -133,7 +139,7 @@ private fun UWCard(
                     modifier = Modifier.padding(top = 8.dp),
                 ) {
                     OutlinedButton(
-                        onClick = onToggleEquip,
+                        onClick = { haptics.tap(); onToggleEquip() },
                         enabled = info.isEquipped || canEquipMore,
                     ) {
                         Text(if (info.isEquipped) "Unequip" else "Equip")
@@ -151,6 +157,8 @@ private fun UWPathRow(
     pathInfo: UWPathDisplay,
     onUpgrade: () -> Unit,
 ) {
+    val pulse = rememberPulse()
+    val haptics = rememberHaptics()
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -176,9 +184,10 @@ private fun UWPathRow(
             )
         } else {
             Button(
-                onClick = onUpgrade,
+                onClick = { pulse.trigger(); haptics.tap(); onUpgrade() },
                 enabled = pathInfo.canAfford,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A5ACD)),
+                modifier = Modifier.pulseScale(pulse),
             ) {
                 Text("L${pathInfo.level + 1} (${pathInfo.cost} PS)")
             }

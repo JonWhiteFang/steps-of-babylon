@@ -4,6 +4,37 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Added — Look & Feel Bundle C (#162): feedback / feel — haptics + celebrations + bigger purchase pulse (2026-06-14)
+
+Presentation-only "make it feel tactile" wave off the 2026-06-12 UX review. Spec → adversarial review
+(29 findings/25 surviving) → 12-task TDD plan → adversarial review (36 findings/29 surviving, incl. 1
+CRITICAL test-hang) → subagent-driven execution with per-task spec + quality review. **Zero
+engine/economy/domain/concurrency change** — every fragile zone honored.
+
+- **Haptics infrastructure (greenfield — there were zero haptics in the app).** New
+  `data/HapticsPreferences.kt` (SharedPreferences `"haptics_prefs"`, default ON, mirrors
+  `SoundPreferences`) + `presentation/ui/Haptics.kt` (`tap()`/`success()` over
+  `View.performHapticFeedback`, gated on the pref read at call time — no `VIBRATE` permission) +
+  `rememberHaptics()`. New Settings **"Haptic Feedback"** toggle (independent of Reduced-Motion).
+- **Shared, bigger purchase pulse.** Extracted the inline Workshop `UpgradeCard` 1.05× pulse into a
+  reusable `presentation/ui/PurchasePulse.kt` (`rememberPulse()` + `Modifier.pulseScale()`), enlarged
+  to **1.12×**, and applied it (with a `tap()` haptic) across all spend buttons (Workshop, in-round,
+  Store, UW, Cards, Labs). Equip / battle-start / pause taps get the haptic only.
+- **Post-Round celebration.** The "Round Over" overlay gains an entrance animation (hosted in
+  `BattleScreen` via `AnimatedVisibility` keyed on the round-end **nullability transition** — watch-ad
+  copies don't re-trigger it) + a **staggered reward-line sting** over the lines actually present this
+  round, each firing a `success()` haptic. Compose-HUD only; renderer/engine untouched.
+- **Claim celebration.** Missions / Milestones / Supplies claims now fire a one-shot reward chip
+  (`presentation/ui/ClaimCelebration.kt`) + `success()` haptic, from a new conflated
+  `Channel`-backed `celebration` event on each claim VM, gated on `Result.Success` (the 3
+  `UnknownCosmetic` milestones never celebrate; `claimAll` celebrates once, only if ≥1 drop succeeded).
+- **Deferred (audio-debt track):** the reward SFX sub-item of #162 is blocked on the placeholder
+  sine-tone audio debt; the animation hooks are designed so a later SFX call slots in beside the haptic.
+- **Tests: 981 → 990 JVM** (+1 `HapticsPreferencesTest` Robolectric, +4 supplies, +4 missions — incl.
+  the ticker-safe `@VisibleForTesting cancelForTest()` harness for the Missions `while(true)` ticker
+  and pure top-level `supplyLabel`/`missionRewardLabel` builders). View/Compose helpers untested per
+  house norm; 9 instrumented unchanged. `testDebugUnitTest lintDebug assembleDebug` green.
+
 ### Docs — full doc-drift sweep (post-v1.0.5) (2026-06-14)
 
 Multi-agent doc-drift audit (67 agents: ground-truth extraction → 11-lane fan-out across the live doc

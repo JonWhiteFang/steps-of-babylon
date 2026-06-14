@@ -32,6 +32,9 @@ import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.usecase.UpgradeEffectReadout
+import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
+import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
+import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import kotlin.math.ceil
 import kotlin.math.pow
 
@@ -104,6 +107,8 @@ fun InRoundUpgradeMenu(
                 val maxed = type.config.maxLevel != null && level >= type.config.maxLevel!!
                 val cost = if (maxed) 0L else ceil(type.config.baseCost * type.config.scaling.pow(level)).toLong()
                 val affordable = cash >= cost && !maxed
+                val pulse = rememberPulse()
+                val haptics = rememberHaptics()
 
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
@@ -135,11 +140,12 @@ fun InRoundUpgradeMenu(
                         Text(stringResource(R.string.upgrade_max), color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(end = 8.dp))
                     } else {
                         Button(
-                            onClick = { onPurchase(type) },
+                            onClick = { pulse.trigger(); haptics.tap(); onPurchase(type) },
                             enabled = affordable,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (affordable) Color(0xFFD4A843) else Color.DarkGray,
                             ),
+                            modifier = Modifier.pulseScale(pulse),
                         ) { Text(stringResource(R.string.cash_amount, cost), fontSize = 11.sp) }
                     }
                 }

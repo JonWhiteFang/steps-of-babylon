@@ -3,6 +3,7 @@ package com.whitefang.stepsofbabylon.presentation.settings
 import android.app.Activity
 import androidx.lifecycle.ViewModel
 import com.whitefang.stepsofbabylon.data.DataDeletionManager
+import com.whitefang.stepsofbabylon.data.HapticsPreferences
 import com.whitefang.stepsofbabylon.data.NotificationPreferences
 import com.whitefang.stepsofbabylon.data.SoundPreferences
 import com.whitefang.stepsofbabylon.presentation.audio.MusicPreferences
@@ -21,6 +22,7 @@ data class SettingsState(
     val soundMuted: Boolean = false,
     val musicMuted: Boolean = false,
     val musicVolume: Float = 0.5f,
+    val hapticsEnabled: Boolean = true,
 )
 
 @HiltViewModel
@@ -28,6 +30,7 @@ class SettingsViewModel @Inject constructor(
     private val prefs: NotificationPreferences,
     private val soundPrefs: SoundPreferences,
     private val musicPrefs: MusicPreferences,
+    private val hapticsPrefs: HapticsPreferences,
     private val dataDeletionManager: DataDeletionManager,
 ) : ViewModel() {
 
@@ -39,6 +42,7 @@ class SettingsViewModel @Inject constructor(
         soundMuted = soundPrefs.isMuted(),
         musicMuted = musicPrefs.isMuted(),
         musicVolume = musicPrefs.getVolume(),
+        hapticsEnabled = hapticsPrefs.isEnabled(),
     ))
     val state: StateFlow<SettingsState> = _state.asStateFlow()
 
@@ -49,6 +53,7 @@ class SettingsViewModel @Inject constructor(
     fun setSoundMuted(muted: Boolean) { soundPrefs.setMuted(muted); _state.update { it.copy(soundMuted = muted) } }
     fun setMusicMuted(muted: Boolean) { musicPrefs.setMuted(muted); _state.update { it.copy(musicMuted = muted) } }
     fun setMusicVolume(volume: Float) { musicPrefs.setVolume(volume); _state.update { it.copy(musicVolume = volume) } }
+    fun setHapticsEnabled(enabled: Boolean) { hapticsPrefs.setEnabled(enabled); _state.update { it.copy(hapticsEnabled = enabled) } }
 
     fun deleteAllData(activity: Activity) {
         dataDeletionManager.deleteAllData(activity)

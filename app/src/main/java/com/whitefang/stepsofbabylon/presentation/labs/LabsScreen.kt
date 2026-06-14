@@ -41,6 +41,9 @@ import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
+import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
+import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
+import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 
 @Composable
 fun LabsScreen(viewModel: LabsViewModel = hiltViewModel()) {
@@ -63,7 +66,13 @@ fun LabsScreen(viewModel: LabsViewModel = hiltViewModel()) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Lab Slots: ${state.activeSlots}/${state.totalSlots}", style = MaterialTheme.typography.titleSmall)
             if (state.totalSlots < 4) {
-                OutlinedButton(onClick = { viewModel.unlockSlot() }, enabled = state.canAffordSlotUnlock) {
+                val slotPulse = rememberPulse()
+                val slotHaptics = rememberHaptics()
+                OutlinedButton(
+                    onClick = { slotPulse.trigger(); slotHaptics.tap(); viewModel.unlockSlot() },
+                    enabled = state.canAffordSlotUnlock,
+                    modifier = Modifier.pulseScale(slotPulse),
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Unlock Slot ")
                         CurrencyCost(CurrencyType.GEMS, state.slotUnlockCostGems)
@@ -98,6 +107,9 @@ private fun ResearchCard(
     freeRushAvailable: Boolean = false,
     onFreeRush: () -> Unit = {},
 ) {
+    val rushPulse = rememberPulse()
+    val startPulse = rememberPulse()
+    val haptics = rememberHaptics()
     Card(
         Modifier.fillMaxWidth(),
         colors = if (info.isActive) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
@@ -153,7 +165,11 @@ private fun ResearchCard(
                                     Text("Free")
                                 }
                             }
-                            Button(onClick = onRush, enabled = info.canAffordRush) {
+                            Button(
+                                onClick = { rushPulse.trigger(); haptics.tap(); onRush() },
+                                enabled = info.canAffordRush,
+                                modifier = Modifier.pulseScale(rushPulse),
+                            ) {
                                 Text("Rush ")
                                 CurrencyCost(CurrencyType.GEMS, info.rushCostGems)
                             }
@@ -170,7 +186,11 @@ private fun ResearchCard(
                             Spacer(Modifier.width(4.dp))
                             Text(String.format("%.1fh", info.timeToCompleteHours), style = MaterialTheme.typography.bodySmall)
                         }
-                        Button(onClick = onStart, enabled = info.canAffordStart) {
+                        Button(
+                            onClick = { startPulse.trigger(); haptics.tap(); onStart() },
+                            enabled = info.canAffordStart,
+                            modifier = Modifier.pulseScale(startPulse),
+                        ) {
                             Text("Start ")
                             CurrencyCost(CurrencyType.STEPS, info.costToStart)
                         }

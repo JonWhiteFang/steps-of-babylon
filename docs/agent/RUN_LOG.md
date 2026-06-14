@@ -1,3 +1,60 @@
+## 2026-06-14 — Bundle C (#162) IMPLEMENTATION — haptics + celebrations + bigger pulse (presentation-only)
+
+- **Goal:** Execute the 12-task, adversarially-reviewed Bundle C plan
+  (`docs/superpowers/plans/2026-06-14-look-and-feel-bundle-c.md`) via **subagent-driven-development**:
+  greenfield haptics, a shared 1.12× purchase pulse, a Post-Round entrance + staggered reward sting, and
+  one-shot claim celebrations — all behind a Settings "Haptic Feedback" toggle. Branch
+  `feat/162-look-and-feel-bundle-c` off `3b48e8a`.
+- **Method:** one fresh implementer subagent per task → spec-compliance review → code-quality review
+  (per the skill); controller curated full task text + ground-truth context for each, never made
+  subagents read the plan file. Model: Sonnet for mechanical/integration tasks, **Opus for the CRITICAL
+  Task 8** (ticker-safe harness) + its spec review. Tasks 11–12 run by the controller.
+- **What shipped (10 impl tasks, each its own commit `323b2fb`…`e393ec1`):**
+  - **Haptics infra (greenfield):** `data/HapticsPreferences.kt` (`"haptics_prefs"`, default ON, mirrors
+    `SoundPreferences`) + `presentation/ui/Haptics.kt` (`tap()` VIRTUAL_KEY / `success()` CONFIRM over
+    `View.performHapticFeedback`, gated on the pref read at call time, no VIBRATE perm) + `rememberHaptics()`
+    + Settings toggle (`SettingsViewModel`/`SettingsScreen`, mirrors the sound/music setters).
+  - **Shared pulse:** `presentation/ui/PurchasePulse.kt` (`rememberPulse()` + `Modifier.pulseScale()`,
+    1f→1.12× tween(100)/snap, graphicsLayer, 100ms hold). `UpgradeCard` adopts it (inline 1.05× pulse
+    deleted) + `tap()`; wired with `tap()` across Store/UW/Cards/Labs/in-round spend; equip/battle-start/
+    pause/resume get the haptic only (per §6 map; 3 real-money Store buttons fire inside `!isPurchasing`).
+  - **Claim celebration:** `presentation/ui/ClaimCelebration.kt` (`ClaimCelebrationEvent(label)` + one-shot
+    chip, success() haptic, reduced-motion-aware). `MissionsViewModel` + `UnclaimedSuppliesViewModel` each
+    gained a conflated `Channel`-backed `celebration` event, emitted on `Result.Success` only (the 3
+    `UnknownCosmetic` milestones never celebrate; `claimAll` once, only if ≥1 Success via a left-of-`||`
+    fold). Pure top-level `missionRewardLabel`/`supplyLabel` builders. Hosted in both claim screens.
+  - **Post-Round:** entrance `AnimatedVisibility` hosted in `BattleScreen`, keyed on the round-end
+    **nullability** transition (watch-ad copies don't re-trigger); `PostRoundOverlay` reveals the present
+    highlight lines on a staggered timer (180ms/line, success() each; instant + one haptic under
+    reduced-motion); Play-Again gains `tap()`. HUD/Compose only — renderer/engine untouched.
+- **Review caught (the substantive one):** Task 7's implementer changed production from the spec-mandated
+  `Channel.CONFLATED` to `MutableSharedFlow` to work around a *test-observation* issue — **reverted to the
+  conflated Channel** (the spec's D6, load-bearing for Task 8's consistency and the "buffer-even-with-no-
+  subscriber" semantics; a `SharedFlow(replay=0)` would drop pre-subscriber emits). Kept the legitimate
+  test fix (`Dispatchers.Unconfined` collector). Task 8's `while(true)` ticker hang was avoided exactly as
+  planned: bare `runTest{}` + Unconfined Main + `runCurrent()` + `@VisibleForTesting cancelForTest()`; no
+  hang, no `UncompletedCoroutinesError`. Spec reviewer also rejected 4 "Rules-of-Compose" false positives
+  (conditional `remember` is legal; compile passed; no compose-lint ruleset active) — applied only the
+  one real idiom fix (`key(pack.tier){}` on the Cards pack loop).
+- **Verification:** `testDebugUnitTest lintDebug assembleDebug` **GREEN**. **981 → 990 JVM** (+1
+  `HapticsPreferencesTest` Robolectric, +4 supplies, +4 missions), 0 failures/errors/skipped; 0
+  `UnusedImports`/`HardcodedText`; 3 pre-existing-style lint WARNINGS only (HapticsPreferences UseKtx
+  mirrors SoundPreferences intentionally; LabsScreen DefaultLocale + StoreScreen toUri are untouched
+  pre-existing lines). **On-device smoke** (emulator-5554): launches clean, no FATAL; Settings toggle
+  renders in the Sound group + round-trips (`haptics_prefs.xml` false↔true persists); a Workshop spend
+  works through the new pulse+haptic path (65→15 Steps, Lv0→Lv1).
+- **Deferred to the developer (can't verify over adb — no emulator vibration motor + subjective feel):**
+  haptic-actually-buzzes; 1.12× pulse reads-as-pulse-not-twitch on tight grids; the 4-line Post-Round sting
+  feels celebratory-not-spammy (fall-back: first+last-line haptic only); reduced-motion collapses animation
+  but haptics still fire; entrance doesn't re-trigger on watch-ad. Reward **SFX** stays deferred to the
+  audio-debt track (the hooks are SFX-ready beside the haptic).
+- **Doc-sync:** `CLAUDE.md` test count 981→990; `docs/steering/source-files.md` (+4 new files, 6 modified
+  entries); `docs/steering/structure.md` (`ui/` feel trio); `CHANGELOG.md` `[Unreleased]` Bundle C entry;
+  `README.md` (981→990 ×2). **No ADR** — implements the ADR-0022 feel direction + reuses the existing
+  conflated-event/economy-atomicity patterns; introduces no new architectural decision (cross-ref spec §3
+  D2/D6). STATE.md fragile-zone note added (feel centralized in `presentation/ui/`).
+- **Next:** developer tactile/visual sign-off on-device → open PR (close #162 on merge; SFX sub-item → audio-debt track).
+
 ## 2026-06-14 — Bundle C (#162) spec + plan + Adversarial Review Gate protocol (docs-only)
 
 - **Goal:** "do phase C" → Bundle C of the 2026-06-12 look-&-feel review (#162, *feedback/feel*): a

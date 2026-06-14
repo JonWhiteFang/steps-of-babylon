@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.missions
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
@@ -14,15 +15,20 @@ import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestone
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestoneResult
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMission
+import com.whitefang.stepsofbabylon.domain.usecase.ClaimMissionResult
 import com.whitefang.stepsofbabylon.domain.usecase.GenerateDailyMissions
 import com.whitefang.stepsofbabylon.domain.time.TimeProvider
 import com.whitefang.stepsofbabylon.data.time.SystemTimeProvider
+import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalTime
@@ -51,6 +57,11 @@ class MissionsViewModel @Inject constructor(
     private var today = timeProvider.today().toString()
     private val tick = MutableStateFlow(System.currentTimeMillis())
     private val userMessage = MutableStateFlow<String?>(null)
+
+    // Bundle C (#162): one-shot claim-celebration event. CONFLATED for consistency with
+    // UnclaimedSuppliesViewModel (Task 7) — the screen renders a brief reward chip + success haptic.
+    private val _celebration = Channel<ClaimCelebrationEvent>(Channel.CONFLATED)
+    val celebration = _celebration.receiveAsFlow()
 
     init {
         viewModelScope.launch { generateMissions(today) }
@@ -98,7 +109,13 @@ class MissionsViewModel @Inject constructor(
     fun claimMission(id: Int) {
         // #122: delegate to the atomic ClaimMission use case (mark-first guarded claim, credit
         // only on rows == 1) so a rapid double-tap can't double-credit the reward.
-        viewModelScope.launch { claimMissionUseCase(id, today) }
+        viewModelScope.launch {
+            if (claimMissionUseCase(id, today) == ClaimMissionResult.Success) {
+                // Bundle C (#162): celebrate only on a real credit (Success-gated).
+                val m = uiState.value.missions.find { it.id == id }
+                _celebration.trySend(ClaimCelebrationEvent(label = missionRewardLabel(m)))
+            }
+        }
     }
 
     fun claimMilestone(milestone: Milestone) {
@@ -110,7 +127,8 @@ class MissionsViewModel @Inject constructor(
             // ids to seed rows \u2014 is C.2 PR 3+ content work; until then those 3 milestones
             // cannot be claimed and the snackbar explains why.
             when (val result = claimMilestoneUseCase.invoke(milestone)) {
-                ClaimMilestoneResult.Success -> Unit // claim state updates via flow
+                ClaimMilestoneResult.Success ->
+                    _celebration.trySend(ClaimCelebrationEvent(label = "${milestone.rewardsSummary()} claimed!"))
                 ClaimMilestoneResult.InsufficientSteps ->
                     userMessage.value = "You haven't walked enough steps yet."
                 ClaimMilestoneResult.AlreadyClaimed ->
@@ -123,6 +141,15 @@ class MissionsViewModel @Inject constructor(
 
     fun clearMessage() { userMessage.value = null }
 
+    /**
+     * Cancels [viewModelScope] (including the init `while(true)` ticker) so JVM unit tests that
+     * construct the VM can terminate — a bare `runTest{}`'s end-of-test cleanup otherwise spins
+     * forever on the rescheduling ticker (backgroundScope's exemption covers collectors, not the
+     * viewModelScope ticker). Tests call this as their last statement (#162, Bundle C).
+     */
+    @VisibleForTesting
+    fun cancelForTest() { viewModelScope.coroutineContext[Job]?.cancel() }
+
     private suspend fun updateWalkingMissionProgress() {
         val missions = dailyMissionDao.getByDateOnce(today)
         val todaySteps = dailyStepDao.sumCreditedSteps(today, today)
@@ -134,4 +161,14 @@ class MissionsViewModel @Inject constructor(
             dailyMissionDao.updateProgress(m.id, progress, progress >= m.target)
         }
     }
+}
+
+/** Pure celebration-label builder for a claimed mission (testable without the VM). */
+internal fun missionRewardLabel(m: MissionDisplayInfo?): String {
+    if (m == null) return "Reward claimed!"
+    val parts = buildList {
+        if (m.rewardGems > 0) add("+${m.rewardGems} Gems")
+        if (m.rewardPowerStones > 0) add("+${m.rewardPowerStones} Power Stones")
+    }
+    return if (parts.isEmpty()) "Reward claimed!" else parts.joinToString(" ") + " claimed!"
 }

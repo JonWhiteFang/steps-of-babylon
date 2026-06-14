@@ -9,7 +9,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -17,9 +19,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.domain.model.Milestone
-import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebration
+import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
+import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import java.text.NumberFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,6 +33,7 @@ fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
     if (state.isLoading) { LoadingBox(); return }
     val fmt = NumberFormat.getNumberInstance()
     val snackbarHostState = remember { SnackbarHostState() }
+    var celebration by remember { mutableStateOf<ClaimCelebrationEvent?>(null) }
 
     // C.4: surface non-Success ClaimMilestoneResult (InsufficientSteps, AlreadyClaimed,
     // UnknownCosmetic) as snackbars so claim failures are visible instead of silent.
@@ -39,36 +44,41 @@ fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
         }
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            // Midnight countdown
-            item {
-                val hours = (state.timeUntilMidnightMs / 3_600_000).toInt()
-                val minutes = ((state.timeUntilMidnightMs % 3_600_000) / 60_000).toInt()
-                Text("Daily Missions", style = MaterialTheme.typography.headlineSmall)
-                Text("Resets in ${hours}h ${minutes}m", style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+    LaunchedEffect(Unit) { viewModel.celebration.collect { celebration = it } }
 
-            // Daily missions
-            items(state.missions, key = { it.id }) { mission ->
-                MissionCard(mission, onClaim = { viewModel.claimMission(mission.id) }, fmt = fmt)
-            }
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                // Midnight countdown
+                item {
+                    val hours = (state.timeUntilMidnightMs / 3_600_000).toInt()
+                    val minutes = ((state.timeUntilMidnightMs % 3_600_000) / 60_000).toInt()
+                    Text("Daily Missions", style = MaterialTheme.typography.headlineSmall)
+                    Text("Resets in ${hours}h ${minutes}m", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
 
-            // Milestones header
-            item {
-                Spacer(Modifier.height(8.dp))
-                Text("Walking Milestones", style = MaterialTheme.typography.headlineSmall)
-            }
+                // Daily missions
+                items(state.missions, key = { it.id }) { mission ->
+                    MissionCard(mission, onClaim = { viewModel.claimMission(mission.id) }, fmt = fmt)
+                }
 
-            // Milestones
-            items(state.milestones, key = { it.milestone.name }) { ms ->
-                MilestoneCard(ms, onClaim = { viewModel.claimMilestone(ms.milestone) }, fmt = fmt)
+                // Milestones header
+                item {
+                    Spacer(Modifier.height(8.dp))
+                    Text("Walking Milestones", style = MaterialTheme.typography.headlineSmall)
+                }
+
+                // Milestones
+                items(state.milestones, key = { it.milestone.name }) { ms ->
+                    MilestoneCard(ms, onClaim = { viewModel.claimMilestone(ms.milestone) }, fmt = fmt)
+                }
             }
         }
+        ClaimCelebration(celebration) { celebration = null }
     }
 }
 

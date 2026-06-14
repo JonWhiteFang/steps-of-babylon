@@ -30,6 +30,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Upgrade
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -56,6 +61,7 @@ import com.whitefang.stepsofbabylon.presentation.battle.ui.InRoundUpgradeMenu
 import com.whitefang.stepsofbabylon.presentation.battle.ui.UltimateWeaponBar
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PauseOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PostRoundOverlay
+import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 
 @Composable
 fun BattleScreen(
@@ -170,6 +176,7 @@ fun BattleScreen(
             //     the buttons (and only the buttons), not the full viewport.
             // Pure layout change — no behaviour change to any individual button. Verified
             // on-device on the next AAB; no JVM regression test (Compose UI surface).
+            val haptics = rememberHaptics()
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -194,7 +201,7 @@ fun BattleScreen(
                     }
                 }
                 val pauseDesc = stringResource(if (state.isPaused) R.string.action_resume else R.string.battle_cd_pause)
-                FilledTonalButton(onClick = { viewModel.togglePause() },
+                FilledTonalButton(onClick = { haptics.tap(); viewModel.togglePause() },
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = if (state.isPaused) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)),
                     modifier = Modifier.semantics { contentDescription = pauseDesc },
@@ -223,7 +230,13 @@ fun BattleScreen(
             PauseOverlay(onResume = { viewModel.togglePause() }, onQuitRound = { viewModel.quitRound() })
         }
 
-        state.roundEndState?.let { PostRoundOverlay(state = it, onPlayAgain = { viewModel.playAgain() }, onExitBattle = onExitBattle, onWatchGemAd = { viewModel.watchGemAd() }, onWatchPsAd = { viewModel.watchPsAd() }) }
+        val showRoundEnd = remember { MutableTransitionState(false) }
+        showRoundEnd.targetState = state.roundEndState != null
+        state.roundEndState?.let { roundEnd ->
+            AnimatedVisibility(visibleState = showRoundEnd, enter = scaleIn() + fadeIn(), exit = fadeOut()) {
+                PostRoundOverlay(state = roundEnd, onPlayAgain = { viewModel.playAgain() }, onExitBattle = onExitBattle, onWatchGemAd = { viewModel.watchGemAd() }, onWatchPsAd = { viewModel.watchPsAd() })
+            }
+        }
         state.biomeTransition?.let { BiomeTransitionOverlay(info = it, onContinue = { viewModel.dismissBiomeTransition() }) }
 
         // Snackbar last — stacks on top of every overlay, including PostRoundOverlay

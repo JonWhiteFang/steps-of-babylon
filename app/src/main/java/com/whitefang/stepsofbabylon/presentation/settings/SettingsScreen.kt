@@ -47,6 +47,7 @@ fun SettingsScreen(
                 )
             }
         }
+        ToggleRow("Haptic Feedback", "Vibrate on taps, claims, and rewards", state.hapticsEnabled, viewModel::setHapticsEnabled)
         Spacer(Modifier.height(16.dp))
         Text("Help", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))

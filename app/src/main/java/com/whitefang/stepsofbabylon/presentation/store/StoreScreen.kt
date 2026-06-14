@@ -41,6 +41,9 @@ import com.whitefang.stepsofbabylon.presentation.ui.CurrencyCost
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
+import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
+import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 
 @Composable
 fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
@@ -66,6 +69,8 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
         item { Text("Gem Packs", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
         val gemPacks = listOf(BillingProduct.GEM_PACK_SMALL, BillingProduct.GEM_PACK_MEDIUM, BillingProduct.GEM_PACK_LARGE)
         items(gemPacks) { product ->
+            val pulse = rememberPulse()
+            val haptics = rememberHaptics()
             Card(Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
@@ -74,7 +79,13 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                         // ProductDetails query hasn't completed yet (or failed). Plan 31 PR B.
                         Text(state.priceDisplays[product] ?: product.priceDisplay, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Button(onClick = { viewModel.purchaseGemPack(product) }) { Text("Buy") }
+                    Button(
+                        onClick = {
+                            if (!state.isPurchasing) { pulse.trigger(); haptics.tap() }
+                            viewModel.purchaseGemPack(product)
+                        },
+                        modifier = Modifier.pulseScale(pulse),
+                    ) { Text("Buy") }
                 }
             }
         }
@@ -103,7 +114,15 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                         }
                     }
                     if (!state.adRemoved) {
-                        Button(onClick = { viewModel.purchaseAdRemoval() }) { Text("Buy") }
+                        val adPulse = rememberPulse()
+                        val adHaptics = rememberHaptics()
+                        Button(
+                            onClick = {
+                                if (!state.isPurchasing) { adPulse.trigger(); adHaptics.tap() }
+                                viewModel.purchaseAdRemoval()
+                            },
+                            modifier = Modifier.pulseScale(adPulse),
+                        ) { Text("Buy") }
                     }
                 }
             }
@@ -134,7 +153,15 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                             }
                         }
                         if (!state.seasonPassActive) {
-                            Button(onClick = { viewModel.purchaseSeasonPass() }) { Text("Subscribe") }
+                            val spPulse = rememberPulse()
+                            val spHaptics = rememberHaptics()
+                            Button(
+                                onClick = {
+                                    if (!state.isPurchasing) { spPulse.trigger(); spHaptics.tap() }
+                                    viewModel.purchaseSeasonPass()
+                                },
+                                modifier = Modifier.pulseScale(spPulse),
+                            ) { Text("Subscribe") }
                         }
                     }
                     Spacer(Modifier.height(8.dp))
@@ -163,6 +190,8 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
             Text("More cosmetic visuals are still being finalized. Jade and Obsidian Ziggurat skins are available now.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         items(state.cosmetics) { cosmetic ->
+            val cosmeticPulse = rememberPulse()
+            val cosmeticHaptics = rememberHaptics()
             Card(Modifier.fillMaxWidth()) {
                 Row(Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(Modifier.weight(1f)) {
@@ -171,14 +200,15 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                         Text(cosmetic.category.replace("_", " "), style = MaterialTheme.typography.labelSmall)
                     }
                     when {
-                        cosmetic.isEquipped -> OutlinedButton(onClick = { viewModel.unequipCosmetic(cosmetic.cosmeticId) }) { Text("Unequip") }
-                        cosmetic.isOwned -> Button(onClick = { viewModel.equipCosmetic(cosmetic.cosmeticId) }) { Text("Equip") }
+                        cosmetic.isEquipped -> OutlinedButton(onClick = { cosmeticHaptics.tap(); viewModel.unequipCosmetic(cosmetic.cosmeticId) }) { Text("Unequip") }
+                        cosmetic.isOwned -> Button(onClick = { cosmeticHaptics.tap(); viewModel.equipCosmetic(cosmetic.cosmeticId) }) { Text("Equip") }
                         // C.2 PR 2 + V1X-14: only cosmetics whose renderer palette has shipped
                         // are purchasable (zig_jade, zig_obsidian). Remaining cosmetics stay
                         // behind the R2-11 "Coming Soon" guard until their palette ships.
                         cosmetic.cosmeticId in ENABLED_COSMETIC_IDS -> Button(
-                            onClick = { viewModel.purchaseCosmetic(cosmetic.cosmeticId) },
+                            onClick = { cosmeticPulse.trigger(); cosmeticHaptics.tap(); viewModel.purchaseCosmetic(cosmetic.cosmeticId) },
                             enabled = !state.isPurchasing,
+                            modifier = Modifier.pulseScale(cosmeticPulse),
                         ) { CurrencyCost(CurrencyType.GEMS, cosmetic.priceGems) }
                         else -> Button(
                             onClick = { },
