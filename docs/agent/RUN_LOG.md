@@ -1,3 +1,51 @@
+## 2026-06-14 — v1.0.4 (versionCode 20) released to Play internal track (release PR #168, tag `v1.0.4`)
+
+- **Goal:** Bump the release version and ship an update to the Play internal track, covering the four
+  presentation-only look-&-feel waves merged to `main` since v1.0.3/code19 (#159 design tokens /
+  ActionBar removal; #160 Bundle A; #161 Bundle B PR-B1 #166; #161 Bundle B PR-B2 #167).
+- **Process (release is outward-facing → verify before anything irreversible):** read the full release
+  model first — the v1.0.3 release commit `6f3ed6e` (#158) is the template: bump versionCode/versionName,
+  promote CHANGELOG `[Unreleased]`→`[x.y.z]`, add `docs/release/release-notes-vX.Y.Z.md`, update STATE
+  headline, commit "collateral only", then push an **annotated** `v*` tag whose message becomes the Play
+  "What's new". The tag triggers `release.yml` (testDebugUnitTest guard → signed `bundleRelease` →
+  `jarsigner -verify` → upload to Play **internal** → GitHub Release).
+- **Pre-release adversarial audit (dynamic workflow, 4 lenses + 2 refutations, ~335k subagent tokens):**
+  (1) version/build-config integrity — versionCode 20 unused across all branches (no Play reused-code
+  rejection), #124 `PLAY_LICENSE_KEY` fail-closed guard + release signingConfig + `ndk debugSymbolLevel`
+  + `release.yml` all intact; (2) changelog accuracy — all 4 code PRs have matching `[Unreleased]`
+  entries, 981 headline verified against actual `@Test` counts (973→975→979→981 = +2/+4/+2); (3)
+  ship-risk — the "presentation-only" claim **held against the real `git diff v1.0.3..HEAD`**: no
+  DAO/repo/Room-entity/migration/schema/di/service/usecase/battle-engine/effects/proguard file touched;
+  deleted `domain/model/Currency.kt` was genuinely dead at v1.0.3; nav + Settings-rename changes are
+  presentation-scoped; (4) "What's new" copy drafted. The ship-risk **refutation** surfaced two real
+  items: the version-code-not-yet-bumped fact (handled as the release step itself) and the **Battle HUD
+  `top=80.dp`** offset regression (visual-only; logged as a spot-check, not a blocker).
+- **Local gate:** `./run-gradle.sh testDebugUnitTest` green — **981 JVM, 0 failures / 0 errors / 0
+  skipped** (aggregated from the result XMLs).
+- **Execution (PR → merge → tag, mirroring v1.0.3; `main` is unprotected but #158 used a PR):** branch
+  `release/v1.0.4` → collateral commit `f65ab83` (versionCode 19→20, versionName 1.0.3→1.0.4, CHANGELOG
+  promote, new release-notes-v1.0.4.md, STATE headline) → PR #168 → **CI PR gate `build-and-test` green
+  (4m39s) + instrumented `connected` lane green (6m17s)** → squash-merge to `main` (`1972f1a`) → annotated
+  tag `v1.0.4` on `1972f1a` (message = approved warm player-facing "What's new", 426 chars / 435 bytes —
+  under both `release.yml`'s `head -c 500` byte truncation and Play's 500-char limit; bullets + em-dash
+  verified intact) → push.
+- **Release lane result:** run `27488197547` **green in 7m51s** — unit-test guard, signed `bundleRelease`,
+  `jarsigner -verify`, **uploaded to Play internal track**, GitHub Release `v1.0.4` created with
+  `app-release.aab` asset. #124 license-key step passed (signature verification active in the shipped
+  build). One non-blocking annotation: the upload action warns `track` is deprecated → `tracks`.
+- **"What's new" (approved by user, British spelling):** "A fresh coat of polish for your climb!" + 4
+  bullets (cleaner screens / thousands separators / back arrow / tab-tap → tab home) + "Thanks for
+  playing — keep walking!".
+- **Doc sync:** `app/build.gradle.kts` (version), CHANGELOG `[1.0.4]`, `docs/release/release-notes-v1.0.4.md`
+  (new), STATE.md (headline → "live", Recently-shipped entry, priorities #161-closed, Known-issues +
+  `release.yml` deprecation + Battle HUD offset). No CLAUDE.md change (test count unchanged at 981; no
+  architecture/convention shift). No ADR (a routine release, no new decision — the process is recorded by
+  ADR-0018 + the release-notes doc).
+- **Remains / next:** (1) on-device spot-check the v1.0.4 internal build — Battle HUD vertical offset +
+  navigate-away loading no-reflash; (2) migrate `release.yml` `track:`→`tracks:` on its next touch; (3)
+  look-&-feel bundles #162/#163/#164 (each its own spec → plan → PR); (4) bigger gate items #29 (Gate F)
+  + #26 (Gate G). Promotion internal→closed stays developer-judgment-gated (Phase 2).
+
 ## 2026-06-13 — Look-&-feel Bundle B PR-B2: bottom-nav restore-wrong-screen bug fix (#161; branch `fix/bundle-b-nav-restore`)
 
 - **Goal:** Fix the bottom-nav "restore wrong saved screen" bug — the second, logic-defect half of

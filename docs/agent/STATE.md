@@ -3,12 +3,12 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.4 (versionCode 20) releasing to Play internal track** (tag `v1.0.4`; supersedes
-v1.0.3/code19) · **981 JVM + 9 instrumented tests** green · schema v12 · **Gate C (onboarding) merged**
-(PR #157) · **four look-&-feel waves merged to `main` and shipping in v1.0.4** (#159 squash `2dc9a08`;
-**#160 Bundle A** squash `491815b`, PR #165; **#161 Bundle B PR-B1** PR #166; **#161 Bundle B PR-B2**
-nav-restore fix, PR #167 squash `b4f2a2b`) · **#161 fully closed** · launch is judgment-gated on the
-Closed-Test Readiness Gate (`plan-FORWARD.md`).
+**Headline:** **v1.0.4 (versionCode 20) live on Play internal track** (tag `v1.0.4` on `1972f1a`;
+release lane green 2026-06-14, signed AAB uploaded; supersedes v1.0.3/code19) · **981 JVM + 9
+instrumented tests** green · schema v12 · **four look-&-feel waves shipped in v1.0.4** (#159 squash
+`2dc9a08`; **#160 Bundle A** squash `491815b`, PR #165; **#161 Bundle B PR-B1** PR #166; **#161 Bundle B
+PR-B2** nav-restore fix, PR #167 squash `b4f2a2b`) · **#161 fully closed** · launch is judgment-gated on
+the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
@@ -29,6 +29,20 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-14 — v1.0.4 (versionCode 20) released to Play internal track** (tag `v1.0.4` on `1972f1a`,
+  via release PR #168). Shipped the four presentation-only look-&-feel waves merged since v1.0.3/code19
+  (#159 design tokens / ActionBar removal; #160 Bundle A; #161 Bundle B PR-B1 #166; #161 Bundle B PR-B2
+  #167). **Release collateral only** — versionCode 19→20, versionName 1.0.3→1.0.4, CHANGELOG
+  `[Unreleased]`→`[1.0.4]`, new `docs/release/release-notes-v1.0.4.md`. Pre-release adversarial audit
+  (4 lenses + 2 refutations) confirmed: presentation-only claim holds against the real diff (no
+  DAO/repo/entity/migration/di/service/engine touched), changelog accurate, versionCode 20 unused,
+  #124 guard + signing + NDK symbols + release.yml intact. CI PR gate + instrumented `connected` lane
+  both green on #168; release lane green (signed AAB uploaded, `jarsigner -verify` + #124 license-key
+  step passed; GitHub Release with AAB asset). Approved warm player-facing "What's new" (426 chars).
+  **Follow-up filed:** `release.yml` upload action warns `track` is deprecated → migrate to `tracks`
+  (non-blocking; see Known issues). **On-device spot-check pending:** Battle HUD `top=80.dp` pad
+  (`BattleScreen.kt:119`) pre-dated #159's ActionBar removal and wasn't adjusted → HUD may sit ~56dp
+  high (visual-only).
 - **2026-06-13 — Look-&-feel Bundle B PR-B2: bottom-nav restore-wrong-screen bug fix (#161)** (branch
   `fix/bundle-b-nav-restore`, PR pending; **not yet merged**). Second of the two Bundle-B PRs (PR-B1
   merged via #166). Done under `systematic-debugging` — **reproduced on-device before any fix**. The
@@ -191,11 +205,18 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 - **Phase B debt:** B.4 FollowOnPipeline + B.5 UpdateMissionProgress extraction (ADR-0004, ~1 week, zero user benefit — deferred).
 - `BuildConfig.USE_REAL_ADS` consent-prefetch branch is JVM-untested (device-verified). Play "no debug symbols"
   warning persists on every upload (pre-stripped .so files — informational).
+- **`release.yml` deprecation (non-blocking):** the `r0adkll/upload-google-play` step uses the deprecated
+  `track:` input — the action now warns "migrate to `tracks`". The v1.0.4 upload still succeeded; migrate
+  the input on the next `release.yml` touch.
+- **Battle HUD vertical offset (visual-only, surfaced in the v1.0.4 audit):** `BattleScreen.kt:119` has a
+  hardcoded `top = 80.dp` HUD pad (+ `top = 72.dp` quit button) that pre-dated #159's app-wide ActionBar
+  removal and wasn't adjusted → the in-round HUD likely sits ~56dp higher than intended. No
+  gameplay/economy/persistence impact; fix in a future presentation bundle after an on-device confirm.
 
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Look-&-feel follow-ups (Gate C/F UX):** **#160 Bundle A merged** (PR #165); **#161 Bundle B PR-B1 merged** (PR #166); **#161 Bundle B PR-B2 (nav-restore bug fix) done — PR pending, awaiting merge; then close #161**. Remaining bundles, each needing its own spec → plan → PR: **#162** haptics + reward/claim animation, **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. Also pending from #160: navigate-away loading no-reflash spot-check (manual).
+1. **Look-&-feel follow-ups (Gate C/F UX):** **Bundles #159/#160/#161 all merged AND released in v1.0.4** (PR #168, tag `v1.0.4`); **#161 fully closed** (both Bundle-B PRs shipped). Remaining bundles, each needing its own spec → plan → PR: **#162** haptics + reward/claim animation, **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. Manual spot-checks pending on the v1.0.4 internal build: navigate-away loading no-reflash (from #160) + **Battle HUD `top=80.dp` offset** (likely ~56dp high after #159's ActionBar removal — visual-only; fold into a future presentation bundle).
 2. **Bigger gate items:** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured).
 3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 4. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
