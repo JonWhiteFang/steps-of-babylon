@@ -25,15 +25,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material3.Icon
 import com.whitefang.stepsofbabylon.domain.model.UWPath
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
+import com.whitefang.stepsofbabylon.presentation.ui.EquippedChip
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.RarityBadge
+import com.whitefang.stepsofbabylon.presentation.ui.rarityBorder
+import com.whitefang.stepsofbabylon.presentation.ui.uwRarityLabel
+import com.whitefang.stepsofbabylon.presentation.ui.uwRarityTier
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
+import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusWarning
 
 @Composable
 fun UltimateWeaponScreen(viewModel: UltimateWeaponViewModel = hiltViewModel()) {
@@ -47,12 +50,22 @@ fun UltimateWeaponScreen(viewModel: UltimateWeaponViewModel = hiltViewModel()) {
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(16.dp),
         )
-        Text(
-            "Equipped: ${state.equippedCount}/3",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(horizontal = 16.dp),
-            color = Color.Gray,
-        )
+        if (state.equippedCount >= 3) {
+            Text(
+                "Equipped: 3/3 — unequip one to swap",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = StatusWarning,
+                fontWeight = FontWeight.Bold,
+            )
+        } else {
+            Text(
+                "Equipped: ${state.equippedCount}/3",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp),
+                color = Color.Gray,
+            )
+        }
 
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
@@ -80,8 +93,12 @@ private fun UWCard(
     onToggleEquip: () -> Unit,
 ) {
     val haptics = rememberHaptics()
+    val tier = uwRarityTier(info.type.unlockCost)
+    // Locked UWs still show their rarity, but dimmed (spec D6) — the rarity affordances share the
+    // same alpha so border + badge dim together with the locked container.
+    val rarityAlpha = if (info.isUnlocked) 1f else 0.5f
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().rarityBorder(tier, alpha = rarityAlpha),
         colors = CardDefaults.cardColors(
             containerColor = if (info.isUnlocked) Color(0xFF2A2A3E) else Color(0xFF1A1A2E),
         ),
@@ -89,11 +106,14 @@ private fun UWCard(
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(
-                        info.type.name.replace('_', ' '),
-                        fontWeight = FontWeight.Bold,
-                        color = if (info.isUnlocked) Color.White else Color.Gray,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        RarityBadge(tier, uwRarityLabel(tier), alpha = rarityAlpha)
+                        Text(
+                            info.type.name.replace('_', ' '),
+                            fontWeight = FontWeight.Bold,
+                            color = if (info.isUnlocked) Color.White else Color.Gray,
+                        )
+                    }
                     Text(
                         info.type.description,
                         style = MaterialTheme.typography.bodySmall,
@@ -101,11 +121,7 @@ private fun UWCard(
                     )
                 }
                 if (info.isEquipped) {
-                    Icon(
-                        Icons.Filled.CheckCircle,
-                        contentDescription = "Equipped",
-                        tint = Color(0xFF4CAF50),
-                    )
+                    EquippedChip()
                 }
             }
             if (!info.isUnlocked) {
