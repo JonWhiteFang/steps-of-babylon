@@ -49,3 +49,10 @@ val GemColor = Color(0xFF6FC3E0)
 val PowerStoneColor = Color(0xFFB57EDC)
 /** Steps — gold, the lifeblood currency, matches the primary brand accent. */
 val StepColor = Gold
+
+// --- Rarity ramp --------------------------------------------------------------------------------
+// Shared 3-tier collectibles rarity palette (Bundle D, #163). Tier-1 reuses LapisLight, tier-2 reuses
+// Gold; only tier-0 needs a new token. Named for the rarity ramp (not reusing SandStone) so the
+// ladder can be re-tuned independently of the brand fill colour (spec D10).
+/** Rarity tier-0 (lowest): COMMON cards / RARE UWs. Warm sandstone, light-on-bronze legible. */
+val RaritySand = Color(0xFFC2B280)
