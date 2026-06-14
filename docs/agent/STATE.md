@@ -29,6 +29,17 @@ the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-14 — Post-v1.0.4 follow-ups + spot-check (PR #169 squash `85ce889`; docs `07429fc`).** Cleared
+  every open item from the v1.0.4 release audit. **(1) Battle HUD vertical offset** — the in-round HUD
+  `Column` carried a stale `top = 80.dp` (quit button `72.dp`) that double-counted a removed status-bar +
+  ActionBar offset (`MainActivity` is edge-to-edge + Scaffold supplies the inset; #159 removed the
+  ActionBar), leaving the wave header ~53dp below the engine health bar; fixed to `40.dp` / `32.dp`,
+  reproduced + re-verified on the emulator. **(2) `release.yml` `track`→`tracks`** deprecation rename
+  (verified non-breaking at the pinned action SHA). Both ride the **next** `v*` tag (they sit in
+  CHANGELOG `[Unreleased]`, not v1.0.4 which already shipped). **(3) #160 navigate-away loading
+  no-reflash** — **verified PASS** on-device via 30fps screen-recording: the `LoadingBox` spinner shows
+  only on first cold tab entry, never on re-entry; no code change. Presentation + CI config only; **981
+  JVM** unchanged; CI PR gate + instrumented lane green on #169.
 - **2026-06-14 — v1.0.4 (versionCode 20) released to Play internal track** (tag `v1.0.4` on `1972f1a`,
   via release PR #168). Shipped the four presentation-only look-&-feel waves merged since v1.0.3/code19
   (#159 design tokens / ActionBar removal; #160 Bundle A; #161 Bundle B PR-B1 #166; #161 Bundle B PR-B2
@@ -39,10 +50,7 @@ the Closed-Test Readiness Gate (`plan-FORWARD.md`).
   #124 guard + signing + NDK symbols + release.yml intact. CI PR gate + instrumented `connected` lane
   both green on #168; release lane green (signed AAB uploaded, `jarsigner -verify` + #124 license-key
   step passed; GitHub Release with AAB asset). Approved warm player-facing "What's new" (426 chars).
-  **Follow-up filed:** `release.yml` upload action warns `track` is deprecated → migrate to `tracks`
-  (non-blocking; see Known issues). **On-device spot-check pending:** Battle HUD `top=80.dp` pad
-  (`BattleScreen.kt:119`) pre-dated #159's ActionBar removal and wasn't adjusted → HUD may sit ~56dp
-  high (visual-only).
+  Two follow-ups + one spot-check it surfaced were all closed the same day (see the #169 entry above).
 - **2026-06-13 — Look-&-feel Bundle B PR-B2: bottom-nav restore-wrong-screen bug fix (#161)** (branch
   `fix/bundle-b-nav-restore`, PR pending; **not yet merged**). Second of the two Bundle-B PRs (PR-B1
   merged via #166). Done under `systematic-debugging` — **reproduced on-device before any fix**. The
