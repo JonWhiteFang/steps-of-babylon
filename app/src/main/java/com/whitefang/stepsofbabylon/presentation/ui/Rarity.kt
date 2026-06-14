@@ -20,6 +20,9 @@ import com.whitefang.stepsofbabylon.presentation.ui.theme.LapisLight
 import com.whitefang.stepsofbabylon.presentation.ui.theme.RaritySand
 import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess
 
+/** Shared pill font size for [RarityBadge] / [EquippedChip]. */
+private val PILL_FONT_SIZE = 10.5.sp
+
 /**
  * Bundle D (#163): presentation-only collectibles rarity identity, shared by Cards + Ultimate Weapons.
  *
@@ -79,7 +82,7 @@ fun RarityBadge(tier: RarityTier, label: String, alpha: Float = 1f) {
         text = label,
         color = Color(0xFF1A1A2E).copy(alpha = alpha),
         fontWeight = FontWeight.Bold,
-        fontSize = 10.5.sp,
+        fontSize = PILL_FONT_SIZE,
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .background(tier.color().copy(alpha = alpha))
@@ -94,7 +97,7 @@ fun EquippedChip() {
         text = "✓ EQUIPPED",
         color = Color(0xFF10300A),
         fontWeight = FontWeight.Bold,
-        fontSize = 10.5.sp,
+        fontSize = PILL_FONT_SIZE,
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .background(StatusSuccess)
@@ -109,10 +112,13 @@ fun EquippedChip() {
  *
  * The accent bar is drawn ON TOP of content via [drawWithContent] (the spec pins this: a `drawBehind`
  * bar would be occluded by the Material3 card container fill). 5dp wide, full height, left edge.
+ * The shape is clipped first so the accent bar's corners follow the card's rounded corners (and don't
+ * bleed past them).
  */
 fun Modifier.rarityBorder(tier: RarityTier, alpha: Float = 1f): Modifier {
     val c = tier.color().copy(alpha = alpha)
     return this
+        .clip(RoundedCornerShape(12.dp))
         .border(width = 3.dp, color = c, shape = RoundedCornerShape(12.dp))
         .drawWithContent {
             drawContent()
