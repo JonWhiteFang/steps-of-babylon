@@ -68,4 +68,9 @@ class ColorLerpTest {
     fun `positive overscroll at the last page clamps to the settled page`() {
         assertEquals(3, crossfadeNeighborIndex(page = 3, offset = 0.2f, lastIndex = 3))
     }
+
+    @Test
+    fun `zero offset stays on the settled page`() {
+        assertEquals(2, crossfadeNeighborIndex(page = 2, offset = 0f, lastIndex = 3))
+    }
 }
