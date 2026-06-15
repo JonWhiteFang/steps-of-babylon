@@ -46,6 +46,15 @@
 **Files:**
 - Create: `app/src/main/res/font/cinzel_regular.ttf`, `app/src/main/res/font/cinzel_bold.ttf`, `app/src/main/res/font/OFL.txt`
 
+> **AS-BUILT CORRECTION (during execution):** the SIL OFL license text must NOT live in `res/font/` —
+> the Android resource merger only accepts `.xml/.ttf/.ttc/.otf` there and fails `mergeDebugResources`
+> on any other file. The license was instead committed to **`licenses/OFL-Cinzel.txt`** (repo root),
+> which the plan's §4.1 explicitly sanctioned as an alternative. So Task 1 bundles only the two `.ttf`
+> files under `res/font/`; the license ships at `licenses/OFL-Cinzel.txt`. The Google-Fonts `/download`
+> endpoint also now returns HTML, not a zip — the static Regular/Bold TTFs were fetched from the
+> upstream `NDISCOVER/Cinzel` source repo (`fonts/ttf/`) instead. Ignore the `res/font/OFL.txt` paths in
+> the steps below; everything else stands.
+
 No test (binary assets; exercised by Task 2's `Type.kt` references + `SobTypographyTest`).
 
 - [ ] **Step 1: Create the `res/font/` directory and fetch the Cinzel static weights**
