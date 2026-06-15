@@ -1,3 +1,53 @@
+## 2026-06-14 — Bundle D (#163) IMPLEMENTATION — collectibles rarity visual system (presentation-only)
+
+- **Goal:** Execute the 6-task, adversarially-reviewed Bundle D plan
+  (`docs/superpowers/plans/2026-06-14-look-and-feel-bundle-d.md`) via **subagent-driven-development**: a
+  shared rarity helper + a prominent rarity treatment (border + accent bar + filled badge), an explicit
+  EQUIPPED chip, and a loadout-cap hint, across the Cards + Ultimate Weapons screens. Branch
+  `feat/163-look-and-feel-bundle-d` off `fdb6efe`.
+- **Pre-implementation (this session, continued):** brainstormed with the visual companion (palette ramp +
+  treatment intensity mockups) → spec (`6ad0ce5`) → **spec adversarial review** (6 reviewers + skeptic
+  verify; 14 findings, 8 surviving all minor/nit, 6 refuted; fixes `1b3994e`). Root fix: `RarityTier.color()`
+  made a **plain fun** (not `@Composable`) — dissolved the `Modifier.rarityBorder` colour-access workaround
+  across 4 findings and made the distinctness test exercise the real function. → 6-task TDD plan (`871d7e4`)
+  → **plan adversarial review** (5 reviewers + verify; 6 findings, 5 surviving = 1 minor + a 3×-reported nit
+  + another nit, 1 refuted; fixes `fdb6efe`). The minor was a real spec/code divergence: locked-UW rarity
+  affordances weren't dimmed despite spec D6 — fixed by an `alpha` param on `RarityBadge`/`rarityBorder`.
+- **Method:** one fresh implementer subagent per task → spec-compliance review → code-quality review (per
+  the skill); controller curated full task text + ground-truth context, never made subagents read the plan.
+  Model: Haiku for the mechanical token/doc tasks, Sonnet for the helper + the two screen rewrites + reviews.
+- **What shipped (commits `0096011`…`49cf82d`, + 2 review-fix commits + docs):**
+  - **`RaritySand` token** (`theme/Color.kt`) — rarity tier-0; tier-1/2 reuse `LapisLight`/`Gold` (`0096011`).
+  - **`presentation/ui/Rarity.kt`** (`5e78bca`, fix `a024598`): `RarityTier{TIER_0/1/2}` + plain
+    `color()` + `cardRarityTier(CardRarity)` + `uwRarityTier(unlockCost: ≤60/61-89/≥90)` + `cardRarityLabel`/
+    `uwRarityLabel` (Cards COMMON/RARE/EPIC; UWs RARE/EPIC/LEGENDARY) + `@Composable RarityBadge`/
+    `EquippedChip` (literal "✓" glyph, not an Icon) + `Modifier.rarityBorder` (clip-to-shape, then 3dp
+    border + left accent bar via `drawWithContent`). TDD: 6 `RarityTest` cases (red→green verified).
+  - **Cards screen** (`33a8359`, nits `cb6603a`): deleted inline `rarityColor()` + dead imports
+    (`CardRarity`/`BorderStroke`/`CardDefaults`), `rarityBorder` + badge, **dropped the `primaryContainer`
+    equipped tint for `EquippedChip`** (D4), removed the redundant inline " • RARE" label, header cap hint;
+    pack-dialog colours re-pointed through the shared helper (fixes the Epic/Power-Stone amethyst collision).
+  - **UW screen** (`49cf82d`): rarity border + badge from `unlockCost`, `EquippedChip` replacing the tiny
+    green `CheckCircle`, header cap hint, **locked UWs dimmed** (alpha 0.5f on border + badge, container
+    stays dimmed); per-path rows + unlock/upgrade/equip logic untouched.
+  - **Docs** (`3439523` + controller edit): `source-files.md` Rarity.kt + Color.kt entries, `CLAUDE.md`
+    headline 990→996, `CHANGELOG.md` `[Unreleased]` Bundle D entry.
+- **Reviews caught + fixed mid-execution:** Task-2 quality review found the accent bar's square `drawRect`
+  corners would bleed past the card's rounded corners → fixed by clipping to the card shape first (+ shared
+  a `PILL_FONT_SIZE` const). Task-3 quality review: FQN `StatusWarning` → import; hoisted a repeated
+  dialog colour computation. Task-4 quality nits (missing `fillMaxWidth`, header style divergence) assessed
+  as no-ops/intentional and not applied; the "EquippedChip undimmed on a locked-equipped UW" observation is
+  a structurally-unreachable state (VM guards it) — no change.
+- **Verification:** `testDebugUnitTest lintDebug assembleDebug` green; **990→996 JVM** (+6 `RarityTest`),
+  0 failures/errors; debug APK assembles. **Final whole-branch review: READY TO MERGE** — 0 critical/major,
+  every public `Rarity.kt` fn consumed, diff confirmed 100% presentation-only (4 prod + 1 test + 3 docs).
+- **Remaining:** developer on-device feel/visual sign-off (rarity reads at a glance; EQUIPPED chip
+  unmistakable; cap hint at 3/3; locked UW dimmed; accent bar not clipped) → open the PR (close #163).
+- **No ADR:** presentation-only; reuses the established shared-`presentation/ui/`-layer pattern; the 10
+  locked design decisions (D1–D10) live in the spec.
+
+---
+
 ## 2026-06-14 — Bundle C (#162) IMPLEMENTATION — haptics + celebrations + bigger pulse (presentation-only)
 
 - **Goal:** Execute the 12-task, adversarially-reviewed Bundle C plan

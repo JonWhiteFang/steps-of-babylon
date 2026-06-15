@@ -3,27 +3,30 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.6 (versionCode 22) shipping to Play internal track** (tag `v1.0.6` on the Bundle C
-merge `5f0d5bf`; release collateral in PR; supersedes v1.0.5/code21) · **990 JVM + 9 instrumented
-tests** green · schema v12 · **v1.0.6 = Look & Feel Bundle C (#162, PR #172)** — greenfield haptics +
-claim/Post-Round celebrations + shared 1.12× purchase pulse (presentation-only) + the post-v1.0.5
-doc-drift sweep · v1.0.5 shipped the Battle HUD offset fix + `release.yml` `track`→`tracks`; v1.0.4
-shipped the four look-&-feel waves (#159/#160/#161) · launch is judgment-gated on the Closed-Test
-Readiness Gate (`plan-FORWARD.md`).
+**Headline:** **v1.0.6 (versionCode 22) shipped to Play internal track** (tag `v1.0.6` on the Bundle C
+merge `5f0d5bf`) · **996 JVM + 9 instrumented tests** green · schema v12 · **Look & Feel Bundle D
+(#163) IMPLEMENTED on `feat/163-look-and-feel-bundle-d`** (presentation-only collectibles rarity
+visual system; spec+plan both passed the Adversarial Review Gate; pending feel sign-off + PR) ·
+v1.0.6 = Bundle C (#162, PR #172) haptics + celebrations + purchase pulse · launch is judgment-gated
+on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
-- **Look-&-feel Bundle C (#162 feedback/feel) — IMPLEMENTED on `feat/162-look-and-feel-bundle-c`; pending
-  developer feel-sign-off + PR.** All 12 plan tasks executed via subagent-driven-development (fresh
-  implementer + spec-review + quality-review per task; Opus for the CRITICAL ticker-safe Task 8).
-  `testDebugUnitTest lintDebug assembleDebug` green; **981→990 JVM**, 0 failures. Shipped (presentation-only,
-  zero engine/economy/domain change): haptics infra (`data/HapticsPreferences` + `presentation/ui/Haptics`
-  + `rememberHaptics` + Settings "Haptic Feedback" toggle), shared 1.12× `presentation/ui/PurchasePulse`
-  wired across all spend buttons, `presentation/ui/ClaimCelebration` chip fed by conflated `celebration`
-  events on the Missions/Supplies VMs (Success-gated), Post-Round entrance + staggered reward sting +
-  Play-Again haptic. On-device smoke passed (toggle persists; Workshop spend works). **Next action:**
-  developer does the tactile/visual feel sign-off on device (haptic buzz, 1.12× pulse on tight grids,
-  4-line sting cadence, reduced-motion) → open the PR (close #162; SFX sub-item stays on the audio-debt track).
+- **Look-&-feel Bundle D (#163 collectibles rarity) — IMPLEMENTED on `feat/163-look-and-feel-bundle-d`; pending
+  developer feel-sign-off + PR.** All 6 plan tasks executed via subagent-driven-development (fresh implementer
+  + spec-review + quality-review per task). `testDebugUnitTest lintDebug assembleDebug` green; **990→996 JVM**,
+  0 failures. Shipped (presentation-only, zero engine/economy/domain/loadout change): new shared
+  `presentation/ui/Rarity.kt` (`RarityTier` 3-tier palette + pure `color()`/`cardRarityTier`/`uwRarityTier`/
+  labels, JVM-tested by `RarityTest`; `@Composable RarityBadge`/`EquippedChip` + `Modifier.rarityBorder`) +
+  one `RaritySand` token. Cards + UW screens wired to the prominent treatment (3dp rarity border + left accent
+  bar + filled pill badge), explicit EQUIPPED chip (replaces the tiny ✓ / `primaryContainer` tint), header
+  loadout-cap hint ("3/3 — unequip one to swap"), UW rarity derived from `unlockCost` (RARE/EPIC/LEGENDARY),
+  locked UWs show **dimmed** rarity. Fixes the latent Epic/Power-Stone amethyst colour collision. Final
+  whole-branch review: READY TO MERGE, 0 critical/major. **Next action:** developer does the on-device
+  feel/visual sign-off (rarity reads at a glance; chip unmistakable; cap hint at 3/3; locked UW dimmed; accent
+  bar not clipped) → open the PR (close #163).
+- **Bundle C (#162) — SHIPPED in v1.0.6** (tag `v1.0.6`, PR #172): greenfield haptics + claim/Post-Round
+  celebrations + shared 1.12× purchase pulse. (Was the prior pending-PR item; now merged + released.)
 - **NEW standing protocol — Adversarial Review Gate** (CLAUDE.md → Agent protocol): every design spec and
   implementation plan passes a code-grounded multi-dimension review → adversarial refute → confirmed-only
   synthesis Workflow **before** the next stage. Default-on under ultracode; if ultracode is off, flag the
@@ -45,6 +48,21 @@ Readiness Gate (`plan-FORWARD.md`).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-14 — Bundle D (#163) IMPLEMENTATION (presentation-only; on `feat/163-look-and-feel-bundle-d`, pre-PR).**
+  Collectibles rarity visual system for UWs + Cards. Brainstormed (visual companion) → spec (`6ad0ce5`) →
+  **spec adversarial review** (14 findings, 8 surviving, 6 refuted; fixes `1b3994e` — root fix: `color()`
+  made a plain fun not `@Composable`, dissolving a Modifier workaround) → 6-task TDD plan (`871d7e4`) →
+  **plan adversarial review** (6 findings, 5 surviving incl. 1 real spec/code divergence — locked-UW rarity
+  wasn't dimmed; fixes `fdb6efe`). Executed via subagent-driven-development (per-task spec+quality review;
+  Task-2 quality review caught + fixed an accent-bar corner-bleed by clipping to the card shape). New shared
+  `presentation/ui/Rarity.kt` (`RarityTier` 3-tier palette + pure `color()`/`cardRarityTier`/`uwRarityTier`/
+  labels + `@Composable RarityBadge`/`EquippedChip` + `Modifier.rarityBorder` = 3dp border + left accent bar)
+  + `RaritySand` token. Cards + UW screens: prominent treatment + explicit `EquippedChip` + header cap hint;
+  UW rarity from `unlockCost` (RARE/EPIC/LEGENDARY), locked UWs dimmed (alpha 0.5f). Fixes the latent
+  Epic/Power-Stone amethyst collision. `testDebugUnitTest lintDebug assembleDebug` green; **990→996 JVM**
+  (+6 `RarityTest`), 0 failures. Final whole-branch review READY TO MERGE (0 critical/major; diff is 100%
+  presentation — 4 prod + 1 test + 3 docs). Feel sign-off + PR pending. No ADR (presentation-only; reuses the
+  shared-`ui/`-layer pattern; spec D1–D10 captured in the design doc).
 - **2026-06-14 — Bundle C (#162) IMPLEMENTATION (presentation-only; on `feat/162-look-and-feel-bundle-c`, pre-PR).**
   Executed the 12-task adversarially-reviewed plan via subagent-driven-development (per-task spec+quality
   review; Opus for the CRITICAL Task 8 ticker-safe harness). Greenfield haptics (`HapticsPreferences` +
@@ -279,7 +297,7 @@ Readiness Gate (`plan-FORWARD.md`).
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Look-&-feel follow-ups (Gate C/F UX):** **Bundles #159/#160/#161 all merged AND released in v1.0.4** (PR #168, tag `v1.0.4`); **#161 fully closed** (both Bundle-B PRs shipped). **#162 (Bundle C, feedback/feel) is IMPLEMENTED on `feat/162-look-and-feel-bundle-c` (981→990 JVM, build/lint/assemble green) — NEXT ACTION is the developer's on-device tactile/visual feel sign-off, then open the PR** (close #162; SFX sub-item → audio-debt track; see Current objective). Remaining bundles after C, each needing its own spec → plan → PR: **#163** UW/Card rarity visuals, **#164** custom font + onboarding per-slide theming + real ziggurat asset. (Battle HUD offset fixed 2026-06-14 — see `[Unreleased]`.) **Both #160-era spot-checks now cleared on-device** (navigate-away loading no-reflash **verified PASS** 2026-06-14 via 30fps screen-recording — spinner shows only on first cold tab entry, never on re-entry).
+1. **Look-&-feel follow-ups (Gate C/F UX):** **Bundles #159/#160/#161 merged + released in v1.0.4**; **#162 (Bundle C) merged + released in v1.0.6** (tag `v1.0.6`, PR #172). **#163 (Bundle D, collectibles rarity) is IMPLEMENTED on `feat/163-look-and-feel-bundle-d` (990→996 JVM, build/lint/assemble green, final review READY TO MERGE) — NEXT ACTION is the developer's on-device feel/visual sign-off, then open the PR** (close #163; see Current objective). Remaining after D, needing its own spec → plan → PR: **#164** custom font + onboarding per-slide theming + real ziggurat asset.
 2. **Bigger gate items:** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured).
 3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 4. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
@@ -350,11 +368,23 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
   top-level `missionRewardLabel`/`supplyLabel` builders (VM tests assert emission *count*). Post-Round
   entrance is hosted in `BattleScreen` keyed on the round-end **nullability** transition, NOT
   `RoundEndState` identity — watch-ad copies must not re-trigger it.
+- **Collectibles rarity is centralized (#163, Bundle D)** — all rarity visuals render via
+  `presentation/ui/Rarity.kt`. `RarityTier.color()` is a **plain fun** (NOT `@Composable`) so it's
+  JVM-testable and callable from `Modifier.rarityBorder`; don't re-add `@Composable` (a parallel
+  composable must delegate to it). UW rarity is **derived in the UI from `unlockCost`** (`uwRarityTier`:
+  ≤60/61-89/≥90 → RARE/EPIC/LEGENDARY) — there is no domain rarity field; don't add one for this.
+  `uwRarityTier`'s ranges (not exact-value matches) + `RarityTest`'s iterate-over-`entries` guard pin
+  today's six costs while tolerating a re-price/7th UW. `rarityBorder` **clips to the card shape first**,
+  then border + accent bar via `drawWithContent` (a `drawBehind` bar is occluded by the Material3
+  container fill; an unclipped bar bleeds past the rounded corners). The Cards `EquippedChip` replaced
+  the `primaryContainer` tint (D4 — chip is the sole equipped signal); don't reintroduce the tint. Locked
+  UWs show **dimmed** rarity (alpha 0.5f on border + badge), not hidden (D6). Guarded by `RarityTest`
+  (pure fns; the `@Composable` pieces are visual-only, verified on-device).
 
 ## References
 
 - **Memory loop:** `CLAUDE.md` (canonical guide; now incl. the **Adversarial Review Gate** for specs/plans) · `docs/agent/START_HERE.md` (contract) · `docs/agent/CONSTRAINTS.md` · SessionStart hook + `/checkpoint` skill.
-- **Bundle C (#162) implemented (pre-PR on `feat/162-look-and-feel-bundle-c`):** spec `docs/superpowers/specs/2026-06-14-look-and-feel-bundle-c-design.md` · plan `docs/superpowers/plans/2026-06-14-look-and-feel-bundle-c.md` (both review-passed; 12 tasks executed, green build, feel-sign-off + PR pending).
+- **Bundle D (#163) implemented (pre-PR on `feat/163-look-and-feel-bundle-d`):** spec `docs/superpowers/specs/2026-06-14-look-and-feel-bundle-d-design.md` (+ §7 review record) · plan `docs/superpowers/plans/2026-06-14-look-and-feel-bundle-d.md` (+ review record; both review-passed; 6 tasks executed, 996 JVM green, final review READY TO MERGE, feel-sign-off + PR pending). Bundle C (#162) shipped in v1.0.6.
 - **Plans:** `docs/plans/plan-FORWARD.md` (forward plan + Closed-Test Readiness Gate — start here) · `docs/plans/master-plan.md` (v1.0 completion record) · `docs/plans/plan-V1X-roadmap.md` (backlog of record). Completed v1.0 plan files archived under `docs/archive/completed-plans-v1.0/`.
 - **Reference docs:** `docs/steering/` (tech, structure, source-files, lib-*) · `docs/architecture.md` · `docs/database-schema.md` · `docs/battle-formulas.md`.
 - **Audit:** `docs/external-reviews/2026-06-10-multi-agent-code-audit.md` (findings #118–#128 + regression specs).
