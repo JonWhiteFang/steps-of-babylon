@@ -148,7 +148,7 @@ class SobTypographyTest {
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `./run-gradle.sh testDebugUnitTest --tests "com.whitefang.stepsofbabylon.presentation.ui.theme.SobTypographyTest"`
-Expected: FAIL — compilation error (`Cinzel` unresolved) and/or `displayMedium`/`displayLarge` resolve to the Material default (`FontFamily.Default`, not `Cinzel`).
+Expected: FAIL — **a compilation error** (`unresolved reference: Cinzel`), because the `Cinzel` family is not defined until Step 3. This is the expected red bar: no assertion executes yet. (Note: `SobTypography.displayMedium`/`.displayLarge` *do* resolve even today — `Typography` exposes every slot via a getter returning the Material3 stock style when the slot wasn't passed; that silent fallback is exactly what E4 closes — but the unresolved `Cinzel` is what fails compilation first.)
 
 - [ ] **Step 3: Define the `Cinzel` family + apply it in `Type.kt`**
 
@@ -168,7 +168,7 @@ import androidx.compose.ui.unit.sp
 import com.whitefang.stepsofbabylon.R
 ```
 
-Insert the `Cinzel` family definition + update the KDoc (replace lines 9-22, the KDoc through `val SobTypography = Typography(`):
+Insert the `Cinzel` family definition + update the KDoc (replace lines 9-22 — the KDoc block is lines 9-21 and `val SobTypography = Typography(` is line 22; the replacement covers the KDoc through that opener line):
 
 ```kotlin
 /**
@@ -395,6 +395,8 @@ Create `app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/ColorLerp
 ```kotlin
 package com.whitefang.stepsofbabylon.presentation.ui
 
+import kotlin.math.sign
+
 /**
  * Linear per-channel interpolation between two packed-ARGB [Int] colours (Bundle E, #164).
  *
@@ -419,19 +421,62 @@ fun lerpArgb(a: Int, b: Int, t: Float): Int {
     val blue = (bf + (bt - bf) * clamped).toInt()
     return (alpha shl 24) or (red shl 16) or (green shl 8) or blue
 }
+
+/**
+ * The neighbouring page index the pager is dragging toward, for the gradient cross-fade (spec E8).
+ * [offset] is `PagerState.currentPageOffsetFraction` (signed, ~[-0.5, 0.5]): negative drags toward the
+ * previous page, positive toward the next. The result is clamped to `[0, lastIndex]`, so an overscroll
+ * at page 0 (negative) or at the last page (positive) returns the settled page itself (no neighbour) —
+ * the caller then blends colour-to-itself (a no-op), never indexing out of range.
+ */
+fun crossfadeNeighborIndex(page: Int, offset: Float, lastIndex: Int): Int =
+    (page + sign(offset).toInt()).coerceIn(0, lastIndex)
 ```
 
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `./run-gradle.sh testDebugUnitTest --tests "com.whitefang.stepsofbabylon.presentation.ui.ColorLerpTest"`
-Expected: PASS — all 5 tests green.
+Expected: PASS — all 5 lerpArgb tests + 4 neighbour-selection tests green.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Add the signed-offset neighbour-selection tests (spec §5 #2)**
+
+Append these `@Test` methods to `ColorLerpTest.kt` (they exercise `crossfadeNeighborIndex` — the E8 edge-guard the cross-fade depends on):
+
+```kotlin
+    @Test
+    fun `positive offset picks the next page`() {
+        assertEquals(2, crossfadeNeighborIndex(page = 1, offset = 0.3f, lastIndex = 3))
+    }
+
+    @Test
+    fun `negative offset at an interior page picks the previous page`() {
+        assertEquals(0, crossfadeNeighborIndex(page = 1, offset = -0.3f, lastIndex = 3))
+    }
+
+    @Test
+    fun `negative overscroll at page 0 clamps to the settled page`() {
+        assertEquals(0, crossfadeNeighborIndex(page = 0, offset = -0.2f, lastIndex = 3))
+    }
+
+    @Test
+    fun `positive overscroll at the last page clamps to the settled page`() {
+        assertEquals(3, crossfadeNeighborIndex(page = 3, offset = 0.2f, lastIndex = 3))
+    }
+```
+
+Add the import at the top of `ColorLerpTest.kt` if not already present (it is not — `lerpArgb` and `crossfadeNeighborIndex` are same-package, so no import is needed; this step adds no import).
+
+- [ ] **Step 6: Run the tests to verify they pass**
+
+Run: `./run-gradle.sh testDebugUnitTest --tests "com.whitefang.stepsofbabylon.presentation.ui.ColorLerpTest"`
+Expected: PASS — all 9 tests green (5 lerpArgb + 4 neighbour-selection).
+
+- [ ] **Step 7: Commit**
 
 ```bash
 git add app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/ColorLerp.kt \
         app/src/test/java/com/whitefang/stepsofbabylon/presentation/ui/ColorLerpTest.kt
-git commit -m "feat(#164): add pure lerpArgb helper for onboarding gradient cross-fade"
+git commit -m "feat(#164): add pure lerpArgb + crossfadeNeighborIndex helpers for onboarding cross-fade"
 ```
 
 ---
@@ -577,16 +622,14 @@ git commit -m "feat(#164): add per-slide biome + ziggurat art fields to Onboardi
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/onboarding/OnboardingScreen.kt`
 
 No new unit test (`@Composable`; the visual behaviour is on-device sign-off per spec §5). The pure
-pieces it consumes (`lerpArgb`, the slide→biome map) are already tested in Tasks 4–5.
+pieces it consumes (`lerpArgb` + `crossfadeNeighborIndex` in Task 4, the slide→biome map in Task 5) are
+already tested.
 
 - [ ] **Step 1: Add the new imports**
 
 Add these imports alongside the existing ones at the top of `OnboardingScreen.kt`:
 
 ```kotlin
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.LaunchedEffect
@@ -596,20 +639,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.zIndex
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.presentation.battle.biome.BiomeTheme
+import com.whitefang.stepsofbabylon.presentation.ui.crossfadeNeighborIndex
 import com.whitefang.stepsofbabylon.presentation.ui.lerpArgb
+import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
+import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
 import kotlin.math.abs
-import kotlin.math.sign
 ```
 
 (`Box`, `fillMaxSize`, `background`, `HorizontalPager`, `rememberPagerState`, `clearAndSetSemantics`
-are already imported in this file.)
+are already imported in this file. We reuse the shipped `PurchasePulse` helpers — `rememberPulse()` +
+`Modifier.pulseScale()` — for the completion beat rather than rolling a bespoke `animateFloatAsState`,
+so no `animateFloatAsState`/`snap`/`tween`/`graphicsLayer` imports are needed. `IntOffset`/`zIndex` are
+**not** used — the gradient is a `background` layer and the scrim is a child `Box`, so do not import
+them.)
 
 - [ ] **Step 2: Add the gradient + cross-fade helpers (file-private, top-level)**
 
@@ -633,7 +679,7 @@ private fun crossfadedSky(
     offset: Float,
 ): Pair<Color, Color>? {
     val current = slideSky(slides[page].biome) ?: return null
-    val neighbourIndex = (page + sign(offset).toInt()).coerceIn(0, slides.lastIndex)
+    val neighbourIndex = crossfadeNeighborIndex(page, offset, slides.lastIndex)
     val neighbour = slideSky(slides[neighbourIndex].biome) ?: current
     val t = abs(offset).coerceIn(0f, 1f)
     val top = lerpArgb(current.first, neighbour.first, t)
@@ -641,6 +687,10 @@ private fun crossfadedSky(
     return Color(top) to Color(bottom)
 }
 ```
+
+(`crossfadeNeighborIndex` is the unit-tested helper from Task 4 — using it here means the screen's
+edge-guard behaviour is exactly what the §5 #2 tests pin. `abs` is imported in Step 1; `sign` lives
+inside `crossfadeNeighborIndex`, so `OnboardingScreen.kt` does not import `sign`.)
 
 - [ ] **Step 3: Wire the completion-pulse state + persist-first sequencing**
 
@@ -653,36 +703,40 @@ Inside `OnboardingScreen`, replace the existing `finish()` function (lines 72-75
     }
 ```
 
-with the persist-first / pulse / navigate sequence (spec E10-seq):
+with the persist-first / pulse / navigate sequence (spec E10-seq). This **reuses the shipped
+`PurchasePulse` helpers** (`rememberPulse()` + `Modifier.pulseScale()`) — a true one-shot round-trip
+scale pulse (1f → 1.12 → 1f) that already honors reduced-motion via `snap()` — rather than a bespoke
+one-way ramp:
 
 ```kotlin
-    // Completion beat (spec E10-seq): persist the gating flag FIRST and unconditionally, then drive a
-    // one-shot pulse, then navigate via the LaunchedEffect below. Navigation is never gated on the
-    // animation, and the flag is already persisted, so backgrounding mid-pulse cannot re-onboard.
+    // Completion beat (spec E10/E10-seq): persist the gating flag FIRST and unconditionally, fire a
+    // one-shot pulse (reused PurchasePulse), then navigate via the LaunchedEffect below. Navigation is
+    // never gated on the animation, and the flag is already persisted, so backgrounding mid-pulse
+    // cannot re-onboard. The `if (finishing) return` latch makes completion exactly-once even if the
+    // CTA is double-tapped during the ~450ms beat (the original synchronous finish() navigated within
+    // the frame, so this restores that once-only guarantee for the now-longer interactive window).
+    val finishPulse = rememberPulse()
     var finishing by remember { mutableStateOf(false) }
     fun finish() {
+        if (finishing) return           // latch: ignore re-taps during the beat
         viewModel.completeOnboarding()  // (1) persist — first, unconditional
-        finishing = true                // (2) drive the pulse
+        finishPulse.trigger()           // (2) fire the one-shot pulse (no-op visual under reduced-motion)
+        finishing = true                // (3) arm navigation
     }
     LaunchedEffect(finishing) {
         if (finishing) {
             if (!reducedMotion) kotlinx.coroutines.delay(FINISH_PULSE_MS)
-            onFinished()                // (3) guaranteed exactly once; immediate under reduced-motion
+            onFinished()                // (4) guaranteed exactly once; immediate under reduced-motion
         }
     }
-    // One-shot scale pulse on the final-slide content (PurchasePulse pattern). 1f when idle.
-    val finishScale by animateFloatAsState(
-        targetValue = if (finishing) FINISH_PULSE_SCALE else 1f,
-        animationSpec = if (reducedMotion) snap() else tween(FINISH_PULSE_MS.toInt()),
-        label = "onboardingFinishPulse",
-    )
 ```
 
-Add the two constants at the top level of the file (next to the gradient helpers from Step 2):
+Add the navigation-delay constant at the top level of the file (next to the gradient helpers from
+Step 2). The pulse's own duration/scale live in `PurchasePulse` (≈100ms tween to 1.12×); we hold
+navigation slightly longer so the round-trip pulse is visible before the screen tears down:
 
 ```kotlin
 private const val FINISH_PULSE_MS = 450L
-private const val FINISH_PULSE_SCALE = 1.12f
 ```
 
 - [ ] **Step 4: Paint the gradient + scrim behind the pager**
@@ -732,8 +786,9 @@ the title+body in a scrim and switch the icon to the emblem when `slide.art != n
                     )
 ```
 
-with the art/emoji switch (the emblem also carries the completion pulse on the final slide, since the
-finish CTA lives there — but a non-art slide's emoji pulses too if it's the primer):
+with the art/emoji switch. The icon carries the completion pulse via `Modifier.pulseScale(finishPulse)`
+— `finish()` only fires on the final (primer) slide, so in practice the `👣` emoji on slide 4 pulses;
+the shared modifier is a harmless no-op (scale 1f) on the other slides:
 
 ```kotlin
                     if (slide.art != null) {
@@ -742,14 +797,14 @@ finish CTA lives there — but a non-art slide's emoji pulses too if it's the pr
                             contentDescription = null,
                             modifier = Modifier
                                 .size(96.dp)
-                                .graphicsLayer(scaleX = finishScale, scaleY = finishScale),
+                                .pulseScale(finishPulse),
                         )
                     } else {
                         Text(
                             slide.icon,
                             style = MaterialTheme.typography.displayMedium,
                             modifier = Modifier
-                                .graphicsLayer(scaleX = finishScale, scaleY = finishScale)
+                                .pulseScale(finishPulse)
                                 .clearAndSetSemantics {},
                         )
                     }
@@ -781,7 +836,58 @@ Then wrap the existing title `Text` + body `Text` (lines 105-112) in a scrim `Bo
 (`clip` is already imported; `MaterialTheme.shapes` is available via the existing `MaterialTheme`
 import. The scrim is non-interactive — no `clickable`/`pointerInput`.)
 
-- [ ] **Step 6: Add the `artDrawable` mapper**
+> **Leave the `Spacer(Modifier.height(24.dp))` at line 104 in place** — it sits between the icon block
+> and the title and is intentionally retained as the icon→text gap. It is *not* part of either replaced
+> range above.
+
+- [ ] **Step 6: Apply the completion pulse to the final-slide CTAs (spec E10: "icon + CTA")**
+
+The spec locks the pulse on the final-slide **icon + CTA**. Step 5 covered the icon; now add
+`Modifier.pulseScale(finishPulse)` to the two CTA buttons that call `finish()` — the granted
+"Start playing" `Button` (line ~167) and the denied "Continue without step counting" `TextButton`
+(line ~189). Do **not** touch the "Enable step counting" button (line ~172) — it calls
+`onEnableStepCounting`, not `finish()`, so it must not pulse.
+
+Replace the "Start playing" button (current lines 167-169):
+
+```kotlin
+                        Button(onClick = { finish() }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Start playing")
+                        }
+```
+
+with:
+
+```kotlin
+                        Button(
+                            onClick = { finish() },
+                            modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
+                        ) {
+                            Text("Start playing")
+                        }
+```
+
+Replace the "Continue without step counting" button (current lines 189-191):
+
+```kotlin
+                        TextButton(onClick = { finish() }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Continue without step counting")
+                        }
+```
+
+with:
+
+```kotlin
+                        TextButton(
+                            onClick = { finish() },
+                            modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
+                        ) {
+                            Text("Continue without step counting")
+                        }
+```
+
+(The branch order — granted → `!permissionAsked` → denied — is unchanged; only these two `finish()`
+CTAs gain the pulse modifier.)
 
 Add this file-private mapper at the end of `OnboardingScreen.kt` (next to the gradient helpers):
 
@@ -794,12 +900,12 @@ private fun artDrawable(art: OnboardingArt): Int = when (art) {
 }
 ```
 
-- [ ] **Step 7: Build + lint to confirm it compiles cleanly**
+- [ ] **Step 8: Build + lint to confirm it compiles cleanly**
 
 Run: `./run-gradle.sh testDebugUnitTest lintDebug > /tmp/bundle-e-t6.log 2>&1; tail -n 25 /tmp/bundle-e-t6.log`
-Expected: BUILD SUCCESSFUL; no unresolved-reference / brace-balance errors; lint clean (no new `HardcodedText` — the only literals are the existing slide copy, unchanged).
+Expected: BUILD SUCCESSFUL; no unresolved-reference / brace-balance / unused-import errors; lint clean (no new `HardcodedText` — the only literals are the existing slide copy, unchanged).
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add app/src/main/java/com/whitefang/stepsofbabylon/presentation/onboarding/OnboardingScreen.kt
@@ -819,7 +925,7 @@ In `docs/steering/source-files.md`, add these lines in the `presentation/ui/` bl
 `ClaimCelebration.kt` line ~295, before `Rarity.kt`):
 
 ```
-presentation/ui/ColorLerp.kt                       # Pure lerpArgb(a,b,t: packed-ARGB Int) per-channel colour interpolation, t clamped [0,1]. Backs the onboarding biome-gradient cross-fade (#164, Bundle E). JVM-tested (ColorLerpTest).
+presentation/ui/ColorLerp.kt                       # Pure colour-math for the onboarding biome-gradient cross-fade (#164, Bundle E): lerpArgb(a,b,t: packed-ARGB Int) per-channel interpolation (t clamped [0,1]) + crossfadeNeighborIndex(page,offset,lastIndex) signed-offset neighbour selection (clamped to [0,lastIndex] for overscroll edges). JVM-tested (ColorLerpTest).
 ```
 
 Update the `Type.kt` line (~298) to reflect Cinzel:
@@ -846,10 +952,10 @@ drawable/ic_ziggurat_emblem.xml                    # Vector stepped-ziggurat emb
 
 - [ ] **Step 2: Update the headline test count in CLAUDE.md**
 
-Bundle E adds **2** (`SobTypographyTest`) **+ 5** (`ColorLerpTest`) **+ 2** (`OnboardingContentTest`) = **9** new JVM tests → 996 + 9 = **1005**. In `CLAUDE.md`'s Testing section, update the headline count line:
+Bundle E adds **2** (`SobTypographyTest`) **+ 9** (`ColorLerpTest`: 5 `lerpArgb` + 4 `crossfadeNeighborIndex`) **+ 2** (`OnboardingContentTest`) = **13** new JVM tests → 996 + 13 = **1009**. In `CLAUDE.md`'s Testing section, update the headline count line:
 
 ```
-- **Headline count: 1005 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1009 JVM tests + 9 instrumented tests.** Update this line when it changes; the
 ```
 
 (Confirm the delta against the actual test run from the Final Verification — if a test was split/merged during implementation, use the real number.)
@@ -868,7 +974,7 @@ guard. Onboarding is now a themed biome journey: per-slide `BiomeTheme` sky-grad
 Frozen → Celestial), cross-faded on swipe via a pure `lerpArgb` helper (static under reduced-motion), a
 legibility scrim behind the text, and a one-shot gold completion pulse sequenced persist-first → pulse →
 navigate (gating/nav contract preserved). The slide-1 🏛️ temple emoji is replaced by a vector
-stepped-ziggurat emblem (`ic_ziggurat_emblem.xml`). +9 JVM tests. Zero engine/economy/domain/routing
+stepped-ziggurat emblem (`ic_ziggurat_emblem.xml`). +13 JVM tests. Zero engine/economy/domain/routing
 change. → v1.0.8 / versionCode 24.
 ```
 
@@ -902,7 +1008,7 @@ current-objective + headline, and appends a `RUN_LOG.md` entry.
 
 If updating manually:
 - `STATE.md`: set the headline + current-objective to "Bundle E (#164) implemented on
-  `feat/164-look-and-feel-bundle-e`; pending feel sign-off + PR" and bump the test count to 1005 and
+  `feat/164-look-and-feel-bundle-e`; pending feel sign-off + PR" and bump the test count to 1009 and
   the version to v1.0.8 / versionCode 24. Note Bundle E is the last of the A–E review bundles.
 - `RUN_LOG.md`: append a dated entry summarising the work (Cinzel font on Display+Headline, onboarding
   biome theming + cross-fade + scrim + finish pulse, vector ziggurat emblem; 9 new tests; spec+plan both
@@ -922,7 +1028,42 @@ git commit -m "docs(#164): checkpoint — Bundle E implemented, pending feel sig
 - [ ] **Run the full gate**
 
 Run: `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug > /tmp/bundle-e-final.log 2>&1; tail -n 20 /tmp/bundle-e-final.log`
-Expected: BUILD SUCCESSFUL; all unit tests green (incl. `SobTypographyTest` 2, `ColorLerpTest` 5, the 2 new `OnboardingContentTest` cases); lint clean; debug APK assembles. Confirm the headline count in CLAUDE.md matches the actual total.
+Expected: BUILD SUCCESSFUL; all unit tests green (incl. `SobTypographyTest` 2, `ColorLerpTest` 9 = 5 `lerpArgb` + 4 `crossfadeNeighborIndex`, the 2 new `OnboardingContentTest` cases); lint clean; debug APK assembles. Confirm the headline count in CLAUDE.md matches the actual total (1009).
+
+- [ ] **Computed scrim-contrast check (spec E9 — during implementation, before sign-off)**
+
+Spec E9 requires a *computed* WCAG-AA contrast check (not just on-device eyeballing) for the scrim over
+each biome. For all 4 onboarding biomes, composite the sky-bottom colour with `Color.Black @ 0.45`
+(`result = sky_bottom × 0.55 + black × 0.45` per channel) and confirm:
+- **Title** Ivory `#FFF8E7` over that composite ≥ **3:1** (large text), and
+- **Body** sandstone `#D8C7A8` over that composite ≥ **4.5:1** (normal text).
+
+Sky-bottoms: HANGING_GARDENS `#4A7C59`, BURNING_SANDS `#D4943A` (lightest — worst case), FROZEN_ZIGGURATS
+`#4682B4`, CELESTIAL_GATE `#1A1A4A`. A quick way to compute (no app needed):
+
+```bash
+python3 - <<'PY'
+def lum(c):
+    def f(x):
+        x/=255
+        return x/12.92 if x<=0.03928 else ((x+0.055)/1.055)**2.4
+    r,g,b=(c>>16)&255,(c>>8)&255,c&255
+    return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b)
+def comp(bg,a=0.45):  # composite black@a over bg
+    return tuple(int(round(((bg>>s)&255)*(1-a))) for s in (16,8,0))
+def ratio(fg,bg_rgb):
+    L1,L2=lum(fg),lum((bg_rgb[0]<<16)|(bg_rgb[1]<<8)|bg_rgb[2])
+    hi,lo=max(L1,L2),min(L1,L2); return (hi+0.05)/(lo+0.05)
+skies={'Gardens':0x4A7C59,'Sands':0xD4943A,'Frozen':0x4682B4,'Celestial':0x1A1A4A}
+for name,sky in skies.items():
+    bg=comp(sky)
+    print(f"{name:10} title {ratio(0xFFF8E7,bg):.2f}:1  body {ratio(0xD8C7A8,bg):.2f}:1")
+PY
+```
+
+Expected: every title ratio ≥ 3.0 and every body ratio ≥ 4.5. If Burning Sands (the lightest) fails,
+raise the scrim alpha (e.g. 0.5) in Step 5 and re-run — do **not** lower it. Record the computed ratios
+in the PR description.
 
 - [ ] **On-device feel sign-off (developer, manual)** — install the debug APK and confirm:
   - **Font:** app-wide titles/headers render in Cinzel (carved-stone caps); body/labels stay Roboto; no missing-glyph/tofu. The biome name on the **battle transition overlay** is Cinzel; the Home **TierSelector** biome name stays Roboto (expected, spec E3).
@@ -930,7 +1071,8 @@ Expected: BUILD SUCCESSFUL; all unit tests green (incl. `SobTypographyTest` 2, `
   - **Onboarding gradients:** each slide shows its biome sky-gradient (Gardens green → Sands amber → Frozen blue → Celestial near-black); swiping **cross-fades** smoothly with no flicker or out-of-range artefact at the first/last slide; under reduced-motion the gradient is static (no blend) and there is no finish pulse.
   - **Scrim:** title + body stay legible on all 4 palettes — explicitly check the lightest (Burning Sands amber) and the darkest (Celestial near-black).
   - **Emblem:** slide 1 shows the vector ziggurat emblem (gold roundel), not the 🏛️ emoji; slides 2–4 keep their emoji.
-  - **Completion beat:** finishing onboarding plays the one-shot gold pulse on the final slide once, then lands on Home; the completion flag persists (no re-onboard on relaunch, including if you background the app mid-pulse); the permission branch (granted "Start playing" / ask "Enable" / denied "Continue without") all reach Home and the pulse plays on the two `finish()` paths.
+  - **Completion beat:** finishing onboarding plays a one-shot scale pulse (up-and-back) on the final-slide icon **and** the CTA once, then lands on Home; the completion flag persists (no re-onboard on relaunch, including if you background the app mid-pulse); double-tapping the CTA during the beat does not double-fire (latch); the permission branch (granted "Start playing" / ask "Enable" / denied "Continue without") all reach Home, and the pulse plays on the two `finish()` paths (Start playing / Continue without) but **not** on "Enable step counting".
+  - **Replay-from-Settings feel (FZ-2):** replay the tutorial from Settings → tap "Start playing"; confirm the ~450ms pulse-then-return-to-Settings reads acceptably (it is sound either way — nav fires once; if the celebratory beat feels wrong on a replay, note it and we can gate the pulse to first-launch only at the `MainActivity` call site in a follow-up).
 
 ---
 
@@ -950,17 +1092,50 @@ Expected: BUILD SUCCESSFUL; all unit tests green (incl. `SobTypographyTest` 2, `
 - `BiomeTheme` lives in `presentation/battle/biome/` and is already used by `HomeScreen` — importing it
   into onboarding is a presentation→presentation reference (no layering violation; both are
   `presentation/`).
-- The completion pulse is keyed to the same `finishScale` on both the emblem (slide 1) and the emoji
-  branch (other slides). The pulse is only *triggered* on the final slide (where `finish()` fires), so
-  in practice it animates the final slide's `👣` emoji; the shared `graphicsLayer` is harmless on
-  non-final slides (scale stays 1f).
+- The completion pulse reuses the shipped `PurchasePulse` helpers: one `finishPulse = rememberPulse()`
+  drives `Modifier.pulseScale(finishPulse)` on the icon/emblem slot and the two `finish()` CTAs. It is
+  only *triggered* (`finishPulse.trigger()`) inside `finish()`, which fires only on the final slide, so
+  in practice it animates the final slide's `👣` emoji + its CTA; the shared `pulseScale` modifier is a
+  harmless no-op (scale 1f) on non-final slides. `rememberPulse()` already does the round-trip
+  (1f→1.12→1f) and `snap()`s under reduced-motion, so no bespoke animation state is needed.
 
 ---
 
-## Adversarial Review Record
+## Adversarial Review Record (2026-06-15)
 
-> _Pending._ Per the CLAUDE.md **Adversarial Review Gate**, this plan must pass a multi-agent
-> code-grounded review (compile-correctness · TDD-soundness · Compose/Android-API · spec-coverage ·
-> line-refs/consistency · fragile-zone safety) with adversarial verification (default-to-refuted)
-> before any implementation. Record total / surviving / refuted counts and the substantive fixes here
-> once complete.
+Per the CLAUDE.md **Adversarial Review Gate**, this plan passed a multi-agent code-grounded review
+before implementation: 6 reviewers (compile-correctness · TDD-soundness · Compose/Android-API ·
+spec-coverage · line-refs/consistency · fragile-zone safety), each finding adversarially verified by a
+skeptic (default-to-refuted). **~25 findings raised → 9 survived (0 critical, 0 major after
+verification; 4 minor + 5 nits) → ~16 refuted** (incl. several "verified-safe/correct" confirmations
+that the plan was already right, and the scary `Surface(Color.Transparent)` "black text" finding, which
+a code-grounded skeptic refuted — the Material3 `Scaffold` provides `onBackground` = Ivory as
+`LocalContentColor`, so the title stays Ivory).
+
+Surviving findings, all applied above:
+- **Completion "pulse" was a one-way ramp + omitted the CTA (E-ONEWAY-RAMP / SC-2, downgraded to minor).**
+  Rewrote E10's beat to **reuse the shipped `rememberPulse()` / `Modifier.pulseScale()`** (a true
+  round-trip pulse that already snaps under reduced-motion) on the final-slide **icon and both
+  `finish()` CTAs** (Task 6 Step 3, 5, 6) — closer to the spec's "icon + CTA" + "reuse Bundle C infra"
+  intent than the bespoke `animateFloatAsState` ramp.
+- **Missing spec §5 #2 signed-offset test (SC-1, minor).** Extracted a pure `crossfadeNeighborIndex`
+  helper and added 4 neighbour-selection tests (interior previous/next + page-0/lastIndex overscroll
+  clamps) — Task 4.
+- **Dropped E9 computed-contrast check (SC-4, minor).** Added a during-implementation computed WCAG-AA
+  contrast step (all 4 biomes, with a runnable Python snippet) to Final Verification.
+- **Double-tap during the beat (FZ-1, → nit).** Added an `if (finishing) return` latch so completion is
+  exactly-once across the now-longer interactive window (Task 6 Step 3).
+- **Dead imports (CC-1 / E-UNUSED-IMPORTS, minor).** Dropped `IntOffset`/`zIndex` (and the now-unneeded
+  `animateFloatAsState`/`snap`/`tween`/`graphicsLayer`) from Task 6 Step 1.
+- **Nits applied:** orphaned 24.dp spacer noted as intentional (CC-2); Task 2 Step 2 "Expected: FAIL"
+  reworded to be honest it is a *compile* error (TDD-1); KDoc replace-range wording clarified (LR-01);
+  replay-from-Settings feel check added to sign-off (FZ-2). Headline count corrected to **+13 → 1009**
+  (the 4 new neighbour-selection tests).
+
+Refuted (~16): the transparent-Surface text-colour finding (code-grounded refutation above); a
+"Typography not JVM-tested before" precedent quibble (the plan only claims classpath availability, which
+is true and was independently verified safe by decompiling `ui-text`); over-stated count/coverage items
+already handled by the spec/plan; and multiple "verified-correct" confirmations (pager-offset math,
+`.then(Modifier)`, `Image`/`graphicsLayer`, `MaterialTheme.shapes`, reduced-motion paths, branch-order
+preservation, low Cinzel clip/overflow risk). No unaddressed critical/major findings remain — cleared
+to implement.
