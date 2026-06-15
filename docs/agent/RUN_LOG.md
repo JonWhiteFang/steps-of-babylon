@@ -1,3 +1,36 @@
+## 2026-06-15 — Bundle D (#163) merge + v1.0.7 release to Play internal track
+
+- **Goal:** Merge the code-complete, review-passed, feel-signed-off Bundle D branch, then ship it to the
+  Play internal track as v1.0.7.
+- **Merge (PR #174):** squash-merged `feat/163-look-and-feel-bundle-d` → `main` (squash `d317fdc`, #163
+  closed, branch deleted). CI PR gate + instrumented `connected` lane both green (4m50s / 5m7s) before
+  merge; on-device feel/visual sign-off done by the developer (rarity reads at a glance; EQUIPPED chip
+  unmistakable; cap hint at 3/3; locked UWs dimmed; accent bar not clipped — recorded as a PR comment).
+  Local `main` had 4 unsquashed spec/plan doc commits → reset to `origin/main` after confirming the squash
+  subsumed all 12 files (no work lost).
+- **Release (PR #175 + tag):** cut `release/v1.0.7` — versionCode 22→23, versionName 1.0.6→1.0.7,
+  CHANGELOG `[Unreleased]`→`[1.0.7]` (2026-06-15), new `docs/release/release-notes-v1.0.7.md` (Play
+  "What's new" + dev detail), STATE headline. Release collateral only (no production code). Release PR
+  #175 CI-green (4m43s / 4m56s) → squash-merge (`2e10330`) → **annotated** tag `v1.0.7` (message = the
+  243-char player-facing "What's new", which `release.yml` reads via `git tag -l --format='%(contents)'`
+  into `whatsnew-en-US`, ≤500 cap).
+- **Release lane result:** green in **6m32s** (run `27523635774`). Steps passed: decode signing keystore
+  → write Play license key → `bundleRelease` (R8 + sign) → **verify signature** (`jarsigner -verify`) →
+  prepare Play release notes → **upload to Play internal track**. GitHub Release `v1.0.7` published
+  (non-draft) with the signed `app-release.aab` (15.6 MB) asset.
+- **Verification:** **996 JVM tests** green (unchanged from the Bundle D merge); all three CI surfaces
+  (PR gate, instrumented, release lane) green end-to-end.
+- **Docs synced (checkpoint):** CLAUDE.md test count (996, set at merge) + CHANGELOG `[1.0.7]` (set at
+  release) already current; this checkpoint flipped the STATE headline/objective `releasing`→`SHIPPED`,
+  added the v1.0.7 recently-shipped entry, rotated the current-objective to **Bundle E (#164)** as the
+  next feature work, and appended this RUN_LOG entry. No ADR (release mechanics unchanged; presentation-only
+  feature).
+- **Next:** Bundle E (#164) — custom font + onboarding per-slide biome theming + real ziggurat asset —
+  the last look-&-feel bundle; brainstorm → spec → plan → PR (each through the Adversarial Review Gate).
+  Heads-up: #164 is **not** presentation-trivial like A–D (touches `res/` font/art + the onboarding flow).
+
+---
+
 ## 2026-06-14 — Bundle D (#163) IMPLEMENTATION — collectibles rarity visual system (presentation-only)
 
 - **Goal:** Execute the 6-task, adversarially-reviewed Bundle D plan

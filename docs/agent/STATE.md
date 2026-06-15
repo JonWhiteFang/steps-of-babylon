@@ -3,27 +3,26 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.7 (versionCode 23) releasing to Play internal track** (Bundle D #163; release branch
-`release/v1.0.7`, tag `v1.0.7` fires the CI release lane) · **996 JVM + 9 instrumented tests** green ·
-schema v12 · **v1.0.7 = Look & Feel Bundle D (#163, PR #174, merge `d317fdc`)** — collectibles rarity
-visual system (presentation-only): shared 3-tier palette + prominent border/badge + EQUIPPED chip + cap
-hint · v1.0.6 = Bundle C (#162) haptics + celebrations + purchase pulse · launch is judgment-gated on the
-Closed-Test Readiness Gate (`plan-FORWARD.md`).
+**Headline:** **v1.0.7 (versionCode 23) SHIPPED to Play internal track** (tag `v1.0.7` on release merge
+`2e10330`; release lane green 6m32s — signed AAB uploaded + GitHub Release with `app-release.aab` asset)
+· **996 JVM + 9 instrumented tests** green · schema v12 · **v1.0.7 = Look & Feel Bundle D (#163, PR #174,
+merge `d317fdc`)** — collectibles rarity visual system (presentation-only): shared 3-tier palette +
+prominent border/badge + EQUIPPED chip + cap hint · v1.0.6 = Bundle C (#162) haptics + celebrations +
+purchase pulse · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
-- **Look-&-feel Bundle D (#163 collectibles rarity) — MERGED to `main` (PR #174, squash `d317fdc`; #163
-  closed) + on-device feel sign-off DONE; now RELEASING as v1.0.7.** Executed via subagent-driven-development
-  (6 tasks, per-task spec+quality review). Presentation-only, zero engine/economy/domain/loadout change: new
-  shared `presentation/ui/Rarity.kt` (`RarityTier` 3-tier palette + pure `color()`/`cardRarityTier`/
-  `uwRarityTier`/labels, JVM-tested by `RarityTest`; `@Composable RarityBadge`/`EquippedChip` +
-  `Modifier.rarityBorder`) + one `RaritySand` token. Cards + UW screens: prominent treatment (3dp rarity
-  border + accent bar + filled pill badge), explicit EQUIPPED chip (replaces the tiny ✓ / `primaryContainer`
-  tint), header cap hint ("3/3 — unequip one to swap"), UW rarity from `unlockCost` (RARE/EPIC/LEGENDARY),
-  locked UWs dimmed. Fixes the latent Epic/Power-Stone amethyst collision. CI PR gate + instrumented lane
-  green on #174; **996 JVM** + 9 instrumented. **Next action:** release v1.0.7 — `release/v1.0.7` (version
-  bump 22→23, CHANGELOG `[Unreleased]`→`[1.0.7]`, release-notes-v1.0.7.md) → release PR → squash → annotated
-  tag `v1.0.7` fires the CI release lane (signed AAB → Play internal).
+- **Next feature work: Look-&-feel Bundle E (#164)** — custom font + onboarding per-slide biome theming +
+  real ziggurat asset. The last look-&-feel bundle off the 2026-06-12 UX review. Needs its own spec → plan
+  → PR (each through the Adversarial Review Gate). NOTE: unlike Bundles A–D, this one is **not** purely
+  presentation-trivial — a custom font + real art assets touch `res/`, and onboarding theming touches the
+  onboarding flow; scope it carefully in brainstorming.
+- **Previous objective (DONE): Bundle D (#163 collectibles rarity) — SHIPPED in v1.0.7** (tag `v1.0.7`,
+  merge `2e10330`; PR #174 squash `d317fdc`, #163 closed; on-device feel sign-off done; release lane green).
+  Presentation-only: shared `presentation/ui/Rarity.kt` (`RarityTier` palette + pure mapping/label/colour
+  fns JVM-tested by `RarityTest` + `RarityBadge`/`EquippedChip`/`rarityBorder`) + `RaritySand` token; Cards +
+  UW screens get the prominent treatment + EQUIPPED chip + cap hint; UW rarity from `unlockCost`; locked UWs
+  dimmed; fixes the Epic/Power-Stone amethyst collision. **990→996 JVM.**
 - **Bundle C (#162) — SHIPPED in v1.0.6** (tag `v1.0.6`, PR #172): greenfield haptics + claim/Post-Round
   celebrations + shared 1.12× purchase pulse.
 - **NEW standing protocol — Adversarial Review Gate** (CLAUDE.md → Agent protocol): every design spec and
@@ -47,7 +46,15 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
-- **2026-06-14 — Bundle D (#163) IMPLEMENTATION (presentation-only; on `feat/163-look-and-feel-bundle-d`, pre-PR).**
+- **2026-06-15 — v1.0.7 (versionCode 23) SHIPPED to Play internal track** (tag `v1.0.7` on release merge
+  `2e10330`, via release PR #175). Ships **Bundle D (#163)** — the collectibles rarity visual system —
+  merged via PR #174 (squash `d317fdc`). Release collateral only (versionCode 22→23, versionName
+  1.0.6→1.0.7, CHANGELOG `[Unreleased]`→`[1.0.7]`, new `release-notes-v1.0.7.md`). CI PR gate +
+  instrumented lane green on both #174 and #175; **release lane green in 6m32s** — keystore decode + Play
+  license-key write + **signature verify** + Play-internal upload all passed; GitHub Release `v1.0.7`
+  published with the signed `app-release.aab` (15.6 MB) asset. Annotated-tag "What's new" (243 chars:
+  rarity borders/badges + EQUIPPED chip + cap hint). **996 JVM** unchanged from the merge.
+- **2026-06-14 — Bundle D (#163) IMPLEMENTATION (presentation-only; SHIPPED in v1.0.7 via PR #174).**
   Collectibles rarity visual system for UWs + Cards. Brainstormed (visual companion) → spec (`6ad0ce5`) →
   **spec adversarial review** (14 findings, 8 surviving, 6 refuted; fixes `1b3994e` — root fix: `color()`
   made a plain fun not `@Composable`, dissolving a Modifier workaround) → 6-task TDD plan (`871d7e4`) →
@@ -60,7 +67,8 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
   UW rarity from `unlockCost` (RARE/EPIC/LEGENDARY), locked UWs dimmed (alpha 0.5f). Fixes the latent
   Epic/Power-Stone amethyst collision. `testDebugUnitTest lintDebug assembleDebug` green; **990→996 JVM**
   (+6 `RarityTest`), 0 failures. Final whole-branch review READY TO MERGE (0 critical/major; diff is 100%
-  presentation — 4 prod + 1 test + 3 docs). Feel sign-off + PR pending. No ADR (presentation-only; reuses the
+  presentation — 4 prod + 1 test + 3 docs). Merged via PR #174 (squash `d317fdc`, #163 closed); on-device
+  feel sign-off done; shipped in v1.0.7 (see entry above). No ADR (presentation-only; reuses the
   shared-`ui/`-layer pattern; spec D1–D10 captured in the design doc).
 - **2026-06-14 — Bundle C (#162) IMPLEMENTATION (presentation-only; on `feat/162-look-and-feel-bundle-c`, pre-PR).**
   Executed the 12-task adversarially-reviewed plan via subagent-driven-development (per-task spec+quality
@@ -296,7 +304,7 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Look-&-feel follow-ups (Gate C/F UX):** **Bundles #159/#160/#161 merged + released in v1.0.4**; **#162 (Bundle C) merged + released in v1.0.6** (tag `v1.0.6`, PR #172). **#163 (Bundle D, collectibles rarity) is IMPLEMENTED on `feat/163-look-and-feel-bundle-d` (990→996 JVM, build/lint/assemble green, final review READY TO MERGE) — NEXT ACTION is the developer's on-device feel/visual sign-off, then open the PR** (close #163; see Current objective). Remaining after D, needing its own spec → plan → PR: **#164** custom font + onboarding per-slide theming + real ziggurat asset.
+1. **Look-&-feel follow-ups (Gate C/F UX):** **#159/#160/#161 → v1.0.4; #162 (Bundle C) → v1.0.6; #163 (Bundle D, collectibles rarity) → v1.0.7** (PR #174, tag `v1.0.7`, #163 closed) — all merged + released. **Last bundle remaining: #164** (custom font + onboarding per-slide biome theming + real ziggurat asset) — needs its own spec → plan → PR through the Adversarial Review Gate. NOTE: #164 is not presentation-trivial like A–D (touches `res/` font/art + the onboarding flow) — scope carefully in brainstorming.
 2. **Bigger gate items:** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured).
 3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 4. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
