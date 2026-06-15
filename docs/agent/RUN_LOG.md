@@ -1,3 +1,57 @@
+## 2026-06-15 — Bundle E (#164): identity/art (Cinzel font + onboarding biome theming + ziggurat emblem)
+
+- **Goal:** Ship the last of the five A–E look-&-feel review bundles (#164): a custom display font,
+  onboarding per-slide biome theming, and a real ziggurat asset replacing the slide-1 🏛️ emoji.
+  Presentation-scoped but NOT trivial like A–D — it adds the project's first bundled font + art assets
+  (`res/`) and edits the onboarding flow (fragile zone, ADR-0021).
+- **Brainstorm (visual companion):** font specimens (chose **Cinzel**, OFL), onboarding biome-journey
+  mockups (Gardens→Sands→Frozen→Celestial, Underworld skipped), ziggurat emblem styles (chose the gold
+  roundel "Emblem"). Locked: font on Display+Headline only; cross-fade + scrim; completion beat; one PR →
+  v1.0.8. Spec `docs/superpowers/specs/2026-06-15-look-and-feel-bundle-e-design.md`.
+- **Adversarial Review Gate (spec):** 6-dimension code-grounded fan-out + per-finding refute (45 agents)
+  → **~39 raised, 13 surviving, ~26 refuted.** Major catch: the "one-shot gold shimmer reusing Bundle C's
+  celebration" was **unbuildable** — no shimmer/particle infra exists (`ClaimCelebration` is a text chip,
+  `PurchasePulse` a scale pulse), and the event-driven chip would be unmounted by the navigation `finish()`
+  triggers. Redefined (E10/E10-seq) as a `PurchasePulse` round-trip pulse sequenced **persist-first →
+  pulse → navigate**. Minors: Cinzel blast-radius enumerated (currency digits flagged for sign-off);
+  "biome names get Cinzel" narrowed to the battle overlay (Home `TierSelector` stays Roboto);
+  CELESTIAL_GATE is near-black not "brightest" (rationale fixed); scrim color/alpha/AA targets locked;
+  `SobTypographyTest` added; signed `currentPageOffsetFraction` guards. Spec §7.
+- **Adversarial Review Gate (plan):** 6-dimension fan-out + refute (35 agents) → **~25 raised, 9 surviving
+  (0 critical/major), ~16 refuted.** The scary transparent-`Surface` "title goes black" finding was
+  **refuted** with a code-grounded trace (the Material3 `Scaffold` provides `onBackground`=Ivory as
+  `LocalContentColor`). Surviving fixes folded in: reuse `rememberPulse()`/`pulseScale()` (true round-trip,
+  on icon **+** both `finish()` CTAs) instead of a bespoke one-way ramp; extracted + tested
+  `crossfadeNeighborIndex` (spec §5 #2 gap); added the computed-contrast verification step; `if (finishing)
+  return` latch; dropped dead imports; headline count corrected +14 → 1010. Plan review record in the plan.
+- **Execution (subagent-driven, per-task spec+quality review):** 8 tasks.
+  **T1** Cinzel `res/font/` (Regular+Bold, OFL) — controller pre-fetched the TTFs (Google `/download` now
+  returns HTML; used the upstream `NDISCOVER/Cinzel` source). **T2** `Cinzel` FontFamily + `Type.kt`
+  Display+Headline + `displayMedium`/`displayLarge` + `SobTypographyTest` (2). **T3** `ic_ziggurat_emblem.xml`
+  vector. **T4** `ColorLerp.kt` `lerpArgb` + `crossfadeNeighborIndex` + `ColorLerpTest` (10, incl. an added
+  `offset==0` branch case). **T5** `OnboardingSlide` `biome`/`art` + `OnboardingArt` enum + 2 content tests.
+  **T6** `OnboardingScreen` gradient/cross-fade/scrim/emblem/completion-pulse (integration task, capable
+  model; implementer hit + fixed the flagged brace-balance risk; a quality-review reindent followed,
+  `git diff -w` empty). **T7** doc sweep + versionCode 24 / 1.0.8. **T8** this checkpoint.
+- **Build-breaking defect caught during execution (both reviews missed it):** the SIL OFL license `.txt`
+  cannot live in `res/font/` — AAPT's resource merger only accepts `.xml/.ttf/.ttc/.otf` there and fails
+  `mergeDebugResources`. Controller reproduced it, moved the license to `licenses/OFL-Cinzel.txt` (plan
+  §4.1 sanctioned a repo `licenses/` dir), and committed the fix (`bcf55e8`). OFL attribution still ships.
+- **Verification:** `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` green; **1010 JVM tests**
+  (996 + `SobTypographyTest` 2 + `ColorLerpTest` 10 + `OnboardingContentTest` +2), 0 failures; lint clean;
+  debug APK assembles; resource refs (`R.font.cinzel_*`, `R.drawable.ic_ziggurat_emblem`) link. The
+  `@Composable` visual pieces (gradient/cross-fade/scrim/pulse/emblem render) are on-device sign-off, not
+  unit-tested (house norm; Compose UI tests don't run under Robolectric here, PR-4736).
+- **Docs synced:** CLAUDE.md headline 996→1010; CHANGELOG `[Unreleased]` Bundle E entry; source-files.md
+  (ColorLerp, Type, the two onboarding lines, `ic_ziggurat_emblem.xml` + `res/font/` entries); plan
+  as-built note (license relocation + font source); STATE.md (headline/objective rotation + Recently-shipped
+  + fragile-zone note); this RUN_LOG entry; **ADR-0024** (font + onboarding-theming + persist-first beat).
+- **What remains:** on-device feel sign-off (Cinzel renders/no-tofu; currency digit legibility; gradient
+  cross-fade smooth + reduced-motion static; scrim legible on lightest [Sands] + darkest [Celestial];
+  emblem on slide 1; completion pulse + persist; replay-from-Settings feel), then PR on
+  `feat/164-look-and-feel-bundle-e`, then the v1.0.8 release (versionCode 24, already committed). Bundle E
+  is the last A–E bundle — after it, Gate F/G items (#29 decision-support, #26 perf/battery) are the live work.
+
 ## 2026-06-15 — #171 battle bottom-chrome overlap fix (left control rail)
 
 - **Goal:** Fix #171 — on the battle screen the bottom-anchored panels (UW cooldown bar, speed/pause/
