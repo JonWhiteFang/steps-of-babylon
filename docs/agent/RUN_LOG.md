@@ -1,3 +1,46 @@
+## 2026-06-15 — #171 battle bottom-chrome overlap fix (left control rail)
+
+- **Goal:** Fix #171 — on the battle screen the bottom-anchored panels (UW cooldown bar, speed/pause/
+  upgrade row, in-round upgrade menu) overlapped/clipped each other (the speed pill painted over the UW
+  cooldown numbers; screenshots at Wave 1). Presentation-only z-order/layout bug.
+- **Root cause:** three bottom-anchored elements in `BattleScreen.kt` each guessed their own `bottom`
+  offset (UW bar 72dp, speed row nav-inset+24dp, menu 72dp), so their vertical bands collided; only the
+  speed row even accounted for the nav inset.
+- **Brainstorm (visual companion):** explored fixes via browser mockups; developer chose a **left vertical
+  control rail** for speed/pause/upgrade (over a bottom-stack or floating-menu option) — frees the
+  bottom-center for the UW bar; the upgrade menu left-pads to clear the rail so controls stay tappable
+  while shopping. Spec `docs/superpowers/specs/2026-06-15-battle-bottom-chrome-overlap-design.md`.
+- **Adversarial Review Gate (spec):** 6-dimension code-grounded fan-out + per-finding refute (27 agents) →
+  **21 findings, 14 surviving (0 critical/major), 7 refuted**. Substantive fixes folded in: single-sourced
+  `railStartInset` shared by rail+menu (a left-cutout device could otherwise regress the overlap);
+  `menuStartPadding()` helper consumed at the call site so the JVM test pins a real coupling not a
+  tautology; corrected a *false* §5 landscape claim (now an accepted, de-scoped limitation); corrected a
+  haptics misstatement (only pause has it). Review record = spec §10.
+- **Plan + Gate (plan):** 7-task TDD plan `docs/superpowers/plans/2026-06-15-battle-bottom-chrome-overlap.md`;
+  5-dimension review (15 agents) → **10 findings, 4 surviving (0 critical/major), 6 refuted**. Applied:
+  added `background`+`RoundedCornerShape` to the import remove-list (orphan when the Row is deleted — the
+  one finding with teeth); WIDTH 64→80 traceability note; spec-deviation flags. Refutations were sound
+  (e.g. a "Speed text truncated" finding confused `contentDescription` with the visible "1x/2x/4x" label).
+- **Implementation (subagent-driven, per-task spec+quality review):** Task 1 TDD'd `BattleControlRailDefaults`
+  (`WIDTH`/`GAP`/`menuStartPadding()`) + `BattleControlRailTest` (2 tests pin `menuStartPadding()==WIDTH+GAP`).
+  Task 2 `BattleControlRail` composable — button bodies extracted **verbatim** (only pause keeps
+  `haptics.tap()`), modifier order width→verticalScroll→background→padding (pill wraps viewport). Task 3
+  rewired `BattleScreen.kt`: shared `railStartInset` (`systemBars ∪ displayCutout`, Start only), UW bar →
+  `navigationBars`+24dp owns bottom-center, rail at `CenterStart`, menu left-pads via
+  `windowInsetsPadding(railStartInset)`+`padding(start = menuStartPadding())`. Spec-compliance + code-quality
+  subagent reviews passed each task (one comment-clarity nit fixed). I rejected several quality-review
+  suggestions that would have violated the verbatim/no-behaviour-change mandate (e.g. `enabled=false` on the
+  selected speed button = visual regression; adding haptics to upgrade = spec violation).
+- **Verification:** `testDebugUnitTest lintDebug assembleDebug` green, **996 → 998 JVM** (+2), lint clean,
+  exit=0 (independently re-run by the spec reviewer with forced fresh test execution). **On-device emulator
+  verification (acceptance gate) + cutout spot-check + PR screenshot still PENDING** (Task 4) — battle
+  layout has no Compose-rule coverage (PR-4736), so on-device is the real gate.
+- **Docs synced:** CLAUDE.md (count 996→998 + battle `ui/` listing), CHANGELOG `[Unreleased]`,
+  source-files.md + structure.md (new `BattleControlRail.kt`). STATE + this RUN_LOG entry.
+- **Next:** on-device verify (Task 4) → final whole-branch review → PR (Task 7). No ADR (presentation-only;
+  reuses the shared-`ui/` extraction pattern; design captured in the spec). Bundle E (#164) still the next
+  feature work after this.
+
 ## 2026-06-15 — Bundle D (#163) merge + v1.0.7 release to Play internal track
 
 - **Goal:** Merge the code-complete, review-passed, feel-signed-off Bundle D branch, then ship it to the
