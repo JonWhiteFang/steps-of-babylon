@@ -12,6 +12,9 @@ local.properties
 # /app/schemas
 run-gradle.sh
 
+# Transient build output (the CLAUDE.md/run-gradle workflow redirects gradle output here)
+build.log
+
 # Release signing (anchored to the top-level signing dir — must NOT match docs/release/)
 /release/
 keystore.properties

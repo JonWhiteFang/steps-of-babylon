@@ -35,7 +35,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   │   ├── entities/   # ZigguratEntity, ProjectileEntity, EnemyEntity, EnemyProjectileEntity, OrbEntity
 │   │   ├── effects/   # ParticlePool, EffectEngine, ScreenShake, DeathEffect, UWVisualEffect, WaveAnnouncement, FloatingText, ProjectileTrailEffect, ReducedMotionCheck
 │   │   ├── biome/      # BiomeTheme, BackgroundRenderer (gradient sky + ambient particles)
-│   │   └── ui/         # HealthBarRenderer, InRoundUpgradeMenu, PostRoundOverlay, PauseOverlay, BiomeTransitionOverlay, UltimateWeaponBar
+│   │   └── ui/         # BattleControlRail, HealthBarRenderer, InRoundUpgradeMenu, PostRoundOverlay, PauseOverlay, BiomeTransitionOverlay, UltimateWeaponBar
 │   ├── weapons/        # UltimateWeaponScreen, UltimateWeaponViewModel
 │   ├── labs/           # LabsScreen, LabsViewModel
 │   ├── cards/          # CardsScreen, CardsViewModel

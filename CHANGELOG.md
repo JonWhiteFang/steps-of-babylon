@@ -4,6 +4,20 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fixed — Battle bottom-chrome overlap (#171)
+
+Presentation-only. The battle screen's bottom controls (speed `1x`/`2x`/`4x`, pause, upgrade) moved
+from a bottom-center row to a **left vertical rail** (`BattleControlRail` at `CenterStart`), so they no
+longer overlap or clip the Ultimate-Weapon cooldown bar or the in-round upgrade menu. The UW cooldown
+bar now owns the bottom-center strip alone. The in-round upgrade menu spans the **full screen width**
+along the bottom and clears the rail **vertically** — its fixed `IN_ROUND_MENU_HEIGHT` (280→240dp) sits
+its top edge below the rail's bottom, so the rail stays fully visible and tappable while shopping (the
+list scrolls, so the slightly shorter sheet loses no content). New shared
+`presentation/battle/ui/BattleControlRail.kt` (rail composable + `BattleControlRailDefaults.WIDTH`).
+Button bodies extracted verbatim — no behaviour change to any control. No net JVM test count change
+(996); battle-screen layout is verified on-device (no Compose-rule coverage — PR-4736). Zero
+engine/economy/domain/persistence change.
+
 ## [1.0.7] — 2026-06-15 (versionCode 23)
 
 Shipped to the Play Console **internal** track (tag `v1.0.7`). Contains Look & Feel Bundle D (#163,

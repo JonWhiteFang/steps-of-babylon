@@ -1,23 +1,19 @@
 package com.whitefang.stepsofbabylon.presentation.battle
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -27,9 +23,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Upgrade
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
@@ -56,12 +49,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.whitefang.stepsofbabylon.R
+import com.whitefang.stepsofbabylon.presentation.battle.ui.BattleControlRail
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BiomeTransitionOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.InRoundUpgradeMenu
 import com.whitefang.stepsofbabylon.presentation.battle.ui.UltimateWeaponBar
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PauseOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PostRoundOverlay
-import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 
 @Composable
 fun BattleScreen(
@@ -73,6 +66,12 @@ fun BattleScreen(
     val surfaceView = remember { GameSurfaceView(context) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val roundActive = state.roundEndState == null
+    // #171: single source of truth for the left-edge inset, shared by the control rail (CenterStart)
+    // and the upgrade-menu wrapper so the menu clears the rail by exactly GAP on any device — incl. a
+    // side display cutout in landscape. systemBars ∪ displayCutout, Start side only (RTL-aware).
+    val railStartInset = WindowInsets.systemBars
+        .union(WindowInsets.displayCutout)
+        .only(WindowInsetsSides.Start)
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Surface watchGemAd / watchPsAd ad-failure messages as a snackbar so testers see
@@ -154,71 +153,53 @@ fun BattleScreen(
             }
         }
 
-        // UW bar (passive cooldown indicator post-R4-06; auto-trigger handled in engine)
+        // UW bar (passive cooldown indicator post-R4-06; auto-trigger handled in engine).
+        // #171: now owns the bottom-center strip alone (speed/pause/upgrade moved to the left rail).
+        // Nav-bar inset + 24dp lifts it above the system gesture handle — was a bare 72.dp chosen to
+        // dodge the old bottom control row.
         if (roundActive && state.uwSlots.isNotEmpty()) {
-            Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 72.dp)) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(bottom = 24.dp)
+            ) {
                 UltimateWeaponBar(slots = state.uwSlots)
             }
         }
 
-        // Bottom controls
+        // #171: speed / pause / upgrade live on a left vertical rail (was a bottom-center Row that
+        // overlapped the UW bar + upgrade menu). CenterStart clears the top-left HUD and the bottom UW
+        // bar in portrait. The full-width upgrade menu below clears this rail vertically (its height sits
+        // its top below the rail's bottom). See
+        // docs/superpowers/specs/2026-06-15-battle-bottom-chrome-overlap-design.md.
         if (roundActive) {
-            // R3-04 / GitHub #3: bottom control row (3× speed + Pause + Upgrade) historically
-            // overflowed the right edge of narrow phones (e.g. Pixel 6, 411dp wide). The
-            // Overdrive button was removed in R4-01 (5 buttons now, was 6) but the scroll
-            // safety net stays in place because future R4 work (Rapid Fire indicator etc.)
-            // may grow the row again. Layout invariant:
-            //   - `windowInsetsPadding(navigationBars)` lifts the row above the system
-            //     gesture handle so it isn't competing with the swipe-up area.
-            //   - `horizontalScroll(rememberScrollState())` on the inner content lets the
-            //     row scroll horizontally on screens too narrow to show every button.
-            //   - The background+rounded corners stay on the inner Row so the pill follows
-            //     the buttons (and only the buttons), not the full viewport.
-            // Pure layout change — no behaviour change to any individual button. Verified
-            // on-device on the next AAB; no JVM regression test (Compose UI surface).
-            val haptics = rememberHaptics()
-            Row(
+            BattleControlRail(
+                speedMultiplier = state.speedMultiplier,
+                isPaused = state.isPaused,
+                showUpgradeMenu = state.showUpgradeMenu,
+                onSetSpeed = viewModel::setSpeed,
+                onTogglePause = viewModel::togglePause,
+                onToggleUpgradeMenu = viewModel::toggleUpgradeMenu,
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .padding(bottom = 24.dp)
-                    .horizontalScroll(rememberScrollState())
-                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                listOf(1f, 2f, 4f).forEach { speed ->
-                    val desc = stringResource(R.string.battle_cd_speed, speed.toInt())
-                    val label = stringResource(R.string.battle_speed_label, speed.toInt())
-                    if (state.speedMultiplier == speed) {
-                        Button(onClick = {}, modifier = Modifier.semantics { contentDescription = desc }) { Text(label) }
-                    } else {
-                        FilledTonalButton(onClick = { viewModel.setSpeed(speed) },
-                            colors = ButtonDefaults.filledTonalButtonColors(containerColor = Color.White.copy(alpha = 0.2f)),
-                            modifier = Modifier.semantics { contentDescription = desc },
-                        ) { Text(label, color = Color.White) }
-                    }
-                }
-                val pauseDesc = stringResource(if (state.isPaused) R.string.action_resume else R.string.battle_cd_pause)
-                FilledTonalButton(onClick = { haptics.tap(); viewModel.togglePause() },
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = if (state.isPaused) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)),
-                    modifier = Modifier.semantics { contentDescription = pauseDesc },
-                ) { Icon(if (state.isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause, contentDescription = null, tint = Color.White) }
-
-                val upgradesDesc = stringResource(R.string.battle_cd_upgrades)
-                FilledTonalButton(onClick = { viewModel.toggleUpgradeMenu() },
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = if (state.showUpgradeMenu) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)),
-                    modifier = Modifier.semantics { contentDescription = upgradesDesc },
-                ) { Icon(Icons.Filled.Upgrade, contentDescription = null, tint = Color.White) }
-            }
+                    .align(Alignment.CenterStart)
+                    .windowInsetsPadding(railStartInset),
+            )
         }
 
-        // Upgrade menu
+        // Upgrade menu (#171): spans the FULL screen width along the bottom. It clears the left control
+        // rail VERTICALLY — `InRoundUpgradeMenu`'s fixed `IN_ROUND_MENU_HEIGHT` is short enough that the
+        // bottom-anchored sheet's top edge sits below the rail's bottom, so a full-width sheet never covers
+        // the rail's lower buttons (rail stays tappable while shopping). Bottom nav-bar inset keeps the
+        // sheet's controls clear of the gesture handle (flush otherwise — replaces the old flat 72.dp lift).
+        // (Earlier this menu left-padded to dodge the rail horizontally; full-width + a shorter, scrolling
+        // sheet reads better — the rail/menu separation is now vertical, not horizontal.)
         if (state.showUpgradeMenu && roundActive) {
-            Box(Modifier.align(Alignment.BottomCenter).padding(bottom = 72.dp)) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+            ) {
                 InRoundUpgradeMenu(cash = state.cash, inRoundLevels = state.inRoundLevels,
                     onPurchase = viewModel::purchaseInRoundUpgrade, onDismiss = viewModel::toggleUpgradeMenu,
                     lastPurchaseFree = state.lastPurchaseFree,
