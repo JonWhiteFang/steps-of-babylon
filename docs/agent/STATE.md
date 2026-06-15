@@ -3,30 +3,29 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.6 (versionCode 22) shipped to Play internal track** (tag `v1.0.6` on the Bundle C
-merge `5f0d5bf`) · **996 JVM + 9 instrumented tests** green · schema v12 · **Look & Feel Bundle D
-(#163) IMPLEMENTED on `feat/163-look-and-feel-bundle-d`** (presentation-only collectibles rarity
-visual system; spec+plan both passed the Adversarial Review Gate; pending feel sign-off + PR) ·
-v1.0.6 = Bundle C (#162, PR #172) haptics + celebrations + purchase pulse · launch is judgment-gated
-on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
+**Headline:** **v1.0.7 (versionCode 23) releasing to Play internal track** (Bundle D #163; release branch
+`release/v1.0.7`, tag `v1.0.7` fires the CI release lane) · **996 JVM + 9 instrumented tests** green ·
+schema v12 · **v1.0.7 = Look & Feel Bundle D (#163, PR #174, merge `d317fdc`)** — collectibles rarity
+visual system (presentation-only): shared 3-tier palette + prominent border/badge + EQUIPPED chip + cap
+hint · v1.0.6 = Bundle C (#162) haptics + celebrations + purchase pulse · launch is judgment-gated on the
+Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
-- **Look-&-feel Bundle D (#163 collectibles rarity) — IMPLEMENTED on `feat/163-look-and-feel-bundle-d`; pending
-  developer feel-sign-off + PR.** All 6 plan tasks executed via subagent-driven-development (fresh implementer
-  + spec-review + quality-review per task). `testDebugUnitTest lintDebug assembleDebug` green; **990→996 JVM**,
-  0 failures. Shipped (presentation-only, zero engine/economy/domain/loadout change): new shared
-  `presentation/ui/Rarity.kt` (`RarityTier` 3-tier palette + pure `color()`/`cardRarityTier`/`uwRarityTier`/
-  labels, JVM-tested by `RarityTest`; `@Composable RarityBadge`/`EquippedChip` + `Modifier.rarityBorder`) +
-  one `RaritySand` token. Cards + UW screens wired to the prominent treatment (3dp rarity border + left accent
-  bar + filled pill badge), explicit EQUIPPED chip (replaces the tiny ✓ / `primaryContainer` tint), header
-  loadout-cap hint ("3/3 — unequip one to swap"), UW rarity derived from `unlockCost` (RARE/EPIC/LEGENDARY),
-  locked UWs show **dimmed** rarity. Fixes the latent Epic/Power-Stone amethyst colour collision. Final
-  whole-branch review: READY TO MERGE, 0 critical/major. **Next action:** developer does the on-device
-  feel/visual sign-off (rarity reads at a glance; chip unmistakable; cap hint at 3/3; locked UW dimmed; accent
-  bar not clipped) → open the PR (close #163).
+- **Look-&-feel Bundle D (#163 collectibles rarity) — MERGED to `main` (PR #174, squash `d317fdc`; #163
+  closed) + on-device feel sign-off DONE; now RELEASING as v1.0.7.** Executed via subagent-driven-development
+  (6 tasks, per-task spec+quality review). Presentation-only, zero engine/economy/domain/loadout change: new
+  shared `presentation/ui/Rarity.kt` (`RarityTier` 3-tier palette + pure `color()`/`cardRarityTier`/
+  `uwRarityTier`/labels, JVM-tested by `RarityTest`; `@Composable RarityBadge`/`EquippedChip` +
+  `Modifier.rarityBorder`) + one `RaritySand` token. Cards + UW screens: prominent treatment (3dp rarity
+  border + accent bar + filled pill badge), explicit EQUIPPED chip (replaces the tiny ✓ / `primaryContainer`
+  tint), header cap hint ("3/3 — unequip one to swap"), UW rarity from `unlockCost` (RARE/EPIC/LEGENDARY),
+  locked UWs dimmed. Fixes the latent Epic/Power-Stone amethyst collision. CI PR gate + instrumented lane
+  green on #174; **996 JVM** + 9 instrumented. **Next action:** release v1.0.7 — `release/v1.0.7` (version
+  bump 22→23, CHANGELOG `[Unreleased]`→`[1.0.7]`, release-notes-v1.0.7.md) → release PR → squash → annotated
+  tag `v1.0.7` fires the CI release lane (signed AAB → Play internal).
 - **Bundle C (#162) — SHIPPED in v1.0.6** (tag `v1.0.6`, PR #172): greenfield haptics + claim/Post-Round
-  celebrations + shared 1.12× purchase pulse. (Was the prior pending-PR item; now merged + released.)
+  celebrations + shared 1.12× purchase pulse.
 - **NEW standing protocol — Adversarial Review Gate** (CLAUDE.md → Agent protocol): every design spec and
   implementation plan passes a code-grounded multi-dimension review → adversarial refute → confirmed-only
   synthesis Workflow **before** the next stage. Default-on under ultracode; if ultracode is off, flag the

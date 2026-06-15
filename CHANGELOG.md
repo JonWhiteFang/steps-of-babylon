@@ -4,6 +4,12 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+## [1.0.7] — 2026-06-15 (versionCode 23)
+
+Shipped to the Play Console **internal** track (tag `v1.0.7`). Contains Look & Feel Bundle D (#163,
+PR #174). Presentation-only — no gameplay/economy/concurrency/persistence/engine code. **996 JVM
+tests** (up from 990), 0 failures.
+
 ### Look & Feel Bundle D (#163) — Collectibles rarity visual system
 
 Presentation-only. Shared 3-tier rarity palette (sand → sky-lapis → gold) for Ultimate Weapons + Cards
