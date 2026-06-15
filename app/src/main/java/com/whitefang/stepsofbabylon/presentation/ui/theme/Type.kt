@@ -2,38 +2,59 @@ package com.whitefang.stepsofbabylon.presentation.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.whitefang.stepsofbabylon.R
+
+/**
+ * Cinzel — the Steps of Babylon display face (Bundle E, #164). Roman inscriptional caps, SIL OFL 1.1,
+ * bundled in res/font/. Applied to the Display + Headline tiers + (via headlineLarge) the battle
+ * BiomeTransitionOverlay biome name. Only Regular (400) + Bold (700) are bundled; every Cinzel'd tier
+ * is FontWeight.Bold, so 700 is what renders (400 is the normal-weight anchor). A future Cinzel tier at
+ * a non-bundled weight would silently synthesize — bundle that weight if you add one.
+ */
+val Cinzel = FontFamily(
+    Font(R.font.cinzel_regular, FontWeight.Normal),
+    Font(R.font.cinzel_bold, FontWeight.Bold),
+)
 
 /**
  * Steps of Babylon type scale.
  *
- * Before the look-&-feel polish pass there was no [Typography] token set — every screen reached for
- * Material3's stock baseline and hand-rolled `FontWeight.Bold`, so headings, labels, and values
- * drifted screen to screen. This object centralises the scale: deliberate weights + a touch of
- * tracking on labels/titles for a tighter, more "premium ancient" feel, with comfortable lineHeight
- * for the body copy on the Help/Onboarding screens.
+ * This object centralises the scale: deliberate weights + a touch of tracking on labels/titles for a
+ * tighter, more "premium ancient" feel, with comfortable lineHeight for body copy.
  *
- * Still Roboto (system default) — a custom display/serif font for headers + biome names is a
- * deliberate later step (needs a `res/font/` asset). Swapping `fontFamily` here later will
- * re-theme the whole app from one place, which is the point of having the token.
+ * The Display + Headline tiers carry the custom [Cinzel] display face (Bundle E, #164) — this is the
+ * app's typographic identity lever and re-themes every Display/Headline consumer app-wide (screen
+ * headers, overlay titles, the Home steps hero, the Currency-dashboard balance, biome names on the
+ * battle transition). Body / Title / Label tiers stay Roboto (FontFamily.Default) for dense-text
+ * legibility. Swapping a tier's fontFamily here re-themes that tier everywhere from one place.
  */
 val SobTypography = Typography(
+    displayLarge = TextStyle(
+        fontFamily = Cinzel, fontWeight = FontWeight.Bold,
+        fontSize = 57.sp, lineHeight = 64.sp, letterSpacing = (-0.25).sp,
+    ),
+    displayMedium = TextStyle(
+        fontFamily = Cinzel, fontWeight = FontWeight.Bold,
+        fontSize = 45.sp, lineHeight = 52.sp, letterSpacing = 0.sp,
+    ),
     displaySmall = TextStyle(
-        fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold,
+        fontFamily = Cinzel, fontWeight = FontWeight.Bold,
         fontSize = 36.sp, lineHeight = 44.sp, letterSpacing = (-0.5).sp,
     ),
     headlineLarge = TextStyle(
-        fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold,
+        fontFamily = Cinzel, fontWeight = FontWeight.Bold,
         fontSize = 32.sp, lineHeight = 40.sp, letterSpacing = 0.sp,
     ),
     headlineMedium = TextStyle(
-        fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold,
+        fontFamily = Cinzel, fontWeight = FontWeight.Bold,
         fontSize = 28.sp, lineHeight = 36.sp, letterSpacing = 0.sp,
     ),
     headlineSmall = TextStyle(
-        fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold,
+        fontFamily = Cinzel, fontWeight = FontWeight.Bold,
         fontSize = 24.sp, lineHeight = 32.sp, letterSpacing = 0.sp,
     ),
     titleLarge = TextStyle(
