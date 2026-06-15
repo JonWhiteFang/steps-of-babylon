@@ -38,6 +38,16 @@ import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import kotlin.math.ceil
 import kotlin.math.pow
 
+/**
+ * #171: the in-round upgrade sheet's fixed height. The menu is bottom-anchored and now spans the FULL
+ * screen width (no left-pad to dodge the rail). It clears the left control rail VERTICALLY instead: a
+ * height short enough that the sheet's top edge sits below the rail's bottom edge, so a full-width sheet
+ * never covers the rail's lower buttons (rail stays tappable while shopping). The list scrolls, so the
+ * slightly reduced height loses no content. Was 280.dp when the menu left-padded to dodge the rail
+ * horizontally. Tune on-device against the rail's bottom edge.
+ */
+val IN_ROUND_MENU_HEIGHT = 240.dp
+
 @Composable
 fun InRoundUpgradeMenu(
     cash: Long,
@@ -69,7 +79,7 @@ fun InRoundUpgradeMenu(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(280.dp)
+            .height(IN_ROUND_MENU_HEIGHT)
             .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
             .padding(8.dp),
     ) {

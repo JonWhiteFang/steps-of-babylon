@@ -50,7 +50,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BattleControlRail
-import com.whitefang.stepsofbabylon.presentation.battle.ui.BattleControlRailDefaults
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BiomeTransitionOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.InRoundUpgradeMenu
 import com.whitefang.stepsofbabylon.presentation.battle.ui.UltimateWeaponBar
@@ -171,8 +170,8 @@ fun BattleScreen(
 
         // #171: speed / pause / upgrade live on a left vertical rail (was a bottom-center Row that
         // overlapped the UW bar + upgrade menu). CenterStart clears the top-left HUD and the bottom UW
-        // bar in portrait. `railStartInset` is shared with the upgrade-menu wrapper below so the menu
-        // clears the rail by exactly GAP on any device. See
+        // bar in portrait. The full-width upgrade menu below clears this rail vertically (its height sits
+        // its top below the rail's bottom). See
         // docs/superpowers/specs/2026-06-15-battle-bottom-chrome-overlap-design.md.
         if (roundActive) {
             BattleControlRail(
@@ -188,18 +187,18 @@ fun BattleScreen(
             )
         }
 
-        // Upgrade menu (#171): left-pads by `menuStartPadding()` (WIDTH + GAP) ON TOP OF the same
-        // `railStartInset` the rail uses, so the sheet's left edge begins GAP past the rail's right edge —
-        // the rail stays tappable while shopping. Bottom nav-bar inset keeps the sheet's controls clear of
-        // the gesture handle (flush otherwise — replaces the old flat 72.dp lift). The start-pad SHRINKS
-        // the sheet rather than shifting it because InRoundUpgradeMenu's root is fillMaxWidth().
+        // Upgrade menu (#171): spans the FULL screen width along the bottom. It clears the left control
+        // rail VERTICALLY — `InRoundUpgradeMenu`'s fixed `IN_ROUND_MENU_HEIGHT` is short enough that the
+        // bottom-anchored sheet's top edge sits below the rail's bottom, so a full-width sheet never covers
+        // the rail's lower buttons (rail stays tappable while shopping). Bottom nav-bar inset keeps the
+        // sheet's controls clear of the gesture handle (flush otherwise — replaces the old flat 72.dp lift).
+        // (Earlier this menu left-padded to dodge the rail horizontally; full-width + a shorter, scrolling
+        // sheet reads better — the rail/menu separation is now vertical, not horizontal.)
         if (state.showUpgradeMenu && roundActive) {
             Box(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .windowInsetsPadding(WindowInsets.navigationBars)
-                    .windowInsetsPadding(railStartInset)
-                    .padding(start = BattleControlRailDefaults.menuStartPadding())
             ) {
                 InRoundUpgradeMenu(cash = state.cash, inRoundLevels = state.inRoundLevels,
                     onPurchase = viewModel::purchaseInRoundUpgrade, onDismiss = viewModel::toggleUpgradeMenu,

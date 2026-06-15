@@ -31,24 +31,17 @@ import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 
 /**
- * Layout constants for the battle [BattleControlRail] (#171). Single source of truth for the rail's
- * fixed footprint and the upgrade-menu start padding, so the "menu clears the rail by GAP" coupling
- * (spec §4.5) can't drift into two hardcoded numbers. WIDTH/GAP are cosmetic — tune on-device — but
- * the [menuStartPadding] DERIVATION must stay the single value the menu wrapper consumes.
+ * Layout constants for the battle [BattleControlRail] (#171). Holds the rail's fixed on-screen
+ * footprint. (The upgrade menu now spans the full width and clears the rail VERTICALLY via
+ * `IN_ROUND_MENU_HEIGHT`, so there is no longer a rail↔menu horizontal-padding coupling to single-source
+ * here — that earlier `GAP`/`menuStartPadding()` derivation was retired when the menu went full-width.)
  */
 object BattleControlRailDefaults {
     /**
      * Fixed rail footprint. Sized to hold the widest control (4x / pause / upgrade) + pill padding.
-     * Starts at 80.dp (spec §4.5 showed 64.dp illustratively); both are tune-on-device cosmetics and
-     * the [menuStartPadding] coupling is value-independent.
+     * Cosmetic — tune on-device.
      */
     val WIDTH: Dp = 80.dp
-
-    /** Separation between the rail's right edge and the upgrade menu's left edge. */
-    val GAP: Dp = 8.dp
-
-    /** Upgrade-menu wrapper start padding. The menu wrapper MUST consume this (not re-type WIDTH + GAP). */
-    fun menuStartPadding(): Dp = WIDTH + GAP
 }
 
 /**

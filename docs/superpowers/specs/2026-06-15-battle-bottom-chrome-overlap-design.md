@@ -4,6 +4,16 @@
 **Issue:** [#171](https://github.com/JonWhiteFang/steps-of-babylon/issues/171) — "Battle screen: bottom control bar and pop-up panels overlap (clipped/cluttered, blocks interaction)" (`area:ui`, `bug`, `severity:minor`, `ux`)
 **Type:** Presentation-only. No domain / data / engine / economy / concurrency change.
 
+> **Post-implementation addendum (2026-06-15, after on-device review).** §4.4/§4.5 below specify the upgrade
+> menu clearing the rail **horizontally** (left-pad by `menuStartPadding()` = WIDTH + GAP, pinned by
+> `BattleControlRailTest`). After verifying on-device, the developer asked for the menu to span the **full
+> screen width**. As shipped, the menu therefore clears the rail **vertically** instead: it is `fillMaxWidth()`
+> and a fixed `IN_ROUND_MENU_HEIGHT` (240dp) keeps its top edge below the rail's bottom. This retired the
+> `GAP`/`menuStartPadding()` horizontal coupling and its JVM test (the vertical clearance is a Compose layout
+> fact, on-device-verified, not JVM-pinnable). The rest of the design (left rail at `CenterStart`, UW bar owns
+> bottom-center, verbatim buttons, `railStartInset` for the rail's own left inset, landscape de-scoped) is
+> unchanged. See `RUN_LOG.md` (2026-06-15) for the pivot detail.
+
 ---
 
 ## 1. Problem & root cause

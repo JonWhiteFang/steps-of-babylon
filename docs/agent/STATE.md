@@ -5,7 +5,7 @@ One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) a
 
 **Headline:** **v1.0.7 (versionCode 23) SHIPPED to Play internal track** (tag `v1.0.7` on release merge
 `2e10330`; release lane green 6m32s — signed AAB uploaded + GitHub Release with `app-release.aab` asset)
-· **998 JVM + 9 instrumented tests** green (996 shipped in v1.0.7 + 2 from the in-flight #171 fix) · schema
+· **996 JVM + 9 instrumented tests** green · schema
 v12 · **v1.0.7 = Look & Feel Bundle D (#163, PR #174,
 merge `d317fdc`)** — collectibles rarity visual system (presentation-only): shared 3-tier palette +
 prominent border/badge + EQUIPPED chip + cap hint · v1.0.6 = Bundle C (#162) haptics + celebrations +
@@ -51,16 +51,19 @@ purchase pulse · launch is judgment-gated on the Closed-Test Readiness Gate (`p
   Presentation-only. The battle bottom controls (speed `1x`/`2x`/`4x` + pause + upgrade) moved from a
   bottom-center Row to a **left vertical rail** (`BattleControlRail` at `CenterStart`), so they no longer
   overlap/clip the UW cooldown bar or the in-round upgrade menu (the reported bug). UW bar now owns
-  bottom-center alone (`navigationBars` inset + 24dp); the upgrade menu left-pads via a shared
-  `railStartInset` (`systemBars ∪ displayCutout`, Start) + `BattleControlRailDefaults.menuStartPadding()`
-  so it clears the rail by GAP and the rail stays tappable while shopping. New
-  `presentation/battle/ui/BattleControlRail.kt` (rail composable + `BattleControlRailDefaults`
-  WIDTH/GAP/`menuStartPadding()` single source of truth). Button bodies extracted **verbatim** — no
-  behaviour change (only pause keeps its haptic). Spec **and** plan both passed the Adversarial Review Gate
-  (spec: 21→14 surviving/7 refuted, 0 critical/major; plan: 10→4 surviving/6 refuted). Subagent-driven
-  TDD; `testDebugUnitTest lintDebug assembleDebug` green, **996→998 JVM** (+2 `BattleControlRailTest`).
-  **On-device verification (acceptance gate) + PR still pending.** No ADR (presentation-only; reuses the
-  shared-`ui/` extraction pattern; design in the spec).
+  bottom-center alone (`navigationBars` inset + 24dp). The in-round upgrade menu spans the **full screen
+  width** along the bottom and clears the rail **vertically** — its fixed `IN_ROUND_MENU_HEIGHT` (280→240dp)
+  sits its top below the rail's bottom, so the rail stays fully visible/tappable while shopping (list
+  scrolls; no content lost). New `presentation/battle/ui/BattleControlRail.kt` (rail composable +
+  `BattleControlRailDefaults.WIDTH`). Button bodies extracted **verbatim** — no behaviour change (only
+  pause keeps its haptic). Spec **and** plan both passed the Adversarial Review Gate (spec: 21→14
+  surviving/7 refuted, 0 critical/major; plan: 10→4 surviving/6 refuted). Subagent-driven TDD; **on-device
+  verified at 1080×2400** (rail clears HUD; menu full-width; speed/pause/upgrade tappable with the menu
+  open). `testDebugUnitTest lintDebug assembleDebug` green, **996 JVM** (the dev pivoted the menu from a
+  left-pad-to-dodge-the-rail layout to full-width-clears-vertically after seeing it on-device, which retired
+  the horizontal `menuStartPadding`/`GAP` coupling and its `BattleControlRailTest` — clearance is now a
+  Compose layout fact, on-device-verified, not JVM-pinned). **PR still pending.** No ADR (presentation-only;
+  reuses the shared-`ui/` extraction pattern; design in the spec).
 - **2026-06-15 — v1.0.7 (versionCode 23) SHIPPED to Play internal track** (tag `v1.0.7` on release merge
   `2e10330`, via release PR #175). Ships **Bundle D (#163)** — the collectibles rarity visual system —
   merged via PR #174 (squash `d317fdc`). Release collateral only (versionCode 22→23, versionName
@@ -403,18 +406,23 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
   UWs show **dimmed** rarity (alpha 0.5f on border + badge), not hidden (D6). Guarded by `RarityTest`
   (pure fns; the `@Composable` pieces are visual-only, verified on-device).
 - **Battle bottom chrome is ONE coordinated layout (#171)** — speed/pause/upgrade live on the left rail
-  (`BattleControlRail` at `Alignment.CenterStart`); the UW cooldown bar owns bottom-center
-  (`navigationBars` inset + 24dp); the upgrade-menu wrapper left-pads via the shared `railStartInset`
-  (`WindowInsets.systemBars.union(displayCutout).only(Start)`) + `BattleControlRailDefaults.menuStartPadding()`
-  (= WIDTH + GAP). **Don't reintroduce independent bottom-anchored `padding(bottom = …)` offsets** — that
-  three-way contention is exactly the overlap #171 fixed. The rail and menu MUST share the byte-identical
-  `railStartInset` (so the menu clears the rail on a side-cutout device), and the menu wrapper MUST consume
-  `menuStartPadding()` rather than re-typing `WIDTH + GAP` inline — that consumption is what gives
-  `BattleControlRailTest` (pure-Dp coupling) teeth. Rail buttons are extracted **verbatim** (only pause has
-  `haptics.tap()`; don't add haptics to the speed/upgrade buttons). Modifier order on the rail is
-  width→verticalScroll→background→padding (background after scroll → pill wraps the viewport). Landscape
-  HUD↔rail overlap is a known, accepted, de-scoped limitation (battle is portrait-designed; manifest
-  doesn't lock orientation). No Compose-rule layout test (PR-4736) — on-device is the acceptance gate.
+  (`BattleControlRail` at `Alignment.CenterStart`, fixed `BattleControlRailDefaults.WIDTH`, `railStartInset`
+  = `WindowInsets.systemBars.union(displayCutout).only(Start)`); the UW cooldown bar owns bottom-center
+  (`navigationBars` inset + 24dp); the in-round upgrade menu spans the **full screen width** at
+  `BottomCenter` and clears the rail **vertically** — `InRoundUpgradeMenu`'s fixed `IN_ROUND_MENU_HEIGHT`
+  (240dp) is short enough that the bottom-anchored sheet's top sits below the rail's bottom, so it never
+  covers the rail's lower buttons (rail stays tappable while shopping; the list scrolls). **Don't
+  reintroduce independent bottom-anchored `padding(bottom = …)` offsets** — that three-way contention is
+  exactly the overlap #171 fixed. **Don't shrink the rail's vertical extent or grow `IN_ROUND_MENU_HEIGHT`
+  past the rail's bottom edge** without re-checking on-device — that's the only thing keeping the full-width
+  menu from covering the rail (the clearance is a Compose layout fact, not a single constant). Rail buttons
+  are extracted **verbatim** (only pause has `haptics.tap()`; don't add haptics to the speed/upgrade
+  buttons). Modifier order on the rail is width→verticalScroll→background→padding (background after scroll →
+  pill wraps the viewport). Landscape HUD↔rail overlap is a known, accepted, de-scoped limitation (battle is
+  portrait-designed; manifest doesn't lock orientation). No Compose-rule layout test (PR-4736) — on-device
+  is the acceptance gate (verified at 1080×2400). (History: the menu first left-padded to dodge the rail
+  horizontally via a `menuStartPadding`/`GAP` coupling + `BattleControlRailTest`; the dev pivoted it to
+  full-width-clears-vertically after seeing it on-device, retiring that coupling + test.)
 
 ## References
 

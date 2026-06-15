@@ -31,15 +31,32 @@
   subagent reviews passed each task (one comment-clarity nit fixed). I rejected several quality-review
   suggestions that would have violated the verbatim/no-behaviour-change mandate (e.g. `enabled=false` on the
   selected speed button = visual regression; adding haptics to upgrade = spec violation).
-- **Verification:** `testDebugUnitTest lintDebug assembleDebug` green, **996 → 998 JVM** (+2), lint clean,
-  exit=0 (independently re-run by the spec reviewer with forced fresh test execution). **On-device emulator
-  verification (acceptance gate) + cutout spot-check + PR screenshot still PENDING** (Task 4) — battle
-  layout has no Compose-rule coverage (PR-4736), so on-device is the real gate.
-- **Docs synced:** CLAUDE.md (count 996→998 + battle `ui/` listing), CHANGELOG `[Unreleased]`,
-  source-files.md + structure.md (new `BattleControlRail.kt`). STATE + this RUN_LOG entry.
-- **Next:** on-device verify (Task 4) → final whole-branch review → PR (Task 7). No ADR (presentation-only;
-  reuses the shared-`ui/` extraction pattern; design captured in the spec). Bundle E (#164) still the next
-  feature work after this.
+- **Verification (initial, left-pad design):** `testDebugUnitTest lintDebug assembleDebug` green, **996 →
+  998 JVM** (+2), lint clean, exit=0 (independently re-run by the spec reviewer with forced fresh test
+  execution). Final whole-branch review: Ready-to-PR, 0 critical/important.
+- **On-device verification (acceptance gate) — PASS.** Installed on a Pixel 6 emulator at **1080×2400**
+  (the issue's resolution), API 36. Confirmed all four #171 criteria in a live round: (a) nothing clips;
+  (b) rail + bottom-center + open menu never overlap; (c) opened the menu via the rail and switched 1x→2x
+  **with the menu open** (rail tappable while shopping); (d) rail clears the top-left HUD + left edge. The
+  original clipped-cooldown-panels bug is gone. (The `adb set-display-cutout` spot-check isn't supported on
+  this emulator image — non-blocking; portrait Start inset is ≈0 so it can't affect the verified result.)
+- **POST-VERIFY PIVOT (dev request): full-width upgrade menu.** After seeing it on-device the dev asked for
+  the upgrade menu to span the **full screen width** instead of left-padding to dodge the rail. Reworked the
+  clearance from **horizontal** (left-pad by `menuStartPadding`/`GAP`) to **vertical**: the menu is now
+  `fillMaxWidth()` and clears the rail by sitting its top below the rail's bottom via a fixed
+  `IN_ROUND_MENU_HEIGHT` (280→**240dp**, top-level val in `InRoundUpgradeMenu.kt`; the list scrolls so no
+  content is lost). Removed the now-dead `GAP`/`menuStartPadding()` from `BattleControlRailDefaults` (keeps
+  `WIDTH`), the menu wrapper's left-pad + `railStartInset` consumption, and **deleted `BattleControlRailTest`**
+  (it pinned the retired horizontal coupling; the new vertical clearance is a Compose layout fact, not
+  JVM-testable — per the spec's own "don't manufacture a test for a Composable that can't be JVM-rendered"
+  discipline). Re-verified on-device: menu spans full width, rail stays fully visible + tappable (1x→2x with
+  the menu open). **Net JVM count back to 996** (the +2 coupling test retired with its contract).
+- **Docs synced (final):** CLAUDE.md (count → 996 + battle `ui/` listing), CHANGELOG `[Unreleased]`
+  (full-width description), source-files.md (`BattleControlRail` + `InRoundUpgradeMenu` entries) +
+  structure.md, STATE (recently-shipped + fragile-zone bullet rewritten for the vertical clearance).
+- **Next:** PR (Task 7) — awaiting the dev's go-ahead (outward-facing). No ADR (presentation-only; reuses
+  the shared-`ui/` extraction pattern; design captured in the spec). Bundle E (#164) still the next feature
+  work after this.
 
 ## 2026-06-15 — Bundle D (#163) merge + v1.0.7 release to Play internal track
 
