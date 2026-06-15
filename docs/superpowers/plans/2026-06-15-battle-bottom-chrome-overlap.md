@@ -106,7 +106,11 @@ import androidx.compose.ui.unit.dp
  * the [menuStartPadding] DERIVATION must stay the single value the menu wrapper consumes.
  */
 object BattleControlRailDefaults {
-    /** Fixed rail footprint. Sized to hold the widest control (4x / pause / upgrade) + pill padding. */
+    /**
+     * Fixed rail footprint. Sized to hold the widest control (4x / pause / upgrade) + pill padding.
+     * Starts at 80.dp (spec §4.5 showed 64.dp illustratively); both are tune-on-device cosmetics and
+     * the [menuStartPadding] coupling is value-independent.
+     */
     val WIDTH: Dp = 80.dp
 
     /** Separation between the rail's right edge and the upgrade menu's left edge. */
@@ -274,10 +278,12 @@ This is a single coherent edit (imports + four body regions). After editing, the
 **Remove** these imports (all were used only by the controls Row, which is being deleted):
 
 ```
+androidx.compose.foundation.background
 androidx.compose.foundation.horizontalScroll
 androidx.compose.foundation.layout.Arrangement
 androidx.compose.foundation.layout.Row
 androidx.compose.foundation.rememberScrollState
+androidx.compose.foundation.shape.RoundedCornerShape
 androidx.compose.material3.Button
 androidx.compose.material3.ButtonDefaults
 androidx.compose.material3.FilledTonalButton
@@ -286,6 +292,9 @@ androidx.compose.material.icons.filled.PlayArrow
 androidx.compose.material.icons.filled.Upgrade
 com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 ```
+
+(`background` + `RoundedCornerShape` were used only by the Row's pill at `BattleScreen.kt:186`; the rail
+re-imports them fresh in `BattleControlRail.kt`. After this PR, BattleScreen draws no pill of its own.)
 
 (Keep `Icon`, `Icons`, and `androidx.compose.material.icons.automirrored.filled.ArrowBack` — still used by the top-right quit button at `BattleScreen.kt:153`. Keep `androidx.compose.foundation.layout.width` — used by the HUD progress bar at `:135`.)
 
@@ -569,3 +578,18 @@ Confirm the PR description covers: the #171 acceptance criteria (a)-(d), the pre
 - **Spec coverage:** §3 left rail → Tasks 2-3; §4.1 rail composable + modifier order + verbatim buttons + haptics-only-on-pause → Task 2; §4.2 `railStartInset` + CenterStart + no gesture-exclusion → Task 3 Steps 2,4; §4.3 UW-bar offset → Task 3 Step 3; §4.4 menu wrapper + fillMaxWidth dependency → Task 3 Step 5; §4.5 WIDTH/GAP/menuStartPadding single source + consumed at call site → Task 1 + Task 3 Step 5; §5 landscape accepted limitation → Task 4 Step 3 (verify clearance only); §6 one JVM coupling test + no Compose-rule test + on-device gate + cutout spot-check → Task 1 + Task 4; §7 YAGNI (no orientation lock, no gesture-exclusion, no menu restyle) → honored; §8 files → Tasks 1-3 + 5.
 - **Type/name consistency:** `BattleControlRailDefaults.WIDTH`/`GAP`/`menuStartPadding()`, `BattleControlRail(speedMultiplier, isPaused, showUpgradeMenu, onSetSpeed, onTogglePause, onToggleUpgradeMenu, modifier)`, and `railStartInset` are used identically across Tasks 1-3.
 - **No placeholders:** every code step shows complete code; every command shows expected output.
+- **Spec deviations (flagged, both benign):** (1) the test lives under `presentation/battle/ui/` to match its
+  `package …battle.ui` and co-locate with the production file — spec §8's `…/battle/…` was an imprecise ellipsis
+  that dropped the `ui/` segment. (2) `WIDTH` starts at 80.dp vs the spec's illustrative 64.dp — both are
+  tune-on-device cosmetics; the binding `menuStartPadding() == WIDTH + GAP` coupling is value-independent.
+
+## Adversarial Review Gate record (plan, 2026-06-15)
+
+5-dimension code-grounded fan-out (code-grounding, Compose-API, scope-completeness, test-feasibility,
+consistency/sequencing) → per-finding adversarial refutation. **15 agents. 10 findings → 4 surviving (0
+critical/major), 6 refuted.** Applied: added `background` + `RoundedCornerShape` to the Task-3 import
+remove-list (they orphan when the Row is deleted — the one finding with real teeth); WIDTH 64→80 traceability
+note in the KDoc; test-path + WIDTH deviations flagged in self-review (above). Refuted (correctly): a
+"Speed text truncated" finding that confused `contentDescription` with the visible "1x/2x/4x" label; the
+`assertEquals(Dp,Dp)` and compile-fail-is-red findings (both self-admitted non-defects); two keep-list
+"implicit rationale" nits (the plan's remove-list is an explicit literal list, not a derivation).
