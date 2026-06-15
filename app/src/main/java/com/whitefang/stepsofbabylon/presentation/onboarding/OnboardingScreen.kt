@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.onboarding
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,17 +25,33 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.whitefang.stepsofbabylon.R
+import com.whitefang.stepsofbabylon.domain.model.Biome
+import com.whitefang.stepsofbabylon.presentation.battle.biome.BiomeTheme
+import com.whitefang.stepsofbabylon.presentation.ui.crossfadeNeighborIndex
+import com.whitefang.stepsofbabylon.presentation.ui.lerpArgb
+import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
+import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 /**
  * One-time first-launch tutorial. Teaches walk -> spend -> battle, then asks for
@@ -69,13 +86,39 @@ fun OnboardingScreen(
         }
     }
 
+    // Completion beat (spec E10/E10-seq): persist the gating flag FIRST and unconditionally, fire a
+    // one-shot pulse (reused PurchasePulse), then navigate via the LaunchedEffect below. Navigation is
+    // never gated on the animation, and the flag is already persisted, so backgrounding mid-pulse
+    // cannot re-onboard. The `if (finishing) return` latch makes completion exactly-once even if the
+    // CTA is double-tapped during the ~450ms beat (the original synchronous finish() navigated within
+    // the frame, so this restores that once-only guarantee for the now-longer interactive window).
+    val finishPulse = rememberPulse()
+    var finishing by remember { mutableStateOf(false) }
     fun finish() {
-        viewModel.completeOnboarding()
-        onFinished()
+        if (finishing) return           // latch: ignore re-taps during the beat
+        viewModel.completeOnboarding()  // (1) persist — first, unconditional
+        finishPulse.trigger()           // (2) fire the one-shot pulse (no-op visual under reduced-motion)
+        finishing = true                // (3) arm navigation
+    }
+    LaunchedEffect(finishing) {
+        if (finishing) {
+            if (!reducedMotion) kotlinx.coroutines.delay(FINISH_PULSE_MS)
+            onFinished()                // (4) guaranteed exactly once; immediate under reduced-motion
+        }
     }
 
-    Surface(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().padding(24.dp)) {
+    val sky = if (reducedMotion) {
+        slideSky(slides[pagerState.currentPage].biome)?.let { Color(it.first) to Color(it.second) }
+    } else {
+        crossfadedSky(slides, pagerState.currentPage, pagerState.currentPageOffsetFraction)
+    }
+    Box(Modifier.fillMaxSize().then(
+        if (sky != null) {
+            Modifier.background(Brush.verticalGradient(listOf(sky.first, sky.second)))
+        } else Modifier
+    )) {
+        Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
+            Column(Modifier.fillMaxSize().padding(24.dp)) {
 
             // Top bar: Skip (non-final slides only) jumps to the permission primer.
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -96,20 +139,41 @@ fun OnboardingScreen(
                     // Emoji icon is decorative — the title/body carry the meaning for TalkBack.
                     // clearAndSetSemantics{} (NOT semantics{contentDescription=""}) actually
                     // removes the auto-generated text node from the a11y tree.
-                    Text(
-                        slide.icon,
-                        style = MaterialTheme.typography.displayMedium,
-                        modifier = Modifier.clearAndSetSemantics {},
-                    )
+                    if (slide.art != null) {
+                        Image(
+                            painter = painterResource(artDrawable(slide.art)),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(96.dp)
+                                .pulseScale(finishPulse),
+                        )
+                    } else {
+                        Text(
+                            slide.icon,
+                            style = MaterialTheme.typography.displayMedium,
+                            modifier = Modifier
+                                .pulseScale(finishPulse)
+                                .clearAndSetSemantics {},
+                        )
+                    }
                     Spacer(Modifier.height(24.dp))
-                    Text(slide.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        slide.body,
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Box(
+                        Modifier
+                            .clip(MaterialTheme.shapes.large)
+                            .background(Color.Black.copy(alpha = 0.45f))
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(slide.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                slide.body,
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
 
@@ -164,7 +228,10 @@ fun OnboardingScreen(
                                 color = MaterialTheme.colorScheme.primary,
                             )
                         }
-                        Button(onClick = { finish() }, modifier = Modifier.fillMaxWidth()) {
+                        Button(
+                            onClick = { finish() },
+                            modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
+                        ) {
                             Text("Start playing")
                         }
                     }
@@ -186,7 +253,10 @@ fun OnboardingScreen(
                             Text("Open Settings")
                         }
                         Spacer(Modifier.height(8.dp))
-                        TextButton(onClick = { finish() }, modifier = Modifier.fillMaxWidth()) {
+                        TextButton(
+                            onClick = { finish() },
+                            modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
+                        ) {
                             Text("Continue without step counting")
                         }
                     }
@@ -194,4 +264,38 @@ fun OnboardingScreen(
             }
         }
     }
+}
+}
+
+private const val FINISH_PULSE_MS = 450L
+
+/** A slide's biome sky colours as packed-ARGB Ints, or null when the slide has no biome. */
+private fun slideSky(biome: Biome?): Pair<Int, Int>? =
+    biome?.let { BiomeTheme.forBiome(it).let { t -> t.skyColorTop to t.skyColorBottom } }
+
+/**
+ * The cross-faded (top, bottom) gradient colours for the current pager position. Blends the settled
+ * slide's biome sky toward the neighbour the pager is dragging toward, using the signed offset
+ * (spec E8): neighbour = currentPage + sign(offset), clamped to [0, lastIndex]; t = abs(offset).
+ * Falls back to the settled slide's colours at the ends (no neighbour) or when a slide has no biome.
+ */
+private fun crossfadedSky(
+    slides: List<OnboardingSlide>,
+    page: Int,
+    offset: Float,
+): Pair<Color, Color>? {
+    val current = slideSky(slides[page].biome) ?: return null
+    val neighbourIndex = crossfadeNeighborIndex(page, offset, slides.lastIndex)
+    val neighbour = slideSky(slides[neighbourIndex].biome) ?: current
+    val t = abs(offset).coerceIn(0f, 1f)
+    val top = lerpArgb(current.first, neighbour.first, t)
+    val bottom = lerpArgb(current.second, neighbour.second, t)
+    return Color(top) to Color(bottom)
+}
+
+/** Maps an [OnboardingArt] marker to its drawable resource (kept screen-local so the model stays
+ *  Android-free). */
+@androidx.annotation.DrawableRes
+private fun artDrawable(art: OnboardingArt): Int = when (art) {
+    OnboardingArt.ZIGGURAT -> R.drawable.ic_ziggurat_emblem
 }
