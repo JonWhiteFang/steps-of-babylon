@@ -171,7 +171,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   │   ├── entities/   #   ZigguratEntity, EnemyEntity, ProjectileEntity, EnemyProjectileEntity, OrbEntity
 │   │   ├── effects/    #   ParticlePool, EffectEngine, ScreenShake, DeathEffect, UWVisualEffect, FloatingText, …
 │   │   ├── biome/      #   BiomeTheme, BackgroundRenderer
-│   │   └── ui/         #   InRoundUpgradeMenu, PostRoundOverlay, PauseOverlay, HealthBarRenderer, UltimateWeaponBar, …
+│   │   └── ui/         #   BattleControlRail, InRoundUpgradeMenu, PostRoundOverlay, PauseOverlay, HealthBarRenderer, UltimateWeaponBar, …
 │   ├── audio/          # Sound/music playback
 │   └── ui/theme/       # Design tokens: Color (brand + role tokens), Type (SobTypography), Shape (SobShapes), Theme
 ├── di/                 # Hilt modules: Database, Repository, Step, HealthConnect, Ad, Billing, CoroutineScope, Time
@@ -299,7 +299,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh connectedDebugAndroidTest` (instrumented).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 996 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 998 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Notable guards:** `architecture/DomainPurityTest` (fails if `domain/` imports any Android package);
   `SimulationTest` (the extracted pure-domain game-loop core); `BattleSurfaceLifecycleTest` +
