@@ -120,151 +120,151 @@ fun OnboardingScreen(
         Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
             Column(Modifier.fillMaxSize().padding(24.dp)) {
 
-            // Top bar: Skip (non-final slides only) jumps to the permission primer.
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                if (pagerState.currentPage < lastIndex) {
-                    TextButton(onClick = { goTo(lastIndex) }) { Text("Skip") }
-                } else {
-                    Spacer(Modifier.height(48.dp))
-                }
-            }
-
-            HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
-                val slide = slides[page]
-                Column(
-                    Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    // Emoji icon is decorative — the title/body carry the meaning for TalkBack.
-                    // clearAndSetSemantics{} (NOT semantics{contentDescription=""}) actually
-                    // removes the auto-generated text node from the a11y tree.
-                    if (slide.art != null) {
-                        Image(
-                            painter = painterResource(artDrawable(slide.art)),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(96.dp)
-                                .pulseScale(finishPulse),
-                        )
+                // Top bar: Skip (non-final slides only) jumps to the permission primer.
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    if (pagerState.currentPage < lastIndex) {
+                        TextButton(onClick = { goTo(lastIndex) }) { Text("Skip") }
                     } else {
-                        Text(
-                            slide.icon,
-                            style = MaterialTheme.typography.displayMedium,
-                            modifier = Modifier
-                                .pulseScale(finishPulse)
-                                .clearAndSetSemantics {},
-                        )
+                        Spacer(Modifier.height(48.dp))
                     }
-                    Spacer(Modifier.height(24.dp))
-                    Box(
-                        Modifier
-                            .clip(MaterialTheme.shapes.large)
-                            .background(Color.Black.copy(alpha = 0.45f))
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                }
+
+                HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
+                    val slide = slides[page]
+                    Column(
+                        Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(slide.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-                            Spacer(Modifier.height(16.dp))
-                            Text(
-                                slide.body,
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        // Emoji icon is decorative — the title/body carry the meaning for TalkBack.
+                        // clearAndSetSemantics{} (NOT semantics{contentDescription=""}) actually
+                        // removes the auto-generated text node from the a11y tree.
+                        if (slide.art != null) {
+                            Image(
+                                painter = painterResource(artDrawable(slide.art)),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(96.dp)
+                                    .pulseScale(finishPulse),
                             )
+                        } else {
+                            Text(
+                                slide.icon,
+                                style = MaterialTheme.typography.displayMedium,
+                                modifier = Modifier
+                                    .pulseScale(finishPulse)
+                                    .clearAndSetSemantics {},
+                            )
+                        }
+                        Spacer(Modifier.height(24.dp))
+                        Box(
+                            Modifier
+                                .clip(MaterialTheme.shapes.large)
+                                .background(Color.Black.copy(alpha = 0.45f))
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(slide.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+                                Spacer(Modifier.height(16.dp))
+                                Text(
+                                    slide.body,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            // Page dots. The dots convey page position via colour+size only — invisible to TalkBack
-            // (HorizontalPager does not auto-announce "page X of N"), so the ROW carries a single
-            // semantic label and the individual dots stay decorative.
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp)
-                    .semantics { contentDescription = "Page ${pagerState.currentPage + 1} of ${slides.size}" },
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                repeat(slides.size) { i ->
-                    val active = i == pagerState.currentPage
-                    Box(
-                        Modifier
-                            .padding(horizontal = 4.dp)
-                            .size(if (active) 10.dp else 8.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (active) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                            ),
-                    )
-                }
-            }
-
-            // Bottom controls.
-            if (pagerState.currentPage < lastIndex) {
-                Button(
-                    onClick = { goTo(pagerState.currentPage + 1) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text("Next") }
-            } else {
-                // Final (permission primer) slide.
-                // ORDER MATTERS: stepCountingGranted is checked FIRST so a replay where the
-                // permission is already held shows the satisfied state and does NOT re-ask
-                // (spec §5). Only if not granted do we branch on whether we've asked yet.
-                when {
-                    stepCountingGranted -> {
-                        Row(
-                            Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                "Step counting enabled",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                        Button(
-                            onClick = { finish() },
-                            modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
-                        ) {
-                            Text("Start playing")
-                        }
-                    }
-                    !permissionAsked -> {
-                        Button(onClick = onEnableStepCounting, modifier = Modifier.fillMaxWidth()) {
-                            Text("Enable step counting")
-                        }
-                    }
-                    else -> {
-                        // Asked but denied — give an explicit recovery path, never strand the player.
-                        Text(
-                            "Step counting is off. You can enable it any time in Settings.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                            textAlign = TextAlign.Center,
+                // Page dots. The dots convey page position via colour+size only — invisible to TalkBack
+                // (HorizontalPager does not auto-announce "page X of N"), so the ROW carries a single
+                // semantic label and the individual dots stay decorative.
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp)
+                        .semantics { contentDescription = "Page ${pagerState.currentPage + 1} of ${slides.size}" },
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    repeat(slides.size) { i ->
+                        val active = i == pagerState.currentPage
+                        Box(
+                            Modifier
+                                .padding(horizontal = 4.dp)
+                                .size(if (active) 10.dp else 8.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (active) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                ),
                         )
-                        Button(onClick = onOpenAppSettings, modifier = Modifier.fillMaxWidth()) {
-                            Text("Open Settings")
+                    }
+                }
+
+                // Bottom controls.
+                if (pagerState.currentPage < lastIndex) {
+                    Button(
+                        onClick = { goTo(pagerState.currentPage + 1) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Next") }
+                } else {
+                    // Final (permission primer) slide.
+                    // ORDER MATTERS: stepCountingGranted is checked FIRST so a replay where the
+                    // permission is already held shows the satisfied state and does NOT re-ask
+                    // (spec §5). Only if not granted do we branch on whether we've asked yet.
+                    when {
+                        stepCountingGranted -> {
+                            Row(
+                                Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    "Step counting enabled",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                            Button(
+                                onClick = { finish() },
+                                modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
+                            ) {
+                                Text("Start playing")
+                            }
                         }
-                        Spacer(Modifier.height(8.dp))
-                        TextButton(
-                            onClick = { finish() },
-                            modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
-                        ) {
-                            Text("Continue without step counting")
+                        !permissionAsked -> {
+                            Button(onClick = onEnableStepCounting, modifier = Modifier.fillMaxWidth()) {
+                                Text("Enable step counting")
+                            }
+                        }
+                        else -> {
+                            // Asked but denied — give an explicit recovery path, never strand the player.
+                            Text(
+                                "Step counting is off. You can enable it any time in Settings.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                textAlign = TextAlign.Center,
+                            )
+                            Button(onClick = onOpenAppSettings, modifier = Modifier.fillMaxWidth()) {
+                                Text("Open Settings")
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            TextButton(
+                                onClick = { finish() },
+                                modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
+                            ) {
+                                Text("Continue without step counting")
+                            }
                         }
                     }
                 }
             }
         }
     }
-}
 }
 
 private const val FINISH_PULSE_MS = 450L
