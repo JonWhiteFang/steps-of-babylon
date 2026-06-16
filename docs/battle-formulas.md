@@ -35,6 +35,7 @@ rawDamage = baseDamage
           × (1 + damageLevel × 0.02)                     // Workshop DAMAGE
           × (1 + inRoundDamageLevel × 0.02)              // In-round DAMAGE
           × (1 + damageResearchLevel × 0.05)             // Lab DAMAGE_RESEARCH (RO-11)
+          × (1 + enemyIntelLevel × 0.02)                 // Lab ENEMY_INTEL (V1X-15b, ADR-0017)
 
 isCrit = random() < critChance
 critChance = min((critChanceLevel + inRoundCritChanceLevel) × 0.005, 0.80)
@@ -320,14 +321,14 @@ Research effects are additive per level (e.g., Damage Research: +5% per level).
 
 ## Step Multiplier
 
-Workshop `STEP_MULTIPLIER` (+1 %/lvl) and Lab `STEP_EFFICIENCY` (+2 %/lvl) both add to walking-credit on the sensor path under a shared cap. Wired in by RO-08 (`STEP_MULTIPLIER`) and RO-11 (`STEP_EFFICIENCY`).
+Workshop `STEP_MULTIPLIER` (asymptotic curve, V1X-18 / ADR-0015) and Lab `STEP_EFFICIENCY` (+2 %/lvl, linear) both add to walking-credit on the sensor path under a shared cap. Wired in by RO-08 (`STEP_MULTIPLIER`) and RO-11 (`STEP_EFFICIENCY`); the Workshop side was re-curved in V1X-18.
 
 ```
-bonusFraction = min(stepMultiplierLevel × 0.01
-                  + stepEfficiencyResearchLevel × 0.02,
-                    1.00)                                  // shared cap +100 %
-bonusSteps = rawSteps × bonusFraction
-totalSteps = rawSteps + bonusSteps
+workshopBonus = 1 − (1 − 0.05)^stepMultiplierLevel         // asymptotic (SimulationMath.stepMultiplierBonus); L10≈0.401, L20≈0.642, →+100 %
+labBonus      = stepEfficiencyResearchLevel × 0.02         // linear, +2 %/lvl (L10 cap = +20 %)
+bonusFraction = min(workshopBonus + labBonus, 1.00)        // shared cap +100 %
+bonusSteps    = rawSteps × bonusFraction
+totalSteps    = rawSteps + bonusSteps
 ```
 
 Applies on the sensor (walking) credit path only — not on Health Connect activity minutes (cycling / swimming / treadmill / etc.). Bonus is added *after* anti-cheat (rate limit + velocity analysis) and *before* the absolute 50,000 steps/day daily ceiling, so the ceiling stays a hard cap. Each credit reads the current Workshop and Lab levels fresh from the DB so level-ups take effect immediately.

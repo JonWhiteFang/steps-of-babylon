@@ -10,6 +10,8 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 ├── data/
 │   ├── local/          # Room database, entities, DAOs, TypeConverters, SQLCipher key manager
 │   ├── repository/     # Repository implementations (Room-backed, @Inject constructors)
+│   ├── anticheat/      # AntiCheatPreferences — offense tracking / daily-counter persistence
+│   ├── time/           # SystemTimeProvider — production TimeProvider (testable clock; B.1 / RO-01)
 │   ├── sensor/         # Step sensor data source, rate limiter, velocity analyzer, ingestion preferences, daily step manager
 │   ├── healthconnect/  # Health Connect client, step reader, cross-validator, gap filler, activity minutes
 │   ├── billing/        # BillingManagerImpl (real Play Billing v8, sole binding for both debug + release as of C.5 PR 3; StubBillingManager deleted after Phase G internal-track on-device verification PASSED 2026-05-18)
@@ -47,7 +49,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── store/          # StoreScreen, StoreViewModel
 │   ├── help/           # HelpScreen
 │   ├── audio/          # SoundManager (SoundPool wrapper, 7 effects, volume/mute)
-│   ├── ui/             # shared composables: SobTopAppBar, LoadingBox, EmptyState, EnumDisplayName, CurrencyDisplay; feel-layer trio Haptics, PurchasePulse, ClaimCelebration (#162)
+│   ├── ui/             # shared composables: SobTopAppBar, LoadingBox, EmptyState, EnumDisplayName, CurrencyDisplay; collectibles rarity (Rarity/RarityBadge, #163); feel-layer trio Haptics, PurchasePulse, ClaimCelebration (#162); ColorLerp (pure lerpArgb/crossfade for the onboarding biome cross-fade, #164)
 │   │   └── theme/      # Compose theme, colors (Material3)
 ├── di/                 # Hilt modules (DatabaseModule, RepositoryModule, StepModule, HealthConnectModule, BillingModule, AdModule, TimeModule, CoroutineScopeModule)
 └── service/            # Foreground step-counting service, WorkManager workers, boot receiver
@@ -57,12 +59,16 @@ app/src/test/java/com/whitefang/stepsofbabylon/
 ├── fakes/              # In-memory fake repositories (FakePlayerRepository, FakeWorkshopRepository, FakeUltimateWeaponRepository, FakeLabRepository, FakeCardRepository, FakeWalkingEncounterRepository, FakeStepRepository, FakeCosmeticRepository, FakeBillingManager, FakeRewardAdManager, FakeMilestoneDao, FakeDailyMissionDao, FakeDailyLoginDao, FakeWeeklyChallengeDao, FakeDailyStepDao, FakeCosmeticDao, FakeTimeProvider)
 ├── domain/
 │   ├── model/          # Domain model invariant tests (TierConfig, Biome, Loadouts, UpgradeType, EnemyType, Milestone, DailyMissionType, BattleConditionEffects)
-│   └── usecase/        # All 36 use case tests
+│   ├── usecase/        # All 36 use case tests
+│   └── battle/         # engine/ (Simulation, SimulationMath) + entity/ (Enemy/Orb/Projectile/Ziggurat state) tests
 ├── presentation/
 │   ├── battle/
 │   │   ├── engine/     # EnemyScaler tests
 │   │   ├── biome/      # BiomeTheme tests
 │   │   └── effects/    # ParticlePool, ScreenShake, DeathEffect tests
+│   ├── audio/          # SoundManager / Music tests
+│   ├── ui/             # ColorLerp, CurrencyDisplay, EnumDisplayName, Rarity tests
+│   │   └── theme/      # SobTypography test (Cinzel + display tokens, #164)
 │   ├── home/           # HomeViewModel tests
 │   ├── workshop/       # WorkshopViewModel tests
 │   ├── labs/           # LabsViewModel tests
@@ -83,6 +89,8 @@ app/src/test/java/com/whitefang/stepsofbabylon/
 │   ├── local/          # RoomSchema round-trip tests
 │   ├── repository/     # CosmeticRepositoryImpl tests (C.2 PR 2)
 │   ├── onboarding/     # OnboardingPreferencesTest (Robolectric SharedPreferences round-trip)
+│   ├── ads/            # RewardAdManagerImpl tests
+│   ├── billing/        # BillingManagerImpl + internal/RealPurchaseVerifier tests
 │   └── integration/    # Escrow lifecycle tests
 ├── balance/            # Step economy, cost curves, enemy scaling, tier progression, cash, cards, UW, supply drops
 └── service/            # StepWidgetProvider tests

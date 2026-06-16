@@ -5,7 +5,7 @@
 An idle tower defense game where your real-world steps raise an ancient ziggurat.
 
 **Platform:** Android | **Experience:** Solo | **Battles:** Real-Time
-**Game Version:** 1.0.5 (versionCode 21) | **GDD last reconciled with code:** 2026-06-14
+**Game Version:** 1.0.8 (versionCode 24) | **GDD last reconciled with code:** 2026-06-16
 
 ---
 
@@ -490,4 +490,4 @@ Three random daily missions refresh at midnight:
 
 ---
 
-*End of Design Document — GDD revision v1.1 (game build 1.0.5; see the header for the authoritative game version)*
+*End of Design Document — GDD revision v1.1 (game build 1.0.8; see the header for the authoritative game version)*

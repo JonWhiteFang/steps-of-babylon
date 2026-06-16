@@ -4,7 +4,21 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Docs — full doc-drift sweep (post-v1.0.8)
+
+Multi-agent doc-drift audit (14 doc-cluster lanes → per-finding adversarial verification): 39 findings
+verified → 38 surviving → applied across 11 docs (docs-only; no production code). Themes: (1) **shipped-status
+reconciliation** — STATE.md still framed Bundle E (#164), the #171 fix, and the v1.0.8 release as
+`pre-PR`/`IN FLIGHT`/`RELEASING` when all three shipped at `26cc086`; objective rotated (A–E bundles all
+shipped; next = #29 decision-support / #26 perf-battery). (2) **version lag** — README/GDD/master-plan
+carried `1.0.5/vc21/990 JVM` → corrected to `1.0.8/vc24/1010 JVM`. (3) **code-grounded corrections**
+(each verified against source): `battle-formulas.md` STEP_MULTIPLIER re-documented as the asymptotic
+`1−(1−0.05)^level` curve (V1X-18/ADR-0015, was wrongly linear `×0.01`) + the missing ENEMY_INTEL damage
+multiplier line; `database-schema.md` `BillingReceipt.productId` is lowercase `skuId()` not uppercase
+`name`; `lib-hilt.md` `provideDatabase` example matched to the real single-param signature; `product.md`
+Labs surfaced count 10→11 (only AUTO_UPGRADE_AI deferred); `source-files.md`/`structure.md` updated for the
+#171 left-rail layout + the new `presentation/ui/ColorLerp.kt` and `data/anticheat`+`data/time` subtrees.
+Cross-doc coherence + all 100 internal `.md` links verified clean.
 
 ## [1.0.8] — 2026-06-16 (versionCode 24)
 
