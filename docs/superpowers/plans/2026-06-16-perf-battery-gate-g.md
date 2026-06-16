@@ -466,24 +466,60 @@ class JourneyBenchmark {
 }
 ```
 
-- [ ] **Step 6: Verify the module compiles AND the #124 guard-for-the-guard (case b + c)**
+- [ ] **Step 6a: Verify both modules compile + discover the REAL variant task names**
 
-Run: `./run-gradle.sh :macrobenchmark:assemble > /tmp/t5.log 2>&1 && tail -n 5 /tmp/t5.log`
-Expected: BUILD SUCCESSFUL.
+First confirm the modules produce variants (the bare `assemble` may not be the right gate for a
+`com.android.test` module). List the actual assemble/release task names for each:
 
-Now verify the narrowed #124 guard (Task 1) lets a benchmark release task through with a blank key (case b), and still blocks a real release in a combined graph (case c):
+Run: `./run-gradle.sh :macrobenchmark:tasks --all 2>&1 | grep -iE "assemble|Release" | head; echo "---"; ./run-gradle.sh :baselineprofile:tasks --all 2>&1 | grep -iE "assemble|Release" | head`
+Expected: a list including variant-specific tasks (e.g. `assembleBenchmarkRelease`, `assembleNonMinifiedRelease` on `:app`-derived variants, or the module's own `assemble`). **Record the exact task names** — they feed Step 6b, the CI step (Task 5 Step 8), and Task 9. If the bare `:macrobenchmark:assemble` doesn't exist, gate on the discovered variant task instead.
+
+Then compile-check both modules using the discovered task (substitute the real name if `assemble` is absent):
+
+Run: `./run-gradle.sh :macrobenchmark:assemble :baselineprofile:assemble > /tmp/t5.log 2>&1; tail -n 6 /tmp/t5.log`
+Expected: BUILD SUCCESSFUL (the new Kotlin/test sources type-check).
+
+- [ ] **Step 6b: Validate the #124 guard task-name exclusion is exhaustive**
+
+The Task 1 exclusion (`!contains("Benchmark") && !contains("NonMinified")`) must cover EVERY non-shippable `*Release` task the plugin now generates graph-wide. Enumerate them:
+
+Run: `./run-gradle.sh tasks --all 2>&1 | grep -iE "^(assemble|bundle|package).*Release" | grep -ivE "Benchmark|NonMinified"`
+Expected: ONLY genuine shippable tasks (`assembleRelease`, `bundleRelease`, `packageRelease`, and any real product-flavor release task) appear — NO benchmark/profile-derived task. **If any non-shippable `*Release` task lacks both tokens, STOP and widen the Task 1 exclusion** (add the new token) before proceeding, then re-run.
+
+- [ ] **Step 6c: Verify the #124 guard-for-the-guard (cases b + c)**
+
+`--dry-run` still configures the task graph and fires `gradle.taskGraph.whenReady` (the guard runs at graph-ready, before task execution), so it's a safe, fast way to exercise the guard. With no `play.licenseKey` in `local.properties`:
 
 Run: `./run-gradle.sh :app:assembleBenchmarkRelease --dry-run 2>&1 | tail -n 5`
-Expected: BUILD SUCCESSFUL (`--dry-run` lists tasks without running them; the `whenReady` guard still evaluates, and must NOT throw for a benchmark-only graph with a blank key — proving case b).
+Expected: BUILD SUCCESSFUL — a benchmark-only graph must NOT throw on a blank key (case b). (Case c — a real release task still throws — is already proven by real execution in Task 1 Step 2's `bundleRelease` run; the line below re-confirms it in a combined graph.)
 
 Run: `./run-gradle.sh :app:bundleRelease :app:assembleBenchmarkRelease --dry-run 2>&1 | grep -i "play.licenseKey\|requires a non-blank\|BUILD"`
-Expected: the guard THROWS (`Release build requires a non-blank 'play.licenseKey'`) because `bundleRelease` is in the graph — proving case c (per-task semantics keep a combined graph fail-closed).
+Expected: the guard THROWS (`Release build requires a non-blank 'play.licenseKey'`) because `bundleRelease` is in the graph — proving the per-task (not whole-graph) semantics keep a combined graph fail-closed (case c).
+> If `--dry-run` unexpectedly does NOT trigger `whenReady` on this Gradle version (sanity-check by confirming case c throws), fall back to real `assembleBenchmarkRelease` execution for case b — but that requires a device/longer build; the dry-run path is preferred.
 
 - [ ] **Step 7: Commit**
 
 ```bash
 git add macrobenchmark settings.gradle.kts
 git commit -m "build(#26): add :macrobenchmark module (startup + journey frame-timing); verify #124 guard cases b/c"
+```
+
+- [ ] **Step 8: Add the new modules to the CI PR-gate compile step (spec §3.6)**
+
+The existing PR-gate `assembleDebug` + the `connectedDebugAndroidTest` lane do NOT build the new
+`com.android.test` modules, so their Kotlin/test sources would go un-type-checked in CI. Add an explicit
+compile step to the PR-gate workflow. Read `.github/workflows/ci.yml` first to find the existing Gradle
+invocation step; then either extend its task list or add a step that runs (using the variant task names
+discovered in Step 6a — substitute if `:…:assemble` isn't the right gate):
+```yaml
+      - name: Compile benchmark modules (type-check only; benchmarks run locally, never CI-gated)
+        run: ./gradlew :baselineprofile:assemble :macrobenchmark:assemble
+```
+Place it after the existing build/test step. Do NOT add any benchmark *execution* or perf-timing
+assertion to CI (emulator timings flake — spec §3.6). Commit:
+```bash
+git add .github/workflows/ci.yml
+git commit -m "ci(#26): type-check :baselineprofile + :macrobenchmark in the PR gate (no perf assertions)"
 ```
 
 ---
@@ -514,18 +550,33 @@ import org.robolectric.annotation.Config
 /**
  * A28 (audit finding) — the collision sweep now receives pre-filtered, engine-owned scratch lists
  * instead of allocating three `filterIsInstance<…>().filter{}` lists per call. These tests pin that
- * the new signature produces identical hit outcomes, excludes dead entities, and that one `enemies`
- * snapshot serves the whole call (single-fill — no mid-sweep re-derivation). Robolectric is needed
- * because the concrete entities construct android.graphics.Paint.
+ * the new signature produces identical hit outcomes and an empty-list short-circuits. Robolectric is
+ * needed because the concrete entities construct android.graphics.Paint.
+ *
+ * REAL CONSTRUCTORS (verified against the entity files — do NOT use x/y/shooter shorthand):
+ *   ProjectileEntity(startX, startY, targetX, targetY, speed, damage = 0.0, …) : Entity(x=startX, y=startY, width=8f)
+ *   EnemyProjectileEntity(startX, startY, targetX, targetY, speed = 300f, damage, shooter = null) : Entity(x=startX, y=startY, width=6f)
+ *   EnemyEntity(enemyType, currentHp, maxHp, speed, damage, targetX, targetY, onDeath, …) : Entity()  // x/y set via .apply
+ * Place an EnemyEntity's geometry with `.apply { x = …; y = …; initDistance() }` (mirrors
+ * GameEngineTest.makeStationaryEnemy at GameEngineTest.kt:846-856).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class CollisionSystemScratchTest {
 
+    private fun enemyAt(x: Float, y: Float, hp: Double = 1.0): EnemyEntity = EnemyEntity(
+        enemyType = EnemyType.BASIC,
+        currentHp = hp, maxHp = hp,
+        speed = 0f, damage = 0.0,
+        targetX = x, targetY = y,
+        onDeath = { },
+    ).apply { this.x = x; this.y = y; initDistance() }
+
     @Test
     fun `checkCollisions fires projectile-enemy hit for an overlapping pair from the typed lists`() {
-        val proj = ProjectileEntity(x = 10f, y = 10f, damage = 1.0, shooter = null)
-        val enemy = EnemyEntity(x = 10f, y = 10f).apply { /* spawned alive */ }
+        // Projectile spawned AT the enemy position so geometry overlaps immediately.
+        val proj = ProjectileEntity(startX = 10f, startY = 10f, targetX = 10f, targetY = 10f, speed = 100f, damage = 1.0)
+        val enemy = enemyAt(10f, 10f)
         val hits = mutableListOf<Pair<ProjectileEntity, EnemyEntity>>()
 
         CollisionSystem.checkCollisions(
@@ -542,15 +593,15 @@ class CollisionSystemScratchTest {
     }
 
     @Test
-    fun `checkCollisions excludes a dead enemy passed in the typed list`() {
-        // Dead enemies must already be filtered OUT by the engine's partition pass; this test
-        // documents the contract by passing only the alive ones (the engine never passes corpses).
-        val proj = ProjectileEntity(x = 10f, y = 10f, damage = 1.0, shooter = null)
+    fun `checkCollisions does not fire when the enemy list is empty`() {
+        // The engine's partition pass filters dead enemies OUT before this call; passing an empty
+        // list models that (the sweep must short-circuit with no hit).
+        val proj = ProjectileEntity(startX = 10f, startY = 10f, targetX = 10f, targetY = 10f, speed = 100f, damage = 1.0)
         var fired = false
         CollisionSystem.checkCollisions(
             Simulation(),
             projectiles = listOf(proj),
-            enemies = emptyList(), // engine filtered the corpse out
+            enemies = emptyList(),
             enemyProjectiles = emptyList(),
             zigX = 0f, zigY = 0f, zigWidth = 20f,
             onProjectileHitEnemy = { _, _ -> fired = true },
@@ -561,7 +612,8 @@ class CollisionSystemScratchTest {
 
     @Test
     fun `checkCollisions fires enemy-projectile ziggurat hit from the typed list`() {
-        val eproj = EnemyProjectileEntity(x = 0f, y = 0f, damage = 1.0)
+        // Enemy projectile spawned at the ziggurat centre (0,0) so it is within zigWidth/2 + projW/2.
+        val eproj = EnemyProjectileEntity(startX = 0f, startY = 0f, targetX = 0f, targetY = 0f, damage = 1.0)
         var hit = 0
         CollisionSystem.checkCollisions(
             Simulation(),
@@ -576,7 +628,8 @@ class CollisionSystemScratchTest {
     }
 }
 ```
-> If the concrete `EnemyEntity`/`ProjectileEntity`/`EnemyProjectileEntity` constructors differ from the params above, adjust the test constructors to match the real signatures (read the entity files first) — the assertions are the contract, the construction is incidental.
+Add `import com.whitefang.stepsofbabylon.domain.model.EnemyType` to the test imports.
+> These constructors are verified against the real entity files. Do NOT revert to the `x =/y =/shooter =` shorthand — those params do not exist (`EnemyEntity` extends `Entity()` no-arg; geometry is set via `.apply`). The corpse-parity assertion is NOT in this file — it lives in `GameEngineTest` (Step 6) where the real reward path can be asserted.
 
 - [ ] **Step 2: Run the test to verify it fails to compile (new signature absent)**
 
@@ -647,32 +700,57 @@ Then replace the `CollisionSystem.checkCollisions(...)` call (`:478-486`, alread
 Run: `./run-gradle.sh testDebugUnitTest --tests "*CollisionSystemScratchTest" --tests "*GameEngineTest" --tests "*SimulationTest" > /tmp/t6b.log 2>&1; tail -n 15 /tmp/t6b.log`
 Expected: PASS — the new parity tests pass AND every existing `GameEngineTest` (incl. `R125`, `R146`) + `SimulationTest` collision test stays green (proves byte-identical behaviour + no double-credit regression).
 
-- [ ] **Step 6: Add the mid-sweep-death corpse parity test**
+- [ ] **Step 6: Add the mid-sweep-death corpse parity test — in `GameEngineTest` (real reward path)**
 
-Append to `CollisionSystemScratchTest.kt` a test mirroring the `R146` corpse-hit pattern (`GameEngineTest.kt:649`/`:673`) but driven through the new scratch path: two projectiles targeting one enemy in a single sweep fire `onDeath` exactly once. If the cleanest way to assert `onDeath`-once is via the existing `GameEngineTest` harness (which has `invokeOnProjectileHitEnemy`), add the test there instead and note it:
+The corpse-parity guarantee that matters is "a second projectile on a corpse does NOT re-credit the
+kill reward." That can only be proven through the real `onProjectileHitEnemy` → `handleEnemyDeath`
+reward path — a synthetic counter in `CollisionSystemScratchTest` would NOT prove it. The repo already
+has exactly this test at `GameEngineTest.kt:673-699` (`R146 a second projectile on a corpse does not
+re-credit the kill reward`), and it must stay green after the A28 refactor (Task 6 Step 5 already runs
+`*GameEngineTest`).
+
+Add ONE new `GameEngineTest` entry that drives **both** projectiles through the engine's real
+collision path in a single `update()` (not via the manual `invokeOnProjectileHitEnemy` shim), proving
+the new scratch-buffer single-fill keeps the corpse in the swept list yet the `#146` `takeDamage` guard
+stops a re-credit. Use the existing helpers (`freshEngine()`, `makeStationaryEnemy`, `engineDeathHandler`,
+`flushPendingAdd`, `addEntity`) — read `GameEngineTest.kt:673-699` + `:846-856` for the exact pattern:
 ```kotlin
     @Test
-    fun `two projectiles on one enemy in a single checkCollisions fire the kill path once`() {
-        val enemy = EnemyEntity(x = 10f, y = 10f) // 1 HP-ish; adjust to die from the first hit
-        val p1 = ProjectileEntity(x = 10f, y = 10f, damage = 9999.0, shooter = null)
-        val p2 = ProjectileEntity(x = 10f, y = 10f, damage = 9999.0, shooter = null)
-        var kills = 0
-        CollisionSystem.checkCollisions(
-            Simulation(),
-            projectiles = listOf(p1, p2),
-            enemies = listOf(enemy), // both projectiles see the SAME enemy instance (single-fill)
-            enemyProjectiles = emptyList(),
-            zigX = 0f, zigY = 0f, zigWidth = 20f,
-            onProjectileHitEnemy = { _, e ->
-                val dealt = e.takeDamage(9999.0) // #146 guard: returns 0.0 on a corpse
-                if (dealt > 0.0 && !e.isAlive) kills++ // count the lethal hit once
-            },
-            onEnemyProjectileHitZiggurat = { },
-        )
-        assertEquals(1, kills)
+    fun `A28 two projectiles on one enemy in a single tick credit the kill exactly once`() {
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        val enemy = EnemyEntity(
+            enemyType = EnemyType.BASIC,
+            currentHp = 0.01, maxHp = 0.01, speed = 0f, damage = 0.0,
+            targetX = zig.originX, targetY = zig.originY,
+            onDeath = engineDeathHandler(eng), // route death through the real reward block
+        ).apply { x = zig.originX; y = zig.originY + 300f; initDistance() }
+        eng.addEntity(enemy)
+        flushPendingAdd(eng)
+
+        val cashBefore = eng.cash
+        // Two projectiles co-located on the enemy, both alive in the same entity list → both land
+        // in the single enemyScratch fill and both reach the corpse in one collision sweep.
+        eng.addEntity(ProjectileEntity(zig.originX, zig.originY, enemy.x, enemy.y, 100f, damage = 9999.0)
+            .apply { x = enemy.x; y = enemy.y })
+        eng.addEntity(ProjectileEntity(zig.originX, zig.originY, enemy.x, enemy.y, 100f, damage = 9999.0)
+            .apply { x = enemy.x; y = enemy.y })
+        flushPendingAdd(eng)
+
+        eng.update(0.016f) // one tick: partition → sweep → both projectiles hit; corpse re-hit is a no-op
+        assertTrue(eng.cash > cashBefore, "the kill must credit cash")
+        // Re-run a tick with no new projectiles: cash must not move (corpse already gone / guarded).
+        val cashAfterKill = eng.cash
+        eng.update(0.016f)
+        assertEquals(cashAfterKill, eng.cash, "no re-credit after the kill")
     }
 ```
-> This proves the buffer reuse keeps the corpse in the list for the second projectile yet does not re-credit — the #146 `takeDamage` `if (!isAlive) return 0.0` guard is what makes the second hit a no-op. Adjust `EnemyEntity` HP/construction so the first hit is lethal.
+> If driving both hits in a single real `update()` proves fiddly (projectile speed/positioning), fall
+> back to the proven `invokeOnProjectileHitEnemy(eng, proj1, enemy)` / `proj2` shim exactly as
+> `R146 (:673-699)` does, asserting `eng.cash` is unchanged after the corpse hit — that already
+> exercises the same `takeDamage` guard the A28 buffer-reuse depends on. Either way the assertion is on
+> **`eng.cash` via the real reward path**, NOT a synthetic counter. Adjust positions so the first hit
+> is lethal (`currentHp = 0.01`).
 
 - [ ] **Step 7: Run the corpse test + full build**
 
@@ -684,7 +762,8 @@ Expected: BUILD SUCCESSFUL, all tests pass.
 ```bash
 git add app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/engine/CollisionSystem.kt \
         app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/engine/GameEngine.kt \
-        app/src/test/java/com/whitefang/stepsofbabylon/presentation/battle/engine/CollisionSystemScratchTest.kt
+        app/src/test/java/com/whitefang/stepsofbabylon/presentation/battle/engine/CollisionSystemScratchTest.kt \
+        app/src/test/java/com/whitefang/stepsofbabylon/presentation/battle/engine/GameEngineTest.kt
 git commit -m "perf(#26): A28 — engine-owned scratch buffers for collision sweep (no per-frame list allocs; under entitiesLock)"
 ```
 
@@ -756,7 +835,13 @@ class ChronoOverlayPaintTest {
     }
 }
 ```
-> If `render()` calls `drawRect(0,0,w,h,...)` elsewhere (it does not today — the only full-screen `drawRect` is the chrono overlay), tighten the captor matcher. `GameEngine()` no-arg construction + `init(w,h)` matches `GameSurfaceViewTest`'s usage.
+> **Captor precision:** `render()` has exactly one OTHER full-screen `drawRect` — `UWVisualEffect.kt:106`
+> (color `0x332196F3`) — but it fires ONLY in the reduced-motion fallback (the effect early-returns when
+> `!reducedMotion`). This test constructs `GameEngine()` with the default `reducedMotion = false` and
+> enqueues no UW effect, so it never fires; the `eq(0f),eq(0f),eq(800f),eq(600f)` matcher captures only
+> the chrono overlay. The colour assert (`0x222196F3`, distinct from the UW fallback's `0x332196F3`) is a
+> second guard. `GameEngine()` no-arg construction + `init(800f, 600f)` is valid (see `GameEngineTest.kt:47`
+> `val eng = GameEngine()` then `eng.init(...)`; `GameSurfaceView` also constructs it no-arg internally).
 
 - [ ] **Step 3: Run the test to verify it fails**
 
@@ -813,35 +898,55 @@ git commit -m "perf(#26): A31 — cache CHRONO_FIELD overlay Paint (no per-frame
 
 - [ ] **Step 1: Write the failing distinct-emission test**
 
-Add to `PlayerRepositoryImplTest.kt` (it already imports `MutableStateFlow`, `runTest`, `mock`, `whenever`). Add `import kotlinx.coroutines.flow.toList` and `import kotlinx.coroutines.flow.take`:
+Add the imports below to `PlayerRepositoryImplTest.kt` (it already imports `MutableStateFlow`, `runTest`,
+`mock`, `whenever`, `assertEquals`):
+```kotlin
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+```
+Add a small entity helper to the test class (`PlayerProfileEntity` is an all-defaulted data class, so
+this compiles as-is — verified against `PlayerProfileEntity.kt`):
+```kotlin
+    private fun makeEntity(currentTier: Int = 1, gems: Long = 0L): PlayerProfileEntity =
+        PlayerProfileEntity(currentTier = currentTier, gems = gems)
+```
+Then the test. **Two non-obvious requirements, both confirmed by plan review against the repo's own
+patterns:** (1) `runTest(UnconfinedTestDispatcher())` so the launched collector subscribes EAGERLY at
+`launch` before the first `flow.value =` write (mirrors `SimulationTest.kt:337` / `GameEngineTest.kt:1209`,
+which document exactly this); (2) `launch { }` unqualified — it binds the implicit `TestScope` receiver
+inside `runTest`; a fully-qualified `kotlinx.coroutines.launch { }` would NOT compile (no scope receiver).
+Because `MutableStateFlow` conflates, advance the scheduler between writes so the duplicate `3` is
+actually delivered to the collector before `4` lands:
 ```kotlin
     @Test
-    fun `observeTier suppresses duplicate-value emissions but still emits real changes`() = runTest {
-        val flow = MutableStateFlow(makeEntity(currentTier = 3))
-        val dao = mock<PlayerProfileDao>()
-        whenever(dao.get()).thenReturn(flow)
-        val repo = PlayerRepositoryImpl(dao)
+    fun `observeTier suppresses duplicate-value emissions but still emits real changes`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val flow = MutableStateFlow(makeEntity(currentTier = 3))
+            val dao = mock<PlayerProfileDao>()
+            whenever(dao.get()).thenReturn(flow)
+            val repo = PlayerRepositoryImpl(dao)
 
-        val seen = mutableListOf<Int>()
-        val job = kotlinx.coroutines.launch { repo.observeTier().take(2).toList(seen) }
+            val seen = mutableListOf<Int>()
+            val job = launch { repo.observeTier().take(2).toList(seen) } // eager subscribe (Unconfined)
 
-        // Identical-value re-emission (an unrelated counter write that didn't change the tier):
-        flow.value = makeEntity(currentTier = 3, gems = 999) // tier unchanged
-        // A genuine tier change:
-        flow.value = makeEntity(currentTier = 4)
+            // Identical-value re-emission (an unrelated counter write that didn't change the tier):
+            flow.value = makeEntity(currentTier = 3, gems = 999L) // tier unchanged
+            // A genuine tier change:
+            flow.value = makeEntity(currentTier = 4)
 
-        job.join()
-        // Without distinctUntilChanged this would be [3, 3] (or [3,3,4]); with it, the duplicate
-        // 3 is suppressed and we observe exactly [3, 4].
-        assertEquals(listOf(3, 4), seen)
-    }
+            job.join()
+            // Pre-fix: observeTier re-emits the duplicate 3 → take(2) completes as [3, 3].
+            // Post-fix (distinctUntilChanged): the duplicate 3 is suppressed → [3, 4].
+            assertEquals(listOf(3, 4), seen)
+        }
 ```
-> Add a `makeEntity(currentTier: Int = 1, gems: Long = 0, ...)` helper if the test file doesn't already have one — read the existing `makeRepoWithEntity` / `PlayerProfileEntity` constructor and build a minimal valid entity. The key is that two entities differing only in an unrelated column both map to `currentTier = 3`.
 
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `./run-gradle.sh testDebugUnitTest --tests "*PlayerRepositoryImplTest" > /tmp/t8.log 2>&1; tail -n 15 /tmp/t8.log`
-Expected: FAIL — `observeTier` re-emits the duplicate `3`, so `seen` is `[3, 3]` not `[3, 4]` (the `take(2)` completes before the real change arrives).
+Expected: FAIL — `observeTier` re-emits the duplicate `3`, so `seen` is `[3, 3]` not `[3, 4]` (the `take(2)` completes on the duplicate before the real change arrives).
 
 - [ ] **Step 3: Add distinctUntilChanged after each projection**
 
