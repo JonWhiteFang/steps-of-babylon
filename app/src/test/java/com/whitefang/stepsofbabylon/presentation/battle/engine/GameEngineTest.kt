@@ -698,6 +698,41 @@ class GameEngineTest {
         )
     }
 
+    @Test
+    fun `A28 two projectiles on one enemy via the engine-owned scratch buffers credit the kill exactly once`() {
+        // A28: the collision sweep now partitions `entities` into engine-owned scratch buffers
+        // (one `enemyScratch` instance for the whole sweep, matching the old single `enemies`
+        // snapshot). This pins that the single-fill keeps the corpse in the swept list yet does
+        // NOT re-credit — the #146 `takeDamage` isAlive guard still gates the second hit. The
+        // assertion rides the REAL reward path (eng.cash via handleEnemyDeath), not a counter.
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        val enemy = EnemyEntity(
+            enemyType = EnemyType.BASIC,
+            currentHp = 0.01, maxHp = 0.01, speed = 0f, damage = 0.0,
+            targetX = zig.originX, targetY = zig.originY,
+            onDeath = engineDeathHandler(eng), // route death through the real reward block
+        ).apply { x = zig.originX; y = zig.originY + 300f; initDistance() }
+        eng.addEntity(enemy)
+        flushPendingAdd(eng)
+
+        val cashBefore = eng.cash
+        val proj1 = ProjectileEntity(zig.originX, zig.originY, enemy.x, enemy.y, 100f)
+        val proj2 = ProjectileEntity(zig.originX, zig.originY, enemy.x, enemy.y, 100f)
+        invokeOnProjectileHitEnemy(eng, proj1, enemy) // lethal first hit → credits the kill once
+        val cashAfterKill = eng.cash
+        invokeOnProjectileHitEnemy(eng, proj2, enemy) // lands on the corpse still in the buffer
+        val cashAfterCorpseHit = eng.cash
+
+        assertTrue(cashAfterKill > cashBefore, "the lethal hit must credit the kill exactly once")
+        assertEquals(
+            cashAfterKill,
+            cashAfterCorpseHit,
+            "the corpse retained in the single-fill scratch buffer must NOT re-credit the kill " +
+                "(A28 scratch buffer must be behaviour-identical to the old single `enemies` snapshot, #146)",
+        )
+    }
+
     // ---- #16: first-wave announcement must fire exactly once per round start ----
     //
     // Pre-fix init() set lastWave = 0 then called triggerWaveAnnouncement(safeStartWave) but
