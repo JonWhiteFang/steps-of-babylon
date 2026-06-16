@@ -13,9 +13,14 @@ import org.robolectric.annotation.Config
 
 /**
  * A28 (audit finding) — the collision sweep now receives pre-filtered, engine-owned scratch lists
- * instead of allocating three `filterIsInstance<…>().filter{}` lists per call. These tests pin that
- * the new signature produces identical hit outcomes and an empty-list short-circuits. Robolectric is
- * needed because the concrete entities construct android.graphics.Paint.
+ * instead of allocating three `filterIsInstance<…>().filter{}` lists per call. These three tests pin
+ * the new typed-list [CollisionSystem.checkCollisions] signature: that it forwards the supplied lists
+ * correctly to the simulation sweeps — a projectile-enemy hit fires, an empty enemy list
+ * short-circuits, and an enemy-projectile ziggurat hit fires. They pass already-filtered lists
+ * straight in, so they do NOT exercise the partition/exclusion step itself (that moved into
+ * `GameEngine.update()`); the dead-/non-collidable-entity exclusion is covered end-to-end by
+ * `GameEngineTest` ("A28 partition sweeps only live …"). Robolectric is needed because the concrete
+ * entities construct android.graphics.Paint.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
