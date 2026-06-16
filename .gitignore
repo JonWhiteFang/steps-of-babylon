@@ -6,6 +6,8 @@
 .DS_Store
 /build
 /app/build
+/baselineprofile/build
+/macrobenchmark/build
 /captures
 .externalNativeBuild
 .cxx

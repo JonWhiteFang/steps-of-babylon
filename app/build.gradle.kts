@@ -214,13 +214,13 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
-// #26 Gate G — baseline-profile consumer config. `newDsl = false` is the AGP-9 compatibility
-// workaround required by the stable 1.4.1 baselineprofile plugin (the 1.4.x line predates AGP 9.0
-// GA). `automaticGenerationDuringBuild = false` keeps profile generation OUT of the ordinary
-// assemble/bundleRelease graph — generation is a deliberate local-device step (see the plan / docs),
-// so the shipping lane stays clean and the #124 guard's task-graph reasoning stays simple.
+// #26 Gate G — baseline-profile consumer config. We pin benchmark/baselineprofile to 1.5.0-alpha06
+// (the line that adds AGP-9 support); the stable 1.4.1 plugin throws at apply time on AGP 9.0.1, so the
+// old `newDsl = false` workaround is neither needed nor usable here. `automaticGenerationDuringBuild =
+// false` keeps profile generation OUT of the ordinary assemble/bundleRelease graph — generation is a
+// deliberate local-device step (see the plan / docs), so the shipping lane stays clean and the #124
+// guard's task-graph reasoning stays simple.
 baselineProfile {
-    newDsl = false
     automaticGenerationDuringBuild = false
 }
 
