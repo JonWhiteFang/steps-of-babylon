@@ -3,21 +3,29 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.7 (versionCode 23) SHIPPED to Play internal track** (tag `v1.0.7` on release merge
-`2e10330`; release lane green 6m32s — signed AAB uploaded + GitHub Release with `app-release.aab` asset)
-· **996 JVM + 9 instrumented tests** green · schema
-v12 · **v1.0.7 = Look & Feel Bundle D (#163, PR #174,
-merge `d317fdc`)** — collectibles rarity visual system (presentation-only): shared 3-tier palette +
-prominent border/badge + EQUIPPED chip + cap hint · v1.0.6 = Bundle C (#162) haptics + celebrations +
-purchase pulse · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
+**Headline:** **Bundle E (#164) IMPLEMENTED on `feat/164-look-and-feel-bundle-e`** (pre-PR; versionCode 24
+/ versionName 1.0.8 committed) · **1010 JVM + 9 instrumented tests** green · schema v12 · **last shipped
+release: v1.0.7 (versionCode 23) on Play internal** (tag `v1.0.7`, merge `2e10330`) = Bundle D (#163)
+collectibles rarity · v1.0.6 = Bundle C (#162) haptics/celebrations/pulse · launch is judgment-gated on
+the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
-- **Next feature work: Look-&-feel Bundle E (#164)** — custom font + onboarding per-slide biome theming +
-  real ziggurat asset. The last look-&-feel bundle off the 2026-06-12 UX review. Needs its own spec → plan
-  → PR (each through the Adversarial Review Gate). NOTE: unlike Bundles A–D, this one is **not** purely
-  presentation-trivial — a custom font + real art assets touch `res/`, and onboarding theming touches the
-  onboarding flow; scope it carefully in brainstorming.
+- **Bundle E (#164) — IMPLEMENTED (presentation + first bundled font/art assets; on
+  `feat/164-look-and-feel-bundle-e`, pre-PR).** The LAST of the five A–E look-&-feel review bundles.
+  Custom **Cinzel** display font (OFL, `res/font/`) on Display+Headline tiers + the missing
+  `displayMedium`/`displayLarge` tokens (guarded by `SobTypographyTest`); onboarding per-slide **biome
+  journey** gradient (Gardens→Sands→Frozen→Celestial) cross-faded via pure `lerpArgb`/
+  `crossfadeNeighborIndex` (`ColorLerp.kt`, static under reduced-motion) + legibility scrim + one-shot
+  completion pulse (reuses `PurchasePulse`, **persist-first → pulse → navigate** so the gating/nav
+  contract is preserved) + a vector **ziggurat emblem** (`ic_ziggurat_emblem.xml`) replacing the slide-1
+  🏛️ emoji. Spec + plan **both** passed the Adversarial Review Gate (spec: ~39 raised→13 surviving, 0
+  unaddressed critical/major; plan: ~25 raised→9 surviving, 0 critical/major). Subagent-driven TDD,
+  per-task spec+quality review. **996→1010 JVM** (+14: `SobTypographyTest` 2, `ColorLerpTest` 10,
+  `OnboardingContentTest` +2). `testDebugUnitTest lintDebug assembleDebug` green. **ADR-0024.** Pending:
+  on-device feel sign-off + PR + the v1.0.8 release. (Execution caught a real defect the reviews missed:
+  the OFL license `.txt` can't live in `res/font/` — the resource merger rejects non-font files there —
+  so it's at `licenses/OFL-Cinzel.txt`.)
 - **Previous objective (DONE): Bundle D (#163 collectibles rarity) — SHIPPED in v1.0.7** (tag `v1.0.7`,
   merge `2e10330`; PR #174 squash `d317fdc`, #163 closed; on-device feel sign-off done; release lane green).
   Presentation-only: shared `presentation/ui/Rarity.kt` (`RarityTier` palette + pure mapping/label/colour
@@ -47,6 +55,24 @@ purchase pulse · launch is judgment-gated on the Closed-Test Readiness Gate (`p
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-15 — Bundle E (#164) IMPLEMENTATION (presentation + first bundled font/art; on
+  `feat/164-look-and-feel-bundle-e`, pre-PR).** The last A–E look-&-feel bundle. Brainstormed (visual
+  companion) → spec (`b7d3c94`, adversarial-reviewed: ~39→13 surviving, the major catch = the "gold
+  shimmer reusing Bundle C" finish beat was unbuildable [no shimmer infra; `ClaimCelebration` is
+  event-driven + unmounted by nav] → redefined as a `PurchasePulse` round-trip pulse, persist-first →
+  pulse → navigate) → 8-task TDD plan (`9fb24c7` + fixes `9bb58e5`, adversarial-reviewed: ~25→9 surviving,
+  0 critical/major; the scary transparent-Surface "black text" finding was *refuted* — Scaffold provides
+  `onBackground`=Ivory as `LocalContentColor`). Executed subagent-driven (per-task spec+quality review).
+  **(1)** Cinzel OFL font in `res/font/` (Regular+Bold) + `Cinzel` FontFamily in `Type.kt` on
+  Display+Headline + new `displayMedium`/`displayLarge` (closes the latent `OnboardingScreen` fallback) +
+  `SobTypographyTest`. **(2)** `ic_ziggurat_emblem.xml` vector emblem. **(3)** pure `ColorLerp.kt`
+  (`lerpArgb` + `crossfadeNeighborIndex`, 10 JVM tests). **(4)** `OnboardingSlide` gains pure `biome:
+  Biome?` + `art: OnboardingArt?` (+2 content tests). **(5)** `OnboardingScreen` biome gradient +
+  cross-fade + scrim + emblem switch + completion pulse. versionCode 24 / 1.0.8 committed; CLAUDE.md
+  headline + CHANGELOG + source-files synced. **996→1010 JVM**, `testDebugUnitTest lintDebug assembleDebug`
+  green. **Execution caught a build-breaking defect both reviews missed:** the OFL `.txt` can't live in
+  `res/font/` (resource merger rejects non-font files) → moved to `licenses/OFL-Cinzel.txt` (commit
+  `bcf55e8`). **ADR-0024.** Pending: on-device feel sign-off + PR + v1.0.8 release.
 - **2026-06-15 — #171 battle bottom-chrome overlap fix (IN FLIGHT on `fix/171-battle-bottom-chrome`, pre-PR).**
   Presentation-only. The battle bottom controls (speed `1x`/`2x`/`4x` + pause + upgrade) moved from a
   bottom-center Row to a **left vertical rail** (`BattleControlRail` at `CenterStart`), so they no longer
@@ -423,6 +449,25 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
   is the acceptance gate (verified at 1080×2400). (History: the menu first left-padded to dodge the rail
   horizontally via a `menuStartPadding`/`GAP` coupling + `BattleControlRailTest`; the dev pivoted it to
   full-width-clears-vertically after seeing it on-device, retiring that coupling + test.)
+- **Onboarding biome theming + completion beat (#164, Bundle E, ADR-0024)** — the per-slide gradient is a
+  SINGLE shared layer behind the `HorizontalPager` (a per-page `Box` can't cross-fade), computed from
+  `pagerState.currentPageOffsetFraction` via the pure `crossfadeNeighborIndex` + `lerpArgb` in
+  `presentation/ui/ColorLerp.kt` (clamps the neighbour to `[0,lastIndex]` so overscroll can't index OOB);
+  reduced-motion → static per-page gradient (no offset blend). The root `Surface` is `Color.Transparent`
+  so the gradient shows through — the title stays Ivory because the Scaffold above provides
+  `onBackground`=Ivory as `LocalContentColor` (don't set an explicit wrong `contentColor`). The
+  **completion beat MUST stay persist-first**: `finish()` calls `completeOnboarding()` FIRST +
+  unconditionally, has an `if (finishing) return` latch, then triggers the pulse; `onFinished()` fires
+  exactly once from `LaunchedEffect(finishing)` (immediate under reduced-motion). The pulse reuses
+  `PurchasePulse` (`rememberPulse()`/`pulseScale()`) on the icon + the two `finish()` CTAs — NOT the
+  "Enable step counting" button (it calls `onEnableStepCounting`). Don't reorder the final-slide
+  `when` (granted→!asked→denied) or gate navigation on the animation. This sits ON TOP of the existing
+  onboarding gating contract (ADR-0021) — that contract is unchanged. The slide model's new `biome`/`art`
+  fields are pure (domain enum + marker enum) — keep `OnboardingSlide` Android-free (the JVM
+  `OnboardingContentTest` depends on it). Cinzel re-themes Display+Headline app-wide incl. numeric
+  Headline content (CurrencyDashboard balance, Home steps hero) — digit legibility is an on-device
+  sign-off item, not assumed. **Font-license caveat:** the OFL `.txt` lives at `licenses/OFL-Cinzel.txt`,
+  NOT `res/font/` (the AAPT resource merger rejects non-`.ttf/.otf/.xml` files under `res/font/`).
 
 ## References
 
@@ -432,4 +477,4 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **Reference docs:** `docs/steering/` (tech, structure, source-files, lib-*) · `docs/architecture.md` · `docs/database-schema.md` · `docs/battle-formulas.md`.
 - **Audit:** `docs/external-reviews/2026-06-10-multi-agent-code-audit.md` (findings #118–#128 + regression specs).
 - **Release:** `docs/release/plan-31-walkthrough.md` · privacy policy `docs/release/privacy-policy.md` → hosted https://jonwhitefang.github.io/steps-of-babylon/ (delete-data: `#delete-data`) · listing copy `docs/release/play-store-listing.md`.
-- **ADRs:** 0003 (Battle Step Rewards) · 0004 (FollowOnPipeline, deferred) · 0005 (Billing) · 0006 (Ads) · 0007 (ADV keystore) · 0010 (Cards copy-based) · 0012 (Simulation extraction) · 0014 (i18n) · 0015/0016 (STEP_MULTIPLIER / GPS dropped) · 0017 (ENEMY_INTEL) · 0018 (CI) · 0019 (Claude Code) · 0020 (economy atomicity). Full set in `docs/agent/DECISIONS/`.
+- **ADRs:** 0003 (Battle Step Rewards) · 0004 (FollowOnPipeline, deferred) · 0005 (Billing) · 0006 (Ads) · 0007 (ADV keystore) · 0010 (Cards copy-based) · 0012 (Simulation extraction) · 0014 (i18n) · 0015/0016 (STEP_MULTIPLIER / GPS dropped) · 0017 (ENEMY_INTEL) · 0018 (CI) · 0019 (Claude Code) · 0020 (economy atomicity) · 0021 (onboarding explain-only) · 0022 (design tokens + de-emoji) · 0023 (bottom-nav back-stack) · **0024 (Bundle E: custom font + onboarding biome theming + persist-first completion beat)**. Full set in `docs/agent/DECISIONS/`.

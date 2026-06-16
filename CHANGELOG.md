@@ -4,6 +4,20 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Look & Feel Bundle E (#164) — Identity / Art
+
+Presentation-only (+ first bundled font/art assets). Custom **Cinzel** display font (SIL OFL 1.1,
+bundled in `res/font/`; license at `licenses/OFL-Cinzel.txt`) applied to the Display + Headline tiers
++ biome names on the battle transition; added the missing `displayMedium`/`displayLarge` tokens
+(closing a latent Material-fallback gap) guarded by `SobTypographyTest`. Onboarding is now a themed
+biome journey: per-slide `BiomeTheme` sky-gradient (Hanging Gardens → Burning Sands → Frozen Ziggurats
+→ Celestial Gate), cross-faded on swipe via a pure `lerpArgb`/`crossfadeNeighborIndex` helper (static
+under reduced-motion), a legibility scrim behind the text, and a one-shot completion pulse (reuses
+Bundle C's `PurchasePulse`, sequenced persist-first → pulse → navigate so the gating/nav contract is
+preserved). The slide-1 🏛️ temple emoji is replaced by a vector stepped-ziggurat emblem
+(`ic_ziggurat_emblem.xml`). New `presentation/ui/ColorLerp.kt`. +14 JVM tests (→ **1010**). Last of
+the five A–E look-&-feel review bundles. Zero engine/economy/domain/concurrency/routing change.
+
 ### Fixed — Battle bottom-chrome overlap (#171)
 
 Presentation-only. The battle screen's bottom controls (speed `1x`/`2x`/`4x`, pause, upgrade) moved

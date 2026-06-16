@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Onboarding slide-1 emblem (Bundle E, #164): stepped ziggurat in a gold roundel. Replaces the
+     wrong-building 🏛️ temple emoji. Flat-vector, brand colours (Gold #D4A843, Sand #C2B280,
+     Ivory #FFF8E7). Rendered at 96.dp in OnboardingScreen; decorative (contentDescription = null). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Gold roundel: translucent fill + ring -->
+    <path
+        android:fillColor="#33D4A843"
+        android:pathData="M54,6 a48,48 0 1,0 0.1,0 z" />
+    <path
+        android:strokeColor="#D4A843"
+        android:strokeWidth="4"
+        android:fillColor="#00000000"
+        android:pathData="M54,8 a46,46 0 1,0 0.1,0 z" />
+
+    <!-- Stepped ziggurat: 4 trapezoid layers, widest at the base, in sand→gold tones -->
+    <!-- Base layer -->
+    <path
+        android:fillColor="#9C7C3E"
+        android:pathData="M24,82 L84,82 L78,70 L30,70 z" />
+    <!-- Layer 2 -->
+    <path
+        android:fillColor="#B8964A"
+        android:pathData="M33,70 L75,70 L70,59 L38,59 z" />
+    <!-- Layer 3 -->
+    <path
+        android:fillColor="#C2B280"
+        android:pathData="M41,59 L67,59 L63,48 L45,48 z" />
+    <!-- Top layer -->
+    <path
+        android:fillColor="#D4A843"
+        android:pathData="M48,48 L60,48 L57,39 L51,39 z" />
+    <!-- Apex finial (ivory) -->
+    <path
+        android:fillColor="#FFF8E7"
+        android:pathData="M51,39 L57,39 L54,31 z" />
+</vector>
