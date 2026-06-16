@@ -1,9 +1,32 @@
 # ADR-0018: Adopt GitHub Actions for CI/CD
 
-**Status:** Accepted (merged to `main` via PR #100, 2026-06-03; post-merge setup — secrets, `release` environment, branch protection, Play service account — completed 2026-06-04; pipeline fully live)
+**Status:** Accepted (merged to `main` via PR #100, 2026-06-03; post-merge setup — secrets, `release` environment, Play service account — completed 2026-06-04; pipeline fully live). **Branch protection was NOT actually configured at that time** (the workflows ran on PRs but nothing *required* them); it was applied 2026-06-16 — see the **2026-06-16 amendment** below.
 **Date:** 2026-06-03
 **Supersedes:** The deliberate "No CI for v1.0" posture documented in `devdocs/archaeology/intro2deployment.md` §4, `philosophy.md`, and the gap-analysis docs (all historical — left intact).
 **Superseded by:** None
+
+## Amendment — 2026-06-16: branch protection actually enforced
+
+Decision #2 / decision #3 and the "Positive" consequence "the documented gate becomes machine-enforced …
+block merges for the first time" described the *intent*. In practice `main` carried **no branch
+protection** until 2026-06-16 — the original Status line's "branch protection … completed 2026-06-04" was
+inaccurate (the API reported `main` unprotected; `statusCheckRollup` had no required checks). The Task-6
+follow-up was, in effect, never done.
+
+Branch protection is now applied to `main` (via the GitHub REST API; owner has ADMIN):
+
+- **Required PR before merge** — `required_approving_review_count: 0` (this is a solo public repo; GitHub
+  cannot require self-approval, so any non-zero count would hard-block the sole maintainer).
+- **Required status checks (strict / up-to-date):** **`build-and-test`** (the `ci.yml` core gate — lint +
+  unit + `assembleDebug` + Room schema-drift) and **`connected`** (the `instrumented.yml` emulator lane).
+  Both must be green and the branch current with `main` before merge — making decisions #1 and #2 real.
+- **`enforce_admins: true`** — protection applies to the owner too; **no direct pushes to `main`**, not
+  even docs/checkpoint commits (this ADR amendment itself went via a PR).
+- **`required_conversation_resolution: true`**; **force-pushes and branch deletion disabled.**
+
+Reversible by the owner (ADMIN retained): `DELETE …/branches/main/protection/enforce_admins` for a one-off
+bypass, or `DELETE …/branches/main/protection` to remove entirely. Flipping `enforce_admins` to `false`
+gives the "protect normal flow but keep an owner escape hatch" posture that was the considered alternative.
 
 ## Context
 
@@ -54,7 +77,7 @@ CI **does not auto-bump `versionCode`** — it builds the committed value, prese
 ### Follow-ups
 
 - Implement the three workflows + `dependabot.yml` (Plan 32 Tasks 1–4); resolve + commit the exact action SHAs.
-- Configure the secrets + `release` environment (Task 5) and branch protection (Task 6).
+- Configure the secrets + `release` environment (Task 5, done 2026-06-04) and branch protection (Task 6 — **done 2026-06-16, see the amendment above**; not actually applied in the original 2026-06-04 setup despite the original Status claim).
 - On implementation, sync `README.md` (badge), `.kiro/steering/tech.md`, `source-files.md`, `structure.md`.
 - Consider CodeQL (Kotlin) on a schedule as a later hardening pass.
 
