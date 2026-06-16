@@ -4,31 +4,40 @@ One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) a
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
 **Headline:** **v1.0.8 (versionCode 24) live on Play internal track** · **1052 JVM + 9 instrumented tests**
-green · schema v12 · **#26 perf/battery (Gate G) in-repo slice DONE on branch `feat/26-perf-battery-gate-g`**
-(13 commits, `36dea10`..`8d485f7`; PR pending) — measurement infra (`:baselineprofile`/`:macrobenchmark`
-modules + profileinstaller + committed Baseline Profile) + A28/A31/A29 GC-churn fixes + battery/startup
-docs; device-measured battery/OEM/startup-numbers half `[deferred]` in plan-FORWARD · all five A–E
+green · schema v12 · **#26 perf/battery (Gate G) in-repo slice MERGED to `main`** (PR #184, squash
+`8f3c2ee`, merged 2026-06-16) — measurement infra (`:baselineprofile`/`:macrobenchmark` modules +
+profileinstaller + committed Baseline Profile) + A28/A31/A29 GC-churn fixes + battery/startup docs;
+device-measured battery/OEM/startup-numbers half `[deferred]` in plan-FORWARD · all five A–E
 look-&-feel bundles shipped (v1.0.4–v1.0.8) + #29 decision-support (Gate F) MERGED (`70ebf53`) · launch is
 judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
-- **CURRENT — #26 perf/battery (Gate G) in-repo slice: IMPLEMENTED on `feat/26-perf-battery-gate-g`, PR
-  pending.** Spec + plan both passed the Adversarial Review Gate (spec 43→23 surviving; plan 63→48
-  surviving; both 0 unaddressed critical/major). Executed subagent-driven TDD, 13 commits, per-task
-  spec+quality review. **Multi-module now:** `:app` + `:baselineprofile` + `:macrobenchmark` (the latter
-  two are `com.android.test` dev-tooling, never shipped). Baseline Profile generated + committed (18,804
-  rules) on the Pixel_6/API36 emulator. Safe GC-churn fixes A28 (collision scratch buffers, under
-  `entitiesLock`), A31 (cached CHRONO_FIELD Paint), A29 (`distinctUntilChanged` on the profile Flow) — all
-  behaviour-preserving. #124 license guard narrowed to exclude benchmark variants (still fail-closed on
-  shippable releases). **1045→1052 JVM**, no schema/engine-logic change. **Execution caught real AGP-9
-  facts the plan missed:** stable baselineprofile 1.4.1 throws on AGP 9.0.1 → bumped to 1.5.0-alpha06
-  (dev-tooling only, user-approved); `kotlin.android` errors on a `com.android.test` module under AGP-9
-  built-in Kotlin → removed; multi-module classpath clash → root `apply false`. **ADR-0025.** Remaining for
-  #26: device-only half (overnight idle-drain + OEM matrix + startup-timing numbers — needs a physical
-  device + a non-debuggable benchmark build type) is `[deferred]` in plan-FORWARD Gate G. NEXT: open PR →
-  CI green → merge. After #26: **#128** (~21 audit Lows, deferred to v1.1); manual play-feel gates (A
-  audio, E balance) — developer judgment.
+- **CURRENT — Closed-Test Readiness Gate: only judgment/manual items remain in-repo.** With #26 merged,
+  the gate's code-addressable surface is essentially down to **#44 (Gate B — content honesty):**
+  `AUTO_UPGRADE_AI` still shows a "Coming Soon" badge on the Labs screen (its sibling `ENEMY_INTEL` was
+  already wired in V1X-15b). The fix is small — *implement it* or *hide it from Labs* — and would close
+  the last visible-but-unusable stub before closed test. Everything else gating promotion is
+  developer-judgment / manual: **Gate A** (in-play audio feel), **Gate E** (early-tier balance feel),
+  **Gate D** "clean fresh-install run, no crashes" (a verification pass, not code). **#128** (~21 audit
+  Lows) is explicitly **deferred — not a blocker** → v1.1. NEXT (developer's call): take #44 through the
+  Adversarial Review Gate (brainstorm → spec → plan → TDD), OR step back and assess promotion readiness on
+  the manual feel gates.
+- **Previous objective (DONE): #26 perf/battery (Gate G) in-repo slice — MERGED to `main`** (PR #184,
+  squash `8f3c2ee`, merged 2026-06-16; CI PR gate + instrumented lane green). Spec + plan both passed the
+  Adversarial Review Gate (spec 43→23 surviving; plan 63→48 surviving; both 0 unaddressed critical/major).
+  Executed subagent-driven TDD, 13 commits, per-task spec+quality review. **Multi-module now:** `:app` +
+  `:baselineprofile` + `:macrobenchmark` (the latter two are `com.android.test` dev-tooling, never
+  shipped). Baseline Profile generated + committed (18,804 rules) on the Pixel_6/API36 emulator. Safe
+  GC-churn fixes A28 (collision scratch buffers, under `entitiesLock`), A31 (cached CHRONO_FIELD Paint),
+  A29 (`distinctUntilChanged` on the profile Flow) — all behaviour-preserving. #124 license guard narrowed
+  to exclude benchmark variants (still fail-closed on shippable releases). **1045→1052 JVM**, no
+  schema/engine-logic change. **Execution caught real AGP-9 facts the plan missed:** stable baselineprofile
+  1.4.1 throws on AGP 9.0.1 → bumped to 1.5.0-alpha06 (dev-tooling only, user-approved); `kotlin.android`
+  errors on a `com.android.test` module under AGP-9 built-in Kotlin → removed; multi-module classpath clash
+  → root `apply false`. **ADR-0025.** Remaining for #26: device-only half (overnight idle-drain + OEM
+  matrix + startup-timing numbers — needs a physical device + a non-debuggable benchmark build type) is
+  `[deferred]` in plan-FORWARD Gate G.
 - **Previous objective (DONE): #29 Workshop decision support (Gate F) — MERGED to `main`** (PR #182, squash
   `70ebf53`; #29 closed; CI PR gate + instrumented lane green; on-device verified on a Pixel_6 emulator).
   Presentation + pure domain math only: combat-power "value per step" bar + "Now → Next" preview + single
@@ -74,13 +83,16 @@ judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
   onboarding (**Gate C ticked** — shipped in v1.0.3, no schema change) (see Recently
   shipped). Still open in **Gate D**: **#128** (remaining ~21 Lows: perf/anti-cheat/security groups,
   deferred to v1.1 per the audit grouping). Bigger gate items: **#29** decision-support (Gate F) **MERGED**
-  (PR #182, squash `70ebf53`, #29 closed); **#26** perf/battery (Gate G, device-measured) is the remaining
-  one to spec.
+  (PR #182, squash `70ebf53`, #29 closed); **#26** perf/battery (Gate G) in-repo slice **MERGED** (PR #184,
+  squash `8f3c2ee`; device-measured half `[deferred]`). The last code-addressable gate item is **#44**
+  (Gate B — `AUTO_UPGRADE_AI` "Coming Soon" stub: implement or hide); the rest of the gate (A audio, E
+  balance, D fresh-install) is developer-judgment / manual.
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
-- **2026-06-16 — #26 perf/battery (Gate G) in-repo slice — IMPLEMENTED on `feat/26-perf-battery-gate-g`
-  (PR pending).** 13 commits (`36dea10`..`8d485f7`). Spec + plan both passed the Adversarial Review Gate
+- **2026-06-16 — #26 perf/battery (Gate G) in-repo slice — MERGED to `main`** (PR #184, squash `8f3c2ee`;
+  CI PR gate + instrumented lane green). 13 commits on `feat/26-perf-battery-gate-g` (`36dea10`..`8d485f7`),
+  squash-merged. Spec + plan both passed the Adversarial Review Gate
   (spec 43→23; plan 63→48; both 0 critical/major). **Measurement infra:** project is now multi-module
   (`:app` + `:baselineprofile` + `:macrobenchmark`, the latter two `com.android.test` dev-tooling, never
   shipped); `androidx.profileinstaller` (stable 1.4.1, the only shipping addition) + a committed Baseline
@@ -412,10 +424,10 @@ judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Look-&-feel bundles A–E — ALL SHIPPED:** #159/#160/#161 → v1.0.4; #162 (Bundle C) → v1.0.6; #163 (Bundle D, collectibles rarity) → v1.0.7 (PR #174, tag `v1.0.7`, #163 closed); **#164 (Bundle E, Cinzel font + onboarding per-slide biome theming + ziggurat emblem) → v1.0.8** (PR #178, squash `9fd40b9`; released `26cc086`, tag `v1.0.8`, versionCode 24, #164 closed). The five-bundle look-&-feel arc is complete.
-2. **Bigger gate items:** #29 decision-support (Gate F) is **implemented, pending merge** (branch `feat/29-upgrade-decision-support`; PR + on-device visual verification owed). The remaining big code-addressable item is #26 device perf/battery (Gate G, device-measured) — needs its own spec → plan → PR through the Adversarial Review Gate.
-3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
-4. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
+1. **Bigger gate items — ALL MERGED:** look-&-feel bundles A–E (→ v1.0.4–v1.0.8, the five-bundle arc is complete); **#29** decision-support (Gate F, PR #182, squash `70ebf53`, #29 closed); **#26** perf/battery (Gate G) in-repo slice (PR #184, squash `8f3c2ee`; device-measured half `[deferred]`). No bigger gate item is left in-repo.
+2. **Last code-addressable gate item — #44 (Gate B, content honesty):** `AUTO_UPGRADE_AI` still shows a "Coming Soon" badge on Labs (sibling `ENEMY_INTEL` already wired in V1X-15b). Decide *implement* vs *hide from Labs*, then run it through the Adversarial Review Gate (brainstorm → spec → plan → TDD). Small change; closes the last visible-but-unusable stub.
+3. **Manual play-feel / verification gates (developer judgment, can't be closed from code):** Gate A in-play audio feel, Gate E early-tier balance feel, Gate D "clean fresh-install run, no crashes."
+4. **Deferred — not a blocker:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
 
 Phase 2 (only AFTER the developer promotes internal → closed):
 6. **(External)** Recruit ≥12 testers; ≥14-day closed soak; apply for production access; staged rollout; tag `v1.0.0`.
