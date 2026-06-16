@@ -333,10 +333,15 @@ include(":macrobenchmark")
 - [ ] **Step 2: Create the module build script**
 
 Create `macrobenchmark/build.gradle.kts`:
+> **AGP-9 NOTE (learned in Task 4):** do NOT add `alias(libs.plugins.kotlin.android)` — AGP 9 has
+> built-in Kotlin and applying `org.jetbrains.kotlin.android` to a `com.android.test` module is an
+> ERROR. The `kotlin-android` catalog alias was removed in Task 4. The two new plugins are already
+> declared `apply false` in the root `build.gradle.kts` (Task 4), so the module just applies them by
+> alias with no version.
 ```kotlin
 plugins {
+    // No kotlin.android — AGP 9 provides built-in Kotlin (matches the :baselineprofile module).
     alias(libs.plugins.android.test)
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
