@@ -156,7 +156,20 @@ android {
         // task can't silently bypass the guard. `assembleDebug` / `testDebugUnitTest` / the PR gate
         // never match (they don't end in "Release"), so those lanes stay unaffected.
         val releaseTask = Regex("^(bundle|assemble|package).*Release$")
-        val buildsRelease = allTasks.any { releaseTask.matches(it.name) }
+        // #124 + #26: keep the BROAD release-task match (so a future product-flavor release task such as
+        // `bundleProdRelease` is still caught — see the comment below), but exclude the AndroidX benchmark /
+        // baseline-profile variant tasks (`assembleBenchmarkRelease`, `bundleNonMinifiedRelease`, …). The
+        // androidx.baselineprofile plugin auto-generates `benchmarkRelease`/`nonMinifiedRelease` from `release`,
+        // so they inherit the blank-by-default play.licenseKey and would otherwise false-trip this fail-closed
+        // guard on every benchmark build. The exclusion is PER TASK: a graph containing BOTH `bundleRelease`
+        // AND `assembleBenchmarkRelease` still hard-fails on a blank key, because the shippable `bundleRelease`
+        // task matches the regex and carries neither excluded token. `generate*BaselineProfile` tasks end in
+        // `Profile` and never match the regex, so they need no exclusion.
+        val buildsRelease = allTasks.any { t ->
+            releaseTask.matches(t.name) &&
+                !t.name.contains("Benchmark") &&
+                !t.name.contains("NonMinified")
+        }
         if (buildsRelease && localProperties.getProperty("play.licenseKey").isNullOrBlank()) {
             throw GradleException(
                 "Release build requires a non-blank 'play.licenseKey' in local.properties " +
