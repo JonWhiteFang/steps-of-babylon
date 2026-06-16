@@ -311,7 +311,7 @@ git commit -m "feat(#29): WorkshopLevels — shared workshop-dimension cap + inc
 
 ### Task 3: `DescribeUpgradeEffect.workshopPreview` (workshop-dimension Now→Next)
 
-Add a **distinct** preview path that increments the workshop dimension (the existing `invoke` stays untouched — it powers the in-round menu and its 30 tests must keep passing).
+Add a **distinct** preview path that increments the workshop dimension (the existing `invoke` stays untouched — it powers the in-round menu and all its existing tests must keep passing).
 
 **Files:**
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/domain/usecase/DescribeUpgradeEffect.kt`
@@ -380,7 +380,7 @@ Expected: FAIL — unresolved reference `workshopPreview`.
 
 - [ ] **Step 3: Add the `workshopPreview` method**
 
-In `DescribeUpgradeEffect.kt`, add this method inside the class, immediately after the existing `invoke(...)` operator (and add the import `com.whitefang.stepsofbabylon.domain.usecase.WorkshopLevels` is in the same package, so no import needed):
+In `DescribeUpgradeEffect.kt`, add this method inside the class, immediately after the existing `invoke(...)` operator. `WorkshopLevels` is in the same package (`domain.usecase`), so no import is needed; `UpgradeEffectReadout`, `ResearchType`, `OwnedCard`, and `UpgradeType` are all already imported/declared in this file:
 
 ```kotlin
     /**
@@ -412,10 +412,10 @@ In `DescribeUpgradeEffect.kt`, add this method inside the class, immediately aft
     }
 ```
 
-- [ ] **Step 4: Run the full `DescribeUpgradeEffectTest`, verify all pass (new + existing 30)**
+- [ ] **Step 4: Run the full `DescribeUpgradeEffectTest`, verify all pass (new + all existing)**
 
 Run: `./run-gradle.sh testDebugUnitTest --tests "com.whitefang.stepsofbabylon.domain.usecase.DescribeUpgradeEffectTest" > build.log 2>&1; tail -n 25 build.log`
-Expected: PASS (all tests, including the 4 new ones — the existing in-round tests are unaffected).
+Expected: PASS — **BUILD SUCCESSFUL** with the test count = (whatever the file had before) + 4. The existing in-round `invoke` tests are unaffected (we only added a new method). Don't assert a hardcoded prior count; trust gradle's BUILD SUCCESSFUL + the +4 delta.
 
 - [ ] **Step 5: Commit**
 
@@ -508,8 +508,9 @@ class EvaluateUpgradeValueTest {
     @Test
     fun `percent-per-k-steps is computed correctly and positive`() {
         val result = sut(emptyMap(), stepBalance = 100_000, candidates = listOf(UpgradeType.DAMAGE))
-        // value 0.004 ÷ currentPower 10 × 1000 × 100 = 4.0
-        assertEquals(4.0, result.single().percentPerKSteps, 1e-6)
+        // value 0.004 ÷ currentPower 10 × 1000 × 100 = 40.0
+        // (sanity: a 50-step DAMAGE level = +2% power, so ~20 levels ≈ 1,000 steps ≈ +40% power)
+        assertEquals(40.0, result.single().percentPerKSteps, 1e-6)
     }
 
     @Test
@@ -533,9 +534,16 @@ class EvaluateUpgradeValueTest {
 
     @Test
     fun `best buy prefers the highest-value AFFORDABLE upgrade`() {
-        // Balance affords ATTACK_SPEED (75) but not DAMAGE... impossible since DAMAGE(50) < 75.
-        // Instead: make DAMAGE unaffordable by pricing it up via level, leaving ATTACK_SPEED affordable.
-        // DAMAGE L40 cost = ceil(50 * 1.12^40) which is large; ATTACK_SPEED L0 cost = 75.
+        // Make DAMAGE unaffordable by pricing it up via level, leaving ATTACK_SPEED/CRIT affordable.
+        // DAMAGE L40 cost = ceil(50 * 1.12^40) ≈ 4653 (large); ATTACK_SPEED L0 = 75, CRIT L0 = 100.
+        // COVERAGE LIMITATION (review test-correctness F1): with real configs the cheapest upgrade
+        // (DAMAGE, base 50) is ALSO the highest-value, so we cannot construct a case where the single
+        // UNAFFORDABLE candidate is simultaneously the highest-value — at L40 DAMAGE is both
+        // unaffordable AND lowest-value (its Δpower/cost collapses). So this test proves the best buy
+        // is affordable + not the priced-out DAMAGE, but does NOT independently prove affordable-pref
+        // would override a higher-value-but-unaffordable option. The affordable-vs-greyed *fallback*
+        // branch is what the next test pins; the "exactly one" + "damage is best from zero" tests pin
+        // the ranking. (A synthetic-config test could prove the override but would not reflect real play.)
         val levels = mapOf(UpgradeType.DAMAGE to 40)
         val costDamage = CalculateUpgradeCost()(UpgradeType.DAMAGE, 40)
         val balance = costDamage - 1 // can't afford DAMAGE, can afford ATTACK_SPEED(75) and CRIT(100)
@@ -665,7 +673,8 @@ class EvaluateUpgradeValue(
                 percentPerKSteps = s.pct,
                 barFraction = if (maxPct > 0.0) (s.pct / maxPct).toFloat() else 0f,
                 isBestBuy = s.type == bestBuyType,
-                bestBuyAffordable = bestBuyIsAffordable,
+                // True only on the flagged Best Buy row (the field is meaningful only there — review F2).
+                bestBuyAffordable = bestBuyIsAffordable && s.type == bestBuyType,
             )
         }
     }
@@ -1012,7 +1021,9 @@ import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
+import com.whitefang.stepsofbabylon.presentation.ui.theme.BronzeSurface
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
+import com.whitefang.stepsofbabylon.presentation.ui.theme.Ivory
 import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess
 
 @Composable
@@ -1126,18 +1137,25 @@ fun UpgradeCard(info: UpgradeDisplayInfo, onClick: () -> Unit) {
 
 @Composable
 private fun BestBuyChip(affordable: Boolean) {
+    // Affordable: solid Gold background with dark (DeepBronze = colorScheme.surface) text — ~4.2:1,
+    // matches the theme's onPrimary=DeepBronze rationale. Greyed "save up" state: a desaturated SOLID
+    // fill (NOT Gold@0.4f over the dark card, which gives illegible ~1.9:1 dark-on-dark — review F1)
+    // with light Ivory text for a legible >4:1 contrast. The exact tokens are confirmed on-device
+    // (Task 8 Step 4); keep the fill opaque so the greyed chip never composites to dark-on-dark.
+    val bg = if (affordable) Gold else BronzeSurface
+    val fg = if (affordable) MaterialTheme.colorScheme.surface else Ivory
     Box(
         modifier = Modifier
             .padding(bottom = 6.dp)
             .clip(RoundedCornerShape(6.dp))
-            .background(Gold.copy(alpha = if (affordable) 1f else 0.4f))
+            .background(bg)
             .padding(horizontal = 8.dp, vertical = 2.dp),
     ) {
         Text(
             text = if (affordable) "★ BEST BUY" else "★ BEST BUY · SAVE UP",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.surface,
+            color = fg,
         )
     }
 }
@@ -1209,6 +1227,9 @@ In `docs/steering/source-files.md`, add entries (matching the file's existing fo
 - `domain/usecase/EvaluateUpgradeValue.kt` — value-per-step ranking + Best-Buy selection (#29).
 - `presentation/workshop/UpgradeValueLabel.kt` — pure "+X.X% power / 1,000 steps" formatter (#29).
 - Update the `DescribeUpgradeEffect.kt` entry to note the new `workshopPreview` path.
+- Fix the **stale `DescribeUpgradeEffectTest.kt` test-count** in `source-files.md` (line ~434 currently
+  says "28 tests total" / "RO-12 adds 3" — the file actually has 35 before this PR's +4; update to the
+  real post-PR count from Step 1) (review F2).
 - Update the `WorkshopViewModel.kt` / `UpgradeCard.kt` / `WorkshopUiState.kt` entries to note the decision-support fields/rendering.
 
 - [ ] **Step 3: Add a `CHANGELOG.md` section**
