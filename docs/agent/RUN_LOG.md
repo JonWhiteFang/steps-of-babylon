@@ -1,3 +1,33 @@
+## 2026-06-16 — Bundle E (#164) merged + v1.0.8 SHIPPED to Play internal
+
+- **Goal:** After the on-device feel sign-off, take Bundle E (#164) from pre-PR to released: watch CI →
+  merge → release. (Implementation detail is the entry below, 2026-06-15.)
+- **CI + merge:** PR #178 (`feat/164-look-and-feel-bundle-e`) — `build-and-test` (4m34s) + `connected`
+  instrumented lane (4m52s) both green; squash-merged to `main` as `9fd40b9`, remote branch deleted.
+  versionCode 24 / versionName 1.0.8 already rode in with the PR (the plan folded the bump into Task 7).
+- **Release (standard release-PR flow, matching v1.0.7):** branch `release/v1.0.8` with **collateral
+  only** — promoted CHANGELOG `[Unreleased]` → `[1.0.8]` (dated 2026-06-16) + fresh empty `[Unreleased]`;
+  added `docs/release/release-notes-v1.0.8.md` (Play "What's new" + developer detail); flipped STATE
+  headline. PR #179 → CI green (`build-and-test` 5m10s, `connected` 4m29s) → squash-merged `26cc086`.
+- **Tag + release lane:** annotated tag `v1.0.8` (324-char "What's new", within Play's 500 cap) pushed →
+  `release.yml` **green in 7m29s**: unit-test guard, keystore decode, AdMob prod IDs, Play license key,
+  `bundleRelease` (R8 + lint-vital + signing), `jarsigner -verify`, **Upload to Play internal track**, and
+  GitHub Release all passed. GitHub Release `v1.0.8` published (not draft) with the signed
+  `app-release.aab` asset.
+- **What shipped in v1.0.8** (both presentation-only, no engine/economy/concurrency/persistence/schema):
+  Bundle E (#164) — custom Cinzel font + onboarding biome theming + ziggurat emblem, the LAST of the five
+  A–E look-&-feel bundles — and the #171 battle bottom-chrome overlap fix (PR #177). **1010 JVM + 9
+  instrumented**, 0 failures (CI re-confirmed on both PRs).
+- **Docs synced (this checkpoint):** STATE.md headline RELEASING → SHIPPED + current-objective rotation
+  (Bundle E demoted to SHIPPED; the next live work is the Gate F/G items #29/#26 — the A–E look-&-feel
+  arc is now complete) + Recently-shipped + Top-priorities updates; this RUN_LOG entry. No new ADR (the
+  release is mechanical; ADR-0024 already records Bundle E's decisions). CLAUDE.md (1010 headline),
+  CHANGELOG `[1.0.8]`, and source-files.md were synced in the merged PRs #178/#179.
+- **What remains / next:** the look-&-feel arc is done. Live work returns to the Closed-Test Readiness
+  Gate: **#29** (upgrade decision-support, Gate F) + **#26** (perf/battery, Gate G, device-measured),
+  each via spec → plan → PR through the Adversarial Review Gate; the manual play-feel gates (A audio, E
+  balance) are the developer's call. Promotion internal → closed stays judgment-gated (`plan-FORWARD.md`).
+
 ## 2026-06-15 — Bundle E (#164): identity/art (Cinzel font + onboarding biome theming + ziggurat emblem)
 
 - **Goal:** Ship the last of the five A–E look-&-feel review bundles (#164): a custom display font,

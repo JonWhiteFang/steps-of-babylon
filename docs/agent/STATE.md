@@ -3,8 +3,9 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.8 (versionCode 24) RELEASING to Play internal track** (tag `v1.0.8`; release lane
-fired on the tag) · **1010 JVM + 9 instrumented tests** green · schema v12 · **v1.0.8 = Look & Feel
+**Headline:** **v1.0.8 (versionCode 24) SHIPPED to Play internal track** (tag `v1.0.8`; release lane
+green 7m29s — signature verified, signed AAB uploaded to Play internal + GitHub Release `v1.0.8` with
+`app-release.aab`) · **1010 JVM + 9 instrumented tests** green · schema v12 · **v1.0.8 = Look & Feel
 Bundle E (#164, PR #178, squash `9fd40b9`)** — custom Cinzel font + onboarding biome theming + ziggurat
 emblem (the LAST A–E bundle) — **plus the #171 battle bottom-chrome fix** (PR #177) · prior: v1.0.7 =
 Bundle D (#163) rarity · v1.0.6 = Bundle C (#162) haptics/celebrations/pulse · launch is judgment-gated
@@ -12,21 +13,22 @@ on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
-- **Bundle E (#164) — IMPLEMENTED (presentation + first bundled font/art assets; on
-  `feat/164-look-and-feel-bundle-e`, pre-PR).** The LAST of the five A–E look-&-feel review bundles.
-  Custom **Cinzel** display font (OFL, `res/font/`) on Display+Headline tiers + the missing
-  `displayMedium`/`displayLarge` tokens (guarded by `SobTypographyTest`); onboarding per-slide **biome
-  journey** gradient (Gardens→Sands→Frozen→Celestial) cross-faded via pure `lerpArgb`/
-  `crossfadeNeighborIndex` (`ColorLerp.kt`, static under reduced-motion) + legibility scrim + one-shot
-  completion pulse (reuses `PurchasePulse`, **persist-first → pulse → navigate** so the gating/nav
-  contract is preserved) + a vector **ziggurat emblem** (`ic_ziggurat_emblem.xml`) replacing the slide-1
-  🏛️ emoji. Spec + plan **both** passed the Adversarial Review Gate (spec: ~39 raised→13 surviving, 0
-  unaddressed critical/major; plan: ~25 raised→9 surviving, 0 critical/major). Subagent-driven TDD,
-  per-task spec+quality review. **996→1010 JVM** (+14: `SobTypographyTest` 2, `ColorLerpTest` 10,
-  `OnboardingContentTest` +2). `testDebugUnitTest lintDebug assembleDebug` green. **ADR-0024.** Pending:
-  on-device feel sign-off + PR + the v1.0.8 release. (Execution caught a real defect the reviews missed:
-  the OFL license `.txt` can't live in `res/font/` — the resource merger rejects non-font files there —
-  so it's at `licenses/OFL-Cinzel.txt`.)
+- **NEXT (live work): Closed-Test Readiness Gate F/G — the A–E look-&-feel arc is now COMPLETE.** With
+  Bundle E shipped, the remaining code-actionable gate items are **#29** (upgrade decision-support, Gate F)
+  and **#26** (performance/battery, Gate G, device-measured); the manual play-feel gates (A audio, E
+  balance) are the developer's call. Each gets its own spec → plan → PR through the Adversarial Review
+  Gate. Promotion internal → closed remains judgment-gated.
+- **Previous objective (DONE): Bundle E (#164 identity/art) — SHIPPED in v1.0.8** (tag `v1.0.8`, release
+  lane green 7m29s; PR #178 squash `9fd40b9`; on-device feel sign-off done; release collateral PR #179
+  merge `26cc086`). The LAST of the five A–E look-&-feel bundles. Custom **Cinzel** display font (OFL,
+  `res/font/`) on Display+Headline tiers + the missing `displayMedium`/`displayLarge` tokens (guarded by
+  `SobTypographyTest`); onboarding per-slide **biome journey** gradient (Gardens→Sands→Frozen→Celestial)
+  cross-faded via pure `lerpArgb`/`crossfadeNeighborIndex` (`ColorLerp.kt`, static under reduced-motion) +
+  legibility scrim + one-shot completion pulse (reuses `PurchasePulse`, **persist-first → pulse →
+  navigate**) + a vector **ziggurat emblem** (`ic_ziggurat_emblem.xml`) replacing the slide-1 🏛️ emoji.
+  Spec + plan both passed the Adversarial Review Gate. **996→1010 JVM.** **ADR-0024.** (Execution caught
+  a defect both reviews missed: the OFL `.txt` can't live in `res/font/` — resource merger rejects
+  non-font files — so it's at `licenses/OFL-Cinzel.txt`.)
 - **Previous objective (DONE): Bundle D (#163 collectibles rarity) — SHIPPED in v1.0.7** (tag `v1.0.7`,
   merge `2e10330`; PR #174 squash `d317fdc`, #163 closed; on-device feel sign-off done; release lane green).
   Presentation-only: shared `presentation/ui/Rarity.kt` (`RarityTier` palette + pure mapping/label/colour
@@ -56,8 +58,8 @@ on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
-- **2026-06-15 — Bundle E (#164) IMPLEMENTATION (presentation + first bundled font/art; on
-  `feat/164-look-and-feel-bundle-e`, pre-PR).** The last A–E look-&-feel bundle. Brainstormed (visual
+- **2026-06-16 — Bundle E (#164) SHIPPED in v1.0.8** (PR #178 squash `9fd40b9`; release lane green 7m29s,
+  AAB on Play internal + GitHub Release `v1.0.8`). The last A–E look-&-feel bundle. Brainstormed (visual
   companion) → spec (`b7d3c94`, adversarial-reviewed: ~39→13 surviving, the major catch = the "gold
   shimmer reusing Bundle C" finish beat was unbuildable [no shimmer infra; `ClaimCelebration` is
   event-driven + unmounted by nav] → redefined as a `PurchasePulse` round-trip pulse, persist-first →
@@ -73,7 +75,8 @@ on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
   headline + CHANGELOG + source-files synced. **996→1010 JVM**, `testDebugUnitTest lintDebug assembleDebug`
   green. **Execution caught a build-breaking defect both reviews missed:** the OFL `.txt` can't live in
   `res/font/` (resource merger rejects non-font files) → moved to `licenses/OFL-Cinzel.txt` (commit
-  `bcf55e8`). **ADR-0024.** Pending: on-device feel sign-off + PR + v1.0.8 release.
+  `bcf55e8`). **ADR-0024.** On-device feel sign-off done; merged via PR #178; v1.0.8 release collateral
+  via PR #179 (`26cc086`) + tag `v1.0.8` → release lane green.
 - **2026-06-15 — #171 battle bottom-chrome overlap fix (IN FLIGHT on `fix/171-battle-bottom-chrome`, pre-PR).**
   Presentation-only. The battle bottom controls (speed `1x`/`2x`/`4x` + pause + upgrade) moved from a
   bottom-center Row to a **left vertical rail** (`BattleControlRail` at `CenterStart`), so they no longer
@@ -349,7 +352,7 @@ on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Look-&-feel follow-ups (Gate C/F UX):** **#159/#160/#161 → v1.0.4; #162 (Bundle C) → v1.0.6; #163 (Bundle D, collectibles rarity) → v1.0.7** (PR #174, tag `v1.0.7`, #163 closed) — all merged + released. **Last bundle remaining: #164** (custom font + onboarding per-slide biome theming + real ziggurat asset) — needs its own spec → plan → PR through the Adversarial Review Gate. NOTE: #164 is not presentation-trivial like A–D (touches `res/` font/art + the onboarding flow) — scope carefully in brainstorming.
+1. **Look-&-feel arc COMPLETE (Gate C/F UX):** **#159/#160/#161 → v1.0.4; #162 (Bundle C) → v1.0.6; #163 (Bundle D) → v1.0.7; #164 (Bundle E, identity/art) → v1.0.8** (PR #178, tag `v1.0.8`) — all five A–E bundles merged + released. No look-&-feel bundles remain.
 2. **Bigger gate items:** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured).
 3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 4. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
