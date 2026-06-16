@@ -4,6 +4,16 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [1.0.8] — 2026-06-16 (versionCode 24)
+
+Shipped to the Play Console **internal** track (tag `v1.0.8`). Two presentation-only changes: Look & Feel
+**Bundle E (#164)** — the identity/art wave (custom Cinzel font + onboarding biome theming + ziggurat
+emblem; the last of the five A–E bundles) via PR #178 (squash `9fd40b9`) — and the **#171** battle
+bottom-chrome overlap fix (PR #177). No gameplay/economy/concurrency/persistence/engine/schema code.
+**1010 JVM tests** (up from 996), 0 failures.
+
 ### Look & Feel Bundle E (#164) — Identity / Art
 
 Presentation-only (+ first bundled font/art assets). Custom **Cinzel** display font (SIL OFL 1.1,

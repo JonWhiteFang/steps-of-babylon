@@ -3,11 +3,12 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **Bundle E (#164) IMPLEMENTED on `feat/164-look-and-feel-bundle-e`** (pre-PR; versionCode 24
-/ versionName 1.0.8 committed) · **1010 JVM + 9 instrumented tests** green · schema v12 · **last shipped
-release: v1.0.7 (versionCode 23) on Play internal** (tag `v1.0.7`, merge `2e10330`) = Bundle D (#163)
-collectibles rarity · v1.0.6 = Bundle C (#162) haptics/celebrations/pulse · launch is judgment-gated on
-the Closed-Test Readiness Gate (`plan-FORWARD.md`).
+**Headline:** **v1.0.8 (versionCode 24) RELEASING to Play internal track** (tag `v1.0.8`; release lane
+fired on the tag) · **1010 JVM + 9 instrumented tests** green · schema v12 · **v1.0.8 = Look & Feel
+Bundle E (#164, PR #178, squash `9fd40b9`)** — custom Cinzel font + onboarding biome theming + ziggurat
+emblem (the LAST A–E bundle) — **plus the #171 battle bottom-chrome fix** (PR #177) · prior: v1.0.7 =
+Bundle D (#163) rarity · v1.0.6 = Bundle C (#162) haptics/celebrations/pulse · launch is judgment-gated
+on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
