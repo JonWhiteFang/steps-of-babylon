@@ -4,7 +4,7 @@ One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) a
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
 **Headline:** **v1.0.8 (versionCode 24) SHIPPED to Play internal track** (tag `v1.0.8`, release merge
-`26cc086`, via release PR #179; release lane green) · **1010 JVM + 9 instrumented tests** green · schema
+`26cc086`, via release PR #179; release lane green) · **1045 JVM + 9 instrumented tests** green · schema
 v12 · **v1.0.8 = Look & Feel Bundle E (#164, PR #178, squash `9fd40b9`)** — custom Cinzel font +
 onboarding biome theming + ziggurat emblem (the LAST A–E bundle) — **plus the #171 battle bottom-chrome
 fix** (PR #177, merge `1643361`) · prior: v1.0.7 = Bundle D (#163) rarity · v1.0.6 = Bundle C (#162)
@@ -14,11 +14,12 @@ on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 ## Current objective
 
 - **NEXT OBJECTIVE — the bigger Closed-Test Readiness Gate items (now the live work).** All five A–E
-  look-&-feel bundles are shipped (Bundle E #164 closed the set in v1.0.8). The remaining gate work is:
-  **#29 decision-support** (Gate F — projected-reward / Now→Next preview surfacing) and **#26 perf/battery**
-  (Gate G, device-measured). Each needs its own spec → plan → PR through the Adversarial Review Gate.
-  Also still open but deferred to v1.1: **#128** (remaining ~21 audit Lows — perf/anti-cheat/security
-  groups). Manual play-feel gates (A audio, E balance) can't be closed from code — developer judgment.
+  look-&-feel bundles are shipped (Bundle E #164 closed the set in v1.0.8). **#29 decision-support (Gate F)
+  is IMPLEMENTED, PENDING MERGE** (branch `feat/29-upgrade-decision-support`; PR pending; on-device visual
+  verification still owed). The remaining big code-addressable gate item is **#26 perf/battery** (Gate G,
+  device-measured) — needs its own spec → plan → PR through the Adversarial Review Gate. Also still open
+  but deferred to v1.1: **#128** (remaining ~21 audit Lows — perf/anti-cheat/security groups). Manual
+  play-feel gates (A audio, E balance) can't be closed from code — developer judgment.
 - **Previous objective (DONE): Bundle E (#164) — SHIPPED in v1.0.8** (tag `v1.0.8`, release merge
   `26cc086` via PR #179; merged via PR #178, squash `9fd40b9`; #164 closed). The LAST of the five A–E
   look-&-feel review bundles — all A–E now shipped. Custom **Cinzel** display font (OFL) on
@@ -57,11 +58,22 @@ on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
   Gate D; **#154** disable "buy more" at max consistently (Gate F UX polish); **#24** first-launch
   onboarding (**Gate C ticked** — shipped in v1.0.3, no schema change) (see Recently
   shipped). Still open in **Gate D**: **#128** (remaining ~21 Lows: perf/anti-cheat/security groups,
-  deferred to v1.1 per the audit grouping). Remaining bigger gate items (now the live work): **#29**
-  decision-support (Gate F), **#26** perf/battery (Gate G, device-measured).
+  deferred to v1.1 per the audit grouping). Bigger gate items: **#29** decision-support (Gate F) is
+  implemented, pending merge (`feat/29-upgrade-decision-support`); **#26** perf/battery (Gate G,
+  device-measured) is the remaining one to spec.
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-16 — #29 Workshop decision support (Gate F) — IMPLEMENTED, PENDING MERGE** (branch
+  `feat/29-upgrade-decision-support`; PR pending — NOT yet merged). Presentation + pure domain math only.
+  A combat-power "value per step" indicator + bar, a "Now → Next" stat preview on every upgrade, and a
+  single "★ BEST BUY" badge (affordable-first, greyed "save up" fallback). New pure use cases
+  `CombatPower` (DPS-proxy ranking index) / `EvaluateUpgradeValue` (+`UpgradeValue`) / `WorkshopLevels`
+  (shared workshop-dimension helpers) + `DescribeUpgradeEffect.workshopPreview` + presentation
+  `formatPowerPerKStepsLabel`; `WorkshopViewModel` wires per-tab Best Buy onto `UpgradeDisplayInfo.nowNext`/
+  `value`; `UpgradeCard` renders them. Spec + plan **both** passed the Adversarial Review Gate; executed
+  subagent-driven TDD. No schema/engine/economy change. **1010→1045 JVM** (+35). Advances **Gate F**.
+  On-device visual verification still pending.
 - **2026-06-16 — v1.0.8 (versionCode 24) SHIPPED to Play internal track** (tag `v1.0.8`, release merge
   `26cc086`, via release PR #179). Ships **Bundle E (#164)** (PR #178, squash `9fd40b9`) + the **#171**
   battle bottom-chrome fix (PR #177). Release lane green; CHANGELOG `[Unreleased]`→`[1.0.8]`, new
@@ -363,7 +375,7 @@ on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
 1. **Look-&-feel bundles A–E — ALL SHIPPED:** #159/#160/#161 → v1.0.4; #162 (Bundle C) → v1.0.6; #163 (Bundle D, collectibles rarity) → v1.0.7 (PR #174, tag `v1.0.7`, #163 closed); **#164 (Bundle E, Cinzel font + onboarding per-slide biome theming + ziggurat emblem) → v1.0.8** (PR #178, squash `9fd40b9`; released `26cc086`, tag `v1.0.8`, versionCode 24, #164 closed). The five-bundle look-&-feel arc is complete.
-2. **Bigger gate items (now the live work):** #29 decision-support (Gate F), #26 device perf/battery (Gate G, device-measured) — each needs its own spec → plan → PR through the Adversarial Review Gate.
+2. **Bigger gate items:** #29 decision-support (Gate F) is **implemented, pending merge** (branch `feat/29-upgrade-decision-support`; PR + on-device visual verification owed). The remaining big code-addressable item is #26 device perf/battery (Gate G, device-measured) — needs its own spec → plan → PR through the Adversarial Review Gate.
 3. **Manual play-feel gates (developer):** A audio feel, E balance — can't be closed from code.
 4. **Deferred:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
 
@@ -482,6 +494,12 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
   Headline content (CurrencyDashboard balance, Home steps hero) — digit legibility is an on-device
   sign-off item, not assumed. **Font-license caveat:** the OFL `.txt` lives at `licenses/OFL-Cinzel.txt`,
   NOT `res/font/` (the AAPT resource merger rejects non-`.ttf/.otf/.xml` files under `res/font/`).
+- **Combat-power index (#29)** — a display/ranking **PROXY** only — `CombatPower` returns a bare `Double`,
+  must NEVER feed the engine (type-incompatible with the `ResolvedStats` stat-sinks). The value bar +
+  Best-Buy badge apply only when **Δpower > 0** (Damage / Attack-Speed / Crit-Chance + Crit-Factor once
+  crit chance > 0). Workshop previews increment the **WORKSHOP** dimension via `WorkshopLevels` (NOT
+  in-round; spec §5.1). `EvaluateUpgradeValue` + `DescribeUpgradeEffect.workshopPreview` **share**
+  `WorkshopLevels` so the Now→Next string + the value delta can't diverge.
 
 ## References
 
