@@ -1,3 +1,35 @@
+## 2026-06-16 — #29 Workshop decision support (Gate F) — MERGED + on-device verified
+
+- **Goal:** Close out #29 — verify the implemented decision-support feature on a real device, then merge.
+  (Implementation detail is in the entry below; this entry records the verification + merge.)
+- **On-device verification (Pixel_6 emulator, API "16"/1080×2400, `installDebug` from the branch):**
+  - **ATTACK tab:** Damage/Attack-Speed/Crit-Chance each render the green value bar + `+X.X% power / 1,000
+    steps` label, bars correctly proportional (Damage +34.4% full → Attack-Speed +20.0% ~58% → Crit-Chance
+    +5.0% short). Damage carried the gold **★ BEST BUY** chip (cost 57 ≤ 67 balance).
+  - **Δpower=0 coverage confirmed visually:** Critical Factor (`×2.00 → ×2.10`), Range, Damage-per-meter,
+    Rapid Fire all show the Now→Next line but **no bar/label/badge**.
+  - **DEFENSE + UTILITY tabs:** Now→Next only — no bars, no labels, no Best-Buy chip anywhere.
+  - **Greyed fallback + purchase flow:** bought Damage (67→10 Steps, card → Lv 2, preview updated); with
+    nothing now affordable the badge flipped to the **greyed "★ BEST BUY · SAVE UP"** variant —
+    opaque BronzeSurface + Ivory text, clearly legible (the WCAG fix from plan-review F1, ~4.2:1).
+  - **#154 probe:** tapping the now-unaffordable Damage card was a clean no-op (balance stayed 10, no level
+    change, no crash) — disabled-at-cap contract intact through the `UpgradeCard` rewrite.
+  - The one half-check not drivable live (Crit-Factor *gaining* a bar once crit chance > 0) is covered by
+    the passing `EvaluateUpgradeValueTest`; the zero-crit half (no bar) was confirmed on-screen.
+- **Final whole-branch review:** READY TO MERGE — 0 critical/important, 2 minor awareness notes
+  (pre-existing / out of scope). Build green at 1045; lint clean; APK assembles.
+- **Merge:** PR #182 → `main`, **squash `70ebf53`**, remote branch deleted. CI on the PR: `build-and-test`
+  (PR gate) green 4m37s, `connected` (instrumented emulator lane) green 5m6s. Local `main` fast-forwarded to
+  `70ebf53`; local feature branch removed. **Issue #29 closed** with a comment documenting Gate-F-met +
+  the deferred follow-ups (ROI-sort/reorder, quick-buy multiplier, Cards equip-preview, readability theme).
+- **Docs:** current-state docs (CLAUDE.md headline 1045, CHANGELOG `[Unreleased]`, source-files.md incl. the
+  stale `DescribeUpgradeEffectTest` count fix 28→39) were synced on-branch in the implementation commit and
+  are now merged; this checkpoint flips STATE.md from "pending merge" → "MERGED, #29 closed" and rotates the
+  current objective to **#26 perf/battery (Gate G)**.
+- **Next:** #26 perf/battery — Gate G. In-repo slice (Baseline Profiles + startup tracing +
+  recomposition/bitmap/Room profiling) is spec→plan→PR-able through the Adversarial Review Gate; the
+  battery/OEM-validation acceptance needs physical devices and can't be fully closed from the repo alone.
+
 ## 2026-06-16 — #29 Workshop decision support (Gate F) — implemented, pending merge
 
 - **Goal:** Surface upgrade decision support on the Workshop screen (Gate F): a combat-power "value per

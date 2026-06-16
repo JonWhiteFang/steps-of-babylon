@@ -13,13 +13,20 @@ on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
-- **NEXT OBJECTIVE — the bigger Closed-Test Readiness Gate items (now the live work).** All five A–E
-  look-&-feel bundles are shipped (Bundle E #164 closed the set in v1.0.8). **#29 decision-support (Gate F)
-  is IMPLEMENTED, PENDING MERGE** (branch `feat/29-upgrade-decision-support`; PR pending; on-device visual
-  verification still owed). The remaining big code-addressable gate item is **#26 perf/battery** (Gate G,
-  device-measured) — needs its own spec → plan → PR through the Adversarial Review Gate. Also still open
-  but deferred to v1.1: **#128** (remaining ~21 audit Lows — perf/anti-cheat/security groups). Manual
-  play-feel gates (A audio, E balance) can't be closed from code — developer judgment.
+- **NEXT OBJECTIVE — #26 perf/battery (Gate G, device-measured).** All five A–E look-&-feel bundles are
+  shipped and **#29 decision-support (Gate F) is now MERGED to `main`** (PR #182, squash `70ebf53`; #29
+  closed; on-device verified). The remaining big code-addressable gate item is **#26 perf/battery** (Gate
+  G, device-measured) — needs its own spec → plan → PR through the Adversarial Review Gate (note its
+  battery/OEM acceptance can't be fully closed from the repo alone — needs physical devices; the in-repo
+  slice = Baseline Profiles + startup tracing + recomposition/bitmap/Room profiling). Also still open but
+  deferred to v1.1: **#128** (remaining ~21 audit Lows — perf/anti-cheat/security groups). Manual play-feel
+  gates (A audio, E balance) can't be closed from code — developer judgment.
+- **Previous objective (DONE): #29 Workshop decision support (Gate F) — MERGED to `main`** (PR #182, squash
+  `70ebf53`; #29 closed; CI PR gate + instrumented lane green; on-device verified on a Pixel_6 emulator).
+  Presentation + pure domain math only: combat-power "value per step" bar + "Now → Next" preview + single
+  "★ BEST BUY" badge (affordable-first, greyed "save up" fallback). **Gate F satisfied.** Deferred to
+  follow-ups (per the spec): ROI-sort/reorder, quick-buy multiplier, Cards equip-preview, the readability
+  theme (already covered by Bundles A–E). **1010→1045 JVM.** See Recently shipped + RUN_LOG.
 - **Previous objective (DONE): Bundle E (#164) — SHIPPED in v1.0.8** (tag `v1.0.8`, release merge
   `26cc086` via PR #179; merged via PR #178, squash `9fd40b9`; #164 closed). The LAST of the five A–E
   look-&-feel review bundles — all A–E now shipped. Custom **Cinzel** display font (OFL) on
@@ -58,21 +65,25 @@ on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
   Gate D; **#154** disable "buy more" at max consistently (Gate F UX polish); **#24** first-launch
   onboarding (**Gate C ticked** — shipped in v1.0.3, no schema change) (see Recently
   shipped). Still open in **Gate D**: **#128** (remaining ~21 Lows: perf/anti-cheat/security groups,
-  deferred to v1.1 per the audit grouping). Bigger gate items: **#29** decision-support (Gate F) is
-  implemented, pending merge (`feat/29-upgrade-decision-support`); **#26** perf/battery (Gate G,
-  device-measured) is the remaining one to spec.
+  deferred to v1.1 per the audit grouping). Bigger gate items: **#29** decision-support (Gate F) **MERGED**
+  (PR #182, squash `70ebf53`, #29 closed); **#26** perf/battery (Gate G, device-measured) is the remaining
+  one to spec.
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
-- **2026-06-16 — #29 Workshop decision support (Gate F) — IMPLEMENTED, PENDING MERGE** (branch
-  `feat/29-upgrade-decision-support`; PR pending — NOT yet merged). Presentation + pure domain math only.
-  A combat-power "value per step" indicator + bar, a "Now → Next" stat preview on every upgrade, and a
-  single "★ BEST BUY" badge (affordable-first, greyed "save up" fallback). New pure use cases
-  `CombatPower` (DPS-proxy ranking index) / `EvaluateUpgradeValue` (+`UpgradeValue`) / `WorkshopLevels`
-  (shared workshop-dimension helpers) + `DescribeUpgradeEffect.workshopPreview` + presentation
-  `formatPowerPerKStepsLabel`; `WorkshopViewModel` wires per-tab Best Buy onto `UpgradeDisplayInfo.nowNext`/
-  `value`; `UpgradeCard` renders them. Spec + plan **both** passed the Adversarial Review Gate; executed
-  subagent-driven TDD. No schema/engine/economy change. **1010→1045 JVM** (+35). Advances **Gate F**.
+- **2026-06-16 — #29 Workshop decision support (Gate F) — MERGED to `main`** (PR #182, squash `70ebf53`;
+  #29 closed; CI PR gate + instrumented `connected` lane both green; on-device verified on a Pixel_6
+  emulator). Presentation + pure domain math only. A combat-power "value per step" indicator + bar, a
+  "Now → Next" stat preview on every upgrade, and a single "★ BEST BUY" badge (affordable-first, greyed
+  "save up" fallback). New pure use cases `CombatPower` (DPS-proxy ranking index) / `EvaluateUpgradeValue`
+  (+`UpgradeValue`) / `WorkshopLevels` (shared workshop-dimension helpers) +
+  `DescribeUpgradeEffect.workshopPreview` + presentation `formatPowerPerKStepsLabel`; `WorkshopViewModel`
+  wires per-tab Best Buy onto `UpgradeDisplayInfo.nowNext`/`value`; `UpgradeCard` renders them. Spec + plan
+  **both** passed the Adversarial Review Gate (spec 35→21 surviving; plan 15→8 surviving + 1 real
+  arithmetic bug caught via a refutation; both 0 critical/major); executed subagent-driven TDD (9 tasks,
+  per-task spec+quality review + final whole-branch review). No schema/engine/economy change. **Gate F
+  satisfied.** Deferred follow-ups: ROI-sort/reorder, quick-buy multiplier, Cards equip-preview, readability
+  theme. **1010→1045 JVM** (+35). Also a small infra fix: gitignore `.kotlin` (Kotlin daemon scratch dir).
   On-device visual verification still pending.
 - **2026-06-16 — v1.0.8 (versionCode 24) SHIPPED to Play internal track** (tag `v1.0.8`, release merge
   `26cc086`, via release PR #179). Ships **Bundle E (#164)** (PR #178, squash `9fd40b9`) + the **#171**
