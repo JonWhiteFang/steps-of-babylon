@@ -184,7 +184,7 @@ Play Billing idempotency record. One row per Play-recorded purchase. Keyed by `p
 |---|---|---|
 | purchaseToken | String (PK) | Play Billing-issued token; stable across re-queries |
 | orderId | String? | Play Billing `orderId`; null while pending |
-| productId | String | Uppercase `BillingProduct.name` (e.g. `GEM_PACK_SMALL`) |
+| productId | String | Lowercase `BillingProduct.skuId()` — `name.lowercase()` (e.g. `gem_pack_small`). Play Console's `[a-z0-9._]` product-id requirement makes lowercase canonical (Plan 31 Phase F) |
 | purchaseTime | Long | Epoch millis when Play Services recorded the purchase |
 | granted | Boolean | `true` once wallet credit committed inside `grantOnceAtomic` |
 | grantedAt | Long? | Epoch millis when `granted` flipped true |

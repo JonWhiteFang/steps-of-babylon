@@ -1,3 +1,53 @@
+## 2026-06-16 — Full doc-drift sweep (post-v1.0.8; docs-only)
+
+- **Goal:** `/checkpoint` "full ultracode doc sweep" after v1.0.8 shipped. The prior checkpoint
+  (`118b8a2`) predated the v1.0.6/7/8 releases, so the last *full* sweep (post-v1.0.5, 2026-06-14) left
+  version-lag + stale-status drift across the live docs. Reconcile all current-state docs to the shipped
+  reality (v1.0.8 / vc24 / 1010 JVM / schema v12).
+- **Ground truth (code-verified inline before the audit):** versionCode 24 / versionName 1.0.8 SHIPPED at
+  `26cc086` (release PR #179); 1010 JVM + 9 instrumented tests; 36 use cases; 13 entities; 13 DAO
+  providers; schema v12 (`MIGRATION_7_8`…`MIGRATION_11_12`). Git delta since `118b8a2` = exactly 3 commits
+  (#171 fix PR #177 `1643361`, Bundle E #164 PR #178 `9fd40b9`, release v1.0.8 PR #179 `26cc086`).
+- **Method (multi-agent `Workflow`, ultracode):** 14 doc-cluster audit lanes (claude+readme, state,
+  changelog, gdd, master-plan, forward+v1x, source-files, structure, tech+libs, schema+arch, domain-docs,
+  misc-steering, release-docs, cross-doc coherence/links) → each finding adversarially refuted against
+  doc + code (default-to-refuted). **53 agents, ~2.44M tokens. 39 findings verified → 38 surviving, 1
+  refuted.** One verifier (`verify:cross-doc#5`) died on a transient API error; its finding (a README
+  version-lag dup, already covered by the per-doc lane) was backfilled by an inline coherence sweep.
+- **Applied — 38 findings across 11 docs (docs-only):**
+  - **Version lag → 1.0.8/vc24/1010 JVM:** README (status line + build-comment), GDD (header + footer,
+    reconcile date → 2026-06-16), master-plan (Plan 31 + Plan 32 rows; V1X row `[ ]`→`[~]` with the
+    C/D/E-shipped note).
+  - **STATE.md shipped-status reconciliation:** headline `RELEASING`→`SHIPPED`; objective rotated (new
+    objective = #29/#26 gate items + #128 deferred; Bundle E demoted to Previous-objective-DONE; Bundle
+    D/C to plain shipped history); Recently-shipped Bundle E + #171 + Bundle C entries flipped from
+    `pre-PR`/`IN FLIGHT`/`PR pending` to SHIPPED; added a v1.0.8 release entry; Top-priorities item 1
+    rewritten ("all A–E shipped"); References section bundle-doc list de-staled.
+  - **Code-grounded corrections (each verified against source before applying):**
+    `battle-formulas.md` STEP_MULTIPLIER re-documented as the asymptotic `1−(1−0.05)^level` curve
+    (`SimulationMath.stepMultiplierBonus`, V1X-18/ADR-0015 — was wrongly linear `×0.01`) + added the
+    ENEMY_INTEL `×(1+lvl×0.02)` damage line (`ResolveStats.kt:65`); `database-schema.md` `productId` is
+    lowercase `skuId()`=`name.lowercase()` (`BillingManagerImpl`, not uppercase `name`); `lib-hilt.md`
+    `provideDatabase` example matched to the real single-`context`-param signature (static
+    `DatabaseKeyManager.getPassphrase`); `product.md` Labs surfaced 10→11 (`LabsViewModel` filters only
+    `isComingSoon`=AUTO_UPGRADE_AI); `source-files.md` BattleScreen entry rewritten for the #171 left-rail
+    layout (the old horizontalScroll row is gone); `structure.md` +`presentation/ui` ColorLerp/Rarity,
+    +`data/anticheat`+`data/time` main subtrees, +`domain/battle`/`presentation/{audio,ui,ui/theme}` and
+    `data/{ads,billing}` test subtrees.
+  - **Misc:** `index.md` "byte-identical"→"kept in sync (identical body + this header)"; `plan-32-ci.md`
+    dropped the never-present `debugSymbols` upload param claim (pre-stripped `.so` → zero symbols).
+- **Refuted / not-flagged (correctly):** my scout grep's `plan-FORWARD.md:49 "schema v11"` false positive
+  — the text is `v11→v12` (the correct `MIGRATION_11_12` description); the adversarial pass cleared it.
+  Frozen historical docs (release-notes-v*, prior RUN_LOG/ADR bodies, archive/*) left untouched.
+- **Verification:** `git diff --name-only` = 12 `.md` files, zero non-doc (docs-only ✓). Cross-doc
+  coherence clean (no live doc disagrees on 1.0.8/vc24/1010/9/v12/36/13). All 100 internal `.md` link
+  targets across the 10 primary live docs resolve. No build needed (docs-only).
+- **Doc-sync:** this sweep IS the doc sync. CHANGELOG `[Unreleased]` gets a "Docs — full doc-drift sweep"
+  entry; STATE.md objective rotated; this RUN_LOG entry. No ADR (no architectural decision — pure
+  reconciliation).
+- **Next:** commit the docs-only sweep; then the live work is the bigger Readiness-Gate items (#29
+  decision-support, #26 perf/battery) — each through the Adversarial Review Gate.
+
 ## 2026-06-15 — Bundle E (#164): identity/art (Cinzel font + onboarding biome theming + ziggurat emblem)
 
 - **Goal:** Ship the last of the five A–E look-&-feel review bundles (#164): a custom display font,

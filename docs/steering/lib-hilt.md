@@ -19,12 +19,14 @@
 object DatabaseModule {
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context, keyManager: DatabaseKeyManager): AppDatabase =
-        Room.databaseBuilder(context, AppDatabase::class.java, "steps_of_babylon.db")
-            .openHelperFactory(SupportOpenHelperFactory(keyManager.getPassphrase()))  // SQLCipher
+    fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
+        val passphrase = DatabaseKeyManager.getPassphrase(context)  // static; key in Android Keystore
+        return Room.databaseBuilder(context, AppDatabase::class.java, "steps_of_babylon.db")
+            .openHelperFactory(SupportOpenHelperFactory(passphrase))  // SQLCipher
             .addMigrations(*AppMigrations.ALL)
             .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)  // dev/QA only
             .build()
+    }
 
     @Provides
     fun providePlayerProfileDao(db: AppDatabase): PlayerProfileDao = db.playerProfileDao()

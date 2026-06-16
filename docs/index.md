@@ -1,6 +1,7 @@
 <!-- GitHub Pages root (published at https://jonwhitefang.github.io/steps-of-babylon/). This is the
-     hosted privacy policy, intentionally byte-identical to docs/release/privacy-policy.md (the
-     canonical source — keep them in sync). It is NOT a documentation index despite the filename;
+     hosted privacy policy, intentionally kept in sync with docs/release/privacy-policy.md (the
+     canonical source — identical policy body; this file adds only this GitHub-Pages header). It
+     is NOT a documentation index despite the filename;
      do not repurpose without updating the Play Console data-safety URL + README links. -->
 # Privacy Policy — Steps of Babylon
 
