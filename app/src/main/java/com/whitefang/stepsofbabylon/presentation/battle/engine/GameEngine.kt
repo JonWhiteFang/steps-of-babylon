@@ -264,6 +264,7 @@ class GameEngine {
     )
     val uwStates = mutableListOf<UWState>()
     private var chronoActive = false
+
     /**
      * Active CHRONO_FIELD slow factor. Set to the firing UW's [UltimateWeaponType.damageAtLevel]
      * value at activation; reset to 1.0 when [chronoActive] flips back to false. Replaces
@@ -533,8 +534,7 @@ class GameEngine {
 
         // Chrono field overlay
         if (chronoActive) {
-            val p = android.graphics.Paint().apply { color = 0x222196F3; style = android.graphics.Paint.Style.FILL }
-            canvas.drawRect(0f, 0f, screenWidth, screenHeight, p)
+            canvas.drawRect(0f, 0f, screenWidth, screenHeight, chronoOverlayPaint)
         }
 
         if (fx != null && !reducedMotion) fx.screenShake.restore(canvas)
@@ -556,6 +556,18 @@ class GameEngine {
         // centre-aligned cooldown banner.
         bossCountdownLabel()?.let { canvas.drawText(it, screenWidth - 16f, 90f, bossCountdownPaint) }
     }
+
+    // A31 (audit): cached CHRONO_FIELD overlay paint — was allocated per frame in render(). Colour
+    // 0x222196F3 preserved exactly (semi-transparent blue). The literal intentionally keeps the
+    // existing value; the alpha nuance the audit flagged is left unchanged (no observable colour
+    // change in this PR).
+    private val chronoOverlayPaint = android.graphics.Paint().apply {
+        color = 0x222196F3; style = android.graphics.Paint.Style.FILL
+    }
+
+    /** A31 test seam: toggle the CHRONO_FIELD overlay so the render-path Paint reuse is JVM-testable. */
+    @androidx.annotation.VisibleForTesting
+    internal fun setChronoActiveForTest(active: Boolean) { chronoActive = active }
 
     private val hpPercentPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
         color = 0xFFFFF8E7.toInt(); textSize = 22f; textAlign = android.graphics.Paint.Align.CENTER
