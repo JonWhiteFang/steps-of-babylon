@@ -378,4 +378,52 @@ class DescribeUpgradeEffectTest {
             assertTrue(r.current.isNotEmpty(), "$type produced an empty current readout")
         }
     }
+
+    // ---- #29: workshop-dimension preview (spec §5.1) ----
+
+    @Test
+    fun `workshopPreview increments the WORKSHOP dimension, not in-round`() {
+        // At ws=50 the two dimensions diverge visibly (the §5.1 trap):
+        //   in-round path (invoke): next bumps ir 0->1 -> 10*(1+50*.02)*(1+1*.02) = 20.4 -> "20.4 dmg"
+        //   workshop path:          next bumps ws 50->51 -> 10*(1+51*.02)         = 20.2 -> "20.2 dmg"
+        val ws = mapOf(UpgradeType.DAMAGE to 50)
+        val inRoundPath = describe(ws, emptyMap(), emptyMap(), UpgradeType.DAMAGE)
+        val workshopPath = describe.workshopPreview(ws, type = UpgradeType.DAMAGE)
+        assertEquals("20.0 dmg", workshopPath.current)
+        assertEquals("20.2 dmg", workshopPath.next)
+        assertEquals("20.4 dmg", inRoundPath.next)
+        assertNotEquals(
+            inRoundPath.next, workshopPath.next,
+            "Workshop preview must bump the permanent (workshop) level, not the in-round level (spec §5.1)",
+        )
+    }
+
+    @Test
+    fun `workshopPreview returns null next at the workshop cap`() {
+        // CRITICAL_CHANCE maxLevel = 160; at the cap there is no next purchase.
+        val atMax = describe.workshopPreview(mapOf(UpgradeType.CRITICAL_CHANCE to 160), type = UpgradeType.CRITICAL_CHANCE)
+        assertEquals("80.0%", atMax.current) // 160 * 0.005 = 0.80 (capped)
+        assertNull(atMax.next)
+    }
+
+    @Test
+    fun `workshopPreview near the cap still previews the next workshop level`() {
+        // ws=159 -> 79.5%; next ws=160 -> 80.0% (capped).
+        val nearMax = describe.workshopPreview(mapOf(UpgradeType.CRITICAL_CHANCE to 159), type = UpgradeType.CRITICAL_CHANCE)
+        assertEquals("79.5%", nearMax.current)
+        assertEquals("80.0%", nearMax.next)
+    }
+
+    @Test
+    fun `workshopPreview applies equipped card effects like the in-round path`() {
+        // Mirrors the in-round path's RO-12 behaviour: WALKING_FORTRESS +50% maxHealth.
+        // ws=5 HEALTH -> 1000*1.15 = 1150; with WF +50% -> 1725 -> "1725 HP".
+        val cards = listOf(OwnedCard(1, CardType.WALKING_FORTRESS, 1, true))
+        val r = describe.workshopPreview(
+            workshopLevels = mapOf(UpgradeType.HEALTH to 5),
+            type = UpgradeType.HEALTH,
+            equippedCards = cards,
+        )
+        assertEquals("1725 HP", r.current)
+    }
 }
