@@ -1,6 +1,6 @@
 # ADR-0025: Perf/battery (Gate G) measurement infra — multi-module benchmark tooling on AGP-9, + safe GC-churn fixes
 
-**Status:** Accepted — 2026-06-16 (implemented on `feat/26-perf-battery-gate-g`, PR pending). Issue #26 (V1X-23), Gate G.
+**Status:** Accepted — 2026-06-16 (merged to `main` via PR #184, squash `8f3c2ee`). Issue #26 (V1X-23), Gate G.
 
 ## Context
 

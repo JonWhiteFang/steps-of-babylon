@@ -1,4 +1,4 @@
-## 2026-06-16 — #26 perf/battery (Gate G) in-repo slice — IMPLEMENTED (branch `feat/26-perf-battery-gate-g`, PR pending)
+## 2026-06-16 — #26 perf/battery (Gate G) in-repo slice — MERGED to `main` (PR #184, squash `8f3c2ee`)
 
 - **Goal:** Ship the code-addressable half of #26 / Gate G — a Baseline Profile + Macrobenchmark
   measurement harness, the already-identified fragile-zone-safe GC-churn fixes (audit A28/A31, + A29),
