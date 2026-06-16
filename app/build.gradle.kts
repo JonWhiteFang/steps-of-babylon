@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 // Load keystore credentials from gitignored file (optional — debug builds work without it)
@@ -213,6 +214,16 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
+// #26 Gate G — baseline-profile consumer config. `newDsl = false` is the AGP-9 compatibility
+// workaround required by the stable 1.4.1 baselineprofile plugin (the 1.4.x line predates AGP 9.0
+// GA). `automaticGenerationDuringBuild = false` keeps profile generation OUT of the ordinary
+// assemble/bundleRelease graph — generation is a deliberate local-device step (see the plan / docs),
+// so the shipping lane stays clean and the #124 guard's task-graph reasoning stays simple.
+baselineProfile {
+    newDsl = false
+    automaticGenerationDuringBuild = false
+}
+
 dependencies {
     // Compose
     val composeBom = platform(libs.compose.bom)
@@ -243,6 +254,13 @@ dependencies {
 
     // WorkManager
     implementation(libs.workmanager)
+
+    // #26 Gate G: installs the committed baseline-prof.txt at runtime so the most-used path
+    // (Home → Workshop → Battle) is AOT-compiled on first launch.
+    implementation(libs.androidx.profileinstaller)
+
+    // #26 Gate G: consumes the generated profile from :baselineprofile (added in a later task).
+    "baselineProfile"(project(":baselineprofile"))
 
     // Hilt WorkManager & Navigation
     implementation(libs.hilt.work)
