@@ -38,6 +38,8 @@
     <string name="upgrade_max">MAX</string>
     <string name="upgrade_level">Lv. %1$d</string>
     <string name="upgrade_cost_steps">%1$d Steps</string>
+    <string name="upgrade_best_buy">★ BEST BUY</string>
+    <string name="upgrade_best_buy_save_up">★ BEST BUY · SAVE UP</string>
 
     <!-- Battle HUD + bottom controls -->
     <string name="battle_wave_header">Wave %1$d · %2$d enemies</string>
