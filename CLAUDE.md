@@ -297,7 +297,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - Use fakes for repositories in ViewModel tests (`test/fakes/`).
 - **Frameworks:** JUnit Jupiter + kotlinx-coroutines-test for JVM unit tests (pure JVM, no emulator);
   JUnit 4 + AndroidJUnit4 + Hilt-android-testing for instrumented tests (needs a connected emulator, API 34+).
-- **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh connectedDebugAndroidTest` (instrumented).
+- **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
 - **Headline count: 1052 JVM tests + 9 instrumented tests.** Update this line when it changes; the
