@@ -9,7 +9,8 @@ import org.junit.runner.RunWith
 /**
  * #26 Gate G — generates the Baseline Profile. Run on a connected device with:
  *   ./run-gradle.sh :baselineprofile:generateBaselineProfile   (or the connected-device variant task)
- * The output is merged into app/src/main/baseline-prof.txt (committed). See docs/performance/.
+ * The output lands at app/src/release/generated/baselineProfiles/baseline-prof.txt (committed; the
+ * plugin-managed path consumed by R8 + profileinstaller at release build). See docs/performance/.
  *
  * SCOPE TODO (refined on-device — see plan Task 9): today this captures only cold launch + Home
  * settle, which is the resilient minimum that works without UiAutomator label lookups. Deeper

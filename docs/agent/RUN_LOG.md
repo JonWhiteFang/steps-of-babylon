@@ -35,7 +35,7 @@
   `apply false`. (3) `org.jetbrains.kotlin.android` ERRORS on a `com.android.test` module under AGP-9
   built-in Kotlin → removed (+ deleted the orphan catalog alias).
 - **Verification:** `testDebugUnitTest lintDebug assembleDebug` green; **1045 → 1052 JVM** (+7: A28
-  CollisionSystemScratchTest 4 / GameEngineTest +2 corpse+partition, A31 +1, A29 +1), 0 failures. #124 guard
+  CollisionSystemScratchTest 3 / GameEngineTest +2 corpse+partition, A31 +1, A29 +1 = +7), 0 failures. #124 guard
   cases b (benchmark-only graph succeeds on blank key) + c (combined graph still throws) verified
   empirically via `--dry-run` — which confirmed `--dry-run` DOES fire `taskGraph.whenReady`. Baseline
   Profile generation succeeded end-to-end on the emulator (`BUILD SUCCESSFUL in 6m 44s`). Per-task two-stage

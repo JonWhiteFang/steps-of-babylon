@@ -87,7 +87,7 @@ spec for a future cadence-tuning PR; none of these constants is changed in the #
   `docs/performance/startup-baseline.md`.
 - **Jank / frame timing:** `:macrobenchmark:JourneyBenchmark` (`FrameTimingMetric`). Same run command.
 - **Baseline Profile:** `:app:generateBaselineProfile` on a connected (root-capable) device writes
-  `app/src/main/…/baseline-prof.txt` (committed).
+  `app/src/release/generated/baselineProfiles/baseline-prof.txt` (committed).
 
 ### 4.2 Device-only (deferred manual pass — NOT in-repo)
 - **Battery drain:** `adb shell dumpsys batterystats --reset` → fixed activity → `adb shell dumpsys
