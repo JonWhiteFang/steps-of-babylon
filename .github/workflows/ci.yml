@@ -32,6 +32,9 @@ jobs:
       - name: Lint, unit tests, debug build
         run: ./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace
 
+      - name: Compile benchmark modules (type-check only; benchmarks run locally, never CI-gated)
+        run: ./gradlew :baselineprofile:assemble :macrobenchmark:assemble --stacktrace
+
       # KSP re-exports the Room schema during assembleDebug; fail if it drifts from the
       # committed app/schemas (a migration added without committing the regenerated schema).
       - name: Room schema-drift guard

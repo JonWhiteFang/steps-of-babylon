@@ -5,6 +5,10 @@ import com.whitefang.stepsofbabylon.data.local.PlayerProfileEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
@@ -201,4 +205,29 @@ class PlayerRepositoryImplTest {
 
         assertEquals(0L, repo.getStepBalance())
     }
+
+    private fun makeEntity(currentTier: Int = 1, gems: Long = 0L): PlayerProfileEntity =
+        PlayerProfileEntity(currentTier = currentTier, gems = gems)
+
+    @Test
+    fun `observeTier suppresses duplicate-value emissions but still emits real changes`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val flow = MutableStateFlow(makeEntity(currentTier = 3))
+            val dao = mock<PlayerProfileDao>()
+            whenever(dao.get()).thenReturn(flow)
+            val repo = PlayerRepositoryImpl(dao)
+
+            val seen = mutableListOf<Int>()
+            val job = launch { repo.observeTier().take(2).toList(seen) } // eager subscribe (Unconfined)
+
+            // Identical-value re-emission (an unrelated counter write that didn't change the tier):
+            flow.value = makeEntity(currentTier = 3, gems = 999L) // tier unchanged
+            // A genuine tier change:
+            flow.value = makeEntity(currentTier = 4)
+
+            job.join()
+            // Pre-fix: observeTier re-emits the duplicate 3 → take(2) completes as [3, 3].
+            // Post-fix (distinctUntilChanged): the duplicate 3 is suppressed → [3, 4].
+            assertEquals(listOf(3, 4), seen)
+        }
 }

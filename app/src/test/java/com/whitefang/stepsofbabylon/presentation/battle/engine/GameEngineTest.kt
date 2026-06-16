@@ -698,6 +698,139 @@ class GameEngineTest {
         )
     }
 
+    @Test
+    fun `A28 two projectiles on one enemy via the engine-owned scratch buffers credit the kill exactly once`() {
+        // A28: the collision sweep now partitions `entities` into engine-owned scratch buffers
+        // (one `enemyScratch` instance for the whole sweep, matching the old single `enemies`
+        // snapshot). This pins that the single-fill keeps the corpse in the swept list yet does
+        // NOT re-credit — the #146 `takeDamage` isAlive guard still gates the second hit. The
+        // assertion rides the REAL reward path (eng.cash via handleEnemyDeath), not a counter.
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+        val enemy = EnemyEntity(
+            enemyType = EnemyType.BASIC,
+            currentHp = 0.01, maxHp = 0.01, speed = 0f, damage = 0.0,
+            targetX = zig.originX, targetY = zig.originY,
+            onDeath = engineDeathHandler(eng), // route death through the real reward block
+        ).apply { x = zig.originX; y = zig.originY + 300f; initDistance() }
+        eng.addEntity(enemy)
+        flushPendingAdd(eng)
+
+        val cashBefore = eng.cash
+        val proj1 = ProjectileEntity(zig.originX, zig.originY, enemy.x, enemy.y, 100f)
+        val proj2 = ProjectileEntity(zig.originX, zig.originY, enemy.x, enemy.y, 100f)
+        invokeOnProjectileHitEnemy(eng, proj1, enemy) // lethal first hit → credits the kill once
+        val cashAfterKill = eng.cash
+        invokeOnProjectileHitEnemy(eng, proj2, enemy) // lands on the corpse still in the buffer
+        val cashAfterCorpseHit = eng.cash
+
+        assertTrue(cashAfterKill > cashBefore, "the lethal hit must credit the kill exactly once")
+        assertEquals(
+            cashAfterKill,
+            cashAfterCorpseHit,
+            "the corpse retained in the single-fill scratch buffer must NOT re-credit the kill " +
+                "(A28 scratch buffer must be behaviour-identical to the old single `enemies` snapshot, #146)",
+        )
+    }
+
+    @Test
+    fun `A28 partition sweeps only live projectiles-enemies-enemy-projectiles, excluding dead and non-collidable entities`() {
+        // A28: GameEngine.update() partitions `entities` into three scratch buffers via a `when`
+        // that admits ONLY live ProjectileEntity / EnemyEntity / EnemyProjectileEntity — exactly
+        // mirroring the old `filterIsInstance<X>().filter { it.isAlive }`. OrbEntity, ZigguratEntity
+        // and any DEAD entity must be excluded so they never reach the collision sweep. The other
+        // A28 test covers the corpse-retained-mid-sweep case via direct onProjectileHitEnemy calls;
+        // this one drives the exclusion end-to-end through a real eng.update(...).
+        //
+        // Setup (all flushed into the live list before the sweep, since addEntity → pendingAdd and
+        // update() flushes pendingAdd at the top of the tick, before the partition):
+        //   • a live BASIC enemy with lethal-on-one-hit HP, co-located with…
+        //   • a live ProjectileEntity at the SAME (x, y) → the sweep produces exactly one hit,
+        //     killing the enemy and routing through the real handleEnemyDeath reward path.
+        //   • a DEAD enemy parked 1000 px below (out of any incidental reach), pre-killed so it is
+        //     NOT admitted to enemyScratch. If the `when` wrongly swept it, a co-located projectile
+        //     would land on it; even guarded by takeDamage, it must never credit a second kill.
+        //   • an OrbEntity wired to see no enemies (cannot itself credit) — proves a non-collidable
+        //     type in `entities` is skipped by the partition without crashing the sweep.
+        //   • the ZigguratEntity from init() is already present and likewise never swept as a target.
+        val eng = freshEngine()
+        val zig = eng.ziggurat!!
+
+        // Baseline single-BASIC-kill cash from an independent fresh engine: the deterministic
+        // delta one kill must credit. Asserting the live engine's delta equals EXACTLY this proves
+        // exactly one credit — i.e. the dead enemy contributed nothing.
+        val oneKillCash = simulateBasicKillCash(freshEngine())
+        assertTrue(oneKillCash > 0L, "a single BASIC kill must credit positive cash (test premise)")
+
+        val liveEnemy = EnemyEntity(
+            enemyType = EnemyType.BASIC,
+            currentHp = 0.01, maxHp = 0.01, speed = 0f, damage = 0.0,
+            targetX = zig.originX, targetY = zig.originY,
+            onDeath = engineDeathHandler(eng), // route the kill through the real reward block
+        ).apply { x = zig.originX; y = zig.originY + 300f; initDistance() }
+        // Co-located with the enemy, but aimed at a FAR target so ProjectileState.update (run by
+        // tickEntities BEFORE the partition) does not self-destruct on arrival this tick. At
+        // speed 100 × dt 0.016 it advances only ~1.6 px — well inside the (8 + 20) / 2 = 14 px
+        // overlap radius of the stationary BASIC enemy — so the sweep still registers the hit.
+        val liveProjectile = ProjectileEntity(
+            startX = liveEnemy.x, startY = liveEnemy.y,
+            targetX = liveEnemy.x + 10_000f, targetY = liveEnemy.y,
+            speed = 100f, damage = 1.0,
+        )
+
+        // A pre-killed enemy that, if wrongly admitted to enemyScratch, could be re-hit/credited.
+        val deadEnemy = EnemyEntity(
+            enemyType = EnemyType.BASIC,
+            currentHp = 0.01, maxHp = 0.01, speed = 0f, damage = 0.0,
+            targetX = zig.originX, targetY = zig.originY,
+            onDeath = engineDeathHandler(eng),
+        ).apply { x = zig.originX; y = zig.originY + 1000f; initDistance(); isAlive = false }
+
+        val orb = com.whitefang.stepsofbabylon.presentation.battle.entities.OrbEntity(
+            zigX = zig.originX, zigY = zig.originY, angle = 0f,
+            damage = 1.0,
+            getEnemies = { emptyList() }, // sees nothing → cannot itself credit a kill
+            onHitEnemy = { _, _ -> },
+        )
+
+        eng.addEntity(liveEnemy)
+        eng.addEntity(liveProjectile)
+        eng.addEntity(deadEnemy)
+        eng.addEntity(orb)
+
+        val cashBefore = eng.cash
+        val zigHpBefore = zig.currentHp
+
+        eng.update(0.016f) // one real tick: flush → partition → sweep → removeAll(!isAlive)
+
+        // Exactly ONE kill credited: the live projectile+enemy pair. The dead enemy was never in
+        // enemyScratch, so it produced no hit and no second credit; the orb/ziggurat were never
+        // swept as collision targets. A delta of exactly one kill's cash is the exclusion proof.
+        assertEquals(
+            oneKillCash,
+            eng.cash - cashBefore,
+            "A28 partition must sweep ONLY the live projectile/enemy pair — exactly one kill is " +
+                "credited; a dead enemy and the orb/ziggurat must be excluded (no extra credit)",
+        )
+        // Both enemies are gone from the live list: the live one died this sweep, the dead one was
+        // removed by removeAll { !it.isAlive } — neither lingers as a counted enemy.
+        assertEquals(
+            0,
+            eng.aliveEnemyCount(),
+            "after the tick no live enemy remains (the swept kill died; the excluded dead enemy " +
+                "was pruned) — the partition never resurrected the corpse",
+        )
+        // The ziggurat was never treated as a collision target by the projectile/enemy sweep, so it
+        // took no damage and the round did not end — the partition's type exclusion held.
+        assertEquals(
+            zigHpBefore,
+            zig.currentHp,
+            0.0,
+            "the ZigguratEntity must be excluded from the projectile/enemy sweep (it took no hit)",
+        )
+        assertFalse(eng.roundOver, "no friendly-fire on the ziggurat → the round must not have ended")
+    }
+
     // ---- #16: first-wave announcement must fire exactly once per round start ----
     //
     // Pre-fix init() set lastWave = 0 then called triggerWaveAnnouncement(safeStartWave) but

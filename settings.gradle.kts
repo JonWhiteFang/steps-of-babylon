@@ -16,3 +16,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "StepsOfBabylon"
 include(":app")
+include(":baselineprofile")
+include(":macrobenchmark")

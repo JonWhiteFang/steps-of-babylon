@@ -4,6 +4,39 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Added — Performance & battery measurement infra + GC-churn fixes (#26, Gate G)
+
+**No schema/engine-logic/economy change. +7 JVM tests (1045 → 1052).**
+
+- **Measurement infrastructure (dev-only modules):** the app is now multi-module — `:app` + two new
+  `com.android.test` modules (`:baselineprofile`, `:macrobenchmark`) that never ship in the AAB.
+  `androidx.profileinstaller 1.4.1` is the only addition to the shipping artifact. A committed
+  Baseline Profile (`app/src/release/generated/baselineProfiles/baseline-prof.txt`, 18,804 rules /
+  1,114 app-specific) covers the cold-launch → Home path, giving ART profile-guided compilation on
+  first install. The benchmark/baselineprofile library is pinned to `1.5.0-alpha06` (the AGP-9-
+  supporting line; stable `1.4.1` throws on AGP 9.0.1) — confined to the non-shipping test modules.
+- **Safe runtime GC-churn fixes (behaviour-preserving, no logic change):**
+  - **A28 — collision-sweep scratch buffers:** engine-owned reusable lists replace three per-frame
+    `filterIsInstance().filter{}` heap allocations in the battle collision sweep. Applied under
+    `entitiesLock` (#118-safe); corpse double-credit guard (`if (!isAlive) return 0.0`) remains
+    intact (#146/#125-safe).
+  - **A31 — cached CHRONO_FIELD overlay `Paint`:** the Paint object for the Chrono Field UW overlay
+    is now allocated once at init rather than on every render frame.
+  - **A29 — `distinctUntilChanged` on shared profile Flow:** `observeProfile` / `observeWallet` /
+    `observeTier` now emit only on genuine state changes, suppressing no-op re-emissions to every
+    screen ViewModel.
+- **#124 license-guard narrowing:** the fail-closed task-graph guard that blocks shippable release
+  builds on a blank signing key is narrowed to exclude AndroidX benchmark and non-minified variant
+  tasks, so the new benchmark modules don't fail local or CI benchmark-only builds.
+- **CI:** the PR gate now also type-checks the two benchmark modules
+  (`:baselineprofile:assemble :macrobenchmark:assemble`); no perf-timing assertions added (emulator
+  timings are non-gating).
+- **Docs:** `docs/performance/battery-audit.md` (wake-source inventory + deferred cadence-tuning
+  hypotheses) + `docs/performance/startup-baseline.md`.
+- **Deferred (device-only):** overnight idle-drain measurement, OEM device matrix, and startup-timing
+  numbers require a physical device + a non-debuggable benchmark build type — recorded `[deferred]`
+  in plan-FORWARD.md Gate G.
+
 ### Added — Workshop decision support (#29, Gate F)
 
 - **#29 Workshop decision support (Gate F):** Now→Next stat preview on every upgrade; combat-power "value per step" indicator + bar on combat upgrades (Damage / Attack Speed / Critical Chance, and Critical Factor once crit chance > 0); a single "★ BEST BUY" badge (affordable-first, greyed "save up" fallback). Presentation + pure domain math only — new `CombatPower` / `EvaluateUpgradeValue` / `WorkshopLevels` use cases; no schema/engine/economy change. +35 JVM tests (1010 → 1045).

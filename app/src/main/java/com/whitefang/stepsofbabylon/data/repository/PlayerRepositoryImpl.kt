@@ -6,6 +6,7 @@ import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.domain.model.PlayerWallet
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -16,13 +17,13 @@ class PlayerRepositoryImpl @Inject constructor(
 ) : PlayerRepository {
 
     override fun observeProfile(): Flow<PlayerProfile> =
-        dao.get().filterNotNull().map { it.toDomain() }
+        dao.get().filterNotNull().map { it.toDomain() }.distinctUntilChanged()
 
     override fun observeWallet(): Flow<PlayerWallet> =
-        dao.get().filterNotNull().map { it.toDomain().toWallet() }
+        dao.get().filterNotNull().map { it.toDomain().toWallet() }.distinctUntilChanged()
 
     override fun observeTier(): Flow<Int> =
-        dao.get().filterNotNull().map { it.currentTier }
+        dao.get().filterNotNull().map { it.currentTier }.distinctUntilChanged()
 
     override suspend fun addSteps(amount: Long) = dao.adjustStepBalance(amount)
     override suspend fun spendSteps(amount: Long) = dao.adjustStepBalance(-amount)

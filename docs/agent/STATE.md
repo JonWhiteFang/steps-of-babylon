@@ -3,24 +3,32 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.8 (versionCode 24) SHIPPED to Play internal track** (tag `v1.0.8`, release merge
-`26cc086`, via release PR #179; release lane green) · **1045 JVM + 9 instrumented tests** green · schema
-v12 · **v1.0.8 = Look & Feel Bundle E (#164, PR #178, squash `9fd40b9`)** — custom Cinzel font +
-onboarding biome theming + ziggurat emblem (the LAST A–E bundle) — **plus the #171 battle bottom-chrome
-fix** (PR #177, merge `1643361`) · prior: v1.0.7 = Bundle D (#163) rarity · v1.0.6 = Bundle C (#162)
-haptics/celebrations/pulse · **all five A–E look-&-feel bundles now shipped** · launch is judgment-gated
-on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
+**Headline:** **v1.0.8 (versionCode 24) live on Play internal track** · **1052 JVM + 9 instrumented tests**
+green · schema v12 · **#26 perf/battery (Gate G) in-repo slice DONE on branch `feat/26-perf-battery-gate-g`**
+(13 commits, `36dea10`..`8d485f7`; PR pending) — measurement infra (`:baselineprofile`/`:macrobenchmark`
+modules + profileinstaller + committed Baseline Profile) + A28/A31/A29 GC-churn fixes + battery/startup
+docs; device-measured battery/OEM/startup-numbers half `[deferred]` in plan-FORWARD · all five A–E
+look-&-feel bundles shipped (v1.0.4–v1.0.8) + #29 decision-support (Gate F) MERGED (`70ebf53`) · launch is
+judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
-- **NEXT OBJECTIVE — #26 perf/battery (Gate G, device-measured).** All five A–E look-&-feel bundles are
-  shipped and **#29 decision-support (Gate F) is now MERGED to `main`** (PR #182, squash `70ebf53`; #29
-  closed; on-device verified). The remaining big code-addressable gate item is **#26 perf/battery** (Gate
-  G, device-measured) — needs its own spec → plan → PR through the Adversarial Review Gate (note its
-  battery/OEM acceptance can't be fully closed from the repo alone — needs physical devices; the in-repo
-  slice = Baseline Profiles + startup tracing + recomposition/bitmap/Room profiling). Also still open but
-  deferred to v1.1: **#128** (remaining ~21 audit Lows — perf/anti-cheat/security groups). Manual play-feel
-  gates (A audio, E balance) can't be closed from code — developer judgment.
+- **CURRENT — #26 perf/battery (Gate G) in-repo slice: IMPLEMENTED on `feat/26-perf-battery-gate-g`, PR
+  pending.** Spec + plan both passed the Adversarial Review Gate (spec 43→23 surviving; plan 63→48
+  surviving; both 0 unaddressed critical/major). Executed subagent-driven TDD, 13 commits, per-task
+  spec+quality review. **Multi-module now:** `:app` + `:baselineprofile` + `:macrobenchmark` (the latter
+  two are `com.android.test` dev-tooling, never shipped). Baseline Profile generated + committed (18,804
+  rules) on the Pixel_6/API36 emulator. Safe GC-churn fixes A28 (collision scratch buffers, under
+  `entitiesLock`), A31 (cached CHRONO_FIELD Paint), A29 (`distinctUntilChanged` on the profile Flow) — all
+  behaviour-preserving. #124 license guard narrowed to exclude benchmark variants (still fail-closed on
+  shippable releases). **1045→1052 JVM**, no schema/engine-logic change. **Execution caught real AGP-9
+  facts the plan missed:** stable baselineprofile 1.4.1 throws on AGP 9.0.1 → bumped to 1.5.0-alpha06
+  (dev-tooling only, user-approved); `kotlin.android` errors on a `com.android.test` module under AGP-9
+  built-in Kotlin → removed; multi-module classpath clash → root `apply false`. **ADR-0025.** Remaining for
+  #26: device-only half (overnight idle-drain + OEM matrix + startup-timing numbers — needs a physical
+  device + a non-debuggable benchmark build type) is `[deferred]` in plan-FORWARD Gate G. NEXT: open PR →
+  CI green → merge. After #26: **#128** (~21 audit Lows, deferred to v1.1); manual play-feel gates (A
+  audio, E balance) — developer judgment.
 - **Previous objective (DONE): #29 Workshop decision support (Gate F) — MERGED to `main`** (PR #182, squash
   `70ebf53`; #29 closed; CI PR gate + instrumented lane green; on-device verified on a Pixel_6 emulator).
   Presentation + pure domain math only: combat-power "value per step" bar + "Now → Next" preview + single
@@ -71,6 +79,25 @@ on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-16 — #26 perf/battery (Gate G) in-repo slice — IMPLEMENTED on `feat/26-perf-battery-gate-g`
+  (PR pending).** 13 commits (`36dea10`..`8d485f7`). Spec + plan both passed the Adversarial Review Gate
+  (spec 43→23; plan 63→48; both 0 critical/major). **Measurement infra:** project is now multi-module
+  (`:app` + `:baselineprofile` + `:macrobenchmark`, the latter two `com.android.test` dev-tooling, never
+  shipped); `androidx.profileinstaller` (stable 1.4.1, the only shipping addition) + a committed Baseline
+  Profile (`app/src/release/generated/baselineProfiles/baseline-prof.txt`, 18,804 rules / 1,114
+  app-specific) generated on the Pixel_6/API36 emulator. benchmark/baselineprofile pinned **1.5.0-alpha06**
+  (the AGP-9-supporting line — stable 1.4.1 throws on AGP 9.0.1; alpha confined to the non-shipping test
+  modules, user-approved). **Safe GC-churn fixes (behaviour-preserving, TDD):** A28 — engine-owned scratch
+  buffers replace 3 per-frame `filterIsInstance().filter{}` collision-sweep allocs (under `entitiesLock`,
+  #118/#125/#146-safe); A31 — cached CHRONO_FIELD overlay `Paint`; A29 — `distinctUntilChanged` on
+  `observeProfile/Wallet/Tier`. **#124 guard** narrowed (per-task `!Benchmark && !NonMinified` exclusion;
+  still fail-closed on shippable releases — verified cases b/c empirically via `--dry-run`). **CI** PR gate
+  now type-checks both benchmark modules (no perf-timing assertions). New docs
+  `docs/performance/{battery-audit,startup-baseline}.md`. **1045→1052 JVM**, `testDebugUnitTest lintDebug
+  assembleDebug` green; no schema/engine-logic/economy change. **Deferred (device-only):** overnight
+  idle-drain + OEM matrix + startup-timing numbers (need a physical device + a non-debuggable benchmark
+  build type) — `[deferred]` in plan-FORWARD Gate G. **ADR-0025.** Subagent-driven; execution caught 3 real
+  AGP-9 facts the plan's stable-1.4.1 assumption missed.
 - **2026-06-16 — #29 Workshop decision support (Gate F) — MERGED to `main`** (PR #182, squash `70ebf53`;
   #29 closed; CI PR gate + instrumented `connected` lane both green; on-device verified on a Pixel_6
   emulator). Presentation + pure domain math only. A combat-power "value per step" indicator + bar, a
@@ -511,6 +538,39 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
   crit chance > 0). Workshop previews increment the **WORKSHOP** dimension via `WorkshopLevels` (NOT
   in-round; spec §5.1). `EvaluateUpgradeValue` + `DescribeUpgradeEffect.workshopPreview` **share**
   `WorkshopLevels` so the Now→Next string + the value delta can't diverge.
+- **Benchmark modules + AGP-9 plugin wiring (#26)** — `:baselineprofile` + `:macrobenchmark` are
+  `com.android.test` **dev-tooling, never shipped**. benchmark/baselineprofile is pinned **1.5.0-alpha06**
+  because stable 1.4.1 throws on AGP 9.0.1 at plugin-apply (`Module :app is not a supported android
+  module`) — don't "downgrade to stable" without re-checking AGP-9 support. The two new plugins
+  (`android.test`, `androidx.baselineprofile`) are declared `apply false` in the ROOT `build.gradle.kts`
+  (pin the version once — a per-module version clashes with AGP on the classpath). **Do NOT add
+  `kotlin.android`** to a `com.android.test` module — AGP 9 has built-in Kotlin and applying it errors.
+  `profileinstaller` is the ONLY shipping addition (stable 1.4.1). The committed profile lives at
+  `app/src/release/generated/baselineProfiles/baseline-prof.txt` (plugin-managed src; R8 + profileinstaller
+  consume it). No `connectedBenchmarkReleaseAndroidTest` exists yet — capturing startup *numbers* needs a
+  non-debuggable `benchmark` build type on `:app` (a fragile-zone change). ADR-0025.
+- **#124 guard is benchmark-variant-aware (#26)** — the fail-closed license-key guard in
+  `app/build.gradle.kts` matches the broad `^(bundle|assemble|package).*Release$` regex but excludes
+  per-task `!contains("Benchmark") && !contains("NonMinified")` (the baselineprofile plugin auto-generates
+  `benchmarkRelease`/`nonMinifiedRelease` which would otherwise false-trip it). Exclusion is **per-task**,
+  NOT whole-graph: a combined `bundleRelease`+benchmark graph still hard-fails on a blank key. Don't relax
+  to a literal allowlist (drops future flavored release tasks) or to a whole-graph check (fail-open risk).
+- **Collision scratch buffers (#26 A28)** — `GameEngine` owns 3 reusable `ArrayList` scratch buffers
+  (`projScratch`/`enemyScratch`/`enemyProjScratch`); the per-tick partition over `entities` fills them in
+  ONE pass **inside `synchronized(entitiesLock)`** (#118) and hands them to `CollisionSystem.checkCollisions`
+  (now takes pre-filtered typed lists, no `filterIsInstance`). The single `enemyScratch` fill serves the
+  whole sweep — matching the old single snapshot, so the #146 `takeDamage` corpse-guard still prevents
+  double-credit. These are per-tick (cleared every sweep), NOT the #125 cross-frame cache — and `getAliveEnemies()`
+  is untouched. Don't move the partition out of the lock or re-filter mid-sweep. Guarded by
+  `CollisionSystemScratchTest` + the `A28` GameEngineTest entries.
+- **Cached CHRONO_FIELD Paint (#26 A31)** — the full-screen chrono overlay uses a cached
+  `chronoOverlayPaint` field (colour `0x222196F3`, FILL), NOT a per-frame `Paint()` alloc. `setChronoActiveForTest`
+  is a `@VisibleForTesting` seam. Guarded by `ChronoOverlayPaintTest` (instance-identity across two renders).
+- **Profile-Flow dedup (#26 A29)** — `PlayerRepositoryImpl.observeProfile/observeWallet/observeTier` end with
+  `.distinctUntilChanged()` AFTER the `.map{}` (dedupe the projected value). Works because `PlayerProfile`/
+  `PlayerWallet` are data classes (structural equality). Suppresses no-op re-emissions to every screen
+  ViewModel; safe because no consumer uses these as a bare trigger (all `.first()` or `combine`/`stateIn`
+  value chains). Don't move the distinct before the map.
 
 ## References
 
@@ -520,4 +580,4 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **Reference docs:** `docs/steering/` (tech, structure, source-files, lib-*) · `docs/architecture.md` · `docs/database-schema.md` · `docs/battle-formulas.md`.
 - **Audit:** `docs/external-reviews/2026-06-10-multi-agent-code-audit.md` (findings #118–#128 + regression specs).
 - **Release:** `docs/release/plan-31-walkthrough.md` · privacy policy `docs/release/privacy-policy.md` → hosted https://jonwhitefang.github.io/steps-of-babylon/ (delete-data: `#delete-data`) · listing copy `docs/release/play-store-listing.md`.
-- **ADRs:** 0003 (Battle Step Rewards) · 0004 (FollowOnPipeline, deferred) · 0005 (Billing) · 0006 (Ads) · 0007 (ADV keystore) · 0010 (Cards copy-based) · 0012 (Simulation extraction) · 0014 (i18n) · 0015/0016 (STEP_MULTIPLIER / GPS dropped) · 0017 (ENEMY_INTEL) · 0018 (CI) · 0019 (Claude Code) · 0020 (economy atomicity) · 0021 (onboarding explain-only) · 0022 (design tokens + de-emoji) · 0023 (bottom-nav back-stack) · **0024 (Bundle E: custom font + onboarding biome theming + persist-first completion beat)**. Full set in `docs/agent/DECISIONS/`.
+- **ADRs:** 0003 (Battle Step Rewards) · 0004 (FollowOnPipeline, deferred) · 0005 (Billing) · 0006 (Ads) · 0007 (ADV keystore) · 0010 (Cards copy-based) · 0012 (Simulation extraction) · 0014 (i18n) · 0015/0016 (STEP_MULTIPLIER / GPS dropped) · 0017 (ENEMY_INTEL) · 0018 (CI) · 0019 (Claude Code) · 0020 (economy atomicity) · 0021 (onboarding explain-only) · 0022 (design tokens + de-emoji) · 0023 (bottom-nav back-stack) · 0024 (Bundle E: custom font + onboarding biome theming + persist-first completion beat) · **0025 (#26 perf/battery Gate-G: multi-module benchmark tooling on AGP-9 [1.5.0-alpha, dev-only] + #124 guard narrowing + A28/A31/A29 GC-churn fixes)**. Full set in `docs/agent/DECISIONS/`.

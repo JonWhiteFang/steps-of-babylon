@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.androidx.baselineprofile)
 }
 
 // Load keystore credentials from gitignored file (optional — debug builds work without it)
@@ -156,7 +157,20 @@ android {
         // task can't silently bypass the guard. `assembleDebug` / `testDebugUnitTest` / the PR gate
         // never match (they don't end in "Release"), so those lanes stay unaffected.
         val releaseTask = Regex("^(bundle|assemble|package).*Release$")
-        val buildsRelease = allTasks.any { releaseTask.matches(it.name) }
+        // #124 + #26: keep the BROAD release-task match (so a future product-flavor release task such as
+        // `bundleProdRelease` is still caught — see the comment below), but exclude the AndroidX benchmark /
+        // baseline-profile variant tasks (`assembleBenchmarkRelease`, `bundleNonMinifiedRelease`, …). The
+        // androidx.baselineprofile plugin auto-generates `benchmarkRelease`/`nonMinifiedRelease` from `release`,
+        // so they inherit the blank-by-default play.licenseKey and would otherwise false-trip this fail-closed
+        // guard on every benchmark build. The exclusion is PER TASK: a graph containing BOTH `bundleRelease`
+        // AND `assembleBenchmarkRelease` still hard-fails on a blank key, because the shippable `bundleRelease`
+        // task matches the regex and carries neither excluded token. `generate*BaselineProfile` tasks end in
+        // `Profile` and never match the regex, so they need no exclusion.
+        val buildsRelease = allTasks.any { t ->
+            releaseTask.matches(t.name) &&
+                !t.name.contains("Benchmark") &&
+                !t.name.contains("NonMinified")
+        }
         if (buildsRelease && localProperties.getProperty("play.licenseKey").isNullOrBlank()) {
             throw GradleException(
                 "Release build requires a non-blank 'play.licenseKey' in local.properties " +
@@ -200,6 +214,16 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
+// #26 Gate G — baseline-profile consumer config. We pin benchmark/baselineprofile to 1.5.0-alpha06
+// (the line that adds AGP-9 support); the stable 1.4.1 plugin throws at apply time on AGP 9.0.1, so the
+// old `newDsl = false` workaround is neither needed nor usable here. `automaticGenerationDuringBuild =
+// false` keeps profile generation OUT of the ordinary assemble/bundleRelease graph — generation is a
+// deliberate local-device step (see the plan / docs), so the shipping lane stays clean and the #124
+// guard's task-graph reasoning stays simple.
+baselineProfile {
+    automaticGenerationDuringBuild = false
+}
+
 dependencies {
     // Compose
     val composeBom = platform(libs.compose.bom)
@@ -230,6 +254,13 @@ dependencies {
 
     // WorkManager
     implementation(libs.workmanager)
+
+    // #26 Gate G: installs the committed baseline-prof.txt at runtime so the most-used path
+    // (Home → Workshop → Battle) is AOT-compiled on first launch.
+    implementation(libs.androidx.profileinstaller)
+
+    // #26 Gate G: consumes the generated profile from :baselineprofile (added in a later task).
+    "baselineProfile"(project(":baselineprofile"))
 
     // Hilt WorkManager & Navigation
     implementation(libs.hilt.work)

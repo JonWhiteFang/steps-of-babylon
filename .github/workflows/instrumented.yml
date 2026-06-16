@@ -1,6 +1,9 @@
-# Plan 32 / ADR-0018 — instrumented suite (connectedDebugAndroidTest, 9 tests).
+# Plan 32 / ADR-0018 — instrumented suite (:app connectedDebugAndroidTest, 9 tests).
 # Blocking on PRs to main (decision #2) + nightly canary + manual dispatch.
 # minSdk 34 => emulator floor is API 34. AVD snapshot is cached to keep runs ~8-12 min.
+# Scoped to :app (#26): the :baselineprofile / :macrobenchmark `com.android.test` modules run
+# locally on a benchmark variant only — their connected tests refuse a debuggable build
+# (EMULATOR DEBUGGABLE) and must NOT run in this debug-app lane.
 name: Instrumented Tests
 
 on:
@@ -67,7 +70,7 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot-save
           disable-animations: true
-          script: ./gradlew connectedDebugAndroidTest
+          script: ./gradlew :app:connectedDebugAndroidTest
 
       - name: Upload androidTest results
         if: always()

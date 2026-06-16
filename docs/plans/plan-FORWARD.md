@@ -62,8 +62,18 @@ state — the checklist informs that call, it does not replace it.
 - [ ] Workshop / Cards readability — a player can tell whether an upgrade is worth buying — *satisfied-by #29 (V1X-26)*
 
 ### G. Performance & battery
-- [ ] Acceptable frame rate on a low-end device at 2×/4× speed
-- [ ] Foreground-service + Health Connect polling battery cost is sane — *satisfied-by #26 (V1X-23)*
+- [ ] Acceptable frame rate on a low-end device at 2×/4× speed — *in-repo contribution shipped by #26:
+  the `:macrobenchmark` `FrameTimingMetric` journey benchmark (jank visibility, run locally) + the A28
+  (per-frame collision list allocs) and A31 (per-frame CHRONO_FIELD Paint alloc) GC-churn fixes. The
+  low-end-device 2×/4× frame-rate verdict itself is a device-only manual pass, not closed in-repo.*
+- [deferred] Foreground-service + Health Connect polling battery cost is sane — physical-device,
+  developer-judgment slice (overnight idle-drain + OEM matrix Samsung/Xiaomi/OnePlus/Pixel). #26 shipped
+  the in-repo half: Baseline Profile (generated + committed, 18,804 rules) + the `:macrobenchmark`
+  harness + the battery-audit doc (`docs/performance/battery-audit.md`) with candidate cadence tunings
+  (notification 30→60 s, HC sync 15→30 min) specced as hypotheses but **not applied** (each needs a
+  device measurement first). Cannot close from the repo alone. (Startup-timing *numbers* are likewise
+  deferred to this pass — needs a non-debuggable `benchmark` build type + a physical device; see
+  `docs/performance/startup-baseline.md`.) *satisfied-in-repo-by #26 (V1X-23); device half deferred.*
 
 > Gate maintenance: tick items as they land; when deferring, replace the checkbox line with
 > `- [deferred] <item> — <one-line rationale>`. Keep this list honest — it is the promotion decision aid.
