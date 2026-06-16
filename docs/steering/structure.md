@@ -1,11 +1,25 @@
 # Project Structure
 
+## Gradle Modules
+
+The project is **multi-module** as of #26 (Gate G):
+
+| Module | Plugin | Ships? | Purpose |
+|---|---|---|---|
+| `:app` | `com.android.application` | Yes (AAB) | The Android application — all game code, assets, and resources |
+| `:baselineprofile` | `com.android.test` | No (dev tooling) | Generates the committed Baseline Profile; never included in the AAB |
+| `:macrobenchmark` | `com.android.test` | No (dev tooling) | `StartupBenchmark` + `JourneyBenchmark`; timings are not CI-gated |
+
+The committed Baseline Profile lives at `app/src/release/generated/baselineProfiles/baseline-prof.txt`. At runtime it is installed by `androidx.profileinstaller` — the only shipping library addition from #26.
+
 ## Root Layout
 
 ```
 .github/
 ├── workflows/          # CI: ci.yml (PR gate) + instrumented.yml (emulator) + release.yml (Play internal) + dependency-submission.yml — SHA-pinned (Plan 32 / ADR-0018)
 └── dependabot.yml      # gradle + github-actions weekly updates
+baselineprofile/        # :baselineprofile module — dev tooling; generates baseline-prof.txt; never ships
+macrobenchmark/         # :macrobenchmark module — dev tooling; StartupBenchmark + JourneyBenchmark; never ships, not CI-gated on timings
 app/src/main/java/com/whitefang/stepsofbabylon/
 ├── data/
 │   ├── local/          # Room database, entities, DAOs, TypeConverters, SQLCipher key manager

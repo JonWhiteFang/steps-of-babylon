@@ -136,7 +136,8 @@ See `docs/StepsOfBabylon_GDD.md` for the full game design document.
 - **Database:** Room (SQLite) with SQLCipher encryption — offline-first, all game state stored locally
 - **Background:** WorkManager + Foreground Service (step counting)
 - **Step Tracking:** Android Sensor API (`TYPE_STEP_COUNTER`) + Health Connect SDK (cross-validation, Activity Minute Parity)
-- **Build:** Gradle 9.5.1 (Kotlin DSL), version catalog at `gradle/libs.versions.toml` (never hardcode versions)
+- **Build:** Gradle 9.5.1 (Kotlin DSL), version catalog at `gradle/libs.versions.toml` (never hardcode versions). Multi-module since #26: `:app` (the shipped application) + `:baselineprofile` & `:macrobenchmark` (`com.android.test` dev-tooling modules — Baseline Profile generation + Macrobenchmark; never shipped, never CI-gated on timings).
+- **CI/CD note (#26):** the PR gate also type-checks the two benchmark modules; perf benchmarks run locally on a device, not in CI (emulator timings are unreliable).
 - **Security:** SQLCipher (DB encryption), Android Keystore (key management), R8 (obfuscation), network security config (cleartext blocked)
 - **CI/CD:** GitHub Actions — PR gate (lint + unit + assembleDebug + schema-drift), instrumented emulator suite, and a release lane that ships a signed AAB to the Play internal track on a `v*` tag. See `docs/plans/plan-32-ci.md` + ADR-0018.
 
@@ -299,7 +300,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh connectedDebugAndroidTest` (instrumented).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1045 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1052 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Notable guards:** `architecture/DomainPurityTest` (fails if `domain/` imports any Android package);
   `SimulationTest` (the extracted pure-domain game-loop core); `BattleSurfaceLifecycleTest` +

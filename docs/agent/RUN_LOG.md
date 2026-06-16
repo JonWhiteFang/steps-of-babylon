@@ -1,3 +1,54 @@
+## 2026-06-16 — #26 perf/battery (Gate G) in-repo slice — IMPLEMENTED (branch `feat/26-perf-battery-gate-g`, PR pending)
+
+- **Goal:** Ship the code-addressable half of #26 / Gate G — a Baseline Profile + Macrobenchmark
+  measurement harness, the already-identified fragile-zone-safe GC-churn fixes (audit A28/A31, + A29),
+  the battery-audit + startup docs, and the #124-guard reconciliation — without weakening any fragile
+  zone, and record the device-only half (battery/OEM/startup-numbers) as `[deferred]` in plan-FORWARD.
+- **Process (full spec→plan→implement with both Adversarial Review Gates):**
+  - Brainstorm → spec (`7f91020`) → **spec adversarial review** (6 dims × refute: 43 raised → 23 surviving
+    → synthesized `2eecc72`; 0 unaddressed critical/major). Spec review caught: #124-guard predicate must
+    be per-task; A30 already fixed (dropped); A11/A18 `getAliveEnemies` caching excluded as #125-violating;
+    audit-finding vs GitHub-issue numbering key.
+  - Plan (`ee2c64a`) → **plan adversarial review** (63 raised → 48 surviving → synthesized `44fd495`). Plan
+    review caught the big one: every entity constructor in the A28 tests was fabricated (`EnemyEntity(x,y)`
+    etc. don't exist) → rewrote against real signatures; corpse-parity test moved to GameEngineTest's real
+    reward path; Task 8 coroutine-scope/dispatcher fixes; CI compile-step gap.
+  - Implementation: subagent-driven TDD, fresh implementer + spec-review + quality-review per task, 11
+    tasks. 13 commits `36dea10`..`8d485f7`.
+- **What changed:**
+  - **Multi-module:** `:app` + new `:baselineprofile` + `:macrobenchmark` (`com.android.test` dev-tooling,
+    never shipped). Root `build.gradle.kts` declares the new plugins `apply false`. `settings.gradle.kts`
+    includes both. `.gitignore` covers the new build dirs.
+  - **profileinstaller 1.4.1** (stable; only shipping addition) + **benchmark/baselineprofile 1.5.0-alpha06**
+    + **uiautomator 2.4.0-beta02** in the catalog. Committed Baseline Profile (18,804 rules / 1,114
+    app-specific) generated on the Pixel_6/API36 emulator via `:app:generateBaselineProfile`.
+  - **A28** (`CollisionSystem.kt` + `GameEngine.kt`): engine-owned scratch buffers replace 3 per-frame
+    `filterIsInstance().filter{}` allocs; partition under `entitiesLock`; single `enemyScratch` fill per
+    sweep (corpse-guard intact). **A31** (`GameEngine.kt`): cached `chronoOverlayPaint`. **A29**
+    (`PlayerRepositoryImpl.kt`): `distinctUntilChanged` on the 3 profile observers.
+  - **#124 guard** narrowed (per-task `!Benchmark && !NonMinified`); **CI** type-checks both modules.
+  - New docs `docs/performance/{battery-audit,startup-baseline}.md`; plan-FORWARD Gate G `[deferred]` line.
+- **AGP-9 facts execution uncovered (plan's stable-1.4.1 assumption was wrong):** (1) stable baselineprofile
+  1.4.1 throws at plugin-apply on AGP 9.0.1 (`Module :app is not a supported android module`), before
+  `newDsl=false` is reachable → bumped to 1.5.0-alpha06 (dev-tooling only; **user-approved**, overrides #33
+  for non-shipping tooling). (2) `com.android.test` version clashes with AGP on the classpath → root
+  `apply false`. (3) `org.jetbrains.kotlin.android` ERRORS on a `com.android.test` module under AGP-9
+  built-in Kotlin → removed (+ deleted the orphan catalog alias).
+- **Verification:** `testDebugUnitTest lintDebug assembleDebug` green; **1045 → 1052 JVM** (+7: A28
+  CollisionSystemScratchTest 4 / GameEngineTest +2 corpse+partition, A31 +1, A29 +1), 0 failures. #124 guard
+  cases b (benchmark-only graph succeeds on blank key) + c (combined graph still throws) verified
+  empirically via `--dry-run` — which confirmed `--dry-run` DOES fire `taskGraph.whenReady`. Baseline
+  Profile generation succeeded end-to-end on the emulator (`BUILD SUCCESSFUL in 6m 44s`). Per-task two-stage
+  reviews all passed (review follow-ups applied: A28 multi-type partition test + KDoc; A31 seam placement;
+  Task-5 JourneyBenchmark `Partial(UseIfAvailable)`).
+- **Doc-sync (this checkpoint):** CLAUDE.md (1045→1052 + multi-module + CI note), CHANGELOG `[Unreleased]`,
+  source-files.md (new modules/tests/docs), structure.md (multi-module), STATE.md (objective rotated +
+  Recently-shipped + 5 new fragile zones), this RUN_LOG entry, **ADR-0025**.
+- **What remains / next:** open PR → CI (PR gate + instrumented lane) green → merge. Device-only half of #26
+  (overnight idle-drain + OEM matrix Samsung/Xiaomi/OnePlus/Pixel + startup-timing numbers — needs a
+  physical device + a non-debuggable `benchmark` build type) is `[deferred]` in plan-FORWARD Gate G. After
+  #26: #128 (~21 audit Lows, v1.1); manual play-feel gates (A audio, E balance) — developer judgment.
+
 ## 2026-06-16 — #29 Workshop decision support (Gate F) — MERGED + on-device verified
 
 - **Goal:** Close out #29 — verify the implemented decision-support feature on a real device, then merge.
