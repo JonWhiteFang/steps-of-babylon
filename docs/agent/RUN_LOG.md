@@ -1,3 +1,44 @@
+## 2026-06-16 — #29 Workshop decision support (Gate F) — implemented, pending merge
+
+- **Goal:** Surface upgrade decision support on the Workshop screen (Gate F): a combat-power "value per
+  step" indicator + bar, a "Now → Next" stat preview on every upgrade, and a single "★ BEST BUY" badge —
+  so a player can tell at a glance which Step spend buys the most combat power. Presentation + pure domain
+  math; **no schema/engine/economy change**. Branch `feat/29-upgrade-decision-support`.
+- **Process (spec-first, both stages through the Adversarial Review Gate):**
+  - **Brainstorm → spec → spec adversarial review:** 35 findings raised → **21 surviving**, 0
+    critical/major.
+  - **Plan → plan adversarial review:** 15 findings raised → **8 surviving** + **1 real arithmetic bug
+    caught by a refutation**, 0 critical/major.
+  - **Execution:** subagent-driven TDD, 9 tasks, per-task spec + quality review.
+- **New files (all pure unless noted):**
+  - `domain/usecase/CombatPower.kt` — combat-power index (steady-state single-target DPS **proxy**:
+    `damage × attackSpeed × (1 + critChance × (critMultiplier−1))`).
+  - `domain/usecase/WorkshopLevels.kt` — shared workshop-dimension cap/increment helpers (object).
+  - `domain/usecase/EvaluateUpgradeValue.kt` — value-per-step ranking + Best-Buy selection
+    (+ `UpgradeValue` data class).
+  - `presentation/workshop/UpgradeValueLabel.kt` — pure `formatPowerPerKStepsLabel` (Locale.ROOT, +0.1%
+    floor).
+  - 4 test files: `CombatPowerTest`, `WorkshopLevelsTest`, `EvaluateUpgradeValueTest`,
+    `UpgradeValueLabelTest`.
+- **Modified:** `domain/usecase/DescribeUpgradeEffect.kt` (added `workshopPreview(...)` — workshop-dimension
+  Now→Next, +4 tests in `DescribeUpgradeEffectTest`, 35→39); `presentation/workshop/{WorkshopUiState,
+  WorkshopViewModel,UpgradeCard}.kt` (new `nowNext`/`value` `UpgradeDisplayInfo` fields, VM wiring with
+  per-tab Best Buy, card rendering); `res/values/strings.xml` (2 new chip strings). Plus a small infra
+  commit: gitignore `.kotlin` (Kotlin daemon scratch dir).
+- **Key invariants / traps (now also in STATE fragile zones):**
+  - **The combat-power proxy is display/ranking only** — `CombatPower` returns a bare `Double` and is
+    type-incompatible with the engine's `ResolvedStats` stat-sinks, so it can never feed the simulation.
+  - **Δpower > 0 coverage rule** — the value bar + Best-Buy badge apply only to upgrades that raise the
+    index (Damage / Attack-Speed / Crit-Chance + Crit-Factor once crit chance > 0); everything else
+    (Range / Damage-per-meter / Rapid Fire / all Defense+Utility) is correctly excluded.
+  - **Workshop-dimension trap** — both the preview string and the value delta increment the **WORKSHOP**
+    dimension (NOT in-round), routed through the shared `WorkshopLevels` so they can't diverge.
+- **Tests:** full `./run-gradle.sh testDebugUnitTest` BUILD SUCCESSFUL — **1010 → 1045 JVM** (+35).
+  Instrumented unchanged (9).
+- **Status / next:** branch `feat/29-upgrade-decision-support`, **PR pending — NOT yet merged**; on-device
+  visual verification still owed before merge. After #29 merges, the remaining big code-addressable gate
+  item is #26 perf/battery (Gate G).
+
 ## 2026-06-16 — Full doc-drift sweep (post-v1.0.8; docs-only)
 
 - **Goal:** `/checkpoint` "full ultracode doc sweep" after v1.0.8 shipped. The prior checkpoint

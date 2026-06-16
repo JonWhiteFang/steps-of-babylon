@@ -10,6 +10,8 @@ import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.WorkshopRepository
 import com.whitefang.stepsofbabylon.domain.usecase.CalculateUpgradeCost
+import com.whitefang.stepsofbabylon.domain.usecase.DescribeUpgradeEffect
+import com.whitefang.stepsofbabylon.domain.usecase.EvaluateUpgradeValue
 import com.whitefang.stepsofbabylon.domain.usecase.PurchaseUpgrade
 import com.whitefang.stepsofbabylon.domain.usecase.QuickInvest
 import com.whitefang.stepsofbabylon.domain.usecase.ResolveStats
@@ -35,6 +37,8 @@ class WorkshopViewModel @Inject constructor(
     private val purchaseUpgrade = PurchaseUpgrade(workshopRepository, calculateCost)
     private val quickInvest = QuickInvest(calculateCost)
     private val resolveStats = ResolveStats()
+    private val describeUpgradeEffect = DescribeUpgradeEffect()
+    private val evaluateUpgradeValue = EvaluateUpgradeValue()
 
     private val _selectedCategory = MutableStateFlow(UpgradeCategory.ATTACK)
     private val _processing = MutableStateFlow(false)
@@ -59,6 +63,11 @@ class WorkshopViewModel @Inject constructor(
         val filtered = upgrades.filter { (type, _) ->
             type.category == category && type !in hiddenUpgrades && type.isWorkshopVisible
         }
+        // #29: value/Best-Buy data for the CURRENT tab's candidates (per-tab scoping, spec §5.2).
+        // Pass the FULL upgrade map so ResolveStats sees every stat; candidates = this tab's visible
+        // types. EvaluateUpgradeValue returns only the Δpower>0 ones, keyed back by type below.
+        val values = evaluateUpgradeValue(upgrades, wallet.stepBalance, filtered.keys)
+            .associateBy { it.type }
         WorkshopUiState(
             upgrades = filtered.map { (type, level) ->
                 val maxLevel = type.config.maxLevel
@@ -69,6 +78,9 @@ class WorkshopViewModel @Inject constructor(
                     canAfford = !isMaxed && wallet.stepBalance >= cost,
                     description = type.config.description,
                     statValue = statValueFor(type, stats),
+                    // Per-row workshop-dimension Now→Next preview (intentional fan-out; pure + small N).
+                    nowNext = describeUpgradeEffect.workshopPreview(upgrades, type),
+                    value = values[type],
                 )
             },
             stepBalance = wallet.stepBalance,

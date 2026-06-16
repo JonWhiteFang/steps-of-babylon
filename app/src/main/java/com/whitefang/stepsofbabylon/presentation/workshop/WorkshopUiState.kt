@@ -2,6 +2,8 @@ package com.whitefang.stepsofbabylon.presentation.workshop
 
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
+import com.whitefang.stepsofbabylon.domain.usecase.UpgradeEffectReadout
+import com.whitefang.stepsofbabylon.domain.usecase.UpgradeValue
 
 data class UpgradeDisplayInfo(
     val type: UpgradeType,
@@ -11,6 +13,11 @@ data class UpgradeDisplayInfo(
     val canAfford: Boolean,
     val description: String,
     val statValue: String = "",
+    // #29 decision support. `nowNext` = workshop-dimension Now→Next preview (null only if it could not
+    // be computed). `value` = combat-power value/Best-Buy data; null for non-combat upgrades (Δpower ≤ 0)
+    // → the card renders no bar/badge for them.
+    val nowNext: UpgradeEffectReadout? = null,
+    val value: UpgradeValue? = null,
 )
 
 data class WorkshopUiState(

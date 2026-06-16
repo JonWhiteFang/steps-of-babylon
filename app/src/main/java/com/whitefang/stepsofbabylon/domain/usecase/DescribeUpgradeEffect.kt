@@ -76,6 +76,34 @@ class DescribeUpgradeEffect(
     }
 
     /**
+     * Now → Next readout for the **Workshop** screen (#29, spec §5.1). Unlike [invoke] — which
+     * increments the *in-round* dimension for the in-round upgrade menu — this previews incrementing
+     * the *permanent* (workshop) level, because that is the purchase the Workshop card makes. For
+     * multiplicative stats the two dimensions produce different "Next" numbers when the other is
+     * non-zero, so the Workshop screen MUST use this path.
+     *
+     * Reuses the private [format] formatter (so number formatting / card-effect post-application /
+     * `Locale.ROOT` discipline are identical to [invoke]) and the shared [WorkshopLevels] helper for
+     * the cap test + level increment (so this readout and [EvaluateUpgradeValue]'s value delta can't
+     * diverge — spec INV-6). In-round levels are intentionally empty here: the Workshop screen has no
+     * in-round dimension in play.
+     */
+    fun workshopPreview(
+        workshopLevels: Map<UpgradeType, Int>,
+        type: UpgradeType,
+        labLevels: Map<ResearchType, Int> = emptyMap(),
+        equippedCards: List<OwnedCard> = emptyList(),
+    ): UpgradeEffectReadout {
+        val currentReadout = format(workshopLevels, emptyMap(), labLevels, equippedCards, type)
+        val nextReadout = if (WorkshopLevels.isAtMax(workshopLevels, type)) {
+            null
+        } else {
+            format(WorkshopLevels.withIncremented(workshopLevels, type), emptyMap(), labLevels, equippedCards, type)
+        }
+        return UpgradeEffectReadout(currentReadout, nextReadout)
+    }
+
+    /**
      * Formats a single point in upgrade-level space. For stat-bearing upgrades this calls
      * [ResolveStats], post-applies [ApplyCardEffects] to mirror the live engine pipeline
      * (RO-12), and reads the relevant [com.whitefang.stepsofbabylon.domain.model.ResolvedStats]

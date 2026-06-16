@@ -4,6 +4,10 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Added — Workshop decision support (#29, Gate F)
+
+- **#29 Workshop decision support (Gate F):** Now→Next stat preview on every upgrade; combat-power "value per step" indicator + bar on combat upgrades (Damage / Attack Speed / Critical Chance, and Critical Factor once crit chance > 0); a single "★ BEST BUY" badge (affordable-first, greyed "save up" fallback). Presentation + pure domain math only — new `CombatPower` / `EvaluateUpgradeValue` / `WorkshopLevels` use cases; no schema/engine/economy change. +35 JVM tests (1010 → 1045).
+
 ### Docs — full doc-drift sweep (post-v1.0.8)
 
 Multi-agent doc-drift audit (14 doc-cluster lanes → per-finding adversarial verification): 39 findings

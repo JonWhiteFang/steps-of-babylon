@@ -185,4 +185,40 @@ class WorkshopViewModelTest {
         assertEquals(orbs.config.maxLevel, workshopRepo.upgrades.value[orbs], "maxed level must be unchanged")
         assertEquals(balanceBefore, playerRepo.profile.value.stepBalance, "no Steps spent at cap")
     }
+
+    @Test
+    fun `R29 combat upgrades carry value and exactly one is best buy`() = runTest(dispatcher) {
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val attack = vm.uiState.value.upgrades
+        // DAMAGE/ATTACK_SPEED/CRITICAL_CHANCE get a value; the best buy from an all-zero tab is DAMAGE.
+        val damage = attack.single { it.type == UpgradeType.DAMAGE }
+        assertNotNull(damage.value, "DAMAGE must carry combat-power value data")
+        assertNotNull(damage.nowNext, "DAMAGE must carry a Now→Next preview")
+        assertEquals(1, attack.count { it.value?.isBestBuy == true }, "exactly one Best Buy")
+        assertTrue(attack.single { it.value?.isBestBuy == true }.type == UpgradeType.DAMAGE)
+    }
+
+    @Test
+    fun `R29 non-combat upgrades have null value but still a Now-Next preview`() = runTest(dispatcher) {
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        vm.selectCategory(UpgradeCategory.DEFENSE)
+        advanceUntilIdle()
+        val health = vm.uiState.value.upgrades.single { it.type == UpgradeType.HEALTH }
+        assertNull(health.value, "Defense upgrades get no value bar/badge (spec §3.3)")
+        assertNotNull(health.nowNext, "Defense upgrades still get the Now→Next preview")
+        assertEquals(0, vm.uiState.value.upgrades.count { it.value?.isBestBuy == true }, "no Best Buy on the Defense tab")
+    }
+
+    @Test
+    fun `R29 best buy is greyed when nothing on the tab is affordable`() = runTest(dispatcher) {
+        playerRepo.profile.value = PlayerProfile(stepBalance = 0)
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        val best = vm.uiState.value.upgrades.single { it.value?.isBestBuy == true }
+        assertFalse(best.value!!.bestBuyAffordable, "with 0 Steps the Best Buy falls back to greyed")
+    }
 }
