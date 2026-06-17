@@ -596,18 +596,32 @@ class GameEngine {
      * Called by [BattleViewModel] after loading the equipped-UW set from the repository.
      */
     fun initUWs(equipped: List<OwnedWeapon>) {
-        uwStates.clear()
-        equipped.forEach {
-            uwStates.add(
-                UWState(
-                    type = it.type,
-                    damageLevel = it.damageLevel,
-                    secondaryLevel = it.secondaryLevel,
-                    cooldownLevel = it.cooldownLevel,
-                ),
-            )
+        // #191 CONC-2: initUWs runs on the main thread (playAgain) while the loop thread iterates
+        // uwStates in updateUWs under entitiesLock. Take the same monitor for mutual exclusion so
+        // the main-thread clear/add can never race the loop-thread iteration. (Reentrant: harmless
+        // if any future loop-thread path calls this.)
+        synchronized(entitiesLock) {
+            uwStates.clear()
+            equipped.forEach {
+                uwStates.add(
+                    UWState(
+                        type = it.type,
+                        damageLevel = it.damageLevel,
+                        secondaryLevel = it.secondaryLevel,
+                        cooldownLevel = it.cooldownLevel,
+                    ),
+                )
+            }
         }
     }
+
+    /**
+     * #191 CONC-2: a thread-safe copy of [uwStates] for the 200ms polling read in BattleViewModel.
+     * Snapshots the LIST STRUCTURE under [entitiesLock] (the only thing the replay race corrupts);
+     * the scalar fields it reads for display are torn-read-tolerant (one stale cooldown frame is
+     * cosmetic, never a crash).
+     */
+    fun uwSnapshot(): List<UWState> = synchronized(entitiesLock) { uwStates.toList() }
 
     /**
      * R4-06: fires the UW at [index] if it's off cooldown and not already mid-effect.

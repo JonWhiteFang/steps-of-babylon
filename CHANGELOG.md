@@ -4,6 +4,41 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fixed — Crash visibility + two reachable battle crashes (#190 + #191, Gate H blockers)
+
+**Closed-track promotion blockers from the 2026-06-17 complete-app review. Local-only diagnostics — no
+new dependency, no data egress, no schema/economy/balance change. 1054 → 1069 JVM tests (+15).** Spec +
+plan both passed the Adversarial Review Gate (spec 34→25 surviving; plan 18→14 surviving; both 0
+unaddressed critical/major), executed subagent-driven TDD (9 tasks, per-task spec+quality review + a
+final whole-branch review).
+
+- **#190 — crash visibility (REL-1/REL-2).** No more silent process death during a soak:
+  - New `data/diagnostics/CrashBreadcrumbStore` (+ `CrashBreadcrumb` model) — device-local SharedPreferences
+    breadcrumb (mirrors `OnboardingPreferences`; synchronous `commit()`; every method best-effort/never-throws).
+  - Chaining global `Thread.setDefaultUncaughtExceptionHandler` in `StepsOfBabylonApp` (extracted to a
+    JVM-testable top-level `buildCrashHandler`) — records the breadcrumb FIRST, then delegates to the
+    previous handler so Play/Android vitals still records the crash.
+  - `GameLoopThread.run()` per-tick `update()`/`render()` wrapped in `try/catch` → record breadcrumb →
+    stop loop → `onLoopError` (the inner `lockCanvas/unlockCanvasAndPost` try/finally stays nested so a
+    render crash unlocks the canvas first). `BattleViewModel.onBattleLoopError` sets a new
+    `BattleUiState.battleError`, breaks the poll, and marks `roundEnded` (now `@Volatile`) so a crashed
+    round's corrupt totals are NOT persisted (deliberately does NOT set `eng.roundOver`).
+  - New non-dismissable `BattleErrorOverlay` ("Return to menu") with all interactive round chrome
+    suppressed (`showGameChrome = roundActive && !battleError`); a one-time next-launch notice snackbar in
+    `MainActivity`; the new `crash_breadcrumb_prefs` file added to `DataDeletionManager.PREFS_NAMES`.
+- **#191 — two reachable battle CMEs (CONC-1/CONC-2), same class as #118.**
+  - `EffectEngine` `effects`/`pendingEffects` guarded by a private `effectsLock` (add/drain/render/clear);
+    per-effect work + Canvas draw run outside the lock; update→removeAll order preserved (deferred sweep)
+    so there's no 1-frame effect-lifetime change.
+  - `GameEngine.initUWs` wrapped in the existing reentrant `entitiesLock` + new `uwSnapshot()` for the
+    200ms poll read (`BattleViewModel` now polls `uwSnapshot()`). Lock order is acyclic
+    (`entitiesLock` → `effectsLock`).
+- **Tests (+15):** `CrashBreadcrumbStoreTest` (6), `StepsOfBabylonCrashHandlerTest` (2),
+  `GameLoopThreadGuardTest` (2, incl. render-crash canvas-unlock), `EffectEngineConcurrencyTest` (1),
+  `GameEngineConcurrencyTest` +1 (uwStates replay race), `BattleViewModelTest` +2 (battleError +
+  no-persist-on-crash), `DataDeletionManagerTest` +1. `testDebugUnitTest lintDebug assembleDebug` green.
+- **ADR-0026.**
+
 ### Docs — Complete-app review + 6 closed-track gate issues raised (#190–#195)
 
 **No code/schema/test-count change (1054). Docs + GitHub issues only.**

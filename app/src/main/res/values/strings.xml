@@ -91,4 +91,8 @@
     <string name="postround_share_chooser">Share your record</string>
     <string name="postround_share_record">📤 Share Record</string>
     <string name="postround_leave_battle">Leave Battle</string>
+    <string name="battle_error_title">Battle error</string>
+    <string name="battle_error_body">Something went wrong and the battle had to stop. Your progress for this round wasn\'t saved.</string>
+    <string name="battle_error_return">Return to menu</string>
+    <string name="crash_notice_last_session">The game closed unexpectedly last time. Sorry about that!</string>
 </resources>

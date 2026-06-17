@@ -1,3 +1,49 @@
+## 2026-06-17 — #190 + #191 Gate-H code blockers FIXED (crash visibility + two reachable battle CMEs)
+
+- **Goal:** clear the two `severity:blocker` *code* defects gating internal → closed (from the 2026-06-17
+  complete-app review): **#190** crash visibility + unguarded game-loop thread (REL-1/REL-2); **#191** two
+  reachable battle CMEs — `EffectEngine` lists + `uwStates` mutated off the loop thread (CONC-1/CONC-2).
+- **Process (full spec→plan→TDD with both review gates):**
+  - Brainstormed scope (3 design calls: local breadcrumb over a remote SDK; loop-crash = stop+surface not
+    skip-frame; next-launch notice). Wrote the spec → **Adversarial Review Gate** (5 dims, 40 agents):
+    34 raised → 25 surviving → 9 refuted; applied all survivors (the big ones: loop crash must stop the
+    poll + suppress `onCleared` persistence of the corrupt round; new prefs file must be wiped by Delete
+    All Data; `record()` needed a `timestampMillis` param; overlay must suppress chrome not just z-order;
+    keep `EffectEngine` update→removeAll order; re-seed `onLoopError` on `surfaceCreated`). Spec
+    `2026-06-17-crash-visibility-battle-concurrency-design.md`.
+  - Wrote the 9-task TDD plan → **Adversarial Review Gate** (5 plan-specific dims, 23 agents): 18 raised →
+    14 surviving → 4 refuted; applied all (1 CRITICAL: a JUnit4-vs-Jupiter `assertTrue` arg-order that
+    wouldn't compile; majors: dropped a non-red TDD alternative + added the spec-required render-crash
+    canvas-unlock test; `roundEnded` → `@Volatile`; corrected a false "R is imported" claim; dropped an
+    unused TAG const; reuse `invokeOnCleared`). Plan `2026-06-17-crash-visibility-battle-concurrency.md`.
+  - Executed via **subagent-driven-development**: fresh implementer per task + per-task spec+quality review
+    (Task 1 took one quality-fix round — `peek()` never-throws guard + forward-looking doc; all others
+    passed clean), then a **final whole-branch review = READY TO MERGE** (2 minor follow-ups; applied #1
+    — wrapped `onLoopError?.invoke` in `runCatching`).
+- **What shipped (10 commits, branch `fix/190-191-crash-visibility-battle-concurrency`, `[Unreleased]`):**
+  - **#190:** new `data/diagnostics/CrashBreadcrumbStore` (+ model) — device-local single-slot breadcrumb;
+    chaining global `Thread.setDefaultUncaughtExceptionHandler` in `StepsOfBabylonApp` (via JVM-testable
+    `buildCrashHandler`); `GameLoopThread` try/catch guard (record→stop→`onLoopError`); `BattleViewModel`
+    `onBattleLoopError` (set `battleError`, break poll, no-persist via `@Volatile roundEnded`,
+    deliberately not `eng.roundOver`); `BattleErrorOverlay` + `showGameChrome` suppression; `MainActivity`
+    next-launch notice; `crash_breadcrumb_prefs` added to `DataDeletionManager.PREFS_NAMES`.
+  - **#191:** `EffectEngine` private `effectsLock` (add/drain/render/clear; deferred sweep preserves order;
+    pool/screenShake loop-confined); `GameEngine.initUWs` under `entitiesLock` + `uwSnapshot()` for the
+    VM poll. Lock order `entitiesLock`→`effectsLock` (acyclic).
+- **Verification:** full suite **1054 → 1069 JVM (+15)**, 0 failures/errors; `lintDebug assembleDebug`
+  BUILD SUCCESSFUL. New tests: `CrashBreadcrumbStoreTest` (6), `StepsOfBabylonCrashHandlerTest` (2),
+  `GameLoopThreadGuardTest` (2), `EffectEngineConcurrencyTest` (1), `GameEngineConcurrencyTest` +1,
+  `BattleViewModelTest` +2, `DataDeletionManagerTest` +1. No schema/economy/balance/dependency change;
+  domain layer untouched (DomainPurityTest safe).
+- **Docs synced:** CLAUDE.md (test count 1054→1069 + battle thread-safety/loop-guard fragile-zone notes),
+  CHANGELOG `[Unreleased]`, source-files.md (3 new files + 7 modified-file responsibility notes),
+  structure.md (`data/diagnostics/`), STATE.md (objective rotated + Known-issues + 3 new fragile zones),
+  **ADR-0026**.
+- **Remains / next:** open the PR (`Closes #190`, `Closes #191`); then **#192** privacy/Data-Safety text
+  (text + Play Console, not code) + the 3 `severity:major` soak-hardening items (#193/#194/#195) to clear
+  Gate H and promote internal → closed. Final-review follow-up #2 (background-resume re-spins a crashed
+  loop → redundant newest-wins breadcrumb, no data impact) is accepted for the soak.
+
 ## 2026-06-17 — Complete-app review + 6 closed-track gate issues raised (#190–#195); Gate H folded into the spine
 
 - **Goal:** run a full, end-to-end "review the app as it exists now" audit (discovery/recommendations only —

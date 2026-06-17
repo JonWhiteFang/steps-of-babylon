@@ -77,4 +77,18 @@ class DataDeletionManagerTest {
         manager.deleteAllData(activity)
         // No exception = pass
     }
+
+    @Test
+    fun `deleteAllData clears the crash breadcrumb prefs`() {
+        // Seed a breadcrumb directly via the same file name CrashBreadcrumbStore uses.
+        context.getSharedPreferences("crash_breadcrumb_prefs", Context.MODE_PRIVATE)
+            .edit().putString("crash_class", "x").commit()
+
+        manager.deleteAllData(activity)
+
+        assertTrue(
+            "crash_breadcrumb_prefs must be cleared by deleteAllData",
+            context.getSharedPreferences("crash_breadcrumb_prefs", Context.MODE_PRIVATE).all.isEmpty(),
+        )
+    }
 }

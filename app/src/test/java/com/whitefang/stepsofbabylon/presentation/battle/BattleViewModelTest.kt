@@ -816,6 +816,47 @@ class BattleViewModelTest {
         )
     }
 
+    // -------- #190 REL-2: battle-error state + stop-and-no-persist on loop crash --------
+
+    @Test
+    fun `onBattleLoopError sets battleError`() = runTest(dispatcher) {
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.onBattleLoopError(RuntimeException("loop boom"))
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.battleError, "battleError must be set after a loop crash")
+    }
+
+    @Test
+    fun `onBattleLoopError makes onCleared skip end-of-round persistence`() = runTest(dispatcher) {
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        // Install an engine that reports wave progress (so onCleared would normally persist).
+        val engine = installEngineForEndRound(vm)
+        engine.init(1080f, 1920f, com.whitefang.stepsofbabylon.domain.model.ResolvedStats(), 1)
+        engine.update(1f / 60f) // elapsedTimeSeconds > 0 → hasWaveProgress() true
+        assertTrue(engine.hasWaveProgress())
+
+        vm.onBattleLoopError(RuntimeException("loop boom"))
+        advanceUntilIdle()
+
+        // Drive onCleared via the existing helper (the prod call site is the framework).
+        invokeOnCleared(vm)
+        advanceUntilIdle()
+
+        // No end-of-round persistence ran on the crashed round.
+        assertEquals(
+            0L, playerRepo.profile.value.totalRoundsPlayed,
+            "a loop-crashed round must NOT persist end-of-round stats",
+        )
+        assertNull(vm.uiState.value.roundEndState, "no RoundEndState on a loop-crashed round")
+    }
+
     // -------- C.2 PR 1 cosmetic renderer override pipeline tests --------
 
     @Test
