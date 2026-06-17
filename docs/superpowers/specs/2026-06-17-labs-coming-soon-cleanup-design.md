@@ -22,8 +22,11 @@ showing half-built features to testers is worse than not showing them.
   list surfaces **11 of 12** research types; the deferred one is invisible, not badged.
 - `ENEMY_INTEL`, the other historically-deferred type, was fully wired in V1X-15b (no longer a stub).
 
-So **Gate B's actual requirement — no misleading half-built features shown to testers — is already
-satisfied in shipped behaviour.** `AUTO_UPGRADE_AI` is hidden.
+So **Gate B.1's requirement — no half-built *research* shown to testers — is already satisfied in
+shipped behaviour.** `AUTO_UPGRADE_AI` is hidden. (Gate B in `plan-FORWARD.md` has **two** checkboxes:
+B.1 *"AUTO_UPGRADE_AI resolved"* — satisfied-by #44, this PR — and B.2 *"no misleading 'Coming Soon'
+in core flows; remaining locked cosmetics clearly framed"* — satisfied-by separate known-issues
+cosmetic-palette debt, **out of scope here**. This PR ticks B.1 only.)
 
 ### The real gaps (what this work fixes)
 
@@ -33,9 +36,12 @@ satisfied in shipped behaviour.** `AUTO_UPGRADE_AI` is hidden.
    comments still describe a live "Coming Soon badge … disables the Start Research button" flow —
    almost certainly what misled the issue author into thinking the stub is still visible.
 2. **No test pins the filter.** `ResearchTypeTest` asserts the *flag*
-   (`AUTO_UPGRADE_AI.isComingSoon == true`) but nothing asserts the *Labs list excludes coming-soon
-   entries*. Deleting the `filterNot` at `LabsViewModel.kt:76` would re-expose the stub **with every
-   existing test still green** — a latent content-honesty regression.
+   (`AUTO_UPGRADE_AI.isComingSoon == true`) but nothing asserts the *list semantics* — that
+   coming-soon entries are excluded from what Labs surfaces. Today, deleting the `filterNot` at
+   `LabsViewModel.kt:76` would re-expose the stub **with every existing test still green** — a latent
+   content-honesty regression. (Note the precise coverage boundary after §3.1's refactor: the pure
+   test pins the **`surfacedInLabs()` helper body**; it does not, on its own, prove the VM *calls* the
+   helper — see §4 for how the call-site is held.)
 3. **Stale comment** in `LabsViewModel.startResearch` claims the UI "suppresses the Start Research
    button when isComingSoon"; the truth is the item is filtered from the list entirely.
 
@@ -46,9 +52,10 @@ implement the auto-upgrade feature (not required for Gate B; remains a v1.x back
 
 **Goals**
 - Make the Labs code honestly reflect that coming-soon research is hidden, not badged.
-- Add a regression guard so the filter cannot be silently removed (re-exposing the stub).
+- Add a regression guard so the filter's semantics cannot be silently removed (re-exposing the stub).
 - Correct the false code comments.
-- Satisfy and tick Gate B; close #44.
+- Satisfy and tick Gate **B.1** (`plan-FORWARD.md:41`, AUTO_UPGRADE_AI); close #44. (B.2 is a separate
+  cosmetic-debt item, left unchecked.)
 
 **Non-goals (explicitly out of scope)**
 - Implementing `AUTO_UPGRADE_AI`'s actual gameplay (auto-purchase / auto-rush). Heavier than
@@ -89,6 +96,19 @@ researchList = ResearchType.surfacedInLabs().map { type -> … }
 Behaviour is identical (same elements, same order — `entries` order is preserved by `filterNot`).
 The win is that the list semantics are now a named, pure, directly-testable function.
 
+**Call-site invariant (the refactor's coverage boundary).** Splitting the inline filter into a
+helper creates *two* places a regression could enter: the **helper body** (mutating
+`surfacedInLabs()` to drop the `filterNot`) and the **VM call-site** (re-inlining
+`ResearchType.entries.map { … }` and dropping the `surfacedInLabs()` call). The pure JVM tests in §4
+pin the **helper body** only — they cannot, without instantiating the `while(true)`-ticker VM, prove
+the VM still *calls* the helper. We accept this boundary deliberately rather than add a VM-harness
+test: the call-site is a single, named, greppable call (`ResearchType.surfacedInLabs()`), and the
+VM's `startResearch` defensive guard (§3.3) is the second, *reachable* safety net that blocks an
+actual Step spend even if the list filter were bypassed. So the residual risk of a silent call-site
+revert is "stub becomes visible again" (caught in code review / on-device), not "tester can spend
+Steps on a stub" (blocked by the guard regardless). §4 states exactly what the tests do and do not
+guarantee — no overclaim.
+
 ### 3.2 Delete dead UI branches + fix comments (`presentation/labs/LabsScreen.kt`)
 
 Remove the two unreachable `info.type.isComingSoon ->` branches in `ResearchCard`:
@@ -126,10 +146,16 @@ ticker entirely, per the Pure-helper decision):
 3. **Add** `surfacedInLabs is exactly the wired types`:
    `surfacedInLabs().toSet() == ResearchType.entries.toSet() - ResearchType.AUTO_UPGRADE_AI`
    (i.e. all 12 minus the one deferred = the 11 wired types), pinning that the helper neither
-   over- nor under-filters. This is the guard that fails red if someone removes the filter.
+   over- nor under-filters.
 
-The existing `LabsViewModelTest` is **not** modified (it deliberately avoids constructing the VM;
-the pure helper carries the filter contract instead).
+**What these tests do and do not guard (precise, no overclaim).** They fail red if someone
+**mutates `surfacedInLabs()`'s body** to stop excluding coming-soon entries — the helper-semantics
+regression. They do **not** catch a VM **call-site** revert (re-inlining `ResearchType.entries.map`
+and dropping the `surfacedInLabs()` call), because the tests call the helper directly, not through
+the VM (which can't be cheaply instantiated — `while(true)` ticker). That call-site vector is held
+instead by code review + the reachable `startResearch` guard (§3.1 call-site invariant, §3.3). The
+existing `LabsViewModelTest` is **not** modified (it deliberately avoids constructing the VM; the
+pure helper carries the helper-semantics contract).
 
 ## 5. Risk & fragile-zone check
 
@@ -140,12 +166,25 @@ the pure helper carries the filter contract instead).
   provably-unreachable branches; §3.3 is comment-only on a guard that already exists. No
   player-visible change (the stub was already hidden).
 - **Verification:** `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` green; new tests
-  red-before-green confirmed by temporarily reverting the `filterNot` in a scratch check.
+  red-before-green confirmed by temporarily mutating `surfacedInLabs()`'s body in a scratch check.
 
-## 6. Outcome
+## 6. Doc-sync (part of this PR)
+
+- **`plan-FORWARD.md:41`** — tick the **B.1** checkbox `[ ] AUTO_UPGRADE_AI resolved … — satisfied-by
+  #44` → `[x]` with the PR ref. **Leave line 42 (B.2) unchecked** — it is satisfied-by separate
+  cosmetic-palette debt, not this PR.
+- **`docs/StepsOfBabylon_GDD.md:256`** — the line still reads *"research disabled in the Labs UI
+  (isComingSoon=true)"*. That framing is the same stale "disabled-in-UI" wording §1.1 corrects in
+  code; update it to "hidden from the Labs UI (filtered out via `ResearchType.surfacedInLabs()`)" so
+  the GDD matches reality. (Pre-existing drift since V1X-15, folded in opportunistically because this
+  PR is precisely about that false framing — surfaced by the spec review.)
+- STATE.md + RUN_LOG per the checkpoint convention; CHANGELOG `[Unreleased]` entry.
+
+## 7. Outcome
 
 - ~3 production files (`ResearchType.kt` +helper, `LabsScreen.kt` −dead branches,
   `LabsViewModel.kt` call-site + comment), +2 JVM tests.
 - No schema / engine / economy / DI change. Test count 1052 → ~1054.
-- Gate B (content honesty) ticked; #44 closed with a note that the visible-stub complaint was
-  resolved by the V1X-15 filter and this PR makes the code match + guards it.
+- Gate **B.1** (AUTO_UPGRADE_AI resolved) ticked; B.2 (cosmetic "Coming Soon" framing) remains
+  satisfied-by separate cosmetic debt, untouched. #44 closed with a note that the visible-stub
+  complaint was resolved by the V1X-15 filter and this PR makes the code match reality + guards it.
