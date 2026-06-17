@@ -253,7 +253,7 @@ Long-term research system using Steps to initiate and real time to complete. Pla
 | Cash Research | +5% cash earned multiplier | 1,500 Steps | 3 hours | 20 |
 | Step Efficiency | +2% bonus steps from walking | 5,000 Steps | 8 hours | 10 |
 | Wave Skip | Start rounds at Wave X instead of Wave 1 | 10,000 Steps | 24 hours | 10 |
-| Auto-Upgrade AI | *Coming soon (v1.x) — not yet implemented; research disabled in the Labs UI (`isComingSoon=true`).* Planned: auto-spends Cash on optimal upgrades during rounds | 8,000 Steps | 12 hours | 5 |
+| Auto-Upgrade AI | *Coming soon (v1.x) — not yet implemented; hidden from the Labs UI (filtered out via `ResearchType.surfacedInLabs()`, `isComingSoon=true`).* Planned: auto-spends Cash on optimal upgrades during rounds | 8,000 Steps | 12 hours | 5 |
 | UW Cooldown | -3% Ultimate Weapon cooldown | 4,000 Steps | 6 hours | 15 |
 | Critical Research | +3% critical damage multiplier | 3,000 Steps | 5 hours | 15 |
 | Regen Research | +4% health regen multiplier | 2,500 Steps | 4.5 hours | 15 |

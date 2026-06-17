@@ -38,7 +38,7 @@ state — the checklist informs that call, it does not replace it.
 - [ ] No audio glitches: throttle holds up at RAPID_FIRE L10 + MULTISHOT; music ducks/resumes correctly on interruptions
 
 ### B. Content honesty
-- [ ] AUTO_UPGRADE_AI resolved (shipped or clearly framed as deferred) — *satisfied-by #44*
+- [x] AUTO_UPGRADE_AI resolved — *satisfied-by #44 (PR pending): the type has been hidden from Labs since V1X-15 (`surfacedInLabs()` filter); #44 made the code match reality (deleted dead UI branches) + added a regression guard. Implementation deferred to v1.x; nothing half-built is shown.*
 - [ ] No misleading "Coming Soon" in core flows; remaining locked cosmetics clearly framed — *satisfied-by known-issues cosmetic debt*
 
 ### C. First-session UX

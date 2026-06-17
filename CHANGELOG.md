@@ -4,6 +4,30 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Changed — Labs "Coming Soon" cleanup + Gate B.1 lock (#44, content honesty)
+
+**No schema/engine/economy change. +2 JVM tests (1052 → 1054). Presentation + one pure-domain helper.**
+
+- **Context:** `AUTO_UPGRADE_AI` (the one deferred `ResearchType`) has been *hidden* from the Labs
+  screen since V1X-15 — the list is built from `entries.filterNot { it.isComingSoon }`. So Gate B's
+  "no half-built research shown to testers" was already met in behaviour; the issue's "visible stub"
+  premise was stale. This change makes the **code** match that reality and locks it.
+- **New `ResearchType.surfacedInLabs()`** — a pure companion helper (`entries.filterNot { it.isComingSoon }`,
+  order-preserving) that is the single source of truth for which research types the Labs UI shows.
+  `LabsViewModel` now consumes it instead of an inline filter, so the list semantics are named and
+  JVM-testable without the VM's `while(true)` ticker.
+- **Regression guard:** 2 new `ResearchTypeTest` cases pin the helper body (excludes coming-soon;
+  equals exactly the 11 wired types) — the filter can no longer be silently dropped.
+- **Dead-code removal:** deleted the two unreachable `info.type.isComingSoon ->` branches in
+  `LabsScreen.ResearchCard` (the "COMING SOON" title chip + the empty action arm) and corrected the
+  stale comment on the kept `startResearch` defensive guard (coming-soon is filtered out of the list,
+  not Start-button-suppressed; the guard is the reachable second layer that blocks a Step spend).
+- **Doc-sync:** GDD Auto-Upgrade-AI row reworded ("hidden from the Labs UI via `surfacedInLabs()`");
+  `plan-FORWARD.md` Gate **B.1** ticked (B.2 cosmetic-framing item left to its separate debt source).
+- Spec + plan **both** passed the Adversarial Review Gate (spec 21→11 surviving, 2 actionable applied,
+  0 critical/major; plan 15→1 surviving, applied, 0 critical/major). Subagent-driven TDD; spec +
+  code-quality review both green. **Closes #44 / Gate B.1.**
+
 ### Added — Performance & battery measurement infra + GC-churn fixes (#26, Gate G)
 
 **No schema/engine-logic/economy change. +7 JVM tests (1045 → 1052).**

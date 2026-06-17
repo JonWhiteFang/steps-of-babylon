@@ -119,15 +119,6 @@ private fun ResearchCard(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(formatName(info.type), style = MaterialTheme.typography.titleSmall)
                 when {
-                    // RO-11 #B.2 / V1X-15b: AUTO_UPGRADE_AI gated as Coming Soon while its
-                    // real implementation is deferred to v1.x (ENEMY_INTEL was wired in V1X-15b).
-                    // Badge takes priority over the MAX / level chip so testers see the deferral
-                    // state immediately.
-                    info.type.isComingSoon -> Text(
-                        "COMING SOON",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.tertiary,
-                    )
                     info.isMaxed -> Text(
                         "MAX",
                         style = MaterialTheme.typography.labelMedium,
@@ -140,13 +131,6 @@ private fun ResearchCard(
             Spacer(Modifier.height(8.dp))
 
             when {
-                info.type.isComingSoon -> {
-                    // RO-11 #B.2: no Start / Rush / progress UI for deferred research types.
-                    // Existing levels (if any landed before the deferral gate) display via the
-                    // "Lv N" chip path is suppressed in favour of the COMING SOON badge above,
-                    // but the underlying level value is preserved in LabRepository so the v1.x
-                    // implementation picks up where the player left off.
-                }
                 info.isMaxed -> {} // no actions
                 info.isActive -> {
                     // Progress based on remaining vs time to complete

@@ -1,13 +1,17 @@
 package com.whitefang.stepsofbabylon.domain.model
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * Domain-model invariants for [ResearchType] (RO-11 #B.2). The [ResearchType.isComingSoon]
- * flag drives the Labs-screen Coming Soon badge, the Start-Research-button suppression in
- * [LabsScreen], and the defensive VM-level guard in `LabsViewModel.startResearch`. All
- * three readers MUST stay in sync with the canonical flag values asserted here.
+ * Domain-model invariants for [ResearchType] (RO-11 #B.2; #44). The [ResearchType.isComingSoon]
+ * flag drives the `surfacedInLabs()` list filter (which removes deferred types from the Labs UI
+ * before any card renders) and the defensive VM-level guard in `LabsViewModel.startResearch`. Both
+ * readers MUST stay in sync with the canonical flag values asserted here. (The old in-`LabsScreen`
+ * Coming Soon badge + Start-button suppression were removed in #44 once the list filter made them
+ * dead code.)
  *
  * Sits alongside the existing model-level tests ([MilestoneTest], [UpgradeTypeTest],
  * [EnemyTypeTest], [DailyMissionTypeTest]) rather than [LabsViewModelTest] because the
@@ -26,10 +30,10 @@ class ResearchTypeTest {
         //   (b) one of the 11 wired enums (DAMAGE / HEALTH / CASH / CRITICAL / REGEN /
         //       STEP_EFFICIENCY / UW_COOLDOWN / WAVE_SKIP / MULTISHOT_RESEARCH /
         //       BOUNCE_RESEARCH / ENEMY_INTEL) silently getting marked Coming Soon (would
-        //       suppress its UI — a player-visible regression).
+        //       hide it from the Labs UI — a player-visible regression).
         // ENEMY_INTEL was flipped to wired in V1X-15b (was deferred under RO-11 #B.2).
-        // Both layers (LabsScreen Coming Soon badge + LabsViewModel.startResearch defensive
-        // guard) read the same flag, so this test transitively guards both.
+        // Both readers (the `surfacedInLabs()` list filter + LabsViewModel.startResearch
+        // defensive guard) read the same flag, so this test transitively guards both.
         val deferred = ResearchType.entries.filter { it.isComingSoon }.toSet()
         assertEquals(
             setOf(ResearchType.AUTO_UPGRADE_AI),
@@ -52,5 +56,35 @@ class ResearchTypeTest {
         assertEquals(10, t.maxLevel, "maxLevel")
         assertEquals(2.0, t.effectPerLevel, 1e-9, "effectPerLevel")
         assertEquals(false, t.isComingSoon, "isComingSoon")
+    }
+
+    @Test
+    fun `surfacedInLabs excludes coming-soon research`() {
+        // The Labs UI must never surface a deferred (isComingSoon) research type — that is
+        // exactly the half-built stub #44 / Gate B.1 is about. surfacedInLabs() is the single
+        // source of truth LabsViewModel consumes; this pins its body so the exclusion can't be
+        // silently dropped (see also `surfacedInLabs is exactly the wired types`).
+        val surfaced = ResearchType.surfacedInLabs()
+        assertTrue(
+            surfaced.none { it.isComingSoon },
+            "surfacedInLabs() must exclude every isComingSoon entry",
+        )
+        assertFalse(
+            ResearchType.AUTO_UPGRADE_AI in surfaced,
+            "AUTO_UPGRADE_AI (the deferred type) must not be surfaced in Labs",
+        )
+    }
+
+    @Test
+    fun `surfacedInLabs is exactly the wired types`() {
+        // Set-equality both directions: surfaced == all entries minus the single deferred one.
+        // Fails red if surfacedInLabs() stops filtering (would re-include AUTO_UPGRADE_AI) OR
+        // over-filters (drops a wired type). AUTO_UPGRADE_AI is the sole isComingSoon entry
+        // (guarded by `only AUTO_UPGRADE_AI is flagged isComingSoon` above).
+        assertEquals(
+            ResearchType.entries.toSet() - ResearchType.AUTO_UPGRADE_AI,
+            ResearchType.surfacedInLabs().toSet(),
+            "surfacedInLabs() must be exactly the 11 wired types (all entries minus AUTO_UPGRADE_AI)",
+        )
     }
 }

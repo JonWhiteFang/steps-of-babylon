@@ -1,3 +1,63 @@
+## 2026-06-17 — #44 Labs Coming-Soon cleanup (Gate B.1) — DONE on `feat/44-labs-coming-soon-cleanup` (PR pending)
+
+- **Goal:** Resolve issue #44 (`AUTO_UPGRADE_AI` "Coming Soon" research stub) for Closed-Test Readiness
+  Gate **B (content honesty)**, through the full spec→plan→implement flow with both Adversarial Review
+  Gates. Also: reconcile #26 docs first (its post-merge checkpoint had never been written).
+- **Pre-work — #26 doc reconciliation (PR #185, squash `a56694c`, MERGED):** #26's in-repo slice merged
+  via PR #184 (`8f3c2ee`) but the spine still said "IMPLEMENTED on branch, PR pending." Flipped STATE.md
+  (headline, objective rotation, Recently-shipped, gate line, Top-priorities), the RUN_LOG #26 header, and
+  ADR-0025 status → MERGED. CHANGELOG/plan-FORWARD/master-plan were already accurate (written by #184).
+- **Key finding (premise was stale):** verification on `main` showed `AUTO_UPGRADE_AI` (the one
+  `isComingSoon` `ResearchType`) has been **filtered out of the Labs list since V1X-15** (`1b6cd01`,
+  2026-05-28 — *before* #44 was filed 2026-06-03): `LabsViewModel.kt:76` did
+  `entries.filterNot { it.isComingSoon }`. So Gate B.1's "no half-built research shown to testers" was
+  **already met in behaviour**; the `COMING SOON` branches in `LabsScreen` were dead/unreachable code that
+  misled the issue author. ENEMY_INTEL (the other historically-deferred type) was wired in V1X-15b. So the
+  work became **cleanup + lock**, not implement-vs-hide. (User chose "Cleanup + lock the win"; test
+  approach "Pure helper + test".)
+- **Process (both Adversarial Review Gates passed):**
+  - Brainstorm → spec (`03ecf2b`) → **spec adversarial review** (4 dims × refute, Workflow: 21 raised → 11
+    surviving → 10 refuted; synthesized `6c4d48c`; 0 critical/major). 9 of 11 "surviving" were nits whose
+    verifiers confirmed "no change needed" (validated code-grounding). 2 actionable applied: **MAJOR** —
+    the "fails red if someone removes the filter" claim overstated coverage (after the helper refactor the
+    pure test pins the helper BODY, not the VM call-site wiring); corrected §4 to state the exact coverage
+    boundary + added a §3.1 call-site invariant. **MINOR** — Gate B has 2 checkboxes; scoped every "ticks
+    Gate B" → "B.1 only" (B.2 = separate cosmetic debt). Folded in a refuted-but-on-topic GDD:256 fix.
+  - Plan (`27d2930`) → **plan adversarial review** (3 dims × refute, Workflow: 15 raised → 1 surviving →
+    14 refuted; synthesized `f3bca9b`; 0 critical/major). Review CONFIRMED the riskiest compile points are
+    fine (bare `entries` resolves inside an enum companion; comma→semicolon valid; `when` blocks stay valid
+    statement-`when`s with `else` after arm deletion; JUnit Jupiter imports correct). 1 surviving MINOR
+    applied: plan itemized CHANGELOG/STATE/RUN_LOG but omitted CLAUDE.md:303 (the live headline count the
+    PR convention names first) — added it explicitly.
+- **What changed (4 task commits `a058369`..`e14cb5c` + review fix `3cd883f`):**
+  - **`ResearchType.kt`** — new `companion object fun surfacedInLabs(): List<ResearchType> =
+    entries.filterNot { it.isComingSoon }` (order-preserving single source of truth). Last enum constant
+    `BOUNCE_RESEARCH` trailing `,`→`;` for the companion.
+  - **`ResearchTypeTest.kt`** — +2 tests pinning the helper body (`surfacedInLabs excludes coming-soon
+    research`; `surfacedInLabs is exactly the wired types` = `entries − AUTO_UPGRADE_AI`); +assertTrue/
+    assertFalse imports; existing 2 tests unchanged. Class KDoc + set-equality comment de-staled (named the
+    real readers: the filter + the VM guard) per code-quality review.
+  - **`LabsViewModel.kt`** — call-site → `ResearchType.surfacedInLabs().map { … }`; `startResearch` guard
+    comment corrected (filtered-out-of-list, not button-suppressed); guard body kept.
+  - **`LabsScreen.kt`** — deleted the two dead `info.type.isComingSoon ->` branches (title chip + empty
+    action arm); no `isComingSoon` reference remains.
+  - **Doc-sync:** GDD:256 reworded ("hidden from the Labs UI via `surfacedInLabs()`"); plan-FORWARD **B.1**
+    ticked (B.2 left `[ ]`); CLAUDE.md:303 + STATE.md + CHANGELOG count → 1054; source-files.md entries
+    updated.
+- **Verification:** `./run-gradle.sh :app:testDebugUnitTest lintDebug assembleDebug` → **BUILD SUCCESSFUL**;
+  **1052 → 1054 JVM** (+2), 0 failures, lint clean (no orphaned import). **Red-before-green proven**:
+  mutating `surfacedInLabs()`'s body to `entries.toList()` failed both new tests at their exact assertion
+  lines (ResearchTypeTest.kt:68 + :84), then reverted (tree clean). Spec-compliance review ✅ (all 6
+  requirements, no extra work); code-quality review **Approved-with-minor** (2 stale-comment nits fixed).
+- **Doc-sync list:** CLAUDE.md (count 1054) · CHANGELOG.md (`[Unreleased]` #44 entry) · STATE.md (headline,
+  objective rotation, gate line, Top-priorities, +fragile-zone entry) · RUN_LOG.md (this entry) ·
+  source-files.md (ResearchType/ResearchTypeTest/LabsViewModel/LabsScreen) · GDD:256 · plan-FORWARD:41
+  (in the task commits). **No ADR** (reuses the pure-helper + content-as-code patterns; no novel decision).
+- **Status / next:** branch `feat/44-labs-coming-soon-cleanup`, **PR pending — open it → CI → merge →
+  close #44.** After #44, the **in-repo Phase-1 gate surface is exhausted** — what remains is
+  developer-judgment / manual (Gate A audio feel, Gate E balance feel, Gate D clean fresh-install). The
+  real next call is **assess promotion readiness (internal → closed)**.
+
 ## 2026-06-16 — #26 perf/battery (Gate G) in-repo slice — MERGED to `main` (PR #184, squash `8f3c2ee`)
 
 - **Goal:** Ship the code-addressable half of #26 / Gate G — a Baseline Profile + Macrobenchmark

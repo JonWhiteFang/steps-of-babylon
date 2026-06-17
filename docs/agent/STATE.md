@@ -3,26 +3,34 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.8 (versionCode 24) live on Play internal track** · **1052 JVM + 9 instrumented tests**
-green · schema v12 · **#26 perf/battery (Gate G) in-repo slice MERGED to `main`** (PR #184, squash
-`8f3c2ee`, merged 2026-06-16) — measurement infra (`:baselineprofile`/`:macrobenchmark` modules +
-profileinstaller + committed Baseline Profile) + A28/A31/A29 GC-churn fixes + battery/startup docs;
-device-measured battery/OEM/startup-numbers half `[deferred]` in plan-FORWARD · all five A–E
-look-&-feel bundles shipped (v1.0.4–v1.0.8) + #29 decision-support (Gate F) MERGED (`70ebf53`) · launch is
-judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
+**Headline:** **v1.0.8 (versionCode 24) live on Play internal track** · **1054 JVM + 9 instrumented tests**
+green · schema v12 · **#44 Labs Coming-Soon cleanup (Gate B.1) DONE on `feat/44-labs-coming-soon-cleanup`,
+PR pending** — `ResearchType.surfacedInLabs()` helper + regression guard, deleted dead `LabsScreen`
+COMING-SOON branches, fixed stale comments; presentation + one pure-domain helper, no schema/engine/economy
+change · **#26 perf/battery (Gate G) in-repo slice MERGED** (PR #184, `8f3c2ee`; device half `[deferred]`)
+· all five A–E look-&-feel bundles shipped (v1.0.4–v1.0.8) + #29 decision-support (Gate F) MERGED
+(`70ebf53`) · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
-- **CURRENT — Closed-Test Readiness Gate: only judgment/manual items remain in-repo.** With #26 merged,
-  the gate's code-addressable surface is essentially down to **#44 (Gate B — content honesty):**
-  `AUTO_UPGRADE_AI` still shows a "Coming Soon" badge on the Labs screen (its sibling `ENEMY_INTEL` was
-  already wired in V1X-15b). The fix is small — *implement it* or *hide it from Labs* — and would close
-  the last visible-but-unusable stub before closed test. Everything else gating promotion is
-  developer-judgment / manual: **Gate A** (in-play audio feel), **Gate E** (early-tier balance feel),
-  **Gate D** "clean fresh-install run, no crashes" (a verification pass, not code). **#128** (~21 audit
-  Lows) is explicitly **deferred — not a blocker** → v1.1. NEXT (developer's call): take #44 through the
-  Adversarial Review Gate (brainstorm → spec → plan → TDD), OR step back and assess promotion readiness on
-  the manual feel gates.
+- **CURRENT — #44 Labs Coming-Soon cleanup (Gate B.1): DONE on `feat/44-labs-coming-soon-cleanup`, PR
+  pending.** Verification on `main` showed #44's premise was stale: `AUTO_UPGRADE_AI` (the one
+  `isComingSoon` research type) has been *hidden* from Labs since V1X-15 (the list is
+  `entries.filterNot { it.isComingSoon }`), so Gate B.1's "no half-built research shown" was already met
+  in behaviour — the dead `COMING SOON` `LabsScreen` branches were just misleading the issue/reader. So
+  the work was **cleanup + lock**, not implement-vs-hide: new pure `ResearchType.surfacedInLabs()` (single
+  source of truth, order-preserving) consumed by `LabsViewModel`; +2 `ResearchTypeTest` regression cases
+  pinning the helper body; deleted the two unreachable `info.type.isComingSoon ->` branches; corrected the
+  stale `startResearch` guard comment (kept the guard as the reachable second layer). Presentation + one
+  pure-domain helper, **no schema/engine/economy change. 1052→1054 JVM.** Spec + plan **both** passed the
+  Adversarial Review Gate (spec 21→11 surviving / 2 actionable applied; plan 15→1 surviving / applied; both
+  0 critical/major); subagent-driven TDD; spec + code-quality review green; red-before-green proven.
+  Doc-sync: GDD:256 reworded + plan-FORWARD **B.1** ticked (B.2 left to its separate cosmetic debt). NEXT:
+  open PR → CI green → merge → close #44. **After #44, the in-repo Phase-1 gate surface is exhausted** —
+  what remains is developer-judgment / manual: **Gate A** (in-play audio feel), **Gate E** (early-tier
+  balance feel), **Gate D** "clean fresh-install run, no crashes" (a verification pass). **#128** (~21
+  audit Lows) is **deferred — not a blocker** → v1.1. So the real next call is **assess promotion
+  readiness** (internal → closed).
 - **Previous objective (DONE): #26 perf/battery (Gate G) in-repo slice — MERGED to `main`** (PR #184,
   squash `8f3c2ee`, merged 2026-06-16; CI PR gate + instrumented lane green). Spec + plan both passed the
   Adversarial Review Gate (spec 43→23 surviving; plan 63→48 surviving; both 0 unaddressed critical/major).
@@ -84,9 +92,10 @@ judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
   shipped). Still open in **Gate D**: **#128** (remaining ~21 Lows: perf/anti-cheat/security groups,
   deferred to v1.1 per the audit grouping). Bigger gate items: **#29** decision-support (Gate F) **MERGED**
   (PR #182, squash `70ebf53`, #29 closed); **#26** perf/battery (Gate G) in-repo slice **MERGED** (PR #184,
-  squash `8f3c2ee`; device-measured half `[deferred]`). The last code-addressable gate item is **#44**
-  (Gate B — `AUTO_UPGRADE_AI` "Coming Soon" stub: implement or hide); the rest of the gate (A audio, E
-  balance, D fresh-install) is developer-judgment / manual.
+  squash `8f3c2ee`; device-measured half `[deferred]`); **#44** Labs Coming-Soon cleanup (Gate **B.1**)
+  **DONE** (`feat/44-labs-coming-soon-cleanup`, PR pending). With #44, the in-repo Phase-1 gate surface is
+  exhausted — the rest of the gate (A audio, E balance, D fresh-install) is developer-judgment / manual,
+  and Gate B.2 (cosmetic "Coming Soon" framing) is satisfied-by separate cosmetic debt.
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
@@ -424,10 +433,9 @@ judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Bigger gate items — ALL MERGED:** look-&-feel bundles A–E (→ v1.0.4–v1.0.8, the five-bundle arc is complete); **#29** decision-support (Gate F, PR #182, squash `70ebf53`, #29 closed); **#26** perf/battery (Gate G) in-repo slice (PR #184, squash `8f3c2ee`; device-measured half `[deferred]`). No bigger gate item is left in-repo.
-2. **Last code-addressable gate item — #44 (Gate B, content honesty):** `AUTO_UPGRADE_AI` still shows a "Coming Soon" badge on Labs (sibling `ENEMY_INTEL` already wired in V1X-15b). Decide *implement* vs *hide from Labs*, then run it through the Adversarial Review Gate (brainstorm → spec → plan → TDD). Small change; closes the last visible-but-unusable stub.
-3. **Manual play-feel / verification gates (developer judgment, can't be closed from code):** Gate A in-play audio feel, Gate E early-tier balance feel, Gate D "clean fresh-install run, no crashes."
-4. **Deferred — not a blocker:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1).
+1. **All in-repo gate items DONE:** look-&-feel bundles A–E (→ v1.0.4–v1.0.8); **#29** decision-support (Gate F, MERGED `70ebf53`, #29 closed); **#26** perf/battery (Gate G) in-repo slice (MERGED PR #184, `8f3c2ee`; device half `[deferred]`); **#44** Labs Coming-Soon cleanup (Gate **B.1**, DONE on `feat/44-labs-coming-soon-cleanup`, **PR pending** — open it, CI, merge, close #44). The in-repo Phase-1 gate surface is now exhausted.
+2. **Then: assess promotion readiness (internal → closed) — the real next call.** What remains is developer-judgment / manual: Gate A in-play audio feel, Gate E early-tier balance feel, Gate D "clean fresh-install run, no crashes." None is code-addressable; the decision to promote is yours, informed by these.
+3. **Deferred — not a blocker:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1); Gate B.2 cosmetic "Coming Soon" framing (separate cosmetic-palette debt).
 
 Phase 2 (only AFTER the developer promotes internal → closed):
 6. **(External)** Recruit ≥12 testers; ≥14-day closed soak; apply for production access; staged rollout; tag `v1.0.0`.
@@ -583,6 +591,18 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
   `PlayerWallet` are data classes (structural equality). Suppresses no-op re-emissions to every screen
   ViewModel; safe because no consumer uses these as a bare trigger (all `.first()` or `combine`/`stateIn`
   value chains). Don't move the distinct before the map.
+- **Labs surfaced-research filter is centralized (#44)** — which `ResearchType`s appear in Labs is decided
+  by ONE pure helper, `ResearchType.surfacedInLabs()` (`entries.filterNot { it.isComingSoon }`,
+  order-preserving). `LabsViewModel` builds `researchList` from it — don't re-inline
+  `entries.filterNot { … }` at the call-site (re-introduces the drift this consolidated). `LabsScreen` no
+  longer reads `isComingSoon` (the dead `COMING SOON` UI branches were removed) — don't re-add a per-card
+  coming-soon branch; a hidden type never reaches a card. The `LabsViewModel.startResearch`
+  `if (type.isComingSoon)` guard is the **reachable** second layer (blocks a Step spend if a future
+  deep-link/quick-research caller bypasses the list) — keep it. Guarded by `ResearchTypeTest` (pins the
+  helper BODY: excludes coming-soon + equals the 11 wired types); the call-site→helper wiring is held by
+  code review + the guard, NOT a test (the VM's `while(true)` ticker blocks cheap VM-construction tests —
+  an accepted coverage boundary, per the spec). `AUTO_UPGRADE_AI` stays the sole `isComingSoon=true`
+  research type (deferred to v1.x; its real design = "auto-spends Cash on optimal upgrades during rounds").
 
 ## References
 

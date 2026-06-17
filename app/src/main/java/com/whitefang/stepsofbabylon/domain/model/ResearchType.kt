@@ -69,5 +69,17 @@ enum class ResearchType(
      * still stacks additively post-cap, so a fully-maxed combination produces the documented
      * extended bounces. (R4-02b, 2026-05-23.)
      */
-    BOUNCE_RESEARCH(8_000, 6.0, 10, 1.0, "+1 projectile bounce", costScaling = 1.5),
+    BOUNCE_RESEARCH(8_000, 6.0, 10, 1.0, "+1 projectile bounce", costScaling = 1.5);
+
+    companion object {
+        /**
+         * Research types surfaced in the Labs UI — excludes [isComingSoon] (deferred-to-v1.x)
+         * entries so testers never see a half-built stub (#44, Gate B.1). The single source of
+         * truth for the Labs list filter: [com.whitefang.stepsofbabylon.presentation.labs.LabsViewModel]
+         * calls this rather than re-deriving `entries.filterNot { it.isComingSoon }` inline. Pure
+         * (no Android), so the UI-list contract is JVM-testable without instantiating the VM
+         * (whose `while(true)` ticker complicates direct construction). Preserves `entries` order.
+         */
+        fun surfacedInLabs(): List<ResearchType> = entries.filterNot { it.isComingSoon }
+    }
 }
