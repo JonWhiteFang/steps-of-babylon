@@ -73,7 +73,7 @@ class LabsViewModel @Inject constructor(
     ) { levels, activeList, profile, now, (processing, message) ->
         val activeMap = activeList.associateBy { it.type }
         LabsUiState(
-            researchList = ResearchType.entries.filterNot { it.isComingSoon }.map { type ->
+            researchList = ResearchType.surfacedInLabs().map { type ->
                 val level = levels[type] ?: 0
                 val isMaxed = level >= type.maxLevel
                 val active = activeMap[type]
@@ -108,12 +108,12 @@ class LabsViewModel @Inject constructor(
 
     fun startResearch(type: ResearchType) {
         if (_processing.value) return
-        // RO-11 #B.2 / V1X-15b: defensive belt-and-braces guard. The Labs UI already suppresses
-        // the Start Research button when [ResearchType.isComingSoon] is true, but this block
-        // protects against any future entry point (e.g. quick-research flow, deep-link)
-        // accidentally bypassing the UI gate while AUTO_UPGRADE_AI is still deferred
-        // (ENEMY_INTEL was wired in V1X-15b). Both layers read the same content-as-code flag
-        // so they cannot drift.
+        // #44 / RO-11 #B.2 / V1X-15b: defensive belt-and-braces guard. Coming-soon research is
+        // filtered out of the surfaced list entirely (ResearchType.surfacedInLabs()), so the UI
+        // never renders a Start button for it; this block is the reachable second layer that
+        // protects against any future caller (quick-research flow, deep-link) reaching
+        // startResearch with a deferred type and spending Steps. Both layers read the same
+        // content-as-code isComingSoon flag (only AUTO_UPGRADE_AI today), so they cannot drift.
         if (type.isComingSoon) {
             _userMessage.value = "Coming soon \u2014 reserved for v1.x"
             return
