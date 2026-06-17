@@ -1,6 +1,8 @@
 package com.whitefang.stepsofbabylon.domain.model
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
@@ -52,5 +54,35 @@ class ResearchTypeTest {
         assertEquals(10, t.maxLevel, "maxLevel")
         assertEquals(2.0, t.effectPerLevel, 1e-9, "effectPerLevel")
         assertEquals(false, t.isComingSoon, "isComingSoon")
+    }
+
+    @Test
+    fun `surfacedInLabs excludes coming-soon research`() {
+        // The Labs UI must never surface a deferred (isComingSoon) research type — that is
+        // exactly the half-built stub #44 / Gate B.1 is about. surfacedInLabs() is the single
+        // source of truth LabsViewModel consumes; this pins its body so the exclusion can't be
+        // silently dropped (see also `surfacedInLabs is exactly the wired types`).
+        val surfaced = ResearchType.surfacedInLabs()
+        assertTrue(
+            surfaced.none { it.isComingSoon },
+            "surfacedInLabs() must exclude every isComingSoon entry",
+        )
+        assertFalse(
+            ResearchType.AUTO_UPGRADE_AI in surfaced,
+            "AUTO_UPGRADE_AI (the deferred type) must not be surfaced in Labs",
+        )
+    }
+
+    @Test
+    fun `surfacedInLabs is exactly the wired types`() {
+        // Set-equality both directions: surfaced == all entries minus the single deferred one.
+        // Fails red if surfacedInLabs() stops filtering (would re-include AUTO_UPGRADE_AI) OR
+        // over-filters (drops a wired type). AUTO_UPGRADE_AI is the sole isComingSoon entry
+        // (guarded by `only AUTO_UPGRADE_AI is flagged isComingSoon` above).
+        assertEquals(
+            ResearchType.entries.toSet() - ResearchType.AUTO_UPGRADE_AI,
+            ResearchType.surfacedInLabs().toSet(),
+            "surfacedInLabs() must be exactly the 11 wired types (all entries minus AUTO_UPGRADE_AI)",
+        )
     }
 }
