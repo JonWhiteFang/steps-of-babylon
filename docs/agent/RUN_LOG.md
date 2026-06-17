@@ -1,3 +1,52 @@
+## 2026-06-17 — Promotion-readiness assessment (internal → closed) + #187 Settings-scroll fix (PR pending on `fix/187-settings-scroll`)
+
+- **Goal:** "Assess promotion readiness" — decide whether the game is good enough to promote from the Play
+  **internal** track to **closed** test, judged against the Closed-Test Readiness Gate (A–G) in
+  `plan-FORWARD.md`. Then act on what the assessment surfaced.
+- **Assessment method (not a self-report parrot):** ran a grounded, adversarially-verified gate audit as a
+  `Workflow` — one auditor per gate (A–G) + two cross-cutting lanes (release mechanics, open-issue sweep),
+  each forced to cite `file:line` / `gh` output, then a skeptic re-checked each verdict against the actual
+  code/issues and tried to refute it. Empirically re-ran the JVM suite: **1054 tests, BUILD SUCCESSFUL**
+  (matches headline). CI on HEAD `952a8bf` green. **Verdict: READY to promote pending manual/device
+  sign-off.** Every code-addressable gate item is done & verified (D: #124/#127/#146 all present + tested;
+  F: #29 merged, CombatPower is a type-isolated display proxy; G: benchmark modules + 18,804-rule Baseline
+  Profile + A28/A31/A29 all present; B.1: `surfacedInLabs()` filter + dead-branch deletion). Zero open
+  `severity:major`/`severity:blocker`; only open bug is #128 (minor, self-declared non-blocking). Remaining
+  gate work is in-play feel (A audio, E balance) + the Gate-D fresh-install pass — none code-addressable.
+- **Doc drift caught:** STATE.md + plan-FORWARD said #44 was "PR pending" — it was actually **MERGED**
+  (PR #186, `952a8bf`). Corrected in STATE this session.
+- **Gate-D fresh-install pass (on-device, Pixel_6/API36):** built debug APK from HEAD `952a8bf`, clean
+  install (app not previously present — true fresh state), cold launch. Drove the full core loop:
+  onboarding lands correctly (4-slide carousel, biome cross-fade #164, Cinzel font) → "Enable step
+  counting" fires the 3 expected permission flows (activity-recognition → POST_NOTIFICATIONS →
+  Health Connect) → persist-first completion beat ("✓ Step counting enabled" → "Start playing") → Home
+  (currency dashboard, daily-login +1 Gem) → Workshop (**#29 decision-support UI renders**: ★ BEST BUY ·
+  SAVE UP badge, Now→Next previews, power/1k-steps bars) → Battle (biome intro → SurfaceView loop, left
+  control rail #171) → ran at **4×** ~20s → ziggurat fell → **Round Over** (Wave 4, 15 kills — counter
+  positive/sane, **#146 held**; +1 PS / +15 Steps) → Leave Battle → Home shows **persisted** Steps 15 / PS 1
+  / Best Wave 4 (**#122 economy contract held**) → Settings. **Zero crashes/ANRs/FATALs** for the app across
+  the whole session (the only process death in logcat was the OS TalkBack service, unrelated).
+- **Bug surfaced → #187 (filed + fixed this session):** on reaching Settings, the screen **would not
+  scroll**. Root cause (`SettingsScreen.kt:30`): root layout was a `Column(fillMaxSize())` with **no
+  `.verticalScroll()`** — content overflowed a 1080×2400 screen, so **"Replay tutorial"** (Gate C, #24) and
+  **"Delete All Data"** (Play data-deletion compliance) were unreachable below the fold. Confirmed real in
+  code (no `verticalScroll`/`LazyColumn`; `HelpScreen` by contrast does scroll). Filed as **#187**
+  (`bug, severity:major, area:ui, ux`; flagged the unreachable Delete-All-Data as arguably `severity:blocker`
+  for the maintainer to decide).
+- **Fix:** added `.verticalScroll(rememberScrollState())` to the root column + the two foundation imports
+  (matches the `HelpScreen` pattern). Presentation-only, one-line. Built + installed; **on-device
+  re-verified** Settings now scrolls and both previously-stranded cards are reachable (uiautomator dump +
+  screenshot confirm "Replay tutorial" / "Delete All Data" present). **JVM suite green (1054, no change).**
+- **No regression test:** Compose-UI test rules don't run under Robolectric in this repo (PR-4736), so
+  on-device is the acceptance gate — consistent with #171 and other UI-layout work.
+- **Doc-sync:** CHANGELOG `[Unreleased]` "Fixed" entry; STATE headline + objective rotation; this RUN_LOG
+  entry. No ADR (presentation-only bug fix, no architectural decision).
+- **NEXT:** open PR for `fix/187-settings-scroll` → CI green → merge → close #187. After that, the Gate-D
+  "clean fresh-install" item is genuinely clean and the promotion call (internal → closed) is the
+  developer's, informed by the remaining in-play feel checks (Gate A audio, Gate E balance).
+
+---
+
 ## 2026-06-17 — #44 Labs Coming-Soon cleanup (Gate B.1) — DONE on `feat/44-labs-coming-soon-cleanup` (PR pending)
 
 - **Goal:** Resolve issue #44 (`AUTO_UPGRADE_AI` "Coming Soon" research stub) for Closed-Test Readiness

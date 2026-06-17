@@ -4,33 +4,33 @@ One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) a
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
 **Headline:** **v1.0.8 (versionCode 24) live on Play internal track** · **1054 JVM + 9 instrumented tests**
-green · schema v12 · **#44 Labs Coming-Soon cleanup (Gate B.1) DONE on `feat/44-labs-coming-soon-cleanup`,
-PR pending** — `ResearchType.surfacedInLabs()` helper + regression guard, deleted dead `LabsScreen`
-COMING-SOON branches, fixed stale comments; presentation + one pure-domain helper, no schema/engine/economy
-change · **#26 perf/battery (Gate G) in-repo slice MERGED** (PR #184, `8f3c2ee`; device half `[deferred]`)
-· all five A–E look-&-feel bundles shipped (v1.0.4–v1.0.8) + #29 decision-support (Gate F) MERGED
-(`70ebf53`) · launch is judgment-gated on the Closed-Test Readiness Gate (`plan-FORWARD.md`).
+green · schema v12 · **#44 Labs Coming-Soon cleanup (Gate B.1) MERGED** (PR #186, `952a8bf`) · **#26
+perf/battery (Gate G) in-repo slice MERGED** (PR #184, `8f3c2ee`; device half `[deferred]`) · all five
+A–E look-&-feel bundles shipped (v1.0.4–v1.0.8) + #29 decision-support (Gate F) MERGED (`70ebf53`) ·
+**promotion-readiness assessed (internal → closed): READY pending manual sign-off** — gate audit + on-device
+Gate-D fresh-install pass surfaced #187 (Settings didn't scroll → "Replay tutorial"/"Delete All Data"
+unreachable), now **FIXED on `fix/187-settings-scroll`, PR pending** · launch is judgment-gated on the
+Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
-- **CURRENT — #44 Labs Coming-Soon cleanup (Gate B.1): DONE on `feat/44-labs-coming-soon-cleanup`, PR
-  pending.** Verification on `main` showed #44's premise was stale: `AUTO_UPGRADE_AI` (the one
-  `isComingSoon` research type) has been *hidden* from Labs since V1X-15 (the list is
-  `entries.filterNot { it.isComingSoon }`), so Gate B.1's "no half-built research shown" was already met
-  in behaviour — the dead `COMING SOON` `LabsScreen` branches were just misleading the issue/reader. So
-  the work was **cleanup + lock**, not implement-vs-hide: new pure `ResearchType.surfacedInLabs()` (single
-  source of truth, order-preserving) consumed by `LabsViewModel`; +2 `ResearchTypeTest` regression cases
-  pinning the helper body; deleted the two unreachable `info.type.isComingSoon ->` branches; corrected the
-  stale `startResearch` guard comment (kept the guard as the reachable second layer). Presentation + one
-  pure-domain helper, **no schema/engine/economy change. 1052→1054 JVM.** Spec + plan **both** passed the
-  Adversarial Review Gate (spec 21→11 surviving / 2 actionable applied; plan 15→1 surviving / applied; both
-  0 critical/major); subagent-driven TDD; spec + code-quality review green; red-before-green proven.
-  Doc-sync: GDD:256 reworded + plan-FORWARD **B.1** ticked (B.2 left to its separate cosmetic debt). NEXT:
-  open PR → CI green → merge → close #44. **After #44, the in-repo Phase-1 gate surface is exhausted** —
-  what remains is developer-judgment / manual: **Gate A** (in-play audio feel), **Gate E** (early-tier
-  balance feel), **Gate D** "clean fresh-install run, no crashes" (a verification pass). **#128** (~21
-  audit Lows) is **deferred — not a blocker** → v1.1. So the real next call is **assess promotion
-  readiness** (internal → closed).
+- **CURRENT — Promotion readiness assessed (internal → closed) + #187 Settings-scroll fix (PR pending on
+  `fix/187-settings-scroll`).** Ran a grounded, adversarially-verified gate audit (A–G + release-mechanics +
+  open-issue sweep): every code-addressable gate item is **done, verified in code, CI green**; the JVM suite
+  was re-run green (1054). Verdict: **READY to promote pending manual/device sign-off** — what's left is
+  in-play feel (Gate A audio, Gate E balance) + the Gate-D fresh-install pass. Zero open
+  `severity:major`/`severity:blocker`; only open bug is #128 (minor, non-blocking). **Then executed the
+  Gate-D pass on-device** (Pixel_6/API36, fresh install of HEAD `952a8bf`): full core loop — onboarding →
+  3 permission flows (activity-recognition + notifications + Health Connect) → Home → Workshop (#29
+  decision-support UI renders) → Battle at 4× → Round Over (Wave 4, 15 kills, +1 PS/+15 Steps, counter
+  sane — #146 held) → reward persistence (#122) → Settings — with **zero crashes/ANRs/FATALs**. The pass
+  surfaced **#187**: `SettingsScreen` root `Column` had no `.verticalScroll()`, so "Replay tutorial" (Gate C)
+  + "Delete All Data" (Play data-deletion compliance) were unreachable below the fold. **Fixed** (one-line +
+  imports, matches `HelpScreen`), on-device re-verified both cards now reachable; JVM green, no test-count
+  change. Filed as #187; CHANGELOG `[Unreleased]` entry added. NEXT: open PR → CI green → merge → close #187,
+  then the Gate-D fresh-install item is genuinely clean and promotion is a developer call.
+- **Doc correction (this session):** prior STATE/plan-FORWARD wording said #44 was "PR pending" — it was
+  actually **MERGED** (PR #186, `952a8bf`). Corrected here; plan-FORWARD §B.1 was already `[x]`.
 - **Previous objective (DONE): #26 perf/battery (Gate G) in-repo slice — MERGED to `main`** (PR #184,
   squash `8f3c2ee`, merged 2026-06-16; CI PR gate + instrumented lane green). Spec + plan both passed the
   Adversarial Review Gate (spec 43→23 surviving; plan 63→48 surviving; both 0 unaddressed critical/major).
