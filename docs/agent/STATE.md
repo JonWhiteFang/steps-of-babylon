@@ -9,28 +9,29 @@ perf/battery (Gate G) in-repo slice MERGED** (PR #184, `8f3c2ee`; device half `[
 A–E look-&-feel bundles shipped (v1.0.4–v1.0.8) + #29 decision-support (Gate F) MERGED (`70ebf53`) ·
 **promotion-readiness assessed (internal → closed): READY pending manual sign-off** — gate audit + on-device
 Gate-D fresh-install pass surfaced #187 (Settings didn't scroll → "Replay tutorial"/"Delete All Data"
-unreachable), now **FIXED on `fix/187-settings-scroll`, PR pending** · launch is judgment-gated on the
+unreachable), now **FIXED + MERGED** (PR #188, `af30e96`; #187 closed) · launch is judgment-gated on the
 Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Current objective
 
-- **CURRENT — Promotion readiness assessed (internal → closed) + #187 Settings-scroll fix (PR pending on
-  `fix/187-settings-scroll`).** Ran a grounded, adversarially-verified gate audit (A–G + release-mechanics +
-  open-issue sweep): every code-addressable gate item is **done, verified in code, CI green**; the JVM suite
-  was re-run green (1054). Verdict: **READY to promote pending manual/device sign-off** — what's left is
-  in-play feel (Gate A audio, Gate E balance) + the Gate-D fresh-install pass. Zero open
-  `severity:major`/`severity:blocker`; only open bug is #128 (minor, non-blocking). **Then executed the
-  Gate-D pass on-device** (Pixel_6/API36, fresh install of HEAD `952a8bf`): full core loop — onboarding →
-  3 permission flows (activity-recognition + notifications + Health Connect) → Home → Workshop (#29
-  decision-support UI renders) → Battle at 4× → Round Over (Wave 4, 15 kills, +1 PS/+15 Steps, counter
-  sane — #146 held) → reward persistence (#122) → Settings — with **zero crashes/ANRs/FATALs**. The pass
-  surfaced **#187**: `SettingsScreen` root `Column` had no `.verticalScroll()`, so "Replay tutorial" (Gate C)
-  + "Delete All Data" (Play data-deletion compliance) were unreachable below the fold. **Fixed** (one-line +
-  imports, matches `HelpScreen`), on-device re-verified both cards now reachable; JVM green, no test-count
-  change. Filed as #187; CHANGELOG `[Unreleased]` entry added. NEXT: open PR → CI green → merge → close #187,
-  then the Gate-D fresh-install item is genuinely clean and promotion is a developer call.
-- **Doc correction (this session):** prior STATE/plan-FORWARD wording said #44 was "PR pending" — it was
-  actually **MERGED** (PR #186, `952a8bf`). Corrected here; plan-FORWARD §B.1 was already `[x]`.
+- **CURRENT — Promotion readiness assessed (internal → closed): READY pending manual sign-off; Gate-D
+  fresh-install pass DONE; #187 Settings-scroll fix MERGED (PR #188, `af30e96`; #187 closed).** Ran a
+  grounded, adversarially-verified gate audit (A–G + release-mechanics + open-issue sweep): every
+  code-addressable gate item is **done, verified in code, CI green**; the JVM suite was re-run green (1054).
+  Verdict: **READY to promote pending manual/device sign-off** — what's left is in-play feel (Gate A audio,
+  Gate E balance). Zero open `severity:major`/`severity:blocker`; only open bug is #128 (minor,
+  non-blocking). **Executed the Gate-D pass on-device** (Pixel_6/API36, fresh install of HEAD `952a8bf`):
+  full core loop — onboarding → 3 permission flows (activity-recognition + notifications + Health Connect) →
+  Home → Workshop (#29 decision-support UI renders) → Battle at 4× → Round Over (Wave 4, 15 kills,
+  +1 PS/+15 Steps, counter sane — #146 held) → reward persistence (#122) → Settings — with **zero
+  crashes/ANRs/FATALs**. The pass surfaced **#187**: `SettingsScreen` root `Column` had no
+  `.verticalScroll()`, so "Replay tutorial" (Gate C) + "Delete All Data" (Play data-deletion compliance)
+  were unreachable below the fold. **Fixed** (one-line + imports, matches `HelpScreen`), on-device
+  re-verified both cards now reachable; JVM green, no test-count change. PR #188 merged (CI both lanes
+  green: build-and-test 4m38s, connected 7m13s). Gate-D "clean fresh-install" item now ticked in
+  plan-FORWARD. **NEXT: the promotion call (internal → closed) is the developer's** — informed by the
+  remaining in-play feel checks (Gate A audio, Gate E balance), then a manual Play Console action on the
+  uploaded AAB. (#44 wording corrected: it was **MERGED**, PR #186 `952a8bf`, not "PR pending".)
 - **Previous objective (DONE): #26 perf/battery (Gate G) in-repo slice — MERGED to `main`** (PR #184,
   squash `8f3c2ee`, merged 2026-06-16; CI PR gate + instrumented lane green). Spec + plan both passed the
   Adversarial Review Gate (spec 43→23 surviving; plan 63→48 surviving; both 0 unaddressed critical/major).
@@ -93,9 +94,10 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
   deferred to v1.1 per the audit grouping). Bigger gate items: **#29** decision-support (Gate F) **MERGED**
   (PR #182, squash `70ebf53`, #29 closed); **#26** perf/battery (Gate G) in-repo slice **MERGED** (PR #184,
   squash `8f3c2ee`; device-measured half `[deferred]`); **#44** Labs Coming-Soon cleanup (Gate **B.1**)
-  **DONE** (`feat/44-labs-coming-soon-cleanup`, PR pending). With #44, the in-repo Phase-1 gate surface is
-  exhausted — the rest of the gate (A audio, E balance, D fresh-install) is developer-judgment / manual,
-  and Gate B.2 (cosmetic "Coming Soon" framing) is satisfied-by separate cosmetic debt.
+  **MERGED** (PR #186, `952a8bf`, #44 closed). With #44, the in-repo Phase-1 gate surface is exhausted —
+  and Gate **D** "clean fresh-install" is now ticked too (verified on-device 2026-06-17; surfaced + fixed
+  #187, PR #188). The rest of the gate (A audio, E balance) is developer-judgment / manual, and Gate B.2
+  (cosmetic "Coming Soon" framing) is satisfied-by separate cosmetic debt.
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
@@ -433,8 +435,8 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **All in-repo gate items DONE:** look-&-feel bundles A–E (→ v1.0.4–v1.0.8); **#29** decision-support (Gate F, MERGED `70ebf53`, #29 closed); **#26** perf/battery (Gate G) in-repo slice (MERGED PR #184, `8f3c2ee`; device half `[deferred]`); **#44** Labs Coming-Soon cleanup (Gate **B.1**, DONE on `feat/44-labs-coming-soon-cleanup`, **PR pending** — open it, CI, merge, close #44). The in-repo Phase-1 gate surface is now exhausted.
-2. **Then: assess promotion readiness (internal → closed) — the real next call.** What remains is developer-judgment / manual: Gate A in-play audio feel, Gate E early-tier balance feel, Gate D "clean fresh-install run, no crashes." None is code-addressable; the decision to promote is yours, informed by these.
+1. **All in-repo gate items DONE + promotion readiness assessed (READY pending manual sign-off):** look-&-feel bundles A–E (→ v1.0.4–v1.0.8); **#29** decision-support (Gate F, MERGED `70ebf53`, #29 closed); **#26** perf/battery (Gate G) in-repo slice (MERGED PR #184, `8f3c2ee`; device half `[deferred]`); **#44** Labs Coming-Soon cleanup (Gate **B.1**, MERGED PR #186 `952a8bf`, #44 closed); **#187** Settings-scroll fix (MERGED PR #188 `af30e96`, #187 closed) from the **Gate-D on-device fresh-install pass** (now ticked — zero crashes). The in-repo Phase-1 gate surface is exhausted.
+2. **The promotion call (internal → closed) is now the developer's.** What remains is developer-judgment / manual: **Gate A** in-play audio feel, **Gate E** early-tier balance feel. None is code-addressable; the decision to promote is yours, informed by these, then a manual Play Console action on the uploaded AAB.
 3. **Deferred — not a blocker:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1); Gate B.2 cosmetic "Coming Soon" framing (separate cosmetic-palette debt).
 
 Phase 2 (only AFTER the developer promotes internal → closed):

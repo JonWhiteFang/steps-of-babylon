@@ -56,7 +56,7 @@ state — the checklist informs that call, it does not replace it.
   install of HEAD `952a8bf`): full core loop (onboarding → 3 permission flows → Home → Workshop → Battle
   @4× → Round Over → reward persistence → Settings) with zero crashes/ANRs/FATALs. The pass surfaced a
   layout defect (#187, Settings didn't scroll → "Replay tutorial"/"Delete All Data" unreachable), now fixed
-  on `fix/187-settings-scroll` + on-device re-verified.*
+  + MERGED (PR #188, `af30e96`; #187 closed) + on-device re-verified.*
 
 ### E. Balance & progression feel
 - [ ] Early tiers (1–5) feel right; economy neither grindy nor trivial — *manual play assessment*
