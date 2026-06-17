@@ -72,6 +72,7 @@ class DataDeletionManager @Inject constructor(
             "widget_data",
             "smart_reminders",
             "billing_anti_fraud",
+            "crash_breadcrumb_prefs",
         )
     }
 }
