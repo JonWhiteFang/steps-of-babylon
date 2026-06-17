@@ -4,6 +4,19 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fixed — Settings screen now scrolls (#187, area:ui)
+
+**No schema/engine/economy change. No test-count change (1054). Presentation-only, one-line.**
+
+- **Bug:** the Settings root layout was a non-scrolling `Column(fillMaxSize())`, so on any device
+  where the content overflowed (confirmed Pixel 6, 1080×2400), everything below the fold was
+  unreachable — including the **"Replay tutorial"** card (Gate C, #24) and the **"Delete All Data"**
+  card (Play data-deletion compliance). Found during the Gate-D clean fresh-install verification pass.
+- **Fix:** added `.verticalScroll(rememberScrollState())` to the root column (matching the existing
+  `HelpScreen` pattern). On-device verified both previously-stranded cards are now reachable.
+- **No regression test:** Compose-UI test rules don't run under Robolectric in this repo (PR-4736),
+  so on-device is the acceptance gate — consistent with other UI-layout work (#171, etc.).
+
 ### Changed — Labs "Coming Soon" cleanup + Gate B.1 lock (#44, content honesty)
 
 **No schema/engine/economy change. +2 JVM tests (1052 → 1054). Presentation + one pure-domain helper.**

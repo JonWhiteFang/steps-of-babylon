@@ -38,7 +38,7 @@ state — the checklist informs that call, it does not replace it.
 - [ ] No audio glitches: throttle holds up at RAPID_FIRE L10 + MULTISHOT; music ducks/resumes correctly on interruptions
 
 ### B. Content honesty
-- [x] AUTO_UPGRADE_AI resolved — *satisfied-by #44 (PR pending): the type has been hidden from Labs since V1X-15 (`surfacedInLabs()` filter); #44 made the code match reality (deleted dead UI branches) + added a regression guard. Implementation deferred to v1.x; nothing half-built is shown.*
+- [x] AUTO_UPGRADE_AI resolved — *satisfied-by #44 (MERGED, PR #186 `952a8bf`): the type has been hidden from Labs since V1X-15 (`surfacedInLabs()` filter); #44 made the code match reality (deleted dead UI branches) + added a regression guard. Implementation deferred to v1.x; nothing half-built is shown.*
 - [ ] No misleading "Coming Soon" in core flows; remaining locked cosmetics clearly framed — *satisfied-by known-issues cosmetic debt*
 
 ### C. First-session UX
@@ -52,7 +52,11 @@ state — the checklist informs that call, it does not replace it.
   `GameEngine.aliveEnemyCount()` from the live `EnemyEntity` list (immune to both causes — untracked
   SCATTER children + `onDeath` re-fire on corpses — and any future bypass) plus the `EnemyEntity.takeDamage`
   guard `if (!isAlive) return 0.0` (also fixes the per-kill cash + battle-Steps double-credit). No schema.
-- [ ] Clean fresh-install run; no known crashes
+- [x] Clean fresh-install run; no known crashes — *verified on-device 2026-06-17 (Pixel_6/API36, fresh
+  install of HEAD `952a8bf`): full core loop (onboarding → 3 permission flows → Home → Workshop → Battle
+  @4× → Round Over → reward persistence → Settings) with zero crashes/ANRs/FATALs. The pass surfaced a
+  layout defect (#187, Settings didn't scroll → "Replay tutorial"/"Delete All Data" unreachable), now fixed
+  on `fix/187-settings-scroll` + on-device re-verified.*
 
 ### E. Balance & progression feel
 - [ ] Early tiers (1–5) feel right; economy neither grindy nor trivial — *manual play assessment*
