@@ -266,15 +266,24 @@ from game logic — the simulation has been extracted to a pure-domain core:
   JVM-testable, no Android. This is where game-logic changes should land. (V1X-09, ADR-0012.)
 - **`presentation/battle/engine/GameEngine`** — the presentation/render shell that delegates simulation
   to `Simulation` and keeps render + UW activation side-effects.
-- **`GameLoopThread`** runs `update()`/`render()` on a dedicated thread with a fixed timestep.
+- **`GameLoopThread`** runs `update()`/`render()` on a dedicated thread with a fixed timestep. Its
+  per-tick `update()`/`render()` is wrapped in a `try/catch` (#190): on a throw it records a crash
+  breadcrumb, stops the loop, and fires `onLoopError` → a "Battle error" UI state — **never silent
+  process death**. Don't remove the guard or let the loop run `update()`/`render()` unguarded.
 - **Stats resolution** combines Workshop (permanent) × In-Round (temporary) upgrades multiplicatively.
 - **Wave timing:** 26s spawn phase + 9s cooldown between waves. **Speed controls:** 1x / 2x / 4x.
 
 > ⚠️ **Thread-safety:** the game loop runs on its own thread while the UI/main thread can mutate engine
 > state. `GameEngine.entities` is now guarded by a private `entitiesLock` monitor — every region that
 > structurally mutates or iterates it (`update`, `init`, `applyStats` orb-reconcile, `render` via an
-> under-lock snapshot, `aliveEnemyCount`) holds the lock (#118 fix). Any NEW structural mutation of a
-> shared engine collection must take the same lock or be confined to the loop thread — see
+> under-lock snapshot, `aliveEnemyCount`) holds the lock (#118 fix). `GameEngine.uwStates` is on the
+> SAME monitor: `updateUWs` iterates it under the tick lock, and `initUWs` (main-thread replay) +
+> `uwSnapshot()` (the 200ms poll read) now take `entitiesLock` too (#191 CONC-2). `EffectEngine`'s
+> `effects`/`pendingEffects` are guarded by their OWN private `effectsLock` (#191 CONC-1) — `addEffect`
+> (off-thread), the `update` drain/deferred-sweep, and the `render` snapshot all hold it; per-effect
+> `update`/`render` and the Canvas draw run OUTSIDE it. **Lock order is acyclic: `entitiesLock` (outer,
+> held across the whole tick) → `effectsLock` (inner); never the reverse.** Any NEW structural mutation
+> of a shared engine collection must take the same lock or be confined to the loop thread — see
 > `docs/external-reviews/` and the remaining `severity:major` battle issues.
 >
 > ⚠️ **HUD enemy count is derived, not tallied (#146):** the wave-header "M enemies" reads
@@ -300,7 +309,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1054 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1069 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Notable guards:** `architecture/DomainPurityTest` (fails if `domain/` imports any Android package);
   `SimulationTest` (the extracted pure-domain game-loop core); `BattleSurfaceLifecycleTest` +

@@ -3,33 +3,31 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.8 (versionCode 24) live on Play internal track** · **1054 JVM + 9 instrumented tests**
-green · schema v12 · all closed-test Gate A–G in-repo items MERGED (B.1 #186, G #184, F #182, A–E bundles
-v1.0.4–v1.0.8, #187 Settings-scroll #188) · **but promotion to closed is NOW GATED on the 2026-06-17
-complete-app review** (`docs/reviews/complete-app-review.md`): a 51-agent code-grounded, adversarially-verified
-audit raised **3 `severity:blocker` promotion blockers (#190 crash visibility + game-loop guard, #191 two
-reachable battle crashes, #192 privacy/Data-Safety accuracy)** + 3 `severity:major` soak-hardening items
-(#193/#194/#195), all on the `v1.0.0 closed-test gate` milestone (Gate H in `plan-FORWARD.md`). Audit verdict:
-**continue building** — do the blocker pass, then promote.
+**Headline:** **v1.0.8 (versionCode 24) live on Play internal track** · **1069 JVM + 9 instrumented tests**
+green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **Gate H code blockers #190 + #191
+DONE** (crash visibility + the two reachable battle CMEs — branch `fix/190-191-crash-visibility-battle-concurrency`,
+in `[Unreleased]`, full suite + lint + assemble green, awaiting PR/merge). **Remaining to promote internal →
+closed:** **#192** privacy/Data-Safety text (a text + Play Console change, not code) + the 3 `severity:major`
+soak-hardening items (#193/#194/#195). Audit (`docs/reviews/complete-app-review.md`) verdict: **continue
+building** — finish the blocker pass, then promote.
 
 ## Current objective
 
-- **CURRENT — Closed-track promotion blockers (Gate H, #190–#192) — NOT yet started.** The 2026-06-17
-  complete-app review (`docs/reviews/complete-app-review.md`; 51 agents, ~3.1M tokens, every material finding
-  adversarially verified) reset the promotion picture: the prior "READY pending manual sign-off" verdict held
-  for *observed* behaviour (the Gate-D fresh-install pass found no crash), but the audit found **reachable**
-  defects a manual pass can't trigger. **Three `severity:blocker` items now gate internal → closed:** **#190**
-  (no crash reporting + unguarded `GameLoopThread` `update()/render()` → silent process death; we'd soak
-  blind — REL-1/REL-2, effort S), **#191** (`EffectEngine` lists mutated cross-thread on every boss kill/step
-  reward + `uwStates` mutated off-thread on replay → reachable battle CME; same class as #118 on lists the
-  `entitiesLock` sweep missed — CONC-1/CONC-2, effort S), **#192** (in-app + hosted privacy policy say data
-  "never uploaded"/AdMob is "future" while the live build ships AdMob+UMP + collects the advertising ID →
-  Play Data-Safety accuracy on the path to the production-access application — PRIV-1/SEC-1, effort S + Console).
-  **NEXT:** spec → adversarial-review-gate → TDD the blocker pass (start with #190/#191; #192 is a text/Console
-  edit). Then the 3 `severity:major` soak-hardening items (#193 no-sensor signal, #194 error states, #195
-  Missions day-rollover) before/during the soak. Lower-severity audit findings (architecture seam, A11Y
-  contrast, no-Compose-UI-tests, wrapper validation, clock-tamper TIME-1, i18n) are before-public/post-launch
-  (review §18 Tiers 2–5), NOT closed-track blockers.
+- **CURRENT — Gate H code blockers #190 + #191 DONE (branch `fix/190-191-crash-visibility-battle-concurrency`,
+  `[Unreleased]`, awaiting PR/merge).** Both `severity:blocker` code defects from the 2026-06-17 complete-app
+  review are fixed, spec→plan→TDD, both artifacts through the Adversarial Review Gate (spec 34→25; plan 18→14;
+  both 0 unaddressed critical/major), 9 subagent-driven tasks with per-task spec+quality review + a final
+  whole-branch review (READY TO MERGE). **#190 (REL-1/REL-2):** local `CrashBreadcrumbStore` + chaining global
+  uncaught-exception handler + guarded `GameLoopThread` (record→stop→`onLoopError`→"Battle error" overlay,
+  no-persist of the corrupt round) + next-launch notice + `DataDeletionManager` wipe. **#191 (CONC-1/CONC-2):**
+  `EffectEngine` `effectsLock` + `initUWs` under `entitiesLock` + `uwSnapshot()`. Local-only diagnostics — no
+  new dep, no data egress, no schema/economy/balance change. **1054→1069 JVM** (+15), `testDebugUnitTest lintDebug
+  assembleDebug` green. ADR-0026. **NEXT:** open the PR (`Closes #190`, `Closes #191`); then the remaining Gate-H
+  items to promote internal → closed: **#192** privacy/Data-Safety text (in-app + hosted policy + a Play Console
+  Data-Safety edit — NOT code) and the 3 `severity:major` soak-hardening items (**#193** no-sensor signal,
+  **#194** error states, **#195** Missions day-rollover) before/during the soak. Lower-severity audit findings
+  (architecture seam, A11Y contrast, no-Compose-UI-tests, wrapper validation, clock-tamper TIME-1, i18n) are
+  before-public/post-launch (review §18 Tiers 2–5), NOT closed-track blockers.
 - **Previous objective (DONE): promotion readiness assessed (internal → closed): READY pending manual
   sign-off; Gate-D fresh-install pass DONE; #187 Settings-scroll fix MERGED (PR #188, `af30e96`).** Ran a
   grounded gate audit (A–G + release-mechanics + open-issue sweep): every code-addressable gate item done,
@@ -418,12 +416,12 @@ reachable battle crashes, #192 privacy/Data-Safety accuracy)** + 3 `severity:maj
 
 ## Known issues / debt
 
-- **CLOSED-TRACK PROMOTION BLOCKERS (2026-06-17 complete-app review, Gate H):** **#190** (no crash
-  visibility + unguarded game-loop thread — REL-1/REL-2), **#191** (two reachable battle crashes:
-  `EffectEngine` + `uwStates` mutated off the loop thread — CONC-1/CONC-2), **#192** (privacy-policy /
-  Data-Safety understates live AdMob+UMP ad-ID collection — PRIV-1/SEC-1). All `severity:blocker`, on the
-  `v1.0.0 closed-test gate` milestone. Plus 3 `severity:major` soak-hardening items: **#193** (no-sensor
-  silent dead-end — REL-3), **#194** (no error states — UX-1), **#195** (Missions day-rollover stale query —
+- **CLOSED-TRACK PROMOTION BLOCKERS (2026-06-17 complete-app review, Gate H):** **#190** (crash visibility +
+  game-loop guard — REL-1/REL-2) and **#191** (two reachable battle CMEs — CONC-1/CONC-2) are **FIXED**
+  (branch `fix/190-191-crash-visibility-battle-concurrency`, `[Unreleased]`, ADR-0026; awaiting PR/merge).
+  Still open: **#192** (privacy-policy / Data-Safety understates live AdMob+UMP ad-ID collection — PRIV-1/SEC-1;
+  text + Play Console, not code). Plus 3 `severity:major` soak-hardening items: **#193** (no-sensor silent
+  dead-end — REL-3), **#194** (no error states — UX-1), **#195** (Missions day-rollover stale query —
   STATE-1). Full report: `docs/reviews/complete-app-review.md`.
 - **Promotion gate:** the Closed-Test Readiness Gate (`plan-FORWARD.md` A–H) is the call to promote
   internal → closed; Gate H (above) must clear first. Google's ≥12-tester + ≥14-day-soak policy is a
@@ -453,12 +451,14 @@ reachable battle crashes, #192 privacy/Data-Safety accuracy)** + 3 `severity:maj
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Closed-track promotion blockers (Gate H, #190–#192) — the new top of the queue.** The 2026-06-17
-   complete-app review reopened the promotion picture with 3 `severity:blocker` items: **#190** crash
-   visibility + game-loop guard (REL-1/REL-2, S), **#191** two reachable battle crashes (CONC-1/CONC-2, S),
-   **#192** privacy/Data-Safety accuracy (PRIV-1/SEC-1, S + Console). Recommended approach: spec →
-   adversarial-review-gate → TDD (start #190/#191; #192 is text + a Console step). These gate internal → closed.
-2. **Soak-hardening (Gate H `severity:major`) — before/during the soak:** **#193** no-sensor signal (REL-3),
+1. **Open the #190/#191 PR.** Both code blockers are DONE on `fix/190-191-crash-visibility-battle-concurrency`
+   (`[Unreleased]`, ADR-0026, full suite + lint + assemble green). Next action: `gh pr create` with
+   `Closes #190` / `Closes #191`, let the CI PR gate + instrumented lane run, merge.
+2. **#192 privacy/Data-Safety accuracy (PRIV-1/SEC-1) — the last `severity:blocker`.** In-app + hosted
+   privacy policy say data is "never uploaded"/AdMob is "future" while the live build ships AdMob+UMP +
+   collects the advertising ID. Fix = the in-app + hosted policy text + a Play Console Data-Safety edit
+   (NOT code). This + #190/#191 gate internal → closed.
+3. **Soak-hardening (Gate H `severity:major`) — before/during the soak:** **#193** no-sensor signal (REL-3),
    **#194** error states (UX-1), **#195** Missions day-rollover (STATE-1). Not hard promotion gates but they
    degrade tester experience / feedback quality.
 3. **Then the remaining developer-judgment / manual gate items:** **Gate A** in-play audio feel, **Gate E**
@@ -484,6 +484,9 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **Live-price wiring (PR B)** — "fetch once on Store entry" is intentional for v1; don't add resume/locale refresh without re-deriving cache invalidation.
 - **GOLDEN × overdrive `fortuneMultiplier` (RO-09 #2)** — 3-site "higher buff wins" invariant, guarded by 4 GameEngineTest entries.
 - **`GameEngine.entities` thread-safety (#118)** — every structural mutation/iteration behind the private `entitiesLock`; guarded by `GameEngineConcurrencyTest`.
+- **`GameEngine.uwStates` is on `entitiesLock` too (#191 CONC-2, ADR-0026)** — `updateUWs` iterates it under the tick lock; `initUWs` (main-thread replay) is now wrapped in `synchronized(entitiesLock)`; the 200ms VM poll reads `uwSnapshot()` (a list-structure copy under the lock), NOT `uwStates` directly. Don't add an unlocked `uwStates` structural mutation or re-point the poll at the raw list. Guarded by `GameEngineConcurrencyTest`'s replay-race test.
+- **`EffectEngine` has its OWN `effectsLock` (#191 CONC-1, ADR-0026)** — `effects`/`pendingEffects` add/drain/render/clear are guarded; per-effect `update`/`render` + the Canvas draw run OUTSIDE it (snapshot idiom); `removeAll` is a deferred 2nd lock acquisition so `update→removeAll` order is preserved (no 1-frame effect-lifetime change). `pool`/`screenShake` stay loop-confined (unguarded). **Lock order is acyclic: `entitiesLock` (outer) → `effectsLock` (inner) — never the reverse** (EffectEngine holds no GameEngine ref). Guarded by `EffectEngineConcurrencyTest`.
+- **Game-loop crash guard (#190 REL-2, ADR-0026)** — `GameLoopThread.run()` wraps per-tick `update()`/`render()` in `try/catch` → record breadcrumb → stop loop → `onLoopError`. The inner `lockCanvas/unlockCanvasAndPost` try/finally MUST stay nested inside the outer catch (render crash unlocks first). `BattleViewModel.onBattleLoopError` sets `battleError` + `roundEnded` (`@Volatile`) and must NOT set `eng.roundOver` (would persist the corrupt round). Don't remove the guard or run the loop unguarded. Guarded by `GameLoopThreadGuardTest` + 2 `BattleViewModelTest` entries.
 - **GOLDEN damage layer (#119)** — GOLDEN is a re-derived `goldenDamageMult`, not a stat snapshot. Don't restore snapshot-and-overwrite.
 - **Economy spend/claim contract (#122, ADR-0020)** — `spendGems`/`spendPowerStones`/`spendStepsIfSufficient` return Boolean; gate the grant on the result. One-shot claims use guarded `… AND claimed=0` + mark-first.
 - **`DailyStepManager` Mutex (#120)** — credit read-check-write under a non-reentrant `Mutex`; don't add an un-locked counter mutation.
