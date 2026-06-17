@@ -50,6 +50,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BattleControlRail
+import com.whitefang.stepsofbabylon.presentation.battle.ui.BattleErrorOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BiomeTransitionOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.InRoundUpgradeMenu
 import com.whitefang.stepsofbabylon.presentation.battle.ui.UltimateWeaponBar
@@ -66,6 +67,10 @@ fun BattleScreen(
     val surfaceView = remember { GameSurfaceView(context) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val roundActive = state.roundEndState == null
+    // #190 REL-2: when the loop has crashed, suppress ALL interactive round chrome — the scrim
+    // overlay doesn't block touches, so leaving the rail/quit/UW bar composed would let a tester
+    // drive the stopped engine through it.
+    val showGameChrome = roundActive && !state.battleError
     // #171: single source of truth for the left-edge inset, shared by the control rail (CenterStart)
     // and the upgrade-menu wrapper so the menu clears the rail by exactly GAP on any device — incl. a
     // side display cutout in landscape. systemBars ∪ displayCutout, Start side only (RTL-aware).
@@ -147,7 +152,7 @@ fun BattleScreen(
             }
         }
 
-        if (roundActive) {
+        if (showGameChrome) {
             IconButton(onClick = { viewModel.quitRound() }, modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = 32.dp)) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.battle_cd_quit_round), tint = Color.White)
             }
@@ -157,7 +162,7 @@ fun BattleScreen(
         // #171: now owns the bottom-center strip alone (speed/pause/upgrade moved to the left rail).
         // Nav-bar inset + 24dp lifts it above the system gesture handle — was a bare 72.dp chosen to
         // dodge the old bottom control row.
-        if (roundActive && state.uwSlots.isNotEmpty()) {
+        if (showGameChrome && state.uwSlots.isNotEmpty()) {
             Box(
                 Modifier
                     .align(Alignment.BottomCenter)
@@ -173,7 +178,7 @@ fun BattleScreen(
         // bar in portrait. The full-width upgrade menu below clears this rail vertically (its height sits
         // its top below the rail's bottom). See
         // docs/superpowers/specs/2026-06-15-battle-bottom-chrome-overlap-design.md.
-        if (roundActive) {
+        if (showGameChrome) {
             BattleControlRail(
                 speedMultiplier = state.speedMultiplier,
                 isPaused = state.isPaused,
@@ -194,7 +199,7 @@ fun BattleScreen(
         // sheet's controls clear of the gesture handle (flush otherwise — replaces the old flat 72.dp lift).
         // (Earlier this menu left-padded to dodge the rail horizontally; full-width + a shorter, scrolling
         // sheet reads better — the rail/menu separation is now vertical, not horizontal.)
-        if (state.showUpgradeMenu && roundActive) {
+        if (state.showUpgradeMenu && showGameChrome) {
             Box(
                 Modifier
                     .align(Alignment.BottomCenter)
@@ -207,7 +212,7 @@ fun BattleScreen(
             }
         }
 
-        if (state.isPaused && roundActive) {
+        if (state.isPaused && showGameChrome) {
             PauseOverlay(onResume = { viewModel.togglePause() }, onQuitRound = { viewModel.quitRound() })
         }
 
@@ -219,6 +224,10 @@ fun BattleScreen(
             }
         }
         state.biomeTransition?.let { BiomeTransitionOverlay(info = it, onContinue = { viewModel.dismissBiomeTransition() }) }
+
+        if (state.battleError) {
+            BattleErrorOverlay(onReturnToMenu = onExitBattle)
+        }
 
         // Snackbar last — stacks on top of every overlay, including PostRoundOverlay
         // where the ad-failure messages originate.

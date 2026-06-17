@@ -53,4 +53,9 @@ data class BattleUiState(
      * `MissionsViewModel` / `CardsViewModel` / `WorkshopViewModel` / `LabsViewModel`.
      */
     val userMessage: String? = null,
+    /**
+     * #190 REL-2: set when the game-loop thread caught an exception and stopped. Drives a
+     * non-dismissable "Battle error" overlay and suppresses all interactive round chrome.
+     */
+    val battleError: Boolean = false,
 )

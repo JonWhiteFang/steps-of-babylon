@@ -151,6 +151,7 @@ class BattleViewModel @Inject constructor(
      * the field was computed but never read — STEP_SURGE was a no-op.
      */
     private var cardGemMultiplier: Double = 1.0
+    @Volatile
     private var roundEnded = false
 
     init {
@@ -196,6 +197,7 @@ class BattleViewModel @Inject constructor(
 
     fun startPollingEngine(engine: GameEngine, surfaceView: GameSurfaceView) {
         this.engine = engine; this.surfaceView = surfaceView
+        surfaceView.onLoopError = { t -> onBattleLoopError(t) }
         engine.setStats(resolvedStats); engine.initUWs(equippedWeapons)
         engine.secondWindHpPercent = cardSecondWind; engine.cashBonusPercent = cardCashBonus
         // RO-11 #A.2 + V1X-15b: push lab-research-derived engine params (cash / UW-cooldown
@@ -217,6 +219,7 @@ class BattleViewModel @Inject constructor(
             val eventCollector = launch { engine.events.collect { handleSimulationEvent(engine, it) } }
             while (true) {
                 delay(200)
+                if (_uiState.value.battleError) break   // #190: stop polling a crashed engine
                 val eng = this@BattleViewModel.engine ?: break
                 val zig = eng.ziggurat ?: continue
                 val spawner = eng.waveSpawner
@@ -400,6 +403,22 @@ class BattleViewModel @Inject constructor(
     }
 
     fun quitRound() { val eng = engine ?: return; eng.roundOver = true; endRound() }
+
+    /**
+     * #190 REL-2: the game-loop thread caught an exception and stopped. Fired on the loop thread
+     * via [GameSurfaceView.onLoopError]; `_uiState.update` is thread-safe. We:
+     *  - surface the battle-error overlay (`battleError = true`),
+     *  - mark the round ended (`roundEnded` is `@Volatile`) so the polling loop breaks AND
+     *    `onCleared` skips end-of-round persistence — the engine state is corrupt, so its totals
+     *    must NOT be committed.
+     * We deliberately do NOT set `eng.roundOver = true` (that routes through `endRound` →
+     * `runEndRoundPersistence`, committing the suspect numbers — the opposite of what we want).
+     */
+    @VisibleForTesting
+    internal fun onBattleLoopError(t: Throwable) {
+        roundEnded = true
+        _uiState.update { it.copy(battleError = true) }
+    }
 
     /**
      * Handles one [SimulationEvent] from [GameEngine.events] (V1X-09 Phase 3 final slice,

@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.health.connect.client.PermissionController
@@ -37,6 +38,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.whitefang.stepsofbabylon.BuildConfig
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.data.ads.internal.ConsentManager
 import com.whitefang.stepsofbabylon.data.billing.internal.ActivityProvider
 import com.whitefang.stepsofbabylon.data.healthconnect.HealthConnectClientWrapper
@@ -81,6 +83,7 @@ class MainActivity : ComponentActivity() {
     @Inject internal lateinit var consentManager: ConsentManager
     @Inject lateinit var musicPreferences: MusicPreferences
     @Inject lateinit var onboardingPreferences: OnboardingPreferences
+    @Inject lateinit var crashBreadcrumbStore: com.whitefang.stepsofbabylon.data.diagnostics.CrashBreadcrumbStore
 
     private lateinit var musicManager: MusicManager
 
@@ -243,6 +246,19 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) { innerPadding ->
+                    // #190 REL-1: surface a one-time notice if the previous session crashed.
+                    // Informational only — there is no in-app report channel to wire an action to.
+                    // Resolve the string via stringResource (Compose-idiomatic) OUTSIDE the
+                    // LaunchedEffect — a coroutine can't call the @Composable, and
+                    // context.getString from LocalContext trips the Compose lint check.
+                    val crashNotice = stringResource(R.string.crash_notice_last_session)
+                    LaunchedEffect(Unit) {
+                        val crash = crashBreadcrumbStore.peek()
+                        if (crash != null) {
+                            snackbarHostState.showSnackbar(crashNotice)
+                            crashBreadcrumbStore.clear()
+                        }
+                    }
                     LaunchedEffect(showStepPermissionSettingsHint) {
                         if (showStepPermissionSettingsHint) {
                             val result = snackbarHostState.showSnackbar(
