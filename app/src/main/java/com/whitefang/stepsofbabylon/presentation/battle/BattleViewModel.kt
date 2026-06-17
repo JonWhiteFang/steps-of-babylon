@@ -233,7 +233,7 @@ class BattleViewModel @Inject constructor(
                             val dur = if (s.phase == WavePhase.SPAWNING) WaveSpawner.SPAWN_DURATION else WaveSpawner.COOLDOWN_DURATION
                             (s.phaseTimer / dur).coerceIn(0f, 1f)
                         } ?: 0f,
-                        uwSlots = eng.uwStates.map { uw ->
+                        uwSlots = eng.uwSnapshot().map { uw ->
                             // RO-11 #A.2 / R4-06: cooldownTotal mirrors the engine-side multiplier
                             // so the ring-fill UI tracks the actual cooldown duration. Cooldown
                             // is now per-UW-state (COOLDOWN path), not a single shared `level`.

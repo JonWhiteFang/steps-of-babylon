@@ -120,4 +120,48 @@ class GameEngineConcurrencyTest {
                 "iteration. Got: ${caught.get()}",
         )
     }
+
+    @Test
+    fun `concurrent replay initUWs during update loop does not throw`() {
+        val eng = engineWithOrbs(orbCount = 2)
+        // Equip ≥1 UW so updateUWs iterates a non-empty uwStates each tick.
+        val equipped = listOf(
+            com.whitefang.stepsofbabylon.domain.model.OwnedWeapon(
+                type = com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType.DEATH_WAVE,
+                isUnlocked = true, isEquipped = true,
+            ),
+        )
+        eng.initUWs(equipped)
+        val caught = AtomicReference<Throwable?>(null)
+
+        val keepLooping = AtomicBoolean(true)
+        val loopThread = Thread {
+            try {
+                while (keepLooping.get()) { eng.update(1f / 60f) }
+            } catch (t: Throwable) {
+                caught.compareAndSet(null, t)
+            }
+        }
+        loopThread.start()
+
+        // Main thread: repeatedly re-init the UW list (the playAgain path), structurally mutating
+        // uwStates while the loop thread iterates it in updateUWs.
+        try {
+            for (i in 0 until 200_000) {
+                if (caught.get() != null) break
+                eng.initUWs(equipped)
+            }
+        } catch (t: Throwable) {
+            caught.compareAndSet(null, t)
+        } finally {
+            keepLooping.set(false)
+            loopThread.join(5_000)
+        }
+
+        assertNull(
+            caught.get(),
+            "Replay initUWs on the main thread must not race the loop thread's updateUWs iteration. " +
+                "Got: ${caught.get()}",
+        )
+    }
 }
