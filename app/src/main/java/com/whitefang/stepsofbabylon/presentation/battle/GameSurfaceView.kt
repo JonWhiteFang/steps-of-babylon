@@ -5,6 +5,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import androidx.annotation.VisibleForTesting
 import com.whitefang.stepsofbabylon.data.AndroidStrings
+import com.whitefang.stepsofbabylon.data.diagnostics.CrashBreadcrumbStore
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.presentation.audio.SoundManager
@@ -46,6 +47,24 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
      * leading to UI/loop desync (R3-01 / issue #2).
      */
     @Volatile internal var pendingPaused: Boolean = false
+
+    // #190 REL-1/REL-2: built directly from Context (like AndroidStrings) — same SharedPreferences
+    // file as the Hilt singleton, keyed by name, so both write the same breadcrumb. The loop thread
+    // writes the breadcrumb directly (no dependency on onLoopError being set yet).
+    private val crashBreadcrumbStore = CrashBreadcrumbStore(context)
+
+    /**
+     * #190 REL-2: forwarded to the current [GameLoopThread] AND re-seeded onto each new thread in
+     * [surfaceCreated] (threads are recreated every surface lifecycle). Unlike pendingSpeed/Paused
+     * — which are re-set on every toggle and so self-heal — this is set ONCE by the VM, so the
+     * re-seed is load-bearing: without it the battle-error callback is lost after a background→resume.
+     */
+    @Volatile
+    var onLoopError: ((Throwable) -> Unit)? = null
+        set(value) {
+            field = value
+            gameThread?.onLoopError = value
+        }
 
     init {
         holder.addCallback(this)
@@ -96,9 +115,10 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
         // inherits the player's UI selections — setSpeedMultiplier / setPaused calls made
         // while gameThread was null (between surfaceDestroyed and this surfaceCreated) would
         // otherwise be lost (R3-01 / issue #2 sub-bug 2b).
-        val thread = GameLoopThread(holder, engine).apply {
+        val thread = GameLoopThread(holder, engine, crashBreadcrumbStore).apply {
             speedMultiplier = pendingSpeed
             isPaused = pendingPaused
+            onLoopError = this@GameSurfaceView.onLoopError
             isRunning = true
         }
         thread.start(); gameThread = thread
