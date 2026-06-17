@@ -26,7 +26,7 @@ userMessagingPlatform = "4.0.0"
 junit5 = "6.1.0"
 coroutinesTest = "1.10.1"
 mockitoKotlin = "5.4.0"
-robolectric = "4.14.1"
+robolectric = "4.16.1"
 # Transitive-dependency security floor (not a direct dep — applied via a constraint in
 # app/build.gradle.kts). guava ships transitively (kotlinx-coroutines-guava + Play Services)
 # at 31.1-android; force >=32 to clear CVE-2023-2976 / CVE-2020-8908.
