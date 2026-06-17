@@ -31,7 +31,7 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
-      - uses: gradle/actions/dependency-submission@5e2ebd065dc2488b7a6ad670704656cbbe1e8f60 # v6.1.1
+      - uses: gradle/actions/dependency-submission@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
         env:
           # Java regex matched against configuration names. Anchored to the production AAB
           # runtime config only; excludes the buildscript `classpath` config (build-tool
