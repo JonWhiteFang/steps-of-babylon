@@ -14,7 +14,8 @@ import javax.inject.Singleton
  * dying when the global handler calls it. Every method is best-effort and never throws —
  * a diagnostic that crashes the crash handler is worse than useless.
  *
- * The backing file `crash_breadcrumb_prefs` is wiped by `DataDeletionManager` (#192-adjacent).
+ * The backing file `crash_breadcrumb_prefs` will be added to `DataDeletionManager.PREFS_NAMES` so a
+ * "Delete All Data" action wipes it (Task 2 / #192-adjacent).
  */
 @Singleton
 class CrashBreadcrumbStore @Inject constructor(@ApplicationContext context: Context) {
@@ -32,16 +33,16 @@ class CrashBreadcrumbStore @Inject constructor(@ApplicationContext context: Cont
         }
     }
 
-    fun peek(): CrashBreadcrumb? {
-        if (!prefs.contains(KEY_TS)) return null
-        return CrashBreadcrumb(
+    fun peek(): CrashBreadcrumb? = runCatching {
+        if (!prefs.contains(KEY_TS)) return@runCatching null
+        CrashBreadcrumb(
             timestampMillis = prefs.getLong(KEY_TS, 0L),
             threadName = prefs.getString(KEY_THREAD, "") ?: "",
             exceptionClass = prefs.getString(KEY_CLASS, "") ?: "",
             message = prefs.getString(KEY_MESSAGE, null),
             stackPreview = prefs.getString(KEY_STACK, "") ?: "",
         )
-    }
+    }.getOrNull()
 
     fun clear() {
         runCatching { prefs.edit().clear().commit() }
