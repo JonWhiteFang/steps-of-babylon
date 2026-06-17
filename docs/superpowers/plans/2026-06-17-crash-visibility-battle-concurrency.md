@@ -260,33 +260,44 @@ git commit -m "feat(#190): CrashBreadcrumbStore + model (local crash breadcrumb)
 
 - [ ] **Step 1: Write the failing test**
 
-First open `DataDeletionManagerTest.kt` and read its existing structure (it asserts `PREFS_NAMES` entries are cleared). Add this test mirroring the existing prefs-clear assertions — adapt the exact harness (Robolectric runner, how it builds the manager) to match the sibling tests already in the file:
+Add a **new dedicated test method** to `DataDeletionManagerTest.kt`. It seeds `crash_breadcrumb_prefs`
+directly (by literal file name) so it produces a genuine red→green: it fails before the `PREFS_NAMES`
+edit (the file isn't wiped) and passes after.
+
+> ⚠️ **Do NOT** instead "add the entry to the existing parameterised `deleteAllData clears all
+> SharedPreferences` test." That test derives BOTH its seed and its assertion from `PREFS_NAMES`
+> itself, so there is no separate expected-set to extend — the only edit would be the production
+> change in Step 3, which leaves no failing-test state (breaks red-green). Use the dedicated method
+> below.
+
+> ⚠️ **Assertion arg order:** `DataDeletionManagerTest` is JUnit4/Robolectric (`import org.junit.Assert.*`),
+> so `assertTrue` is **message-FIRST** (`assertTrue(String, boolean)`) — NOT the Jupiter
+> condition-first order. The snippet below uses the correct JUnit4 order; the existing test at
+> `DataDeletionManagerTest.kt:58` is the precedent.
+
+The file's `@Before setUp()` already provides `context`, `manager`, and `activity` — reuse them
+(do not re-create them in the test):
 
 ```kotlin
-@Test
-fun `deleteAllData clears the crash breadcrumb prefs`() {
-    val context = RuntimeEnvironment.getApplication()
-    // Seed a breadcrumb directly via the same file name the store uses.
-    context.getSharedPreferences("crash_breadcrumb_prefs", Context.MODE_PRIVATE)
-        .edit().putString("crash_class", "x").commit()
+    @Test
+    fun `deleteAllData clears the crash breadcrumb prefs`() {
+        // Seed a breadcrumb directly via the same file name CrashBreadcrumbStore uses.
+        context.getSharedPreferences("crash_breadcrumb_prefs", Context.MODE_PRIVATE)
+            .edit().putString("crash_class", "x").commit()
 
-    // Build the manager exactly as the other tests in this file do, then run the wipe.
-    // (Use the same `database`/activity doubles the sibling tests use.)
-    manager.deleteAllData(activity)
+        manager.deleteAllData(activity)
 
-    assertTrue(
-        context.getSharedPreferences("crash_breadcrumb_prefs", Context.MODE_PRIVATE).all.isEmpty(),
-        "crash_breadcrumb_prefs must be cleared by deleteAllData",
-    )
-}
+        assertTrue(
+            "crash_breadcrumb_prefs must be cleared by deleteAllData",
+            context.getSharedPreferences("crash_breadcrumb_prefs", Context.MODE_PRIVATE).all.isEmpty(),
+        )
+    }
 ```
-
-If `DataDeletionManagerTest` already has a parameterised "every PREFS_NAMES file is cleared" test, prefer simply adding `"crash_breadcrumb_prefs"` to that test's expected set instead of a new method — match the file's existing style.
 
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `./run-gradle.sh testDebugUnitTest --tests "com.whitefang.stepsofbabylon.data.DataDeletionManagerTest" > /tmp/t2.log 2>&1; tail -n 30 /tmp/t2.log`
-Expected: FAIL — the breadcrumb file still has the seeded `crash_class` entry (not in `PREFS_NAMES`).
+Expected: FAIL — assertion fails: the breadcrumb file still has the seeded `crash_class` entry (`crash_breadcrumb_prefs` is not yet in `PREFS_NAMES`, so `deleteAllData` doesn't wipe it).
 
 - [ ] **Step 3: Add the prefs name**
 
@@ -430,10 +441,6 @@ class StepsOfBabylonApp : Application(), Configuration.Provider {
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .build()
-
-    companion object {
-        private const val TAG = "StepsOfBabylonApp"
-    }
 }
 
 /**
@@ -473,7 +480,7 @@ git commit -m "feat(#190): chaining global uncaught-exception handler"
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/GameLoopThread.kt`
 - Test: `app/src/test/java/com/whitefang/stepsofbabylon/presentation/battle/GameLoopThreadGuardTest.kt`
 
-`GameLoopThread` takes `engine: GameEngine` (final class — mock it with `mock<GameEngine>()`, an established in-repo pattern). We add a `CrashBreadcrumbStore` constructor param and an `onLoopError` callback. The test mocks `GameEngine` to throw on `update()`, mocks `SurfaceHolder`, runs the real thread, joins, then asserts.
+`GameLoopThread` takes `engine: GameEngine` (a final Kotlin class — mock it with `mock<GameEngine>()`; mockito-kotlin 5.x's default inline maker mocks final classes, and the repo already mocks final Kotlin classes like `BiomePreferences`/`MilestoneNotificationManager` in `BattleViewModelTest`). We add a `CrashBreadcrumbStore` constructor param and an `onLoopError` callback. The tests mock `GameEngine` to throw on `update()` (test 1) / `render()` (test 2), mock `SurfaceHolder`, run the real thread, join, then assert.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -487,10 +494,10 @@ import com.whitefang.stepsofbabylon.data.diagnostics.CrashBreadcrumbStore
 import com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -520,6 +527,35 @@ class GameLoopThreadGuardTest {
         assertFalse(thread.isRunning, "isRunning must be false after a loop crash")
         assertEquals(1, errorCount.get(), "onLoopError must fire exactly once")
         assertEquals(1, recordCount.get(), "breadcrumb must be recorded exactly once")
+    }
+
+    @Test
+    fun `a render crash unlocks the canvas before propagating to the outer catch`() {
+        // Spec §B1 load-bearing assertion: the inner lockCanvas/unlockCanvasAndPost try/finally
+        // must stay strictly nested inside the outer try/catch, so a render() crash unlocks the
+        // canvas (no frozen surface / ANR) before the throwable reaches the outer catch.
+        val engine = mock<GameEngine>()
+        // update() no-ops; render() throws. (update is called inside the same outer try.)
+        whenever(engine.render(any())).thenThrow(RuntimeException("render boom"))
+        val canvas = mock<android.graphics.Canvas>()
+        val holder = mock<SurfaceHolder>()
+        whenever(holder.lockCanvas()).thenReturn(canvas) // non-null → render() block is entered
+
+        val store = mock<CrashBreadcrumbStore>()
+        val errorCount = AtomicInteger(0)
+        val thread = GameLoopThread(holder, engine, store).apply {
+            onLoopError = { errorCount.incrementAndGet() }
+            isPaused = false
+            isRunning = true
+        }
+
+        thread.start()
+        thread.join(2_000)
+
+        assertFalse(thread.isAlive, "loop thread must have stopped after a render crash")
+        // The inner finally must have unlocked the canvas before the outer catch fired.
+        verify(holder).unlockCanvasAndPost(canvas)
+        assertEquals(1, errorCount.get(), "onLoopError must fire exactly once on a render crash")
     }
 }
 ```
@@ -639,12 +675,13 @@ class GameLoopThread(
 
 The inner `lockCanvas`/`unlockCanvasAndPost` try/finally stays strictly nested inside the new outer try/catch — so on a `render()` crash the canvas is unlocked by the finally before the throwable reaches the outer catch.
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [ ] **Step 4: (Do NOT expect green standalone) — proceed to Task 5, then run Tasks 4+5 together**
 
-Run: `./run-gradle.sh testDebugUnitTest --tests "com.whitefang.stepsofbabylon.presentation.battle.GameLoopThreadGuardTest" > /tmp/t4.log 2>&1; tail -n 30 /tmp/t4.log`
-Expected: PASS. (This will break compilation of `GameSurfaceView`, which still calls the 2-arg constructor — fixed in Task 5. Scope this run to the test class so it compiles the test source set; if the app source set fails to compile, proceed to Task 5 and run them together.)
-
-> If the scoped test run fails to compile because `GameSurfaceView.kt` still uses the old constructor, that is expected — do Task 5 next and run Tasks 4+5 tests together at the end of Task 5.
+⚠️ **The 3-arg constructor change makes the whole debug source set fail to compile until Task 5
+updates `GameSurfaceView`'s call site.** Gradle compiles main+test before running any `--tests` filter,
+so a standalone Task-4 run here will fail at COMPILE (`GameSurfaceView.kt:99` still calls the 2-arg
+`GameLoopThread(holder, engine)`). That is expected — **do not look for a green here.** Do Task 5 next;
+the genuinely-passing run for both guard tests is **Task 5 Step 2** (Tasks 4+5 together).
 
 - [ ] **Step 5: Commit**
 
@@ -771,10 +808,8 @@ Add to `BattleViewModelTest.kt` (uses the existing `createVm` + `installEngineFo
         vm.onBattleLoopError(RuntimeException("loop boom"))
         advanceUntilIdle()
 
-        // Drive onCleared via reflection (the prod call site is the framework).
-        val onCleared = androidx.lifecycle.ViewModel::class.java
-            .getDeclaredMethod("onCleared").apply { isAccessible = true }
-        onCleared.invoke(vm)
+        // Drive onCleared via the existing helper (the prod call site is the framework).
+        invokeOnCleared(vm)
         advanceUntilIdle()
 
         // No end-of-round persistence ran on the crashed round.
@@ -786,7 +821,9 @@ Add to `BattleViewModelTest.kt` (uses the existing `createVm` + `installEngineFo
     }
 ```
 
-> Note: `onCleared` is `protected` in `ViewModel`; reflection is the test-only way to invoke it (matches the repo's existing reflection use in `installEngineForEndRound`). If `onCleared` is hard to reach, an alternative is to expose a `@VisibleForTesting internal fun onClearedForTest() = onCleared()` — but prefer reflection to avoid widening the API.
+> Note: this reuses the file's existing `invokeOnCleared(vm)` helper (`BattleViewModelTest.kt:714`) —
+> `onCleared` is `protected` in `ViewModel`, and that helper already does the `getDeclaredMethod` +
+> `setAccessible` reflection. Do NOT inline a second copy of the reflection.
 
 - [ ] **Step 2: Run to verify it fails**
 
@@ -825,14 +862,27 @@ In `BattleViewModel.kt`:
                 // ... rest unchanged ...
 ```
 
-(c) Add the handler method (near `endRound` / `quitRound`), `@VisibleForTesting internal`:
+(c) **Make `roundEnded` `@Volatile`.** `onBattleLoopError` runs on the **loop thread** (it's invoked
+via `GameSurfaceView.onLoopError`, which the loop thread calls in its catch), and it writes
+`roundEnded`, which `onCleared` reads **directly** on the main thread (`BattleViewModel.kt:486`, not via
+the StateFlow). This is the FIRST cross-thread write of `roundEnded` (today all writes are main-thread).
+Without `@Volatile` there is no JMM happens-before edge guaranteeing the main thread sees the write.
+This also matches the spec's "@Volatile/state flag" intent and the repo's convention (every cross-thread
+engine field is `@Volatile`; #118). Change `BattleViewModel.kt:154`:
+```kotlin
+    @Volatile
+    private var roundEnded = false
+```
+
+(d) Add the handler method (near `endRound` / `quitRound`), `@VisibleForTesting internal`:
 ```kotlin
     /**
      * #190 REL-2: the game-loop thread caught an exception and stopped. Fired on the loop thread
      * via [GameSurfaceView.onLoopError]; `_uiState.update` is thread-safe. We:
      *  - surface the battle-error overlay (`battleError = true`),
-     *  - mark the round ended so the polling loop breaks AND `onCleared` skips end-of-round
-     *    persistence — the engine state is corrupt, so its totals must NOT be committed.
+     *  - mark the round ended (`roundEnded` is `@Volatile`, see (c)) so the polling loop breaks AND
+     *    `onCleared` skips end-of-round persistence — the engine state is corrupt, so its totals
+     *    must NOT be committed.
      * We deliberately do NOT set `eng.roundOver = true` (that routes through `endRound` →
      * `runEndRoundPersistence`, committing the suspect numbers — the opposite of what we want).
      */
@@ -843,7 +893,7 @@ In `BattleViewModel.kt`:
     }
 ```
 
-> Setting `roundEnded = true` short-circuits `onCleared`'s `!roundEnded && hasWaveProgress()` guard (`BattleViewModel.kt:486`) so no persistence runs, and the polling loop's `battleError` break (b) stops the HUD updates. The `eventCollector` is cancelled when the polling coroutine exits (it already calls `eventCollector.cancel()` after the `while`).
+> Setting `roundEnded = true` short-circuits `onCleared`'s `!roundEnded && hasWaveProgress()` guard (`BattleViewModel.kt:486`) so no persistence runs, and the polling loop's `battleError` break (b) stops the HUD updates. The `eventCollector` is cancelled when the polling coroutine exits (it already calls `eventCollector.cancel()` after the `while`). `playAgain` resets `roundEnded = false` (`BattleViewModel.kt:457`), so a post-crash replay path is unaffected — though in practice the only CTA on the battle-error overlay is "Return to menu" (no replay).
 
 - [ ] **Step 5: Add the strings**
 
@@ -976,7 +1026,9 @@ Inside `setContent`, alongside the other top-level `LaunchedEffect`s that use `s
                         }
                     }
 ```
-Ensure `R` and `context` are already in scope in that block (they are — `context` is used by the sibling permission-hint effect). If `R` isn't imported, add `import com.whitefang.stepsofbabylon.R`.
+`context` IS already in scope (used by the sibling permission-hint effect). **`R` is NOT imported in
+`MainActivity` today** (the existing snackbars use raw string literals, not `R.string`) — so you MUST
+add `import com.whitefang.stepsofbabylon.R` to the file's imports.
 
 - [ ] **Step 9: Run the VM tests**
 
