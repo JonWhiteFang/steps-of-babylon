@@ -1,3 +1,43 @@
+## 2026-06-17 — Complete-app review + 6 closed-track gate issues raised (#190–#195); Gate H folded into the spine
+
+- **Goal:** run a full, end-to-end "review the app as it exists now" audit (discovery/recommendations only —
+  no fixes), then raise the findings as GitHub issues and fold them into the planning docs.
+- **Method:** scouted the repo inline (verified security/persistence/release surfaces by hand — keystore
+  secrets confirmed gitignored + *never committed*; DB crypto = AES-256/GCM Keystore + `SecureRandom`;
+  `RealPurchaseVerifier` SHA1withRSA + product/token binding; deep-link `navigate_to` allowlisted; audio is
+  *real* `.ogg`, not the "sine tones" the docs claimed), then ran a 51-agent `Workflow`: 17 review dimensions
+  fan out → each material finding handed to a refute-by-default skeptic → a completeness critic swept for
+  cross-cutting gaps. Two critic gaps (TIME-1 clock-tamper, NOTIF-1 notification fatigue) were
+  orchestrator-re-verified in code and promoted to findings.
+- **Output:** `docs/reviews/complete-app-review.md` — 20 sections, scores (overall 7.5/10; arch 7, UX 7,
+  sec/priv 7.5, testing 7), a technical-debt register, and a tiered remediation plan. Surviving finding set:
+  5 confirmed High (one corrected High→Med), 16 confirmed Medium, plus partial/refuted adjustments + 63
+  unverified Lows. Verdict: **continue building** on this codebase — do the blocker pass, don't refactor.
+- **Issues raised (all on the `v1.0.0 closed-test gate` milestone, `[Audit]` house style — file:line evidence
+  → impact → fix → regression test → links):** **#190** crash visibility + unguarded game-loop thread
+  (REL-1/REL-2, `severity:blocker`), **#191** two reachable battle crashes — `EffectEngine` + `uwStates`
+  off-thread (CONC-1/CONC-2, `severity:blocker`; grouped two triggers like #118), **#192** privacy/Data-Safety
+  accuracy (PRIV-1/SEC-1, `severity:blocker`), **#193** no-sensor signal (REL-3, `severity:major`), **#194**
+  no error states (UX-1, `severity:major`), **#195** Missions day-rollover (STATE-1, `severity:major`).
+- **Doc-sync (this checkpoint):** `plan-FORWARD.md` — new **Gate H** (blockers #190–#192 + soak-hardening
+  #193–#195), placed after Gate G so A–H run in order; Gate D fresh-install item annotated (no *observed*
+  crash, but the audit found *reachable* ones); Phase-1 exit criterion updated. `STATE.md` — headline +
+  current objective rotated to the Gate-H blocker pass (prior "READY pending manual sign-off" demoted to a
+  superseded Previous-objective bullet); Known-issues + Top-priorities + References updated; corrected two
+  stale notes the audit caught (audio shipped; #6 RO-09 confirmed). `CHANGELOG.md` — new `[Unreleased]` Docs
+  entry. Did NOT touch the README "1010 JVM" drift (DOC-1) or the privacy-policy text (#192's own job) — both
+  are tracked findings with their own fixes, kept out of this docs commit to avoid muddying it.
+- **Verification:** docs + issues only — no code/schema/test change (1054 JVM unchanged). The 6 issues
+  verified present + correctly labelled/milestoned via `gh issue list --milestone`. plan-FORWARD gate
+  sequence re-checked A–H in order; all six issue refs present in both planning docs.
+- **No ADR:** raising audit findings as issues is not an architectural decision.
+- **NEXT:** the Gate-H **blocker pass** (#190/#191/#192) — recommend spec → Adversarial Review Gate → TDD,
+  starting with #190 (crash handler + game-loop try/catch) and #191 (mirror the `entitiesLock` monitor onto
+  `EffectEngine.pendingEffects` + `uwStates`); #192 is a policy-text edit + a Play Console Data-Safety step.
+  Then the `severity:major` soak-hardening trio before/during the soak. These gate internal → closed.
+
+---
+
 ## 2026-06-17 — Post-merge checkpoint — #187 Settings-scroll fix MERGED (PR #188, `af30e96`)
 
 - **Goal:** post-merge doc reconciliation after PR #188 merged (the prior entry's doc-sync was written

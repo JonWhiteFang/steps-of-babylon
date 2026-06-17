@@ -19,7 +19,7 @@ snapshot.
 
 | Phase | Contains | Exit criterion |
 |---|---|---|
-| **Phase 1 — Closed-Test Readiness** | Every work item the Readiness Gate demands (below), drawn from unshipped V1X sub-plans + open GitHub issues + open audit Lows. | Gate fully ticked (or items explicitly deferred-not-a-blocker) → developer decides to promote. |
+| **Phase 1 — Closed-Test Readiness** | Every work item the Readiness Gate demands (below), drawn from unshipped V1X sub-plans + open GitHub issues + open audit Lows + the 2026-06-17 complete-app review's promotion blockers (Gate H / #190–#192). | Gate fully ticked (or items explicitly deferred-not-a-blocker) → developer decides to promote. |
 | **Phase 2 — Closed Test** | Promote internal → closed track; recruit ≥12 testers; ≥14-day soak; triage feedback; apply for production access. | Production access granted; staged rollout begins. |
 | **Phase 3 — Post-Launch (v1.1+)** | Work that does NOT gate "the game is good." | Ongoing. |
 
@@ -57,6 +57,12 @@ state — the checklist informs that call, it does not replace it.
   @4× → Round Over → reward persistence → Settings) with zero crashes/ANRs/FATALs. The pass surfaced a
   layout defect (#187, Settings didn't scroll → "Replay tutorial"/"Delete All Data" unreachable), now fixed
   + MERGED (PR #188, `af30e96`; #187 closed) + on-device re-verified.*
+- [ ] **Audit-H (2026-06-17 complete-app review) — promotion blockers, see §H below.** A full
+  code-grounded, adversarially-verified audit (`docs/reviews/complete-app-review.md`) surfaced three
+  **promotion blockers** beyond the fresh-install pass: no crash visibility + unguarded game-loop thread
+  (#190), two reachable battle crashes (#191), privacy-policy/Data-Safety accuracy (#192). These reopen the
+  "no known crashes" item in spirit — the fresh-install pass found no *observed* crash, but the audit found
+  *reachable* ones the manual pass couldn't trigger. **Closed-track promotion is gated on §H.**
 
 ### E. Balance & progression feel
 - [ ] Early tiers (1–5) feel right; economy neither grindy nor trivial — *manual play assessment*
@@ -78,6 +84,47 @@ state — the checklist informs that call, it does not replace it.
   device measurement first). Cannot close from the repo alone. (Startup-timing *numbers* are likewise
   deferred to this pass — needs a non-debuggable `benchmark` build type + a physical device; see
   `docs/performance/startup-baseline.md`.) *satisfied-in-repo-by #26 (V1X-23); device half deferred.*
+
+### H. Complete-app review (2026-06-17) — closed-track promotion blockers + soak hardening
+
+Source: `docs/reviews/complete-app-review.md` (51-agent code-grounded audit; every material finding
+adversarially verified). The 2026-06-17 fresh-install pass (Gate D) confirmed no *observed* crash, but a
+soak puts ≥12 testers × ≥14 days against the build — exactly the regime these *reachable* defects (which a
+manual pass can't trigger) bite. Split into **promotion blockers** (must fix before promoting internal →
+closed: gathering soak signal or exposing testers is the whole point of closed test) and **soak hardening**
+(fix before/during the soak; not a hard promotion gate but degrades tester experience or feedback quality).
+
+**Promotion blockers (`severity:blocker` — gate internal → closed):**
+- [ ] **#190 — crash visibility (REL-1/REL-2).** No global uncaught-exception handler + no crash reporting,
+  and `GameLoopThread.run()` wraps `update()/render()` in no `try/catch` → a sim exception is silent
+  process death. *We would soak blind.* Fix: per-tick `try/catch` (skip-frame / surface error state) + a
+  `setDefaultUncaughtExceptionHandler` breadcrumb. Effort **S**.
+- [ ] **#191 — two reachable battle crashes (CONC-1/CONC-2).** `EffectEngine` effect lists mutated
+  cross-thread on every boss kill / step reward (High); `uwStates` mutated off-loop-thread on replay
+  (Medium). Same class as #118, on lists the `entitiesLock` sweep missed. Fix: mirror the `entitiesLock`
+  monitor pattern. Effort **S**.
+- [ ] **#192 — privacy-policy / Data-Safety accuracy (PRIV-1/SEC-1).** Policy says data "never uploaded" /
+  AdMob is a "future" integration, but the live build ships AdMob + UMP + collects the advertising ID.
+  Play-compliance accuracy on the path to the production-access application the soak feeds. Fix: present-tense
+  policy rewrite (`HealthConnectPermissionActivity.kt` + `privacy-policy.md`/`docs/index.md`) + ad-ID
+  disclosure + reconcile the Console Data-Safety form (Console step **needs external verification**). Effort
+  **S** + Console.
+
+**Soak hardening (`severity:major` — fix before/during soak):**
+- [ ] **#193 — no-sensor silent dead-end (REL-3).** A device without `TYPE_STEP_COUNTER` accrues zero Steps
+  while the foreground notification implies it works. Detect at first-launch → message + Health Connect
+  steer. Effort **M**.
+- [ ] **#194 — no error states anywhere (UX-1).** A failed data load spins forever (no error field on any
+  `UiState`; `isLoading` cleared only on `combine` success). Add a shared `ScreenStateHost(isLoading, error,
+  retry)` + `.catch` on each `combine`. Effort **M**.
+- [ ] **#195 — Missions day-rollover stale query (STATE-1).** `MissionsViewModel` never re-subscribes
+  `getByDate(today)` at midnight (the only date-screen missing the `flatMapLatest` pattern Home/Stats use).
+  Effort **S**.
+
+> Lower-severity audit findings (architecture seam, A11Y contrast, no-Compose-UI-tests, Gradle-wrapper
+> validation, clock-tamper TIME-1, i18n, etc.) are **before-public / post-launch**, not closed-track
+> blockers — see `docs/reviews/complete-app-review.md` §18 Tiers 2–5. Audit verdict: **continue building** —
+> do the blocker pass, then resume features.
 
 > Gate maintenance: tick items as they land; when deferring, replace the checkbox line with
 > `- [deferred] <item> — <one-line rationale>`. Keep this list honest — it is the promotion decision aid.
