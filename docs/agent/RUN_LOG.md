@@ -1,3 +1,27 @@
+## 2026-06-17 — Post-merge checkpoint — #187 Settings-scroll fix MERGED (PR #188, `af30e96`)
+
+- **Goal:** post-merge doc reconciliation after PR #188 merged (the prior entry's doc-sync was written
+  pre-merge, so the spine said "#187 fix on branch, PR pending" while reality is merged + #187 closed).
+  Matches the established post-merge-sweep precedent (e.g. 2026-05-29; PR #100 sweep).
+- **Merge:** PR #188 squash-merged to `main` as `af30e96` ("fix(#187): Settings screen now scrolls …");
+  branch `fix/187-settings-scroll` deleted; **#187 CLOSED**. CI both required lanes green pre-merge
+  (build-and-test 4m38s, connected 7m13s). Local `main` fast-forwarded.
+- **Doc-sync (this checkpoint):** flipped STATE.md headline + CURRENT objective + the Gate-status bullet +
+  Top-priorities from "PR pending / on branch" → "MERGED (PR #188, `af30e96`)"; rotated the objective so
+  the promotion call is now explicitly the developer's (only Gate A audio + Gate E balance manual checks
+  remain). `plan-FORWARD.md` Gate-D fresh-install line → "fixed + MERGED". Also cleaned up **stale #44
+  "PR pending" wording** that lingered in STATE.md (it was MERGED, PR #186 `952a8bf`, #44 closed). No
+  CHANGELOG/CLAUDE.md edit — test count unchanged (1054), and CHANGELOG's `[Unreleased]` Fixed entry (added
+  in PR #188) is already accurate.
+- **Verification:** no code change in this checkpoint (docs-only). HEAD `af30e96` carries the verified fix;
+  the JVM suite was green at merge (1054) and the fix was on-device re-verified pre-merge.
+- **No ADR:** docs-only reconciliation, no decision.
+- **NEXT:** merge this docs PR. Then the in-repo Phase-1 gate surface is fully exhausted and reconciled —
+  the internal → closed promotion is a developer call, informed by the remaining manual in-play feel checks
+  (Gate A audio, Gate E balance), then a Play Console action on the uploaded AAB.
+
+---
+
 ## 2026-06-17 — Promotion-readiness assessment (internal → closed) + #187 Settings-scroll fix (PR pending on `fix/187-settings-scroll`)
 
 - **Goal:** "Assess promotion readiness" — decide whether the game is good enough to promote from the Play
