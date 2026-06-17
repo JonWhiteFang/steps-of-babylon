@@ -4,34 +4,40 @@ One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) a
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
 **Headline:** **v1.0.8 (versionCode 24) live on Play internal track** · **1054 JVM + 9 instrumented tests**
-green · schema v12 · **#44 Labs Coming-Soon cleanup (Gate B.1) MERGED** (PR #186, `952a8bf`) · **#26
-perf/battery (Gate G) in-repo slice MERGED** (PR #184, `8f3c2ee`; device half `[deferred]`) · all five
-A–E look-&-feel bundles shipped (v1.0.4–v1.0.8) + #29 decision-support (Gate F) MERGED (`70ebf53`) ·
-**promotion-readiness assessed (internal → closed): READY pending manual sign-off** — gate audit + on-device
-Gate-D fresh-install pass surfaced #187 (Settings didn't scroll → "Replay tutorial"/"Delete All Data"
-unreachable), now **FIXED + MERGED** (PR #188, `af30e96`; #187 closed) · launch is judgment-gated on the
-Closed-Test Readiness Gate (`plan-FORWARD.md`).
+green · schema v12 · all closed-test Gate A–G in-repo items MERGED (B.1 #186, G #184, F #182, A–E bundles
+v1.0.4–v1.0.8, #187 Settings-scroll #188) · **but promotion to closed is NOW GATED on the 2026-06-17
+complete-app review** (`docs/reviews/complete-app-review.md`): a 51-agent code-grounded, adversarially-verified
+audit raised **3 `severity:blocker` promotion blockers (#190 crash visibility + game-loop guard, #191 two
+reachable battle crashes, #192 privacy/Data-Safety accuracy)** + 3 `severity:major` soak-hardening items
+(#193/#194/#195), all on the `v1.0.0 closed-test gate` milestone (Gate H in `plan-FORWARD.md`). Audit verdict:
+**continue building** — do the blocker pass, then promote.
 
 ## Current objective
 
-- **CURRENT — Promotion readiness assessed (internal → closed): READY pending manual sign-off; Gate-D
-  fresh-install pass DONE; #187 Settings-scroll fix MERGED (PR #188, `af30e96`; #187 closed).** Ran a
-  grounded, adversarially-verified gate audit (A–G + release-mechanics + open-issue sweep): every
-  code-addressable gate item is **done, verified in code, CI green**; the JVM suite was re-run green (1054).
-  Verdict: **READY to promote pending manual/device sign-off** — what's left is in-play feel (Gate A audio,
-  Gate E balance). Zero open `severity:major`/`severity:blocker`; only open bug is #128 (minor,
-  non-blocking). **Executed the Gate-D pass on-device** (Pixel_6/API36, fresh install of HEAD `952a8bf`):
-  full core loop — onboarding → 3 permission flows (activity-recognition + notifications + Health Connect) →
-  Home → Workshop (#29 decision-support UI renders) → Battle at 4× → Round Over (Wave 4, 15 kills,
-  +1 PS/+15 Steps, counter sane — #146 held) → reward persistence (#122) → Settings — with **zero
-  crashes/ANRs/FATALs**. The pass surfaced **#187**: `SettingsScreen` root `Column` had no
-  `.verticalScroll()`, so "Replay tutorial" (Gate C) + "Delete All Data" (Play data-deletion compliance)
-  were unreachable below the fold. **Fixed** (one-line + imports, matches `HelpScreen`), on-device
-  re-verified both cards now reachable; JVM green, no test-count change. PR #188 merged (CI both lanes
-  green: build-and-test 4m38s, connected 7m13s). Gate-D "clean fresh-install" item now ticked in
-  plan-FORWARD. **NEXT: the promotion call (internal → closed) is the developer's** — informed by the
-  remaining in-play feel checks (Gate A audio, Gate E balance), then a manual Play Console action on the
-  uploaded AAB. (#44 wording corrected: it was **MERGED**, PR #186 `952a8bf`, not "PR pending".)
+- **CURRENT — Closed-track promotion blockers (Gate H, #190–#192) — NOT yet started.** The 2026-06-17
+  complete-app review (`docs/reviews/complete-app-review.md`; 51 agents, ~3.1M tokens, every material finding
+  adversarially verified) reset the promotion picture: the prior "READY pending manual sign-off" verdict held
+  for *observed* behaviour (the Gate-D fresh-install pass found no crash), but the audit found **reachable**
+  defects a manual pass can't trigger. **Three `severity:blocker` items now gate internal → closed:** **#190**
+  (no crash reporting + unguarded `GameLoopThread` `update()/render()` → silent process death; we'd soak
+  blind — REL-1/REL-2, effort S), **#191** (`EffectEngine` lists mutated cross-thread on every boss kill/step
+  reward + `uwStates` mutated off-thread on replay → reachable battle CME; same class as #118 on lists the
+  `entitiesLock` sweep missed — CONC-1/CONC-2, effort S), **#192** (in-app + hosted privacy policy say data
+  "never uploaded"/AdMob is "future" while the live build ships AdMob+UMP + collects the advertising ID →
+  Play Data-Safety accuracy on the path to the production-access application — PRIV-1/SEC-1, effort S + Console).
+  **NEXT:** spec → adversarial-review-gate → TDD the blocker pass (start with #190/#191; #192 is a text/Console
+  edit). Then the 3 `severity:major` soak-hardening items (#193 no-sensor signal, #194 error states, #195
+  Missions day-rollover) before/during the soak. Lower-severity audit findings (architecture seam, A11Y
+  contrast, no-Compose-UI-tests, wrapper validation, clock-tamper TIME-1, i18n) are before-public/post-launch
+  (review §18 Tiers 2–5), NOT closed-track blockers.
+- **Previous objective (DONE): promotion readiness assessed (internal → closed): READY pending manual
+  sign-off; Gate-D fresh-install pass DONE; #187 Settings-scroll fix MERGED (PR #188, `af30e96`).** Ran a
+  grounded gate audit (A–G + release-mechanics + open-issue sweep): every code-addressable gate item done,
+  CI green, JVM 1054. **Executed the Gate-D pass on-device** (Pixel_6/API36, fresh install of HEAD `952a8bf`):
+  full core loop (onboarding → 3 permission flows → Home → Workshop → Battle @4× → Round Over → reward
+  persistence → Settings) with **zero observed crashes/ANRs/FATALs**. Surfaced + fixed **#187** (Settings
+  didn't scroll → "Replay tutorial"/"Delete All Data" unreachable; PR #188 merged). *Superseded by the
+  2026-06-17 complete-app review above, which found reachable (not observed) blockers the manual pass missed.*
 - **Previous objective (DONE): #26 perf/battery (Gate G) in-repo slice — MERGED to `main`** (PR #184,
   squash `8f3c2ee`, merged 2026-06-16; CI PR gate + instrumented lane green). Spec + plan both passed the
   Adversarial Review Gate (spec 43→23 surviving; plan 63→48 surviving; both 0 unaddressed critical/major).
@@ -412,17 +418,29 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 
 ## Known issues / debt
 
-- **Promotion gate (developer judgment):** the Closed-Test Readiness Gate (`plan-FORWARD.md` A–G) is
-  the call to promote internal → closed. Google's ≥12-tester + ≥14-day-soak policy is a downstream
-  Phase-2 step that only begins after that promotion (not the current gate).
+- **CLOSED-TRACK PROMOTION BLOCKERS (2026-06-17 complete-app review, Gate H):** **#190** (no crash
+  visibility + unguarded game-loop thread — REL-1/REL-2), **#191** (two reachable battle crashes:
+  `EffectEngine` + `uwStates` mutated off the loop thread — CONC-1/CONC-2), **#192** (privacy-policy /
+  Data-Safety understates live AdMob+UMP ad-ID collection — PRIV-1/SEC-1). All `severity:blocker`, on the
+  `v1.0.0 closed-test gate` milestone. Plus 3 `severity:major` soak-hardening items: **#193** (no-sensor
+  silent dead-end — REL-3), **#194** (no error states — UX-1), **#195** (Missions day-rollover stale query —
+  STATE-1). Full report: `docs/reviews/complete-app-review.md`.
+- **Promotion gate:** the Closed-Test Readiness Gate (`plan-FORWARD.md` A–H) is the call to promote
+  internal → closed; Gate H (above) must clear first. Google's ≥12-tester + ≥14-day-soak policy is a
+  downstream Phase-2 step that only begins after that promotion.
 - **Open audit Lows:** #128 (remaining ~21 Lows — perf/anti-cheat/security groups, deferred to v1.1).
-  (#124 purchase signature verification, #146 enemy-counter drift, and #127 duplicate daily missions
-  all fixed 2026-06-11.)
+  Plus the 2026-06-17 review's before-public/post-launch findings (architecture seam, A11Y contrast,
+  no-Compose-UI-tests, Gradle-wrapper validation, clock-tamper TIME-1, i18n) — review §18 Tiers 2–5.
+  (#124 purchase signature verification, #146 enemy-counter drift, #127 duplicate daily missions fixed 2026-06-11.)
 - **RO-09 deferred (v1.x backlog):** #3 STEP_MULTIPLIER × cross-validator unit mismatch (needs schema migration);
   #4 currency lifetime-counter desync (display-only); #5 TOCTOU on gem/PS spend (lifetime drift, wallet correct);
-  #6 per-kill credit on `viewModelScope` (≤1 step lost on mid-round nav-away).
-- **Content/polish debt:** sound assets are placeholder sine tones; cosmetics — 5 ziggurat palettes plumbed
-  (zig_jade + zig_obsidian store-purchasable; lapis/garden/sandals milestone-only), rest "Coming Soon" pending art.
+  #6 per-kill credit on `viewModelScope` (≤1 step lost on mid-round nav-away — confirmed by the 2026-06-17 review:
+  BossKilled PS on `viewModelScope` is lost on nav-away; StepReward correctly uses `applicationScope`).
+- **Content/polish debt:** audio shipped (V1X-04/05/06 — 9 synthesized `.ogg` SFX + 2 BGM tracks via
+  SoundPool/MediaPlayer; only the subjective "feel" assessment remains, Gate A); cosmetics — 5 ziggurat
+  palettes plumbed (zig_jade + zig_obsidian store-purchasable; lapis/garden/sandals milestone-only), rest
+  "Coming Soon" pending art. The 4 seeded projectile/enemy-skin cosmetics have no render path (#192-adjacent
+  FEAT-1, before-public).
 - **Phase B debt:** B.4 FollowOnPipeline + B.5 UpdateMissionProgress extraction (ADR-0004, ~1 week, zero user benefit — deferred).
 - `BuildConfig.USE_REAL_ADS` consent-prefetch branch is JVM-untested (device-verified). Play "no debug symbols"
   warning persists on every upload (pre-stripped .so files — informational).
@@ -435,9 +453,19 @@ Closed-Test Readiness Gate (`plan-FORWARD.md`).
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **All in-repo gate items DONE + promotion readiness assessed (READY pending manual sign-off):** look-&-feel bundles A–E (→ v1.0.4–v1.0.8); **#29** decision-support (Gate F, MERGED `70ebf53`, #29 closed); **#26** perf/battery (Gate G) in-repo slice (MERGED PR #184, `8f3c2ee`; device half `[deferred]`); **#44** Labs Coming-Soon cleanup (Gate **B.1**, MERGED PR #186 `952a8bf`, #44 closed); **#187** Settings-scroll fix (MERGED PR #188 `af30e96`, #187 closed) from the **Gate-D on-device fresh-install pass** (now ticked — zero crashes). The in-repo Phase-1 gate surface is exhausted.
-2. **The promotion call (internal → closed) is now the developer's.** What remains is developer-judgment / manual: **Gate A** in-play audio feel, **Gate E** early-tier balance feel. None is code-addressable; the decision to promote is yours, informed by these, then a manual Play Console action on the uploaded AAB.
-3. **Deferred — not a blocker:** #128 remaining ~21 audit Lows (perf/anti-cheat/security groups → v1.1); Gate B.2 cosmetic "Coming Soon" framing (separate cosmetic-palette debt).
+1. **Closed-track promotion blockers (Gate H, #190–#192) — the new top of the queue.** The 2026-06-17
+   complete-app review reopened the promotion picture with 3 `severity:blocker` items: **#190** crash
+   visibility + game-loop guard (REL-1/REL-2, S), **#191** two reachable battle crashes (CONC-1/CONC-2, S),
+   **#192** privacy/Data-Safety accuracy (PRIV-1/SEC-1, S + Console). Recommended approach: spec →
+   adversarial-review-gate → TDD (start #190/#191; #192 is text + a Console step). These gate internal → closed.
+2. **Soak-hardening (Gate H `severity:major`) — before/during the soak:** **#193** no-sensor signal (REL-3),
+   **#194** error states (UX-1), **#195** Missions day-rollover (STATE-1). Not hard promotion gates but they
+   degrade tester experience / feedback quality.
+3. **Then the remaining developer-judgment / manual gate items:** **Gate A** in-play audio feel, **Gate E**
+   early-tier balance feel. None is code-addressable; the promote decision is yours once Gate H clears,
+   then a manual Play Console action on the uploaded AAB.
+4. **All other in-repo gate items DONE:** look-&-feel bundles A–E (→ v1.0.4–v1.0.8); **#29** Gate F (MERGED `70ebf53`); **#26** Gate G in-repo slice (MERGED PR #184, device half `[deferred]`); **#44** Gate B.1 (MERGED PR #186); **#187** Settings-scroll (MERGED PR #188) from the Gate-D fresh-install pass.
+5. **Deferred — not a blocker:** #128 remaining ~21 audit Lows → v1.1; the review's before-public/post-launch findings (review §18 Tiers 2–5); Gate B.2 cosmetic "Coming Soon" framing.
 
 Phase 2 (only AFTER the developer promotes internal → closed):
 6. **(External)** Recruit ≥12 testers; ≥14-day closed soak; apply for production access; staged rollout; tag `v1.0.0`.
@@ -612,6 +640,6 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **Look-&-feel bundle docs (all shipped):** Bundle E (#164, v1.0.8) spec `docs/superpowers/specs/2026-06-15-look-and-feel-bundle-e-design.md` + plan `docs/superpowers/plans/2026-06-15-look-and-feel-bundle-e.md` (both review-passed) · #171 spec/plan `docs/superpowers/{specs,plans}/2026-06-15-battle-bottom-chrome-overlap*.md` · Bundle D (#163, v1.0.7) spec `docs/superpowers/specs/2026-06-14-look-and-feel-bundle-d-design.md` + plan `docs/superpowers/plans/2026-06-14-look-and-feel-bundle-d.md` · Bundle C (#162) shipped in v1.0.6.
 - **Plans:** `docs/plans/plan-FORWARD.md` (forward plan + Closed-Test Readiness Gate — start here) · `docs/plans/master-plan.md` (v1.0 completion record) · `docs/plans/plan-V1X-roadmap.md` (backlog of record). Completed v1.0 plan files archived under `docs/archive/completed-plans-v1.0/`.
 - **Reference docs:** `docs/steering/` (tech, structure, source-files, lib-*) · `docs/architecture.md` · `docs/database-schema.md` · `docs/battle-formulas.md`.
-- **Audit:** `docs/external-reviews/2026-06-10-multi-agent-code-audit.md` (findings #118–#128 + regression specs).
+- **Audit:** `docs/external-reviews/2026-06-10-multi-agent-code-audit.md` (findings #118–#128 + regression specs) · **`docs/reviews/complete-app-review.md` (2026-06-17 complete-app review — 20 sections, 51-agent adversarially-verified; raised closed-track blockers #190–#192 + soak-hardening #193–#195, all on the `v1.0.0 closed-test gate` milestone / Gate H in plan-FORWARD).**
 - **Release:** `docs/release/plan-31-walkthrough.md` · privacy policy `docs/release/privacy-policy.md` → hosted https://jonwhitefang.github.io/steps-of-babylon/ (delete-data: `#delete-data`) · listing copy `docs/release/play-store-listing.md`.
 - **ADRs:** 0003 (Battle Step Rewards) · 0004 (FollowOnPipeline, deferred) · 0005 (Billing) · 0006 (Ads) · 0007 (ADV keystore) · 0010 (Cards copy-based) · 0012 (Simulation extraction) · 0014 (i18n) · 0015/0016 (STEP_MULTIPLIER / GPS dropped) · 0017 (ENEMY_INTEL) · 0018 (CI) · 0019 (Claude Code) · 0020 (economy atomicity) · 0021 (onboarding explain-only) · 0022 (design tokens + de-emoji) · 0023 (bottom-nav back-stack) · 0024 (Bundle E: custom font + onboarding biome theming + persist-first completion beat) · **0025 (#26 perf/battery Gate-G: multi-module benchmark tooling on AGP-9 [1.5.0-alpha, dev-only] + #124 guard narrowing + A28/A31/A29 GC-churn fixes)**. Full set in `docs/agent/DECISIONS/`.

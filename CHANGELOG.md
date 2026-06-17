@@ -4,6 +4,31 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Docs — Complete-app review + 6 closed-track gate issues raised (#190–#195)
+
+**No code/schema/test-count change (1054). Docs + GitHub issues only.**
+
+- **New `docs/reviews/complete-app-review.md`** — a full 20-section, code-grounded, adversarially-verified
+  app audit (51-agent workflow: 17 review dimensions × refute-by-default skeptic + a completeness critic;
+  every material finding cites `file:line` opened by both a reviewer and a verifier). Scores: overall 7.5/10,
+  architecture 7, UX 7, security/privacy 7.5, testing 7. Verdict: **continue building** — do the blocker
+  pass, then promote. No code changed.
+- **6 issues raised on the `v1.0.0 closed-test gate` milestone.** 3 `severity:blocker` (gate internal →
+  closed): **#190** crash visibility + unguarded game-loop thread (REL-1/REL-2), **#191** two reachable
+  battle crashes — `EffectEngine` + `uwStates` mutated off the loop thread (CONC-1/CONC-2, same class as
+  #118 on lists the `entitiesLock` sweep missed), **#192** privacy-policy / Data-Safety understates live
+  AdMob+UMP advertising-ID collection (PRIV-1/SEC-1). 3 `severity:major` soak-hardening: **#193** no-sensor
+  silent dead-end (REL-3), **#194** no error states anywhere (UX-1), **#195** Missions day-rollover stale
+  query (STATE-1).
+- **`plan-FORWARD.md`** — new **Gate H** in the Closed-Test Readiness Gate (promotion blockers #190–#192 +
+  soak-hardening #193–#195); Gate D's fresh-install item annotated (found no *observed* crash; the audit
+  found *reachable* ones). Lower-severity findings (architecture seam, A11Y contrast, no-Compose-UI-tests,
+  Gradle-wrapper validation, clock-tamper, i18n) are before-public/post-launch (review §18 Tiers 2–5).
+- **`STATE.md`** — current objective rotated to the Gate-H blocker pass (prior "READY pending manual
+  sign-off" demoted; it held for *observed* behaviour, superseded by the audit's *reachable* findings);
+  also corrected two stale notes the audit caught (audio is shipped, not "placeholder sine tones"; the #6
+  RO-09 BossKilled-PS-on-`viewModelScope` loss is confirmed). Review linked in References.
+
 ### Fixed — Settings screen now scrolls (#187, area:ui)
 
 **No schema/engine/economy change. No test-count change (1054). Presentation-only, one-line.**
