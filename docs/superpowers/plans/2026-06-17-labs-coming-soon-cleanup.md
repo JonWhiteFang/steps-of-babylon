@@ -334,7 +334,13 @@ Temporarily change `surfacedInLabs()`'s body to `entries.toList()` (drop the `fi
 
 - [ ] **Step 3: Checkpoint (doc-sync + STATE/RUN_LOG)**
 
-Run the `/checkpoint` skill. Per the PR Task-List Convention: add a `CHANGELOG.md` `[Unreleased]` entry (#44, content honesty, +2 JVM tests 1052→1054, presentation + pure-domain helper, no schema/engine/economy change), rotate `STATE.md`'s current objective (#44 done; surface the manual feel gates A/E + fresh-install D as what remains in Phase 1), and append `RUN_LOG.md`. No ADR (no non-trivial architectural decision — reuses the pure-helper + content-as-code patterns).
+Run the `/checkpoint` skill. Per the PR Task-List Convention, sync these current-state docs explicitly (do not rely on the doc-drift sweep to catch them):
+- **`CLAUDE.md:303`** — update the headline count `1052 JVM tests` → `1054 JVM tests` (the one live test-count number the repo keeps in CLAUDE.md; it must move with the +2).
+- **`CHANGELOG.md`** — add an `[Unreleased]` entry (#44, content honesty / Gate B.1, +2 JVM tests 1052→1054, presentation + pure-domain helper, no schema/engine/economy change).
+- **`STATE.md`** — update the headline count to 1054 (line ~6) and rotate the current objective (#44 done; surface the manual feel gates A/E + fresh-install D as what remains in Phase 1).
+- **`RUN_LOG.md`** — append a new top entry.
+
+All three coordinated copies of the live count (CLAUDE.md:303, STATE.md:~6, CHANGELOG.md) must read 1054. No ADR (no non-trivial architectural decision — reuses the pure-helper + content-as-code patterns).
 
 - [ ] **Step 4: Push + open PR**
 
