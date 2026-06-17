@@ -83,7 +83,7 @@ class GameLoopThread(
                 runCatching { crashBreadcrumbStore.record(name, t, System.currentTimeMillis()) }
                 runCatching { Log.e(TAG, "Game loop crashed; stopping loop", t) }
                 isRunning = false
-                onLoopError?.invoke(t)
+                runCatching { onLoopError?.invoke(t) }
                 break
             }
 
