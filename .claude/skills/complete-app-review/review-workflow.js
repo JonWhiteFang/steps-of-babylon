@@ -14,8 +14,23 @@ export const meta = {
 const BRIEF = '.claude/skills/complete-app-review/review-brief.md'
 
 // ── Date-stamped output path (scripts can't read the clock; date comes from args) ──
-// Pass via Workflow({..., args: { date: 'YYYY-MM-DD' }}). Falls back to an undated name only if absent.
-const REVIEW_DATE = (args && typeof args === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(args.date || '')) ? args.date : null
+// The date can arrive in several shapes depending on how the caller passed it, so accept all of them:
+//   args = { date: '2026-06-18' }   (the documented form)
+//   args = '2026-06-18'             (bare string)
+//   args = '{"date":"2026-06-18"}'  (JSON-stringified object — a known Workflow arg footgun)
+// Extract the first YYYY-MM-DD we can find rather than depending on one exact shape.
+function extractReviewDate(a) {
+  const ISO = /\d{4}-\d{2}-\d{2}/
+  if (!a) return null
+  if (typeof a === 'string') { const m = a.match(ISO); return m ? m[0] : null }
+  if (typeof a === 'object') {
+    if (typeof a.date === 'string' && ISO.test(a.date)) return a.date.match(ISO)[0]
+    // last-ditch: stringify the whole object and scan (covers nested/renamed keys)
+    const m = JSON.stringify(a).match(ISO); return m ? m[0] : null
+  }
+  return null
+}
+const REVIEW_DATE = extractReviewDate(args)
 const REPORT_PATH = REVIEW_DATE
   ? `docs/reviews/${REVIEW_DATE}-complete-app-review.md`
   : 'docs/reviews/complete-app-review.md'
@@ -300,17 +315,35 @@ function sevLabel(s) {
   if (s === 'medium') return 'severity:major'
   return 'severity:minor'
 }
+// Map a finder's dimension key (r.area) to labels that ACTUALLY EXIST in this repo. The repo has NO
+// `area:reliability`/`area:architecture`/etc. — only the domain labels below — so emit those instead.
+// `gh issue create` fails on a nonexistent label, so the plan must only propose real ones.
+function domainLabels(area) {
+  const m = {
+    'product-ux': ['ux'], 'accessibility': ['accessibility', 'ux'],
+    'architecture': ['architecture'], 'code-quality': ['architecture'],
+    'state-mgmt': ['architecture'], 'data-persistence': ['data-integrity'],
+    'security': ['data-integrity'], 'privacy': ['monetization'],
+    'performance': ['performance'], 'reliability': [], 'offline-network': [],
+    'testing': ['testing'], 'build-ci-release': ['github_actions'],
+    'dependencies': ['dependencies'], 'docs-maintainability': ['documentation'],
+    'documentation': ['documentation'], 'i18n-l10n': ['i18n'], 'i18n': ['i18n'],
+    'feature-completeness': ['content'],
+  }
+  return m[area] || []
+}
 const medPlus = survivors.filter(r => r.finalSeverity !== 'low')
 const lows = survivors.filter(r => r.finalSeverity === 'low')
 const issuePlan = {
   convention: 'Med+ → one issue each (dedup against existing issues first); ALL Lows → a single [Audit] tracker issue (mirror #128).',
   filingMode: 'propose-then-confirm — present this plan to the developer; only run `gh issue create` after go-ahead.',
-  dedupHint: 'Before filing, run `gh issue list --state all --limit 200`; skip any finding already covered (match on finding ID in title or the described defect).',
+  dedupHint: 'Before filing, run `gh issue list --state all --limit 200`; skip any finding already covered (match on finding ID in title or the described defect). NOTE: a re-run against a near-unchanged HEAD will re-surface findings already filed — dedup hard.',
+  labelNote: 'suggestedLabels are pre-mapped to labels that exist in THIS repo (no `area:*` except battle/missions/economy/billing/ui). Verify with `gh label list` before filing; a nonexistent label makes `gh issue create` fail.',
   backlink: `Each issue body should backlink to ${REPORT_PATH} (and its section/finding-ID anchor).`,
   proposedIndividualIssues: medPlus.map(r => ({
     title: `[Audit] ${r.title}`,
     severity: r.finalSeverity,
-    suggestedLabels: ['bug', sevLabel(r.finalSeverity), r.area ? `area:${r.area}` : null].filter(Boolean),
+    suggestedLabels: ['bug', sevLabel(r.finalSeverity), ...domainLabels(r.area)],
     evidence: `${r.file}${r.line ? ':' + r.line : ''}`,
     why: r.why,
     fix: r.fix,

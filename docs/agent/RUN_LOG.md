@@ -1,3 +1,43 @@
+## 2026-06-18 — Ran `complete-app-review` (2026-06-18 audit) → 38 issues filed + 2 skill bugs fixed
+
+- **Trigger:** developer invoked `/complete-app-review 2026-06-18` (the skill built earlier today).
+- **Run:** ultracode `Workflow` — 260 agents, ~14.3M tokens, ~73 min. recon → 17 dimension finders →
+  dedup → severity-scaled adversarial refutation (3/3/2/1 separate subagents) → synthesis.
+- **Output:** `docs/reviews/2026-06-18-complete-app-review.md` (900 lines, all 20 sections + a
+  Refuted/Downgraded section). 148 findings → 3 refuted, **145 survived (7 high · 43 medium · 95 low)**.
+  Verdict **7/10 — keep shipping on internal, NOT public-ready.** Refutation killed a "pre-v7 migration
+  crash for real users" (no shipped build below v9), a Turkish-i SKU break (Kotlin `lowercase()` is
+  locale-invariant), and a BattleViewModel "untestable god-object" (40-test suite exists).
+- **Top surviving themes:** background step-counting under-built vs the GDD's own risk register
+  (battery-optimization whitelist prompt **absent**; no-sensor silent fail; offline gap-fill clamped to
+  ~200/min); reactive monetization error-handling (offline IAP swallowed; pending-purchase **Play
+  auto-refund** risk; non-atomic premium-currency spend→grant); config-change battle-state loss;
+  supply-chain gaps (unvalidated `gradle-wrapper.jar` in the signing lane; no dependency verification).
+- **Issues filed (propose-then-confirm; developer chose "all net-new Med+" + "supersede #223"):**
+  dedup'd the 50 proposed Med+ against #190–#223 + open epics → **12 already-tracked (skipped), 38
+  net-new filed #224–#261.** New Low tracker **#262** (95 items) created; **#223 closed as superseded**.
+  Labels remapped from the workflow's nonexistent `area:*` set to real repo labels before filing.
+- **TWO SKILL BUGS found + fixed this run (TDD: the run itself was the failing test):**
+  1. **Date arg silently misfired.** Workflow returned `reviewDate:null` → report written to the
+     **undated** fallback path despite a valid `args:{date}`. Root cause: the runtime delivered `args`
+     in a shape the strict `typeof==='object' && args.date` guard rejected (likely JSON-stringified).
+     Fix: `extractReviewDate()` accepts object / bare-string / JSON-string / renamed-key forms; scans
+     for the first ISO date. **7/7 unit tests pass** (incl. the JSON-string footgun). Rescued the
+     written artifact via `mv` → `2026-06-18-complete-app-review.md`.
+  2. **Proposed labels didn't exist.** The issue plan emitted `area:reliability`/`area:architecture`/…
+     (this repo only has `area:battle/missions/economy/billing/ui`), which would make `gh issue create`
+     fail. Fix: `domainLabels()` maps each finder dimension to real repo labels
+     (`architecture`/`accessibility`/`testing`/`performance`/`dependencies`/`documentation`/`i18n`/`ux`/
+     `monetization`/`data-integrity`/`content`). SKILL.md "Filing issues" updated (real-label note +
+     re-run-dedup discipline + supersede-old-Low-tracker rule).
+- **Verification:** `node --check` (async-wrapped) on the workflow → clean after both fixes.
+- **Doc sync:** STATE.md (objective rotated) + this RUN_LOG entry. The dated report is a point-in-time
+  artifact (not edited in future sweeps, like `docs/external-reviews/*`). No app code/schema/test change.
+- **Remains:** the 2026-06-18 findings are now tracked (#224–#262); prioritization/fixing is future work
+  (the report's §20 + the top-10 list drive it). The 4 net-new HIGHs (#233 config-change state loss,
+  #236 non-atomic currency grant, #250 purchase reconcile/auto-refund, #261 battery-whitelist) are the
+  highest-leverage.
+
 ## 2026-06-18 — New `complete-app-review` skill (ultracode audit + adversarial refutation) + dated review artifact
 
 - **Trigger:** developer asked for a reusable skill that runs the full end-to-end app review where **every

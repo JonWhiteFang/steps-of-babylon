@@ -88,13 +88,24 @@ execute it only after the developer confirms.
 2. **Scope (the standing default):** file **Medium / High / Critical** survivors that lack a dedicated
    issue, one issue each. **Bundle all Low findings into a single tracker issue** (mirrors the existing
    `[Audit] Tracker: NN Low-severity findings` convention, e.g. #128) — do not open one issue per Low.
-3. **Conventions:** title `[Audit] <finding title> (<ID>)`; labels `bug` + the right
-   `severity:{blocker|major|minor}` (map Critical/High→`major` or `blocker`, Medium→`major`/`minor`,
-   Low→`minor`) + an `area:*` label; body = the report's evidence (`file:line`), why-it-matters, fix,
-   effort, and a backlink to `docs/reviews/<date>-complete-app-review.md#<section>`.
-4. **Present the plan, then confirm.** Show the developer the list (new issues to create + "already
-   tracked" mappings) and wait for go-ahead. Only then run `gh issue create`. After filing, note the
-   new issue numbers back into the report's Technical Debt Register if asked.
+   When a prior dated run already has a Low tracker, **supersede it** (open the new dated tracker, close
+   the old one as superseded-by with a cross-link) rather than leaving two open.
+3. **Conventions:** title `[Audit] <finding title>`; body = the report's evidence (`file:line`),
+   why-it-matters, fix, effort, and a backlink to `docs/reviews/<date>-complete-app-review.md`.
+   **Labels — use ONLY labels that exist in this repo** (`gh label list` to confirm). This repo has
+   **no `area:reliability`/`area:architecture`/etc.** — the only `area:*` labels are
+   `battle/missions/economy/billing/ui`. The workflow's `proposedIndividualIssues[].suggestedLabels`
+   are already pre-mapped to real labels (`bug` + `severity:{blocker|major|minor}` + a domain label like
+   `architecture`/`accessibility`/`testing`/`performance`/`dependencies`/`documentation`/`i18n`/`ux`/
+   `monetization`/`data-integrity`/`content`); still verify before filing — **a nonexistent label makes
+   `gh issue create` fail.**
+4. **Re-run dedup is the hard part.** A re-run against a near-unchanged HEAD re-surfaces findings you
+   already filed last run AND open epics. Pull `gh issue list --state all --limit 200`, build an
+   explicit "proposed → DUP #N / NEW" map, and only file the NEWs. (Past slip: a duplicate of an
+   already-open issue was filed and had to be closed — dedup *before* filing, not after.)
+5. **Present the plan, then confirm.** Show the developer the list (new issues + "already tracked → #N"
+   mappings) and wait for go-ahead. Only then run `gh issue create` (batch via `--body-file`). After
+   filing, note the new issue numbers back into the report's Technical Debt Register if asked.
 
 ## Red flags — STOP, you are rationalizing away the refutation
 
