@@ -29,7 +29,15 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
     private var currentStartWave: Int = 1
     private var surfaceReady = false
     private val isReducedMotion = ReducedMotionCheck.isReducedMotionEnabled(context)
-    private val soundManager: SoundManager
+
+    // #245: recreatable, because a SurfaceView surface is destroyed+recreated across a
+    // background→resume cycle. surfaceDestroyed releases the SoundManager (frees its SoundPool);
+    // surfaceCreated must recreate it and re-point engine.soundManager, or every battle SFX after
+    // the first background round-trip would target a released SoundPool (silent no-op).
+    private var soundManager: SoundManager
+    // True once [releaseSoundManager] has freed the current SoundManager, so [ensureSoundManager]
+    // knows whether it must rebuild (skip the rebuild + clip-reload on the first surfaceCreated).
+    private var soundManagerReleased = false
 
     /**
      * Pending speed multiplier captured by [setSpeedMultiplier] before / outside an active
@@ -68,12 +76,47 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
 
     init {
         holder.addCallback(this)
-        soundManager = SoundManager(context)
-        val prefs = context.getSharedPreferences("sound_prefs", Context.MODE_PRIVATE)
-        soundManager.setMuted(prefs.getBoolean("muted", false))
-        soundManager.setVolume(prefs.getFloat("volume", 1f))
+        soundManager = buildSoundManager()
         engine.soundManager = soundManager
         engine.strings = AndroidStrings(context)
+    }
+
+    /** Builds a fresh [SoundManager] seeded from the persisted mute/volume prefs (#245). */
+    private fun buildSoundManager(): SoundManager {
+        val prefs = context.getSharedPreferences("sound_prefs", Context.MODE_PRIVATE)
+        return SoundManager(context).apply {
+            setMuted(prefs.getBoolean("muted", false))
+            setVolume(prefs.getFloat("volume", 1f))
+        }
+    }
+
+    /**
+     * #245: recreate the [SoundManager] if it was released by a prior [releaseSoundManager]
+     * (surfaceDestroyed), and re-point [GameEngine.soundManager] at the fresh instance. Idempotent
+     * and a no-op when nothing was released, so the first surfaceCreated doesn't needlessly reload
+     * every SoundPool clip. Extracted as `@VisibleForTesting internal` so the regression test in
+     * [GameSurfaceViewTest] can drive it without a real surface holder.
+     */
+    @VisibleForTesting
+    internal fun ensureSoundManager() {
+        if (!soundManagerReleased) return
+        soundManager = buildSoundManager()
+        engine.soundManager = soundManager
+        soundManagerReleased = false
+    }
+
+    /** #245: release the current [SoundManager]'s SoundPool (called from surfaceDestroyed). */
+    @VisibleForTesting
+    internal fun releaseSoundManager() {
+        if (soundManagerReleased) return // idempotent against a double destroy (no intervening create)
+        soundManager.release()
+        // Drop the engine's reference too: a main-thread caller (e.g. BattleViewModel's
+        // upgrade-purchase SFX) can fire between surfaceDestroyed and the next surfaceCreated.
+        // Nulling it makes that a clean no-op via the existing `soundManager?.play(...)` guard
+        // instead of hitting a released SoundPool (log spam / use-after-release). ensureSoundManager()
+        // re-points it on recreate.
+        engine.soundManager = null
+        soundManagerReleased = true
     }
 
     fun configure(stats: ResolvedStats, tier: Int, wsLevels: Map<UpgradeType, Int>, startWave: Int = 1) {
@@ -108,6 +151,9 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         surfaceReady = true
+        // #245: a prior surfaceDestroyed released the SoundManager; recreate it (and re-point the
+        // engine) so battle SFX survive a background→resume. No-op on the first surfaceCreated.
+        ensureSoundManager()
         // Guarded init: a background-and-resume cycle must not wipe an in-flight round.
         // initEngineIfNeeded short-circuits via engine.hasWaveProgress() in that case.
         initEngineIfNeeded()
@@ -136,7 +182,9 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
         thread.isRunning = false
         try { thread.join(1000) } catch (_: InterruptedException) {}
         gameThread = null
-        soundManager.release()
+        // #245: release frees the SoundPool; ensureSoundManager() in the next surfaceCreated
+        // rebuilds it so SFX don't silently die after a background→resume.
+        releaseSoundManager()
     }
 
     fun setSpeedMultiplier(speed: Float) {

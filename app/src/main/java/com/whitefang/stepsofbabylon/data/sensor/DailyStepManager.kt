@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.data.sensor
 
+import android.util.Log
 import com.whitefang.stepsofbabylon.data.anticheat.AntiCheatPreferences
 import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
 import com.whitefang.stepsofbabylon.data.local.DailyLoginDao
@@ -51,6 +52,8 @@ class DailyStepManager @Inject constructor(
     private val labRepository: LabRepository,
 ) {
     companion object {
+        private const val TAG = "DailyStepManager"
+
         const val DAILY_CEILING = 50_000L
 
         /** Per-level effect of the STEP_MULTIPLIER Workshop upgrade: +1 % bonus credited steps. */
@@ -89,6 +92,26 @@ class DailyStepManager @Inject constructor(
      * section and prove the lock serialises the read-check-write. Default no-op in production.
      */
     internal var onBeforeCreditCommit: suspend () -> Unit = {}
+
+    /**
+     * #232: reports a swallowed follow-on-pipeline failure (widget / supply-drop / economy /
+     * mission stage) instead of dropping it into a silent `catch{}`. The step credit itself must
+     * never fail because of a follow-on error, so the catch stays — but the failure is now
+     * surfaced. Defaults to a `Log.w` so a recurring failure is visible in logcat / a bug report;
+     * a test can override it to assert a stage threw. Deliberately NOT routed to
+     * [com.whitefang.stepsofbabylon.data.diagnostics.CrashBreadcrumbStore]: that store is a
+     * single-slot, newest-wins crash breadcrumb (#190) — writing a per-credit pipeline warning to
+     * it would clobber the genuine crash context it exists to preserve.
+     *
+     * Invariant: this runs INSIDE the #120 credit [mutex] (the catch blocks live in
+     * [runFollowOnPipeline], called under `mutex.withLock`). Any override MUST be non-blocking and
+     * non-throwing — it is `(String, Throwable) -> Unit` (non-suspend) so it cannot re-enter the
+     * non-reentrant Mutex, but a blocking call would stall the credit lock and a throw would escape
+     * the catch and abort [recordSteps] after the credit already committed.
+     */
+    internal var onPipelineError: (stage: String, e: Throwable) -> Unit = { stage, e ->
+        Log.w(TAG, "follow-on-pipeline stage '$stage' failed", e)
+    }
 
     private var currentDate: String = todayDate()
     @Volatile private var dailySensorTotal: Long = 0L
@@ -239,7 +262,7 @@ class DailyStepManager @Inject constructor(
         try {
             val balance = playerRepository.getStepBalance()
             widgetUpdateHelper.update(dailyCreditedTotal, balance)
-        } catch (_: Exception) {}
+        } catch (e: Exception) { onPipelineError("widget", e) }
 
         // Supply drop generation
         try {
@@ -255,7 +278,7 @@ class DailyStepManager @Inject constructor(
                 lastCheckSteps = dailyCreditedTotal,
                 milestoneTriggered = dropState.milestoneTriggered || (drop?.trigger == SupplyDropTrigger.DAILY_MILESTONE),
             )
-        } catch (_: Exception) {}
+        } catch (e: Exception) { onPipelineError("supply-drop", e) }
 
         // Economy rewards
         try {
@@ -271,10 +294,10 @@ class DailyStepManager @Inject constructor(
                 profile.seasonPassExpiry,
             )
             trackWeeklyChallenge.checkAndAward()
-        } catch (_: Exception) {}
+        } catch (e: Exception) { onPipelineError("economy", e) }
 
         // Walking mission progress
-        try { updateWalkingMissions() } catch (_: Exception) {}
+        try { updateWalkingMissions() } catch (e: Exception) { onPipelineError("mission", e) }
     }
 
     private suspend fun updateWalkingMissions() {

@@ -1,3 +1,56 @@
+## 2026-06-18 — Reliability-hardening wave: 5 confirmed audit defects fixed (#244/#246/#245/#232/#247)
+
+- **Goal:** fix a batch of the 2026-06-18 audit's confirmed reliability/crash-path defects (developer
+  chose the "Reliability hardening" batch over the economy / battle-rotation / battery-whitelist batches).
+- **Scope (all confirmed in the audit, all small/defensive, no schema/economy/engine-logic change):**
+  - **#244** — `StepCounterService.onCreate` called `startForeground()` unguarded; a typed (health) FGS
+    start can throw on Android 14 (FGS-not-allowed via BootReceiver's bg BOOT start / invalid-type /
+    SecurityException) → process death + START_STICKY retry loop. New top-level `startForegroundSafely(
+    start, onFailure)` seam catches `RuntimeException` → `Log.w` + `stopSelf()` (WorkManager catch-up).
+    `BootReceiver.startForegroundService` guarded too.
+  - **#246** — `MusicManager.createPlayer` deref'd `MediaPlayer.create()` (nullable on codec/decode/OOM)
+    via `.apply{}` on a non-null type → main-thread KNPE. Now nullable via injectable `playerFactory`
+    (default `MediaPlayer::create`); null → silent + track left `NONE` (a later nav re-attempts).
+  - **#245** — `GameSurfaceView` released its `SoundManager` on `surfaceDestroyed` but never recreated it
+    → `engine.soundManager` pointed at a released SoundPool, every SFX a no-op after one bg round-trip.
+    New `ensureSoundManager()`/`releaseSoundManager()` seams (rebuild from `sound_prefs` + re-point engine,
+    idempotent `soundManagerReleased` flag); release also nulls the engine ref so a play() in the
+    destroyed window is a clean no-op (not use-after-release on the freed pool).
+  - **#232** — `DailyStepManager`'s 4 follow-on-pipeline `catch{}` blocks swallowed silently (invisible
+    failures: players stop getting supply drops / streak Gems / mission credit). New `onPipelineError`
+    seam (default `Log.w`, stage-labelled); catch stays so a follow-on failure never fails the credit.
+  - **#247** — `DataDeletionManager.PREFS_NAMES` had drifted: `onboarding_prefs` (#24) + `haptics_prefs`
+    (#162) escaped "Delete All Data". Both added; new `DataDeletionPrefsCoverageTest` scans the source
+    tree for every `getSharedPreferences(...)` site and **fails** on a missing-from-list OR unresolvable
+    arg, so the list can't silently drift again.
+- **Process:** TDD per fix (RED confirmed for each — compile-failure for the new seams, behavioral-failure
+  for #247's drift check). Then the **Adversarial Review Gate**: a 4-dimension `Workflow` (correctness /
+  Android-API / test-quality / scope-&-fragile-zone) → per-finding adversarial refute (23 agents, ~1.2M
+  tokens). **19 findings → 0 critical, 0 confirmed major** (the 3 "major"s all downgraded to `partial` by
+  the skeptics; rest `nit`/`minor`). **6 worthwhile findings applied** as amendments:
+  1. #244 `onFailure` switched `CrashBreadcrumbStore`→`Log.w` — the single-slot newest-wins breadcrumb
+     (#190) must not be clobbered by a per-boot FGS-start failure (same rationale #232 already used).
+  2. #245 `releaseSoundManager()` now nulls `engine.soundManager` (a main-thread caller, BattleViewModel's
+     upgrade-purchase SFX, can fire in the destroyed window) + an idempotent double-release guard.
+  3. #247 guard now **fails** on an unresolved `getSharedPreferences` arg (was silently skipped → false-neg).
+  4. #232 KDoc caveat: `onPipelineError` runs under the #120 credit mutex → overrides must be non-blocking/
+     non-throwing.
+  5. #246 happy-path test asserts `setVolume` seeding (not just looping+start).
+  6. #245 tests strengthened to observable state (engine-ref-null-in-window + persisted-mute re-read),
+     dropping the tautological non-null assert.
+- **Verification:** `:app:testDebugUnitTest :app:lintDebug :app:assembleDebug` → **BUILD SUCCESSFUL**,
+  lint clean, **1069 → 1081 JVM** (+12), 0 failures. New tests: StartForegroundSafelyTest (3),
+  MusicManagerNullPlayerTest (3), DailyStepManagerErrorReportingTest (1), DataDeletionPrefsCoverageTest
+  (1), GameSurfaceViewTest +4 (4→8). No instrumented change.
+- **Docs synced:** CLAUDE.md headline count (1069→1081); CHANGELOG `[Unreleased]` Fix entry;
+  source-files.md (6 prod entries updated + 4 new test entries + 2 existing test entries recounted);
+  STATE.md headline + Current objective rotated.
+- **No ADR** — bug-fixes on established patterns (the `@VisibleForTesting`-seam idiom, the `Log.w`
+  swallowed-but-surfaced pattern, the `resolveDisplayBalance` pure-seam precedent); no new decision.
+- **Remains / next:** commit + open PR. The other net-new HIGHs are unaddressed (#233 config-change
+  battle-state loss [large], #236 atomic premium spend [fits ADR-0020], #250 IAP reconcile, #261 battery
+  whitelist) + 43 med · 95 low (#262) — none internal-track blockers.
+
 ## 2026-06-18 — Ran `complete-app-review` (2026-06-18 audit) → 38 issues filed + 2 skill bugs fixed
 
 - **Trigger:** developer invoked `/complete-app-review 2026-06-18` (the skill built earlier today).

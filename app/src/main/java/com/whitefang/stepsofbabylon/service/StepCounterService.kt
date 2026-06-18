@@ -8,6 +8,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.IBinder
+import android.util.Log
 import com.whitefang.stepsofbabylon.data.NotificationPreferences
 import com.whitefang.stepsofbabylon.data.sensor.DailyStepManager
 import com.whitefang.stepsofbabylon.data.sensor.StepIngestionPreferences
@@ -34,8 +35,35 @@ import javax.inject.Inject
  */
 internal fun resolveDisplayBalance(fresh: Long?, lastKnown: Long?): Long? = fresh ?: lastKnown
 
+/**
+ * #244: runs [start] (a `startForeground(...)` call) defensively. On Android 14 (minSdk 34) a typed
+ * foreground-service start can throw `ForegroundServiceStartNotAllowedException` /
+ * `InvalidForegroundServiceTypeException` (both `RuntimeException` subtypes) or `SecurityException`
+ * — most exposed via [BootReceiver]'s background BOOT_COMPLETED start. Pre-fix any throw propagated
+ * out of `onCreate` and killed the process, with START_STICKY retrying straight back into it.
+ *
+ * Returns `true` if the start succeeded; on a [RuntimeException] (which covers all three cases) it
+ * routes the throwable to [onFailure] and returns `false` so the caller can `stopSelf()` gracefully
+ * — WorkManager's StepSyncWorker handles step catch-up. Pure + top-level for JVM coverage
+ * (StartForegroundSafelyTest); the wiring in [StepCounterService.onCreate] is a thin application.
+ */
+internal inline fun startForegroundSafely(
+    start: () -> Unit,
+    onFailure: (Throwable) -> Unit,
+): Boolean = try {
+    start()
+    true
+} catch (e: RuntimeException) {
+    onFailure(e)
+    false
+}
+
 @AndroidEntryPoint
 class StepCounterService : Service() {
+
+    private companion object {
+        const val TAG = "StepCounterService"
+    }
 
     @Inject lateinit var sensorDataSource: StepSensorDataSource
     @Inject lateinit var dailyStepManager: DailyStepManager
@@ -58,11 +86,27 @@ class StepCounterService : Service() {
         } else {
             notificationManager.buildMinimalNotification()
         }
-        startForeground(
-            StepNotificationManager.NOTIFICATION_ID,
-            notification,
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH,
+        // #244: a typed FGS start can throw on Android 14 (background-start restriction via
+        // BootReceiver, missing FGS-type prerequisite). Don't let it kill the process — log it and
+        // stopSelf() so WorkManager's StepSyncWorker takes over step catch-up. Deliberately Log.w
+        // (not CrashBreadcrumbStore): START_STICKY may re-create the service repeatedly after a
+        // recurring FGS-not-allowed failure, and the single-slot, newest-wins breadcrumb (#190) must
+        // not be clobbered by a per-boot service-start warning — same rationale as #232's pipeline
+        // errors. stopSelf() already averts the hard process-death the breadcrumb exists to record.
+        val started = startForegroundSafely(
+            start = {
+                startForeground(
+                    StepNotificationManager.NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH,
+                )
+            },
+            onFailure = { Log.w(TAG, "startForeground failed; stopping service (WorkManager will catch up)", it) },
         )
+        if (!started) {
+            stopSelf()
+            return
+        }
 
         // Establish day-start counter baseline on startup
         scope.launch(Dispatchers.IO) {

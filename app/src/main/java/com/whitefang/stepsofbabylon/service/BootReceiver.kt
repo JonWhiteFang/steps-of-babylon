@@ -15,9 +15,15 @@ class BootReceiver : BroadcastReceiver() {
         ) == PackageManager.PERMISSION_GRANTED
 
         if (hasPermission) {
-            context.startForegroundService(
-                Intent(context, StepCounterService::class.java)
-            )
+            // #244: startForegroundService can itself throw ForegroundServiceStartNotAllowedException
+            // on Android 12+ if a background BOOT_COMPLETED receiver isn't permitted to start an FGS.
+            // Don't crash the receiver — WorkManager's StepSyncWorker handles step catch-up either way.
+            try {
+                context.startForegroundService(
+                    Intent(context, StepCounterService::class.java)
+                )
+            } catch (_: RuntimeException) {
+            }
         }
     }
 }

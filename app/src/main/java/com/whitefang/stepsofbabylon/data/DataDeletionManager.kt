@@ -60,6 +60,9 @@ class DataDeletionManager @Inject constructor(
         private const val DB_FILENAME = "steps_of_babylon.db"
         private const val KEYSTORE_ALIAS = "steps_of_babylon_db_key"
 
+        // #247: the authoritative list of every SharedPreferences file the "Delete All Data" wipe
+        // must clear. DataDeletionPrefsCoverageTest scans the source tree for getSharedPreferences()
+        // call sites and fails the build if a prefs file is missing here, so this list can't drift.
         internal val PREFS_NAMES = listOf(
             "biome_prefs",
             "milestone_notification_prefs",
@@ -73,6 +76,8 @@ class DataDeletionManager @Inject constructor(
             "smart_reminders",
             "billing_anti_fraud",
             "crash_breadcrumb_prefs",
+            "onboarding_prefs", // #247: a wipe must re-show the first-run tutorial/permission primer
+            "haptics_prefs",    // #247
         )
     }
 }
