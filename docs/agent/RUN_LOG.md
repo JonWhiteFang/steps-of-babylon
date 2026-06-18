@@ -1,3 +1,34 @@
+## 2026-06-18 — Release v1.0.9 (versionCode 25) → Play internal track
+
+- **Goal:** cut the first release since v1.0.8, shipping the 23 commits accumulated on `main` to the Play
+  internal track via the automated `v*`-tag lane. Developer chose **versionName 1.0.9** (patch, matching
+  the 1.0.x internal cadence), **drafted player-facing notes** (approved), and the **PR merge path** (like
+  v1.0.8/#179, respecting branch protection).
+- **Collateral (no production-code change in this PR):**
+  - `app/build.gradle.kts` — `versionCode` 24→25, `versionName` 1.0.8→1.0.9 (the bump rides in with the
+    release PR; `release.yml` builds the committed code — Play rejects reused codes).
+  - `CHANGELOG.md` — promoted `[Unreleased]` → `[1.0.9] — 2026-06-18 (versionCode 25)` with a summary head
+    over the existing per-change entries (which carry the technical record); `[Unreleased]` left empty.
+  - `docs/release/release-notes-v1.0.9.md` — new, following the v1.0.8 template: Play "What's new" (297
+    chars), developer detail (player-facing vs infra/compliance split), provenance, verification, next.
+  - Version-pointer doc sync: README status line, GDD header + footer, master-plan Plan 31/32 pointers,
+    STATE headline + current objective.
+- **Player-facing in this release:** #29 Workshop upgrade decision-support (Gate F, first non-presentational
+  feature since v1.0.8), #187 Settings-scroll, #190/#191 crash-visibility + 2 reachable battle CMEs (Gate H,
+  ADR-0026), #245 battle SFX survive background→resume, #26 startup perf (Baseline Profile, Gate G).
+  Infra/compliance (not player-visible): reliability wave #244/#246/#232/#247, Dependabot wave, privacy-policy
+  hosting (#192/#207).
+- **"What's new" (annotated tag message, 297 chars):** "Smarter upgrades, smoother battles: • Workshop
+  upgrade previews + best-value flag • Settings scrolls again (Replay Tutorial & Delete Data) • steadier
+  battles (crash fixes + SFX survives app-switching) • faster startup. Keep walking!"
+- **Verification:** `./run-gradle.sh testDebugUnitTest` → BUILD SUCCESSFUL, **1081 JVM** tests, 0 failures
+  (matches CLAUDE.md headline; `release.yml` runs the same guard before signing).
+- **Remaining (post-merge):** tag `v1.0.9` annotated with the "What's new" block on the merge commit → push
+  → watch `release.yml` (unit guard → keystore → AdMob/license secrets → `bundleRelease` → `jarsigner -verify`
+  → Play internal upload → GitHub Release). **NOT done by the tag:** the manual Play Console Data-Safety form
+  action (#192, `docs/release/data-safety-form.md`) — a separate human step still required to promote
+  internal→closed.
+
 ## 2026-06-18 — Reliability-hardening wave: 5 confirmed audit defects fixed (#244/#246/#245/#232/#247)
 
 - **Goal:** fix a batch of the 2026-06-18 audit's confirmed reliability/crash-path defects (developer

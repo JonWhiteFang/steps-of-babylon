@@ -4,6 +4,18 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+## [1.0.9] — 2026-06-18 (versionCode 25)
+
+Release collateral promotes everything accumulated since v1.0.8 (23 commits) to the Play **internal**
+track. `versionCode` 24 → 25, `versionName` 1.0.8 → 1.0.9 (the bump rides in with this release PR — Play
+rejects reused codes). Player-facing highlights: **#29** Workshop upgrade decision-support (the first
+non-presentational feature since v1.0.8); **#187** Settings now scrolls (restores Replay-Tutorial +
+Delete-All-Data access); **#190/#191** crash visibility + two reachable battle-crash fixes; **#245**
+battle SFX survive background→resume; **#26** faster cold start via a committed Baseline Profile. The
+rest of the wave (reliability hardening #244/#246/#232/#247, the Dependabot bumps, privacy-policy hosting)
+is infrastructure/compliance, not player-visible. See `docs/release/release-notes-v1.0.9.md` for the
+Play "What's new" + the full developer detail; the per-change entries below carry the technical record.
+
 ### Fix — Reliability hardening: 5 confirmed audit defects (#244, #246, #245, #232, #247)
 
 **Defensive bug-fixes from the 2026-06-18 complete-app review — no schema/economy/engine-logic change;

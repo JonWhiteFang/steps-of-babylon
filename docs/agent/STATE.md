@@ -3,7 +3,7 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.8 (versionCode 24) live on Play internal track** · **1081 JVM + 9 instrumented tests**
+**Headline:** **RELEASING v1.0.9 (versionCode 25) → Play internal** (collateral PR up; bumps vc 24→25, promotes CHANGELOG `[Unreleased]`→`[1.0.9]`, adds `docs/release/release-notes-v1.0.9.md`; tag `v1.0.9` fires `release.yml` on merge). Supersedes **v1.0.8 (vc 24)** · **1081 JVM + 9 instrumented tests**
 green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
@@ -17,7 +17,16 @@ highest-leverage before-public work.
 
 ## Current objective
 
-- **CURRENT — reliability-hardening wave: 5 confirmed 2026-06-18 audit defects fixed (#244/#246/#245/#232/#247)
+- **CURRENT — cutting release v1.0.9 (versionCode 25) to the Play internal track.** First release since
+  v1.0.8; promotes 23 commits. Collateral-only PR (no production-code change in the PR itself): bump
+  `versionCode` 24→25 / `versionName` 1.0.8→1.0.9 in `app/build.gradle.kts`; promote CHANGELOG
+  `[Unreleased]`→`[1.0.9]`; add `docs/release/release-notes-v1.0.9.md` (Play "What's new" 297 chars +
+  developer detail); version-pointer doc sync (README/GDD/master-plan). `testDebugUnitTest` green (1081).
+  **On merge, tag `v1.0.9` (annotated; tag message = the "What's new" block) → `release.yml` builds the
+  signed AAB → Play internal.** Player-facing: #29 Workshop decision-support, #187 Settings-scroll,
+  #190/#191 crash/CME fixes, #245 SFX-on-resume, #26 startup perf. **Manual Play Console Data-Safety
+  action (#192) is still NOT done by this tag** — separate human step (`docs/release/data-safety-form.md`).
+- **Previous objective (DONE) — reliability-hardening wave: 5 confirmed 2026-06-18 audit defects fixed (#244/#246/#245/#232/#247)
   — MERGED (PR #267, squash `8864f5b`; both CI checks green; all 5 issues closed).** Defensive
   bug-fixes, TDD'd (RED→GREEN per fix), no schema/economy/engine-logic change. **#244** FGS
   `startForeground()` crash path → `startForegroundSafely` seam (Log.w + stopSelf; BootReceiver guarded);
