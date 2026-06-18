@@ -15,9 +15,9 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | Library | Version | Purpose |
 |---|---|---|
 | Kotlin | 2.3.0 | Language |
-| AGP | 9.0.1 | Android Gradle Plugin |
+| AGP | 9.2.1 | Android Gradle Plugin |
 | KSP | 2.3.9 | Annotation processing (replaces kapt) |
-| Compose BOM | 2026.02.00 | Jetpack Compose UI |
+| Compose BOM | 2026.05.01 | Jetpack Compose UI |
 | Hilt | 2.59.2 | Dependency injection |
 | Room | 2.8.4 | Local SQLite database |
 | Google Play Billing | 8.3.0 | IAP via `billing-ktx`. `BillingManagerImpl` is the sole `BillingManager` binding for debug + release as of C.5 PR 3 (`StubBillingManager` deleted; `BuildConfig.USE_REAL_BILLING` removed). |
@@ -32,11 +32,11 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | Health Connect | 1.1.0 (stable) | Step cross-validation, Activity Minute Parity (off alpha per audit #33; 1.2.x needs compileSdk 37) |
 | SQLite KTX | 2.4.0 | SQLite support library |
 | Core KTX | 1.17.0 | Kotlin extensions for Android |
-| Activity Compose | 1.12.3 | Compose Activity integration |
+| Activity Compose | 1.13.0 | Compose Activity integration (transitively resolves core-ktx to 1.18.0) |
 | Hilt Work | 1.3.0 | Hilt WorkManager + Navigation Compose integration |
 | Compose Material Icons | (BOM) | Material icon set for Compose. Both `material-icons-core` (small built-in set) and `material-icons-extended` (full Material catalogue) are included; R8 shrinks unused icons in release builds. Extended set added in R4-04 for `Icons.Filled.Upgrade`; R4-05 will use `Icons.Filled.Help`. |
 | Mockito Kotlin | 5.4.0 | Kotlin-friendly mocking for tests |
-| Robolectric | 4.14.1 | Android framework simulation for JVM tests |
+| Robolectric | 4.16.1 | Android framework simulation for JVM tests (tests pin `@Config(sdk=[34])`, so the 4.16 "JDK 21 for SDK 36" requirement is not triggered) |
 | AndroidX Test Core | 1.7.0 | Test utilities for Android components |
 | WorkManager Testing | 2.11.0 | `WorkManagerTestInitHelper` for tests that exercise `WorkManager.cancelAllWork` (added by V1X-01 `DataDeletionManagerTest`). Same version as the main WorkManager dep. |
 | AndroidX Test Runner | 1.6.2 | `AndroidJUnitRunner` for instrumented tests; subclassed by `HiltTestRunner` (V1X-08 Phase 1A). |

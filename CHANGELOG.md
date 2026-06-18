@@ -4,6 +4,29 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Build — Dependabot dependency wave: 6 safe bumps merged, core-ktx 1.19.0 deferred (#197, #198, #200–#203)
+
+**Dependency/CI-config only — no app code, schema, or test change; JVM test count unchanged (1069).**
+Landed six Dependabot bumps as one combined, build-verified PR after an adversarial breaking-change
+review (8 agents, ~406K tokens; zero surviving critical/major findings) and a local
+`testDebugUnitTest + assembleDebug` of the four catalog bumps applied **together** (`BUILD SUCCESSFUL`
+— the per-PR CI runs only ever tested each bump against the old `main` in isolation).
+
+- **Catalog (`gradle/libs.versions.toml`):** AGP `9.0.1 → 9.2.1`; Compose BOM `2026.02.00 → 2026.05.01`
+  (moves core Compose `1.10.3 → 1.11.2`; **material3 stays 1.4.0**); activity-compose `1.12.3 → 1.13.0`
+  (transitively resolves core-ktx to `1.18.0`, still a compileSdk-36 floor); robolectric `4.14.1 → 4.16.1`.
+- **GitHub Actions (4 workflows):** gradle/actions `6.1.1 → 6.2.0`; actions/setup-java `5.2.0 → 5.3.0`
+  (CI-only; SHA pins verified against the release tags; only inputs the workflows pass are unchanged).
+- **Deferred — core-ktx `1.17.0 → 1.19.0` (#199): CLOSED, not merged.** It hard-requires
+  **compileSdk ≥ 37 AND AGP ≥ 9.1**; the project intentionally stays at compileSdk 36 (same rationale as
+  the Health Connect 1.2.x pin — see `libs.versions.toml` comment + `tech.md`). The AGP bump satisfies
+  the AGP half but not the SDK-37 floor, so #199 stays out until a deliberate compileSdk-37 migration.
+- **Two non-blocking notes (pre-existing, not caused by these bumps):** AGP 9.1's R8 now does implicit
+  `-repackageclasses` on *minified release* builds (judged benign — every reflection surface is
+  explicitly `-keep`-pinned in `proguard-rules.pro`; only exercised on `assembleRelease` via the
+  `release.yml` lane, never in the PR gate). Robolectric 4.16's "JDK 21 for SDK 36" requirement is not
+  triggered because all 22 Robolectric tests pin `@Config(sdk=[34])`.
+
 ### Docs — `complete-app-review` skill + 2026-06-18 audit (#210, #263); 38 issues filed (#224–#262)
 
 **Agent tooling + a review artifact — no app code, schema, dependency, or test change; JVM test count
