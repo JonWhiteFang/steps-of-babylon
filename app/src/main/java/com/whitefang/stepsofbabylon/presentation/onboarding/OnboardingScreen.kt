@@ -76,6 +76,7 @@ fun OnboardingScreen(
     viewModel: OnboardingViewModel = hiltViewModel(),
 ) {
     val slides = viewModel.slides
+    val stepSensorAvailable = viewModel.stepSensorAvailable
     val pagerState = rememberPagerState(pageCount = { slides.size })
     val scope = rememberCoroutineScope()
     val lastIndex = slides.lastIndex
@@ -210,10 +211,33 @@ fun OnboardingScreen(
                     ) { Text("Next") }
                 } else {
                     // Final (permission primer) slide.
-                    // ORDER MATTERS: stepCountingGranted is checked FIRST so a replay where the
-                    // permission is already held shows the satisfied state and does NOT re-ask
-                    // (spec §5). Only if not granted do we branch on whether we've asked yet.
+                    // ORDER MATTERS: the no-sensor case is checked FIRST (#193) — on a device with no
+                    // hardware step-counter, granting ACTIVITY_RECOGNITION is meaningless (no Steps
+                    // ever accrue), so we tell the player and steer them to Health Connect instead of
+                    // showing a "Step counting enabled" success they'd never benefit from. Then
+                    // stepCountingGranted so a replay where the permission is already held shows the
+                    // satisfied state and does NOT re-ask (spec §5); only if not granted do we branch
+                    // on whether we've asked yet.
                     when {
+                        !stepSensorAvailable -> {
+                            // #193: hardware step-counter absent — never strand the player at a
+                            // silent dead-end. Explain it and let them continue (HC can backfill).
+                            Text(
+                                "This device has no step-counter sensor. You can still earn Steps " +
+                                    "by connecting Health Connect in Settings — otherwise the game " +
+                                    "can't track your walking.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                textAlign = TextAlign.Center,
+                            )
+                            Button(
+                                onClick = { finish() },
+                                modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
+                            ) {
+                                Text("Continue anyway")
+                            }
+                        }
                         stepCountingGranted -> {
                             Row(
                                 Modifier.fillMaxWidth().padding(bottom = 8.dp),

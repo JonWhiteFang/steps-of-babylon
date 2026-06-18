@@ -3,7 +3,6 @@ package com.whitefang.stepsofbabylon.domain.usecase
 import com.whitefang.stepsofbabylon.domain.model.CardRarity
 import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.domain.repository.CardRepository
-import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import kotlin.random.Random
 
 enum class PackTier(val gemCost: Long, val commonWeight: Double, val rareWeight: Double, val epicWeight: Double) {
@@ -16,7 +15,6 @@ data class CardResult(val type: CardType, val isNew: Boolean, val copiesAwarded:
 
 class OpenCardPack(
     private val cardRepository: CardRepository,
-    private val playerRepository: PlayerRepository,
     private val random: Random = Random,
 ) {
     sealed class Result {
@@ -25,28 +23,27 @@ class OpenCardPack(
     }
 
     suspend operator fun invoke(packTier: PackTier, gems: Long, isFree: Boolean = false): Result {
+        // Cheap fast-path: reject obviously-unaffordable packs without a DB round-trip. The
+        // authoritative gate is the guarded deduct inside openCardPackAtomic (a stale snapshot can
+        // still pass this check — #122 / R122).
         if (!isFree && gems < packTier.gemCost) return Result.InsufficientGems
-        // #122: gate the card grant on the guarded deduct's success (free packs skip the spend
-        // entirely). Keeps the deduct inside the !isFree branch so free packs are never blocked.
-        if (!isFree && !playerRepository.spendGems(packTier.gemCost)) return Result.InsufficientGems
 
-        val results = mutableListOf<CardResult>()
-
-        repeat(3) { index ->
-            // First card guaranteed at pack-tier rarity; other 2 use standard weights
+        // Roll the 3 card types first (pure + seeded — must stay here for unit coverage). First card
+        // is guaranteed at pack-tier rarity; the other 2 use standard weights.
+        val rolledTypes = (0 until 3).map { index ->
             val rarity = if (index == 0) packTierToRarity(packTier) else rollRarity(packTier)
-            val candidates = CardType.entries.filter { it.rarity == rarity }
-            val type = pickCardType(candidates)
-
-            if (cardRepository.hasCard(type)) {
-                cardRepository.incrementCopyCount(type)
-                results += CardResult(type, isNew = false)
-            } else {
-                cardRepository.addCard(type)
-                results += CardResult(type, isNew = true)
-            }
+            pickCardType(CardType.entries.filter { it.rarity == rarity })
         }
-        return Result.Opened(results)
+
+        // #236: deduct Gems + write all 3 cards atomically (one transaction). A crash mid-pack can
+        // no longer debit Gems with no cards delivered. Free packs pass gemCost = 0 (no deduct).
+        val gemCost = if (isFree) 0L else packTier.gemCost
+        val isNewFlags = cardRepository.openCardPackAtomic(gemCost, rolledTypes.map { it.name })
+            ?: return Result.InsufficientGems
+
+        return Result.Opened(
+            rolledTypes.zip(isNewFlags).map { (type, isNew) -> CardResult(type, isNew = isNew) },
+        )
     }
 
     /**

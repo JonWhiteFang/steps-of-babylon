@@ -2,7 +2,6 @@ package com.whitefang.stepsofbabylon.domain.usecase
 
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
-import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.UltimateWeaponRepository
 
 /**
@@ -14,7 +13,6 @@ import com.whitefang.stepsofbabylon.domain.repository.UltimateWeaponRepository
  */
 class UnlockUltimateWeapon(
     private val uwRepository: UltimateWeaponRepository,
-    private val playerRepository: PlayerRepository,
 ) {
     suspend operator fun invoke(
         type: UltimateWeaponType,
@@ -23,11 +21,11 @@ class UnlockUltimateWeapon(
     ): Boolean {
         if (owned.any { it.type == type && it.isUnlocked }) return false
         if (powerStones < type.unlockCost) return false
-        // #122: only unlock when the guarded deduct actually moved the balance. The UW screen
-        // has no _processing guard, so two quick taps could both pass the stale-snapshot check;
-        // gating on the deduct's success prevents a free unlock when the second deduct no-ops.
-        if (!playerRepository.spendPowerStones(type.unlockCost.toLong())) return false
-        uwRepository.unlockWeapon(type)
-        return true
+        // #236: deduct Power Stones + unlock atomically (one transaction) so a crash between the
+        // two can't permanently debit Power Stones with no weapon unlocked. The atomic method keeps
+        // the #122 guard (only unlock when the guarded deduct moved the balance — two quick taps
+        // both passing the stale `owned`/`powerStones` snapshot can't free-unlock) and additionally
+        // re-checks already-unlocked inside the transaction so the second tap pays nothing.
+        return uwRepository.unlockWeaponAtomic(type, type.unlockCost.toLong())
     }
 }

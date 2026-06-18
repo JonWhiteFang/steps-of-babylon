@@ -2,6 +2,7 @@ package com.whitefang.stepsofbabylon.data.repository
 
 import com.whitefang.stepsofbabylon.data.local.CardDao
 import com.whitefang.stepsofbabylon.data.local.CardInventoryEntity
+import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.domain.model.OwnedCard
 import com.whitefang.stepsofbabylon.domain.repository.CardRepository
@@ -11,6 +12,7 @@ import javax.inject.Inject
 
 class CardRepositoryImpl @Inject constructor(
     private val dao: CardDao,
+    private val playerDao: PlayerProfileDao,
 ) : CardRepository {
 
     override fun observeAllCards(): Flow<List<OwnedCard>> =
@@ -24,6 +26,9 @@ class CardRepositoryImpl @Inject constructor(
 
     override suspend fun addCard(type: CardType): Long =
         dao.insert(CardInventoryEntity(cardType = type.name))
+
+    override suspend fun openCardPackAtomic(gemCost: Long, cardTypeNames: List<String>): List<Boolean>? =
+        dao.openCardPackAtomic(gemCost, cardTypeNames, playerDao)
 
     override suspend fun addCardOrIncrementCopy(type: CardType) {
         val existing = dao.getByType(type.name)

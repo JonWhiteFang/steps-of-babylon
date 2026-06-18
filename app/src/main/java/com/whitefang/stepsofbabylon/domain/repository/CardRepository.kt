@@ -9,6 +9,13 @@ interface CardRepository {
     fun observeEquippedCards(): Flow<List<OwnedCard>>
     suspend fun hasCard(type: CardType): Boolean
     suspend fun addCard(type: CardType): Long
+
+    /**
+     * #236: atomically deduct [gemCost] Gems (0 = free pack, no deduct) and write the pre-rolled
+     * [cardTypeNames] in a single transaction. Returns per-card `isNew` flags in order, or `null`
+     * when the guarded Gem deduct found insufficient balance (no cards written).
+     */
+    suspend fun openCardPackAtomic(gemCost: Long, cardTypeNames: List<String>): List<Boolean>?
     suspend fun addCardOrIncrementCopy(type: CardType)
     suspend fun incrementCopyCount(type: CardType)
     suspend fun decrementCopiesAndLevelUp(id: Int, amount: Int): Boolean

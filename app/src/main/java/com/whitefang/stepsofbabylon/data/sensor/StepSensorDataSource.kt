@@ -24,6 +24,16 @@ class StepSensorDataSource @Inject constructor(
         private const val TAG = "StepSensorDataSource"
     }
 
+    /**
+     * #193: whether this device has a hardware step-counter. The whole progression loop is gated on
+     * [Sensor.TYPE_STEP_COUNTER]; on a device without it (emulators, some low-end / quirky-OEM
+     * phones) [stepDeltas] silently completes and no Steps ever accrue. Onboarding queries this to
+     * tell the player up front (steering them to Health Connect) instead of leaving a dead-end. A
+     * cheap in-process registry lookup — safe to call on the main thread.
+     */
+    fun isSensorAvailable(): Boolean =
+        sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER) != null
+
     val stepDeltas: Flow<Long> = callbackFlow {
         val sensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
         if (sensor == null) {

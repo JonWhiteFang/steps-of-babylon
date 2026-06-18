@@ -3,7 +3,10 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **RELEASING v1.0.9 (versionCode 25) → Play internal** (collateral PR up; bumps vc 24→25, promotes CHANGELOG `[Unreleased]`→`[1.0.9]`, adds `docs/release/release-notes-v1.0.9.md`; tag `v1.0.9` fires `release.yml` on merge). Supersedes **v1.0.8 (vc 24)** · **1081 JVM + 9 instrumented tests**
+**Headline:** **v1.0.9 (versionCode 25) SHIPPED → Play internal** (tag fired). Latest work (this branch
+`fix/reliability-236-195-193`, `[Unreleased]`): **3 before-public reliability defects fixed — #236 atomic
+premium spend, #195 missions day-rollover, #193 no-sensor signal** (one combined PR; TDD'd; lighter inline
+adversarial review; full build green). Supersedes **v1.0.8 (vc 24)** · **1093 JVM + 9 instrumented tests**
 green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
@@ -17,7 +20,22 @@ highest-leverage before-public work.
 
 ## Current objective
 
-- **CURRENT — cutting release v1.0.9 (versionCode 25) to the Play internal track.** First release since
+- **CURRENT — reliability wave: #236 / #195 / #193 (branch `fix/reliability-236-195-193`, `[Unreleased]`,
+  PR up).** Three confirmed 2026-06-18 complete-app-review defects, one combined PR; **no schema change;
+  1081 → 1093 JVM** (+12); `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. TDD'd (RED→GREEN
+  per fix); spec+plan (`docs/superpowers/specs/2026-06-18-reliability-wave-236-195-193.md`) put through a
+  lighter single-agent adversarial review (ultracode off, per the developer's choice) — its one
+  scope-changing finding (drop an unnecessary interface for #193: mockito-core 5.x mocks final classes
+  directly) was applied. **#236** (HIGH, data-integrity) premium spend+grant made atomic — new
+  `CardDao.openCardPackAtomic` / `UltimateWeaponDao.unlockWeaponAtomic` `@Transaction` methods +
+  repository ports; extends ADR-0020 → **ADR-0027**; `OpenCardPack`/`UnlockUltimateWeapon` dropped their
+  now-unused `PlayerRepository`. **#195** (STATE-1) MissionsViewModel `var today` → `_today`
+  MutableStateFlow + `flatMapLatest` + `refreshDate()` + screen `ON_RESUME` (mirrors Home/Stats).
+  **#193** (REL-3) `StepSensorDataSource.isSensorAvailable()` → `OnboardingViewModel.stepSensorAvailable`
+  → new highest-priority onboarding final-slide branch steering to Health Connect. No ADR for #195/#193
+  (established patterns). Remaining HIGHs after this: #233 (config-change battle-state loss [large]),
+  #250 (IAP reconcile), #261 (battery whitelist) + the med/low backlog (#262).
+- **Previous objective (DONE) — cutting release v1.0.9 (versionCode 25) to the Play internal track.** First release since
   v1.0.8; promotes 23 commits. Collateral-only PR (no production-code change in the PR itself): bump
   `versionCode` 24→25 / `versionName` 1.0.8→1.0.9 in `app/build.gradle.kts`; promote CHANGELOG
   `[Unreleased]`→`[1.0.9]`; add `docs/release/release-notes-v1.0.9.md` (Play "What's new" 297 chars +
@@ -586,6 +604,7 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **Game-loop crash guard (#190 REL-2, ADR-0026)** — `GameLoopThread.run()` wraps per-tick `update()`/`render()` in `try/catch` → record breadcrumb → stop loop → `onLoopError`. The inner `lockCanvas/unlockCanvasAndPost` try/finally MUST stay nested inside the outer catch (render crash unlocks first). `BattleViewModel.onBattleLoopError` sets `battleError` + `roundEnded` (`@Volatile`) and must NOT set `eng.roundOver` (would persist the corrupt round). Don't remove the guard or run the loop unguarded. Guarded by `GameLoopThreadGuardTest` + 2 `BattleViewModelTest` entries.
 - **GOLDEN damage layer (#119)** — GOLDEN is a re-derived `goldenDamageMult`, not a stat snapshot. Don't restore snapshot-and-overwrite.
 - **Economy spend/claim contract (#122, ADR-0020)** — `spendGems`/`spendPowerStones`/`spendStepsIfSufficient` return Boolean; gate the grant on the result. One-shot claims use guarded `… AND claimed=0` + mark-first.
+- **Premium spend+grant is atomic (#236, ADR-0027)** — card-pack and UW-unlock deduct+grant commit/roll back together via `CardDao.openCardPackAtomic` / `UltimateWeaponDao.unlockWeaponAtomic` (`@Transaction` default methods that call `PlayerProfileDao` as a param — same cross-DAO mechanism as `claimMilestoneAtomic`). The guarded deduct runs FIRST inside the tx; `openCardPackAtomic` returns `null` and `unlockWeaponAtomic` returns `false` on insufficient (no grant written). `unlockWeaponAtomic` re-checks already-unlocked INSIDE the tx before deducting (double-tap can't pay twice). Exposed via repository ports so the use cases stay domain-pure — `OpenCardPack`/`UnlockUltimateWeapon` no longer take `PlayerRepository`. Rarity rolling stays pure/seeded in `OpenCardPack` (the DAO only does the writes). The use cases' pre-checks (`gems < cost` etc.) are cheap fast-paths, NOT the guard. Don't reintroduce a separate spend-then-grant or move the deduct out of the tx. Guarded by `PremiumSpendDaoTest` + atomic-path assertions in `OpenCardPackTest`/`UnlockUltimateWeaponTest`; fakes use a `linkedPlayer` wallet seam.
 - **`DailyStepManager` Mutex (#120)** — credit read-check-write under a non-reentrant `Mutex`; don't add an un-locked counter mutation.
 - **`GameEngine.getAliveEnemies()` must NOT be cached across a frame (#125)** — `takeDamage` re-fires `onDeath` on a dead enemy; a shared snapshot double-credits kills. Guarded by `R125` GameEngineTest.
 - **HUD enemy count is derived, not tallied (#146)** — `GameEngine.aliveEnemyCount()` counts live `EnemyEntity` under `entitiesLock`; the desync-prone `WaveSpawner.enemiesAlive` tally was removed (SCATTER children bypassed its only `++`; `onDeath` re-fires double-counted). Don't reintroduce a hand-kept counter. `EnemyEntity.takeDamage` is guarded `if (!isAlive) return 0.0` (no corpse re-hit → no double-credit). Guarded by 3 `R146` GameEngineTest entries.

@@ -9,8 +9,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
-class FakeUltimateWeaponRepository : UltimateWeaponRepository {
+/**
+ * In-memory fake for [UltimateWeaponRepository].
+ *
+ * @param linkedPlayer when supplied, [unlockWeaponAtomic] forwards the Power-Stone deduct to this
+ *                     player fake (the guarded [FakePlayerRepository.spendPowerStones] gates the
+ *                     unlock, mirroring the real cross-DAO `@Transaction`). When null, no deduct.
+ */
+class FakeUltimateWeaponRepository(
+    private val linkedPlayer: FakePlayerRepository? = null,
+) : UltimateWeaponRepository {
     val weapons = MutableStateFlow<Map<UltimateWeaponType, OwnedWeapon>>(emptyMap())
+
+    /** Number of [unlockWeaponAtomic] calls — lets a test assert the atomic path is live. */
+    var unlockWeaponAtomicCallCount: Int = 0
+        private set
 
     override fun observeUnlockedWeapons(): Flow<List<OwnedWeapon>> =
         weapons.map { m -> m.values.filter { it.isUnlocked }.toList() }
@@ -24,6 +37,15 @@ class FakeUltimateWeaponRepository : UltimateWeaponRepository {
             if (existing != null) m + (type to existing.copy(isUnlocked = true))
             else m + (type to OwnedWeapon(type, isUnlocked = true))
         }
+    }
+
+    override suspend fun unlockWeaponAtomic(type: UltimateWeaponType, powerStoneCost: Long): Boolean {
+        unlockWeaponAtomicCallCount++
+        // Already-unlocked re-check before the deduct (mirrors the DAO transaction).
+        if (weapons.value[type]?.isUnlocked == true) return false
+        if (linkedPlayer != null && !linkedPlayer.spendPowerStones(powerStoneCost)) return false
+        unlockWeapon(type)
+        return true
     }
 
     override suspend fun upgradePathLevel(type: UltimateWeaponType, path: UWPath, newLevel: Int) {

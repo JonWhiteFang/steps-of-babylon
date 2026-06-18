@@ -6,6 +6,7 @@ import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeUltimateWeaponRepository
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -13,8 +14,10 @@ import org.junit.jupiter.api.Test
 class UnlockUltimateWeaponTest {
 
     private val playerRepo = FakePlayerRepository(PlayerProfile(powerStones = 200))
-    private val uwRepo = FakeUltimateWeaponRepository()
-    private val sut = UnlockUltimateWeapon(uwRepo, playerRepo)
+    // #236: the Power-Stone deduct now routes through the atomic UltimateWeaponRepository.unlockWeaponAtomic,
+    // so the UW fake is linked to the player fake to model the guarded deduct gating the unlock.
+    private val uwRepo = FakeUltimateWeaponRepository(linkedPlayer = playerRepo)
+    private val sut = UnlockUltimateWeapon(uwRepo)
 
     @Test
     fun `sufficient stones and not owned returns true`() = runTest {
@@ -47,5 +50,19 @@ class UnlockUltimateWeaponTest {
         playerRepo.profile.value = PlayerProfile(powerStones = 0)
         val unlocked = sut(UltimateWeaponType.DEATH_WAVE, powerStones = 200, owned = emptyList())
         assertFalse(unlocked, "a UW must not unlock when the guarded Power Stone deduct fails")
+    }
+
+    // #236: deduct + unlock must go through the single atomic path so a crash can't debit Power
+    // Stones with no weapon unlocked. Pins that the use case routes through unlockWeaponAtomic and
+    // that the deduct actually moved the on-disk balance.
+    @Test
+    fun `R236 success routes through the atomic unlock path and deducts stones`() = runTest {
+        val unlocked = sut(UltimateWeaponType.DEATH_WAVE, powerStones = 200, owned = emptyList())
+        assertTrue(unlocked)
+        assertEquals(1, uwRepo.unlockWeaponAtomicCallCount)
+        assertEquals(
+            200L - UltimateWeaponType.DEATH_WAVE.unlockCost.toLong(),
+            playerRepo.profile.value.powerStones,
+        )
     }
 }

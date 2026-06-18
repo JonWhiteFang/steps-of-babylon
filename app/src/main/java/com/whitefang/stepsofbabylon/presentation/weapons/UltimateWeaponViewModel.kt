@@ -53,7 +53,7 @@ class UltimateWeaponViewModel @Inject constructor(
     private val playerRepository: PlayerRepository,
 ) : ViewModel() {
 
-    private val unlockUW = UnlockUltimateWeapon(uwRepository, playerRepository)
+    private val unlockUW = UnlockUltimateWeapon(uwRepository)
     private val upgradeUW = UpgradeUltimateWeapon(uwRepository, playerRepository)
     private var ownedList: List<OwnedWeapon> = emptyList()
 
