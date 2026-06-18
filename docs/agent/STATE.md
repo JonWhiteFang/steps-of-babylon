@@ -17,8 +17,8 @@ highest-leverage before-public work.
 
 ## Current objective
 
-- **CURRENT — reliability-hardening wave: 5 confirmed 2026-06-18 audit defects fixed (#244/#246/#245/#232/#247),
-  on branch `fix/reliability-hardening-244-246-245-232-247` (uncommitted at write time).** Defensive
+- **CURRENT — reliability-hardening wave: 5 confirmed 2026-06-18 audit defects fixed (#244/#246/#245/#232/#247)
+  — MERGED (PR #267, squash `8864f5b`; both CI checks green; all 5 issues closed).** Defensive
   bug-fixes, TDD'd (RED→GREEN per fix), no schema/economy/engine-logic change. **#244** FGS
   `startForeground()` crash path → `startForegroundSafely` seam (Log.w + stopSelf; BootReceiver guarded);
   **#246** `MusicManager.createPlayer` NPE → nullable + injectable `playerFactory`, degrades to silent;
@@ -32,7 +32,7 @@ highest-leverage before-public work.
   CrashBreadcrumbStore→Log.w to match #232's single-slot rationale, #245 release nulls the engine ref +
   idempotent guard, #247 test now fails on unresolved args, #232 mutex KDoc caveat, #246/#245 tests
   strengthened to observable-state). **1069→1081 JVM** (+12). `testDebugUnitTest lintDebug assembleDebug`
-  BUILD SUCCESSFUL, 0 failures. No ADR (bug-fixes on established patterns). **Next:** commit + open PR.
+  BUILD SUCCESSFUL, 0 failures. No ADR (bug-fixes on established patterns).
   Remaining open audit issues: the other 2 net-new HIGHs (#233 config-change battle-state loss [large],
   #236 atomic premium spend [medium, fits ADR-0020], #250 IAP reconcile, #261 battery whitelist) + 43
   med · 95 low (#262 tracker) — none internal-track blockers.

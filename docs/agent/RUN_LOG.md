@@ -47,7 +47,10 @@
   STATE.md headline + Current objective rotated.
 - **No ADR** — bug-fixes on established patterns (the `@VisibleForTesting`-seam idiom, the `Log.w`
   swallowed-but-surfaced pattern, the `resolveDisplayBalance` pure-seam precedent); no new decision.
-- **Remains / next:** commit + open PR. The other net-new HIGHs are unaddressed (#233 config-change
+- **DONE:** PR **#267** opened, both CI checks green (build-and-test + connected/instrumented),
+  squash-merged to `main` as `8864f5b`. All 5 issues closed (#244 auto-closed by the keyword; #246/#245/
+  #232/#247 closed manually — GitHub binds a `Closes` keyword only to the first issue in a comma list).
+  Branch deleted; zero open PRs. The other net-new HIGHs remain unaddressed (#233 config-change
   battle-state loss [large], #236 atomic premium spend [fits ADR-0020], #250 IAP reconcile, #261 battery
   whitelist) + 43 med · 95 low (#262) — none internal-track blockers.
 
