@@ -14,7 +14,20 @@ the merged #190/#191/#192 (currently `[Unreleased]`) to the internal track. Audi
 
 ## Current objective
 
-- **CURRENT — added the `complete-app-review` skill (repo tooling) + date-stamped the review artifact.**
+- **CURRENT — ran the `complete-app-review` skill (2026-06-18 audit) + filed findings as issues + hardened
+  the skill.** Second full audit (260 agents, ~14.3M tokens, ~73 min) → `docs/reviews/2026-06-18-complete-app-review.md`
+  (900 lines, 20 sections + Refuted/Downgraded; 148 findings → 3 refuted, **7 high · 43 med · 95 low**).
+  Verdict **7/10 — keep shipping internal, NOT public-ready**; surviving themes: background step-counting
+  under-built vs the GDD risk register (battery-whitelist prompt absent, no-sensor silent fail, gap-fill
+  rate-clamp), reactive monetization error-handling (offline IAP swallowed, pending-purchase auto-refund
+  risk, non-atomic currency grant), config-change battle-state loss, supply-chain gaps (unvalidated
+  wrapper jar, no dependency verification). Filed **38 net-new Med+ issues #224–#261** (after dedup'ing
+  ~12 against #190–#223 + epics) + **new Low tracker #262** (superseded #223, now CLOSED). **Two skill
+  bugs fixed this run:** (1) the `date` arg silently misfired (`reviewDate:null` → report written to the
+  undated path; rescued via `mv`) — `extractReviewDate()` now accepts object/bare-string/JSON-string
+  forms (7/7 unit tests); (2) the issue-plan proposed `area:*` labels that don't exist in this repo —
+  `domainLabels()` now maps dimensions to real repo labels. No app code/schema/test change.
+- **Previous objective (DONE) — added the `complete-app-review` skill (repo tooling) + date-stamped the review artifact.**
   New `.claude/skills/complete-app-review/` (SKILL.md + review-brief.md + review-workflow.js): an
   ultracode `Workflow` that runs the full 20-section audit and puts **every** finding through
   severity-scaled adversarial refutation by **separate** subagents (3 crit/high · 2 med · 1 low) before
