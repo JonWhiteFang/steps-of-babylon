@@ -4,6 +4,29 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Docs — `complete-app-review` skill + 2026-06-18 audit (#210, #263); 38 issues filed (#224–#262)
+
+**Agent tooling + a review artifact — no app code, schema, dependency, or test change; JVM test count
+unchanged (1069).** Added a reusable, repo-tailored audit skill and ran it once.
+
+- **New `.claude/skills/complete-app-review/`** (PR #210, `68a7fc7`) — an ultracode `Workflow` that runs
+  the full 20-section app review and puts **every** finding through severity-scaled adversarial
+  refutation by *separate* subagents (3 critical/high · 2 medium · 1 low; default-to-refute). Built
+  TDD-style per `superpowers:writing-skills` — the 3/2/1 law is encoded in the workflow so it can't be
+  rationalized away. Output is date-stamped (`docs/reviews/<YYYY-MM-DD>-complete-app-review.md`); also
+  emits a deduped, propose-then-confirm GitHub-issue plan. Renamed the prior report to
+  `docs/reviews/2026-06-17-complete-app-review.md` (live backlinks repointed; historical refs left as-authored).
+- **2026-06-18 audit run** (PR #263, `b940855`) — `docs/reviews/2026-06-18-complete-app-review.md` (900
+  lines; 148 findings → 3 refuted, **7 high · 43 medium · 95 low**; verdict **7/10, keep shipping
+  internal, not public-ready**). Filed **38 net-new Med+ issues #224–#261** (dedup'd against #190–#223 +
+  epics) + new Low tracker **#262** (superseded #223). Surviving themes: background step-counting
+  under-built vs the GDD risk register, reactive monetization error-handling, config-change battle-state
+  loss, supply-chain gaps. The 4 net-new HIGHs: #233/#236/#250/#261.
+- **Two skill bugs fixed in the same PR** (the run was the failing test): the `date` arg silently
+  misfired (report written to the undated path → `extractReviewDate()` now accepts object/bare-string/
+  JSON-string forms, 7/7 unit tests); and the issue plan proposed `area:*` labels that don't exist in
+  this repo (→ `domainLabels()` maps finder dimensions to real repo labels).
+
 ### Fixed — Privacy-policy hosting: publish `site/` only, not the whole `docs/` tree (Pages over-exposure)
 
 **Infra/docs only — no app code, schema, or test change.** The hosted privacy policy
