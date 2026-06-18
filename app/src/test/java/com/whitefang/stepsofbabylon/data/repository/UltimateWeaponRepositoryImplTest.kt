@@ -39,7 +39,7 @@ class UltimateWeaponRepositoryImplTest {
             UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = false),
         )
         val dao = mockDao(rows)
-        val repo = UltimateWeaponRepositoryImpl(dao)
+        val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
         val unlocked = repo.observeUnlockedWeapons().first()
 
@@ -50,7 +50,7 @@ class UltimateWeaponRepositoryImplTest {
     @Test
     fun `observeEquippedWeapons returns empty when none equipped`() = runTest {
         val dao = mockDao(emptyList())
-        val repo = UltimateWeaponRepositoryImpl(dao)
+        val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
         assertTrue(repo.observeEquippedWeapons().first().isEmpty())
     }
@@ -64,7 +64,7 @@ class UltimateWeaponRepositoryImplTest {
             UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = true, isEquipped = true),
         )
         val dao = mockDao(rows)
-        val repo = UltimateWeaponRepositoryImpl(dao)
+        val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
         val equipped = repo.observeEquippedWeapons().first()
 
@@ -76,7 +76,7 @@ class UltimateWeaponRepositoryImplTest {
     fun `unlockWeapon inserts new row when none exists`() = runTest {
         val dao = mock<UltimateWeaponDao>()
         whenever(dao.getByType(any())).thenReturn(null)
-        val repo = UltimateWeaponRepositoryImpl(dao)
+        val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
         repo.unlockWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT)
 
@@ -93,7 +93,7 @@ class UltimateWeaponRepositoryImplTest {
         whenever(dao.getByType("DEATH_WAVE")).thenReturn(
             UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = false)
         )
-        val repo = UltimateWeaponRepositoryImpl(dao)
+        val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
         repo.unlockWeapon(UltimateWeaponType.DEATH_WAVE)
 
@@ -107,7 +107,7 @@ class UltimateWeaponRepositoryImplTest {
         whenever(dao.getByType("GOLDEN_ZIGGURAT")).thenReturn(
             UltimateWeaponStateEntity(weaponType = "GOLDEN_ZIGGURAT", isUnlocked = true)
         )
-        val repo = UltimateWeaponRepositoryImpl(dao)
+        val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
         repo.upgradePathLevel(UltimateWeaponType.GOLDEN_ZIGGURAT, UWPath.DAMAGE, newLevel = 5)
 
@@ -122,7 +122,7 @@ class UltimateWeaponRepositoryImplTest {
         whenever(dao.getByType("DEATH_WAVE")).thenReturn(
             UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = true)
         )
-        val repo = UltimateWeaponRepositoryImpl(dao)
+        val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
         repo.upgradePathLevel(UltimateWeaponType.DEATH_WAVE, UWPath.SECONDARY, newLevel = 3)
 
@@ -137,7 +137,7 @@ class UltimateWeaponRepositoryImplTest {
         whenever(dao.getByType("CHRONO_FIELD")).thenReturn(
             UltimateWeaponStateEntity(weaponType = "CHRONO_FIELD", isUnlocked = true)
         )
-        val repo = UltimateWeaponRepositoryImpl(dao)
+        val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
         repo.upgradePathLevel(UltimateWeaponType.CHRONO_FIELD, UWPath.COOLDOWN, newLevel = 7)
 
@@ -148,7 +148,7 @@ class UltimateWeaponRepositoryImplTest {
     fun `upgradePathLevel inserts row defensively when missing`() = runTest {
         val dao = mock<UltimateWeaponDao>()
         whenever(dao.getByType("GOLDEN_ZIGGURAT")).thenReturn(null)
-        val repo = UltimateWeaponRepositoryImpl(dao)
+        val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
         repo.upgradePathLevel(UltimateWeaponType.GOLDEN_ZIGGURAT, UWPath.DAMAGE, newLevel = 1)
 
@@ -161,7 +161,7 @@ class UltimateWeaponRepositoryImplTest {
         val dao = mock<UltimateWeaponDao>()
         val existing = UltimateWeaponStateEntity(weaponType = "GOLDEN_ZIGGURAT", isUnlocked = true, isEquipped = false)
         whenever(dao.getByType("GOLDEN_ZIGGURAT")).thenReturn(existing)
-        val repo = UltimateWeaponRepositoryImpl(dao)
+        val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
         repo.equipWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT)
 
@@ -174,7 +174,7 @@ class UltimateWeaponRepositoryImplTest {
     fun `equipWeapon is no-op when entity does not exist`() = runTest {
         val dao = mock<UltimateWeaponDao>()
         whenever(dao.getByType(any())).thenReturn(null)
-        val repo = UltimateWeaponRepositoryImpl(dao)
+        val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
         repo.equipWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT)
 
@@ -186,7 +186,7 @@ class UltimateWeaponRepositoryImplTest {
         val dao = mock<UltimateWeaponDao>()
         val existing = UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = true, isEquipped = true)
         whenever(dao.getByType("DEATH_WAVE")).thenReturn(existing)
-        val repo = UltimateWeaponRepositoryImpl(dao)
+        val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
         repo.unequipWeapon(UltimateWeaponType.DEATH_WAVE)
 

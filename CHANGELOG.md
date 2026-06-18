@@ -4,6 +4,47 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — Reliability wave: atomic premium spend (#236) · missions day-rollover (#195) · no-sensor signal (#193)
+
+Three confirmed 2026-06-18 complete-app-review defects, one combined PR. **No schema change; 1081 →
+1093 JVM tests** (+12). TDD'd (RED→GREEN per fix); spec+plan put through a lighter single-agent
+adversarial review (ultracode off) before coding — its one scope-changing finding (drop an unnecessary
+interface for #193: mockito-core 5.x mocks final classes) was applied.
+
+- **#236 — premium-currency spend + grant were two non-atomic DB writes** (`data-integrity`,
+  high). A crash/cancel between `spendGems`→card writes (`OpenCardPack`) or
+  `spendPowerStones`→`unlockWeapon` (`UnlockUltimateWeapon`) permanently debited a real-money-purchasable
+  currency with nothing delivered and no reconciliation record. Closed by extending the ADR-0020
+  guarded-deduct-inside-`@Transaction` pattern (the `MilestoneDao.claimMilestoneAtomic` template) to both
+  flows: new `CardDao.openCardPackAtomic(gemCost, cardTypeNames, playerDao)` and
+  `UltimateWeaponDao.unlockWeaponAtomic(weaponType, powerStoneCost, playerDao)` — the guarded deduct and
+  the grant now commit or roll back together. Exposed via new repository ports
+  (`CardRepository.openCardPackAtomic` / `UltimateWeaponRepository.unlockWeaponAtomic`), so the domain
+  use cases keep depending only on repositories (no new domain→data leak — `OpenCardPack`/
+  `UnlockUltimateWeapon` dropped their now-unused `PlayerRepository` dependency). Rarity rolling stays
+  pure/seeded in `OpenCardPack`; only the DB write set is made atomic. `unlockWeaponAtomic` also
+  re-checks already-unlocked **inside** the transaction (before the deduct) so a double-tap can't pay
+  twice. Guarded by new `PremiumSpendDaoTest` (real-Room, 7) + atomic-path assertions in
+  `OpenCardPackTest`/`UnlockUltimateWeaponTest`; fakes gained a `linkedPlayer` wallet seam mirroring
+  `FakeMilestoneDao`. ADR-0027.
+- **#195 — MissionsViewModel never re-subscribed the query on day-rollover** (`area:missions`,
+  STATE-1). `var today` captured once inside `combine(getByDate(today), …)` → over a soak a tester
+  leaving the app open across midnight saw **yesterday's** missions while the new day's rows already
+  existed. Fixed by mirroring `HomeViewModel`/`StatsViewModel` exactly: `private val _today =
+  MutableStateFlow(...)` + `_today.flatMapLatest { combine(getByDate(it), …) }` so the query
+  re-subscribes; the 1 s countdown ticker (kept — Missions shows "Resets in Xh Ym") now calls a new
+  idempotent `refreshDate()` instead of mutating a var; `MissionsScreen` gained the `ON_RESUME`
+  observer the siblings have. Double-fire is safe (`GenerateDailyMissions` is `(date, missionType)`
+  unique-index-guarded, #127). Guarded by a `MissionsViewModelTest` rollover test.
+- **#193 — no user signal when the step-counter hardware is absent** (`ux`, REL-3). On a device with
+  no `TYPE_STEP_COUNTER` (emulators / some OEMs) all three sensor sites silently no-op while the
+  foreground notification implies it's working — the core mechanic is a silent dead-end. Added
+  `StepSensorDataSource.isSensorAvailable()` (single source of truth), surfaced via a new
+  `OnboardingViewModel.stepSensorAvailable`, and a new **highest-priority** branch in the onboarding
+  final slide (before the permission states — granting permission is meaningless without the sensor)
+  that explains it and steers the player to Health Connect. Guarded by two `OnboardingViewModelTest`
+  cases. (A persistent Home banner + `<uses-feature>` are deliberately out of scope per the issue.)
+
 ## [1.0.9] — 2026-06-18 (versionCode 25)
 
 Release collateral promotes everything accumulated since v1.0.8 (23 commits) to the Play **internal**

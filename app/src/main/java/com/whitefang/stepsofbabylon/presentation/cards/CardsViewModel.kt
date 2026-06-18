@@ -30,7 +30,7 @@ class CardsViewModel @Inject constructor(
     private val rewardAdManager: RewardAdManager,
 ) : ViewModel() {
 
-    private val openCardPack = OpenCardPack(cardRepository, playerRepository)
+    private val openCardPack = OpenCardPack(cardRepository)
     private val upgradeCardUseCase = UpgradeCard(cardRepository)
     private val manageLoadout = ManageCardLoadout(cardRepository)
 

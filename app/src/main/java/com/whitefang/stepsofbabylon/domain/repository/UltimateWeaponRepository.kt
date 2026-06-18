@@ -14,6 +14,13 @@ interface UltimateWeaponRepository {
     fun observeUnlockedWeapons(): Flow<List<OwnedWeapon>>
     fun observeEquippedWeapons(): Flow<List<OwnedWeapon>>
     suspend fun unlockWeapon(type: UltimateWeaponType)
+
+    /**
+     * #236: atomically deduct [powerStoneCost] Power Stones and unlock [type] in a single
+     * transaction. Returns `true` when the deduct succeeded and the weapon is now unlocked;
+     * `false` when it was already unlocked or the guarded deduct found insufficient Power Stones.
+     */
+    suspend fun unlockWeaponAtomic(type: UltimateWeaponType, powerStoneCost: Long): Boolean
     suspend fun upgradePathLevel(type: UltimateWeaponType, path: UWPath, newLevel: Int)
     suspend fun equipWeapon(type: UltimateWeaponType)
     suspend fun unequipWeapon(type: UltimateWeaponType)

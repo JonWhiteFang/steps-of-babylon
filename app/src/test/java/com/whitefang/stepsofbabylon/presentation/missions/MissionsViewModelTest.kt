@@ -108,15 +108,16 @@ class MissionsViewModelTest {
     // that constructs the VM therefore calls vm.cancelForTest() as its LAST statement. Label *content*
     // is covered by the pure missionRewardLabel test below (no VM); the VM tests assert emission COUNT.
 
-    private fun createVm() = MissionsViewModel(
-        dailyMissionDao = missionDao,
-        milestoneDao = milestoneDao,
-        dailyStepDao = mock<DailyStepDao> { onBlocking { sumCreditedSteps(any(), any()) } doReturn 0L },
-        playerRepository = playerRepo,
-        playerProfileDao = mock<PlayerProfileDao>(),
-        cosmeticRepository = FakeCosmeticRepository(),
-        timeProvider = FakeTimeProvider(fixedDate = LocalDate.parse(today)),
-    )
+    private fun createVm(timeProvider: FakeTimeProvider = FakeTimeProvider(fixedDate = LocalDate.parse(today))) =
+        MissionsViewModel(
+            dailyMissionDao = missionDao,
+            milestoneDao = milestoneDao,
+            dailyStepDao = mock<DailyStepDao> { onBlocking { sumCreditedSteps(any(), any()) } doReturn 0L },
+            playerRepository = playerRepo,
+            playerProfileDao = mock<PlayerProfileDao>(),
+            cosmeticRepository = FakeCosmeticRepository(),
+            timeProvider = timeProvider,
+        )
 
     @Test
     fun `missionRewardLabel formats gems, power-stones, both, and fallback`() {
@@ -163,6 +164,40 @@ class MissionsViewModelTest {
         vm.claimMilestone(Milestone.entries.maxBy { it.requiredSteps })   // 5_000_000 ≫ 5000 → InsufficientSteps
         runCurrent()
         assertTrue(events.isEmpty())
+        vm.cancelForTest()
+    }
+
+    // #195: across midnight the uiState must switch to the NEW day's missions. Pre-fix the combined
+    // StateFlow captured `today` once, so getByDate(today) never re-subscribed and the screen kept
+    // showing yesterday's rows. refreshDate() flips _today → flatMapLatest re-subscribes getByDate.
+    @Test
+    fun `R195 uiState re-subscribes missions on day rollover`() = runTest {
+        val day1 = LocalDate.of(2026, 6, 18)
+        val day2 = day1.plusDays(1)
+        val time = FakeTimeProvider(fixedDate = day1)
+        // Seed a distinct, recognisable mission row for each day.
+        missionDao.insert(DailyMissionEntity(date = day1.toString(), missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 10, completed = false, rewardGems = 1))
+        missionDao.insert(DailyMissionEntity(date = day2.toString(), missionType = DailyMissionType.WALK_12000.name, target = 12000, progress = 20, completed = false, rewardGems = 2))
+
+        val vm = createVm(timeProvider = time)
+        val states = mutableListOf<MissionsUiState>()
+        backgroundScope.launch { vm.uiState.toList(states) }
+        runCurrent()
+
+        // Day 1: the WALK_5000 row is present, the WALK_12000 (day-2) row is not.
+        val day1Missions = vm.uiState.value.missions.map { it.target }
+        assertTrue(day1Missions.contains(5000), "day 1 should show the WALK_5000 mission, got $day1Missions")
+        assertFalse(day1Missions.contains(12000), "day 1 must NOT show day 2's mission, got $day1Missions")
+
+        // Roll over to day 2 and refresh — the query must re-subscribe to day 2's rows.
+        time.fixedDate = day2
+        vm.refreshDate()
+        runCurrent()
+
+        val day2Missions = vm.uiState.value.missions.map { it.target }
+        assertTrue(day2Missions.contains(12000), "day 2 should show the WALK_12000 mission, got $day2Missions")
+        assertFalse(day2Missions.contains(5000), "day 2 must NOT still show day 1's mission, got $day2Missions")
+
         vm.cancelForTest()
     }
 }

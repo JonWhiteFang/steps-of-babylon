@@ -33,7 +33,7 @@ class CardRepositoryImplTest {
             CardInventoryEntity(id = 2, cardType = "SHARP_SHOOTER", level = 1, isEquipped = true),
         )
         whenever(dao.getAll()).thenReturn(MutableStateFlow(rows))
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         val cards = repo.observeAllCards().first()
 
@@ -52,7 +52,7 @@ class CardRepositoryImplTest {
             CardInventoryEntity(id = 1, cardType = "IRON_SKIN", isEquipped = true),
         )
         whenever(dao.getEquipped()).thenReturn(MutableStateFlow(equipped))
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         val cards = repo.observeEquippedCards().first()
 
@@ -66,7 +66,7 @@ class CardRepositoryImplTest {
         whenever(dao.getByType("IRON_SKIN")).thenReturn(
             CardInventoryEntity(cardType = "IRON_SKIN")
         )
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         assertTrue(repo.hasCard(CardType.IRON_SKIN))
     }
@@ -75,7 +75,7 @@ class CardRepositoryImplTest {
     fun `hasCard returns false when card does not exist`() = runTest {
         val dao = mock<CardDao>()
         whenever(dao.getByType(any())).thenReturn(null)
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         assertFalse(repo.hasCard(CardType.IRON_SKIN))
     }
@@ -84,7 +84,7 @@ class CardRepositoryImplTest {
     fun `addCard inserts new entity`() = runTest {
         val dao = mock<CardDao>()
         whenever(dao.insert(any())).thenReturn(42L)
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         val id = repo.addCard(CardType.SHARP_SHOOTER)
 
@@ -100,7 +100,7 @@ class CardRepositoryImplTest {
         whenever(dao.getByType("IRON_SKIN")).thenReturn(
             CardInventoryEntity(cardType = "IRON_SKIN", copyCount = 1)
         )
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         repo.addCardOrIncrementCopy(CardType.IRON_SKIN)
 
@@ -113,7 +113,7 @@ class CardRepositoryImplTest {
         val dao = mock<CardDao>()
         whenever(dao.getByType("SHARP_SHOOTER")).thenReturn(null)
         whenever(dao.insert(any<CardInventoryEntity>())).thenReturn(1L)
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         repo.addCardOrIncrementCopy(CardType.SHARP_SHOOTER)
 
@@ -125,7 +125,7 @@ class CardRepositoryImplTest {
     fun `R4-08 decrementCopiesAndLevelUp returns true when DAO returns positive rows`() = runTest {
         val dao = mock<CardDao>()
         whenever(dao.decrementCopiesAndLevelUp(1, 3)).thenReturn(1)
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         assertTrue(repo.decrementCopiesAndLevelUp(id = 1, amount = 3))
     }
@@ -134,7 +134,7 @@ class CardRepositoryImplTest {
     fun `R4-08 decrementCopiesAndLevelUp returns false when insufficient copies`() = runTest {
         val dao = mock<CardDao>()
         whenever(dao.decrementCopiesAndLevelUp(any(), any())).thenReturn(0)
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         assertFalse(repo.decrementCopiesAndLevelUp(id = 1, amount = 5))
     }
@@ -144,7 +144,7 @@ class CardRepositoryImplTest {
         val dao = mock<CardDao>()
         val existing = CardInventoryEntity(id = 1, cardType = "IRON_SKIN", level = 2)
         whenever(dao.getById(1)).thenReturn(existing)
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         repo.upgradeCard(id = 1, newLevel = 3)
 
@@ -157,7 +157,7 @@ class CardRepositoryImplTest {
     fun `upgradeCard is no-op when entity does not exist`() = runTest {
         val dao = mock<CardDao>()
         whenever(dao.getById(any())).thenReturn(null)
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         repo.upgradeCard(id = 99, newLevel = 5)
 
@@ -170,7 +170,7 @@ class CardRepositoryImplTest {
         whenever(dao.getById(1)).thenReturn(
             CardInventoryEntity(id = 1, cardType = "IRON_SKIN", isEquipped = false)
         )
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         repo.equipCard(1)
 
@@ -185,7 +185,7 @@ class CardRepositoryImplTest {
         whenever(dao.getById(1)).thenReturn(
             CardInventoryEntity(id = 1, cardType = "IRON_SKIN", isEquipped = true)
         )
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         repo.unequipCard(1)
 
@@ -199,7 +199,7 @@ class CardRepositoryImplTest {
         val dao = mock<CardDao>()
         val existing = CardInventoryEntity(id = 1, cardType = "IRON_SKIN")
         whenever(dao.getById(1)).thenReturn(existing)
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         repo.deleteCard(1)
 
@@ -210,7 +210,7 @@ class CardRepositoryImplTest {
     fun `deleteCard is no-op when entity does not exist`() = runTest {
         val dao = mock<CardDao>()
         whenever(dao.getById(any())).thenReturn(null)
-        val repo = CardRepositoryImpl(dao)
+        val repo = CardRepositoryImpl(dao, mock())
 
         repo.deleteCard(99)
 

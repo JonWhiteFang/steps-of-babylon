@@ -21,9 +21,11 @@ class OpenCardPackTest {
 
     @BeforeEach
     fun setup() {
-        cardRepo = FakeCardRepository()
         playerRepo = FakePlayerRepository(PlayerProfile(gems = 1000))
-        useCase = OpenCardPack(cardRepo, playerRepo, Random(42))
+        // #236: the Gem deduct now routes through the atomic CardRepository.openCardPackAtomic, so
+        // the card fake must be linked to the player fake to model the guarded deduct gating the grant.
+        cardRepo = FakeCardRepository(linkedPlayer = playerRepo)
+        useCase = OpenCardPack(cardRepo, Random(42))
     }
 
     @Test
@@ -64,6 +66,18 @@ class OpenCardPackTest {
         val result = useCase(PackTier.COMMON, 0, isFree = true)
         assertTrue(result is OpenCardPack.Result.Opened)
         assertEquals(1000L, playerRepo.profile.value.gems)
+    }
+
+    // #236: the deduct + 3 card writes must go through the single atomic path so a crash can't
+    // debit Gems with no cards. Pins that the use case routes through openCardPackAtomic (not the
+    // old two-step spendGems → addCard) — the call-count proves the atomic path is live.
+    @Test
+    fun `R236 success routes through the atomic open-pack path`() = runTest {
+        val result = useCase(PackTier.COMMON, 1000)
+        assertTrue(result is OpenCardPack.Result.Opened)
+        assertEquals(1, cardRepo.openCardPackAtomicCallCount)
+        assertEquals(3, (result as OpenCardPack.Result.Opened).cards.size)
+        assertEquals(950L, playerRepo.profile.value.gems)
     }
 
     // #122 (audit #5): stale snapshot says affordable but the wallet is empty — the guarded deduct

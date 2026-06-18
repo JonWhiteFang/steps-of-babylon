@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
@@ -40,4 +41,43 @@ interface CardDao {
 
     @Query("UPDATE card_inventory SET copyCount = copyCount - :amount, level = level + 1 WHERE id = :id AND copyCount >= :amount")
     suspend fun decrementCopiesAndLevelUp(id: Int, amount: Int): Int
+
+    /**
+     * #236: opens a card pack — the guarded Gem deduct and all card-row writes commit or roll back
+     * as one SQLite transaction, closing the partial-failure gap where a crash between
+     * [PlayerProfileDao.spendGemsAtomic] and the card inserts permanently debited (real-money)
+     * Gems with no cards delivered and no reconciliation record (unlike billing). Mirrors the
+     * cross-DAO `@Transaction` pattern of [MilestoneDao.claimMilestoneAtomic]: Room scopes its
+     * transaction to the underlying [androidx.room.RoomDatabase], not the DAO instance, so the
+     * [playerDao] calls join this transaction.
+     *
+     * Rarity rolling stays in [com.whitefang.stepsofbabylon.domain.usecase.OpenCardPack] (it is
+     * pure + seeded and must remain unit-testable); only the DB write set is made atomic here. The
+     * caller passes the already-rolled [cardTypeNames]; this method decides per-name whether it is a
+     * new card (insert) or a duplicate (copy-count increment), preserving the existing isNew
+     * semantics, and re-reads [getByType] INSIDE the transaction.
+     *
+     * @param gemCost Gems to deduct; `0` (a free pack) skips the deduct entirely.
+     * @param cardTypeNames the 3 pre-rolled [com.whitefang.stepsofbabylon.domain.model.CardType] names.
+     * @param playerDao the wallet DAO that owns the guarded Gem deduct.
+     * @return per-card `isNew` flags in [cardTypeNames] order, or `null` when the guarded deduct
+     *         found insufficient Gems (no card rows written — the atomicity guarantee).
+     */
+    @Transaction
+    suspend fun openCardPackAtomic(
+        gemCost: Long,
+        cardTypeNames: List<String>,
+        playerDao: PlayerProfileDao,
+    ): List<Boolean>? {
+        if (gemCost > 0L && playerDao.spendGemsAtomic(gemCost) == 0) return null
+        return cardTypeNames.map { name ->
+            if (getByType(name) != null) {
+                incrementCopyCount(name)
+                false
+            } else {
+                insert(CardInventoryEntity(cardType = name))
+                true
+            }
+        }
+    }
 }

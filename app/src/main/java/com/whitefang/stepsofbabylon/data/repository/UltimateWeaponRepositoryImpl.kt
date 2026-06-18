@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.data.repository
 
+import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.data.local.UltimateWeaponDao
 import com.whitefang.stepsofbabylon.data.local.UltimateWeaponStateEntity
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
@@ -20,6 +21,7 @@ import javax.inject.Inject
  */
 class UltimateWeaponRepositoryImpl @Inject constructor(
     private val dao: UltimateWeaponDao,
+    private val playerDao: PlayerProfileDao,
 ) : UltimateWeaponRepository {
 
     override fun observeUnlockedWeapons(): Flow<List<OwnedWeapon>> =
@@ -36,6 +38,9 @@ class UltimateWeaponRepositoryImpl @Inject constructor(
             dao.markUnlocked(type.name)
         }
     }
+
+    override suspend fun unlockWeaponAtomic(type: UltimateWeaponType, powerStoneCost: Long): Boolean =
+        dao.unlockWeaponAtomic(type.name, powerStoneCost, playerDao)
 
     override suspend fun upgradePathLevel(
         type: UltimateWeaponType,
