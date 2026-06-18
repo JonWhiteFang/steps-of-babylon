@@ -833,7 +833,7 @@ Migration v12 → v13 adds these 2 columns (v11 → v12 was consumed by #127; se
 
 - Enable Play Games Services for the app in Play Console
 - Configure Snapshots feature (max 1 snapshot, max 1 MB)
-- Document new permissions in privacy policy update (NEW: `docs/release/privacy-policy.md` revision)
+- Document new permissions in privacy policy update (NEW: `site/index.md` revision)
 
 **Tests:**
 
@@ -1574,4 +1574,4 @@ Some triage items map to existing tracked debt rather than V1X-NN sub-plans:
 - Plan R4 (predecessor — feedback bundle): `docs/archive/completed-plans-v1.0/plan-R4-feedback-bundle.md`
 - Plan 31 (Play Console — currently active): `docs/plans/plan-31-play-console.md`
 - ADR-0003 (Battle Step Rewards): `docs/agent/DECISIONS/ADR-0003-battle-step-rewards.md`
-- Privacy policy (canonical, in repo): `docs/release/privacy-policy.md`
+- Privacy policy (canonical, in repo): `site/index.md`

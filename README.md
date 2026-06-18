@@ -22,7 +22,7 @@ The app does NOT request location permissions; GPS / Exploration Mode was droppe
 
 - Privacy policy (hosted): <https://jonwhitefang.github.io/steps-of-babylon/>
 - Data deletion: <https://jonwhitefang.github.io/steps-of-babylon/#delete-data>
-- Canonical source: [docs/release/privacy-policy.md](docs/release/privacy-policy.md)
+- Canonical source: [site/index.md](site/index.md) — the published Pages page IS the single source of truth (built from `site/` by `.github/workflows/pages.yml`; internal `docs/` is not published)
 
 ## Prerequisites
 
@@ -119,7 +119,7 @@ If you're picking this up cold, read [docs/agent/START_HERE.md](docs/agent/START
 | [Step Tracking](docs/step-tracking.md) | Sensor stack, anti-cheat, background service |
 | [Monetization](docs/monetization.md) | IAP, ads, and economy rules |
 | [Security Model](docs/steering/security-model.md) | Consolidated view: encryption, anti-cheat, economy atomicity, purchase verification |
-| [Privacy Policy](docs/release/privacy-policy.md) | Canonical privacy policy |
+| [Privacy Policy](site/index.md) | Canonical privacy policy (published to GitHub Pages) |
 
 ## Tech Stack
 

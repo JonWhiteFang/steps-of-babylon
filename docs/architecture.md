@@ -109,7 +109,7 @@ If a future agent reintroduces location services, that change must:
 - Re-submit Play Console data safety form
 - Add `play-services-location` dependency to `gradle/libs.versions.toml`
 - Foreground service permission upgrade (`ACCESS_BACKGROUND_LOCATION` is intrusive — expect Play review delay)
-- Update privacy policy at `docs/release/privacy-policy.md` and the hosted GitHub Pages copy
+- Update privacy policy at `site/index.md` (canonical; auto-published to GitHub Pages)
 - Update this section to remove the "no location" guarantee
 
 ## Internationalization (i18n)

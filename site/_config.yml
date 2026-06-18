@@ -1,0 +1,12 @@
+# Jekyll config for the PUBLIC web root (site/). This directory is the ONLY content published to
+# GitHub Pages (https://jonwhitefang.github.io/steps-of-babylon/) — built + deployed by
+# .github/workflows/pages.yml. It must contain public-facing content only; never the internal
+# docs/ tree. Keeping the published source a dedicated folder is what stops dev docs (agent memory,
+# audits, plans) from leaking onto the public privacy domain.
+title: Steps of Babylon — Privacy Policy
+description: Privacy policy and data-deletion instructions for the Steps of Babylon Android game.
+theme: minima
+# Defensive: even though only this folder is the build root, never publish stray files.
+exclude:
+  - README.md
+  - "*.sh"
