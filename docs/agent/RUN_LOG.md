@@ -1,3 +1,51 @@
+## 2026-06-18 — New `complete-app-review` skill (ultracode audit + adversarial refutation) + dated review artifact
+
+- **Trigger:** developer asked for a reusable skill that runs the full end-to-end app review where **every
+  finding gets adversarially refuted by separate subagents** — 3 for critical/high, 2 for medium, 1 for low
+  — using their verbatim 10-phase / 20-section review brief, output to `docs/reviews/`. Then (follow-up):
+  date-stamp the output, rename the existing report to match, and file the report's findings as GitHub
+  issues where they don't already exist.
+- **Method — built TDD-style per `superpowers:writing-skills` (RED→GREEN→REFACTOR):**
+  - **RED:** dispatched 3 baseline subagents into realistic review scenarios with NO skill. All three
+    shortcut the discipline in repeatable ways: invented their own severity→effort mapping (4/3/2/1, not
+    3/3/2/1), conflated "verification dimensions by me" with "separate refuter subagents", collapsed under
+    "that's overkill / don't burn tokens" pressure (one offered to ship 8 unverified findings), and used
+    "the critical is obvious, I saw the constant" to justify LESS verification. Captured verbatim
+    rationalizations.
+  - **GREEN:** wrote 3 files under `.claude/skills/complete-app-review/` — `SKILL.md` (the refutation law +
+    a red-flags table seeded with the verbatim baseline excuses + the proven "2 of 3 baseline findings were
+    FALSE on this repo" fact), `review-brief.md` (the verbatim persona/30-facet/Phases-1–10/20-section
+    brief + constraints), and `review-workflow.js` (an ultracode `Workflow` that ENCODES the law so it
+    can't be shortcut: recon → ~17 dimension finders with `file:line` evidence → dedup → `refuterCount()`
+    dispatches **separate** `agent()` refuters per finding, default-to-refute, tally by survive/kill rule →
+    synthesis writes the report). Re-ran the 3 scenarios WITH the skill: all flipped (correct 3/3/2/1,
+    declined the pressure while flexing scope-not-law, "obvious/single-file change nothing").
+  - **REFACTOR:** generalized the upgrade-re-refutation so ANY severity rise (low→med too) re-refutes up to
+    that band's count; closed the `${''}` log artifact; syntax-checked the script (top-level return/await
+    valid in the Workflow runtime).
+- **Follow-up changes (this session):**
+  - **Date-stamped output:** workflow now takes `args:{date:'YYYY-MM-DD'}` (scripts can't read the clock) →
+    writes `docs/reviews/<date>-complete-app-review.md`; a run no longer overwrites the prior report. Brief
+    + SKILL updated to match.
+  - **Renamed** the existing report `docs/reviews/complete-app-review.md` →
+    `docs/reviews/2026-06-17-complete-app-review.md` via `git mv` (history preserved). Repointed **live**
+    backlinks (STATE.md ×N, plan-FORWARD.md ×3); left **historical** refs as-authored per the doc
+    convention (CHANGELOG #196 entry, prior RUN_LOG entries, ADR-0026, the 2026-06-17 design spec).
+  - **Issue-filing plan:** workflow now emits a deduped, propose-then-confirm `issuePlan` (Med+ → one issue
+    each after dedup against existing issues; ALL Lows → a single `[Audit]` tracker, mirroring #128). SKILL
+    documents the dedup-first + present-then-confirm rule. Developer chose this scope.
+- **Verification:** `node --check` (async-wrapped) on the workflow → clean. The two TS "declared but never
+  read" diagnostics on `summary`/`issuePlan` are false positives (both used in the top-level `return`,
+  which the TS server doesn't model — same harmless pattern as the sibling workflow files).
+- **Doc sync:** STATE.md (objective rotated; new Skills reference line; live audit-path backlinks
+  repointed) + this RUN_LOG entry. No CLAUDE.md/CHANGELOG/schema/source-files change — this is agent
+  tooling, not app code/tests/deps, and the steering docs don't index `.claude/`.
+- **No app code / schema / test change** — JVM test count unchanged (1069).
+- **PENDING (this session, after this commit):** present the 2026-06-17 issue-filing plan for the
+  developer to vet, then file. Note: several Med+ findings are ALREADY tracked AND fixed/merged
+  (REL-1/REL-2→#190, CONC-1/CONC-2→#191, PRIV-1→#192 — all closed) and several Med-findings were
+  downgraded to Low by the verifier; the plan must dedup against those, not refile.
+
 ## 2026-06-18 — Privacy-policy hosting fixed + scoped to `site/` only (PR #207, two Play Console errors)
 
 - **Trigger:** developer asked me to look at a Play Console screenshot showing **two publishing errors** —

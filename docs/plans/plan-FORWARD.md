@@ -58,7 +58,7 @@ state — the checklist informs that call, it does not replace it.
   layout defect (#187, Settings didn't scroll → "Replay tutorial"/"Delete All Data" unreachable), now fixed
   + MERGED (PR #188, `af30e96`; #187 closed) + on-device re-verified.*
 - [ ] **Audit-H (2026-06-17 complete-app review) — promotion blockers, see §H below.** A full
-  code-grounded, adversarially-verified audit (`docs/reviews/complete-app-review.md`) surfaced three
+  code-grounded, adversarially-verified audit (`docs/reviews/2026-06-17-complete-app-review.md`) surfaced three
   **promotion blockers** beyond the fresh-install pass: no crash visibility + unguarded game-loop thread
   (#190), two reachable battle crashes (#191), privacy-policy/Data-Safety accuracy (#192). These reopen the
   "no known crashes" item in spirit — the fresh-install pass found no *observed* crash, but the audit found
@@ -87,7 +87,7 @@ state — the checklist informs that call, it does not replace it.
 
 ### H. Complete-app review (2026-06-17) — closed-track promotion blockers + soak hardening
 
-Source: `docs/reviews/complete-app-review.md` (51-agent code-grounded audit; every material finding
+Source: `docs/reviews/2026-06-17-complete-app-review.md` (51-agent code-grounded audit; every material finding
 adversarially verified). The 2026-06-17 fresh-install pass (Gate D) confirmed no *observed* crash, but a
 soak puts ≥12 testers × ≥14 days against the build — exactly the regime these *reachable* defects (which a
 manual pass can't trigger) bite. Split into **promotion blockers** (must fix before promoting internal →
@@ -123,7 +123,7 @@ closed: gathering soak signal or exposing testers is the whole point of closed t
 
 > Lower-severity audit findings (architecture seam, A11Y contrast, no-Compose-UI-tests, Gradle-wrapper
 > validation, clock-tamper TIME-1, i18n, etc.) are **before-public / post-launch**, not closed-track
-> blockers — see `docs/reviews/complete-app-review.md` §18 Tiers 2–5. Audit verdict: **continue building** —
+> blockers — see `docs/reviews/2026-06-17-complete-app-review.md` §18 Tiers 2–5. Audit verdict: **continue building** —
 > do the blocker pass, then resume features.
 
 > Gate maintenance: tick items as they land; when deferring, replace the checkbox line with
