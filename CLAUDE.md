@@ -139,7 +139,7 @@ See `docs/StepsOfBabylon_GDD.md` for the full game design document.
 - **Build:** Gradle 9.5.1 (Kotlin DSL), version catalog at `gradle/libs.versions.toml` (never hardcode versions). Multi-module since #26: `:app` (the shipped application) + `:baselineprofile` & `:macrobenchmark` (`com.android.test` dev-tooling modules — Baseline Profile generation + Macrobenchmark; never shipped, never CI-gated on timings).
 - **CI/CD note (#26):** the PR gate also type-checks the two benchmark modules; perf benchmarks run locally on a device, not in CI (emulator timings are unreliable).
 - **Security:** SQLCipher (DB encryption), Android Keystore (key management), R8 (obfuscation), network security config (cleartext blocked)
-- **CI/CD:** GitHub Actions — PR gate (lint + unit + assembleDebug + schema-drift), instrumented emulator suite, and a release lane that ships a signed AAB to the Play internal track on a `v*` tag. See `docs/plans/plan-32-ci.md` + ADR-0018.
+- **CI/CD:** GitHub Actions — PR gate (lint + unit + assembleDebug + schema-drift), instrumented emulator suite, a release lane that ships a signed AAB to the Play internal track on a `v*` tag, and a Pages lane (`pages.yml`) that publishes the hosted privacy policy from the top-level `site/` folder only (never the internal `docs/` tree). See `docs/plans/plan-32-ci.md` + ADR-0018.
 
 ## Architecture
 

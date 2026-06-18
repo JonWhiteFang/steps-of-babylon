@@ -94,6 +94,7 @@ GitHub Actions (Plan 32 / ADR-0018). Workflows under `.github/workflows/`, all t
 - `ci.yml` — PR + push:main gate: `./gradlew testDebugUnitTest lintDebug assembleDebug` + a Room schema-drift guard. Secret-free.
 - `instrumented.yml` — `connectedDebugAndroidTest` on an API-34 KVM emulator (AVD-cached); blocking on PRs to `main` + nightly.
 - `release.yml` — `v*` tag → signed `bundleRelease` → Play internal track (`r0adkll/upload-google-play`). Play "What's new" notes are written from the annotated tag message (`en-US`, capped at Play's 500-char limit; falls back to a generic line for lightweight tags / manual dispatch).
+- `pages.yml` — push:main touching `site/**` (+ `workflow_dispatch`) → Jekyll-builds + deploys **only the top-level `site/` folder** to GitHub Pages (the hosted privacy policy at `https://jonwhitefang.github.io/steps-of-babylon/` + the `#delete-data` anchor — the URLs Play Console's privacy-policy + Data-safety declarations point at). Replaced the legacy "Deploy from branch → `/docs`" Pages source, which served the entire internal `docs/` tree publicly. Pages `build_type` = `workflow`.
 
 Plus `dependency-submission.yml` (Gradle dependency graph, scoped via `DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS` to a regex anchored on `releaseRuntimeClasspath` so the security graph reflects only production-shipped deps — excludes the build-tool/plugin classpath and the debug/test runtime classpaths) and `dependabot.yml` (gradle + github-actions). CI invokes `./gradlew` directly — runners have a PTY, so `run-gradle.sh` is not needed there.
 
