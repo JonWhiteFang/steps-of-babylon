@@ -21,8 +21,8 @@ highest-leverage before-public work.
   Gate (8-agent `Workflow`, zero surviving critical/major) + a local combined build (`testDebugUnitTest +
   assembleDebug` BUILD SUCCESSFUL, 1069 green). **6 are safe** (AGP 9.2.1, Compose BOM 2026.05.01,
   activity-compose 1.13.0, robolectric 4.16.1, gradle/actions 6.2.0, setup-java 5.3.0) → landed as ONE
-  combined build-verified PR (branch `deps/combined-validation`); the 6 Dependabot PRs closed as
-  superseded. **#199 (core-ktx 1.17.0→1.19.0) CLOSED, deferred** — it hard-requires compileSdk ≥ 37 (which
+  combined build-verified PR **#265 (MERGED `a703b8d`; both CI checks green incl. instrumented)**; the 6
+  Dependabot PRs closed as superseded. **#199 (core-ktx 1.17.0→1.19.0) CLOSED, deferred** — it hard-requires compileSdk ≥ 37 (which
   the project intentionally avoids, same as the Health Connect 1.2.x pin); revisit with a deliberate
   compileSdk-37 migration. No app source/schema/test-count change. Pre-existing follow-ups (not blockers):
   AGP-9.1 R8 repackaging is unexercised by the PR gate (only `release.yml`); a compileSdk-37 migration
