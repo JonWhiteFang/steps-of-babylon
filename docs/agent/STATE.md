@@ -4,32 +4,37 @@ One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) a
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
 **Headline:** **v1.0.8 (versionCode 24) live on Play internal track** · **1069 JVM + 9 instrumented tests**
-green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **Gate H code blockers #190 + #191
-MERGED** (crash visibility + the two reachable battle CMEs — PR #204, squash `d673386`) · **#192 privacy/
-Data-Safety in-repo text DONE** (branch `fix/192-privacy-data-safety`, `[Unreleased]`, awaiting PR/merge;
-the policy/rationale text is corrected — a **manual Play Console Data-Safety action** documented in
-`docs/release/data-safety-form.md` still remains). **Remaining to promote internal → closed:** the #192
-Play Console action + the 3 `severity:major` soak-hardening items (#193/#194/#195). Audit
+green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
+(crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
+text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
+Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
+repo); (b) the 3 `severity:major` soak-hardening items (#193/#194/#195); (c) a `v*` release tag to ship
+the merged #190/#191/#192 (currently `[Unreleased]`) to the internal track. Audit
 (`docs/reviews/complete-app-review.md`) verdict: **continue building** — finish the blocker pass, then promote.
 
 ## Current objective
 
-- **CURRENT — #192 privacy/Data-Safety in-repo text DONE (branch `fix/192-privacy-data-safety`, `[Unreleased]`,
-  awaiting PR/merge).** Last `severity:blocker`'s in-repo half: brought every disclosure in line with the
-  shipped v1.0.8 behaviour (real AdMob v25 + UMP v4 + Billing v8; the AdMob SDK auto-merges the ad-ID +
-  ad-services permissions). Hosted policy (`docs/release/privacy-policy.md` + the byte-identical Pages copy
-  `docs/index.md`) rewritten present-tense with a new **Advertising Identifier** section, scoped no-upload
-  claims, reconciled Children's-Privacy line, ad-ID reset path; in-app rationale
+- **CURRENT — all 3 Gate H `severity:blocker`s MERGED; remaining to promote internal → closed is a Console
+  step + 3 majors + a release tag.** #190/#191 (PR #204, `d673386`) and #192 (PR #205, `0019217`) are on
+  `main`. The promotion path now needs, in any order: **(a)** the **manual Play Console Data-Safety action**
+  for #192 — declare the four AdMob-SDK data types + "Contains ads"=Yes + deletion URL per
+  `docs/release/data-safety-form.md` (repo can't do this; must precede promotion); **(b)** the 3
+  `severity:major` soak-hardening items — **#195** Missions day-rollover stale query (most self-contained),
+  **#194** error states, **#193** no-sensor signal — each via spec→review-gate→TDD; **(c)** a `v*` release
+  tag to actually ship the merged #190/#191/#192 (currently `[Unreleased]`) to the internal track. Then the
+  promote decision is the developer's (plus Gate A audio feel + Gate E balance feel, both judgment-only).
+  Lower-severity audit findings (architecture seam, A11Y contrast, no-Compose-UI-tests, wrapper validation,
+  clock-tamper TIME-1, i18n) stay before-public/post-launch (review §18 Tiers 2–5), NOT blockers.
+- **Previous objective (DONE): #192 privacy/Data-Safety in-repo text — MERGED (PR #205, squash `0019217`).**
+  Brought every disclosure in line with shipped v1.0.8 behaviour (real AdMob v25 + UMP v4 + Billing v8; the
+  AdMob SDK auto-merges the ad-ID + ad-services permissions). Hosted policy (`privacy-policy.md` + the
+  byte-identical Pages copy `docs/index.md`) rewritten present-tense with a new **Advertising Identifier**
+  section, scoped no-upload claims, reconciled Children's-Privacy line, ad-ID reset path; in-app rationale
   (`HealthConnectPermissionActivity.kt`) de-falsified + email unified to `jonwhitefang@gmail.com`; new
-  `docs/release/data-safety-form.md` specifying the manual Play Console answers (all FOUR AdMob-SDK data
-  types collected+shared, verified against Google's published GMA disclosure). Passed the Adversarial Review
-  Gate (13→4 surviving→9 refuted; the 2 majors — Data-Safety under-declaration + the Children's-Privacy
-  contradiction — fixed). `assembleDebug` green; no test-count/schema change. **NEXT:** open the PR
-  (`Closes #192` — but note #192 also needs the **manual Play Console Data-Safety action** per
-  `data-safety-form.md`, which must happen before promotion); then the 3 `severity:major` soak-hardening
-  items (**#193** no-sensor signal, **#194** error states, **#195** Missions day-rollover) before/during the
-  soak. Lower-severity audit findings (architecture seam, A11Y contrast, no-Compose-UI-tests, wrapper
-  validation, clock-tamper TIME-1, i18n) are before-public/post-launch (review §18 Tiers 2–5), NOT blockers.
+  `docs/release/data-safety-form.md` (the manual Console answers — all FOUR AdMob-SDK data types
+  collected+shared, verified against Google's published GMA disclosure). Adversarial Review Gate 13→4
+  surviving→9 refuted (the 2 majors — Data-Safety under-declaration + Children's-Privacy contradiction —
+  fixed). Text/compliance only, no ADR. **The manual Play Console Data-Safety action still remains.**
 - **Previous objective (DONE): Gate H code blockers #190 + #191 — MERGED (PR #204, squash `d673386`).** Both
   `severity:blocker` code defects fixed spec→plan→TDD, both artifacts through the Adversarial Review Gate
   (spec 34→25; plan 18→14; both 0 unaddressed critical/major), 9 subagent-driven tasks + final whole-branch
@@ -426,15 +431,14 @@ Play Console action + the 3 `severity:major` soak-hardening items (#193/#194/#19
 
 ## Known issues / debt
 
-- **CLOSED-TRACK PROMOTION BLOCKERS (2026-06-17 complete-app review, Gate H):** **#190** (crash visibility +
-  game-loop guard — REL-1/REL-2) and **#191** (two reachable battle CMEs — CONC-1/CONC-2) are **MERGED**
-  (PR #204, `d673386`, ADR-0026). **#192** (privacy-policy / Data-Safety understates live AdMob+UMP ad-ID
-  collection — PRIV-1/SEC-1): the **in-repo text is FIXED** (branch `fix/192-privacy-data-safety`,
-  `[Unreleased]`, awaiting PR/merge) — but it ALSO requires a **manual Play Console Data-Safety action**
-  (declare the four AdMob-SDK data types per `docs/release/data-safety-form.md`) that must be applied before
-  promotion. Plus 3 `severity:major` soak-hardening items still open: **#193** (no-sensor silent dead-end —
-  REL-3), **#194** (no error states — UX-1), **#195** (Missions day-rollover stale query — STATE-1). Full
-  report: `docs/reviews/complete-app-review.md`.
+- **CLOSED-TRACK PROMOTION BLOCKERS (2026-06-17 complete-app review, Gate H) — all 3 MERGED:** **#190**
+  (crash visibility + game-loop guard — REL-1/REL-2) + **#191** (two reachable battle CMEs — CONC-1/CONC-2)
+  via PR #204 (`d673386`, ADR-0026); **#192** (privacy/Data-Safety text — PRIV-1/SEC-1) via PR #205
+  (`0019217`). **#192 STILL requires a manual Play Console Data-Safety action** (declare the four AdMob-SDK
+  data types per `docs/release/data-safety-form.md`) before promotion — a developer step, not code. Plus 3
+  `severity:major` soak-hardening items still open: **#195** (Missions day-rollover stale query — STATE-1),
+  **#194** (no error states — UX-1), **#193** (no-sensor silent dead-end — REL-3). And the merged blockers
+  ship only on the next `v*` tag (currently `[Unreleased]`). Full report: `docs/reviews/complete-app-review.md`.
 - **Promotion gate:** the Closed-Test Readiness Gate (`plan-FORWARD.md` A–H) is the call to promote
   internal → closed; Gate H (above) must clear first. Google's ≥12-tester + ≥14-day-soak policy is a
   downstream Phase-2 step that only begins after that promotion.
@@ -463,14 +467,15 @@ Play Console action + the 3 `severity:major` soak-hardening items (#193/#194/#19
 ## Top priorities / next actions
 
 Phase 1 (work down the Readiness Gate so the developer can decide to promote — the real current work):
-1. **Open the #192 PR** (branch `fix/192-privacy-data-safety`, `[Unreleased]`): `gh pr create` with
-   `Closes #192`, CI PR gate + instrumented lane, merge. **Then apply the manual Play Console Data-Safety
-   action** per `docs/release/data-safety-form.md` (declare the four AdMob-SDK data types; "Contains ads" =
-   Yes; deletion URL) — this Console step is required before promotion and cannot be done from the repo.
-2. **Soak-hardening (Gate H `severity:major`) — before/during the soak:** **#193** no-sensor signal (REL-3),
-   **#194** error states (UX-1), **#195** Missions day-rollover (STATE-1). Not hard promotion gates but they
-   degrade tester experience / feedback quality.
-3. **(#190/#191 DONE — MERGED PR #204, `d673386`.)** Crash visibility + the two reachable battle CMEs.
+1. **Manual Play Console Data-Safety action for #192** (cannot be done from the repo): in Play Console →
+   App content → Data safety, declare the four AdMob-SDK data types + "Contains ads" = Yes + deletion URL
+   per `docs/release/data-safety-form.md`. Required before promotion. **(Developer action.)**
+2. **Soak-hardening (Gate H `severity:major`) — before/during the soak:** **#195** Missions day-rollover
+   (STATE-1, most self-contained), **#194** error states (UX-1), **#193** no-sensor signal (REL-3). Not hard
+   promotion gates but they degrade tester experience / feedback quality. Each via spec→review-gate→TDD.
+3. **Cut a `v*` release** to ship the merged #190/#191/#192 (currently `[Unreleased]`) to the internal
+   track (version bump + release notes + tag; the release lane handles signing + upload).
+4. **(DONE — all 3 Gate H blockers MERGED:** #190/#191 PR #204 `d673386`; #192 PR #205 `0019217`.)
 3. **Then the remaining developer-judgment / manual gate items:** **Gate A** in-play audio feel, **Gate E**
    early-tier balance feel. None is code-addressable; the promote decision is yours once Gate H clears,
    then a manual Play Console action on the uploaded AAB.
