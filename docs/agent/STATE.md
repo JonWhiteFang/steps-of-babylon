@@ -3,16 +3,19 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.9 (versionCode 25) SHIPPED → Play internal** (tag fired). Latest work (this branch
-`fix/reliability-236-195-193`, `[Unreleased]`): **3 before-public reliability defects fixed — #236 atomic
-premium spend, #195 missions day-rollover, #193 no-sensor signal** (one combined PR; TDD'd; lighter inline
-adversarial review; full build green). Supersedes **v1.0.8 (vc 24)** · **1093 JVM + 9 instrumented tests**
+**Headline:** **v1.0.9 (versionCode 25) SHIPPED → Play internal** (tag fired). Latest work **MERGED** (PR
+#270, squash `ebf588a`, both CI checks green, branch deleted, `[Unreleased]`): **3 before-public
+reliability defects fixed — #236 atomic premium spend, #195 missions day-rollover, #193 no-sensor signal**
+(one combined PR; TDD'd; lighter inline adversarial review; all 3 issues auto-closed). Supersedes
+**v1.0.8 (vc 24)** · **1093 JVM + 9 instrumented tests**
 green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
-repo); (b) the 3 `severity:major` soak-hardening items (#193/#194/#195); (c) a `v*` release tag to ship
-the merged #190/#191/#192 (currently `[Unreleased]`) to the internal track. Latest audit
+repo); (b) the last `severity:major` soak-hardening item **#194** (error states, UX-1 — shows CLOSED on
+GitHub but with no referencing PR/commit; reconcile before trusting; **#195 + #193 now MERGED via #270**);
+(c) a `v*` release tag to ship the `[Unreleased]` work (#190/#191/#192 + #236/#195/#193) to internal.
+Latest audit
 (`docs/reviews/2026-06-18-complete-app-review.md`, supersedes 2026-06-17) verdict: **7/10 — continue
 building** (keep shipping internal, NOT public-ready); it filed **38 net-new Med+ issues #224–#261 + Low
 tracker #262** — none are internal-track blockers; 4 net-new HIGHs (#233/#236/#250/#261) are the
@@ -20,8 +23,8 @@ highest-leverage before-public work.
 
 ## Current objective
 
-- **CURRENT — reliability wave: #236 / #195 / #193 (branch `fix/reliability-236-195-193`, `[Unreleased]`,
-  PR up).** Three confirmed 2026-06-18 complete-app-review defects, one combined PR; **no schema change;
+- **CURRENT (DONE — MERGED PR #270, squash `ebf588a`; both CI checks green; #236/#195/#193 auto-closed;
+  `[Unreleased]`).** Reliability wave: three confirmed 2026-06-18 complete-app-review defects, one combined PR; **no schema change;
   1081 → 1093 JVM** (+12); `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. TDD'd (RED→GREEN
   per fix); spec+plan (`docs/superpowers/specs/2026-06-18-reliability-wave-236-195-193.md`) put through a
   lighter single-agent adversarial review (ultracode off, per the developer's choice) — its one
@@ -104,11 +107,10 @@ highest-leverage before-public work.
   needs, in any order: **(a)** the **manual Play Console Data-Safety action** for #192 — declare the four
   AdMob-SDK data types + "Contains ads"=Yes + deletion URL per `docs/release/data-safety-form.md` (repo
   can't do this; must precede promotion); **(b)** the `severity:major` soak-hardening items —
-  **#195** Missions day-rollover stale query (most self-contained, OPEN) + **#193** no-sensor signal (OPEN);
-  **#194** (error states, UX-1) shows **CLOSED on GitHub (2026-06-17, COMPLETED) with no referencing
-  PR/commit/comment — status unverified; reconcile before trusting the gate** — each remaining via
-  spec→review-gate→TDD; **(c)** a `v*` release tag to ship the merged #190/#191/#192 (currently
-  `[Unreleased]`) to the internal track. Then the promote decision is the developer's (plus Gate A audio
+  **#195** Missions day-rollover + **#193** no-sensor signal **now MERGED (PR #270, `ebf588a`)**; only
+  **#194** (error states, UX-1) remains — it shows **CLOSED on GitHub (2026-06-17, COMPLETED) with no
+  referencing PR/commit/comment — status unverified; reconcile before trusting the gate**; **(c)** a
+  `v*` release tag to ship the `[Unreleased]` work (#190/#191/#192 + #236/#195/#193) to the internal track. Then the promote decision is the developer's (plus Gate A audio
   feel + Gate E balance feel, both judgment-only). Lower-severity audit findings (architecture seam, A11Y
   contrast, no-Compose-UI-tests, wrapper validation, clock-tamper TIME-1, i18n) stay
   before-public/post-launch (review §18 Tiers 2–5), NOT blockers.
@@ -535,9 +537,10 @@ highest-leverage before-public work.
   (crash visibility + game-loop guard — REL-1/REL-2) + **#191** (two reachable battle CMEs — CONC-1/CONC-2)
   via PR #204 (`d673386`, ADR-0026); **#192** (privacy/Data-Safety text — PRIV-1/SEC-1) via PR #205
   (`0019217`). **#192 STILL requires a manual Play Console Data-Safety action** (declare the four AdMob-SDK
-  data types per `docs/release/data-safety-form.md`) before promotion — a developer step, not code. Plus 3
-  `severity:major` soak-hardening items still open: **#195** (Missions day-rollover stale query — STATE-1),
-  **#194** (no error states — UX-1), **#193** (no-sensor silent dead-end — REL-3). And the merged blockers
+  data types per `docs/release/data-safety-form.md`) before promotion — a developer step, not code. Of the
+  3 `severity:major` soak-hardening items, **#195** (Missions day-rollover — STATE-1) + **#193** (no-sensor
+  silent dead-end — REL-3) are now **MERGED (PR #270, `ebf588a`)**; only **#194** (no error states — UX-1)
+  remains (CLOSED on GitHub but unverified — reconcile). And the merged blockers/fixes
   ship only on the next `v*` tag (currently `[Unreleased]`). Full report: `docs/reviews/2026-06-17-complete-app-review.md`.
 - **Promotion gate:** the Closed-Test Readiness Gate (`plan-FORWARD.md` A–H) is the call to promote
   internal → closed; Gate H (above) must clear first. Google's ≥12-tester + ≥14-day-soak policy is a
@@ -570,10 +573,10 @@ Phase 1 (work down the Readiness Gate so the developer can decide to promote —
 1. **Manual Play Console Data-Safety action for #192** (cannot be done from the repo): in Play Console →
    App content → Data safety, declare the four AdMob-SDK data types + "Contains ads" = Yes + deletion URL
    per `docs/release/data-safety-form.md`. Required before promotion. **(Developer action.)**
-2. **Soak-hardening (Gate H `severity:major`) — before/during the soak:** **#195** Missions day-rollover
-   (STATE-1, most self-contained), **#194** error states (UX-1), **#193** no-sensor signal (REL-3). Not hard
-   promotion gates but they degrade tester experience / feedback quality. Each via spec→review-gate→TDD.
-3. **Cut a `v*` release** to ship the merged #190/#191/#192 (currently `[Unreleased]`) to the internal
+2. **Soak-hardening (Gate H `severity:major`):** **#195** Missions day-rollover + **#193** no-sensor
+   signal **DONE (PR #270, `ebf588a`)**; only **#194** error states (UX-1) remains (CLOSED on GitHub but
+   unverified — reconcile, then close or re-do via spec→review-gate→TDD). Not hard promotion gates.
+3. **Cut a `v*` release** to ship the `[Unreleased]` work (#190/#191/#192 + #236/#195/#193) to the internal
    track (version bump + release notes + tag; the release lane handles signing + upload).
 4. **(DONE — all 3 Gate H blockers MERGED:** #190/#191 PR #204 `d673386`; #192 PR #205 `0019217`.)
 3. **Then the remaining developer-judgment / manual gate items:** **Gate A** in-play audio feel, **Gate E**
