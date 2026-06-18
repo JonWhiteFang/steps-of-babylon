@@ -1,8 +1,14 @@
-<!-- GitHub Pages root (published at https://jonwhitefang.github.io/steps-of-babylon/). This is the
-     hosted privacy policy, intentionally kept in sync with docs/release/privacy-policy.md (the
-     canonical source — identical policy body; this file adds only this GitHub-Pages header). It
-     is NOT a documentation index despite the filename;
-     do not repurpose without updating the Play Console data-safety URL + README links. -->
+---
+title: Privacy Policy — Steps of Babylon
+description: Privacy policy and data-deletion instructions for the Steps of Babylon Android game.
+---
+
+<!-- CANONICAL privacy policy. This file is the single source of truth for the policy text and
+     is the ONLY page published to GitHub Pages (https://jonwhitefang.github.io/steps-of-babylon/).
+     The Pages site is built from the top-level `site/` directory by .github/workflows/pages.yml —
+     NOT from `docs/` — so internal dev docs are never served publicly. Do not move this file back
+     into `docs/`, and keep `site/` free of internal content. The `delete-data` anchor below is the
+     URL Play Console's Data-safety form points at; do not rename it. -->
 # Privacy Policy — Steps of Babylon
 
 **Effective Date:** June 18, 2026

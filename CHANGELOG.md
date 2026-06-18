@@ -4,6 +4,28 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fixed — Privacy-policy hosting: publish `site/` only, not the whole `docs/` tree (Pages over-exposure)
+
+**Infra/docs only — no app code, schema, or test change.** The hosted privacy policy
+(`https://jonwhitefang.github.io/steps-of-babylon/`) had gone offline (GitHub Pages was disabled), which
+surfaced two Play Console publishing errors ("Privacy policy page returns a page not found" + "Data deletion
+page returns a page not found"). Re-enabling exposed a latent problem: the legacy "Deploy from branch →
+`/docs`" Pages source published the **entire internal `docs/` tree** (agent memory, audits, plans,
+monetization notes) as a public, indexable website on the app's privacy domain.
+
+- **New public web root `site/`** — `site/index.md` is now the **single canonical** privacy-policy source
+  (replaces the old `docs/release/privacy-policy.md` canonical + `docs/index.md` Pages copy, both deleted;
+  the two-file sync was drift-prone). `site/_config.yml` sets the page title.
+- **New `.github/workflows/pages.yml`** — SHA-pinned (decision #5) GitHub Actions workflow that builds +
+  deploys **only `site/`** to Pages on push to `main` touching `site/**` (+ `workflow_dispatch`). Internal
+  `docs/` is no longer served publicly. Publishing is now version-controlled + automatic, so it can't
+  silently disappear again.
+- **Pages `build_type` flipped** legacy (branch `/docs`) → `workflow` (GitHub Actions source). The public
+  URL + `#delete-data` anchor are **unchanged**, so the Play Console privacy-policy + Data-safety URLs need
+  no re-entry (just a re-crawl once the new deploy is live).
+- Repointed live references (`README.md`, `docs/architecture.md`, `docs/release/{data-safety-form,release-checklist,plan-31-walkthrough}.md`,
+  `docs/plans/{plan-FORWARD,plan-V1X-roadmap}.md`, `STATE.md` References) from the old paths to `site/index.md`.
+
 ### Fixed — Privacy policy / Data Safety accuracy (#192, Gate H blocker, PRIV-1/SEC-1)
 
 **Compliance-accuracy text change — no code-behaviour/schema/test change.** Brought every data-handling

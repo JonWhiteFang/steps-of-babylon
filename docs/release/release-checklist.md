@@ -25,7 +25,7 @@
 
 ## Documentation
 
-- [x] Privacy policy written (`docs/release/privacy-policy.md`)
+- [x] Privacy policy written (`site/index.md` — canonical; published to GitHub Pages via `.github/workflows/pages.yml`)
 - [x] Play Store listing text written (`docs/release/play-store-listing.md`)
 - [x] Signing guide written (`docs/release/signing-guide.md`)
 - [ ] CHANGELOG section added for the release being shipped (per-release)

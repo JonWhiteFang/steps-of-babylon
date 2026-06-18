@@ -63,8 +63,9 @@ advertising ID.
   the hosted policy's `#delete-data` anchor (https://jonwhitefang.github.io/steps-of-babylon/#delete-data).
 
 ### Privacy policy URL
-`https://jonwhitefang.github.io/steps-of-babylon/` (the GitHub-Pages copy in `docs/index.md`, kept in
-sync with `docs/release/privacy-policy.md`).
+`https://jonwhitefang.github.io/steps-of-babylon/` — served from `site/index.md` (the single canonical
+policy source), published to GitHub Pages by `.github/workflows/pages.yml`. The Pages site is built from
+the top-level `site/` folder ONLY, so the internal `docs/` tree is never published publicly.
 
 ### Ads declaration (separate Console question, "App content → Ads")
 - **Does your app contain ads?** **Yes** (reward ads).

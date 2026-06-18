@@ -1,0 +1,59 @@
+# Publishes the PUBLIC privacy policy to GitHub Pages
+# (https://jonwhitefang.github.io/steps-of-babylon/ + the #delete-data anchor — the URLs Play
+# Console's privacy-policy + Data-safety declarations point at).
+#
+# WHY a workflow instead of "Deploy from a branch": the branch source can only publish `/` or
+# `/docs`, which would serve the ENTIRE internal docs/ tree (agent memory, audits, plans) on the
+# public privacy domain. This builds ONLY the top-level `site/` folder, so internal docs are never
+# published. It also makes publishing version-controlled + automatic (the previous manual Pages
+# config silently disappeared once, taking the policy URL offline — this prevents a repeat).
+#
+# Actions are SHA-pinned (decision #5 / ADR-0018); Dependabot maintains the pins.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+# Least privilege: only what Pages deployment needs.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; don't cancel an in-progress publish (avoid a half-deployed policy).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1.0.13
+        with:
+          source: ./site
+          destination: ./_site
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

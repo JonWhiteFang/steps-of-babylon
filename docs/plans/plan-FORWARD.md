@@ -106,7 +106,7 @@ closed: gathering soak signal or exposing testers is the whole point of closed t
 - [ ] **#192 — privacy-policy / Data-Safety accuracy (PRIV-1/SEC-1).** Policy says data "never uploaded" /
   AdMob is a "future" integration, but the live build ships AdMob + UMP + collects the advertising ID.
   Play-compliance accuracy on the path to the production-access application the soak feeds. Fix: present-tense
-  policy rewrite (`HealthConnectPermissionActivity.kt` + `privacy-policy.md`/`docs/index.md`) + ad-ID
+  policy rewrite (`HealthConnectPermissionActivity.kt` + `site/index.md`) + ad-ID
   disclosure + reconcile the Console Data-Safety form (Console step **needs external verification**). Effort
   **S** + Console.
 

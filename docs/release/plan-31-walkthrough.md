@@ -78,17 +78,21 @@ Project constants you will paste repeatedly:
 ## Phase B — Privacy policy hosting (parallel to A)
 
 The Play Console listing requires a **public URL** to the privacy policy.
-Privacy text is already written at `docs/release/privacy-policy.md`.
+The canonical policy text lives at `site/index.md`.
 
-### B1. Pick a host
+### B1. Host = GitHub Pages, published from `site/` by a workflow
 
-Cheapest path: **GitHub Pages**.
-- Create a public repo (or reuse this one if you're OK with the repo being
-  public).
-- Enable Pages: repo Settings → Pages → Source = `main` branch, `/docs`
-  folder.
-- Convert `docs/release/privacy-policy.md` to a hosted page or copy it into
-  `docs/index.md` so the URL is `https://<user>.github.io/<repo>/`.
+The policy is published to GitHub Pages automatically by
+`.github/workflows/pages.yml`, which builds **only** the top-level `site/`
+folder (so the internal `docs/` tree is never served publicly). Pages is set to
+**Source = GitHub Actions** (not "Deploy from a branch"). On every push to `main`
+that touches `site/**`, the workflow rebuilds and the URL is
+`https://<user>.github.io/<repo>/` (here: `https://jonwhitefang.github.io/steps-of-babylon/`).
+
+> History: Pages was originally a "Deploy from branch → `/docs`" config, which
+> served the whole `docs/` tree (internal dev docs included) and silently went
+> offline once. The workflow approach scopes publishing to `site/` only and keeps
+> it version-controlled. Don't revert to a branch source pointed at `/docs`.
 
 Alternatives: any static host (Netlify, Vercel), or a single `privacy.html` on
 your own domain. The URL just needs to resolve to readable HTML and stay up.
