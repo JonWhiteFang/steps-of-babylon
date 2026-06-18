@@ -41,11 +41,12 @@ With your permission, the app reads:
 You can revoke Health Connect permissions at any time through your device settings.
 
 Data Storage
-All game data is stored locally on your device in an encrypted database. Steps of Babylon has no server backend. Your data is never uploaded to any remote server.
+Your step, Health Connect, and game data is stored locally on your device in an encrypted database. Steps of Babylon has no server backend, and we do not upload your step, health, or game data to any server, sell it, or share it with third parties.
 
-No data is sold, traded, or shared with third parties.
+Advertising
+The app shows optional, opt-in reward ads via Google AdMob. To serve these, Google's ads SDK collects your device's advertising ID; this is collected by Google, not by us. A consent prompt governs ad personalisation. You can reset or limit your advertising ID in Settings → Google → Ads. Full privacy policy: https://jonwhitefang.github.io/steps-of-babylon/
 
-Contact: support@whitefanggames.com
+Contact: jonwhitefang@gmail.com
                     """.trimIndent()
                 )
             }
