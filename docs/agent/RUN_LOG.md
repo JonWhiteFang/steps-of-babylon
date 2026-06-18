@@ -1,3 +1,50 @@
+## 2026-06-18 — Privacy-policy hosting fixed + scoped to `site/` only (PR #207, two Play Console errors)
+
+- **Trigger:** developer asked me to look at a Play Console screenshot showing **two publishing errors** —
+  "Privacy policy page returns a page not found" + "Data deletion page returns a page not found".
+- **Diagnosis (one root cause, not two):** both URLs are the same Pages site
+  (`https://jonwhitefang.github.io/steps-of-babylon/` + the `#delete-data` anchor). **GitHub Pages had been
+  disabled** (Pages API 404; all URL variants 404). The policy *content* was always fine — only the hosting
+  was down. Last good deploy was 2026-06-11; no Pages workflow existed, so the manual config had silently
+  vanished.
+- **Immediate restore:** re-enabled Pages via the API → URLs back to 200. But this surfaced a latent
+  problem: the legacy **"Deploy from branch → `/docs`"** source publishes the **ENTIRE internal `docs/`
+  tree** (agent memory, audits enumerating unfixed defects, plans, monetization notes) as a public,
+  indexable website on the app's privacy domain. Branch-source can only publish `/` or `/docs` — no
+  subfolder scoping — so the only way to publish *just* the policy is a GitHub Actions workflow.
+- **Developer asked** "is the policy location correct / best practice?" → answered: host (Pages) is fine,
+  but the **scope** is wrong; best practice is a dedicated public-only web root. Developer pre-authorized
+  "if we change it then add the workflow," and chose **`site/index.md` as the single canonical copy**
+  (collapsing the prior drift-prone `docs/release/privacy-policy.md` canonical + `docs/index.md` Pages-copy
+  split).
+- **Fix (PR #207, squash `7d5c3e5`):**
+  - New `site/` web root: `site/index.md` (single canonical policy, Jekyll front matter) + `site/_config.yml`.
+  - New SHA-pinned `.github/workflows/pages.yml` (decision #5): builds + deploys **only `site/`** on push to
+    `main` touching `site/**` (+ `workflow_dispatch`). `permissions: pages:write + id-token:write`,
+    `concurrency: pages` no-cancel. Verified the `jekyll-build-pages` `source`/`destination` input names at
+    the pinned SHA before relying on them.
+  - Deleted `docs/release/privacy-policy.md` + `docs/index.md`; repointed all **live** references
+    (README ×2, architecture, data-safety-form, release-checklist, plan-31-walkthrough, plan-FORWARD,
+    plan-V1X, STATE References) to `site/index.md`. Left **historical** CHANGELOG/RUN_LOG/archive/ADR/review
+    entries untouched per the doc convention. New `[Unreleased]` CHANGELOG entry added.
+- **CI:** PR gate `build-and-test` + instrumented `connected` both green (~5m each); squash-merged;
+  branch deleted.
+- **Cutover (post-merge, out of band):** flipped Pages `build_type` legacy→workflow via API. NOTE: the merge
+  fired BOTH a final legacy `/docs` build AND the new workflow; the legacy build re-claimed serving after my
+  first flip (→ `/` 404 because `docs/index.md` was deleted, internal docs still 200). Re-dispatched the
+  workflow once `build_type=workflow` was settled → clean.
+- **Verified live:** policy URL + `/#delete-data` → **200** (served page has the delete-data anchor,
+  Advertising-Identifier section, contact email, correct title); internal docs (`agent/STATE.md`,
+  `reviews/complete-app-review.md`, `monetization.md`, `plans/master-plan.md`, `release/data-safety-form.md`)
+  → **404**. Pages `build_type=workflow`, `https_enforced=true`.
+- **Incidental find:** **#194** (error states, UX-1) is **CLOSED on GitHub (2026-06-17, reason=COMPLETED)
+  but has no referencing PR/commit/comment and no error-state code I could locate** — flagged in STATE.md as
+  unverified; reconcile before trusting the Gate-H surface.
+- **STILL PENDING (developer):** in Play Console, **re-save / re-submit the two flagged items** to force a
+  re-crawl (links resolve now; Google caches the last crawl). Separate from #192's manual Data-Safety
+  declaration.
+- **No app code / schema / test change** — JVM test count unchanged (1069).
+
 ## 2026-06-18 — Post-merge checkpoint: all 3 Gate H blockers MERGED (#204 + #205)
 
 - **What landed:** **PR #204** (squash `d673386`) — #190 crash visibility + #191 two battle CMEs; **PR #205**

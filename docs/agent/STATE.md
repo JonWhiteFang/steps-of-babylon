@@ -14,17 +14,32 @@ the merged #190/#191/#192 (currently `[Unreleased]`) to the internal track. Audi
 
 ## Current objective
 
-- **CURRENT — all 3 Gate H `severity:blocker`s MERGED; remaining to promote internal → closed is a Console
-  step + 3 majors + a release tag.** #190/#191 (PR #204, `d673386`) and #192 (PR #205, `0019217`) are on
-  `main`. The promotion path now needs, in any order: **(a)** the **manual Play Console Data-Safety action**
-  for #192 — declare the four AdMob-SDK data types + "Contains ads"=Yes + deletion URL per
-  `docs/release/data-safety-form.md` (repo can't do this; must precede promotion); **(b)** the 3
-  `severity:major` soak-hardening items — **#195** Missions day-rollover stale query (most self-contained),
-  **#194** error states, **#193** no-sensor signal — each via spec→review-gate→TDD; **(c)** a `v*` release
-  tag to actually ship the merged #190/#191/#192 (currently `[Unreleased]`) to the internal track. Then the
-  promote decision is the developer's (plus Gate A audio feel + Gate E balance feel, both judgment-only).
-  Lower-severity audit findings (architecture seam, A11Y contrast, no-Compose-UI-tests, wrapper validation,
-  clock-tamper TIME-1, i18n) stay before-public/post-launch (review §18 Tiers 2–5), NOT blockers.
+- **CURRENT — privacy-policy hosting fixed (was DOWN → two Play Console publishing errors); now published
+  from `site/` only.** PR #207 (`7d5c3e5`) MERGED. The hosted policy
+  (`https://jonwhitefang.github.io/steps-of-babylon/`) had gone offline (GitHub Pages disabled), so Play
+  Console flagged "Privacy policy page returns a page not found" + "Data deletion page returns a page not
+  found". Root cause = hosting down; re-enabling exposed that the legacy "Deploy from branch → `/docs`"
+  source was publishing the **entire internal `docs/` tree** publicly. Fix: new `site/` web root
+  (`site/index.md` is now the SINGLE canonical policy — old `docs/release/privacy-policy.md` + `docs/index.md`
+  deleted) + new SHA-pinned `.github/workflows/pages.yml` that builds + deploys **only `site/`**; Pages
+  `build_type` flipped legacy→workflow. **Verified live:** policy URL + `#delete-data` → 200; internal docs
+  (`agent/STATE.md`, `reviews/…`, `monetization.md`, `plans/…`) → 404. **URL unchanged → no Play Console
+  re-entry.** ⚠️ **STILL PENDING (developer, in Play Console):** re-save / re-submit the two flagged items
+  to force a re-crawl (Google caches the last crawl — links resolve now). This is SEPARATE from #192's
+  manual Data-Safety declaration (still also pending).
+- **Gate H — all 3 `severity:blocker`s MERGED; promotion still needs a Console step + majors + a release
+  tag.** #190/#191 (PR #204, `d673386`) and #192 (PR #205, `0019217`) are on `main`. The promotion path
+  needs, in any order: **(a)** the **manual Play Console Data-Safety action** for #192 — declare the four
+  AdMob-SDK data types + "Contains ads"=Yes + deletion URL per `docs/release/data-safety-form.md` (repo
+  can't do this; must precede promotion); **(b)** the `severity:major` soak-hardening items —
+  **#195** Missions day-rollover stale query (most self-contained, OPEN) + **#193** no-sensor signal (OPEN);
+  **#194** (error states, UX-1) shows **CLOSED on GitHub (2026-06-17, COMPLETED) with no referencing
+  PR/commit/comment — status unverified; reconcile before trusting the gate** — each remaining via
+  spec→review-gate→TDD; **(c)** a `v*` release tag to ship the merged #190/#191/#192 (currently
+  `[Unreleased]`) to the internal track. Then the promote decision is the developer's (plus Gate A audio
+  feel + Gate E balance feel, both judgment-only). Lower-severity audit findings (architecture seam, A11Y
+  contrast, no-Compose-UI-tests, wrapper validation, clock-tamper TIME-1, i18n) stay
+  before-public/post-launch (review §18 Tiers 2–5), NOT blockers.
 - **Previous objective (DONE): #192 privacy/Data-Safety in-repo text — MERGED (PR #205, squash `0019217`).**
   Brought every disclosure in line with shipped v1.0.8 behaviour (real AdMob v25 + UMP v4 + Billing v8; the
   AdMob SDK auto-merges the ad-ID + ad-services permissions). Hosted policy (`privacy-policy.md` + the
