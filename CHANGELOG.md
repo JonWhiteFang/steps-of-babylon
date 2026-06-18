@@ -4,6 +4,32 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fixed — Privacy policy / Data Safety accuracy (#192, Gate H blocker, PRIV-1/SEC-1)
+
+**Compliance-accuracy text change — no code-behaviour/schema/test change.** Brought every data-handling
+disclosure in line with what the v1.0.8 release actually ships (real AdMob v25 + UMP v4 + Play Billing v8;
+the AdMob SDK auto-merges the advertising-ID + ad-services permissions). Spec/plan stage was N/A (text);
+the edits passed the Adversarial Review Gate (13 raised → 4 surviving → 9 refuted; DS-1 verified against
+Google's published GMA SDK Data-Safety disclosure).
+
+- **Hosted privacy policy** (`docs/release/privacy-policy.md` + the GitHub-Pages copy `docs/index.md`,
+  kept byte-identical) rewritten present-tense: new **Advertising Identifier (Google AdMob)** section
+  disclosing ad-ID + ad-service-ID collection by Google + the UMP consent prompt; "no upload/no share"
+  claims scoped to the app's own on-device data (game/step/Health Connect/purchase stays on-device); the
+  Children's-Privacy line reconciled with the ad-ID disclosure; retention/deletion note the Google-side ad
+  ID + the `Settings → Google → Ads` reset; in-app **Settings → Delete All Data** path added; effective
+  date → 2026-06-18.
+- **In-app Health Connect rationale** (`HealthConnectPermissionActivity.kt`) — removed the false "never
+  uploaded / never shared with third parties" claim, added the AdMob/advertising disclosure + the hosted
+  policy URL, and unified the contact email to `jonwhitefang@gmail.com` (was the odd-one-out
+  `support@whitefanggames.com`).
+- **New `docs/release/data-safety-form.md`** — exact Play Console Data-Safety answers for the **manual**
+  Console step that completes this blocker: declare ALL four AdMob-SDK data types (Device/other IDs incl.
+  ad ID; App interactions; Diagnostics; Approximate location) as Collected + Shared for
+  advertising/analytics/fraud, ad-ID Optional; "Contains ads" = Yes; on-device data NOT declared; deletion
+  URL + encrypted-in-transit. **Requires a human Play Console action — not code.**
+- `assembleDebug` green; no test-count change.
+
 ### Fixed — Crash visibility + two reachable battle crashes (#190 + #191, Gate H blockers)
 
 **Closed-track promotion blockers from the 2026-06-17 complete-app review. Local-only diagnostics — no

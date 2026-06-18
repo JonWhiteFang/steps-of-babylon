@@ -1,3 +1,40 @@
+## 2026-06-18 — #192 privacy/Data-Safety accuracy — in-repo text FIXED (Gate H, PRIV-1/SEC-1)
+
+- **Goal:** clear the last `severity:blocker`'s in-repo half — make every data-handling disclosure match
+  shipped v1.0.8 behaviour (the release ships real AdMob v25 + UMP v4 + Play Billing v8; the AdMob SDK
+  auto-merges `AD_ID` + `ACCESS_ADSERVICES_*`, none authored). The old text said data is "never uploaded"/
+  "never shared" (in-app rationale) and framed AdMob/Billing as "future versions" (hosted policy).
+- **Process:** grounded every claim against the actual build (USE_REAL_ADS, deps, the built merged release
+  manifest, AdPlacement) before writing; asked the developer which contact email is canonical
+  (→ `jonwhitefang@gmail.com`); edited text; ran the **Adversarial Review Gate** (5 dims, 18 agents):
+  13 raised → **4 surviving → 9 refuted**. The 9 refuted were correctly killed (self-described "no change"
+  confirmations + stylistic nits). Applied all 4 survivors:
+  - **DS-1 (major):** my Data-Safety doc declared ONLY the advertising ID + told the applicant not to
+    declare app activity. **Verified against Google's published GMA SDK Data-Safety disclosure** (WebFetch)
+    — the SDK collects+shares FOUR types (Device/other IDs incl. ad ID; App interactions; Diagnostics;
+    Approximate location/IP). Rewrote the declaration table to all four (under-declaration was the exact
+    defect #192 exists to prevent).
+  - **COMP-1 (major):** the Children's-Privacy "does not collect identifying information" line contradicted
+    the new ad-ID disclosure → reworded (not child-directed; ad ID collected by AdMob on opt-in; reset path).
+  - **COMP-2 (minor):** the in-app "see our full privacy policy" pointer wasn't reachable in-app → made it
+    self-contained (named the hosted URL).
+  - **COMP-4 (partial):** positive confirmation the #190 local crash breadcrumb is correctly NOT disclosed
+    as collection (on-device only) — no action.
+- **What changed:** `docs/release/privacy-policy.md` + the byte-identical Pages copy `docs/index.md`
+  (present-tense rewrite, new Advertising-Identifier section, scoped no-upload claims, retention/deletion +
+  ad-ID reset, in-app Delete-All-Data path, effective date 2026-06-18, Children's-Privacy reconciled);
+  `HealthConnectPermissionActivity.kt` (de-falsified rationale + hosted URL + email unified); new
+  `docs/release/data-safety-form.md` (the manual Play Console answers).
+- **Verification:** `assembleDebug` green; the two policy bodies confirmed byte-identical; no remaining
+  `support@whitefanggames.com` / "future versions" / "never uploaded" text; no test/schema/behaviour change.
+- **Docs synced:** CHANGELOG `[Unreleased]`, source-files.md (rationale activity note), STATE.md (objective
+  rotated, Known-issues + priorities). No ADR (text/compliance change, no architectural decision).
+- **Remains / next:** open the #192 PR; **then a human must apply the manual Play Console Data-Safety
+  action** per `docs/release/data-safety-form.md` (declare the four AdMob-SDK types; "Contains ads" = Yes;
+  deletion URL) — required before promotion, not doable from the repo. Then the 3 `severity:major`
+  soak-hardening items #193/#194/#195. Also a v* release tag is needed to actually ship #190/#191/#192 to
+  the internal track (they sit in `[Unreleased]`).
+
 ## 2026-06-17 — #190 + #191 Gate-H code blockers FIXED (crash visibility + two reachable battle CMEs)
 
 - **Goal:** clear the two `severity:blocker` *code* defects gating internal → closed (from the 2026-06-17
