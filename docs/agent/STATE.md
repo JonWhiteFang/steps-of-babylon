@@ -10,23 +10,23 @@ text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) 
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
 repo); (b) the 3 `severity:major` soak-hardening items (#193/#194/#195); (c) a `v*` release tag to ship
 the merged #190/#191/#192 (currently `[Unreleased]`) to the internal track. Audit
-(`docs/reviews/complete-app-review.md`) verdict: **continue building** — finish the blocker pass, then promote.
+(`docs/reviews/2026-06-17-complete-app-review.md`) verdict: **continue building** — finish the blocker pass, then promote.
 
 ## Current objective
 
-- **CURRENT — privacy-policy hosting fixed (was DOWN → two Play Console publishing errors); now published
-  from `site/` only.** PR #207 (`7d5c3e5`) MERGED. The hosted policy
-  (`https://jonwhitefang.github.io/steps-of-babylon/`) had gone offline (GitHub Pages disabled), so Play
-  Console flagged "Privacy policy page returns a page not found" + "Data deletion page returns a page not
-  found". Root cause = hosting down; re-enabling exposed that the legacy "Deploy from branch → `/docs`"
-  source was publishing the **entire internal `docs/` tree** publicly. Fix: new `site/` web root
-  (`site/index.md` is now the SINGLE canonical policy — old `docs/release/privacy-policy.md` + `docs/index.md`
-  deleted) + new SHA-pinned `.github/workflows/pages.yml` that builds + deploys **only `site/`**; Pages
-  `build_type` flipped legacy→workflow. **Verified live:** policy URL + `#delete-data` → 200; internal docs
-  (`agent/STATE.md`, `reviews/…`, `monetization.md`, `plans/…`) → 404. **URL unchanged → no Play Console
-  re-entry.** ⚠️ **STILL PENDING (developer, in Play Console):** re-save / re-submit the two flagged items
-  to force a re-crawl (Google caches the last crawl — links resolve now). This is SEPARATE from #192's
-  manual Data-Safety declaration (still also pending).
+- **CURRENT — added the `complete-app-review` skill (repo tooling) + date-stamped the review artifact.**
+  New `.claude/skills/complete-app-review/` (SKILL.md + review-brief.md + review-workflow.js): an
+  ultracode `Workflow` that runs the full 20-section audit and puts **every** finding through
+  severity-scaled adversarial refutation by **separate** subagents (3 crit/high · 2 med · 1 low) before
+  it reaches the report — built TDD-style per `superpowers:writing-skills` (baseline agents shortcut the
+  3/2/1 rule; the law is now encoded in the workflow so it can't be). Output is now
+  `docs/reviews/<YYYY-MM-DD>-complete-app-review.md` (dated for tracking/backlinking; a run no longer
+  overwrites the prior one) — the existing report was renamed `2026-06-17-complete-app-review.md` and
+  live backlinks (STATE, plan-FORWARD) repointed; historical refs (CHANGELOG #196, prior RUN_LOG,
+  ADR-0026, design spec) left as-authored. Skill also emits a deduped **GitHub-issue plan**
+  (propose-then-confirm; Med+ one-each, Lows bundled into one tracker per the #128 convention). No app
+  code / schema / test change. **PENDING (this session):** file the 2026-06-17 findings as issues after
+  developer vets the plan.
 - **Gate H — all 3 `severity:blocker`s MERGED; promotion still needs a Console step + majors + a release
   tag.** #190/#191 (PR #204, `d673386`) and #192 (PR #205, `0019217`) are on `main`. The promotion path
   needs, in any order: **(a)** the **manual Play Console Data-Safety action** for #192 — declare the four
@@ -40,6 +40,19 @@ the merged #190/#191/#192 (currently `[Unreleased]`) to the internal track. Audi
   feel + Gate E balance feel, both judgment-only). Lower-severity audit findings (architecture seam, A11Y
   contrast, no-Compose-UI-tests, wrapper validation, clock-tamper TIME-1, i18n) stay
   before-public/post-launch (review §18 Tiers 2–5), NOT blockers.
+- **Previous objective (DONE) — privacy-policy hosting fixed (was DOWN → two Play Console publishing
+  errors); now published from `site/` only.** PR #207 (`7d5c3e5`) MERGED. The hosted policy
+  (`https://jonwhitefang.github.io/steps-of-babylon/`) had gone offline (GitHub Pages disabled), so Play
+  Console flagged "Privacy policy page returns a page not found" + "Data deletion page returns a page not
+  found". Root cause = hosting down; re-enabling exposed that the legacy "Deploy from branch → `/docs`"
+  source was publishing the **entire internal `docs/` tree** publicly. Fix: new `site/` web root
+  (`site/index.md` is now the SINGLE canonical policy — old `docs/release/privacy-policy.md` + `docs/index.md`
+  deleted) + new SHA-pinned `.github/workflows/pages.yml` that builds + deploys **only `site/`**; Pages
+  `build_type` flipped legacy→workflow. **Verified live:** policy URL + `#delete-data` → 200; internal docs
+  (`agent/STATE.md`, `reviews/…`, `monetization.md`, `plans/…`) → 404. **URL unchanged → no Play Console
+  re-entry.** ⚠️ **STILL PENDING (developer, in Play Console):** re-save / re-submit the two flagged items
+  to force a re-crawl (Google caches the last crawl — links resolve now). This is SEPARATE from #192's
+  manual Data-Safety declaration (still also pending).
 - **Previous objective (DONE): #192 privacy/Data-Safety in-repo text — MERGED (PR #205, squash `0019217`).**
   Brought every disclosure in line with shipped v1.0.8 behaviour (real AdMob v25 + UMP v4 + Billing v8; the
   AdMob SDK auto-merges the ad-ID + ad-services permissions). Hosted policy (`privacy-policy.md` + the
@@ -453,7 +466,7 @@ the merged #190/#191/#192 (currently `[Unreleased]`) to the internal track. Audi
   data types per `docs/release/data-safety-form.md`) before promotion — a developer step, not code. Plus 3
   `severity:major` soak-hardening items still open: **#195** (Missions day-rollover stale query — STATE-1),
   **#194** (no error states — UX-1), **#193** (no-sensor silent dead-end — REL-3). And the merged blockers
-  ship only on the next `v*` tag (currently `[Unreleased]`). Full report: `docs/reviews/complete-app-review.md`.
+  ship only on the next `v*` tag (currently `[Unreleased]`). Full report: `docs/reviews/2026-06-17-complete-app-review.md`.
 - **Promotion gate:** the Closed-Test Readiness Gate (`plan-FORWARD.md` A–H) is the call to promote
   internal → closed; Gate H (above) must clear first. Google's ≥12-tester + ≥14-day-soak policy is a
   downstream Phase-2 step that only begins after that promotion.
@@ -670,9 +683,10 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 ## References
 
 - **Memory loop:** `CLAUDE.md` (canonical guide; now incl. the **Adversarial Review Gate** for specs/plans) · `docs/agent/START_HERE.md` (contract) · `docs/agent/CONSTRAINTS.md` · SessionStart hook + `/checkpoint` skill.
+- **Skills (`.claude/skills/`):** `checkpoint` (end-of-session memory write) · `complete-app-review` (ultracode `Workflow` for the full 20-section audit — every finding refuted by separate subagents 3/3/2/1; writes `docs/reviews/<date>-complete-app-review.md` + emits a propose-then-confirm GitHub-issue plan).
 - **Look-&-feel bundle docs (all shipped):** Bundle E (#164, v1.0.8) spec `docs/superpowers/specs/2026-06-15-look-and-feel-bundle-e-design.md` + plan `docs/superpowers/plans/2026-06-15-look-and-feel-bundle-e.md` (both review-passed) · #171 spec/plan `docs/superpowers/{specs,plans}/2026-06-15-battle-bottom-chrome-overlap*.md` · Bundle D (#163, v1.0.7) spec `docs/superpowers/specs/2026-06-14-look-and-feel-bundle-d-design.md` + plan `docs/superpowers/plans/2026-06-14-look-and-feel-bundle-d.md` · Bundle C (#162) shipped in v1.0.6.
 - **Plans:** `docs/plans/plan-FORWARD.md` (forward plan + Closed-Test Readiness Gate — start here) · `docs/plans/master-plan.md` (v1.0 completion record) · `docs/plans/plan-V1X-roadmap.md` (backlog of record). Completed v1.0 plan files archived under `docs/archive/completed-plans-v1.0/`.
 - **Reference docs:** `docs/steering/` (tech, structure, source-files, lib-*) · `docs/architecture.md` · `docs/database-schema.md` · `docs/battle-formulas.md`.
-- **Audit:** `docs/external-reviews/2026-06-10-multi-agent-code-audit.md` (findings #118–#128 + regression specs) · **`docs/reviews/complete-app-review.md` (2026-06-17 complete-app review — 20 sections, 51-agent adversarially-verified; raised closed-track blockers #190–#192 + soak-hardening #193–#195, all on the `v1.0.0 closed-test gate` milestone / Gate H in plan-FORWARD).**
+- **Audit:** `docs/external-reviews/2026-06-10-multi-agent-code-audit.md` (findings #118–#128 + regression specs) · **`docs/reviews/2026-06-17-complete-app-review.md` (2026-06-17 complete-app review — 20 sections, 51-agent adversarially-verified; raised closed-track blockers #190–#192 + soak-hardening #193–#195, all on the `v1.0.0 closed-test gate` milestone / Gate H in plan-FORWARD).**
 - **Release:** `docs/release/plan-31-walkthrough.md` · privacy policy `site/index.md` (canonical; published to GitHub Pages by `.github/workflows/pages.yml` — `site/` ONLY, not `docs/`) → hosted https://jonwhitefang.github.io/steps-of-babylon/ (delete-data: `#delete-data`) · listing copy `docs/release/play-store-listing.md`.
 - **ADRs:** 0003 (Battle Step Rewards) · 0004 (FollowOnPipeline, deferred) · 0005 (Billing) · 0006 (Ads) · 0007 (ADV keystore) · 0010 (Cards copy-based) · 0012 (Simulation extraction) · 0014 (i18n) · 0015/0016 (STEP_MULTIPLIER / GPS dropped) · 0017 (ENEMY_INTEL) · 0018 (CI) · 0019 (Claude Code) · 0020 (economy atomicity) · 0021 (onboarding explain-only) · 0022 (design tokens + de-emoji) · 0023 (bottom-nav back-stack) · 0024 (Bundle E: custom font + onboarding biome theming + persist-first completion beat) · **0025 (#26 perf/battery Gate-G: multi-module benchmark tooling on AGP-9 [1.5.0-alpha, dev-only] + #124 guard narrowing + A28/A31/A29 GC-churn fixes)**. Full set in `docs/agent/DECISIONS/`.
