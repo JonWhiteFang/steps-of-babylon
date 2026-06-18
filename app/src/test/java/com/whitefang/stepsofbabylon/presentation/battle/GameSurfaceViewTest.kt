@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -139,6 +141,83 @@ class GameSurfaceViewTest {
                 "begin accumulating progress (no-regression guard against the fix " +
                 "accidentally suppressing fresh-battle initialisation)",
             view.engine.hasWaveProgress()
+        )
+    }
+
+    // --- #245: battle SFX must survive a background→resume (surface destroy→recreate) cycle ---
+
+    @Test
+    fun `245 a recreated surface re-points the engine at a fresh SoundManager`() {
+        // A SurfaceView surface is destroyed and recreated across an app background→foreground cycle.
+        // Pre-fix: surfaceDestroyed called soundManager.release() but surfaceCreated never recreated
+        // it, so engine.soundManager kept pointing at the released SoundPool — every play(...) became
+        // a no-op and the player lost all combat SFX for the rest of the session.
+        val view = newView()
+        val original = view.engine.soundManager
+        assertTrue("Sanity: engine starts wired to a SoundManager", original != null)
+
+        // surfaceDestroyed releases the SoundManager.
+        view.releaseSoundManager()
+        // surfaceCreated must recreate it and re-point the engine.
+        view.ensureSoundManager()
+
+        val recreated = view.engine.soundManager
+        assertNotSame(
+            "engine.soundManager must be a FRESH instance after a surface destroy→recreate cycle, " +
+                "not the released one (#245)",
+            original,
+            recreated,
+        )
+    }
+
+    @Test
+    fun `245 the engine reference is dropped while the surface is destroyed`() {
+        // Between surfaceDestroyed (release) and the next surfaceCreated (recreate), engine.soundManager
+        // must be null so a main-thread SFX call (e.g. an upgrade purchase) is a clean no-op via the
+        // `soundManager?.play(...)` guard — NOT a play() on a released SoundPool.
+        val view = newView()
+        view.releaseSoundManager()
+        assertEquals(
+            "engine.soundManager must be null in the destroyed window so play() is a clean no-op, " +
+                "not a use-after-release on a freed SoundPool (#245)",
+            null,
+            view.engine.soundManager,
+        )
+    }
+
+    @Test
+    fun `245 the recreated SoundManager re-reads the persisted mute pref`() {
+        // The recreated manager must be rebuilt from the persisted sound_prefs (not left at defaults),
+        // so the player's mute choice survives a background→resume — an observable-state check that
+        // the rebuild actually re-seeds, beyond mere instance identity.
+        val ctx = ApplicationProvider.getApplicationContext<Context>()
+        ctx.getSharedPreferences("sound_prefs", Context.MODE_PRIVATE)
+            .edit().putBoolean("muted", true).commit()
+
+        val view = GameSurfaceView(ctx)
+        view.releaseSoundManager()
+        view.ensureSoundManager()
+
+        assertTrue(
+            "the recreated SoundManager must re-read the persisted muted=true pref (#245)",
+            view.engine.soundManager!!.isMuted(),
+        )
+    }
+
+    @Test
+    fun `245 ensureSoundManager without a prior release keeps the existing instance`() {
+        // No-regression guard: a surfaceCreated that is NOT preceded by a release (the very first
+        // surface creation) must not needlessly churn the SoundManager / reload every SoundPool clip.
+        val view = newView()
+        val original = view.engine.soundManager
+
+        view.ensureSoundManager()
+
+        assertSame(
+            "ensureSoundManager() must be a no-op when the SoundManager was never released " +
+                "(don't reload clips on the first surfaceCreated)",
+            original,
+            view.engine.soundManager,
         )
     }
 }

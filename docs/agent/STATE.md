@@ -3,7 +3,7 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.8 (versionCode 24) live on Play internal track** · **1069 JVM + 9 instrumented tests**
+**Headline:** **v1.0.8 (versionCode 24) live on Play internal track** · **1081 JVM + 9 instrumented tests**
 green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
@@ -17,7 +17,26 @@ highest-leverage before-public work.
 
 ## Current objective
 
-- **CURRENT — sorted the Dependabot PRs (#197–#203).** Reviewed 7 open bumps via the Adversarial Review
+- **CURRENT — reliability-hardening wave: 5 confirmed 2026-06-18 audit defects fixed (#244/#246/#245/#232/#247),
+  on branch `fix/reliability-hardening-244-246-245-232-247` (uncommitted at write time).** Defensive
+  bug-fixes, TDD'd (RED→GREEN per fix), no schema/economy/engine-logic change. **#244** FGS
+  `startForeground()` crash path → `startForegroundSafely` seam (Log.w + stopSelf; BootReceiver guarded);
+  **#246** `MusicManager.createPlayer` NPE → nullable + injectable `playerFactory`, degrades to silent;
+  **#245** battle SFX die after background→resume → `ensureSoundManager`/`releaseSoundManager` seams
+  (rebuild + re-point engine; null in the destroyed window); **#232** silent `catch{}` in
+  `DailyStepManager` → `onPipelineError` seam (Log.w, runs under #120 mutex); **#247**
+  `DataDeletionManager` incomplete wipe → added `onboarding_prefs`+`haptics_prefs` + a source-scan guard
+  test that fails on drift/unresolved sites. Put through the **Adversarial Review Gate** (4-dimension
+  fan-out → adversarial refute, 23 agents; 19 findings → **0 critical, 0 confirmed major** — 3 "major"s
+  downgraded to `partial`; **6 worthwhile findings applied** as amendments: #244 onFailure switched
+  CrashBreadcrumbStore→Log.w to match #232's single-slot rationale, #245 release nulls the engine ref +
+  idempotent guard, #247 test now fails on unresolved args, #232 mutex KDoc caveat, #246/#245 tests
+  strengthened to observable-state). **1069→1081 JVM** (+12). `testDebugUnitTest lintDebug assembleDebug`
+  BUILD SUCCESSFUL, 0 failures. No ADR (bug-fixes on established patterns). **Next:** commit + open PR.
+  Remaining open audit issues: the other 2 net-new HIGHs (#233 config-change battle-state loss [large],
+  #236 atomic premium spend [medium, fits ADR-0020], #250 IAP reconcile, #261 battery whitelist) + 43
+  med · 95 low (#262 tracker) — none internal-track blockers.
+- **Previous objective (DONE) — sorted the Dependabot PRs (#197–#203).** Reviewed 7 open bumps via the Adversarial Review
   Gate (8-agent `Workflow`, zero surviving critical/major) + a local combined build (`testDebugUnitTest +
   assembleDebug` BUILD SUCCESSFUL, 1069 green). **6 are safe** (AGP 9.2.1, Compose BOM 2026.05.01,
   activity-compose 1.13.0, robolectric 4.16.1, gradle/actions 6.2.0, setup-java 5.3.0) → landed as ONE

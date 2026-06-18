@@ -4,6 +4,45 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — Reliability hardening: 5 confirmed audit defects (#244, #246, #245, #232, #247)
+
+**Defensive bug-fixes from the 2026-06-18 complete-app review — no schema/economy/engine-logic change;
+1069 → 1081 JVM tests** (+12). TDD'd (RED→GREEN per fix) and put through the Adversarial Review Gate
+(4-dimension fan-out → per-finding adversarial refute, 23 agents; 19 findings → **0 critical, 0 confirmed
+major** — the 3 "major"s all downgraded to `partial`; 6 worthwhile findings applied as amendments).
+
+- **#244 — FGS `startForeground()` can kill the process.** `StepCounterService.onCreate` called
+  `startForeground(...)` unguarded; on Android 14 a typed (health) FGS start can throw
+  `ForegroundServiceStartNotAllowedException` / `InvalidForegroundServiceTypeException` /
+  `SecurityException` (most exposed via `BootReceiver`'s background BOOT_COMPLETED start), killing the
+  process with START_STICKY retrying into the same crash. New top-level `startForegroundSafely(start,
+  onFailure)` seam catches `RuntimeException` → `Log.w` + `stopSelf()` (WorkManager's `StepSyncWorker`
+  handles step catch-up). `BootReceiver`'s `startForegroundService` guarded too. (`Log.w`, not the
+  single-slot `CrashBreadcrumbStore` — a recurring per-boot failure must not clobber a real #190 crash
+  breadcrumb; same rationale as #232.) Guarded by `StartForegroundSafelyTest` (3).
+- **#246 — `MusicManager.createPlayer` NPE.** `MediaPlayer.create()` is documented to return null on
+  codec/decode/OOM failure, but `createPlayer` dereferenced it via `.apply{}` on a non-null type → KNPE
+  on the main thread from `playWalking()`/`playBattle()`. `createPlayer` is now nullable via an
+  injectable `playerFactory` (default `MediaPlayer::create`); on null it degrades to silent and leaves
+  the track `NONE` so a later navigation re-attempts creation. Guarded by `MusicManagerNullPlayerTest` (3).
+- **#245 — battle SFX die after background→resume.** `GameSurfaceView` released its `SoundManager` on
+  `surfaceDestroyed` but never recreated it, so `engine.soundManager` kept pointing at a released
+  SoundPool — every `play(...)` a silent no-op for the rest of the session. New
+  `ensureSoundManager()`/`releaseSoundManager()` seams: surfaceCreated rebuilds + re-points the engine;
+  release also nulls `engine.soundManager` so a main-thread SFX call in the destroyed window is a clean
+  no-op (not a use-after-release). Guarded by 3 new `GameSurfaceViewTest` cases.
+- **#232 — silent `catch{}` in `DailyStepManager`.** The four follow-on-pipeline stages (widget /
+  supply-drop / economy / mission) swallowed every failure with no logging — invisible failures (a
+  player silently stops getting supply drops / streak Gems / mission credit). New `onPipelineError`
+  seam (default `Log.w`, stage-labelled) surfaces them; the catch stays so a follow-on failure never
+  fails the step credit. (KDoc notes the seam runs under the #120 credit mutex → overrides must be
+  non-blocking/non-throwing.) Guarded by `DailyStepManagerErrorReportingTest` (1).
+- **#247 — `DataDeletionManager` incomplete wipe.** `PREFS_NAMES` had drifted: `onboarding_prefs` (#24)
+  and `haptics_prefs` (#162) escaped "Delete All Data" (a wiped user wouldn't re-see onboarding;
+  incomplete-wipe privacy gap). Both added. New `DataDeletionPrefsCoverageTest` scans the source tree for
+  every `getSharedPreferences(...)` call site and **fails** the build on any prefs file missing from the
+  list — *or* on any arg it can't resolve — so the list can't silently drift again. (1)
+
 ### Build — Dependabot dependency wave: 6 safe bumps merged, core-ktx 1.19.0 deferred (#197, #198, #200–#203)
 
 **Dependency/CI-config only — no app code, schema, or test change; JVM test count unchanged (1069).**

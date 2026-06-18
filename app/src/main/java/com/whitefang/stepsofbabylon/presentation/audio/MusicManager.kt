@@ -5,13 +5,21 @@ import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaPlayer
+import androidx.annotation.VisibleForTesting
 import com.whitefang.stepsofbabylon.R
 
 /**
  * Manages background music playback with two tracks (walking/battle),
  * audio focus handling, and volume/mute controls.
+ *
+ * @param playerFactory creates a [MediaPlayer] for a raw-resource id, returning `null` on failure.
+ *   Defaults to [MediaPlayer.create], which is documented to return null on codec/decode/OOM failure
+ *   (#246). Injectable so the null-failure path is testable without a real codec.
  */
-class MusicManager(private val context: Context) : AudioManager.OnAudioFocusChangeListener {
+class MusicManager(
+    private val context: Context,
+    private val playerFactory: (Context, Int) -> MediaPlayer? = { ctx, resId -> MediaPlayer.create(ctx, resId) },
+) : AudioManager.OnAudioFocusChangeListener {
 
     private var walkingPlayer: MediaPlayer? = null
     private var battlePlayer: MediaPlayer? = null
@@ -34,17 +42,22 @@ class MusicManager(private val context: Context) : AudioManager.OnAudioFocusChan
     fun playWalking() {
         if (activeTrack == Track.WALKING) return
         stopActive()
-        activeTrack = Track.WALKING
-        walkingPlayer = createPlayer(R.raw.bgm_walking)
-        startIfNotMuted()
+        val player = createPlayer(R.raw.bgm_walking)
+        walkingPlayer = player
+        // #246: MediaPlayer.create() can return null (codec/decode/OOM failure). Degrade to silent
+        // and leave the track NONE so a later navigation re-attempts creation instead of being
+        // wedged on a dead track by the `activeTrack == WALKING` early-return guard.
+        activeTrack = if (player != null) Track.WALKING else Track.NONE
+        if (player != null) startIfNotMuted()
     }
 
     fun playBattle() {
         if (activeTrack == Track.BATTLE) return
         stopActive()
-        activeTrack = Track.BATTLE
-        battlePlayer = createPlayer(R.raw.bgm_battle)
-        startIfNotMuted()
+        val player = createPlayer(R.raw.bgm_battle)
+        battlePlayer = player
+        activeTrack = if (player != null) Track.BATTLE else Track.NONE
+        if (player != null) startIfNotMuted()
     }
 
     fun pause() {
@@ -93,11 +106,15 @@ class MusicManager(private val context: Context) : AudioManager.OnAudioFocusChan
         }
     }
 
-    private fun createPlayer(resId: Int): MediaPlayer =
-        MediaPlayer.create(context, resId).apply {
+    // #246: nullable — MediaPlayer.create() (via [playerFactory]) returns null on failure.
+    private fun createPlayer(resId: Int): MediaPlayer? =
+        playerFactory(context, resId)?.apply {
             isLooping = true
             setVolume(volume, volume)
         }
+
+    @VisibleForTesting
+    internal fun activePlayerOrNullForTest(): MediaPlayer? = activePlayer()
 
     private fun startIfNotMuted() {
         if (!muted) {
