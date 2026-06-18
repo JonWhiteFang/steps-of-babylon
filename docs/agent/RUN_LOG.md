@@ -1,3 +1,19 @@
+## 2026-06-18 — Post-merge checkpoint: all 3 Gate H blockers MERGED (#204 + #205)
+
+- **What landed:** **PR #204** (squash `d673386`) — #190 crash visibility + #191 two battle CMEs; **PR #205**
+  (squash `0019217`) — #192 privacy/Data-Safety text. Both squash-merged to `main` with the CI PR gate +
+  instrumented `connected` lane green; issues #190/#191/#192 auto-closed; both feature branches deleted.
+- **State:** all three Gate H `severity:blocker`s are now resolved in-repo. **1069 JVM tests** green;
+  `main` clean.
+- **STATE.md reconciled** to merged reality (the prior entry was written pre-merge / "awaiting PR/merge"):
+  objective rotated, Known-issues + priorities updated. CLAUDE.md (1069) + CHANGELOG `[Unreleased]` were
+  already synced inside the PRs — no residual drift; no schema/dep/build/README change in either PR.
+- **Remains to promote internal → closed (none are code blockers now):** (a) the **manual Play Console
+  Data-Safety action** for #192 (`docs/release/data-safety-form.md` — declare the four AdMob-SDK data types,
+  "Contains ads"=Yes, deletion URL; a developer Console step); (b) the 3 `severity:major` soak-hardening
+  items #195/#194/#193 (spec→review-gate→TDD; #195 most self-contained); (c) a `v*` release tag to ship the
+  merged #190/#191/#192 (currently `[Unreleased]`) to the internal track.
+
 ## 2026-06-18 — #192 privacy/Data-Safety accuracy — in-repo text FIXED (Gate H, PRIV-1/SEC-1)
 
 - **Goal:** clear the last `severity:blocker`'s in-repo half — make every data-handling disclosure match
