@@ -33,6 +33,7 @@ class DailyStepManagerTest {
     private lateinit var widgetHelper: WidgetUpdateHelper
     private lateinit var workshopRepo: FakeWorkshopRepository
     private lateinit var labRepo: FakeLabRepository
+    private lateinit var antiCheatPrefs: AntiCheatPreferences
     private lateinit var manager: DailyStepManager
 
     private val baseTime = 1_710_000_000_000L
@@ -47,13 +48,14 @@ class DailyStepManagerTest {
         widgetHelper = mock<WidgetUpdateHelper>()
         workshopRepo = FakeWorkshopRepository()
         labRepo = FakeLabRepository()
+        antiCheatPrefs = mock<AntiCheatPreferences>()
 
         manager = DailyStepManager(
             stepRepository = stepRepo,
             playerRepository = playerRepo,
             rateLimiter = StepRateLimiter(),
             velocityAnalyzer = StepVelocityAnalyzer(),
-            antiCheatPrefs = mock<AntiCheatPreferences>(),
+            antiCheatPrefs = antiCheatPrefs,
             walkingEncounterRepository = FakeWalkingEncounterRepository(),
             supplyDropNotificationManager = mock<SupplyDropNotificationManager>(),
             dailyLoginDao = FakeDailyLoginDao(),
