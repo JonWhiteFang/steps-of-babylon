@@ -84,6 +84,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var musicPreferences: MusicPreferences
     @Inject lateinit var onboardingPreferences: OnboardingPreferences
     @Inject lateinit var crashBreadcrumbStore: com.whitefang.stepsofbabylon.data.diagnostics.CrashBreadcrumbStore
+    @Inject lateinit var billingManager: com.whitefang.stepsofbabylon.domain.repository.BillingManager
 
     private lateinit var musicManager: MusicManager
 
@@ -407,6 +408,15 @@ class MainActivity : ComponentActivity() {
         activityProvider.set(this)
         activityScope.launch(Dispatchers.IO) {
             playerRepository.updateLastActiveAt(System.currentTimeMillis())
+        }
+        // #250: foreground reconcile of pending/unresolved Play Billing purchases on every resume,
+        // so an entitlement bought on a flaky connection (ack RPC failed) is granted before Play's
+        // 3-day auto-refund window — not only when the user re-opens the Store. Idempotent +
+        // mutex-serialised + connect-guarded; time-bounded via the shared reconcileBillingSafely
+        // helper (BillingManagerImpl.connect() has no internal timeout). StepSyncWorker is the
+        // background safety net for users who never re-foreground.
+        activityScope.launch(Dispatchers.IO) {
+            com.whitefang.stepsofbabylon.service.reconcileBillingSafely(billingManager)
         }
         // Prefetch UMP consent so the first reward-ad tap doesn't pay the
         // ~200-500ms UMP init latency. Flag-gated on BuildConfig.USE_REAL_ADS so debug

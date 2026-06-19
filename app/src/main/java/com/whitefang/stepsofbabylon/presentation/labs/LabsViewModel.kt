@@ -14,18 +14,23 @@ import com.whitefang.stepsofbabylon.domain.usecase.StartResearch
 import com.whitefang.stepsofbabylon.domain.usecase.UnlockLabSlot
 import com.whitefang.stepsofbabylon.domain.usecase.UpdateCompleteResearchMissionProgress
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlin.math.max
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class LabsViewModel @Inject constructor(
     private val labRepository: LabRepository,
@@ -44,6 +49,8 @@ class LabsViewModel @Inject constructor(
     private val tick = MutableStateFlow(System.currentTimeMillis())
     private val _processing = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<String?>(null)
+    // #194: bump to re-subscribe the data flow after a load error (retry).
+    private val _retry = MutableStateFlow(0)
 
     init {
         viewModelScope.launch {
@@ -64,7 +71,8 @@ class LabsViewModel @Inject constructor(
         }
     }
 
-    val uiState: StateFlow<LabsUiState> = combine(
+    val uiState: StateFlow<LabsUiState> = _retry.flatMapLatest {
+    combine(
         labRepository.observeAllResearch(),
         labRepository.observeActiveResearch(),
         playerRepository.observeProfile(),
@@ -104,7 +112,14 @@ class LabsViewModel @Inject constructor(
             isProcessing = processing,
             userMessage = message,
         )
+    }
+        // #194: surface a source-flow throw as an error state, not a silent spinner. .catch INSIDE
+        // flatMapLatest so retry() re-subscribes.
+        .catch { emit(LabsUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LabsUiState())
+
+    /** #194: re-subscribe the data flow after a load error. */
+    fun retry() { _retry.value++ }
 
     fun startResearch(type: ResearchType) {
         if (_processing.value) return

@@ -16,4 +16,5 @@ data class HomeUiState(
     val claimableMissionCount: Int = 0,
     val seasonPassActive: Boolean = false,
     val isLoading: Boolean = true,
+    val error: String? = null,
 )

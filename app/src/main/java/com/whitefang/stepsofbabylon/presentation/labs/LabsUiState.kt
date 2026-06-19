@@ -25,6 +25,7 @@ data class LabsUiState(
     val canAffordSlotUnlock: Boolean = false,
     val seasonPassFreeRushAvailable: Boolean = false,
     val isLoading: Boolean = true,
+    val error: String? = null,
     val isProcessing: Boolean = false,
     val userMessage: String? = null,
 )

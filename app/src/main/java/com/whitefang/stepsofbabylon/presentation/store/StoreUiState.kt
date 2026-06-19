@@ -11,6 +11,7 @@ data class StoreUiState(
     val cosmetics: List<CosmeticDisplayInfo> = emptyList(),
     val isPurchasing: Boolean = false,
     val isLoading: Boolean = true,
+    val error: String? = null,
     val userMessage: String? = null,
     /**
      * Live formatted prices from Play Billing per SKU (e.g. `BillingProduct.GEM_PACK_SMALL

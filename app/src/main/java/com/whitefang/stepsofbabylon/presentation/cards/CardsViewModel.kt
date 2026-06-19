@@ -13,16 +13,21 @@ import com.whitefang.stepsofbabylon.domain.usecase.UpgradeCard
 import com.whitefang.stepsofbabylon.domain.repository.CardRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.RewardAdManager
+import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CardsViewModel @Inject constructor(
     private val cardRepository: CardRepository,
@@ -37,9 +42,12 @@ class CardsViewModel @Inject constructor(
     private val _lastPackResult = MutableStateFlow<List<CardResult>?>(null)
     private val _processing = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<String?>(null)
+    // #194: bump to re-subscribe the data flow after a load error (retry).
+    private val _retry = MutableStateFlow(0)
     private var allCards: List<OwnedCard> = emptyList()
 
-    val uiState: StateFlow<CardsUiState> = combine(
+    val uiState: StateFlow<CardsUiState> = _retry.flatMapLatest {
+    combine(
         cardRepository.observeAllCards(),
         playerRepository.observeProfile(),
         _lastPackResult,
@@ -71,7 +79,14 @@ class CardsViewModel @Inject constructor(
             isProcessing = processing,
             userMessage = message,
         )
+    }
+        // #194: surface a source-flow throw as an error state, not a silent spinner. .catch INSIDE
+        // flatMapLatest so retry() re-subscribes.
+        .catch { emit(CardsUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CardsUiState())
+
+    /** #194: re-subscribe the data flow after a load error. */
+    fun retry() { _retry.value++ }
 
     fun openPack(packTier: PackTier) {
         if (_processing.value) return

@@ -33,4 +33,5 @@ data class StatsUiState(
     val daysActive: Int = 0,
     val averageDailySteps: Long = 0,
     val isLoading: Boolean = true,
+    val error: String? = null,
 )

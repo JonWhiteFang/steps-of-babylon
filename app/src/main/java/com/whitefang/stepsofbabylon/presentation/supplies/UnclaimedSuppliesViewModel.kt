@@ -9,16 +9,22 @@ import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.WalkingEncounterRepository
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimSupplyDrop
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
+import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class UnclaimedSuppliesViewModel @Inject constructor(
     private val encounterRepository: WalkingEncounterRepository,
@@ -28,9 +34,18 @@ class UnclaimedSuppliesViewModel @Inject constructor(
 
     private val claimSupplyDrop = ClaimSupplyDrop(encounterRepository, playerRepository, cardRepository)
 
-    val uiState: StateFlow<SuppliesUiState> = encounterRepository.observeUnclaimed()
-        .map { SuppliesUiState(drops = it, isLoading = false) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SuppliesUiState())
+    // #194: bump to re-subscribe the data flow after a load error (retry).
+    private val _retry = MutableStateFlow(0)
+
+    val uiState: StateFlow<SuppliesUiState> = _retry.flatMapLatest {
+        encounterRepository.observeUnclaimed()
+            .map { SuppliesUiState(drops = it, isLoading = false) }
+            // #194: surface a source-flow throw as an error state, not a silent spinner.
+            .catch { emit(SuppliesUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SuppliesUiState())
+
+    /** #194: re-subscribe the data flow after a load error. */
+    fun retry() { _retry.value++ }
 
     private val _celebration = Channel<ClaimCelebrationEvent>(Channel.CONFLATED)
     val celebration = _celebration.receiveAsFlow()

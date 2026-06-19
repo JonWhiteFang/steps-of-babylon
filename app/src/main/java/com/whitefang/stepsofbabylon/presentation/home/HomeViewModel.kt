@@ -18,10 +18,12 @@ import com.whitefang.stepsofbabylon.domain.usecase.GenerateDailyMissions
 import com.whitefang.stepsofbabylon.domain.usecase.CheckMilestones
 import com.whitefang.stepsofbabylon.domain.usecase.TrackDailyLogin
 import com.whitefang.stepsofbabylon.domain.usecase.UpdateCompleteResearchMissionProgress
+import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -47,6 +49,8 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _currentDate = MutableStateFlow(LocalDate.now().toString())
+    // #194: bump to re-subscribe the data flow after a load error (retry).
+    private val _retry = MutableStateFlow(0)
 
     /**
      * Closes #55. Pre-fix `init` discarded the [List] returned by [CheckResearchCompletion],
@@ -89,33 +93,40 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    val uiState: StateFlow<HomeUiState> = _currentDate.flatMapLatest { date ->
-        combine(
-            playerRepository.observeProfile(),
-            stepRepository.observeTodayRecord(date),
-            walkingEncounterRepository.countUnclaimed(),
-            dailyMissionDao.countClaimable(date),
-            milestoneDao.getAll(),
-        ) { profile, stepSummary, unclaimedCount, claimableMissions, milestoneEntities ->
-            val claimedIds = milestoneEntities.filter { it.claimed }.map { it.milestoneId }.toSet()
-            val achievableMilestones = Milestone.entries.count { it.requiredSteps <= profile.totalStepsEarned && it.name !in claimedIds }
-            HomeUiState(
-                todaySteps = stepSummary?.creditedSteps ?: 0,
-                stepBalance = profile.stepBalance,
-                gems = profile.gems,
-                powerStones = profile.powerStones,
-                currentTier = profile.currentTier,
-                highestUnlockedTier = profile.highestUnlockedTier,
-                currentBiome = Biome.forTier(profile.currentTier),
-                bestWave = profile.bestWavePerTier[profile.currentTier] ?: 0,
-                bestWavePerTier = profile.bestWavePerTier,
-                unclaimedDropCount = unclaimedCount,
-                claimableMissionCount = claimableMissions + achievableMilestones,
-                seasonPassActive = profile.seasonPassActive && profile.seasonPassExpiry > System.currentTimeMillis(),
-                isLoading = false,
-            )
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
+    val uiState: StateFlow<HomeUiState> = combine(_currentDate, _retry) { date, _ -> date }
+        .flatMapLatest { date ->
+            combine(
+                playerRepository.observeProfile(),
+                stepRepository.observeTodayRecord(date),
+                walkingEncounterRepository.countUnclaimed(),
+                dailyMissionDao.countClaimable(date),
+                milestoneDao.getAll(),
+            ) { profile, stepSummary, unclaimedCount, claimableMissions, milestoneEntities ->
+                val claimedIds = milestoneEntities.filter { it.claimed }.map { it.milestoneId }.toSet()
+                val achievableMilestones = Milestone.entries.count { it.requiredSteps <= profile.totalStepsEarned && it.name !in claimedIds }
+                HomeUiState(
+                    todaySteps = stepSummary?.creditedSteps ?: 0,
+                    stepBalance = profile.stepBalance,
+                    gems = profile.gems,
+                    powerStones = profile.powerStones,
+                    currentTier = profile.currentTier,
+                    highestUnlockedTier = profile.highestUnlockedTier,
+                    currentBiome = Biome.forTier(profile.currentTier),
+                    bestWave = profile.bestWavePerTier[profile.currentTier] ?: 0,
+                    bestWavePerTier = profile.bestWavePerTier,
+                    unclaimedDropCount = unclaimedCount,
+                    claimableMissionCount = claimableMissions + achievableMilestones,
+                    seasonPassActive = profile.seasonPassActive && profile.seasonPassExpiry > System.currentTimeMillis(),
+                    isLoading = false,
+                )
+            }
+            // #194: a source flow throwing (e.g. Room/SQLCipher) must surface an error state, not a
+            // silent infinite spinner. .catch INSIDE flatMapLatest so retry() can re-subscribe.
+            .catch { emit(HomeUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeUiState())
+
+    /** #194: re-subscribe the data flow after a load error. */
+    fun retry() { _retry.value++ }
 
     fun selectTier(tier: Int) {
         viewModelScope.launch { playerRepository.updateTier(tier) }

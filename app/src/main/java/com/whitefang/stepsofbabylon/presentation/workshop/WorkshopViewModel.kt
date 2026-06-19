@@ -16,16 +16,21 @@ import com.whitefang.stepsofbabylon.domain.usecase.PurchaseUpgrade
 import com.whitefang.stepsofbabylon.domain.usecase.QuickInvest
 import com.whitefang.stepsofbabylon.domain.usecase.ResolveStats
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class WorkshopViewModel @Inject constructor(
     private val workshopRepository: WorkshopRepository,
@@ -43,10 +48,13 @@ class WorkshopViewModel @Inject constructor(
     private val _selectedCategory = MutableStateFlow(UpgradeCategory.ATTACK)
     private val _processing = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<String?>(null)
+    // #194: bump to re-subscribe the data flow after a load error (retry).
+    private val _retry = MutableStateFlow(0)
     private val hiddenUpgrades = setOf(UpgradeType.STEP_MULTIPLIER, UpgradeType.RECOVERY_PACKAGES)
     private var allUpgrades: Map<UpgradeType, Int> = emptyMap()
 
-    val uiState: StateFlow<WorkshopUiState> = combine(
+    val uiState: StateFlow<WorkshopUiState> = _retry.flatMapLatest {
+    combine(
         workshopRepository.observeAllUpgrades(),
         playerRepository.observeWallet(),
         _selectedCategory,
@@ -89,7 +97,14 @@ class WorkshopViewModel @Inject constructor(
             isProcessing = processing,
             userMessage = message,
         )
+    }
+        // #194: surface a source-flow throw as an error state, not a silent spinner. .catch INSIDE
+        // flatMapLatest so retry() re-subscribes.
+        .catch { emit(WorkshopUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), WorkshopUiState())
+
+    /** #194: re-subscribe the data flow after a load error. */
+    fun retry() { _retry.value++ }
 
     fun selectCategory(category: UpgradeCategory) { _selectedCategory.value = category }
 
