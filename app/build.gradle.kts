@@ -236,6 +236,10 @@ dependencies {
     implementation(libs.compose.material.icons.extended)
     debugImplementation(libs.compose.ui.tooling)
 
+    // Coroutines — #257: pin the runtime explicitly (was floating transitively at 1.9.0 via
+    // Room-ktx/Lifecycle/Hilt). Aligned with kotlinx-coroutines-test via the shared `coroutines` ref.
+    implementation(libs.coroutines.android)
+
     // AndroidX
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)

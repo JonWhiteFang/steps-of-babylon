@@ -27,7 +27,7 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | Lifecycle | 2.10.0 | ViewModel, StateFlow integration |
 | WorkManager | 2.11.0 | Background step sync |
 | JUnit (Jupiter) | 6.1.0 | Unit testing framework — junit-jupiter 6.x (catalog key still `junit5`) |
-| kotlinx-coroutines-test | 1.10.1 | Coroutine test utilities |
+| kotlinx-coroutines (-android / -test) | 1.10.1 | Async runtime + test utilities. #257: runtime (`-android`) is now pinned explicitly (shared `coroutines` ref) — was floating transitively at 1.9.0 while tests ran 1.10.1 |
 | SQLCipher | 4.16.0 | Database encryption |
 | Health Connect | 1.1.0 (stable) | Step cross-validation, Activity Minute Parity (off alpha per audit #33; 1.2.x needs compileSdk 37) |
 | SQLite KTX | 2.4.0 | SQLite support library |
@@ -91,12 +91,12 @@ In non-TTY environments (CI, etc.), use `./run-gradle.sh <task>` instead of `./g
 
 GitHub Actions (Plan 32 / ADR-0018). Workflows under `.github/workflows/`, all third-party actions SHA-pinned (Dependabot-maintained):
 
-- `ci.yml` — PR + push:main gate: `./gradlew testDebugUnitTest lintDebug assembleDebug` + a Room schema-drift guard. Secret-free.
+- `ci.yml` — PR + push:main gate: a `gradle/actions/wrapper-validation` step first (#212), then `./gradlew testDebugUnitTest lintDebug assembleDebug` + a Room schema-drift guard. The drift guard catches both modified AND new-untracked schema JSON (#254: `git add -N` + `git diff` + a `git status --porcelain` belt). Secret-free.
 - `instrumented.yml` — `connectedDebugAndroidTest` on an API-34 KVM emulator (AVD-cached); blocking on PRs to `main` + nightly.
-- `release.yml` — `v*` tag → signed `bundleRelease` → Play internal track (`r0adkll/upload-google-play`). Play "What's new" notes are written from the annotated tag message (`en-US`, capped at Play's 500-char limit; falls back to a generic line for lightweight tags / manual dispatch).
+- `release.yml` — `v*` tag → a `gradle/actions/wrapper-validation` step (#212), then signed `bundleRelease` → Play internal track (`r0adkll/upload-google-play`). Play "What's new" notes are written from the annotated tag message (`en-US`, capped at Play's 500-char limit; falls back to a generic line for lightweight tags / manual dispatch).
 - `pages.yml` — push:main touching `site/**` (+ `workflow_dispatch`) → Jekyll-builds + deploys **only the top-level `site/` folder** to GitHub Pages (the hosted privacy policy at `https://jonwhitefang.github.io/steps-of-babylon/` + the `#delete-data` anchor — the URLs Play Console's privacy-policy + Data-safety declarations point at). Replaced the legacy "Deploy from branch → `/docs`" Pages source, which served the entire internal `docs/` tree publicly. Pages `build_type` = `workflow`.
 
-Plus `dependency-submission.yml` (Gradle dependency graph, scoped via `DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS` to a regex anchored on `releaseRuntimeClasspath` so the security graph reflects only production-shipped deps — excludes the build-tool/plugin classpath and the debug/test runtime classpaths) and `dependabot.yml` (gradle + github-actions). CI invokes `./gradlew` directly — runners have a PTY, so `run-gradle.sh` is not needed there.
+Plus `dependency-submission.yml` (Gradle dependency graph, scoped via `DEPENDENCY_GRAPH_INCLUDE_CONFIGURATIONS` to a regex anchored on `releaseRuntimeClasspath` so the security graph reflects only production-shipped deps — excludes the build-tool/plugin classpath and the debug/test runtime classpaths) and `dependabot.yml` (gradle + github-actions; #255: bumps are grouped — `all-gradle` + a separate `gradle-wrapper` group + `all-actions` — so interacting versions land in one CI-verified PR). The Gradle wrapper distribution is checksum-pinned via `distributionSha256Sum` in `gradle-wrapper.properties` (#212). CI invokes `./gradlew` directly — runners have a PTY, so `run-gradle.sh` is not needed there.
 
 ## Notes
 

@@ -99,11 +99,14 @@ Signed AAB → Play internal track (decision #3).
 
 ### Task 4: Supply-chain & robustness hardening
 
-- **`.github/dependabot.yml`** — two ecosystems, weekly: `gradle` (keeps `libs.versions.toml` fresh) and `github-actions` (bumps the SHA pins with the human-readable version comment).
+- **`.github/dependabot.yml`** — two ecosystems, weekly: `gradle` (keeps `libs.versions.toml` fresh) and `github-actions` (bumps the SHA pins with the human-readable version comment). **#255 (post-authoring):** bumps are now **grouped** so interacting versions land in one CI-verified PR — `all-gradle` (catalog libs) + a separate `gradle-wrapper` group (own blast radius) + `all-actions`.
 - **Dependency graph** — `gradle/actions/dependency-submission@<sha>` on `push` to `main` so GitHub security alerts see the resolved Gradle graph.
-- **Room schema-drift guard** — after `assembleDebug` in `ci.yml`, fail if KSP regenerated a schema that wasn't committed:
+- **Wrapper integrity (#212, post-authoring)** — `gradle-wrapper.properties` carries `distributionSha256Sum` (the official `gradle-9.5.1-bin.zip.sha256`) and both `ci.yml` and `release.yml` run `gradle/actions/wrapper-validation@<sha>` as their first post-checkout step (the signing lane is the highest-value target). Bump the checksum alongside `distributionUrl`.
+- **Room schema-drift guard** — after `assembleDebug` in `ci.yml`, fail if KSP regenerated a schema that wasn't committed. **#254 (post-authoring):** a bare `git diff` misses a NEW untracked schema (e.g. a regenerated `13.json` the dev forgot to `git add` — the most likely real drift), so the guard now stages intent-to-add first + a porcelain belt:
   ```bash
-  git diff --exit-code app/schemas || { echo "::error::Room schema drift — commit app/schemas changes"; exit 1; }
+  git add -N app/schemas
+  git diff --exit-code app/schemas || { echo "::error::Room schema drift — commit app/schemas changes (new or modified)"; exit 1; }
+  [ -z "$(git status --porcelain app/schemas)" ] || { echo "::error::Untracked Room schema files"; exit 1; }
   ```
 - **SHA-pinning (decision #5)** — every non-`actions/*`-and-even-`actions/*` third-party action pinned to a full 40-char commit SHA with a trailing `# vX.Y.Z` comment. Exact SHAs are resolved at YAML-authoring time and thereafter maintained by Dependabot. Resolution helper:
   ```bash
