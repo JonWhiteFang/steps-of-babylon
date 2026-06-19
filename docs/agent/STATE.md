@@ -3,18 +3,18 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.9 (versionCode 25) SHIPPED → Play internal** (tag fired). Latest work (branch
-`fix/graceful-degradation-194-250`, `[Unreleased]`, PR up): **2 before-public graceful-degradation
-defects fixed — #194 shared screen error state + #250 offline-purchase reconcile** (TDD'd; lighter inline
-adversarial review caught 2 real defects pre-code; full build green). Prior wave **MERGED** (PR #270,
-`ebf588a`): #236 atomic premium spend, #195 missions day-rollover, #193 no-sensor signal. Supersedes
-**v1.0.8 (vc 24)** · **1098 JVM + 9 instrumented tests**
+**Headline:** **v1.0.9 (versionCode 25) SHIPPED → Play internal** (tag fired). Latest work **MERGED**
+(PR #272, squash `1811617`, both CI checks green, branch deleted, #194/#250 auto-closed, `[Unreleased]`):
+**2 before-public graceful-degradation defects — #194 shared screen error state + #250 offline-purchase
+reconcile** (TDD'd; lighter inline adversarial review caught 2 real defects pre-code). Prior wave MERGED
+(PR #270, `ebf588a`): #236 atomic premium spend, #195 missions day-rollover, #193 no-sensor signal.
+Supersedes **v1.0.8 (vc 24)** · **1098 JVM + 9 instrumented tests**
 green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
 repo); (b) the `severity:major` soak-hardening items are now ALL addressed — **#195 + #193 MERGED via
-#270; #194 (error states, UX-1) fixed on `fix/graceful-degradation-194-250` (PR up)** — #194 had been
+#270; #194 (error states, UX-1) MERGED (PR #272, `1811617`)** — #194 had been
 prematurely closed 2026-06-17 with no implementing commit, verified unfixed at HEAD + re-opened 2026-06-19;
 (c) a `v*` release tag to ship the `[Unreleased]` work (#190/#191/#192 + #236/#195/#193 + #194/#250) to internal.
 Latest audit
@@ -25,9 +25,9 @@ highest-leverage before-public work.
 
 ## Current objective
 
-- **CURRENT — graceful-degradation wave: #194 shared error state + #250 offline-purchase reconcile
-  (branch `fix/graceful-degradation-194-250`, `[Unreleased]`, PR up).** Two confirmed audit defects, one
-  combined PR; **no schema change; 1093 → 1098 JVM** (+5); `testDebugUnitTest lintDebug assembleDebug`
+- **CURRENT (DONE — MERGED PR #272, squash `1811617`; both CI checks green; #194/#250 auto-closed;
+  `[Unreleased]`).** Graceful-degradation wave: #194 shared error state + #250 offline-purchase reconcile;
+  **no schema change; 1093 → 1098 JVM** (+5); `testDebugUnitTest lintDebug assembleDebug`
   BUILD SUCCESSFUL. TDD'd; spec+plan
   (`docs/superpowers/specs/2026-06-19-graceful-degradation-194-250.md`) put through a lighter
   single-agent adversarial review that **caught 2 real defects pre-code**: (1) `.catch` must live INSIDE
@@ -126,7 +126,7 @@ highest-leverage before-public work.
   AdMob-SDK data types + "Contains ads"=Yes + deletion URL per `docs/release/data-safety-form.md` (repo
   can't do this; must precede promotion); **(b)** the `severity:major` soak-hardening items —
   **#195** Missions day-rollover + **#193** no-sensor signal **MERGED (PR #270, `ebf588a`)**, and
-  **#194** (error states, UX-1) **fixed on `fix/graceful-degradation-194-250` (PR up)** — it had been
+  **#194** (error states, UX-1) **MERGED (PR #272, `1811617`)** — it had been
   prematurely CLOSED 2026-06-17 with no implementing commit; verified unfixed at HEAD + re-opened
   2026-06-19, then actually fixed (ADR-0028). **All 3 soak `severity:major`s now addressed.** **(c)** a
   `v*` release tag to ship the `[Unreleased]` work (#190/#191/#192 + #236/#195/#193 + #194/#250) to the internal track. Then the promote decision is the developer's (plus Gate A audio
@@ -559,7 +559,7 @@ highest-leverage before-public work.
   data types per `docs/release/data-safety-form.md`) before promotion — a developer step, not code. Of the
   3 `severity:major` soak-hardening items, **#195** (Missions day-rollover — STATE-1) + **#193** (no-sensor
   silent dead-end — REL-3) are **MERGED (PR #270, `ebf588a`)** and **#194** (no error states — UX-1) is
-  **fixed on `fix/graceful-degradation-194-250` (PR up, ADR-0028)** — it had been prematurely CLOSED
+  **MERGED (PR #272, `1811617`, ADR-0028)** — it had been prematurely CLOSED
   2026-06-17 with no commit; re-opened 2026-06-19 after verifying it was unfixed. All 3 now addressed.
   The merged blockers/fixes ship only on the next `v*` tag (currently `[Unreleased]`). Full report: `docs/reviews/2026-06-17-complete-app-review.md`.
 - **Promotion gate:** the Closed-Test Readiness Gate (`plan-FORWARD.md` A–H) is the call to promote
@@ -594,7 +594,7 @@ Phase 1 (work down the Readiness Gate so the developer can decide to promote —
    App content → Data safety, declare the four AdMob-SDK data types + "Contains ads" = Yes + deletion URL
    per `docs/release/data-safety-form.md`. Required before promotion. **(Developer action.)**
 2. **Soak-hardening (Gate H `severity:major`) — ALL ADDRESSED:** **#195** + **#193** **DONE (PR #270,
-   `ebf588a`)**; **#194** error states (UX-1) **fixed on `fix/graceful-degradation-194-250` (PR up, ADR-0028)**
+   `ebf588a`)**; **#194** error states (UX-1) **MERGED (PR #272, `1811617`, ADR-0028)**
    — was prematurely CLOSED 2026-06-17 with no commit; re-opened + actually fixed 2026-06-19.
 3. **Cut a `v*` release** to ship the `[Unreleased]` work (#190/#191/#192 + #236/#195/#193 + #194/#250) to the internal
    track (version bump + release notes + tag; the release lane handles signing + upload).
