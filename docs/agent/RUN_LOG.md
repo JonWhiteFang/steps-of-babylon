@@ -35,9 +35,11 @@
 - **Docs synced:** `CLAUDE.md` test count 1100→1110; `CHANGELOG.md` new `[Unreleased]` entry; `database-schema.md`
   (migration-chain guard note + scoped decrypt-fail Security note); `docs/steering/source-files.md` (4 entries
   updated + `MigrationChainTest` added); STATE current-objective rotation + 3 new fragile-zone entries; ADR-0030.
-- **Remains / next:** commit + open the PR (branch `fix/data-integrity-237-238-248`). After merge, #237/#238/#248
-  auto-close. Remaining audit backlog: #251/#249 (step-counting / IAP), the larger #233 Simulation-hoist
-  (deferred), and the rest of the med/low #224–#262.
+- **MERGED:** PR #276, squash `0f32ac6`; both CI checks green (build-and-test 5m26s, connected 7m25s);
+  branch deleted; #237/#238/#248 auto-closed.
+- **Remains / next:** the merged work ships only on the next `v*` tag (currently `[Unreleased]`). Remaining
+  audit backlog: #251/#249 (step-counting / IAP), the larger #233 Simulation-hoist (deferred), and the rest
+  of the med/low #224–#262.
 
 ## 2026-06-18 — Release v1.0.9 (versionCode 25) → Play internal track
 
