@@ -4,6 +4,21 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+## [1.0.10] — 2026-06-19 (versionCode 26)
+
+Release collateral promotes everything accumulated since v1.0.9 (4 fix waves) to the Play **internal**
+track. `versionCode` 25 → 26, `versionName` 1.0.9 → 1.0.10 (the bump rides in with this release PR — Play
+rejects reused codes). This is a **reliability / data-integrity / graceful-degradation** release — no new
+features, no schema change. It clears the last of the 2026-06-18 audit's 4 net-new HIGHs (#233/#236/#250/#261)
+plus the data-integrity dimension (#237/#238/#248) and the last Gate-H `severity:major` soak items
+(#193/#194/#195). Player-facing highlights: a battery-optimization whitelist primer so background step
+counting survives aggressive-OEM Doze (#261), load-error retry states across the menu screens (#194), and
+steadier offline purchase handling (#250). The rest is data-integrity hardening (atomic premium spend #236,
+migration-chain guard #237, scoped decrypt-fail recovery #238, safe data-wipe #248) and reliability
+plumbing (missions day-rollover #195, no-sensor signposting #193, battle portrait-lock #233) — see
+`docs/release/release-notes-v1.0.10.md` for the Play "What's new" + full developer detail; the per-change
+entries below carry the technical record. **1081 → 1110 JVM tests** across the four waves.
+
 ### Fix — Data-integrity wave: migration-chain guard (#237) · scoped decrypt-fail recovery (#238) · DB-close race (#248)
 
 Three confirmed data-integrity defects from the 2026-06-18 complete-app review, one combined PR. **No
