@@ -32,7 +32,7 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — branch `fix/ci-supply-chain-257-254-212-255`, ready to commit/PR; `[Unreleased]`).**
+- **CURRENT (DONE — MERGED PR #285, squash `67cf74c`; both CI checks green; #257/#254/#212/#255 auto-closed; `[Unreleased]`).**
   **CI / supply-chain hardening wave** off the complete-app-review backlog: four confirmed findings, one
   combined PR. **Build-infra + config only — no app source / schema / test-count change** (`testDebugUnitTest
   lintDebug assembleDebug` BUILD SUCCESSFUL; 1126 JVM unchanged). **#257** coroutines runtime was floating
@@ -43,7 +43,9 @@ the med/low backlog (#262) remain.
   `gradle/actions/wrapper-validation` first step in BOTH `ci.yml` and `release.yml`. **#255** Dependabot →
   grouped (`all-gradle` + separate `gradle-wrapper` + `all-actions`). **#256 (dependency-verification
   metadata) DEFERRED** — strict verification would break every weekly Dependabot bump on a bleeding-edge dep
-  set; developer chose to defer. No ADR (config hardening on the established Plan-32 CI). Next: commit + PR.
+  set; developer chose to defer. No ADR (config hardening on the established Plan-32 CI). This PR's own CI
+  run was the first to exercise the new wrapper-validation step + strengthened drift gate (both green).
+  Next: back to the audit backlog (perf/policy/architecture/test-integrity clusters; #256 deferred).
 - **Previous objective (DONE — MERGED PR #283, squash `0d58aa1`; both CI checks green; #225/#235/#224/#222 auto-closed; `[Unreleased]`).**
   Quick **correctness/UX wave** off the 2026-06-18 complete-app-review backlog: four self-contained,
   low-risk defects, one combined PR. **Presentation + test-only — no schema/economy/engine change;
