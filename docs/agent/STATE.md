@@ -32,7 +32,7 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — implemented on branch `fix/reliability-wave-251-249`; NOT yet a PR / `[Unreleased]`).**
+- **CURRENT (DONE — MERGED PR #280, squash `1cc3afe`; both CI checks green; #251/#249 auto-closed; `[Unreleased]`).**
   Before-public **reliability wave**: two confirmed 2026-06-18 complete-app-review `severity:major` defects,
   one combined branch. **No schema change; no economy/engine-formula change** beyond the offline gap-fill
   *crediting path*; **1133 → 1141 JVM** (+8); full `testDebugUnitTest lintDebug assembleDebug` BUILD
@@ -46,8 +46,8 @@ the med/low backlog (#262) remain.
   `dailySensorTotal`); `StepGapFiller` switched to it; `StepSyncWorker.sensorCatchUp` deliberately stays
   rate-limited (raw-hardware delta, not HC-verified). **#249**: the 3 `StoreViewModel` billing purchase fns
   surface `PurchaseResult.Error.message` via `_userMessage` (Store Snackbar), de-triplicated into a private
-  `runPurchase` helper; mirrors `CardsViewModel`. No ADR (bug-fixes on established patterns). **Next:** open
-  the PR (squash); on merge it joins `[Unreleased]` for the next `v*` tag. Whole-branch review flagged ONE
+  `runPurchase` helper; mirrors `CardsViewModel`. No ADR (bug-fixes on established patterns). Ships on the
+  next `v*` tag (currently `[Unreleased]`). Whole-branch review flagged ONE
   accepted minor: user-cancel now shows a "Purchase cancelled" Snackbar (spec-approved parity with
   CardsViewModel; reversible later if undesirable). Remaining audit backlog after this: med/low (#262) +
   the rest of #224–#260; the larger #233 Simulation-hoist (deferred).
