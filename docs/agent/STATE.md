@@ -32,20 +32,24 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — branch `feat/compilesdk-37-migration`, ready to commit/PR; `[Unreleased]`).**
-  **compileSdk 36 → 37 migration + dependency unblock** — reverses the deliberate compileSdk-36 pin that
-  recurrently blocked Dependabot (Dependabot's grouped #288 fails CI at `:app:checkDebugAarMetadata`).
-  Raised `compileSdk` 37 in all 3 modules (targetSdk stays 36 — compile-only, not behavioral; minSdk 34);
-  unblocked **core-ktx 1.19.0 (closes #199), lifecycle 2.11.0, sqlite-ktx 2.6.2**. **HC stays 1.1.0**
-  (1.2.x still alpha-only; gate re-based onto "beta/stable"). **No app source/schema/test change; 1126 JVM
-  unchanged.** Built spec→plan, **both through the full Adversarial Review Gate** (ultracode: spec 27→20
-  surviving/7 refuted; plan 23→10/13 — all surviving were doc-sync line-precision + verify-rigor, applied
-  pre-implementation). Verified locally (platform 37 installed): testDebugUnitTest (1126) + lintDebug (0 new)
-  + assembleDebug + benchmark assemble + **full :app:assembleRelease (R8 at compileSdk 37)** all green;
-  releaseRuntimeClasspath resolves core-ktx→1.19.0, lifecycle→2.11.0. **ADR-0031.** Next: commit + PR +
-  monitor (PR-gate CI is the authoritative proof CI auto-provisions platform 37) + merge; then #288 rebases.
-  Local platform-37 install (for reproducibility): `sdkmanager "platforms;android-37.0" "build-tools;37.0.0"`
-  (stable channel, latest cmdline-tools).
+- **CURRENT (DONE — MERGED PR #289, squash `1b6465a`; both CI checks green; #199 auto-closed; `[Unreleased]`).**
+  **compileSdk 36 → 37 migration + dependency unblock** — reversed the deliberate compileSdk-36 pin that
+  recurrently blocked Dependabot. Raised `compileSdk` 37 in all 3 modules (targetSdk stays 36 — compile-only,
+  not behavioral; minSdk 34); unblocked **core-ktx 1.19.0 (closes #199), lifecycle 2.11.0, sqlite-ktx 2.6.2**.
+  **HC stays 1.1.0** (1.2.x still alpha-only; gate re-based onto "beta/stable"). **No app source/schema/test
+  change; 1126 JVM unchanged.** Built spec→plan, **both through the full Adversarial Review Gate** (ultracode:
+  spec 27→20 surviving/7 refuted; plan 23→10/13 — all surviving were doc-sync line-precision + verify-rigor,
+  applied pre-implementation). **PR-gate CI ran green on a clean runner → CONFIRMED CI auto-provisions
+  platform 37** (the central risk). Locally also verified a full `:app:assembleRelease` (R8 at compileSdk 37).
+  **ADR-0031.** Local platform-37 install (reproducibility): `sdkmanager "platforms;android-37.0"
+  "build-tools;37.0.0"` (stable channel, latest cmdline-tools).
+  **Dependabot fallout (resolved):** old grouped #288 (16 updates) auto-closed on rebase (its core-ktx/
+  lifecycle/sqlite bumps now on `main`); #287 (all-actions: checkout v7 + gh-release) rebased green + MERGED
+  (`fa7e957`; no `pull_request_target` usage so checkout-v7's fork-PR break is N/A). Dependabot reopened the
+  remainder as **#290 (12 updates) — STILL FAILING**, now on a NEW conflict (NOT compileSdk): kotlin-compose
+  plugin **2.4.0** emits Kotlin-metadata 2.4.0 but **Hilt 2.59.2's bundled kotlin-metadata-jvm caps at 2.3.0**
+  → `hiltJavaCompileDebug` fails. **#290 is its own task** (hold the kotlin-2.4.0 bump, or bump Hilt to a
+  Kotlin-2.4-compatible release) — left OPEN for a deliberate decision, not merged.
 - **Previous objective (DONE — MERGED PR #285, squash `67cf74c`; both CI checks green; #257/#254/#212/#255 auto-closed; `[Unreleased]`).**
   **CI / supply-chain hardening wave** off the complete-app-review backlog: four confirmed findings, one
   combined PR. **Build-infra + config only — no app source / schema / test-count change** (`testDebugUnitTest
