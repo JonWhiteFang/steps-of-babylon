@@ -8,6 +8,8 @@ import com.whitefang.stepsofbabylon.fakes.FakeStepRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWorkshopRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -154,5 +156,52 @@ class StatsViewModelTest {
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
         assertEquals(2, vm.uiState.value.daysActive)
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // #194 (UX-1) — a throwing source flow must surface an error state (not a silent infinite
+    // spinner), and retry() must re-subscribe and recover. Pre-fix, combine completed
+    // exceptionally and stateIn kept the initial isLoading=true forever. The retry hinges on
+    // .catch living INSIDE flatMapLatest (a downstream .catch would make the error terminal and
+    // retry() a no-op) — this pair pins that operator placement.
+    // ---------------------------------------------------------------------------------------
+
+    /** A player fake whose profile flow throws until [healed], to drive the #194 error path. */
+    private class ThrowingPlayerRepository(initial: PlayerProfile) : FakePlayerRepository(initial) {
+        @Volatile var healed = false
+        override fun observeProfile(): Flow<PlayerProfile> =
+            if (healed) super.observeProfile() else flow { throw RuntimeException("boom") }
+    }
+
+    @Test
+    fun `R194 a throwing source flow surfaces an error state, not an infinite spinner`() = runTest(dispatcher) {
+        playerRepo = ThrowingPlayerRepository(PlayerProfile())
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertFalse(state.isLoading, "must not be stuck loading after a source throws")
+        assertNotNull(state.error, "a thrown source flow must surface an error message")
+    }
+
+    @Test
+    fun `R194 retry re-subscribes and recovers after the source heals`() = runTest(dispatcher) {
+        val throwing = ThrowingPlayerRepository(PlayerProfile(totalStepsEarned = 4242))
+        playerRepo = throwing
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        assertNotNull(vm.uiState.value.error, "precondition: starts in the error state")
+
+        // Heal the source and retry — the flow must re-subscribe and clear the error.
+        throwing.healed = true
+        vm.retry()
+        advanceUntilIdle()
+
+        val state = vm.uiState.value
+        assertNull(state.error, "retry() must clear the error after the source heals")
+        assertFalse(state.isLoading)
+        assertEquals(4242, state.allTimeSteps, "recovered state must reflect the healed source data")
     }
 }

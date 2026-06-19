@@ -9,6 +9,7 @@ data class EconomyUiState(
     val todayPsClaimed: Boolean = false,
     val todayGemsClaimed: Boolean = false,
     val isLoading: Boolean = true,
+    val error: String? = null,
     /** V1X-16: time remaining in current week (formatted, e.g. "3d 14h"). */
     val weeklyTimeRemaining: String = "",
     /** V1X-16: last 4 weeks history, newest first. Empty if no past data. */

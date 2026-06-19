@@ -9,10 +9,15 @@ import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.UltimateWeaponRepository
 import com.whitefang.stepsofbabylon.domain.usecase.UnlockUltimateWeapon
 import com.whitefang.stepsofbabylon.domain.usecase.UpgradeUltimateWeapon
+import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -45,8 +50,10 @@ data class UltimateWeaponUiState(
     val powerStones: Long = 0,
     val equippedCount: Int = 0,
     val isLoading: Boolean = true,
+    val error: String? = null,
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class UltimateWeaponViewModel @Inject constructor(
     private val uwRepository: UltimateWeaponRepository,
@@ -56,8 +63,11 @@ class UltimateWeaponViewModel @Inject constructor(
     private val unlockUW = UnlockUltimateWeapon(uwRepository)
     private val upgradeUW = UpgradeUltimateWeapon(uwRepository, playerRepository)
     private var ownedList: List<OwnedWeapon> = emptyList()
+    // #194: bump to re-subscribe the data flow after a load error (retry).
+    private val _retry = MutableStateFlow(0)
 
-    val uiState: StateFlow<UltimateWeaponUiState> = combine(
+    val uiState: StateFlow<UltimateWeaponUiState> = _retry.flatMapLatest {
+    combine(
         uwRepository.observeUnlockedWeapons(),
         playerRepository.observeWallet(),
     ) { owned, wallet ->
@@ -94,7 +104,14 @@ class UltimateWeaponViewModel @Inject constructor(
             equippedCount = owned.count { it.isEquipped && it.isUnlocked },
             isLoading = false,
         )
+    }
+        // #194: surface a source-flow throw as an error state, not a silent spinner. .catch INSIDE
+        // flatMapLatest so retry() re-subscribes.
+        .catch { emit(UltimateWeaponUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UltimateWeaponUiState())
+
+    /** #194: re-subscribe the data flow after a load error. */
+    fun retry() { _retry.value++ }
 
     fun unlock(type: UltimateWeaponType) {
         viewModelScope.launch { unlockUW(type, uiState.value.powerStones, ownedList) }

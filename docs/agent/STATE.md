@@ -3,18 +3,20 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.9 (versionCode 25) SHIPPED → Play internal** (tag fired). Latest work **MERGED** (PR
-#270, squash `ebf588a`, both CI checks green, branch deleted, `[Unreleased]`): **3 before-public
-reliability defects fixed — #236 atomic premium spend, #195 missions day-rollover, #193 no-sensor signal**
-(one combined PR; TDD'd; lighter inline adversarial review; all 3 issues auto-closed). Supersedes
-**v1.0.8 (vc 24)** · **1093 JVM + 9 instrumented tests**
+**Headline:** **v1.0.9 (versionCode 25) SHIPPED → Play internal** (tag fired). Latest work (branch
+`fix/graceful-degradation-194-250`, `[Unreleased]`, PR up): **2 before-public graceful-degradation
+defects fixed — #194 shared screen error state + #250 offline-purchase reconcile** (TDD'd; lighter inline
+adversarial review caught 2 real defects pre-code; full build green). Prior wave **MERGED** (PR #270,
+`ebf588a`): #236 atomic premium spend, #195 missions day-rollover, #193 no-sensor signal. Supersedes
+**v1.0.8 (vc 24)** · **1098 JVM + 9 instrumented tests**
 green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
-repo); (b) the last `severity:major` soak-hardening item **#194** (error states, UX-1 — shows CLOSED on
-GitHub but with no referencing PR/commit; reconcile before trusting; **#195 + #193 now MERGED via #270**);
-(c) a `v*` release tag to ship the `[Unreleased]` work (#190/#191/#192 + #236/#195/#193) to internal.
+repo); (b) the `severity:major` soak-hardening items are now ALL addressed — **#195 + #193 MERGED via
+#270; #194 (error states, UX-1) fixed on `fix/graceful-degradation-194-250` (PR up)** — #194 had been
+prematurely closed 2026-06-17 with no implementing commit, verified unfixed at HEAD + re-opened 2026-06-19;
+(c) a `v*` release tag to ship the `[Unreleased]` work (#190/#191/#192 + #236/#195/#193 + #194/#250) to internal.
 Latest audit
 (`docs/reviews/2026-06-18-complete-app-review.md`, supersedes 2026-06-17) verdict: **7/10 — continue
 building** (keep shipping internal, NOT public-ready); it filed **38 net-new Med+ issues #224–#261 + Low
@@ -23,7 +25,23 @@ highest-leverage before-public work.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #270, squash `ebf588a`; both CI checks green; #236/#195/#193 auto-closed;
+- **CURRENT — graceful-degradation wave: #194 shared error state + #250 offline-purchase reconcile
+  (branch `fix/graceful-degradation-194-250`, `[Unreleased]`, PR up).** Two confirmed audit defects, one
+  combined PR; **no schema change; 1093 → 1098 JVM** (+5); `testDebugUnitTest lintDebug assembleDebug`
+  BUILD SUCCESSFUL. TDD'd; spec+plan
+  (`docs/superpowers/specs/2026-06-19-graceful-degradation-194-250.md`) put through a lighter
+  single-agent adversarial review that **caught 2 real defects pre-code**: (1) `.catch` must live INSIDE
+  `flatMapLatest` or `retry()` is a no-op (stuck-error, inverse bug); (2) `reconcilePendingPurchases()`
+  → `connect()` has no internal timeout → must wrap in `withTimeoutOrNull`. **#194** (UX-1, re-opened
+  2026-06-19 — was closed 2026-06-17 with no implementing commit; verified unfixed at HEAD): shared
+  `presentation/ui/ErrorState.kt` + `error: String?` on 10 UiStates (Battle excluded) + per-VM
+  `_retry`/`flatMapLatest`/`.catch`/`retry()`; screens early-return `ErrorState` before the loading
+  check. **#250**: shared time-bounded `reconcileBillingSafely()` helper called from
+  `MainActivity.onResume` (foreground) + `StepSyncWorker.doWork` (background safety net). **ADR-0028.**
+  Tests: `StatsViewModelTest` (throw→error, retry→recover) + `ReconcileBillingSafelyTest` (once/swallow/timeout).
+  Remaining HIGHs after this: #233 (config-change battle-state loss [large]); plus #261 (battery
+  whitelist) + the med/low backlog (#262). **#194 was the last Gate-H `severity:major` soak item.**
+- **Previous objective (DONE — MERGED PR #270, squash `ebf588a`; both CI checks green; #236/#195/#193 auto-closed;
   `[Unreleased]`).** Reliability wave: three confirmed 2026-06-18 complete-app-review defects, one combined PR; **no schema change;
   1081 → 1093 JVM** (+12); `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. TDD'd (RED→GREEN
   per fix); spec+plan (`docs/superpowers/specs/2026-06-18-reliability-wave-236-195-193.md`) put through a
@@ -107,10 +125,11 @@ highest-leverage before-public work.
   needs, in any order: **(a)** the **manual Play Console Data-Safety action** for #192 — declare the four
   AdMob-SDK data types + "Contains ads"=Yes + deletion URL per `docs/release/data-safety-form.md` (repo
   can't do this; must precede promotion); **(b)** the `severity:major` soak-hardening items —
-  **#195** Missions day-rollover + **#193** no-sensor signal **now MERGED (PR #270, `ebf588a`)**; only
-  **#194** (error states, UX-1) remains — it shows **CLOSED on GitHub (2026-06-17, COMPLETED) with no
-  referencing PR/commit/comment — status unverified; reconcile before trusting the gate**; **(c)** a
-  `v*` release tag to ship the `[Unreleased]` work (#190/#191/#192 + #236/#195/#193) to the internal track. Then the promote decision is the developer's (plus Gate A audio
+  **#195** Missions day-rollover + **#193** no-sensor signal **MERGED (PR #270, `ebf588a`)**, and
+  **#194** (error states, UX-1) **fixed on `fix/graceful-degradation-194-250` (PR up)** — it had been
+  prematurely CLOSED 2026-06-17 with no implementing commit; verified unfixed at HEAD + re-opened
+  2026-06-19, then actually fixed (ADR-0028). **All 3 soak `severity:major`s now addressed.** **(c)** a
+  `v*` release tag to ship the `[Unreleased]` work (#190/#191/#192 + #236/#195/#193 + #194/#250) to the internal track. Then the promote decision is the developer's (plus Gate A audio
   feel + Gate E balance feel, both judgment-only). Lower-severity audit findings (architecture seam, A11Y
   contrast, no-Compose-UI-tests, wrapper validation, clock-tamper TIME-1, i18n) stay
   before-public/post-launch (review §18 Tiers 2–5), NOT blockers.
@@ -539,9 +558,10 @@ highest-leverage before-public work.
   (`0019217`). **#192 STILL requires a manual Play Console Data-Safety action** (declare the four AdMob-SDK
   data types per `docs/release/data-safety-form.md`) before promotion — a developer step, not code. Of the
   3 `severity:major` soak-hardening items, **#195** (Missions day-rollover — STATE-1) + **#193** (no-sensor
-  silent dead-end — REL-3) are now **MERGED (PR #270, `ebf588a`)**; only **#194** (no error states — UX-1)
-  remains (CLOSED on GitHub but unverified — reconcile). And the merged blockers/fixes
-  ship only on the next `v*` tag (currently `[Unreleased]`). Full report: `docs/reviews/2026-06-17-complete-app-review.md`.
+  silent dead-end — REL-3) are **MERGED (PR #270, `ebf588a`)** and **#194** (no error states — UX-1) is
+  **fixed on `fix/graceful-degradation-194-250` (PR up, ADR-0028)** — it had been prematurely CLOSED
+  2026-06-17 with no commit; re-opened 2026-06-19 after verifying it was unfixed. All 3 now addressed.
+  The merged blockers/fixes ship only on the next `v*` tag (currently `[Unreleased]`). Full report: `docs/reviews/2026-06-17-complete-app-review.md`.
 - **Promotion gate:** the Closed-Test Readiness Gate (`plan-FORWARD.md` A–H) is the call to promote
   internal → closed; Gate H (above) must clear first. Google's ≥12-tester + ≥14-day-soak policy is a
   downstream Phase-2 step that only begins after that promotion.
@@ -573,10 +593,10 @@ Phase 1 (work down the Readiness Gate so the developer can decide to promote —
 1. **Manual Play Console Data-Safety action for #192** (cannot be done from the repo): in Play Console →
    App content → Data safety, declare the four AdMob-SDK data types + "Contains ads" = Yes + deletion URL
    per `docs/release/data-safety-form.md`. Required before promotion. **(Developer action.)**
-2. **Soak-hardening (Gate H `severity:major`):** **#195** Missions day-rollover + **#193** no-sensor
-   signal **DONE (PR #270, `ebf588a`)**; only **#194** error states (UX-1) remains (CLOSED on GitHub but
-   unverified — reconcile, then close or re-do via spec→review-gate→TDD). Not hard promotion gates.
-3. **Cut a `v*` release** to ship the `[Unreleased]` work (#190/#191/#192 + #236/#195/#193) to the internal
+2. **Soak-hardening (Gate H `severity:major`) — ALL ADDRESSED:** **#195** + **#193** **DONE (PR #270,
+   `ebf588a`)**; **#194** error states (UX-1) **fixed on `fix/graceful-degradation-194-250` (PR up, ADR-0028)**
+   — was prematurely CLOSED 2026-06-17 with no commit; re-opened + actually fixed 2026-06-19.
+3. **Cut a `v*` release** to ship the `[Unreleased]` work (#190/#191/#192 + #236/#195/#193 + #194/#250) to the internal
    track (version bump + release notes + tag; the release lane handles signing + upload).
 4. **(DONE — all 3 Gate H blockers MERGED:** #190/#191 PR #204 `d673386`; #192 PR #205 `0019217`.)
 3. **Then the remaining developer-judgment / manual gate items:** **Gate A** in-play audio feel, **Gate E**
@@ -608,6 +628,8 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **GOLDEN damage layer (#119)** — GOLDEN is a re-derived `goldenDamageMult`, not a stat snapshot. Don't restore snapshot-and-overwrite.
 - **Economy spend/claim contract (#122, ADR-0020)** — `spendGems`/`spendPowerStones`/`spendStepsIfSufficient` return Boolean; gate the grant on the result. One-shot claims use guarded `… AND claimed=0` + mark-first.
 - **Premium spend+grant is atomic (#236, ADR-0027)** — card-pack and UW-unlock deduct+grant commit/roll back together via `CardDao.openCardPackAtomic` / `UltimateWeaponDao.unlockWeaponAtomic` (`@Transaction` default methods that call `PlayerProfileDao` as a param — same cross-DAO mechanism as `claimMilestoneAtomic`). The guarded deduct runs FIRST inside the tx; `openCardPackAtomic` returns `null` and `unlockWeaponAtomic` returns `false` on insufficient (no grant written). `unlockWeaponAtomic` re-checks already-unlocked INSIDE the tx before deducting (double-tap can't pay twice). Exposed via repository ports so the use cases stay domain-pure — `OpenCardPack`/`UnlockUltimateWeapon` no longer take `PlayerRepository`. Rarity rolling stays pure/seeded in `OpenCardPack` (the DAO only does the writes). The use cases' pre-checks (`gems < cost` etc.) are cheap fast-paths, NOT the guard. Don't reintroduce a separate spend-then-grant or move the deduct out of the tx. Guarded by `PremiumSpendDaoTest` + atomic-path assertions in `OpenCardPackTest`/`UnlockUltimateWeaponTest`; fakes use a `linkedPlayer` wallet seam.
+- **Screen error-state pattern (#194, ADR-0028)** — the 10 data-backed screens surface a load error via a shared `presentation/ui/ErrorState.kt` (+ `SCREEN_LOAD_ERROR`); each UiState carries `error: String?` and each VM wraps its data flow in `_retry.flatMapLatest { <combine/map>.catch { emit(errorState) } }` + `fun retry() { _retry.value++ }`. **The `.catch` MUST stay INSIDE `flatMapLatest`** — a downstream catch completes the stream so `retry()` becomes a no-op (stuck-error, the inverse bug). Screens early-return `ErrorState(state.error!!, onRetry = viewModel::retry)` before the loading check (`state.error` is a delegated property → `!!`, not smart-cast). Date VMs (Home/Missions/Stats) fold `_retry` via `combine(_date,_retry){d,_->d}`. **Battle is excluded** (owns `battleError`/overlay, #190). Guarded by `StatsViewModelTest` (throw→error, retry→recover); VM-level only (no Compose-UI harness in repo).
+- **Background billing reconcile is time-bounded + best-effort (#250, ADR-0028)** — `MainActivity.onResume` (foreground) and `StepSyncWorker.doWork` (background, 15-min) both call the shared top-level `service.reconcileBillingSafely(billingManager)` = `withTimeoutOrNull(20s)` + catch-all. The timeout is load-bearing: `BillingManagerImpl.connect()` has NO internal timeout (its disconnect callback never resumes), so an offline/stalled device would otherwise hang the worker / leak a coroutine on resume. `reconcilePendingPurchases()` is idempotent + mutex-serialised + connect-guarded + Activity-independent (BillingClient from `@ApplicationContext`). Don't inline the call without the timeout, and don't drop either trigger (Store-open alone misses the 3-day Play auto-refund window). Guarded by `ReconcileBillingSafelyTest`.
 - **`DailyStepManager` Mutex (#120)** — credit read-check-write under a non-reentrant `Mutex`; don't add an un-locked counter mutation.
 - **`GameEngine.getAliveEnemies()` must NOT be cached across a frame (#125)** — `takeDamage` re-fires `onDeath` on a dead enemy; a shared snapshot double-credits kills. Guarded by `R125` GameEngineTest.
 - **HUD enemy count is derived, not tallied (#146)** — `GameEngine.aliveEnemyCount()` counts live `EnemyEntity` under `entitiesLock`; the desync-prone `WaveSpawner.enemiesAlive` tally was removed (SCATTER children bypassed its only `++`; `onDeath` re-fires double-counted). Don't reintroduce a hand-kept counter. `EnemyEntity.takeDamage` is guarded `if (!isAlive) return 0.0` (no corpse re-hit → no double-credit). Guarded by 3 `R146` GameEngineTest entries.

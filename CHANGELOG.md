@@ -4,6 +4,36 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — Graceful degradation: shared error state (#194) · offline-purchase reconcile (#250)
+
+Two confirmed audit defects, one combined PR. **No schema change; 1093 → 1098 JVM tests** (+5).
+TDD'd; spec+plan put through a single-agent adversarial review (ultracode off) that caught two real
+defects before coding — see ADR-0028.
+
+- **#194 — no error state anywhere; a failed data load spun forever** (`ux`, UX-1; re-opened
+  2026-06-19 after a premature 2026-06-17 close with no implementing commit). All 11 data-backed
+  screens did `if (state.isLoading) { LoadingBox(); return }` with no error field and `.catch`
+  nowhere — a throwing source flow (Room/SQLCipher) completed `combine` exceptionally and `stateIn`
+  kept `isLoading = true` → infinite spinner, no message, no retry. Fix: a shared
+  `presentation/ui/ErrorState.kt` (icon + message + Retry button) + `error: String?` on the 10
+  affected UiStates (Battle excluded — it owns `battleError`/overlay from #190) + a `_retry`
+  re-subscribe trigger and `.catch { emit(error state) }` on each VM. **The `.catch` lives INSIDE
+  `flatMapLatest`** (a downstream catch would complete the stream and make `retry()` a no-op — the
+  inverse bug; caught in review). Screens early-return `ErrorState` before the loading check. Guarded
+  by `StatsViewModelTest` (throw → error; retry → recover). VM-level only — no Compose-UI test harness
+  exists in the repo (documented boundary).
+- **#250 — pending/offline-completed purchases only reconciled on Store open** (`monetization`).
+  Play auto-refunds purchases not acknowledged within 3 days; the sole `reconcilePendingPurchases()`
+  trigger was `StoreViewModel.init`, so an entitlement bought on a flaky connection (ack RPC failed)
+  was refunded unless the user re-opened the Store in time. Added two triggers via a shared,
+  time-bounded `reconcileBillingSafely()` helper (`withTimeoutOrNull(20s)` + catch-all —
+  `BillingManagerImpl.connect()` has no internal timeout, so a stalled/offline device could otherwise
+  hang the worker; caught in review): **`MainActivity.onResume`** (foreground, every resume) and
+  **`StepSyncWorker.doWork`** (background safety net, every 15 min, for users who never re-foreground).
+  The reconcile is already idempotent + mutex-serialised + connect-guarded + Activity-independent
+  (the `BillingClient` is built from `@ApplicationContext`). Guarded by `ReconcileBillingSafelyTest`
+  (called once; a thrown reconcile is swallowed; a hanging reconcile is time-bounded). ADR-0028.
+
 ### Fix — Reliability wave: atomic premium spend (#236) · missions day-rollover (#195) · no-sensor signal (#193)
 
 Three confirmed 2026-06-18 complete-app-review defects, one combined PR. **No schema change; 1081 →

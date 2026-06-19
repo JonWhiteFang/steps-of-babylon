@@ -7,11 +7,15 @@ import com.whitefang.stepsofbabylon.data.local.DailyStepDao
 import com.whitefang.stepsofbabylon.data.local.WeeklyChallengeDao
 import com.whitefang.stepsofbabylon.data.local.WeeklyChallengeEntity
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
+import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
@@ -20,6 +24,7 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CurrencyDashboardViewModel @Inject constructor(
     private val playerRepository: PlayerRepository,
@@ -38,10 +43,13 @@ class CurrencyDashboardViewModel @Inject constructor(
     )
 
     private val snapshot = MutableStateFlow(SnapshotData())
+    // #194: bump to re-subscribe the data flow after a load error (retry).
+    private val _retry = MutableStateFlow(0)
 
     init { viewModelScope.launch { refresh() } }
 
-    val uiState: StateFlow<EconomyUiState> = combine(
+    val uiState: StateFlow<EconomyUiState> = _retry.flatMapLatest {
+    combine(
         playerRepository.observeProfile(),
         snapshot,
     ) { profile, snap ->
@@ -57,7 +65,14 @@ class CurrencyDashboardViewModel @Inject constructor(
             weeklyTimeRemaining = snap.weeklyTimeRemaining,
             weeklyHistory = snap.weeklyHistory,
         )
+    }
+        // #194: surface a source-flow throw as an error state, not a silent spinner. .catch INSIDE
+        // flatMapLatest so retry() re-subscribes.
+        .catch { emit(EconomyUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), EconomyUiState())
+
+    /** #194: re-subscribe the data flow after a load error. */
+    fun retry() { _retry.value++ }
 
     fun refresh() {
         viewModelScope.launch {

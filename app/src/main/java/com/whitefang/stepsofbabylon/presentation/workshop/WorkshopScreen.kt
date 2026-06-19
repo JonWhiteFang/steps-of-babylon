@@ -31,11 +31,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.presentation.ui.EmptyState
+import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 
 @Composable
 fun WorkshopScreen(onNavigateToWeapons: () -> Unit = {}, onNavigateToCards: () -> Unit = {}, viewModel: WorkshopViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    if (state.error != null) { ErrorState(state.error!!, onRetry = viewModel::retry); return }
     if (state.isLoading) { LoadingBox(); return }
     val categories = UpgradeCategory.entries
     val selectedIndex = categories.indexOf(state.selectedCategory)

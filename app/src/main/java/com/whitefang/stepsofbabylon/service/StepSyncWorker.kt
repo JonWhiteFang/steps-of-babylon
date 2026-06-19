@@ -13,9 +13,11 @@ import com.whitefang.stepsofbabylon.data.healthconnect.StepCrossValidator
 import com.whitefang.stepsofbabylon.data.healthconnect.StepGapFiller
 import com.whitefang.stepsofbabylon.data.sensor.DailyStepManager
 import com.whitefang.stepsofbabylon.data.sensor.StepIngestionPreferences
+import com.whitefang.stepsofbabylon.domain.repository.BillingManager
 import com.whitefang.stepsofbabylon.domain.repository.StepRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.LocalDate
 
 @HiltWorker
@@ -32,6 +34,7 @@ class StepSyncWorker @AssistedInject constructor(
     private val smartReminderManager: SmartReminderManager,
     private val stepIngestionPrefs: StepIngestionPreferences,
     private val stepRepository: StepRepository,
+    private val billingManager: BillingManager,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
@@ -60,6 +63,11 @@ class StepSyncWorker @AssistedInject constructor(
         try { smartReminderManager.checkAndNotify() } catch (e: Exception) {
             android.util.Log.w("StepSyncWorker", "Smart reminder failed", e)
         }
+
+        // 3. #250: background safety net — sweep pending/unresolved Play Billing purchases so an
+        // entitlement bought on a flaky connection (ack RPC failed) is reconciled before Play's
+        // 3-day auto-refund window, even if the user never re-opens the Store.
+        reconcileBillingSafely(billingManager)
 
         return Result.success()
     }
@@ -152,5 +160,28 @@ class StepSyncWorker @AssistedInject constructor(
         latch.await(5, java.util.concurrent.TimeUnit.SECONDS)
         sensorManager.unregisterListener(listener)
         return value
+    }
+}
+
+/** Timeout for a background billing reconcile sweep (#250). */
+private const val BILLING_RECONCILE_TIMEOUT_MS = 20_000L
+
+/**
+ * #250: best-effort, time-bounded background reconcile of pending/unresolved Play Billing purchases.
+ * Extracted as a top-level suspend fun so it is JVM-unit-testable with a fake [BillingManager]
+ * (the full [StepSyncWorker] has 11 injected deps + needs a Robolectric `Context`, so the worker
+ * itself is not cheaply unit-testable). [reconcilePendingPurchases] is already idempotent,
+ * mutex-serialised and connect-guarded, but `connect()` has no internal timeout (its
+ * disconnect callback never resumes), so a stalled Play Services / offline device could otherwise
+ * hang the worker until WorkManager's execution cap — hence the [withTimeoutOrNull] bound and the
+ * catch-all (a background safety net must never crash the worker).
+ */
+internal suspend fun reconcileBillingSafely(billingManager: BillingManager) {
+    try {
+        withTimeoutOrNull(BILLING_RECONCILE_TIMEOUT_MS) {
+            billingManager.reconcilePendingPurchases()
+        }
+    } catch (e: Exception) {
+        android.util.Log.w("StepSyncWorker", "Billing reconcile failed", e)
     }
 }

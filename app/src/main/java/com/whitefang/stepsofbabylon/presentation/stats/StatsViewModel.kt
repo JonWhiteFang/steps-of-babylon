@@ -7,9 +7,11 @@ import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.StepRepository
 import com.whitefang.stepsofbabylon.domain.repository.WorkshopRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
@@ -31,9 +33,12 @@ class StatsViewModel @Inject constructor(
 
     private val _selectedPeriod = MutableStateFlow(StatsPeriod.WEEK)
     private val _today = MutableStateFlow(LocalDate.now())
+    // #194: bump to re-subscribe the data flow after a load error (retry).
+    private val _retry = MutableStateFlow(0)
     private val fmt = DateTimeFormatter.ISO_LOCAL_DATE
 
-    val uiState: StateFlow<StatsUiState> = _today.flatMapLatest { today ->
+    val uiState: StateFlow<StatsUiState> = combine(_today, _retry) { today, _ -> today }
+        .flatMapLatest { today ->
         val historyFlow = stepRepository.observeHistory(
             today.minusDays(89).format(fmt), today.format(fmt)
         )
@@ -70,9 +75,15 @@ class StatsViewModel @Inject constructor(
             isLoading = false,
         )
     }
+        // #194: surface a source-flow throw as an error state, not a silent spinner. .catch INSIDE
+        // flatMapLatest so retry() re-subscribes.
+        .catch { emit(StatsUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), StatsUiState())
 
     fun selectPeriod(period: StatsPeriod) { _selectedPeriod.value = period }
+
+    /** #194: re-subscribe the data flow after a load error. */
+    fun retry() { _retry.value++ }
 
     fun refreshDate() {
         val now = LocalDate.now()

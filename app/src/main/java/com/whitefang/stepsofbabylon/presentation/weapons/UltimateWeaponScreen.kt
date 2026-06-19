@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.domain.model.UWPath
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.presentation.ui.EquippedChip
+import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.RarityBadge
 import com.whitefang.stepsofbabylon.presentation.ui.rarityBorder
@@ -41,6 +42,7 @@ import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusWarning
 @Composable
 fun UltimateWeaponScreen(viewModel: UltimateWeaponViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    if (state.error != null) { ErrorState(state.error!!, onRetry = viewModel::retry); return }
     if (state.isLoading) { LoadingBox(); return }
 
     Column(Modifier.fillMaxSize()) {

@@ -14,12 +14,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import java.text.NumberFormat
 
 @Composable
 fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    if (state.error != null) { ErrorState(state.error!!, onRetry = viewModel::retry); return }
     if (state.isLoading) { LoadingBox(); return }
     val fmt = NumberFormat.getNumberInstance()
     val lifecycleOwner = LocalLifecycleOwner.current

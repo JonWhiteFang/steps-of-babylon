@@ -25,9 +25,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -61,6 +63,8 @@ class MissionsViewModel @Inject constructor(
     // `var` captured once inside combine() never re-subscribed getByDate(), so the screen showed
     // yesterday's missions across midnight. Mirrors HomeViewModel/StatsViewModel's _currentDate.
     private val _today = MutableStateFlow(timeProvider.today().toString())
+    // #194: bump to re-subscribe the data flow after a load error (retry).
+    private val _retry = MutableStateFlow(0)
     private val tick = MutableStateFlow(System.currentTimeMillis())
     private val userMessage = MutableStateFlow<String?>(null)
 
@@ -84,7 +88,8 @@ class MissionsViewModel @Inject constructor(
         }
     }
 
-    val uiState: StateFlow<MissionsUiState> = _today.flatMapLatest { today ->
+    val uiState: StateFlow<MissionsUiState> = combine(_today, _retry) { today, _ -> today }
+        .flatMapLatest { today ->
         combine(
             dailyMissionDao.getByDate(today),
             milestoneDao.getAll(),
@@ -110,7 +115,13 @@ class MissionsViewModel @Inject constructor(
                 userMessage = message,
             )
         }
+        // #194: surface a source-flow throw as an error state, not a silent spinner. .catch INSIDE
+        // flatMapLatest so retry() re-subscribes.
+        .catch { emit(MissionsUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MissionsUiState())
+
+    /** #194: re-subscribe the data flow after a load error. */
+    fun retry() { _retry.value++ }
 
     /**
      * #195: re-reads the current day; on a rollover, flips [_today] (so the missions query

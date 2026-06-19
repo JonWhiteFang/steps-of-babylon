@@ -40,6 +40,7 @@ import com.whitefang.stepsofbabylon.domain.model.BillingProduct
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyCost
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
+import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
@@ -48,6 +49,7 @@ import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 @Composable
 fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsState()
+    if (state.error != null) { ErrorState(state.error!!, onRetry = viewModel::retry); return }
     if (state.isLoading) { LoadingBox(); return }
     val snackbarHostState = remember { SnackbarHostState() }
 

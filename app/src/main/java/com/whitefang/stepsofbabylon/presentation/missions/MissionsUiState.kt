@@ -25,6 +25,7 @@ data class MissionsUiState(
     val milestones: List<MilestoneDisplayInfo> = emptyList(),
     val timeUntilMidnightMs: Long = 0,
     val isLoading: Boolean = true,
+    val error: String? = null,
     /**
      * Transient user-visible feedback (snackbar), cleared by the screen after display
      * via [MissionsViewModel.clearMessage]. Set by the VM when a milestone claim
