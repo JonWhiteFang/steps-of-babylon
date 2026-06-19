@@ -93,34 +93,24 @@ class StoreViewModel @Inject constructor(
     /** #194: re-subscribe the data flow after a load error. */
     fun retry() { _retry.value++ }
 
-    fun purchaseGemPack(product: BillingProduct) {
+    fun purchaseGemPack(product: BillingProduct) = runPurchase(product)
+
+    fun purchaseAdRemoval() = runPurchase(BillingProduct.AD_REMOVAL)
+
+    fun purchaseSeasonPass() = runPurchase(BillingProduct.SEASON_PASS)
+
+    /**
+     * Shared purchase driver: guards against concurrent taps, launches the billing flow, and
+     * surfaces a [PurchaseResult.Error] message (network / pending / cancelled) via [_userMessage]
+     * so the Store Snackbar can show it (#249). [purchaseCosmetic] is intentionally NOT routed
+     * through here — it is a Gem spend, not a Play-Billing purchase.
+     */
+    private fun runPurchase(product: BillingProduct) {
         if (_purchasing.value) return
         viewModelScope.launch {
             _purchasing.value = true
             try {
                 val result = billingManager.purchase(product)
-                if (result is PurchaseResult.Error) _userMessage.value = result.message
-            } finally { _purchasing.value = false }
-        }
-    }
-
-    fun purchaseAdRemoval() {
-        if (_purchasing.value) return
-        viewModelScope.launch {
-            _purchasing.value = true
-            try {
-                val result = billingManager.purchase(BillingProduct.AD_REMOVAL)
-                if (result is PurchaseResult.Error) _userMessage.value = result.message
-            } finally { _purchasing.value = false }
-        }
-    }
-
-    fun purchaseSeasonPass() {
-        if (_purchasing.value) return
-        viewModelScope.launch {
-            _purchasing.value = true
-            try {
-                val result = billingManager.purchase(BillingProduct.SEASON_PASS)
                 if (result is PurchaseResult.Error) _userMessage.value = result.message
             } finally { _purchasing.value = false }
         }
