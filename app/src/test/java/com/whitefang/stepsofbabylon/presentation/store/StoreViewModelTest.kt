@@ -1,8 +1,10 @@
 package com.whitefang.stepsofbabylon.presentation.store
 
+import com.whitefang.stepsofbabylon.domain.model.BillingProduct
 import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
 import com.whitefang.stepsofbabylon.domain.model.CosmeticItem
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
+import com.whitefang.stepsofbabylon.domain.model.PurchaseResult
 import com.whitefang.stepsofbabylon.fakes.FakeBillingManager
 import com.whitefang.stepsofbabylon.fakes.FakeCosmeticRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
@@ -200,6 +202,51 @@ class StoreViewModelTest {
             "missing live price must NOT have a map entry (UI uses ?: fallback)",
         )
         assertNull(displays[com.whitefang.stepsofbabylon.domain.model.BillingProduct.GEM_PACK_LARGE])
+    }
+
+    // --- #249: surface failed/pending Play-Billing purchase errors via userMessage ---
+
+    @Test
+    fun `purchase error surfaces a user message`() = runTest(dispatcher) {
+        billingManager.nextResult = PurchaseResult.Error("Network error")
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.purchaseGemPack(BillingProduct.GEM_PACK_SMALL)
+        advanceUntilIdle()
+
+        assertEquals("Network error", vm.uiState.value.userMessage)
+    }
+
+    @Test
+    fun `pending purchase surfaces its message`() = runTest(dispatcher) {
+        billingManager.nextResult =
+            PurchaseResult.Error("Purchase pending — complete payment to receive your items")
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.purchaseSeasonPass()
+        advanceUntilIdle()
+
+        assertEquals(
+            "Purchase pending — complete payment to receive your items",
+            vm.uiState.value.userMessage,
+        )
+    }
+
+    @Test
+    fun `successful purchase shows no message`() = runTest(dispatcher) {
+        billingManager.nextResult = PurchaseResult.Success
+        val vm = createVm()
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        vm.purchaseAdRemoval()
+        advanceUntilIdle()
+
+        assertNull(vm.uiState.value.userMessage)
     }
 }
 

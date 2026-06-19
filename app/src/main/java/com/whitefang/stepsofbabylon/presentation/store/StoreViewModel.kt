@@ -3,6 +3,7 @@ package com.whitefang.stepsofbabylon.presentation.store
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.domain.model.BillingProduct
+import com.whitefang.stepsofbabylon.domain.model.PurchaseResult
 import com.whitefang.stepsofbabylon.domain.repository.BillingManager
 import com.whitefang.stepsofbabylon.domain.repository.CosmeticRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
@@ -96,7 +97,10 @@ class StoreViewModel @Inject constructor(
         if (_purchasing.value) return
         viewModelScope.launch {
             _purchasing.value = true
-            try { billingManager.purchase(product) } finally { _purchasing.value = false }
+            try {
+                val result = billingManager.purchase(product)
+                if (result is PurchaseResult.Error) _userMessage.value = result.message
+            } finally { _purchasing.value = false }
         }
     }
 
@@ -104,7 +108,10 @@ class StoreViewModel @Inject constructor(
         if (_purchasing.value) return
         viewModelScope.launch {
             _purchasing.value = true
-            try { billingManager.purchase(BillingProduct.AD_REMOVAL) } finally { _purchasing.value = false }
+            try {
+                val result = billingManager.purchase(BillingProduct.AD_REMOVAL)
+                if (result is PurchaseResult.Error) _userMessage.value = result.message
+            } finally { _purchasing.value = false }
         }
     }
 
@@ -112,7 +119,10 @@ class StoreViewModel @Inject constructor(
         if (_purchasing.value) return
         viewModelScope.launch {
             _purchasing.value = true
-            try { billingManager.purchase(BillingProduct.SEASON_PASS) } finally { _purchasing.value = false }
+            try {
+                val result = billingManager.purchase(BillingProduct.SEASON_PASS)
+                if (result is PurchaseResult.Error) _userMessage.value = result.message
+            } finally { _purchasing.value = false }
         }
     }
 
