@@ -332,6 +332,7 @@ class MainActivity : ComponentActivity() {
                                         )
                                     )
                                 },
+                                onRequestBatteryExemption = { requestBatteryExemption(context) },
                                 onFinished = {
                                     onboardingComplete = true
                                     // previousBackStackEntry is null ONLY when Onboarding was the
@@ -385,6 +386,7 @@ class MainActivity : ComponentActivity() {
                         composable(Screen.Settings.route) {
                             SettingsScreen(
                                 onReplayTutorial = { navController.navigate(Screen.Onboarding.route) },
+                                onOptimizeBattery = { requestBatteryExemption(context) },
                             )
                         }
                         composable(Screen.Store.route) {
@@ -453,6 +455,26 @@ class MainActivity : ComponentActivity() {
         musicManager.release()
         activityScope.cancel()
         super.onDestroy()
+    }
+}
+
+/**
+ * #261: fire the system battery-optimization-exemption request for this app. Mirrors the
+ * `ACTION_APPLICATION_DETAILS_SETTINGS` pattern used for permission recovery. The persistent
+ * `foregroundServiceType="health"` step service is the eligible use case for the direct-ask
+ * (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` declared in the manifest). Falls back to the general
+ * battery-optimization settings list if the direct-ask intent can't be resolved on this device.
+ */
+private fun requestBatteryExemption(context: android.content.Context) {
+    val direct = Intent(
+        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+        Uri.parse("package:${context.packageName}"),
+    )
+    val settingsList = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+    when {
+        direct.resolveActivity(context.packageManager) != null -> context.startActivity(direct)
+        settingsList.resolveActivity(context.packageManager) != null -> context.startActivity(settingsList)
+        else -> { /* no battery-optimization UI on this device — nothing to do */ }
     }
 }
 

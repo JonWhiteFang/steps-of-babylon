@@ -37,6 +37,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import android.content.pm.ActivityInfo
+import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -66,6 +68,19 @@ fun BattleScreen(
     val context = LocalContext.current
     val surfaceView = remember { GameSurfaceView(context) }
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    // #233: lock the battle screen to portrait so a mid-round rotation can't recreate the
+    // Activity/Composable → discard the GameSurfaceView/engine while the surviving BattleViewModel
+    // still believes a round is in progress (the engine/VM desync that loses the round + can
+    // mis-credit end-of-round persistence). Battle is portrait-designed (#171) and the app has no
+    // landscape resources, so a one-time recreate at ENTER (if the device was in landscape) is
+    // harmless — the round only starts after configure/startPollingEngine. Restored on exit so the
+    // rest of the app keeps following the sensor. Touches no VM/engine/surface-survival logic.
+    val activity = LocalActivity.current
+    DisposableEffect(Unit) {
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        onDispose { activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
+    }
     val roundActive = state.roundEndState == null
     // #190 REL-2: when the loop has crashed, suppress ALL interactive round chrome — the scrim
     // overlay doesn't block touches, so leaving the rail/quit/UW bar composed would let a tester

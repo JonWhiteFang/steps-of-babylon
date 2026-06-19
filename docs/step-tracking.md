@@ -43,7 +43,12 @@ The foreground service and WorkManager worker share step ingestion responsibilit
 
 ### Battery Optimization
 
-- Request battery optimization whitelist on first launch
+- Request battery optimization whitelist on first launch — **implemented #261/ADR-0029**: a contextual,
+  dismissible primer in onboarding (after the activity-recognition grant, gated on
+  `BatteryOptimizationStatus.isIgnoring()` so it's skipped when already exempt) fires
+  `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`; a durable Settings "Background activity" row re-offers it
+  (onboarding is one-shot). Manifest declares `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (Play-eligible via
+  the `foregroundServiceType="health"` step service). Never blocks the flow.
 - Use `SensorManager.SENSOR_DELAY_NORMAL` (lowest power)
 - Minimize wake locks — rely on hardware step counter batching
 

@@ -72,11 +72,17 @@ fun OnboardingScreen(
     reducedMotion: Boolean,
     onEnableStepCounting: () -> Unit,
     onOpenAppSettings: () -> Unit,
+    onRequestBatteryExemption: () -> Unit,
     onFinished: () -> Unit,
     viewModel: OnboardingViewModel = hiltViewModel(),
 ) {
     val slides = viewModel.slides
     val stepSensorAvailable = viewModel.stepSensorAvailable
+    // #261: offer the battery-exemption prompt after the step-permission grant. `batteryPrimerHandled`
+    // closes the primer once the user responds — it (not the construction-time `shouldOfferBatteryExemption`,
+    // which is stale after the grant) gates re-display, so it MUST be set on BOTH buttons.
+    val showBatteryPrimer = viewModel.shouldOfferBatteryExemption
+    var batteryPrimerHandled by remember { mutableStateOf(false) }
     val pagerState = rememberPagerState(pageCount = { slides.size })
     val scope = rememberCoroutineScope()
     val lastIndex = slides.lastIndex
@@ -252,11 +258,43 @@ fun OnboardingScreen(
                                     color = MaterialTheme.colorScheme.primary,
                                 )
                             }
-                            Button(
-                                onClick = { finish() },
-                                modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
-                            ) {
-                                Text("Start playing")
+                            if (showBatteryPrimer && !batteryPrimerHandled) {
+                                // #261: offer the battery-optimization exemption after the grant. Never
+                                // blocks — both buttons set batteryPrimerHandled so the primer closes and
+                                // "Start playing" shows next (the construction-time showBatteryPrimer is
+                                // stale after the grant, so the handled flag is what gates re-display).
+                                Text(
+                                    "Some phones pause background apps to save battery, which stops " +
+                                        "step counting. Allow Steps of Babylon to run in the background " +
+                                        "so your walking always counts.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                    textAlign = TextAlign.Center,
+                                )
+                                Button(
+                                    onClick = {
+                                        onRequestBatteryExemption()
+                                        batteryPrimerHandled = true
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text("Allow background activity")
+                                }
+                                Spacer(Modifier.height(8.dp))
+                                TextButton(
+                                    onClick = { batteryPrimerHandled = true },
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    Text("Maybe later")
+                                }
+                            } else {
+                                Button(
+                                    onClick = { finish() },
+                                    modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
+                                ) {
+                                    Text("Start playing")
+                                }
                             }
                         }
                         !permissionAsked -> {
