@@ -28,9 +28,11 @@
 - **Doc-sync:** CHANGELOG `[Unreleased]` (new section + #256-deferral rationale); `tech.md` (coroutines runtime
   pin, ci/release wrapper-validation, drift-guard new-file coverage, dependabot grouping); `plan-32-ci.md` Task-4
   (post-authoring notes for #212/#254/#255); STATE + this entry.
-- **Remaining:** commit + open PR. Rest of the audit backlog (perf #242/#243, policy #239/#240/#241, architecture
-  #227–#235, test-integrity #228/#252, + low trackers #262/#128) untouched — none internal-track blockers; #256
-  deferred.
+- **Merged:** PR #285 (squash `67cf74c`); both CI checks green (build-and-test 7m20s + connected 7m8s) — this
+  run was the first to exercise the new wrapper-validation step + strengthened drift gate; #257/#254/#212/#255
+  auto-closed; branch deleted.
+- **Remaining:** rest of the audit backlog (perf #242/#243, policy #239/#240/#241, architecture #227–#235,
+  test-integrity #228/#252, + low trackers #262/#128) untouched — none internal-track blockers; #256 deferred.
 
 ## 2026-06-19 — Correctness/UX wave: #225 / #235 / #224 / #222 (`[Unreleased]`)
 
