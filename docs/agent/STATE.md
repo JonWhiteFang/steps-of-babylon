@@ -3,11 +3,11 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.9 (versionCode 25) SHIPPED → Play internal** (tag fired). Latest work (branch
-`fix/background-reliability-261-233`, `[Unreleased]`, PR up): **the last 2 net-new HIGHs — #261
-battery-optimization whitelist primer + #233 battle portrait-lock** (TDD where seam'd; inline review
-caught a re-show bug pre-code). **ALL 4 net-new HIGHs (#233/#236/#250/#261) now done.** Prior waves
-MERGED: #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
+**Headline:** **v1.0.9 (versionCode 25) SHIPPED → Play internal** (tag fired). Latest work **MERGED**
+(PR #274, squash `8b50b13`, both CI checks green, branch deleted, #261/#233 auto-closed, `[Unreleased]`):
+**the last 2 net-new HIGHs — #261 battery-optimization whitelist primer + #233 battle portrait-lock**
+(inline review caught a re-show bug pre-code). **ALL 4 net-new HIGHs (#233/#236/#250/#261) now DONE.**
+Prior waves MERGED: #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
 Supersedes **v1.0.8 (vc 24)** · **1100 JVM + 9 instrumented tests**
 green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
@@ -22,15 +22,15 @@ Latest audit
 building** (keep shipping internal, NOT public-ready); it filed **38 net-new Med+ issues #224–#261 + Low
 tracker #262** — none are internal-track blockers; its 4 net-new HIGHs (#233/#236/#250/#261) were the
 highest-leverage before-public work and are **now ALL fixed** (#236 PR #270; #250 PR #272; #261 + #233
-PR up on `fix/background-reliability-261-233`). The larger **#233 clean Simulation-hoist** (ADR-0012) +
+PR #274, `8b50b13`). The larger **#233 clean Simulation-hoist** (ADR-0012) +
 the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — background-reliability wave: #261 battery-optimization whitelist primer + #233 battle
-  portrait-lock (branch `fix/background-reliability-261-233`, `[Unreleased]`, PR up).** The last 2
-  net-new HIGHs; **no schema change; 1098 → 1100 JVM** (+2); `testDebugUnitTest lintDebug assembleDebug`
-  BUILD SUCCESSFUL. TDD where there's a seam; spec+plan
+- **CURRENT (DONE — MERGED PR #274, squash `8b50b13`; both CI checks green; #261/#233 auto-closed;
+  `[Unreleased]`).** Background-reliability wave: #261 battery-optimization whitelist primer + #233
+  battle portrait-lock. The last 2 net-new HIGHs; **no schema change; 1098 → 1100 JVM** (+2);
+  `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. TDD where there's a seam; spec+plan
   (`docs/superpowers/specs/2026-06-19-background-reliability-261-233.md`) put through a lighter
   single-agent adversarial review that **caught a real re-show bug pre-code** (the construction-time
   `shouldOfferBatteryExemption` is stale after the grant, so `batteryPrimerHandled` must be set on BOTH
