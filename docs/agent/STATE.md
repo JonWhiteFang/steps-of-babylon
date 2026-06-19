@@ -32,9 +32,9 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — branch `fix/correctness-ux-wave-224-225-235-222`, ready to commit/PR; `[Unreleased]`).**
+- **CURRENT (DONE — MERGED PR #283, squash `0d58aa1`; both CI checks green; #225/#235/#224/#222 auto-closed; `[Unreleased]`).**
   Quick **correctness/UX wave** off the 2026-06-18 complete-app-review backlog: four self-contained,
-  low-risk defects, one combined branch. **Presentation + test-only — no schema/economy/engine change;
+  low-risk defects, one combined PR. **Presentation + test-only — no schema/economy/engine change;
   1118 → 1126 JVM** (+8); `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. TDD per fix
   (RED guard/test → fix → GREEN). Ultracode OFF → TDD + single-agent self-review (flagged, not silently
   skipped). **#225** six `enum.name.replace('_',' ')` UI sites → shared `toDisplayName()` + new
@@ -42,7 +42,7 @@ the med/low backlog (#262) remain.
   (Battle stays plain, documented + allowlisted in new `FlowCollectionLifecycleTest`). **#224** pure
   `HomeUiState.showFirstWalkPrompt` + Home `EmptyState` first-walk prompt (`HomeFirstWalkPromptTest`).
   **#222** `DataTransformMigrationsTest` characterizes the 9→10 UW-split + 10→11 card-dedup migrations.
-  No ADR. Next: commit + PR; then back to the audit backlog (#262/#128 + perf/policy/CI/architecture clusters).
+  No ADR. Next: back to the audit backlog (#262/#128 + perf/policy/CI/architecture clusters).
 - **Previous objective (DONE — MERGED PR #280, squash `1cc3afe`; both CI checks green; #251/#249 auto-closed; `[Unreleased]`).**
   Before-public **reliability wave**: two confirmed 2026-06-18 complete-app-review `severity:major` defects,
   one combined branch. **No schema change; no economy/engine-formula change** beyond the offline gap-fill

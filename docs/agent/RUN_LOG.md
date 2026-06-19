@@ -28,8 +28,10 @@
 - **Verify:** `:app:testDebugUnitTest :app:lintDebug :app:assembleDebug` BUILD SUCCESSFUL; **1118 → 1126
   JVM** (+8: NoRawEnumNameInUi 1, FlowCollectionLifecycle 1, HomeFirstWalkPrompt 4, DataTransformMigrations 2).
   No ADR (presentation polish + characterization tests on established patterns).
-- **Remaining:** commit + open PR. Rest of the audit backlog (#224–#261 perf/policy/CI/architecture clusters
-  + low trackers #262/#128) untouched — none internal-track blockers.
+- **Merged:** PR #283 (squash `0d58aa1`); both CI checks green (build-and-test 5m10s + connected
+  instrumented 5m19s); #225/#235/#224/#222 auto-closed; branch deleted. README test count 1118→1126.
+- **Remaining:** rest of the audit backlog (#224–#261 perf/policy/CI/architecture clusters + low trackers
+  #262/#128) untouched — none internal-track blockers.
 
 ## 2026-06-19 — Full ultracode doc-drift sweep (docs-only, `[Unreleased]`)
 
