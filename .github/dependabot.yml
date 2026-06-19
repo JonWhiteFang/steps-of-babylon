@@ -1,4 +1,10 @@
 # Plan 32 / ADR-0018 — keeps libs.versions.toml and the SHA-pinned action versions fresh.
+#
+# #255: bumps are GROUPED so interacting versions (AGP/Kotlin/KSP/Compose are bleeding-edge here)
+# land in ONE PR that CI verifies together, instead of N individually-green PRs that can break when
+# merged as a set (the combined-verification regression the maintainer already hit by hand). The
+# gradle wrapper is its OWN group given its blast radius (it changes the build tool itself, not a
+# library), so a wrapper bump is reviewed in isolation.
 version: 2
 updates:
   - package-ecosystem: gradle
@@ -6,8 +12,24 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      gradle-wrapper:
+        patterns:
+          - "gradle"
+          - "org.gradle*"
+      all-gradle:
+        # Everything else in the gradle ecosystem (catalog libs) in one combined, CI-verified PR.
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "gradle"
+          - "org.gradle*"
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      all-actions:
+        patterns:
+          - "*"

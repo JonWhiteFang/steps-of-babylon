@@ -4,6 +4,33 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — CI / supply-chain wave: coroutines pin (#257) · schema-drift gate (#254) · wrapper validation (#212) · Dependabot grouping (#255)
+
+Four confirmed before-public CI / supply-chain hardening findings from the complete-app reviews, one
+combined PR. **Build-infra + config only — no app source / schema / test-count change** (the coroutines
+runtime moves 1.9.0 → 1.10.1, matching the already-shipped test version). `#256` (Gradle
+dependency-verification metadata) was **deliberately deferred** — strict checksum verification would
+fail the gate on every Dependabot bump until the metadata is regenerated, and this repo intentionally
+tracks bleeding-edge deps on a weekly cadence; revisit if the dep cadence settles.
+
+- **#257 — kotlinx-coroutines runtime undeclared/unpinned.** The runtime resolved transitively to
+  **1.9.0** (via Room-ktx/Lifecycle/Hilt) while tests ran the pinned **1.10.1** — a real runtime/test
+  skew, and invisible to the version catalog. Added a shared `coroutines` ref + explicit
+  `kotlinx-coroutines-android` catalog entry & direct `implementation`, aligned with
+  `kotlinx-coroutines-test`. Verified the release runtime classpath now resolves 1.10.1 everywhere.
+- **#254 — schema-drift gate missed new untracked files.** `git diff --exit-code app/schemas` caught
+  *modifications* but a regenerated-but-unstaged `13.json` (the most likely real drift) passed green.
+  The gate now `git add -N app/schemas` + `git diff` (catches new + modified) + a `git status
+  --porcelain` belt. Locally simulated: a new untracked schema is now caught.
+- **#212 — Gradle wrapper integrity unvalidated in the signing lane.** Added `distributionSha256Sum`
+  (official `gradle-9.5.1-bin.zip.sha256`) to `gradle-wrapper.properties` + a
+  `gradle/actions/wrapper-validation` step (SHA-pinned) as the first post-checkout step in **both**
+  `ci.yml` and `release.yml` (the production-AAB lane is the highest-value target).
+- **#255 — Dependabot opened ungrouped per-dependency PRs.** Added `groups:` — `all-gradle` (catalog
+  libs) + a separate `gradle-wrapper` group (isolated blast radius) + `all-actions` — so interacting
+  bleeding-edge bumps land in one CI-verified PR instead of N individually-green ones that can break
+  when merged together.
+
 ### Fix — Correctness/UX wave: enum-name leaks (#225) · flow-collection lifecycle (#235) · Home zero-state (#224) · migration tests (#222)
 
 Four self-contained before-public defects from the 2026-06-18 complete-app review, one combined PR.

@@ -1,3 +1,37 @@
+## 2026-06-19 — CI / supply-chain wave: #257 / #254 / #212 / #255 (`[Unreleased]`)
+
+- **Goal:** developer asked for "more issues" → chose the *CI / supply-chain* cluster from the complete-app-review
+  backlog. Four confirmed findings, one combined branch (`fix/ci-supply-chain-257-254-212-255`). Build-infra +
+  config only — no app source / schema / test-count change.
+- **Method:** ground-truthed each against HEAD before touching anything. Key confirmations: coroutines runtime
+  resolves **transitively to 1.9.0** on `releaseRuntimeClasspath` while the test dep is pinned **1.10.1** (a real
+  skew, #257); the schema-drift gate runs `git diff --exit-code app/schemas` which only catches *modified* files
+  (#254); no `distributionSha256Sum` + no `wrapper-validation` anywhere (#212); no `groups:` in dependabot.yml
+  (#255). **#256 (dependency-verification metadata) deferred** after surfacing the tradeoff to the developer —
+  strict verification breaks the gate on every weekly Dependabot bump on a bleeding-edge dep set.
+- **#257:** new shared `coroutines = "1.10.1"` catalog ref; `coroutinesTest` ref renamed → both
+  `kotlinx-coroutines-android` (new) and `-test` point at it; added `implementation(libs.coroutines.android)` to
+  `app/build.gradle.kts`. Verified `:app:dependencies --configuration releaseRuntimeClasspath` now resolves
+  `coroutines-core`/`-android` to **1.10.1 everywhere** (all transitive 1.8.x/1.9.0 refs upgraded).
+- **#254:** `ci.yml` schema-drift step now `git add -N app/schemas` → `git diff --exit-code` (catches new +
+  modified) → `git status --porcelain` belt. Locally simulated: a touched `99.json` is now caught by both the
+  diff and the porcelain check (was a silent PASS before).
+- **#212:** `distributionSha256Sum=bafc141b…031f` (the official `gradle-9.5.1-bin.zip.sha256`, fetched + matched)
+  added to `gradle-wrapper.properties`; `gradle/actions/wrapper-validation@<same-sha-as-setup-gradle>` added as
+  the first post-checkout step in BOTH `ci.yml` and `release.yml` (the signing lane was the explicit gap).
+- **#255:** `dependabot.yml` gradle ecosystem grouped into `all-gradle` (catalog libs) + a separate
+  `gradle-wrapper` group (`gradle`/`org.gradle*` patterns, isolated blast radius); github-actions grouped into
+  `all-actions`.
+- **Verify:** `:app:testDebugUnitTest :app:lintDebug :app:assembleDebug` BUILD SUCCESSFUL; **1126 JVM unchanged**
+  (no test added/removed). All 3 changed YAML files parse (ruby `YAML.load_file`). Wrapper SHA matches official.
+  No ADR (config hardening on the established Plan-32 CI / ADR-0018).
+- **Doc-sync:** CHANGELOG `[Unreleased]` (new section + #256-deferral rationale); `tech.md` (coroutines runtime
+  pin, ci/release wrapper-validation, drift-guard new-file coverage, dependabot grouping); `plan-32-ci.md` Task-4
+  (post-authoring notes for #212/#254/#255); STATE + this entry.
+- **Remaining:** commit + open PR. Rest of the audit backlog (perf #242/#243, policy #239/#240/#241, architecture
+  #227–#235, test-integrity #228/#252, + low trackers #262/#128) untouched — none internal-track blockers; #256
+  deferred.
+
 ## 2026-06-19 — Correctness/UX wave: #225 / #235 / #224 / #222 (`[Unreleased]`)
 
 - **Goal:** developer asked to "fix some issues" → chose the *quick correctness/UX wins* cluster from the

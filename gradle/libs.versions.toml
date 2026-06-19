@@ -24,7 +24,10 @@ billingPlay = "8.3.0"
 playServicesAds = "25.3.0"
 userMessagingPlatform = "4.0.0"
 junit5 = "6.1.0"
-coroutinesTest = "1.10.1"
+# #257: pins the coroutines RUNTIME (was floating transitively at 1.9.0 via Room-ktx/Lifecycle/Hilt
+# while tests ran 1.10.1 — a real runtime/test skew). One version ref aligns -android (runtime) and
+# -test so a bump moves both together. Keeps the version-catalog-as-single-source convention.
+coroutines = "1.10.1"
 mockitoKotlin = "5.4.0"
 robolectric = "4.16.1"
 # Transitive-dependency security floor (not a direct dep — applied via a constraint in
@@ -107,7 +110,8 @@ guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 # Testing
 junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit5" }
 junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engine", version.ref = "junit5" }
-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
+coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 mockito-kotlin = { group = "org.mockito.kotlin", name = "mockito-kotlin", version.ref = "mockitoKotlin" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 androidx-test-core = { group = "androidx.test", name = "core", version = "1.7.0" }
