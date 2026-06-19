@@ -258,7 +258,14 @@ git commit -m "fix(#251): StepGapFiller credits recovered gaps via the trusted b
 
 - [ ] **Step 1: Write the failing tests.**
 
-Add to `StoreViewModelTest` (after the existing tests, ~line 130). The `PurchaseResult` import may be needed: add `import com.whitefang.stepsofbabylon.domain.model.PurchaseResult` if not already present. The fake's `nextResult` knob already exists (`FakeBillingManager.kt:21`). Use the existing `createVm()` helper and the `backgroundScope.launch { vm.uiState.collect {} }` + `advanceUntilIdle()` idiom from the file.
+Add to `StoreViewModelTest` (after the existing tests, ~line 130). **Two imports are missing and MUST be added** (the file currently uses FQNs for these, the new tests use short names):
+
+```kotlin
+import com.whitefang.stepsofbabylon.domain.model.BillingProduct
+import com.whitefang.stepsofbabylon.domain.model.PurchaseResult
+```
+
+(Alternatively, write the new test bodies with fully-qualified names to match the file's existing convention — but adding the two imports is cleaner.) `assertNull` needs no import (covered by the wildcard `import org.junit.jupiter.api.Assertions.*` at line 18). The fake's `nextResult` knob already exists (`FakeBillingManager.kt:21`). Use the existing `createVm()` helper and the `backgroundScope.launch { vm.uiState.collect {} }` + `advanceUntilIdle()` idiom from the file.
 
 ```kotlin
     @Test
