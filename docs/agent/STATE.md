@@ -3,13 +3,16 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.9 (versionCode 25) SHIPPED → Play internal** (tag fired). Latest work **MERGED**
-(PR #276, squash `0f32ac6`, both CI checks green, branch deleted, #237/#238/#248 auto-closed, `[Unreleased]`):
-**data-integrity wave — migration-chain guard (#237) + scoped decrypt-fail recovery (#238) + awaited DB-close
-(#248)** (single-agent review caught a critical pre-code defect; ADR-0030). Prior wave MERGED: the last 2
-net-new HIGHs #261/#233 (PR #274, `8b50b13`) — **ALL 4 net-new HIGHs (#233/#236/#250/#261) now DONE.**
-Earlier waves MERGED: #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.8 (vc 24)** · **1110 JVM + 9 instrumented tests**
+**Headline:** **v1.0.10 (versionCode 26) SHIPPED → Play internal** (tag `v1.0.10` fired green end-to-end —
+release run `27821174663` `success`: signed AAB, `jarsigner -verify`, Play-internal upload `status:completed`,
+GitHub Release `v1.0.10` w/ `app-release.aab` 15.9 MB). v1.0.10 promotes the **4 fix waves since v1.0.9**
+(reliability #236/#195/#193 · graceful-degradation #194/#250 · background-reliability #261/#233 ·
+data-integrity #237/#238/#248) via release PR #278 (squash `ffa9973`). **ALL 4 net-new audit HIGHs
+(#233/#236/#250/#261) + the last Gate-H `severity:major` soak items (#193/#194/#195) are now SHIPPED.**
+Latest content wave MERGED: data-integrity (PR #276, `0f32ac6`; #237/#238/#248 auto-closed; ADR-0030,
+single-agent review caught a critical pre-code defect). Earlier waves MERGED: #261/#233 (PR #274, `8b50b13`);
+#194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
+Supersedes **v1.0.9 (vc 25)** · **1110 JVM + 9 instrumented tests**
 green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
@@ -28,8 +31,19 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #276, squash `0f32ac6`; both CI checks green; #237/#238/#248 auto-closed;
-  `[Unreleased]`).**
+- **CURRENT (DONE — SHIPPED v1.0.10 / versionCode 26 → Play internal track).** First release since v1.0.9;
+  promotes the 4 fix waves accumulated on `main` (no new features, no schema change). Release PR #278
+  (squash `ffa9973`): versionCode 25→26, versionName 1.0.9→1.0.10; CHANGELOG `[Unreleased]`→`[1.0.10]`; new
+  `docs/release/release-notes-v1.0.10.md` (Play "What's new" 293 chars, developer-approved); version-pointer
+  sync (README/GDD/master-plan). Both CI checks green on #278; on merge, annotated tag `v1.0.10` (message =
+  the "What's new" block) fired `release.yml` → run `27821174663` `success` (signed AAB, `jarsigner -verify`,
+  Play-internal upload `status:completed`, GitHub Release `v1.0.10` + `app-release.aab` 15.9 MB). Player-facing
+  in this release: battery-optimization primer (#261), load-error retry states (#194), offline-purchase
+  reconcile (#250), battle portrait-lock (#233). **Manual Play Console Data-Safety action (#192) is still NOT
+  done by this tag** — separate human step (`docs/release/data-safety-form.md`). Next: med/low backlog
+  (#262 + #251/#249), the larger #233 Simulation-hoist (deferred), and the promote-to-closed judgment call.
+- **Previous objective (DONE — MERGED PR #276, squash `0f32ac6`; both CI checks green; #237/#238/#248 auto-closed;
+  shipped in v1.0.10).**
   Data-integrity wave: three confirmed 2026-06-18 complete-app-review defects, one combined PR. **No schema
   change; no economy/engine-logic change; 1100 → 1110 JVM** (+10); `testDebugUnitTest lintDebug assembleDebug`
   BUILD SUCCESSFUL. TDD where there's a seam; spec

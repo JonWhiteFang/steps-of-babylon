@@ -1,3 +1,36 @@
+## 2026-06-19 — Release v1.0.10 (versionCode 26) → Play internal track
+
+- **Goal:** cut the first release since v1.0.9, shipping the 4 fix waves accumulated on `main`
+  (#270/#272/#274/#276) to the Play internal track via the automated `v*`-tag lane. Developer chose
+  **v1.0.10 (patch, vc 26)** — these are reliability/data-integrity/UX hardening waves, no new features, no
+  schema change — and **ship to internal now** (vs. hold for a PR-only). Approved the player-facing "What's
+  new" copy before the tag.
+- **Collateral (no production-code change in the release PR itself):**
+  - `app/build.gradle.kts` — versionCode 25→26, versionName 1.0.9→1.0.10 (rides in with the release PR;
+    `release.yml` builds the committed code — Play rejects reused codes).
+  - `CHANGELOG.md` — promoted `[Unreleased]` → `[1.0.10] — 2026-06-19 (versionCode 26)` with a summary head
+    over the 4 existing per-wave entries (which carry the technical record); `[Unreleased]` left empty.
+  - `docs/release/release-notes-v1.0.10.md` — new (v1.0.9 template): Play "What's new" (293 chars),
+    developer detail (player-facing vs data-integrity/reliability split), provenance (the single-agent
+    review trail per wave, ultracode off), verification, next.
+  - Version-pointer sync: README status line (+1081→1110 JVM), GDD header, master-plan Plan 31/32 pointers.
+- **Process:** release collateral on `release/v1.0.10` → PR #278 → both CI checks green (build-and-test
+  4m14s, connected 5m0s) → squash-merge `ffa9973` → annotated tag `v1.0.10` (message = the approved "What's
+  new" block) created on the merge commit + pushed. The tag fired `release.yml`.
+- **Verification (release lane — run `27821174663`, conclusion `success`):** every step green — Unit test
+  guard, Decode signing keystore, Build release bundle, **Verify signature** (`jarsigner -verify`), Write
+  Play license key (#124 guard satisfied), Prepare Play release notes, **Upload to Play internal track**
+  (`status: completed`), **GitHub Release** `v1.0.10` published with `app-release.aab` (15,917,445 bytes /
+  15.9 MB). `testDebugUnitTest` green locally at vc 26 (1110 tests). The `track`-deprecation annotation is
+  gone (uses `tracks:` since v1.0.5).
+- **Doc-sync (this checkpoint):** STATE headline → v1.0.10 SHIPPED + the run evidence; current-objective
+  rotation (release on top, data-integrity wave demoted to "shipped in v1.0.10"); "Supersedes" v1.0.8→v1.0.9.
+  No ADR (a release isn't a decision). No source-file/schema change.
+- **Remains / next:** the **manual Play Console Data-Safety action (#192)** is still pending (separate human
+  step, `docs/release/data-safety-form.md`) — not done by this tag. Promotion internal→closed stays a
+  developer judgment call (Gate A audio feel + Gate E balance feel are judgment-only). Backlog: med/low
+  #262 + #251/#249 (step-counting / IAP), the larger #233 Simulation-hoist (deferred).
+
 ## 2026-06-19 — Data-integrity wave: migration-chain guard (#237) · scoped decrypt-fail recovery (#238) · DB-close race (#248)
 
 - **Goal:** fix the three confirmed data-integrity defects from the 2026-06-18 complete-app review's
