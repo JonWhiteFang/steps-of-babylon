@@ -14,8 +14,11 @@ import javax.crypto.spec.GCMParameterSpec
  * Manages the Room database encryption passphrase.
  * Generates a random passphrase on first run, encrypts it with an
  * Android Keystore key, and stores the encrypted blob in SharedPreferences.
- * On decryption failure (e.g. restore to new device), wipes stale data
- * and generates a fresh passphrase.
+ * On decryption failure, the response is scoped to the cause (#238): the DB is wiped **only** when the
+ * Keystore alias is provably absent (the true device-restore signal — the on-disk DB is encrypted with a
+ * now-unrecoverable passphrase). A decrypt failure with the alias still present is treated as a *transient*
+ * Keystore fault (OEM daemon restart, low memory, post-OS-update) and is rethrown so the next launch retries
+ * — non-regenerable player progress (Steps) is never destroyed on a fault we can't prove is unrecoverable.
  */
 object DatabaseKeyManager {
 
@@ -30,6 +33,39 @@ object DatabaseKeyManager {
     // here alongside the stale key blob and let Room rebuild from scratch.
     private const val DB_FILENAME = "steps_of_babylon.db"
 
+    /**
+     * The two ways a decrypt failure can be handled (#238). [Wipe] is the irreversible
+     * device-restore path; [Rethrow] preserves progress on a transient fault.
+     */
+    internal sealed interface DecryptFailureAction {
+        object Wipe : DecryptFailureAction
+        object Rethrow : DecryptFailureAction
+    }
+
+    /**
+     * #238: the pure wipe-vs-rethrow decision, extracted so it's JVM-unit-testable without a working
+     * AndroidKeyStore (Robolectric can't shadow it). Wipe **only** when the alias is provably absent
+     * (true device-restore — the on-disk DB is unrecoverable); otherwise preserve progress and retry.
+     */
+    internal fun decideOnDecryptFailure(aliasExists: Boolean): DecryptFailureAction =
+        if (aliasExists) DecryptFailureAction.Rethrow else DecryptFailureAction.Wipe
+
+    /**
+     * Whether the Keystore alias backing the passphrase is present. Overridable for tests (the real impl
+     * touches AndroidKeyStore, which Robolectric can't provide). If the keystore can't even be opened to
+     * check, we report `true` ("present/uncertain") so an *uncertain* failure never triggers a destructive
+     * wipe — preferring data preservation for non-regenerable currency.
+     */
+    internal var keystoreAliasExists: () -> Boolean = ::realKeystoreAliasExists
+
+    private fun realKeystoreAliasExists(): Boolean =
+        try {
+            KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.containsAlias(KEYSTORE_ALIAS)
+        } catch (e: Exception) {
+            Log.w(TAG, "Keystore unavailable while checking alias presence — treating as present (no wipe)", e)
+            true
+        }
+
     fun getPassphrase(context: Context): ByteArray {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val existing = prefs.getString(PREF_ENCRYPTED, null)
@@ -40,13 +76,22 @@ object DatabaseKeyManager {
                     android.util.Base64.decode(prefs.getString(PREF_IV, "")!!, android.util.Base64.NO_WRAP),
                 )
             } catch (e: Exception) {
-                // Keystore key missing or mismatched (e.g. device restore) — reset.
-                // The existing DB file is encrypted with the now-lost passphrase
-                // and cannot be recovered; delete it so Room can rebuild cleanly
-                // instead of crashing in a loop on next open.
-                Log.w(TAG, "Passphrase decryption failed, wiping stale key and DB file", e)
-                prefs.edit().clear().apply()
-                wipeDatabaseFile(context)
+                when (decideOnDecryptFailure(keystoreAliasExists())) {
+                    DecryptFailureAction.Wipe -> {
+                        // Alias provably absent (device restore to new hardware) — the on-disk DB is
+                        // encrypted with the now-lost passphrase and cannot be recovered. Delete it so Room
+                        // rebuilds cleanly instead of crash-looping on open, then fall through to regenerate.
+                        Log.w(TAG, "Keystore alias absent — wiping stale key blob and unreadable DB file", e)
+                        prefs.edit().clear().apply()
+                        wipeDatabaseFile(context)
+                    }
+                    DecryptFailureAction.Rethrow -> {
+                        // Alias present but decrypt threw → transient/recoverable Keystore fault. Do NOT
+                        // destroy progress; rethrow so DB open fails this launch and the next launch retries.
+                        Log.e(TAG, "Transient passphrase decryption failure (alias present) — NOT wiping", e)
+                        throw e
+                    }
+                }
             }
         }
         val passphrase = generateRandomPassphrase()

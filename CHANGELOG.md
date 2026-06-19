@@ -4,6 +4,43 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — Data-integrity wave: migration-chain guard (#237) · scoped decrypt-fail recovery (#238) · DB-close race (#248)
+
+Three confirmed data-integrity defects from the 2026-06-18 complete-app review, one combined PR. **No
+schema change; no economy/engine-logic change; 1100 → 1110 JVM tests** (+10). TDD where there's a seam;
+spec put through a single-agent adversarial review (ultracode off) that caught a critical pre-code defect
+(the #238 catch-branch isn't testable through `getPassphrase` under Robolectric — `KeyStore.getInstance`
+throws before any decrypt — so the wipe-vs-rethrow *decision* was extracted as a pure seam). ADR-0030.
+
+- **#237 — no guard that the migration chain is registered/contiguous** (`data-integrity`, confirmed).
+  The single biggest migration risk: a future version bump that updates `AppDatabase.version` + commits
+  the new schema JSON (passing the CI drift gate) but forgets to add/register the `Migration` object —
+  shipping a guaranteed launch crash for every upgrading user, with nothing in CI to catch it. Added a
+  pure `AppMigrations.validateChain(migrations, liveVersion, floor)` (+ `MIGRATION_FLOOR = 7`) that returns
+  a list of chain problems (non-contiguous, gap/overlap, multi-version step, wrong floor, or max-target ≠
+  live version). New `MigrationChainTest` runs it against the real `ALL` + the built-DB version (the
+  `@Database` annotation is `@Retention(CLASS)`, so the version is read from `db.openHelper.readableDatabase
+  .version`, not annotation reflection) and pins the forgotten-registration / gap / floor cases.
+- **#238 — decrypt-failure recovery wiped the whole DB on ANY exception** (`data-integrity`, partial). A
+  *transient* Keystore fault (OEM daemon restart, low memory, post-OS-update) destroyed all non-regenerable
+  player progress (Steps). Now `DatabaseKeyManager` wipes **only** when the Keystore alias is provably
+  absent (the true device-restore signal); a decrypt failure with the alias present is rethrown so the next
+  launch retries — no wipe. The wipe-vs-rethrow decision is a pure `decideOnDecryptFailure(aliasExists)`
+  seam (JVM-tested), with an injectable `keystoreAliasExists` predicate that defaults to "present" (no
+  wipe) if the keystore can't even be opened. Trade-off: a *persistent* alias-present failure now
+  crash-loops instead of silently self-healing via wipe — deliberate (we won't destroy progress on a fault
+  we can't prove unrecoverable; the true device-restore case still auto-heals, and Settings → Delete All
+  Data remains).
+- **#248 — DB closed while async work may still write** (`data-integrity`, partial). `deleteAllData` called
+  `database.close()` immediately after the asynchronous `WorkManager.cancelAllWork()` + `stopService()`, so
+  an in-flight `StepSyncWorker` could hit a closed DB → `IllegalStateException` on a background thread. Now
+  `cancelAllWork().result` is **awaited** (bounded `.get(2s)` — the method runs on the main thread off the
+  Settings click handler, so the bound stays well under the 5s ANR window; on timeout/error it logs +
+  proceeds) **before** `close()`. This closes the WorkManager half of the race deterministically; the
+  foreground-service collector half is narrowed (service stops promptly + Room's lazy reopen-after-close
+  backstops a late write) but not fully eliminated — full elimination needs the process-restart approach
+  rejected this session. The existing `recreate()` + lazy-reopen self-heal is kept (smallest-change).
+
 ### Fix — Background reliability: battery-optimization whitelist primer (#261) · battle portrait-lock (#233)
 
 Two confirmed HIGH audit defects (the last 2 net-new HIGHs from the 2026-06-18 review), one combined

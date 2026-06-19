@@ -241,4 +241,59 @@ object AppMigrations {
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12,
     )
+
+    /**
+     * The migration floor: the oldest schema version a shipped build can upgrade *from*. Migrations
+     * begin at v7 (the lowest [Migration.startVersion] in [ALL]); pre-v7 upgrades are an unhandled,
+     * separately-documented concern (#258). Bump this deliberately if the floor ever moves.
+     */
+    const val MIGRATION_FLOOR = 7
+
+    /**
+     * #237: validates that a migration set forms a single contiguous +1-step chain from [floor] up to
+     * [liveVersion] (the running [AppDatabase] `@Database(version)`), with no gaps, overlaps, or duplicate
+     * steps. Returns a list of human-readable problems — empty means the chain is sound.
+     *
+     * The catch this guards: a version bump that updates `@Database(version)` + commits the new schema JSON
+     * (passing the CI drift gate) but forgets to add/register the new [Migration] object. With no general
+     * destructive fallback, that ships a guaranteed launch crash for every upgrading user — and nothing else
+     * in CI catches it. Pure (no Android) so it's JVM-unit-testable; `MigrationChainTest` feeds it the real
+     * [ALL] + the real built-DB version.
+     */
+    fun validateChain(
+        migrations: Array<Migration>,
+        liveVersion: Int,
+        floor: Int = MIGRATION_FLOOR,
+    ): List<String> {
+        val problems = mutableListOf<String>()
+        if (migrations.isEmpty()) {
+            problems += "Migration set is empty but liveVersion=$liveVersion (expected a chain from $floor)."
+            return problems
+        }
+        val sorted = migrations.sortedBy { it.startVersion }
+        sorted.forEach { m ->
+            if (m.endVersion != m.startVersion + 1) {
+                problems += "Migration ${m.startVersion}->${m.endVersion} is not a single +1 step."
+            }
+        }
+        val minStart = sorted.first().startVersion
+        if (minStart != floor) {
+            problems += "Chain starts at $minStart but the migration floor is $floor."
+        }
+        // Contiguity: each migration's end must equal the next one's start (no gaps, no overlaps/dupes).
+        for (i in 0 until sorted.size - 1) {
+            val cur = sorted[i]
+            val next = sorted[i + 1]
+            if (next.startVersion != cur.endVersion) {
+                problems += "Gap or overlap between ${cur.startVersion}->${cur.endVersion} and " +
+                    "${next.startVersion}->${next.endVersion}."
+            }
+        }
+        val maxEnd = sorted.last().endVersion
+        if (maxEnd != liveVersion) {
+            problems += "Chain tops out at v$maxEnd but AppDatabase is v$liveVersion — a Migration " +
+                "object for v$maxEnd->v$liveVersion is missing or unregistered."
+        }
+        return problems
+    }
 }
