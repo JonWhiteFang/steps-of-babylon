@@ -4,6 +4,34 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Build — compileSdk 36 → 37 migration + dependency unblock (closes #199)
+
+Raised `compileSdk` 36 → 37 across all three Android modules (`:app`, `:baselineprofile`,
+`:macrobenchmark`) and unblocked the dependency bumps that the compileSdk-36 pin had been gating:
+**core-ktx 1.17.0 → 1.19.0** (closes #199), **lifecycle 2.10.0 → 2.11.0**, **sqlite-ktx 2.4.0 → 2.6.2**.
+`targetSdk` stays **36** (this is a compile-time change — new APIs/lint visible — not a runtime-behavior
+change) and `minSdk` stays **34**. **No app source / schema / test change; 1126 JVM tests unchanged.**
+
+Built spec-first → both the spec and the implementation plan through the **Adversarial Review Gate**
+(ultracode: 5-dimension code-grounded fan-out → per-finding refute → synthesis; spec 27→20 surviving/7
+refuted, plan 23→10 surviving/13 refuted — all substantive findings were doc-sync line-precision +
+verification-rigor and were applied before implementing). **ADR-0031.**
+
+- **Why now:** the pin was a documented deliberate constraint that recurrently blocked Dependabot
+  (Dependabot's grouped `all-gradle` PR #288 failed CI at `:app:checkDebugAarMetadata` for exactly this).
+  AGP 9.2.1 already satisfied the "AGP ≥ 9.1" half of the gate; only compileSdk-37 remained.
+- **Verified:** API 37 is published on the stable SDK channel; CI's `setup-android` auto-provisions it
+  (no platform pin). Locally (platform 37 installed): `testDebugUnitTest` (1126) + `lintDebug` (**zero new
+  lint findings**) + `assembleDebug` + `:baselineprofile:assemble` + `:macrobenchmark:assemble` + **a full
+  `:app:assembleRelease` (R8/minify path at compileSdk 37)** all BUILD SUCCESSFUL. `releaseRuntimeClasspath`
+  resolves core-ktx → 1.19.0 and lifecycle → 2.11.0 (no clamp).
+- **Health Connect stays 1.1.0** — 1.2.x is still alpha-only (`1.2.0-alpha04` latest, no beta/stable); the
+  catalog rationale comment was rewritten to record that compileSdk-37 is now cleared but HC remains gated
+  on a 1.2.x **beta/stable** (alpha AndroidX carries no API-stability guarantee; HC is load-bearing).
+- **Out of scope (ride Dependabot #288 post-merge):** the rest of #288's bumps (compose-bom, work, billing
+  9.x, play-services-ads, coroutines 1.11.0, mockito-kotlin, kotlin-compose 2.4.0, gradle-wrapper 9.6.0)
+  are NOT compileSdk-gated; #288 will rebase green once this lands.
+
 ### Fix — CI / supply-chain wave: coroutines pin (#257) · schema-drift gate (#254) · wrapper validation (#212) · Dependabot grouping (#255)
 
 Four confirmed before-public CI / supply-chain hardening findings from the complete-app reviews, one

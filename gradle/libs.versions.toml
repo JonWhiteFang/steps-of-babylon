@@ -5,20 +5,22 @@ ksp = "2.3.9"
 hilt = "2.59.2"
 room = "2.8.4"
 composeBom = "2026.05.01"
-lifecycle = "2.10.0"
+lifecycle = "2.11.0"
 navigationCompose = "2.9.8"
 workmanager = "2.11.0"
 hiltWork = "1.3.0"
 activityCompose = "1.13.0"
-coreKtx = "1.17.0"
+coreKtx = "1.19.0"
 sqlcipher = "4.16.0"
-sqliteKtx = "2.4.0"
+sqliteKtx = "2.6.2"
 # #33: moved off the 1.2.0-alpha line to the 1.1.0 STABLE release before v1.0.0 — alpha AndroidX
 # artifacts carry no API-stability guarantee and Health Connect is load-bearing (cross-validation,
-# Activity Minute Parity, gap-filling). 1.1.0 builds against compileSdk 36 (1.2.x alphas now require
-# SDK 37 / compileSdkExtension 19) and covers the full API surface in use (HealthConnectClient,
+# Activity Minute Parity, gap-filling). 1.1.0 covers the full API surface in use (HealthConnectClient,
 # PermissionController, HealthPermission, StepsRecord, ExerciseSessionRecord, Aggregate/ReadRecords
-# requests, TimeRangeFilter). Revisit a 1.2.x beta/stable post-launch when compileSdk moves to 37.
+# requests, TimeRangeFilter). (Historically the 1.2.x alphas also required compileSdk 37 /
+# compileSdkExtension 19, which was a second blocker while we were on compileSdk 36.) compileSdk is now
+# 37, so that half of the gate is cleared; HC 1.2.x stays out until it reaches beta/stable — alpha
+# AndroidX carries no API-stability guarantee and HC is load-bearing.
 healthConnect = "1.1.0"
 billingPlay = "8.3.0"
 playServicesAds = "25.3.0"

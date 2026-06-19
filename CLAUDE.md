@@ -128,7 +128,7 @@ See `docs/StepsOfBabylon_GDD.md` for the full game design document.
 
 - **Language:** Kotlin (JVM target 17)
 - **Package:** `com.whitefang.stepsofbabylon`
-- **Min SDK:** 34 (Android 14) · **Target/Compile SDK:** 36
+- **Min SDK:** 34 (Android 14) · **Compile SDK:** 37 · **Target SDK:** 36
 - **Version:** see `app/build.gradle.kts` (`versionCode`/`versionName`). Release/version history lives in `CHANGELOG.md` — do not inline it here.
 - **Architecture:** MVVM + Clean Architecture (`presentation → domain ← data`)
 - **UI:** Jetpack Compose (menus/screens) + custom `SurfaceView` (battle renderer)

@@ -27,7 +27,7 @@ The app does NOT request location permissions; GPS / Exploration Mode was droppe
 ## Prerequisites
 
 - JDK 17
-- Android SDK 36 (compile/target), min SDK 34 (Android 14)
+- compileSdk 37 / targetSdk 36, min SDK 34 (Android 14)
 - Android Studio (latest stable recommended)
 
 ## Setup

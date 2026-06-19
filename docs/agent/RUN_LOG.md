@@ -1,3 +1,42 @@
+## 2026-06-19 — compileSdk 36 → 37 migration + dependency unblock (`[Unreleased]`, ADR-0031)
+
+- **Goal:** developer hit the recurring compileSdk-36 wall again (Dependabot's grouped `all-gradle` PR #288
+  failed CI at `:app:checkDebugAarMetadata` — core-ktx/lifecycle bumps need compileSdk 37) and said "update to
+  compileSdk 37 now, nip this in the bud." Ultracode session → full spec→review→plan→review→implement.
+- **Feasibility scouting (inline, before any design):** local SDK topped out at android-36 with no
+  `sdkmanager`. Established: API 37 IS published; fetched latest cmdline-tools (15641748) and confirmed
+  `platforms;android-37.0` + `build-tools;37.0.0` are on the **stable** channel (the earlier "canary-only"
+  read was an artifact of outdated XML-v3 cmdline-tools). Installed platform 37 locally. **Scratch-branch
+  probe:** bare compileSdk=37 builds clean (0 new lint); compileSdk 37 + core-ktx 1.19.0 + lifecycle 2.11.0 +
+  sqlite-ktx 2.6.2 build clean together; releaseRuntimeClasspath resolves core-ktx→1.19.0 (no clamp). CI
+  auto-provisions (the #288 failure was AAR-metadata, not platform-missing).
+- **Spec → Adversarial Review Gate (5-dimension code-grounded fan-out, 32 agents): 27 findings → 20
+  surviving / 7 refuted.** Substantive amendments applied: 3 missed doc-sync sites (tech.md:6, tech.md:35
+  stale transitive-resolution note, plan-32-ci.md:53 second platform line); verbatim HC trailing-clause
+  rewrite (the "revisit when compileSdk moves to 37" clause would self-satisfy); R2 claim softened (#288
+  proved platform-*36* resolution) + setup-android fallback; release-variant/R8 local-verify step added;
+  resolved-version check noted as manual.
+- **Plan → Adversarial Review Gate (4-dimension, 27 agents): 23 findings → 10 surviving / 13 refuted.**
+  Substantive: tech.md version cells are on THREE lines (L27 lifecycle, L33 sqlite, L34 core-ktx) not all
+  "L34" — corrected; plan-32-ci.md L33 fuses `compileSdk/targetSdk 36` so the edit must be SURGICAL (split,
+  not replace_all — else targetSdk wrongly bumps); restored `docs/external-reviews/**` to the frozen list;
+  broadened the resolved-version grep. All applied pre-implementation.
+- **Implementation:** compileSdk 37 in app/baselineprofile/macrobenchmark; catalog core-ktx 1.19.0 /
+  lifecycle 2.11.0 / sqlite-ktx 2.6.2; HC stays 1.1.0 with the rationale comment rewritten (gate re-based to
+  beta/stable). targetSdk + minSdk untouched.
+- **Verification (local, platform 37 installed):** `testDebugUnitTest` (1126) + `lintDebug` (**0 new
+  findings**) + `assembleDebug` + `:baselineprofile:assemble` + `:macrobenchmark:assemble` BUILD SUCCESSFUL;
+  a full `:app:assembleRelease` (R8/minify at compileSdk 37 — the spec-review-flagged gap, tested via a
+  throwaway local `play.licenseKey` to clear the #124 fail-closed guard, then reverted) BUILD SUCCESSFUL;
+  resolved core-ktx→1.19.0, lifecycle→2.11.0, sqlite→2.6.2 (no clamp). Reproduce platform 37 with
+  `sdkmanager "platforms;android-37.0" "build-tools;37.0.0"` (stable channel, latest cmdline-tools).
+- **Doc-sync:** CLAUDE.md:131 (Compile SDK 37 / Target SDK 36), README:30, tech.md (L6/L27/L32/L33/L34/L35),
+  plan-32-ci.md (L33 surgical + L53), CHANGELOG `[Unreleased]`, catalog HC comment. **ADR-0031** records the
+  pin reversal. No app source/schema/test change; 1126 JVM unchanged.
+- **Remaining:** commit + PR (closes #199; the PR-gate CI run is the authoritative proof CI auto-provisions
+  platform 37) + monitor + merge; then #288 rebases (its compileSdk-gated bumps are now satisfied). HC 1.2.x
+  + targetSdk 37 + the rest of #288 deliberately deferred.
+
 ## 2026-06-19 — CI / supply-chain wave: #257 / #254 / #212 / #255 (`[Unreleased]`)
 
 - **Goal:** developer asked for "more issues" → chose the *CI / supply-chain* cluster from the complete-app-review

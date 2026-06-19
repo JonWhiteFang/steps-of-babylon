@@ -3,7 +3,7 @@
 ## Core
 
 - **Language:** Kotlin (JVM target 17)
-- **Min SDK:** 34 (Android 14) / Target & Compile SDK: 36
+- **Min SDK:** 34 (Android 14) / Compile SDK 37 / Target SDK 36
 - **Architecture:** MVVM + Clean Architecture
 - **Build:** Gradle 9.5.1 with Kotlin DSL, version catalog at `gradle/libs.versions.toml`
 - **Database encryption:** SQLCipher via Android Keystore-managed passphrase
@@ -24,15 +24,15 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | Google Mobile Ads SDK | 25.3.0 | Reward ads via `play-services-ads`. `RewardAdManagerImpl` is the sole `RewardAdManager` binding for debug + release as of C.6 PR 3 (`StubRewardAdManager` deleted). `BuildConfig.USE_REAL_ADS` is retained only to gate the `MainActivity` UMP consent prefetch on debug emulators. |
 | User Messaging Platform | 4.0.0 | GDPR/DSA consent via `user-messaging-platform`; paired with AdMob (C.6 PR 1) |
 | Navigation Compose | 2.9.8 | Compose navigation |
-| Lifecycle | 2.10.0 | ViewModel, StateFlow integration |
+| Lifecycle | 2.11.0 | ViewModel, StateFlow integration |
 | WorkManager | 2.11.0 | Background step sync |
 | JUnit (Jupiter) | 6.1.0 | Unit testing framework — junit-jupiter 6.x (catalog key still `junit5`) |
 | kotlinx-coroutines (-android / -test) | 1.10.1 | Async runtime + test utilities. #257: runtime (`-android`) is now pinned explicitly (shared `coroutines` ref) — was floating transitively at 1.9.0 while tests ran 1.10.1 |
 | SQLCipher | 4.16.0 | Database encryption |
-| Health Connect | 1.1.0 (stable) | Step cross-validation, Activity Minute Parity (off alpha per audit #33; 1.2.x needs compileSdk 37) |
-| SQLite KTX | 2.4.0 | SQLite support library |
-| Core KTX | 1.17.0 | Kotlin extensions for Android |
-| Activity Compose | 1.13.0 | Compose Activity integration (transitively resolves core-ktx to 1.18.0) |
+| Health Connect | 1.1.0 (stable) | Step cross-validation, Activity Minute Parity (off alpha per audit #33; compileSdk now 37 so that gate is cleared, but HC 1.2.x is still alpha-only — held until beta/stable) |
+| SQLite KTX | 2.6.2 | SQLite support library |
+| Core KTX | 1.19.0 | Kotlin extensions for Android (unblocked by compileSdk 37; closes #199) |
+| Activity Compose | 1.13.0 | Compose Activity integration (direct core-ktx pin 1.19.0 now governs the resolved version) |
 | Hilt Work | 1.3.0 | Hilt WorkManager + Navigation Compose integration |
 | Compose Material Icons | (BOM) | Material icon set for Compose. Both `material-icons-core` (small built-in set) and `material-icons-extended` (full Material catalogue) are included; R8 shrinks unused icons in release builds. Extended set added in R4-04 for `Icons.Filled.Upgrade`; R4-05 will use `Icons.Filled.Help`. |
 | Mockito Kotlin | 5.4.0 | Kotlin-friendly mocking for tests |
