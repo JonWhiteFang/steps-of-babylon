@@ -32,7 +32,21 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #285, squash `67cf74c`; both CI checks green; #257/#254/#212/#255 auto-closed; `[Unreleased]`).**
+- **CURRENT (DONE — branch `feat/compilesdk-37-migration`, ready to commit/PR; `[Unreleased]`).**
+  **compileSdk 36 → 37 migration + dependency unblock** — reverses the deliberate compileSdk-36 pin that
+  recurrently blocked Dependabot (Dependabot's grouped #288 fails CI at `:app:checkDebugAarMetadata`).
+  Raised `compileSdk` 37 in all 3 modules (targetSdk stays 36 — compile-only, not behavioral; minSdk 34);
+  unblocked **core-ktx 1.19.0 (closes #199), lifecycle 2.11.0, sqlite-ktx 2.6.2**. **HC stays 1.1.0**
+  (1.2.x still alpha-only; gate re-based onto "beta/stable"). **No app source/schema/test change; 1126 JVM
+  unchanged.** Built spec→plan, **both through the full Adversarial Review Gate** (ultracode: spec 27→20
+  surviving/7 refuted; plan 23→10/13 — all surviving were doc-sync line-precision + verify-rigor, applied
+  pre-implementation). Verified locally (platform 37 installed): testDebugUnitTest (1126) + lintDebug (0 new)
+  + assembleDebug + benchmark assemble + **full :app:assembleRelease (R8 at compileSdk 37)** all green;
+  releaseRuntimeClasspath resolves core-ktx→1.19.0, lifecycle→2.11.0. **ADR-0031.** Next: commit + PR +
+  monitor (PR-gate CI is the authoritative proof CI auto-provisions platform 37) + merge; then #288 rebases.
+  Local platform-37 install (for reproducibility): `sdkmanager "platforms;android-37.0" "build-tools;37.0.0"`
+  (stable channel, latest cmdline-tools).
+- **Previous objective (DONE — MERGED PR #285, squash `67cf74c`; both CI checks green; #257/#254/#212/#255 auto-closed; `[Unreleased]`).**
   **CI / supply-chain hardening wave** off the complete-app-review backlog: four confirmed findings, one
   combined PR. **Build-infra + config only — no app source / schema / test-count change** (`testDebugUnitTest
   lintDebug assembleDebug` BUILD SUCCESSFUL; 1126 JVM unchanged). **#257** coroutines runtime was floating

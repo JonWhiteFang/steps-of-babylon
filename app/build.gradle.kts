@@ -30,7 +30,7 @@ val ADMOB_TEST_REWARDED_AD_UNIT = "ca-app-pub-3940256099942544/5224354917"
 
 android {
     namespace = "com.whitefang.stepsofbabylon"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.whitefang.stepsofbabylon"

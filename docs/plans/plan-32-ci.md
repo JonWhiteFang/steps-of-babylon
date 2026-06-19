@@ -30,7 +30,7 @@ This closes the long-standing "No CI" gap noted across the project memory (the `
 | Aspect | Value | CI consequence |
 |---|---|---|
 | Toolchain | Gradle + AGP + Kotlin + KSP per `gradle/libs.versions.toml` / the wrapper (the catalog is the single source — don't pin versions here), JDK 17 | `setup-java` temurin 17 + `setup-gradle` cache |
-| SDK | compileSdk/targetSdk 36, **minSdk 34** | emulator floor **API 34**; install platform 36 via `setup-android` |
+| SDK | compileSdk 37 / targetSdk 36, **minSdk 34** | emulator floor **API 34**; install platform 37 via `setup-android` |
 | JVM gate | `testDebugUnitTest` (JUnit5; live count in STATE.md/CLAUDE.md), `lintDebug`, `assembleDebug` | one ubuntu job, **no secrets** |
 | Instrumented | `connectedDebugAndroidTest` (9 tests, `HiltTestRunner`) | emulator + KVM |
 | Debug build secrets | **none** — AdMob falls back to Google test IDs; no `google-services` plugin | PRs build on a clean clone with zero config |
@@ -50,7 +50,7 @@ The fast, secret-free, always-blocking lane.
 - **Triggers:** `pull_request` (all branches) + `push` to `main`.
 - **Hardening:** top-level `permissions: contents: read`; `concurrency` group keyed on ref with `cancel-in-progress: true`; job `timeout-minutes: 30`.
 - **Runner:** `ubuntu-latest`, single job `build-and-test`.
-- **Steps:** checkout → `setup-java` (temurin 17) → `setup-android` (ensure platform-36 + build-tools) → `setup-gradle` (cache read/write) → run the documented one-call gate:
+- **Steps:** checkout → `setup-java` (temurin 17) → `setup-android` (ensure platform-37 + build-tools) → `setup-gradle` (cache read/write) → run the documented one-call gate:
   ```bash
   ./gradlew testDebugUnitTest lintDebug assembleDebug --no-daemon
   ```

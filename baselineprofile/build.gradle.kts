@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.whitefang.stepsofbabylon.baselineprofile"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 34
