@@ -1,3 +1,52 @@
+## 2026-06-19 — Full ultracode doc-drift sweep (docs-only, `[Unreleased]`)
+
+- **Goal:** developer asked for a "full ultracode doc sweep of project" — find every place a doc makes a
+  factual claim that's false against HEAD, fix the live ones, leave frozen/historical artifacts alone.
+- **Method (multi-agent `Workflow`, 59 agents, ~2.9M subagent tokens):** ground-truth extraction inline in
+  the main loop first (ran `testDebugUnitTest` → **1118 JVM, 0 failures**; counted enums/DAOs/repos/use-cases/
+  modules/dep-versions/schema), then a `Workflow`: 9 live-doc-cluster finders (CLAUDE.md, agent-spine,
+  README+CHANGELOG, steering tech/structure/source-files, steering product/security/lib-*, technical docs,
+  plans, release+privacy, skills) — **every finding required code-grounded evidence (file:line / grep / build
+  value), not just the doc's prose** — then per-finding adversarial refute (default-to-refuted), then a
+  cross-doc-coherence lane + a link/path-integrity lane, each also refuted. Frozen docs (RUN_LOG prior
+  entries, archive/**, external-reviews, dated reviews, release-notes-v*, superpowers specs/plans,
+  shipped CHANGELOG sections, ADR bodies) were report-only, never edited.
+- **First run crashed** at final assembly (`args.groundTruth` arrived undefined → `GT.jvmTests` threw in the
+  coherence-lane prompt) after all 42 find/verify agents had completed; fixed by making ground truth a
+  self-contained `const` in the script, then **resumed** (`resumeFromRunId`) so the 42 completed agents
+  returned cached and only the coherence lanes + their verification ran live.
+- **Result:** 48 candidates → **48 surviving, 0 refuted** → deduped to **34 unique fixes across 15 live docs**.
+  Every numeric finding independently re-verified in the main loop before applying (per-test-file `@Test`
+  counts, BattleViewModel param count via the `@param:ApplicationScope` line, SFX `.ogg` listing,
+  UpgradeType→UpgradeCategory map, play-store desc char count recomputed *after* the bullet rewrite = 2,927).
+- **Headline fix — test-count inflation reconciled to 1118.** Actual `@Test` = 1118 (gradle 1118/0-fail; 0
+  parameterized/factory/disabled, no hidden inflation). Stale claims corrected: CLAUDE.md 1141→1118; STATE.md
+  headline 1141→1118 + dropped the never-reconciled "+23 pre-branch drift" clause + objective "1133→1141"→
+  "1110→1118"; README 1110→1118 (line 13) and 1010→1118 (line 48); CHANGELOG `[Unreleased]` "1133→1141"→
+  "1110→1118". The base is the frozen [1.0.10] 1110 + the wave's +8.
+- **Other fixes:** `domain/usecase/` 36→39 (STATE + structure.md genericized); SFX 9→7 (.ogg ground truth,
+  SoundEffect has 7 values); 7 source-files.md per-file test counts (CardType 31→32, BillingManagerImpl 14→20,
+  RealPurchaseVerifier 4→9, PlayerRepositoryImpl 13→18, DailyStepDao 14→13, CardRepositoryImpl 16→15,
+  SimulationMath 34→42); BattleViewModel 16→15-param; CardsUiState "dust balance"→copy counts (R4-08);
+  **security-model.md** key-recovery row → #238 scoped-wipe (alias-absent wipe vs alias-present rethrow);
+  **database-schema.md** bare `fallbackToDestructiveMigration()`→`fallbackToDestructiveMigrationOnDowngrade`
+  on line 280 + the six v1→v7 list rows normalized + migration-floor=v7 (#237) framing; **lib-room.md**
+  `adjustStepBalance` example regained the `MAX(0,…)` escrow-clawback clamp; **plan-FORWARD.md** §H code
+  blockers #190/#191/#192 + soak majors #193/#194/#195 ticked MERGED w/ PR refs + §D Audit-H line reconciled;
+  **plan-V1X-roadmap** V1X-07/10/11 moved pending→shipped + 2 `AGENTS.md`→`CLAUDE.md` refs (`.kiro/` retired,
+  ADR-0019); **plan-31** build pointer v1.0.5/vc21→v1.0.10/vc26; **plan-32-ci** post-authoring reconciliation
+  note (live `.github/` = 5 workflows incl. `dependency-submission.yml` + `pages.yml`; ci.yml also assembles
+  the 2 benchmark modules); **play-store-listing** desc char-count 2,389→2,927 + 3 mis-categorized upgrade
+  bullets fixed against `UpgradeType` (orbs/lifesteal are DEFENSE, attack-speed/range are ATTACK, no
+  "projectile speed" upgrade exists); **product.md** Workshop "24 purchased with Steps"→"22 Steps-purchasable
+  (MULTISHOT/BOUNCE_SHOT `isWorkshopVisible=false`)".
+- **Left intentionally:** historical "X→Y JVM" deltas inside STATE "Recently shipped" / RUN_LOG narrative
+  (append-only history, internally consistent); plan-32-ci's as-authored `.github/` manifest + `.kiro/`/AGENTS
+  doc-sync checklist (historical-at-authoring, covered by the new reconciliation note); all frozen docs.
+- **No app code / schema / test change. 1118 JVM unchanged.** No ADR (doc reconciliation, no decision).
+- **Status:** applied to working tree on `main`; not yet committed (developer to review the diff / decide the
+  branch + commit per the usual flow).
+
 ## 2026-06-19 — Reliability wave #251 (offline gap-fill rate-clamp) + #249 (offline IAP swallowed)
 
 - **Goal:** clear two confirmed before-public `severity:major` defects from the 2026-06-18 complete-app

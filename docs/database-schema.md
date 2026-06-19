@@ -247,12 +247,13 @@ Each entity gets its own DAO:
   so the test reads the authoritative version from a built DB, not annotation reflection.)
 - Current schema version: 12
 - Active migrations: `MIGRATION_7_8` (adds `battleStepsEarned`), `MIGRATION_8_9` (adds `billing_receipt` table, C.5 PR 1), `MIGRATION_9_10` (recreates `ultimate_weapon_state` table with per-path columns + adds `bossPsEarnedToday` to `daily_step_record`, R4-06 + R4-07 / ADR-0008 + ADR-0009), `MIGRATION_10_11` (recreates `card_inventory` aggregating duplicate rows by `cardType` into `copyCount` + adds unique index on `cardType`, R4-08 / ADR-0010), `MIGRATION_11_12` (recreates `daily_mission` deduping duplicate `(date, missionType)` rows + adds unique index, #127)
-- v1→v2: Added `highestUnlockedTier` column to `player_profile` (Plan 13). Uses `fallbackToDestructiveMigration` during development.
-- v2→v3: Added `labSlotCount` column to `player_profile` (Plan 16). Uses `fallbackToDestructiveMigration` during development.
-- v3→v4: Added `WeeklyChallengeEntity`, `DailyLoginEntity`, streak fields on `player_profile` (Plan 20). Uses `fallbackToDestructiveMigration`.
-- v4→v5: Added `MilestoneEntity`, `DailyMissionEntity` (Plan 21). Uses `fallbackToDestructiveMigration`.
-- v5→v6: Added lifetime currency counters and battle stats to `player_profile` (Plan 22). Uses `fallbackToDestructiveMigration`.
-- v6→v7: Added `CosmeticEntity`, monetization fields on `player_profile` (adRemoved, seasonPassActive, seasonPassExpiry, freeLabRushUsedToday, freeCardPackAdUsedToday) (Plan 26). Uses `fallbackToDestructiveMigration`.
+- _Pre-v7 schemas (v1→v7) predate the first explicit `Migration` object and were handled by destructive downgrade fallback during early development — the **migration floor is v7** (`MIGRATION_FLOOR = 7`, #237). The per-step deltas below are retained for history only:_
+- v1→v2: Added `highestUnlockedTier` column to `player_profile` (Plan 13).
+- v2→v3: Added `labSlotCount` column to `player_profile` (Plan 16).
+- v3→v4: Added `WeeklyChallengeEntity`, `DailyLoginEntity`, streak fields on `player_profile` (Plan 20).
+- v4→v5: Added `MilestoneEntity`, `DailyMissionEntity` (Plan 21).
+- v5→v6: Added lifetime currency counters and battle stats to `player_profile` (Plan 22).
+- v6→v7: Added `CosmeticEntity`, monetization fields on `player_profile` (adRemoved, seasonPassActive, seasonPassExpiry, freeLabRushUsedToday, freeCardPackAdUsedToday) (Plan 26).
 - v7→v8: Added `battleStepsEarned` column to `daily_step_record` (Battle Step Rewards, ADR-0003). First explicit `Migration` object (`MIGRATION_7_8` in `data/local/Migrations.kt`); `fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)` retained for dev/QA downgrades only.
 - v8→v9: Added `billing_receipt` table (Play Billing idempotency store, C.5 PR 1 / ADR-0005). `MIGRATION_8_9` creates the table with all 10 columns.
 - v9→v10: Recreated `ultimate_weapon_state` table (R4-06 / ADR-0008). Recreate-table dance: create `_new` table with per-path columns (`damageLevel`, `secondaryLevel`, `cooldownLevel`, `isUnlocked`), copy existing rows mapping old `level` → `damageLevel` and `level > 0` → `isUnlocked = 1`, drop old table, rename `_new` to `ultimate_weapon_state`. Same migration also adds `bossPsEarnedToday` column to `daily_step_record` (R4-07 / ADR-0009 — boss-drop Power Stones daily cap tracking, folded into the same migration).
@@ -277,4 +278,4 @@ Each entity gets its own DAO:
 - Encryption passphrase is generated randomly on first run, encrypted with an Android Keystore AES-256-GCM key, and stored in SharedPreferences
 - On decryption failure, `DatabaseKeyManager`'s response is **scoped to the cause (#238)**: it wipes the stale passphrase + DB **only** when the Keystore alias is provably absent (the true device-restore signal — the on-disk DB is encrypted with an unrecoverable passphrase). A decrypt failure with the alias still present is treated as a *transient* Keystore fault (OEM daemon restart, low memory, post-OS-update) and is **rethrown** so the next launch retries — non-regenerable player progress is never destroyed on a fault that can't be proven unrecoverable. If the keystore can't even be opened to check, it defaults to "present" (no wipe).
 - Backup is disabled (`allowBackup="false"`) — local-only game, no valuable state to restore across devices
-- Uses `fallbackToDestructiveMigration()` during pre-release development
+- Uses `fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)` — destructive reset only on a **downgrade** (dev/QA). Forward upgrades require an explicit registered `Migration` object; a version bump with a missing migration **fails the build** (guarded by `MigrationChainTest`, #237) rather than silently wiping. The bare `fallbackToDestructiveMigration()` is **not** used anywhere.

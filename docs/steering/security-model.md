@@ -13,7 +13,7 @@ authoritative doc/code/ADR. When they disagree, the linked source wins.
 |---|---|---|
 | Database | SQLCipher (AES-256) full-DB encryption at rest via `net.zetetic:sqlcipher-android` | `docs/architecture.md` § Security |
 | Key management | DB passphrase generated randomly on first run, encrypted with an AES-256-GCM Android Keystore key, stored as a blob in SharedPreferences | `data/local/DatabaseKeyManager.kt` |
-| Key recovery | On Keystore mismatch (e.g. key invalidated), the manager regenerates a fresh passphrase rather than crashing | `data/local/DatabaseKeyManager.kt` |
+| Key recovery | On a passphrase-decrypt failure the response is **scoped to the cause (#238)**: the DB is wiped + a fresh passphrase regenerated **only** when the Keystore alias is provably absent (true device-restore — on-disk DB unrecoverable); a decrypt failure with the alias still present is treated as a *transient* Keystore fault and **rethrown** (open retries next launch) so non-regenerable Steps progress is preserved | `data/local/DatabaseKeyManager.kt` |
 | Backup | `android:allowBackup="false"` — local-only game; prevents restore-related crashes and cross-device key mismatch | `app/src/main/AndroidManifest.xml` |
 
 Room is the single source of truth for all game state; schema exports are committed to `app/schemas/`.

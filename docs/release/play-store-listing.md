@@ -20,9 +20,9 @@ Your phone's step counter tracks your daily walking. Every step you take earns i
 
 UPGRADE YOUR ZIGGURAT
 Spend Steps in the Workshop to permanently upgrade your tower across 22 Steps-purchasable upgrade types in three categories:
-• Attack — damage, crit chance, projectile speed, orbs
-• Defense — HP, regen, damage reduction, block, thorn damage
-• Utility — attack speed, range, lifesteal, cash bonuses, interest
+• Attack — damage, attack speed, crit chance, range
+• Defense — HP, regen, damage reduction, thorn damage, orbs, lifesteal
+• Utility — cash bonuses, interest, free upgrades, step multiplier
 
 BATTLE MYTHIC ENEMIES
 Launch wave-based tower defense battles against 6 enemy types — from fast scouts to massive bosses. Your ziggurat auto-fires projectiles while you manage in-round upgrades and activate Ultimate Weapons for spectacular effects.
@@ -58,7 +58,7 @@ All game data is stored locally on your device in an encrypted database. No acco
 Requires Android 14+ and a device with a step counter sensor. Optional Health Connect integration for enhanced step tracking and indoor workout credits.
 ```
 
-(2,389 characters)
+(2,927 characters)
 
 ## Category
 

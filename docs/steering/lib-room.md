@@ -23,8 +23,8 @@ interface PlayerProfileDao {
     @Upsert
     suspend fun upsert(entity: PlayerProfileEntity)
 
-    @Query("UPDATE player_profile SET currentStepBalance = currentStepBalance + :delta, totalStepsEarned = CASE WHEN :delta > 0 THEN totalStepsEarned + :delta ELSE totalStepsEarned END WHERE id = 1")
-    suspend fun adjustStepBalance(delta: Long)
+    @Query("UPDATE player_profile SET currentStepBalance = MAX(0, currentStepBalance + :delta), totalStepsEarned = CASE WHEN :delta > 0 THEN totalStepsEarned + :delta ELSE totalStepsEarned END WHERE id = 1")
+    suspend fun adjustStepBalance(delta: Long) // MAX(0, …) is the anti-cheat escrow-clawback clamp — keep it
 }
 ```
 

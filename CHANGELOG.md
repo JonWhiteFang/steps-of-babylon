@@ -8,7 +8,7 @@ All notable changes to Steps of Babylon are documented here.
 
 Two confirmed before-public reliability defects from the 2026-06-18 complete-app review, one combined PR.
 **No schema change; no economy/engine-formula change** beyond the offline gap-fill *crediting path*;
-**1133 → 1141 JVM tests** (+8). TDD (RED→GREEN per fix); spec + plan each put through a single-agent
+**1110 → 1118 JVM tests** (+8). TDD (RED→GREEN per fix); spec + plan each put through a single-agent
 adversarial review (ultracode off, per the developer's choice) — the spec review added a test-mechanics
 amendment (hoist the `antiCheatPrefs` mock so the no-rate-rejection assertion is verifiable) and the plan
 review caught a missing `BillingProduct` import in the #249 tests, both applied before implementation. No

@@ -20,7 +20,7 @@ Walk → Earn Steps → Spend Steps on Workshop upgrades → Fight battles → R
 
 ## Key Systems
 
-- **Workshop** — 24 permanent upgrade types (Attack/Defense/Utility), purchased with Steps
+- **Workshop** — 24 `UpgradeType` entries (Attack/Defense/Utility); 22 are purchased with Steps on the Workshop screen (MULTISHOT + BOUNCE_SHOT are `isWorkshopVisible = false` — in-round Cash and/or Labs-research paths)
 - **Labs** — research projects (12 `ResearchType` enum rows; 11 surfaced in the Labs UI, AUTO_UPGRADE_AI deferred to v1.x), Step cost + real-time duration (background timer)
 - **Cards** — 9 types, 3 rarities, loadout of 3 max, acquired via Gem packs; copy-based 7-level upgrades
 - **Ultimate Weapons** — 6 types, loadout of 3 max, Power Stone gated, per-path upgrades (R4-06)
