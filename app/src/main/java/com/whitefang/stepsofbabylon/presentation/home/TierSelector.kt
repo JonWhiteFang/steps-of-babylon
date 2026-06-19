@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.domain.model.TierConfig
+import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 
 @Composable
 fun TierSelector(
@@ -34,7 +35,7 @@ fun TierSelector(
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "Tier $currentTier — ${Biome.forTier(currentTier).name.replace('_', ' ')}",
+            text = "Tier $currentTier — ${Biome.forTier(currentTier).name.toDisplayName()}",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFD4A843),
@@ -72,7 +73,7 @@ fun TierSelector(
         if (conditions.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
             Text(
-                text = conditions.entries.joinToString(" · ") { "${it.key.name.replace('_', ' ')} ${it.value}" },
+                text = conditions.entries.joinToString(" · ") { "${it.key.name.toDisplayName()} ${it.value}" },
                 style = MaterialTheme.typography.labelSmall,
                 color = Color(0xFFFF8A65),
                 textAlign = TextAlign.Center,

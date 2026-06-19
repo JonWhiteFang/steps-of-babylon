@@ -12,9 +12,9 @@ data-integrity #237/#238/#248) via release PR #278 (squash `ffa9973`). **ALL 4 n
 Latest content wave MERGED: data-integrity (PR #276, `0f32ac6`; #237/#238/#248 auto-closed; ADR-0030,
 single-agent review caught a critical pre-code defect). Earlier waves MERGED: #261/#233 (PR #274, `8b50b13`);
 #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.9 (vc 25)** · **1118 JVM + 9 instrumented tests**
-green (1110 shipped in v1.0.10; +8 net-new on the `[Unreleased]` reliability-wave branch #251/#249 → 1118;
-the prior +23 headline drift is now reconciled) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
+Supersedes **v1.0.9 (vc 25)** · **1126 JVM + 9 instrumented tests**
+green (1110 shipped in v1.0.10; +8 reliability wave #251/#249 → 1118; +8 correctness/UX wave
+#225/#235/#224/#222 → 1126; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -32,7 +32,18 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #280, squash `1cc3afe`; both CI checks green; #251/#249 auto-closed; `[Unreleased]`).**
+- **CURRENT (DONE — branch `fix/correctness-ux-wave-224-225-235-222`, ready to commit/PR; `[Unreleased]`).**
+  Quick **correctness/UX wave** off the 2026-06-18 complete-app-review backlog: four self-contained,
+  low-risk defects, one combined branch. **Presentation + test-only — no schema/economy/engine change;
+  1118 → 1126 JVM** (+8); `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. TDD per fix
+  (RED guard/test → fix → GREEN). Ultracode OFF → TDD + single-agent self-review (flagged, not silently
+  skipped). **#225** six `enum.name.replace('_',' ')` UI sites → shared `toDisplayName()` + new
+  `NoRawEnumNameInUiTest` source-scan guard. **#235** Labs/Cards/Store → `collectAsStateWithLifecycle()`
+  (Battle stays plain, documented + allowlisted in new `FlowCollectionLifecycleTest`). **#224** pure
+  `HomeUiState.showFirstWalkPrompt` + Home `EmptyState` first-walk prompt (`HomeFirstWalkPromptTest`).
+  **#222** `DataTransformMigrationsTest` characterizes the 9→10 UW-split + 10→11 card-dedup migrations.
+  No ADR. Next: commit + PR; then back to the audit backlog (#262/#128 + perf/policy/CI/architecture clusters).
+- **Previous objective (DONE — MERGED PR #280, squash `1cc3afe`; both CI checks green; #251/#249 auto-closed; `[Unreleased]`).**
   Before-public **reliability wave**: two confirmed 2026-06-18 complete-app-review `severity:major` defects,
   one combined branch. **No schema change; no economy/engine-formula change** beyond the offline gap-fill
   *crediting path*; **1110 → 1118 JVM** (+8); full `testDebugUnitTest lintDebug assembleDebug` BUILD

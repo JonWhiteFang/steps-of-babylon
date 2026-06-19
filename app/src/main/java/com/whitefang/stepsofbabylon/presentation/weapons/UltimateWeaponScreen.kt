@@ -34,6 +34,7 @@ import com.whitefang.stepsofbabylon.presentation.ui.RarityBadge
 import com.whitefang.stepsofbabylon.presentation.ui.rarityBorder
 import com.whitefang.stepsofbabylon.presentation.ui.uwRarityLabel
 import com.whitefang.stepsofbabylon.presentation.ui.uwRarityTier
+import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
@@ -111,7 +112,7 @@ private fun UWCard(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         RarityBadge(tier, uwRarityLabel(tier), alpha = rarityAlpha)
                         Text(
-                            info.type.name.replace('_', ' '),
+                            info.type.name.toDisplayName(),
                             fontWeight = FontWeight.Bold,
                             color = if (info.isUnlocked) Color.White else Color.Gray,
                         )

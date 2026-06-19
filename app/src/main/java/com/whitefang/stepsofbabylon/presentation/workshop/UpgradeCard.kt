@@ -25,6 +25,7 @@ import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
+import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import com.whitefang.stepsofbabylon.presentation.ui.theme.BronzeSurface
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Ivory
@@ -85,7 +86,7 @@ fun UpgradeCard(info: UpgradeDisplayInfo, onClick: () -> Unit) {
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = info.type.name.replace('_', ' '),
+                        text = info.type.name.toDisplayName(),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                     )

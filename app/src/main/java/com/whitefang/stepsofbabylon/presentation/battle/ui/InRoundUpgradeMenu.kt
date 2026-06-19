@@ -35,6 +35,7 @@ import com.whitefang.stepsofbabylon.domain.usecase.UpgradeEffectReadout
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
+import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import kotlin.math.ceil
 import kotlin.math.pow
 
@@ -126,7 +127,7 @@ fun InRoundUpgradeMenu(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text(type.name.replace("_", " "), color = Color.White, fontSize = 13.sp)
+                        Text(type.name.toDisplayName(), color = Color.White, fontSize = 13.sp)
                         Text(stringResource(R.string.inround_level_desc, level, type.config.description), color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
                         // RO-11 #C / RO-10: live "Now → Next" readout.
                         // Skip when describeEffect returns an empty current string — keeps
