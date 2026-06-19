@@ -20,9 +20,11 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 
 class DailyStepManagerTest {
@@ -408,6 +410,52 @@ class DailyStepManagerTest {
             playerRepo.getStepBalance(),
             "Activity minutes must not receive the STEP_MULTIPLIER walking bonus",
         )
+    }
+
+    // ---- #251: recordTrustedSteps — HC-verified batch credit bypasses the rate limiter ----
+
+    @Test
+    fun `R251 trusted credit of a large gap is NOT clamped to the per-minute cap`() = runTest {
+        manager.recordTrustedSteps(4_000, baseTime)
+
+        assertEquals(
+            4_000L,
+            playerRepo.getStepBalance(),
+            "trusted gap-fill must bypass the 200/min rate limiter (issue acceptance: > 250)",
+        )
+        assertTrue(playerRepo.getStepBalance() > 250L)
+    }
+
+    @Test
+    fun `R251 trusted credit still respects the 50k daily ceiling`() = runTest {
+        manager.recordTrustedSteps(60_000, baseTime)
+
+        assertEquals(
+            DailyStepManager.DAILY_CEILING,
+            playerRepo.getStepBalance(),
+            "trusted credit must clamp at the absolute 50k ceiling",
+        )
+    }
+
+    @Test
+    fun `R251 trusted credit applies the STEP_MULTIPLIER bonus`() = runTest {
+        workshopRepo.upgrades.value =
+            mapOf(com.whitefang.stepsofbabylon.domain.model.UpgradeType.STEP_MULTIPLIER to 50)
+
+        manager.recordTrustedSteps(100, baseTime)
+
+        assertEquals(
+            192L,
+            playerRepo.getStepBalance(),
+            "trusted credit must apply the same STEP_MULTIPLIER as recordSteps",
+        )
+    }
+
+    @Test
+    fun `R251 trusted credit does NOT record an anti-cheat rate rejection`() = runTest {
+        manager.recordTrustedSteps(4_000, baseTime)
+
+        verify(antiCheatPrefs, never()).incrementRateRejected(any())
     }
 
     // ---- RO-11 #A.3: STEP_EFFICIENCY Lab research applies to walking step credit ----
