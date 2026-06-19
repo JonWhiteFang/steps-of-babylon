@@ -221,6 +221,47 @@ class DailyStepManager @Inject constructor(
         }
     }
 
+    /**
+     * Credits an HC-verified recovered gap (offline-recovery, #251). UNLIKE [recordSteps] this path
+     * SKIPS rate-limit + velocity analysis: the total is independently bounded by Health Connect's
+     * own daily aggregate (the caller derives the gap as `hcTotal - sensorTotal`, the same source
+     * [com.whitefang.stepsofbabylon.data.healthconnect.StepCrossValidator] already trusts), so
+     * funnelling it through the live-walking 200/min limiter would clamp a legitimate multi-hour
+     * recovery to a tiny fraction and discard the rest as a false anti-cheat rejection. The 50k
+     * [DAILY_CEILING] and the STEP_MULTIPLIER bonus still apply (the cap stays absolute; gap steps
+     * are legitimately-walked sensor steps credited identically to live crediting).
+     *
+     * Runs under the same non-reentrant [mutex] as [recordSteps] (calls [ensureInitializedLocked],
+     * never [recordSteps] — that would self-deadlock). Persists the raw gap into [dailySensorTotal]
+     * so the next [com.whitefang.stepsofbabylon.data.healthconnect.StepGapFiller.fillGaps] computes
+     * `gap ≈ 0` (idempotent). Per-minute tracking ([stepsPerMinute]) is intentionally NOT updated —
+     * a multi-minute elapsed window has no single true epoch minute and must not skew the
+     * activity-minute overlap dedup.
+     */
+    suspend fun recordTrustedSteps(rawDelta: Long, timestampMs: Long) {
+        if (rawDelta <= 0) return
+
+        mutex.withLock {
+            ensureInitializedLocked()
+
+            val multiplied = applyStepMultiplier(rawDelta)
+
+            val remainingCeiling = (DAILY_CEILING - dailyCreditedTotal).coerceAtLeast(0)
+            val credited = multiplied.coerceAtMost(remainingCeiling)
+            if (credited <= 0) return
+
+            dailySensorTotal += rawDelta
+            dailyCreditedTotal += credited
+
+            // Persist-with-sum FIRST, then increment the field (mirror recordSteps:208-209).
+            stepRepository.updateDailySteps(currentDate, dailySensorTotal, dailySensorCredited + credited)
+            dailySensorCredited += credited
+            playerRepository.addSteps(credited)
+
+            runFollowOnPipeline(timestampMs)
+        }
+    }
+
     suspend fun recordActivityMinutes(
         activityMinutes: Map<String, Int>,
         stepEquivalents: Long,

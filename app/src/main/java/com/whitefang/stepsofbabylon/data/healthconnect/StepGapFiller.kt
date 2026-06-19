@@ -22,7 +22,10 @@ class StepGapFiller @Inject constructor(
 
         val gap = hcTotal - sensorTotal
         if (gap > 0) {
-            dailyStepManager.recordSteps(gap, System.currentTimeMillis())
+            // #251: recovered HC gaps are an already-validated batch over an elapsed window, not a
+            // live sensor delta — credit them through the trusted path so the live-walking rate
+            // limiter doesn't clamp a legitimate multi-hour recovery to ~200 steps.
+            dailyStepManager.recordTrustedSteps(gap, System.currentTimeMillis())
         }
     }
 }

@@ -4,6 +4,44 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — Reliability wave: offline gap-fill rate-clamp (#251) · offline IAP swallowed (#249)
+
+Two confirmed before-public reliability defects from the 2026-06-18 complete-app review, one combined PR.
+**No schema change; no economy/engine-formula change** beyond the offline gap-fill *crediting path*;
+**1133 → 1141 JVM tests** (+8). TDD (RED→GREEN per fix); spec + plan each put through a single-agent
+adversarial review (ultracode off, per the developer's choice) — the spec review added a test-mechanics
+amendment (hoist the `antiCheatPrefs` mock so the no-rate-rejection assertion is verifiable) and the plan
+review caught a missing `BillingProduct` import in the #249 tests, both applied before implementation. No
+ADR (bug-fixes on established patterns).
+
+- **#251 — offline-recovery gap-fill silently clamped to ~200 steps/min** (`severity:major`, confirmed).
+  `StepGapFiller.fillGaps` recovers steps the device counted while the foreground service was killed
+  (`gap = hcTotal − sensorTotal`) but credited them via `DailyStepManager.recordSteps`, which funnels every
+  credit through the live-walking `StepRateLimiter` (200/min, 250 burst). A large HC-verified recovery (e.g.
+  4,000 steps over two hours) was clamped to ~200 in one shot and the rest counted as a *false anti-cheat
+  rate rejection* and permanently lost. Fix: new `DailyStepManager.recordTrustedSteps(rawDelta, timestampMs)`
+  — a trusted batch-credit path that **skips** rate-limit + velocity analysis (the total is independently
+  bounded by Health Connect's own daily aggregate, the same source `StepCrossValidator` already trusts) while
+  **keeping** the 50k `DAILY_CEILING` and the STEP_MULTIPLIER bonus, running its full body under the same
+  non-reentrant `#120` mutex (calls `ensureInitializedLocked()`, never `recordSteps` — no self-deadlock),
+  persisting the raw gap into `dailySensorTotal` so the next `fillGaps` sees `gap ≈ 0` (idempotent), and
+  intentionally skipping per-minute tracking (a multi-minute elapsed window has no single true epoch minute).
+  `StepGapFiller` switched to it. **Deliberately out of scope:** `StepSyncWorker.sensorCatchUp` stays
+  rate-limited — its gap comes from the raw hardware counter, not an HC-verified total, so it is exactly the
+  unvalidated source the rate limiter exists to guard. Guarded by 5 new `R251` `DailyStepManagerTest` cases
+  (large gap not clamped > 250; 50k ceiling still absolute; STEP_MULTIPLIER applies; no anti-cheat
+  rate-rejection recorded; non-positive delta is a no-op).
+- **#249 — offline / failed IAP errors silently swallowed** (`severity:major`, confirmed). `StoreViewModel`'s
+  three purchase functions called `billingManager.purchase(...)` and **discarded** the `PurchaseResult`, so
+  on a poor/absent network the spinner cleared and nothing was shown — the carefully-authored offline error
+  strings in `BillingManagerImpl` ("Billing service unavailable", "Network error", "Purchase pending —
+  complete payment to receive your items") were dead, and the Store Snackbar (already bound to
+  `userMessage`) never fired. Fix: capture the result and set `_userMessage.value = result.message` on
+  `PurchaseResult.Error` (the PENDING-vs-hard-error distinction is already carried in the message string), de-
+  triplicated into a private `runPurchase(product)` helper; mirrors `CardsViewModel.watchFreePackAd`.
+  `purchaseCosmetic` (a Gem spend, already surfacing its own failure) is untouched. Guarded by 3 new
+  `StoreViewModelTest` cases (error surfaces; pending surfaces; success is quiet).
+
 ## [1.0.10] — 2026-06-19 (versionCode 26)
 
 Release collateral promotes everything accumulated since v1.0.9 (4 fix waves) to the Play **internal**
