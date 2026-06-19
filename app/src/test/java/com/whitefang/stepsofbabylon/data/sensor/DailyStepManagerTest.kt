@@ -458,6 +458,14 @@ class DailyStepManagerTest {
         verify(antiCheatPrefs, never()).incrementRateRejected(any())
     }
 
+    @Test
+    fun `R251 trusted credit of a non-positive delta is a no-op`() = runTest {
+        manager.recordTrustedSteps(0, baseTime)
+        manager.recordTrustedSteps(-100, baseTime)
+
+        assertEquals(0L, playerRepo.getStepBalance(), "non-positive trusted delta must credit nothing")
+    }
+
     // ---- RO-11 #A.3: STEP_EFFICIENCY Lab research applies to walking step credit ----
     // Pre-RO-11 the STEP_EFFICIENCY enum was dead despite costing 5 000 Steps + 8 hours
     // research time per level. RO-11 #A.3 wires it into the same applyStepMultiplier path
