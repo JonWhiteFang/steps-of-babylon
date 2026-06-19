@@ -4,6 +4,13 @@ import android.app.Activity
 import android.content.Context
 import androidx.room.Room
 import androidx.work.Configuration
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.Worker
+import androidx.work.WorkerParameters
+import androidx.work.testing.SynchronousExecutor
+import java.util.concurrent.TimeUnit
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.whitefang.stepsofbabylon.data.local.AppDatabase
 import org.junit.After
@@ -29,8 +36,10 @@ class DataDeletionManagerTest {
     @Before
     fun setUp() {
         context = RuntimeEnvironment.getApplication()
+        // SynchronousExecutor so cancelAllWork().result resolves on the calling thread — makes the
+        // #248 "await cancel before close" path deterministic in-test (the default executor is async).
         WorkManagerTestInitHelper.initializeTestWorkManager(
-            context, Configuration.Builder().build()
+            context, Configuration.Builder().setExecutor(SynchronousExecutor()).build()
         )
         db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
             .allowMainThreadQueries()
@@ -79,6 +88,26 @@ class DataDeletionManagerTest {
     }
 
     @Test
+    fun `deleteAllData cancels in-flight work before closing the database`() {
+        val wm = WorkManager.getInstance(context)
+        // Enqueue work with a long initial delay so it stays ENQUEUED (never starts running under the
+        // SynchronousExecutor), modelling pending background work at wipe time.
+        val request = OneTimeWorkRequestBuilder<NoOpWorker>()
+            .setInitialDelay(1, TimeUnit.HOURS)
+            .build()
+        wm.enqueue(request).result.get()
+        assertEquals(WorkInfo.State.ENQUEUED, wm.getWorkInfoById(request.id).get()?.state)
+
+        manager.deleteAllData(activity)
+
+        // The awaited cancellation must have run before close(): the work is cancelled and the DB is closed
+        // without an "already-closed object" throw (the method returning normally proves no crash).
+        val info = wm.getWorkInfoById(request.id).get()
+        assertEquals(WorkInfo.State.CANCELLED, info?.state)
+        assertFalse("Database should be closed", db.isOpen)
+    }
+
+    @Test
     fun `deleteAllData clears the crash breadcrumb prefs`() {
         // Seed a breadcrumb directly via the same file name CrashBreadcrumbStore uses.
         context.getSharedPreferences("crash_breadcrumb_prefs", Context.MODE_PRIVATE)
@@ -90,5 +119,10 @@ class DataDeletionManagerTest {
             "crash_breadcrumb_prefs must be cleared by deleteAllData",
             context.getSharedPreferences("crash_breadcrumb_prefs", Context.MODE_PRIVATE).all.isEmpty(),
         )
+    }
+
+    /** Minimal no-op worker used only to enqueue pending work for the cancel-before-close test. */
+    class NoOpWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
+        override fun doWork(): Result = Result.success()
     }
 }

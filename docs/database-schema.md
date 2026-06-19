@@ -238,6 +238,13 @@ Each entity gets its own DAO:
 - Write manual migrations for complex changes (column renames, data transforms)
 - Version numbering: increment by 1 per plan that touches the schema
 - Test migrations with `MigrationTestHelper` in instrumented tests
+- **Migration-chain guard (#237):** `AppMigrations.validateChain()` (pure) asserts `AppMigrations.ALL`
+  forms a contiguous +1-step chain from the migration floor (v7) up to the live `AppDatabase` version,
+  with no gaps/overlaps/multi-step jumps. `MigrationChainTest` runs it against the real chain + the
+  built-DB version, so a future version bump that commits the new schema JSON (passing the CI drift gate)
+  but forgets to register the `Migration` object **fails the build** — the worst migration failure mode,
+  which would otherwise ship a guaranteed launch crash. (The `@Database` annotation is `@Retention(CLASS)`,
+  so the test reads the authoritative version from a built DB, not annotation reflection.)
 - Current schema version: 12
 - Active migrations: `MIGRATION_7_8` (adds `battleStepsEarned`), `MIGRATION_8_9` (adds `billing_receipt` table, C.5 PR 1), `MIGRATION_9_10` (recreates `ultimate_weapon_state` table with per-path columns + adds `bossPsEarnedToday` to `daily_step_record`, R4-06 + R4-07 / ADR-0008 + ADR-0009), `MIGRATION_10_11` (recreates `card_inventory` aggregating duplicate rows by `cardType` into `copyCount` + adds unique index on `cardType`, R4-08 / ADR-0010), `MIGRATION_11_12` (recreates `daily_mission` deduping duplicate `(date, missionType)` rows + adds unique index, #127)
 - v1→v2: Added `highestUnlockedTier` column to `player_profile` (Plan 13). Uses `fallbackToDestructiveMigration` during development.
@@ -268,6 +275,6 @@ Each entity gets its own DAO:
 
 - Database is encrypted at rest using SQLCipher (`net.zetetic:sqlcipher-android`)
 - Encryption passphrase is generated randomly on first run, encrypted with an Android Keystore AES-256-GCM key, and stored in SharedPreferences
-- On decryption failure (e.g., keystore mismatch after device restore), `DatabaseKeyManager` wipes the stale passphrase and generates a fresh key (database resets)
+- On decryption failure, `DatabaseKeyManager`'s response is **scoped to the cause (#238)**: it wipes the stale passphrase + DB **only** when the Keystore alias is provably absent (the true device-restore signal — the on-disk DB is encrypted with an unrecoverable passphrase). A decrypt failure with the alias still present is treated as a *transient* Keystore fault (OEM daemon restart, low memory, post-OS-update) and is **rethrown** so the next launch retries — non-regenerable player progress is never destroyed on a fault that can't be proven unrecoverable. If the keystore can't even be opened to check, it defaults to "present" (no wipe).
 - Backup is disabled (`allowBackup="false"`) — local-only game, no valuable state to restore across devices
 - Uses `fallbackToDestructiveMigration()` during pre-release development

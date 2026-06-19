@@ -8,7 +8,7 @@ One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) a
 **the last 2 net-new HIGHs — #261 battery-optimization whitelist primer + #233 battle portrait-lock**
 (inline review caught a re-show bug pre-code). **ALL 4 net-new HIGHs (#233/#236/#250/#261) now DONE.**
 Prior waves MERGED: #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.8 (vc 24)** · **1100 JVM + 9 instrumented tests**
+Supersedes **v1.0.8 (vc 24)** · **1110 JVM + 9 instrumented tests**
 green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
@@ -27,7 +27,26 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #274, squash `8b50b13`; both CI checks green; #261/#233 auto-closed;
+- **CURRENT (DONE — on branch `fix/data-integrity-237-238-248`, not yet committed/PR'd; `[Unreleased]`).**
+  Data-integrity wave: three confirmed 2026-06-18 complete-app-review defects, one combined PR. **No schema
+  change; no economy/engine-logic change; 1100 → 1110 JVM** (+10); `testDebugUnitTest lintDebug assembleDebug`
+  BUILD SUCCESSFUL. TDD where there's a seam; spec
+  (`docs/superpowers/specs/2026-06-19-data-integrity-wave-237-238-248.md`) put through a single-agent
+  adversarial review (ultracode off) that **caught a critical pre-code defect**: the #238 catch-branch can't
+  be tested through `getPassphrase` under Robolectric (`KeyStore.getInstance` throws before any decrypt), so
+  the wipe-vs-rethrow *decision* was extracted as a pure seam. **#237**: pure
+  `AppMigrations.validateChain(migrations, liveVersion, floor)` + `MIGRATION_FLOOR=7` → `MigrationChainTest`
+  fails the build if a future version bump forgets to register a `Migration` (reads the live version from a
+  built DB — `@Database` is `@Retention(CLASS)`, reflection returns null). **#238**: `DatabaseKeyManager`
+  wipes the DB **only** when the Keystore alias is provably absent (device restore); transient
+  alias-present decrypt failures rethrow (no wipe) — pure `decideOnDecryptFailure(aliasExists)` + injectable
+  `keystoreAliasExists` (defaults to "present"/no-wipe). **#248**: `DataDeletionManager` awaits
+  `cancelAllWork().result` (bounded `.get(2s)`, main-thread-safe) **before** `database.close()` — closes the
+  WorkManager half of the write-after-close race; service-collector half narrowed not eliminated (kept
+  `recreate()` + lazy-reopen self-heal). **ADR-0030.** Remaining audit work after this: the larger #233
+  clean Simulation-hoist (ADR-0012, deferred) + the med/low backlog (#262) + #251/#249 (step-counting /
+  IAP) + the rest of #224–#260.
+- **Previous objective (DONE — MERGED PR #274, squash `8b50b13`; both CI checks green; #261/#233 auto-closed;
   `[Unreleased]`).** Background-reliability wave: #261 battery-optimization whitelist primer + #233
   battle portrait-lock. The last 2 net-new HIGHs; **no schema change; 1098 → 1100 JVM** (+2);
   `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. TDD where there's a seam; spec+plan
@@ -657,6 +676,24 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **HUD enemy count is derived, not tallied (#146)** — `GameEngine.aliveEnemyCount()` counts live `EnemyEntity` under `entitiesLock`; the desync-prone `WaveSpawner.enemiesAlive` tally was removed (SCATTER children bypassed its only `++`; `onDeath` re-fires double-counted). Don't reintroduce a hand-kept counter. `EnemyEntity.takeDamage` is guarded `if (!isAlive) return 0.0` (no corpse re-hit → no double-credit). Guarded by 3 `R146` GameEngineTest entries.
 - **Game-loop frame clamp (#126)** — `SimulationMath.clampAccumulator` (`MAX_CATCHUP_TICKS = 8`); don't lower below ~8 (a 30fps@4× render legitimately needs ~7.9 ticks/frame). Guarded by `SimulationMathTest`.
 - **`daily_step_record` writers must stay column-targeted (#121)** — disjoint-column `ON CONFLICT(date) DO UPDATE SET` upserts, NOT a whole-row read-copy-`@Upsert`. Guarded by `DailyStepDaoTest` + `StepRepositoryImplTest`.
+- **Migration chain is guarded (#237, ADR-0030)** — `AppMigrations.validateChain(migrations, liveVersion,
+  floor=MIGRATION_FLOOR=7)` (pure) + `MigrationChainTest` fail the build if `ALL` isn't a contiguous +1-step
+  chain topping out at `AppDatabase.version`. When you bump the schema version you MUST add+register the new
+  `Migration` in `ALL` or the test goes red. The live version is read from a built DB
+  (`db.openHelper.readableDatabase.version`), NOT annotation reflection (`@Database` is `@Retention(CLASS)`).
+  If the floor ever moves off 7, bump `MIGRATION_FLOOR` deliberately (ties to #258's pre-v7 concern).
+- **Decrypt-fail recovery is scoped to cause (#238, ADR-0030)** — `DatabaseKeyManager` wipes the DB **only**
+  when the Keystore alias is provably absent (device restore); an alias-present decrypt failure is a
+  *transient* fault and is **rethrown** (no wipe — preserves non-regenerable progress; retries next launch).
+  The decision is the pure `decideOnDecryptFailure(aliasExists)` seam; `keystoreAliasExists` is injectable
+  and defaults to "present" (no wipe) if the keystore can't be opened. Don't widen the catch back to
+  "wipe on any exception". Tests that override `keystoreAliasExists` MUST reset it in `@After` (JVM-global
+  `var` on the `object`). Guarded by `DatabaseKeyManagerTest`.
+- **`deleteAllData` awaits work-cancel before close (#248, ADR-0030)** — `DataDeletionManager` blocks on
+  `cancelAllWork().result.get(2s)` BEFORE `database.close()` so an in-flight `StepSyncWorker` can't write to
+  a closed DB. Keep the bound small (main-thread call, 5s ANR window); don't move `close()` ahead of the
+  cancel barrier. The service-collector half of the race is narrowed, not eliminated (documented). Guarded
+  by `DataDeletionManagerTest` (SynchronousExecutor; cancel-before-close test).
 - **`daily_mission` uniqueness is DB-level (#127)** — `(date, missionType)` unique index + `@Insert(onConflict = IGNORE)` is the authoritative guard against duplicate daily missions; the generator's read-then-insert check is racy on a WAL pool. Don't weaken the index or relax `IGNORE` back to plain `@Insert`. Schema v12; `MIGRATION_11_12` dedups via `GROUP BY` + `MAX()` (keeps `MAX(claimed)`). Guarded by `DailyMissionDaoTest` + `Migration11To12Test`.
 - **Billing signature verification (#124, ADR-0005 amendment)** — every wallet grant goes through `PurchaseVerifier.isValidPurchase(originalJson, signature, expectedProductId, expectedPurchaseToken)` BEFORE `grantOnceAtomic`, on BOTH paths. The product+token binding is load-bearing (blocks replaying a signed cheap receipt for an expensive product) — don't credit off the caller's `product` without verifying first. `PLAY_LICENSE_KEY` blank → fail-open is debug/CI only; a **release** build with a blank key is hard-failed by the `app/build.gradle.kts` `taskGraph` guard + the `release.yml` `PLAY_LICENSE_KEY` secret step — don't weaken either or fail-open could ship. Guarded by `RealPurchaseVerifierTest` + `BillingManagerImplTest`.
 - **Currency presentation is centralized (#160)** — all currency glyphs render via

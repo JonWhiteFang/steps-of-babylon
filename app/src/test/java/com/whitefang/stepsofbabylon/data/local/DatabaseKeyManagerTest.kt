@@ -2,7 +2,9 @@ package com.whitefang.stepsofbabylon.data.local
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.whitefang.stepsofbabylon.data.local.DatabaseKeyManager.DecryptFailureAction
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -75,5 +77,17 @@ class DatabaseKeyManagerTest {
         DatabaseKeyManager.wipeDatabaseFile(context)
 
         assertFalse(dbFile.exists())
+    }
+
+    // #238: the wipe-vs-rethrow decision is a pure seam so it's testable without an AndroidKeyStore.
+
+    @Test
+    fun `decideOnDecryptFailure wipes only when the alias is provably absent`() {
+        assertEquals(DecryptFailureAction.Wipe, DatabaseKeyManager.decideOnDecryptFailure(aliasExists = false))
+    }
+
+    @Test
+    fun `decideOnDecryptFailure rethrows when the alias is present — transient fault must not wipe`() {
+        assertEquals(DecryptFailureAction.Rethrow, DatabaseKeyManager.decideOnDecryptFailure(aliasExists = true))
     }
 }

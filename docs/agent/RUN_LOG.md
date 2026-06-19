@@ -1,3 +1,44 @@
+## 2026-06-19 — Data-integrity wave: migration-chain guard (#237) · scoped decrypt-fail recovery (#238) · DB-close race (#248)
+
+- **Goal:** fix the three confirmed data-integrity defects from the 2026-06-18 complete-app review's
+  data-integrity dimension (developer picked this batch + the #248 "await-cancel, keep recreate()" approach +
+  a lighter single-agent review since ultracode is off). One combined PR; no schema/economy/engine change.
+- **Process:** wrote a spec (`docs/superpowers/specs/2026-06-19-data-integrity-wave-237-238-248.md`) → ran a
+  single-agent adversarial review against the actual code → applied surviving findings → TDD where there's a
+  seam. The review **caught a critical pre-code defect**: the #238 catch-branch can't be exercised through
+  `getPassphrase` under Robolectric (`KeyStore.getInstance("AndroidKeyStore")` throws `NoSuchAlgorithmException`
+  *before* any decrypt, so a "seed a malformed blob" test would pass for the wrong reason, and the
+  alias-absent branch can't return a fresh passphrase because the fall-through `encrypt()` re-enters the
+  keystore). Resolution: extract the wipe-vs-rethrow *decision* as a pure `decideOnDecryptFailure(aliasExists)`
+  seam and unit-test that purely. Other applied findings: use raw `Future.get(timeout)` not a coroutines-guava
+  `await` (this project has no coroutines-guava dep); timeout ≤2s (main-thread call, verified via
+  `SettingsViewModel`); switch the #248 test to `SynchronousExecutor` for a deterministic await; reset the
+  JVM-global `keystoreAliasExists` seam in `@After`.
+- **What changed (3 prod files, 3 test files + 1 new):**
+  - **#237** — `data/local/Migrations.kt`: added `MIGRATION_FLOOR = 7` + pure
+    `validateChain(migrations, liveVersion, floor)` returning chain problems (contiguity / +1-step / floor /
+    tops-out-at-liveVersion). New `MigrationChainTest` (1 Robolectric: real `ALL` + built-DB version == 12, no
+    problems; 6 pure cases: valid, missing-top = forgotten-registration, mid-gap, multi-step, wrong-floor,
+    empty).
+  - **#238** — `data/local/DatabaseKeyManager.kt`: `DecryptFailureAction` sealed iface + pure
+    `decideOnDecryptFailure(aliasExists)` + injectable `keystoreAliasExists` (real impl → `containsAlias`,
+    defaults to "present"/no-wipe on keystore-open failure); `getPassphrase` catch now `when`s on the decision
+    (Wipe = clear prefs + `wipeDatabaseFile` + fall through to regenerate; Rethrow = `throw e`). Extended
+    `DatabaseKeyManagerTest` (+2 pure decision tests; `@After` resets the seam).
+  - **#248** — `data/DataDeletionManager.kt`: await `cancelAllWork().result.get(2s)` (try/catch
+    Timeout/Exception → log + proceed) before `stopService` + `close()`; `CANCEL_TIMEOUT_SECONDS = 2`.
+    Extended `DataDeletionManagerTest` (SynchronousExecutor config; new "cancels in-flight work before close"
+    test asserting `WorkInfo.State.CANCELLED` + DB closed; +`NoOpWorker`).
+- **Verification:** `testDebugUnitTest` BUILD SUCCESSFUL, **1110 JVM** (was 1100, +10). `lintDebug assembleDebug`
+  BUILD SUCCESSFUL. The only compiler warning is the pre-existing `@ApplicationContext`-param annotation-target
+  deprecation (not from this change).
+- **Docs synced:** `CLAUDE.md` test count 1100→1110; `CHANGELOG.md` new `[Unreleased]` entry; `database-schema.md`
+  (migration-chain guard note + scoped decrypt-fail Security note); `docs/steering/source-files.md` (4 entries
+  updated + `MigrationChainTest` added); STATE current-objective rotation + 3 new fragile-zone entries; ADR-0030.
+- **Remains / next:** commit + open the PR (branch `fix/data-integrity-237-238-248`). After merge, #237/#238/#248
+  auto-close. Remaining audit backlog: #251/#249 (step-counting / IAP), the larger #233 Simulation-hoist
+  (deferred), and the rest of the med/low #224–#262.
+
 ## 2026-06-18 — Release v1.0.9 (versionCode 25) → Play internal track
 
 - **Goal:** cut the first release since v1.0.8, shipping the 23 commits accumulated on `main` to the Play
