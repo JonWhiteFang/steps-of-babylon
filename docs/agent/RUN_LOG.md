@@ -33,9 +33,17 @@
 - **Doc-sync:** CLAUDE.md:131 (Compile SDK 37 / Target SDK 36), README:30, tech.md (L6/L27/L32/L33/L34/L35),
   plan-32-ci.md (L33 surgical + L53), CHANGELOG `[Unreleased]`, catalog HC comment. **ADR-0031** records the
   pin reversal. No app source/schema/test change; 1126 JVM unchanged.
-- **Remaining:** commit + PR (closes #199; the PR-gate CI run is the authoritative proof CI auto-provisions
-  platform 37) + monitor + merge; then #288 rebases (its compileSdk-gated bumps are now satisfied). HC 1.2.x
-  + targetSdk 37 + the rest of #288 deliberately deferred.
+- **Merged:** PR #289 (squash `1b6465a`); both CI checks green on a clean runner → **CONFIRMED CI
+  auto-provisions platform 37** (the central risk); #199 auto-closed.
+- **Dependabot fallout (resolved this session):** old grouped #288 (16 updates) auto-closed on rebase (its
+  core-ktx/lifecycle/sqlite bumps are now on `main`); #287 (all-actions: checkout 6.0.3→7.0.0 + action-gh-release)
+  rebased green + MERGED (`fa7e957`) — verified safe: this repo uses no `pull_request_target`, so checkout-v7's
+  fork-PR-checkout break is N/A. Dependabot reopened the remainder as **#290 (12 updates), STILL FAILING** on a
+  NEW conflict (not compileSdk): kotlin-compose plugin 2.4.0 → Kotlin-metadata 2.4.0, but Hilt 2.59.2's bundled
+  kotlin-metadata-jvm caps at 2.3.0 → `hiltJavaCompileDebug` fails. Left OPEN as its own task (hold kotlin-2.4.0,
+  or bump Hilt to a Kotlin-2.4-compatible release).
+- **Deliberately deferred:** HC 1.2.x (await beta/stable), targetSdk 37 (behavioral/device-tested), the rest
+  of #290's bumps (need the Hilt/Kotlin-2.4 conflict resolved first).
 
 ## 2026-06-19 — CI / supply-chain wave: #257 / #254 / #212 / #255 (`[Unreleased]`)
 
