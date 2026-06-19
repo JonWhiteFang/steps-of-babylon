@@ -57,12 +57,14 @@ state — the checklist informs that call, it does not replace it.
   @4× → Round Over → reward persistence → Settings) with zero crashes/ANRs/FATALs. The pass surfaced a
   layout defect (#187, Settings didn't scroll → "Replay tutorial"/"Delete All Data" unreachable), now fixed
   + MERGED (PR #188, `af30e96`; #187 closed) + on-device re-verified.*
-- [ ] **Audit-H (2026-06-17 complete-app review) — promotion blockers, see §H below.** A full
+- [x] **Audit-H (2026-06-17 complete-app review) — promotion blockers, see §H below.** A full
   code-grounded, adversarially-verified audit (`docs/reviews/2026-06-17-complete-app-review.md`) surfaced three
   **promotion blockers** beyond the fresh-install pass: no crash visibility + unguarded game-loop thread
   (#190), two reachable battle crashes (#191), privacy-policy/Data-Safety accuracy (#192). These reopen the
   "no known crashes" item in spirit — the fresh-install pass found no *observed* crash, but the audit found
-  *reachable* ones the manual pass couldn't trigger. **Closed-track promotion is gated on §H.**
+  *reachable* ones the manual pass couldn't trigger. **All three §H code blockers (#190/#191/#192) and the
+  three soak majors (#193/#194/#195) are now MERGED and shipped in v1.0.10 (versionCode 26)** — the only
+  residual §H item is the manual Play Console Data-Safety form for #192 (external, pre-promotion; see §H ticks).
 
 ### E. Balance & progression feel
 - [ ] Early tiers (1–5) feel right; economy neither grindy nor trivial — *manual play assessment*
@@ -95,31 +97,32 @@ closed: gathering soak signal or exposing testers is the whole point of closed t
 (fix before/during the soak; not a hard promotion gate but degrades tester experience or feedback quality).
 
 **Promotion blockers (`severity:blocker` — gate internal → closed):**
-- [ ] **#190 — crash visibility (REL-1/REL-2).** No global uncaught-exception handler + no crash reporting,
+- [x] **#190 — crash visibility (REL-1/REL-2).** No global uncaught-exception handler + no crash reporting,
   and `GameLoopThread.run()` wraps `update()/render()` in no `try/catch` → a sim exception is silent
   process death. *We would soak blind.* Fix: per-tick `try/catch` (skip-frame / surface error state) + a
-  `setDefaultUncaughtExceptionHandler` breadcrumb. Effort **S**.
-- [ ] **#191 — two reachable battle crashes (CONC-1/CONC-2).** `EffectEngine` effect lists mutated
+  `setDefaultUncaughtExceptionHandler` breadcrumb. Effort **S**. **MERGED** (PR #204, `d673386`; ADR-0026; shipped v1.0.10).
+- [x] **#191 — two reachable battle crashes (CONC-1/CONC-2).** `EffectEngine` effect lists mutated
   cross-thread on every boss kill / step reward (High); `uwStates` mutated off-loop-thread on replay
   (Medium). Same class as #118, on lists the `entitiesLock` sweep missed. Fix: mirror the `entitiesLock`
-  monitor pattern. Effort **S**.
-- [ ] **#192 — privacy-policy / Data-Safety accuracy (PRIV-1/SEC-1).** Policy says data "never uploaded" /
+  monitor pattern. Effort **S**. **MERGED** (PR #204, `d673386`; ADR-0026; shipped v1.0.10).
+- [x] **#192 — privacy-policy / Data-Safety accuracy (PRIV-1/SEC-1).** Policy says data "never uploaded" /
   AdMob is a "future" integration, but the live build ships AdMob + UMP + collects the advertising ID.
   Play-compliance accuracy on the path to the production-access application the soak feeds. Fix: present-tense
   policy rewrite (`HealthConnectPermissionActivity.kt` + `site/index.md`) + ad-ID
   disclosure + reconcile the Console Data-Safety form (Console step **needs external verification**). Effort
-  **S** + Console.
+  **S** + Console. **In-repo code MERGED** (PR #205, `0019217`; shipped v1.0.10); **residual = the manual Play
+  Console Data-Safety form** per `docs/release/data-safety-form.md` (external, pre-promotion — not a repo change).
 
 **Soak hardening (`severity:major` — fix before/during soak):**
-- [ ] **#193 — no-sensor silent dead-end (REL-3).** A device without `TYPE_STEP_COUNTER` accrues zero Steps
+- [x] **#193 — no-sensor silent dead-end (REL-3).** A device without `TYPE_STEP_COUNTER` accrues zero Steps
   while the foreground notification implies it works. Detect at first-launch → message + Health Connect
-  steer. Effort **M**.
-- [ ] **#194 — no error states anywhere (UX-1).** A failed data load spins forever (no error field on any
+  steer. Effort **M**. **MERGED** (PR #270, `ebf588a`; shipped v1.0.10).
+- [x] **#194 — no error states anywhere (UX-1).** A failed data load spins forever (no error field on any
   `UiState`; `isLoading` cleared only on `combine` success). Add a shared `ScreenStateHost(isLoading, error,
-  retry)` + `.catch` on each `combine`. Effort **M**.
-- [ ] **#195 — Missions day-rollover stale query (STATE-1).** `MissionsViewModel` never re-subscribes
+  retry)` + `.catch` on each `combine`. Effort **M**. **MERGED** (PR #272, `1811617`; ADR-0028; shipped v1.0.10).
+- [x] **#195 — Missions day-rollover stale query (STATE-1).** `MissionsViewModel` never re-subscribes
   `getByDate(today)` at midnight (the only date-screen missing the `flatMapLatest` pattern Home/Stats use).
-  Effort **S**.
+  Effort **S**. **MERGED** (PR #270, `ebf588a`; shipped v1.0.10).
 
 > Lower-severity audit findings (architecture seam, A11Y contrast, no-Compose-UI-tests, Gradle-wrapper
 > validation, clock-tamper TIME-1, i18n, etc.) are **before-public / post-launch**, not closed-track

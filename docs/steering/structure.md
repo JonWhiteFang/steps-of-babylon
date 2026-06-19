@@ -75,7 +75,7 @@ app/src/test/java/com/whitefang/stepsofbabylon/
 ├── fakes/              # In-memory fake repositories (FakePlayerRepository, FakeWorkshopRepository, FakeUltimateWeaponRepository, FakeLabRepository, FakeCardRepository, FakeWalkingEncounterRepository, FakeStepRepository, FakeCosmeticRepository, FakeBillingManager, FakeRewardAdManager, FakeMilestoneDao, FakeDailyMissionDao, FakeDailyLoginDao, FakeWeeklyChallengeDao, FakeDailyStepDao, FakeCosmeticDao, FakeTimeProvider)
 ├── domain/
 │   ├── model/          # Domain model invariant tests (TierConfig, Biome, Loadouts, UpgradeType, EnemyType, Milestone, DailyMissionType, BattleConditionEffects)
-│   ├── usecase/        # All 36 use case tests
+│   ├── usecase/        # Use case tests (one per use case in domain/usecase/)
 │   └── battle/         # engine/ (Simulation, SimulationMath) + entity/ (Enemy/Orb/Projectile/Ziggurat state) tests
 ├── presentation/
 │   ├── battle/

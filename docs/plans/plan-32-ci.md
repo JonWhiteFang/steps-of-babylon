@@ -173,6 +173,14 @@ AGENTS.md                   (update — plan index + status)
 
 On implementation, also: `README.md`, `.kiro/steering/tech.md`, `.kiro/steering/source-files.md`, `.kiro/steering/structure.md`.
 
+> **Post-authoring reconciliation (the manifest above is the as-planned set; the live `.github/` differs):**
+> the repo now has **5** workflow files — the three above plus `dependency-submission.yml` (Gradle dependency
+> graph, split into its own workflow) and `pages.yml` (privacy-policy publish from `site/` only, added later;
+> see ADR-0018 + plan-FORWARD). The live `ci.yml` also **type-checks the two benchmark modules**
+> (`:baselineprofile` + `:macrobenchmark`, added with the #26 perf/baseline-profile multi-module work) and runs
+> the gate with `--stacktrace`. The `.kiro/steering/*` + `AGENTS.md` doc-sync targets above were superseded by
+> `CLAUDE.md` + `docs/steering/` (ADR-0019).
+
 ---
 
 ## Completion Criteria

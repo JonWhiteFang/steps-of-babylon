@@ -67,10 +67,11 @@ The triage document already proposed a 6-patch phasing; this plan inherits that 
 
 Each wave produces a versioned release (v1.0.1, v1.0.2, v1.1, v1.2). Each wave gets its own AAB upload + smoke test before the next wave starts.
 
-> **Shipped status (as of 2026-06-11 — verify against git/issues, don't trust this note long-term):**
+> **Shipped status (last reconciled 2026-06-19 — verify against git/issues, don't trust this note long-term):**
 > Wave 1 (V1X-01/02/03) and Wave 2 (V1X-04/05/06) **shipped** (merged 2026-05-28, PRs #64–#69).
-> From Wave 3, V1X-08 (instrumented harness, PR #80), V1X-09 (simulation extraction, completed
-> 2026-06-03 PR #98), and V1X-13 phase 1 (i18n, PRs #109–#112) have **shipped**; V1X-07/10/11 and
+> From Wave 3, V1X-07 (repository tests), V1X-08 (instrumented harness, PR #80), V1X-09 (simulation
+> extraction, completed 2026-06-03 PR #98), V1X-10 (atomic Gem/PS spend), V1X-11 (per-kill
+> `@ApplicationScope` crediting), and V1X-13 phase 1 (i18n, PRs #109–#112) have **shipped**; only
 > Wave 4 (V1X-12 cloud save, V1X-13 phase 2) plus most content/proposal items remain **pending**.
 > The per-item specs below are still the live content for the pending work; the wave→version mapping
 > in the table is historical (V1X-08/09/13 landed without waiting for the v1.1/v1.2 sequencing).
@@ -120,7 +121,7 @@ V1X-07 (repo tests) lays the groundwork for V1X-08 (instrumented tests) by estab
 1. Branch named `feat/V1X-NN-short-slug` (or `fix/V1X-NN-...` if a sub-plan is purely a fix)
 2. Failing regression test committed first (red), then the feature/fix
 3. Full suite stays green
-4. Doc-sync per `.kiro/steering/11-agent-protocol.md` PR Task-List Convention (AGENTS.md test count, CHANGELOG.md, source-files.md, structure.md if applicable, STATE.md, RUN_LOG.md)
+4. Doc-sync per `CLAUDE.md` PR Task-List Convention (CLAUDE.md test count, CHANGELOG.md, source-files.md, structure.md if applicable, STATE.md, RUN_LOG.md)
 5. PR title `feat(<area>): <summary> (V1X-NN)`
 6. Merge → bump versionCode + versionName per the wave's target release tag → bundleRelease → upload to internal track → on-device smoke test → promote to production via staged rollout
 
@@ -570,7 +571,7 @@ Estimated test count delta: +0 JVM, +38 instrumented (656 + 43 from V1X-07 → 6
 
 **Source:** GitHub issue #37 (verified-accurate finding — Tier 3 in triage doc) + GitHub issue #25 (replay testing) + GitHub issue #27 (modularisation proposal)
 
-**Why:** `GameEngine.kt` lives in `presentation/`, imports `android.graphics.Canvas` directly, and is ~700 lines of mixed simulation + entity-system + auto-trigger + cosmetic-resolution + render logic. Pure simulation logic (wave spawn timing, entity tick, collision, stat resolution) is logically domain code. Mixing it with rendering violates the Clean Architecture invariant declared in `AGENTS.md` ("`domain/` must have zero Android imports") and prevents the kind of headless deterministic-replay testing #25 calls for.
+**Why:** `GameEngine.kt` lives in `presentation/`, imports `android.graphics.Canvas` directly, and is ~700 lines of mixed simulation + entity-system + auto-trigger + cosmetic-resolution + render logic. Pure simulation logic (wave spawn timing, entity tick, collision, stat resolution) is logically domain code. Mixing it with rendering violates the Clean Architecture invariant declared in `CLAUDE.md` ("`domain/` must have zero Android imports") and prevents the kind of headless deterministic-replay testing #25 calls for.
 
 **Scope (Option C from triage — partial extraction):**
 

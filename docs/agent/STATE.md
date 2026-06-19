@@ -12,9 +12,9 @@ data-integrity #237/#238/#248) via release PR #278 (squash `ffa9973`). **ALL 4 n
 Latest content wave MERGED: data-integrity (PR #276, `0f32ac6`; #237/#238/#248 auto-closed; ADR-0030,
 single-agent review caught a critical pre-code defect). Earlier waves MERGED: #261/#233 (PR #274, `8b50b13`);
 #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.9 (vc 25)** · **1141 JVM + 9 instrumented tests**
-green (1110 shipped in v1.0.10; +8 net-new on the `[Unreleased]` reliability-wave branch #251/#249, +23 was
-pre-branch drift in the headline) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
+Supersedes **v1.0.9 (vc 25)** · **1118 JVM + 9 instrumented tests**
+green (1110 shipped in v1.0.10; +8 net-new on the `[Unreleased]` reliability-wave branch #251/#249 → 1118;
+the prior +23 headline drift is now reconciled) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -35,7 +35,7 @@ the med/low backlog (#262) remain.
 - **CURRENT (DONE — MERGED PR #280, squash `1cc3afe`; both CI checks green; #251/#249 auto-closed; `[Unreleased]`).**
   Before-public **reliability wave**: two confirmed 2026-06-18 complete-app-review `severity:major` defects,
   one combined branch. **No schema change; no economy/engine-formula change** beyond the offline gap-fill
-  *crediting path*; **1133 → 1141 JVM** (+8); full `testDebugUnitTest lintDebug assembleDebug` BUILD
+  *crediting path*; **1110 → 1118 JVM** (+8); full `testDebugUnitTest lintDebug assembleDebug` BUILD
   SUCCESSFUL. TDD (RED→GREEN per fix); spec + plan each through a **single-agent adversarial review**
   (ultracode off, developer chose "b") — spec review added a test-mechanics amendment (hoist `antiCheatPrefs`
   mock), plan review caught a missing `BillingProduct` import; both applied pre-implementation. Subagent-
@@ -316,6 +316,25 @@ the med/low backlog (#262) remain.
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-19 — full ultracode doc-drift sweep (docs-only, `[Unreleased]`).** Multi-agent `Workflow`
+  (59 agents: 9 live-doc-cluster finders, every claim code-grounded → per-finding adversarial refute →
+  cross-doc-coherence + link-integrity lanes → refute). 48 candidates → **48 surviving, 0 refuted**;
+  deduped to **34 unique fixes across 15 live docs**. Headline theme: the long-standing **test-count
+  inflation reconciled** — actual `@Test` count is **1118** (gradle: 1118, 0 failures), but CLAUDE.md
+  said 1141, STATE.md 1141 (with a self-flagged but never-reconciled "+23 pre-branch drift"), README
+  both 1110 and 1010, CHANGELOG `[Unreleased]` "1133→1141". All reconciled to **1110→1118 (+8)** on the
+  real shipped base. Also: `domain/usecase/` **36→39**; SFX **9→7** (.ogg ground truth); 7 per-file
+  test counts in source-files.md (CardType 31→32, BillingManagerImpl 14→20, RealPurchaseVerifier 4→9,
+  PlayerRepositoryImpl 13→18, DailyStepDao 14→13, CardRepositoryImpl 16→15, SimulationMath 34→42);
+  BattleViewModel **16→15-param**; CardsUiState "dust balance"→copy counts; **security-model.md** key-recovery
+  row rewritten to the #238 scoped-wipe behavior; **database-schema.md** `fallbackToDestructiveMigration()`→
+  `fallbackToDestructiveMigrationOnDowngrade` (+ migration-floor=v7 framing); **lib-room.md** `adjustStepBalance`
+  example regained its `MAX(0,…)` clamp; **plan-FORWARD.md** §H/§D blockers #190/#191/#192 + soak #193/#194/#195
+  ticked MERGED; **plan-V1X-roadmap** V1X-07/10/11 moved to shipped + 2 `AGENTS.md`→`CLAUDE.md` path refs;
+  **plan-31** build pointer v1.0.5→v1.0.10; **plan-32-ci** post-authoring reconciliation note (5 workflows +
+  benchmark type-check); **play-store-listing** desc char-count 2,389→2,927 + 3 mis-categorized upgrade bullets
+  fixed against `UpgradeType`; **product.md** Workshop 24→"22 Steps-purchasable (MULTISHOT/BOUNCE_SHOT hidden)".
+  No app code/schema/test change; **1118 JVM** unchanged.
 - **2026-06-16 — #26 perf/battery (Gate G) in-repo slice — MERGED to `main`** (PR #184, squash `8f3c2ee`;
   CI PR gate + instrumented lane green). 13 commits on `feat/26-perf-battery-gate-g` (`36dea10`..`8d485f7`),
   squash-merged. Spec + plan both passed the Adversarial Review Gate
@@ -648,7 +667,7 @@ the med/low backlog (#262) remain.
   #4 currency lifetime-counter desync (display-only); #5 TOCTOU on gem/PS spend (lifetime drift, wallet correct);
   #6 per-kill credit on `viewModelScope` (≤1 step lost on mid-round nav-away — confirmed by the 2026-06-17 review:
   BossKilled PS on `viewModelScope` is lost on nav-away; StepReward correctly uses `applicationScope`).
-- **Content/polish debt:** audio shipped (V1X-04/05/06 — 9 synthesized `.ogg` SFX + 2 BGM tracks via
+- **Content/polish debt:** audio shipped (V1X-04/05/06 — 7 synthesized `.ogg` SFX + 2 BGM tracks via
   SoundPool/MediaPlayer; only the subjective "feel" assessment remains, Gate A); cosmetics — 5 ziggurat
   palettes plumbed (zig_jade + zig_obsidian store-purchasable; lapis/garden/sandals milestone-only), rest
   "Coming Soon" pending art. The 4 seeded projectile/enemy-skin cosmetics have no render path (#192-adjacent
@@ -688,7 +707,7 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 ## Do-not-touch / fragile zones
 
 - `domain/model/` — stable; balance constants validated by regression tests. `BillingProduct.skuId()` is a stable public API.
-- `domain/usecase/` — 36 use cases stable.
+- `domain/usecase/` — 39 use cases stable.
 - `presentation/battle/effects/` — particle pool, effect engine, all visual effects.
 - `gradle/libs.versions.toml` — single source for all dependency versions. `app/proguard-rules.pro` — hardened R8 rules.
 - `app/build.gradle.kts` — signing config + AdMob production-ID wiring (don't break the test-ID fallback) + `ndk { debugSymbolLevel = "FULL" }`.
