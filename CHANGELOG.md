@@ -4,6 +4,38 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — Background reliability: battery-optimization whitelist primer (#261) · battle portrait-lock (#233)
+
+Two confirmed HIGH audit defects (the last 2 net-new HIGHs from the 2026-06-18 review), one combined
+PR. **No schema change; 1098 → 1100 JVM tests** (+2). TDD where there's a seam; spec+plan put through a
+single-agent adversarial review (ultracode off) that caught a real re-show bug pre-code (ADR-0029).
+
+- **#261 — GDD-promised battery-optimization whitelist prompt was entirely absent** (`content`). The
+  product gates on reliable background step counting, but on aggressive-OEM devices Doze/App-Standby
+  kills the foreground `StepCounterService` and steps silently stop — the GDD's highest-rated risk, whose
+  documented mitigation (`docs/step-tracking.md`) was never implemented (no `PowerManager` code, no
+  permission). Added a new injectable `BatteryOptimizationStatus.isIgnoring()` (mirrors the #193
+  `StepSensorDataSource` pattern) → `OnboardingViewModel.shouldOfferBatteryExemption` → a contextual,
+  dismissible primer in the onboarding granted-branch ("Allow background activity" / "Maybe later", both
+  closing it — the construction-time boolean is stale after the grant, so a session `handled` flag gates
+  re-display; caught in review) + a durable Settings "Background activity" re-offer row (onboarding is
+  one-shot). `MainActivity` fires `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (`package:` Uri), with a
+  fallback to `ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS`; new manifest
+  `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission (Play-eligible via the `foregroundServiceType="health"`
+  step service). Never blocks the flow. Guarded by `OnboardingViewModelTest` (offer iff not already
+  exempt); the intent firing is build/on-device-verified (documented boundary).
+- **#233 — in-flight battle round destroyed on any configuration change** (`architecture`). On rotation
+  the Activity→Composable recreated, `remember` discarded the `GameSurfaceView`/engine and built a fresh
+  one configured to wave 1/0 cash, while the surviving `BattleViewModel` still believed a round was in
+  progress → lost round + possible mis-credit/skip of end-of-round persistence. Minimal fix (battle is
+  portrait-designed, #171; no landscape resources exist): a per-screen portrait lock in `BattleScreen`
+  via `DisposableEffect` + `LocalActivity` (the `SettingsScreen` pattern) — `requestedOrientation =
+  PORTRAIT` on enter, `UNSPECIFIED` on dispose. The desync becomes unreachable (no mid-round rotation); a
+  one-time recreate at entry is harmless (the round starts only after configure). Touches no
+  VM/engine/surface-survival logic (R3-01/#2, RO-03, #190). Verified by build + on-device (rotate
+  mid-round → round persists). Multi-window resize residual documented + accepted; the clean
+  Simulation-hoist (ADR-0012) remains a deferred larger effort. ADR-0029.
+
 ### Fix — Graceful degradation: shared error state (#194) · offline-purchase reconcile (#250)
 
 Two confirmed audit defects, one combined PR. **No schema change; 1093 → 1098 JVM tests** (+5).

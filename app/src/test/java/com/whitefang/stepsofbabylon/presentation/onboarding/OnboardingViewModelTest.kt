@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.onboarding
 
 import com.whitefang.stepsofbabylon.data.onboarding.OnboardingPreferences
+import com.whitefang.stepsofbabylon.data.sensor.BatteryOptimizationStatus
 import com.whitefang.stepsofbabylon.data.sensor.StepSensorDataSource
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertSame
@@ -16,7 +17,8 @@ class OnboardingViewModelTest {
     // mockito-core 5.x's inline maker mocks final Kotlin classes directly (same as the
     // mock<Activity>() usage in BillingManagerImplTest) — no interface extraction needed.
     private val sensor = mock<StepSensorDataSource>()
-    private fun vm() = OnboardingViewModel(prefs, sensor)
+    private val battery = mock<BatteryOptimizationStatus>()
+    private fun vm() = OnboardingViewModel(prefs, sensor, battery)
 
     @Test
     fun `exposes the canonical slide list`() {
@@ -44,5 +46,19 @@ class OnboardingViewModelTest {
     fun `stepSensorAvailable reflects the sensor data source - present`() {
         whenever(sensor.isSensorAvailable()).thenReturn(true)
         assertTrue(vm().stepSensorAvailable)
+    }
+
+    // #261: offer the battery-exemption prompt only when the app is NOT already exempt, so an
+    // already-whitelisted device skips it.
+    @Test
+    fun `shouldOfferBatteryExemption is true when not already exempt`() {
+        whenever(battery.isIgnoring()).thenReturn(false)
+        assertTrue(vm().shouldOfferBatteryExemption)
+    }
+
+    @Test
+    fun `shouldOfferBatteryExemption is false when already exempt`() {
+        whenever(battery.isIgnoring()).thenReturn(true)
+        assertFalse(vm().shouldOfferBatteryExemption)
     }
 }

@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun SettingsScreen(
     onReplayTutorial: () -> Unit = {},
+    onOptimizeBattery: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -62,6 +63,22 @@ fun SettingsScreen(
                     Text("Replay tutorial", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                     Text(
                         "See the first-launch walkthrough again",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        // #261: durable re-offer of the battery-optimization exemption (onboarding's primer is one-shot,
+        // so existing players never see it; this is the persistent entry point). Always available — the
+        // system handles the already-exempt case.
+        OutlinedCard(onClick = onOptimizeBattery, modifier = Modifier.fillMaxWidth()) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column {
+                    Text("Background activity", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Text(
+                        "Allow step counting to keep running in the background",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

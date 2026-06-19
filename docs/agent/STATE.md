@@ -3,12 +3,12 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.9 (versionCode 25) SHIPPED → Play internal** (tag fired). Latest work **MERGED**
-(PR #272, squash `1811617`, both CI checks green, branch deleted, #194/#250 auto-closed, `[Unreleased]`):
-**2 before-public graceful-degradation defects — #194 shared screen error state + #250 offline-purchase
-reconcile** (TDD'd; lighter inline adversarial review caught 2 real defects pre-code). Prior wave MERGED
-(PR #270, `ebf588a`): #236 atomic premium spend, #195 missions day-rollover, #193 no-sensor signal.
-Supersedes **v1.0.8 (vc 24)** · **1098 JVM + 9 instrumented tests**
+**Headline:** **v1.0.9 (versionCode 25) SHIPPED → Play internal** (tag fired). Latest work (branch
+`fix/background-reliability-261-233`, `[Unreleased]`, PR up): **the last 2 net-new HIGHs — #261
+battery-optimization whitelist primer + #233 battle portrait-lock** (TDD where seam'd; inline review
+caught a re-show bug pre-code). **ALL 4 net-new HIGHs (#233/#236/#250/#261) now done.** Prior waves
+MERGED: #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
+Supersedes **v1.0.8 (vc 24)** · **1100 JVM + 9 instrumented tests**
 green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
@@ -20,12 +20,32 @@ prematurely closed 2026-06-17 with no implementing commit, verified unfixed at H
 Latest audit
 (`docs/reviews/2026-06-18-complete-app-review.md`, supersedes 2026-06-17) verdict: **7/10 — continue
 building** (keep shipping internal, NOT public-ready); it filed **38 net-new Med+ issues #224–#261 + Low
-tracker #262** — none are internal-track blockers; 4 net-new HIGHs (#233/#236/#250/#261) are the
-highest-leverage before-public work.
+tracker #262** — none are internal-track blockers; its 4 net-new HIGHs (#233/#236/#250/#261) were the
+highest-leverage before-public work and are **now ALL fixed** (#236 PR #270; #250 PR #272; #261 + #233
+PR up on `fix/background-reliability-261-233`). The larger **#233 clean Simulation-hoist** (ADR-0012) +
+the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #272, squash `1811617`; both CI checks green; #194/#250 auto-closed;
+- **CURRENT — background-reliability wave: #261 battery-optimization whitelist primer + #233 battle
+  portrait-lock (branch `fix/background-reliability-261-233`, `[Unreleased]`, PR up).** The last 2
+  net-new HIGHs; **no schema change; 1098 → 1100 JVM** (+2); `testDebugUnitTest lintDebug assembleDebug`
+  BUILD SUCCESSFUL. TDD where there's a seam; spec+plan
+  (`docs/superpowers/specs/2026-06-19-background-reliability-261-233.md`) put through a lighter
+  single-agent adversarial review that **caught a real re-show bug pre-code** (the construction-time
+  `shouldOfferBatteryExemption` is stale after the grant, so `batteryPrimerHandled` must be set on BOTH
+  primer buttons, not just "Maybe later"). **#261** (GDD's top risk): new injectable
+  `BatteryOptimizationStatus.isIgnoring()` → `OnboardingViewModel.shouldOfferBatteryExemption` → a
+  contextual/dismissible onboarding granted-branch primer + durable Settings "Background activity"
+  re-offer; `MainActivity.requestBatteryExemption` fires `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`;
+  new manifest `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (Play-eligible via the FGS-health step service).
+  **#233**: per-screen portrait lock in `BattleScreen` (`DisposableEffect` + `LocalActivity`,
+  PORTRAIT-on-enter/UNSPECIFIED-on-dispose) makes the config-change engine/VM desync unreachable; minimal
+  (battle is portrait-designed, no landscape resources). **ADR-0029.** Tests: `OnboardingViewModelTest`
+  (offer iff not exempt); intent firing + portrait lock are build/on-device-verified (documented boundaries).
+  Remaining audit work after this: the larger **#233 clean Simulation-hoist** (ADR-0012, deferred) + the
+  med/low backlog (#262) + the manual Play Console Data-Safety action (#192) + a `v*` release tag.
+- **Previous objective (DONE — MERGED PR #272, squash `1811617`; both CI checks green; #194/#250 auto-closed;
   `[Unreleased]`).** Graceful-degradation wave: #194 shared error state + #250 offline-purchase reconcile;
   **no schema change; 1093 → 1098 JVM** (+5); `testDebugUnitTest lintDebug assembleDebug`
   BUILD SUCCESSFUL. TDD'd; spec+plan
@@ -630,6 +650,8 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **Premium spend+grant is atomic (#236, ADR-0027)** — card-pack and UW-unlock deduct+grant commit/roll back together via `CardDao.openCardPackAtomic` / `UltimateWeaponDao.unlockWeaponAtomic` (`@Transaction` default methods that call `PlayerProfileDao` as a param — same cross-DAO mechanism as `claimMilestoneAtomic`). The guarded deduct runs FIRST inside the tx; `openCardPackAtomic` returns `null` and `unlockWeaponAtomic` returns `false` on insufficient (no grant written). `unlockWeaponAtomic` re-checks already-unlocked INSIDE the tx before deducting (double-tap can't pay twice). Exposed via repository ports so the use cases stay domain-pure — `OpenCardPack`/`UnlockUltimateWeapon` no longer take `PlayerRepository`. Rarity rolling stays pure/seeded in `OpenCardPack` (the DAO only does the writes). The use cases' pre-checks (`gems < cost` etc.) are cheap fast-paths, NOT the guard. Don't reintroduce a separate spend-then-grant or move the deduct out of the tx. Guarded by `PremiumSpendDaoTest` + atomic-path assertions in `OpenCardPackTest`/`UnlockUltimateWeaponTest`; fakes use a `linkedPlayer` wallet seam.
 - **Screen error-state pattern (#194, ADR-0028)** — the 10 data-backed screens surface a load error via a shared `presentation/ui/ErrorState.kt` (+ `SCREEN_LOAD_ERROR`); each UiState carries `error: String?` and each VM wraps its data flow in `_retry.flatMapLatest { <combine/map>.catch { emit(errorState) } }` + `fun retry() { _retry.value++ }`. **The `.catch` MUST stay INSIDE `flatMapLatest`** — a downstream catch completes the stream so `retry()` becomes a no-op (stuck-error, the inverse bug). Screens early-return `ErrorState(state.error!!, onRetry = viewModel::retry)` before the loading check (`state.error` is a delegated property → `!!`, not smart-cast). Date VMs (Home/Missions/Stats) fold `_retry` via `combine(_date,_retry){d,_->d}`. **Battle is excluded** (owns `battleError`/overlay, #190). Guarded by `StatsViewModelTest` (throw→error, retry→recover); VM-level only (no Compose-UI harness in repo).
 - **Background billing reconcile is time-bounded + best-effort (#250, ADR-0028)** — `MainActivity.onResume` (foreground) and `StepSyncWorker.doWork` (background, 15-min) both call the shared top-level `service.reconcileBillingSafely(billingManager)` = `withTimeoutOrNull(20s)` + catch-all. The timeout is load-bearing: `BillingManagerImpl.connect()` has NO internal timeout (its disconnect callback never resumes), so an offline/stalled device would otherwise hang the worker / leak a coroutine on resume. `reconcilePendingPurchases()` is idempotent + mutex-serialised + connect-guarded + Activity-independent (BillingClient from `@ApplicationContext`). Don't inline the call without the timeout, and don't drop either trigger (Store-open alone misses the 3-day Play auto-refund window). Guarded by `ReconcileBillingSafelyTest`.
+- **Battery-exemption primer gating (#261, ADR-0029)** — `OnboardingViewModel.shouldOfferBatteryExemption` = `!BatteryOptimizationStatus.isIgnoring()` is read ONCE at construction → it's STALE after the user grants the exemption. The onboarding granted-branch primer therefore gates re-display on a session-local `batteryPrimerHandled` flag that **BOTH** buttons ("Allow background activity" AND "Maybe later") set — setting it only on "Maybe later" re-shows the primer after the user just allowed. Never block the flow (both paths reach `finish()`). The durable re-offer is the Settings "Background activity" row (onboarding is one-shot). `MainActivity.requestBatteryExemption` fires `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (falls back to the settings list); manifest must keep `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (Play-eligible only via the FGS-health step service). Guarded by `OnboardingViewModelTest`.
+- **Battle is portrait-locked (#233, ADR-0029)** — `BattleScreen` sets `activity.requestedOrientation = PORTRAIT` in a `DisposableEffect` (via `LocalActivity`), restored to `UNSPECIFIED` on dispose. This makes the config-change engine/VM desync (fresh `remember`ed `GameSurfaceView`/engine vs. surviving `BattleViewModel`) UNREACHABLE by preventing mid-round rotation. The lock is per-screen (battle is a Compose destination in the single MainActivity — a manifest `screenOrientation` would lock the whole app). An entry-time recreate (device was landscape) is harmless: the round starts only after `configure`/`startPollingEngine`, strictly after `isLoading` flips false. Don't remove the lock without restoring orientation on dispose, and don't move it to the manifest (would lock the whole app). The clean fix (hoist `Simulation` to the VM, ADR-0012) is the deferred larger effort.
 - **`DailyStepManager` Mutex (#120)** — credit read-check-write under a non-reentrant `Mutex`; don't add an un-locked counter mutation.
 - **`GameEngine.getAliveEnemies()` must NOT be cached across a frame (#125)** — `takeDamage` re-fires `onDeath` on a dead enemy; a shared snapshot double-credits kills. Guarded by `R125` GameEngineTest.
 - **HUD enemy count is derived, not tallied (#146)** — `GameEngine.aliveEnemyCount()` counts live `EnemyEntity` under `entitiesLock`; the desync-prone `WaveSpawner.enemiesAlive` tally was removed (SCATTER children bypassed its only `++`; `onDeath` re-fires double-counted). Don't reintroduce a hand-kept counter. `EnemyEntity.takeDamage` is guarded `if (!isAlive) return 0.0` (no corpse re-hit → no double-credit). Guarded by 3 `R146` GameEngineTest entries.

@@ -7,6 +7,14 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--
+        #261: lets the app fire ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS (the per-app
+        confirmation dialog) so the persistent step-counter foreground service isn't killed by
+        Doze/App-Standby on aggressive OEMs — the GDD's documented mitigation for its highest-rated
+        risk. The direct-ask is Play-eligible here because of the FOREGROUND_SERVICE_HEALTH step
+        service below; the prompt is contextual + dismissible + gated on isIgnoringBatteryOptimizations.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
 
