@@ -67,6 +67,10 @@ Behaviour (all under the existing `#120` `mutex`, sharing the ceiling RMW with
    `stepRepository.updateDailySteps(currentDate, dailySensorTotal, dailySensorCredited + credited)`;
    `dailySensorCredited += credited`; `dailyCreditedTotal += credited`;
    `playerRepository.addSteps(credited)`.
+   - **Ordering trap (mirror `recordSteps` exactly):** `updateDailySteps` is called with
+     `dailySensorCredited + credited` (the SUM) **before** `dailySensorCredited += credited`
+     increments the field — see `DailyStepManager.kt:208-209`. Persist-with-sum-first, then
+     increment; transposing these persists the wrong `creditedSteps`.
    - **Idempotency invariant:** because the raw gap increments `dailySensorTotal`, the *next*
      `fillGaps` run computes `gap = hcTotal - sensorTotal ≈ 0` and credits nothing. This mirrors the
      existing `recordSteps` accounting (`dailySensorTotal += rawDelta`) so the gap-fill stays
@@ -110,6 +114,15 @@ New `app/src/test/java/com/whitefang/stepsofbabylon/data/sensor/` coverage (exte
   `applyStepMultiplier`).
 - **Rate-limiter untouched:** a trusted credit does NOT increment the rate-rejected anti-cheat
   counter (contrast with `recordSteps`, which does for the same over-cap delta).
+  - **Test mechanics (review amendment):** `DailyStepManagerTest.setup()` currently constructs the
+    manager with an anonymous, unheld `antiCheatPrefs = mock<AntiCheatPreferences>()`
+    (`DailyStepManagerTest.kt:56`) and a **real** `StepRateLimiter()` / `StepVelocityAnalyzer()`. To
+    assert this, **hoist `antiCheatPrefs` to a held `lateinit var` field** (like the other repos at
+    `DailyStepManagerTest.kt:30-36`) so the test can call
+    `verify(antiCheatPrefs, never()).incrementRateRejected(any())` after a trusted credit, contrasted
+    with a `recordSteps` over-cap call that DOES trigger it. Because the limiter is real, the
+    "credited > 250" assertion above *already* proves the limiter was bypassed; the `verify(never())`
+    is the explicit confirmation that no anti-cheat rejection was recorded.
 - **Idempotent gap-fill (if a `StepGapFiller` test is added):** with a fake `HealthConnectStepReader`
   returning a fixed `hcTotal`, two successive `fillGaps` calls credit the gap once (second run sees
   `gap ≈ 0`).
