@@ -1,3 +1,36 @@
+## 2026-06-19 — Correctness/UX wave: #225 / #235 / #224 / #222 (`[Unreleased]`)
+
+- **Goal:** developer asked to "fix some issues" → chose the *quick correctness/UX wins* cluster from the
+  2026-06-18 complete-app-review backlog. Four self-contained, low-risk defects, one combined branch
+  (`fix/correctness-ux-wave-224-225-235-222`). Presentation + test-only — no schema/economy/engine change.
+- **Method:** ground-truthed each issue against HEAD (helper exists, sites, schemas, existing test patterns),
+  then TDD per fix (RED guard/test → fix → GREEN). Ultracode is OFF; these are small audit bug-fixes (not a
+  new-feature spec), so per recent precedent I did TDD + this self-review rather than the full multi-agent
+  Adversarial Review Gate — flagged to the developer as a conscious choice, not a silent skip.
+- **#225 (`severity:major`, partial) — raw enum names in UI.** Replaced six `enum.name.replace('_',' ')`
+  sites (TierSelector ×2, BattleViewModel best-wave notification, InRoundUpgradeMenu, UpgradeCard,
+  UltimateWeaponScreen) with the existing shared `String.toDisplayName()` → `Hanging Gardens` not
+  `HANGING GARDENS`. New pure-JVM `NoRawEnumNameInUiTest` walks `presentation/` and fails on any
+  `.name.replace(` regression (RED-verified before the fix).
+- **#235 (`severity:major`, partial) — flow-collection lifecycle.** `LabsScreen`/`CardsScreen`/`StoreScreen`
+  switched from plain `collectAsState()` to `collectAsStateWithLifecycle()` (parity with the other 8
+  screens; stops backgrounded Room/combine pipelines + Labs' 1s ticker recomputing while STOPPED).
+  `BattleScreen` keeps plain collect deliberately (documented inline + allowlisted in the new
+  `FlowCollectionLifecycleTest` source-scan guard, RED-verified).
+- **#224 (`severity:major`, partial) — Home first-walk zero-state.** Added pure
+  `HomeUiState.showFirstWalkPrompt` (`todaySteps==0 && stepBalance<100`, suppressed while loading/error)
+  rendering an `EmptyState` "Earn your first Steps" prompt under the Today card. Guarded by
+  `HomeFirstWalkPromptTest` (4 cases).
+- **#222 (`severity:minor`, confirmed/partial) — data-transform migration tests.** New
+  `DataTransformMigrationsTest` (direct-`migrate()` pattern from `Migration11To12Test`) characterizes the
+  9→10 UW-level integer-division split + bossPsEarnedToday add, and the 10→11 card dust→copy dedup +
+  cardType unique index + cardDust zero-out.
+- **Verify:** `:app:testDebugUnitTest :app:lintDebug :app:assembleDebug` BUILD SUCCESSFUL; **1118 → 1126
+  JVM** (+8: NoRawEnumNameInUi 1, FlowCollectionLifecycle 1, HomeFirstWalkPrompt 4, DataTransformMigrations 2).
+  No ADR (presentation polish + characterization tests on established patterns).
+- **Remaining:** commit + open PR. Rest of the audit backlog (#224–#261 perf/policy/CI/architecture clusters
+  + low trackers #262/#128) untouched — none internal-track blockers.
+
 ## 2026-06-19 — Full ultracode doc-drift sweep (docs-only, `[Unreleased]`)
 
 - **Goal:** developer asked for a "full ultracode doc sweep of project" — find every place a doc makes a

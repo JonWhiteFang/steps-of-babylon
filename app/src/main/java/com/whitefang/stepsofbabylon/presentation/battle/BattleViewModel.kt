@@ -48,6 +48,7 @@ import com.whitefang.stepsofbabylon.presentation.battle.engine.WavePhase
 import com.whitefang.stepsofbabylon.presentation.battle.engine.WaveSpawner
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BiomeTransitionInfo
 import com.whitefang.stepsofbabylon.presentation.battle.UWSlotInfo
+import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -375,7 +376,7 @@ class BattleViewModel @Inject constructor(
             runCatching {
                 milestoneNotificationManager.notifyNewBestWave(
                     wave,
-                    Biome.forTier(tier).name.replace("_", " "),
+                    Biome.forTier(tier).name.toDisplayName(),
                 )
             }.onFailure { Log.w(TAG, "endRound: notifyNewBestWave failed", it) }
         }

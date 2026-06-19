@@ -48,6 +48,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.presentation.battle.biome.BiomeTheme
+import com.whitefang.stepsofbabylon.presentation.ui.EmptyState
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
@@ -122,6 +123,16 @@ fun HomeScreen(
                 CurrencyItem("Steps", state.stepBalance)
                 CurrencyItem("Gems", state.gems)
                 CurrencyItem("Power Stones", state.powerStones)
+            }
+
+            // #224: first-walk teaching prompt. Right after onboarding the player lands on a screen of
+            // zeros with a prominent BATTLE button; the real next action — go walk to earn Steps — is
+            // otherwise invisible. Shown only at that kickoff moment (see HomeUiState.showFirstWalkPrompt).
+            if (state.showFirstWalkPrompt) {
+                EmptyState(
+                    title = "Earn your first Steps",
+                    message = "Go for a walk — every step powers up your ziggurat. Your Steps will appear here.",
+                )
             }
 
             Text("Best Wave: ${state.bestWave}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)

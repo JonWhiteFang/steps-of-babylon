@@ -4,6 +4,37 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — Correctness/UX wave: enum-name leaks (#225) · flow-collection lifecycle (#235) · Home zero-state (#224) · migration tests (#222)
+
+Four self-contained before-public defects from the 2026-06-18 complete-app review, one combined PR.
+**No schema change; no economy/engine-formula change; presentation + test-only.** **1118 → 1126 JVM
+tests** (+8). TDD (RED→GREEN per fix). No ADR (presentation polish + characterization tests on
+established patterns).
+
+- **#225 — raw SCREAMING_CASE enum names leak into UI** (`severity:major`, partial). Six
+  `enum.name.replace('_', ' ')` sites (`TierSelector` ×2, `BattleViewModel` best-wave notification,
+  `InRoundUpgradeMenu`, `UpgradeCard`, `UltimateWeaponScreen`) surfaced `HANGING GARDENS` / `IRON SKIN`
+  — placeholder-looking and inconsistent with the screens that already use `toDisplayName()`. Replaced
+  all six with the shared `String.toDisplayName()` helper (`Hanging Gardens`). New pure-JVM
+  `NoRawEnumNameInUiTest` walks the presentation tree and fails the build on any `.name.replace(`
+  regression.
+- **#235 — inconsistent flow collection** (`severity:major`, partial). `LabsScreen`/`CardsScreen`/
+  `StoreScreen` collected `uiState` with plain `collectAsState()`, keeping the upstream Room/combine
+  pipelines hot while the screen was STOPPED (Labs has a 1s `while(true)` ticker). Switched all three to
+  `collectAsStateWithLifecycle()` for parity with the other 8 screens; `BattleScreen` keeps plain
+  collect deliberately (full-screen, owns its game loop, never backgrounded mid-round) — documented +
+  allowlisted in the new `FlowCollectionLifecycleTest` guard.
+- **#224 — Home has no first-walk guidance** (`severity:major`, partial). Right after onboarding the
+  player landed on a screen of zeros with no hint that the next action is to go walk. Added a pure
+  `HomeUiState.showFirstWalkPrompt` predicate (shown only when `todaySteps == 0` AND `stepBalance <
+  100` — a returning player with a stockpile isn't nagged; suppressed while loading/error) rendering an
+  `EmptyState` "Earn your first Steps" prompt. Guarded by `HomeFirstWalkPromptTest`.
+- **#222 — data-transform migrations unverified** (`severity:minor`, confirmed/partial). The two
+  recreate-table migrations (9→10 UW-level split, 10→11 card dust→copy dedup) had no upgrade-path test
+  (only 11→12 did). Added `DataTransformMigrationsTest` (direct-`migrate()` pattern, mirroring
+  `Migration11To12Test`) characterizing the integer-division level split, the `MAX()/COUNT(*)` card
+  dedup + unique index, and the `cardDust` zero-out.
+
 ### Fix — Reliability wave: offline gap-fill rate-clamp (#251) · offline IAP swallowed (#249)
 
 Two confirmed before-public reliability defects from the 2026-06-18 complete-app review, one combined PR.

@@ -64,6 +64,10 @@ fun BattleScreen(
     onExitBattle: () -> Unit,
     viewModel: BattleViewModel = hiltViewModel(),
 ) {
+    // #235: plain collectAsState() is DELIBERATE here (unlike the lifecycle-aware collectors on the
+    // menu screens). Battle is a full-screen destination that owns its game loop and is never
+    // backgrounded mid-round; a lifecycle-aware collector would needlessly tear the HUD state down on
+    // a transient STOP. Allowlisted in FlowCollectionLifecycleTest with this reason.
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val surfaceView = remember { GameSurfaceView(context) }
