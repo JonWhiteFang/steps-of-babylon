@@ -12,8 +12,9 @@ data-integrity #237/#238/#248) via release PR #278 (squash `ffa9973`). **ALL 4 n
 Latest content wave MERGED: data-integrity (PR #276, `0f32ac6`; #237/#238/#248 auto-closed; ADR-0030,
 single-agent review caught a critical pre-code defect). Earlier waves MERGED: #261/#233 (PR #274, `8b50b13`);
 #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.9 (vc 25)** · **1110 JVM + 9 instrumented tests**
-green · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
+Supersedes **v1.0.9 (vc 25)** · **1141 JVM + 9 instrumented tests**
+green (1110 shipped in v1.0.10; +8 net-new on the `[Unreleased]` reliability-wave branch #251/#249, +23 was
+pre-branch drift in the headline) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -31,7 +32,26 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — SHIPPED v1.0.10 / versionCode 26 → Play internal track).** First release since v1.0.9;
+- **CURRENT (DONE — implemented on branch `fix/reliability-wave-251-249`; NOT yet a PR / `[Unreleased]`).**
+  Before-public **reliability wave**: two confirmed 2026-06-18 complete-app-review `severity:major` defects,
+  one combined branch. **No schema change; no economy/engine-formula change** beyond the offline gap-fill
+  *crediting path*; **1133 → 1141 JVM** (+8); full `testDebugUnitTest lintDebug assembleDebug` BUILD
+  SUCCESSFUL. TDD (RED→GREEN per fix); spec + plan each through a **single-agent adversarial review**
+  (ultracode off, developer chose "b") — spec review added a test-mechanics amendment (hoist `antiCheatPrefs`
+  mock), plan review caught a missing `BillingProduct` import; both applied pre-implementation. Subagent-
+  driven execution: 2 implementers + spec & quality review each + a final whole-branch review (**READY TO
+  MERGE**, 0 critical/major). **#251**: new `DailyStepManager.recordTrustedSteps` — HC-verified offline-
+  recovery gaps bypass the live-walking rate limiter (skip rate-limit + velocity; keep 50k ceiling +
+  STEP_MULTIPLIER; under the non-reentrant #120 mutex via `ensureInitializedLocked`; idempotent via
+  `dailySensorTotal`); `StepGapFiller` switched to it; `StepSyncWorker.sensorCatchUp` deliberately stays
+  rate-limited (raw-hardware delta, not HC-verified). **#249**: the 3 `StoreViewModel` billing purchase fns
+  surface `PurchaseResult.Error.message` via `_userMessage` (Store Snackbar), de-triplicated into a private
+  `runPurchase` helper; mirrors `CardsViewModel`. No ADR (bug-fixes on established patterns). **Next:** open
+  the PR (squash); on merge it joins `[Unreleased]` for the next `v*` tag. Whole-branch review flagged ONE
+  accepted minor: user-cancel now shows a "Purchase cancelled" Snackbar (spec-approved parity with
+  CardsViewModel; reversible later if undesirable). Remaining audit backlog after this: med/low (#262) +
+  the rest of #224–#260; the larger #233 Simulation-hoist (deferred).
+- **Previous objective (DONE — SHIPPED v1.0.10 / versionCode 26 → Play internal track).** First release since v1.0.9;
   promotes the 4 fix waves accumulated on `main` (no new features, no schema change). Release PR #278
   (squash `ffa9973`): versionCode 25→26, versionName 1.0.9→1.0.10; CHANGELOG `[Unreleased]`→`[1.0.10]`; new
   `docs/release/release-notes-v1.0.10.md` (Play "What's new" 293 chars, developer-approved); version-pointer
@@ -688,6 +708,20 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **Battery-exemption primer gating (#261, ADR-0029)** — `OnboardingViewModel.shouldOfferBatteryExemption` = `!BatteryOptimizationStatus.isIgnoring()` is read ONCE at construction → it's STALE after the user grants the exemption. The onboarding granted-branch primer therefore gates re-display on a session-local `batteryPrimerHandled` flag that **BOTH** buttons ("Allow background activity" AND "Maybe later") set — setting it only on "Maybe later" re-shows the primer after the user just allowed. Never block the flow (both paths reach `finish()`). The durable re-offer is the Settings "Background activity" row (onboarding is one-shot). `MainActivity.requestBatteryExemption` fires `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (falls back to the settings list); manifest must keep `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (Play-eligible only via the FGS-health step service). Guarded by `OnboardingViewModelTest`.
 - **Battle is portrait-locked (#233, ADR-0029)** — `BattleScreen` sets `activity.requestedOrientation = PORTRAIT` in a `DisposableEffect` (via `LocalActivity`), restored to `UNSPECIFIED` on dispose. This makes the config-change engine/VM desync (fresh `remember`ed `GameSurfaceView`/engine vs. surviving `BattleViewModel`) UNREACHABLE by preventing mid-round rotation. The lock is per-screen (battle is a Compose destination in the single MainActivity — a manifest `screenOrientation` would lock the whole app). An entry-time recreate (device was landscape) is harmless: the round starts only after `configure`/`startPollingEngine`, strictly after `isLoading` flips false. Don't remove the lock without restoring orientation on dispose, and don't move it to the manifest (would lock the whole app). The clean fix (hoist `Simulation` to the VM, ADR-0012) is the deferred larger effort.
 - **`DailyStepManager` Mutex (#120)** — credit read-check-write under a non-reentrant `Mutex`; don't add an un-locked counter mutation.
+- **Trusted gap-fill credit path (#251)** — `DailyStepManager.recordTrustedSteps` is the ONLY credit path that
+  bypasses the rate limiter + velocity analyzer; it exists for HC-verified offline-recovery gaps
+  (`StepGapFiller`), whose total is independently bounded by Health Connect's own daily aggregate. It MUST run
+  under the same non-reentrant #120 `mutex` via `ensureInitializedLocked()` — never call `recordSteps` from it
+  (self-deadlock). It KEEPS the 50k `DAILY_CEILING` + STEP_MULTIPLIER and persists the raw gap into
+  `dailySensorTotal` (so the next `fillGaps` sees `gap ≈ 0` — idempotent), and intentionally does NOT touch
+  `stepsPerMinute` (a multi-minute elapsed window has no single true epoch minute). **Do NOT route live-sensor
+  deltas through it** — `StepSyncWorker.sensorCatchUp` credits a RAW-hardware-counter gap (not HC-verified) and
+  MUST stay on the rate-limited `recordSteps`. Guarded by 5 `R251` `DailyStepManagerTest` cases.
+- **Store purchase-error surfacing (#249)** — the 3 billing purchase fns route through a private
+  `StoreViewModel.runPurchase(product)` that sets `_userMessage` on `PurchaseResult.Error` (PENDING vs hard
+  error is carried in the message string). `purchaseCosmetic` is a Gem spend — NOT routed through `runPurchase`,
+  keeps its own `#122` `spendGems`-gated failure path. The `#194` `flatMapLatest`/`.catch` error-state flow is
+  untouched. Don't re-discard `purchase()`'s result. Guarded by `StoreViewModelTest` (error/pending/success).
 - **`GameEngine.getAliveEnemies()` must NOT be cached across a frame (#125)** — `takeDamage` re-fires `onDeath` on a dead enemy; a shared snapshot double-credits kills. Guarded by `R125` GameEngineTest.
 - **HUD enemy count is derived, not tallied (#146)** — `GameEngine.aliveEnemyCount()` counts live `EnemyEntity` under `entitiesLock`; the desync-prone `WaveSpawner.enemiesAlive` tally was removed (SCATTER children bypassed its only `++`; `onDeath` re-fires double-counted). Don't reintroduce a hand-kept counter. `EnemyEntity.takeDamage` is guarded `if (!isAlive) return 0.0` (no corpse re-hit → no double-credit). Guarded by 3 `R146` GameEngineTest entries.
 - **Game-loop frame clamp (#126)** — `SimulationMath.clampAccumulator` (`MAX_CATCHUP_TICKS = 8`); don't lower below ~8 (a 30fps@4× render legitimately needs ~7.9 ticks/frame). Guarded by `SimulationMathTest`.

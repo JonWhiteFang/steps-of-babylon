@@ -1,3 +1,44 @@
+## 2026-06-19 — Reliability wave #251 (offline gap-fill rate-clamp) + #249 (offline IAP swallowed)
+
+- **Goal:** clear two confirmed before-public `severity:major` defects from the 2026-06-18 complete-app
+  review, picked by the developer as the next coding wave after v1.0.10 shipped. One combined branch
+  `fix/reliability-wave-251-249`; no schema change; no economy/engine-formula change beyond the offline
+  gap-fill *crediting path*.
+- **Process (spec → review → plan → review → subagent-driven execution):**
+  - Brainstormed (one real design fork for #251 — how to credit an HC-verified batch without the live
+    rate limiter clamping it); developer chose the **trusted batch-credit path**.
+  - Spec `docs/superpowers/specs/2026-06-19-reliability-wave-251-249.md` → **single-agent adversarial
+    review** (ultracode off, developer chose "b"): 1 major (test-mechanics — hoist the `antiCheatPrefs`
+    mock so the no-rate-rejection `verify(never())` is possible) + 1 ordering-trap note, both folded in.
+  - Plan `docs/superpowers/plans/2026-06-19-reliability-wave-251-249.md` → single-agent review: 1 real
+    compile gap (the #249 tests use `BillingProduct` short name but the plan only added the `PurchaseResult`
+    import) — fixed; everything else verified against real code.
+  - Executed via `subagent-driven-development`: implementer per unit + spec-compliance review + code-quality
+    review each, then a final whole-branch review. #251 quality review → added a `rawDelta<=0` no-op test;
+    #249 quality review → extracted the de-triplicated `runPurchase` helper. Final whole-branch review
+    **READY TO MERGE** (0 critical/major; 1 accepted minor — user-cancel now Snackbars "Purchase cancelled",
+    spec-approved parity with CardsViewModel, reversible later).
+- **#251 — `DailyStepManager.recordTrustedSteps(rawDelta, timestampMs)`** (new): trusted batch-credit path
+  for HC-verified offline-recovery gaps. Skips rate-limit + velocity (HC's daily aggregate is the
+  independent bound, the source `StepCrossValidator` already trusts), keeps the 50k `DAILY_CEILING` +
+  STEP_MULTIPLIER, runs under the non-reentrant #120 mutex via `ensureInitializedLocked()` (never
+  `recordSteps` — no self-deadlock), persists the raw gap into `dailySensorTotal` (idempotent `fillGaps`),
+  skips per-minute tracking. `StepGapFiller.fillGaps` switched to it. `StepSyncWorker.sensorCatchUp`
+  deliberately stays on rate-limited `recordSteps` (raw-hardware delta, not HC-verified). 5 new `R251`
+  `DailyStepManagerTest` cases + a behaviour-neutral mock-hoist refactor.
+- **#249 — `StoreViewModel`** the 3 billing purchase fns capture `PurchaseResult` and surface `.message` on
+  `Error` via `_userMessage` (Store Snackbar already bound), de-triplicated into a private
+  `runPurchase(product)` helper; mirrors `CardsViewModel.watchFreePackAd`. `purchaseCosmetic` (Gem spend,
+  #122-gated, own failure path) untouched; #194 error-state flow untouched. 3 new `StoreViewModelTest` cases.
+- **Verification:** 6 commits (`d3f8200`→`1c93d6b`), TDD order, each scoped. Full
+  `testDebugUnitTest lintDebug assembleDebug` → **BUILD SUCCESSFUL**, 0 failures; **1133 → 1141 JVM** (+8;
+  the headline had drifted from 1110 — corrected here). No ADR (established patterns).
+- **Doc sync:** CLAUDE.md headline test count 1110→1141; CHANGELOG `[Unreleased]` reliability-wave section;
+  `docs/steering/source-files.md` (DailyStepManager/StepGapFiller/StoreViewModel + 2 test entries);
+  STATE.md (objective rotated, 2 fragile-zone entries added). STATE/RUN_LOG this entry.
+- **Next:** open the PR (squash-merge → `[Unreleased]`); ships on the next `v*` tag. Backlog continues:
+  med/low #262 + rest of #224–#260; the larger #233 Simulation-hoist (deferred).
+
 ## 2026-06-19 — Release v1.0.10 (versionCode 26) → Play internal track
 
 - **Goal:** cut the first release since v1.0.9, shipping the 4 fix waves accumulated on `main`
