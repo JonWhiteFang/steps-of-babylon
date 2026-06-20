@@ -1,6 +1,11 @@
 [versions]
 agp = "9.2.1"
-kotlin = "2.4.0"
+# Held at 2.3.0: Kotlin 2.4.0 is blocked by two unreleased upstream items — Hilt's bundled
+# kotlin-metadata-jvm caps at metadata 2.3.0 (fix merged in dagger#5179 but unreleased past 2.59.2)
+# AND KSP #2964 (Kotlin 2.4's module-name change breaks code-gen, no fix released). Note: the
+# `kotlin-compose` plugin (org.jetbrains.kotlin.plugin.compose) tracks this ref, so it stays 2.3.0 too.
+# Revisit when a Dagger release > 2.59.2 ships AND KSP #2964 is fixed+released. (Dependabot #290 wave.)
+kotlin = "2.3.0"
 ksp = "2.3.9"
 hilt = "2.59.2"
 room = "2.8.4"
@@ -46,7 +51,7 @@ androidxTestExtJunit = "1.3.0"
 # by the two NON-SHIPPING `com.android.test` modules (:baselineprofile, :macrobenchmark) — it never
 # enters the AAB. The only artifact that ships, `profileinstaller`, stays STABLE 1.4.1. (Contrast #33,
 # which moved load-bearing SHIPPED Health Connect code off alpha — that rationale doesn't apply to dev
-# tooling.) uiautomator 2.4.0-beta02 matches the 1.5.x benchmark/macro line (which pulls UiAutomator 2.4
+# tooling.) uiautomator 2.4.0-rc01 matches the 1.5.x benchmark/macro line (which pulls UiAutomator 2.4
 # transitively). Revisit when 1.5.x reaches stable.
 benchmark = "1.5.0-alpha06"
 profileinstaller = "1.4.1"
