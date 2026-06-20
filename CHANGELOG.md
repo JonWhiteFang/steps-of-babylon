@@ -4,6 +4,35 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — Accessibility wave: button contrast (#213) · battle TalkBack live region (#214) · color-blind deferral (#226)
+
+Three confirmed `severity:major` accessibility findings from the complete-app reviews, one combined PR.
+**No schema / economy / engine-formula change; 1139 → 1152 JVM** (+13); `testDebugUnitTest lintDebug
+assembleDebug` BUILD SUCCESSFUL. Spec + plan both through the **Adversarial Review Gate** (single-agent,
+ultracode off). Plan review caught a **CRITICAL pre-code bug** — a stateful announcer mutated inside
+`derivedStateOf`/`remember` is a side-effect-in-composition (recompositions can run/discard the calc and
+corrupt transition detection); reworked to a pure `(prev,next)` diff advanced in a `LaunchedEffect` — plus
+a major (`size(0.dp)` live-region nodes are pruned from the a11y tree → `size(1.dp).alpha(0f)`). Both new
+test suites mutation-verified. No ADR (a11y polish on established token/UI patterns).
+
+- **#213** — primary-button label contrast failed WCAG AA-normal: `onPrimary = DeepBronze` on `Gold` =
+  ~4.19:1 (`labelLarge` 14sp is normal text → 4.5:1 threshold). New `OnGold = #4A2618` text-role token
+  (~5.99:1), wired as `onPrimary`; `GoldArgb`/`OnGoldArgb` plain-Int consts let the pure-JVM
+  `ContrastTest` pin the real tokens ≥ 4.5:1 (a token regression now fails the build). `StatusDanger`/
+  `RaritySand` surveyed: icon-tint/fill only, never normal text → unchanged.
+- **#214** — the battle `SurfaceView` was invisible to TalkBack (canvas-only). Added a pure
+  `battleAnnouncement(prev, next): BattleAnnouncement?` decision layer (`BattleAnnouncerTest`, 11) +
+  a polite Compose live region in `BattleScreen` (a `size(1.dp).alpha(0f)` node fed from `uiState`)
+  announcing wave / phase / 25%-health-bracket / round-over / battle-error transitions. Health is bucketed
+  so the 200ms HP poll doesn't spam TalkBack; pre-round (blank phase / `maxHp<=0`) announces nothing.
+  On-device TalkBack confirmation is a developer step (no Compose UI tests — #253).
+- **#226** — the GDD flatly promised three color-blind palettes that don't exist. Per the developer's
+  decision, **deferred honestly**: GDD §17 reworded to a tracked post-v1.0 deferral (no palette toggle in
+  v1.0). Survey confirmed no status is conveyed by color alone (wave-phase bar carries its phase label;
+  currencies pair tint with icon + value; dashboard goal uses Check/Close shape + contentDescription) →
+  no code change needed. Store listing makes no a11y claim (unchanged); `master-plan.md` already records
+  Plan 24 deferred (unchanged).
+
 ### Fix — Performance wave: background-music caching (#242) · projectile-trail throttle (#243)
 
 Two confirmed `severity:major` performance findings from the 2026-06-18 complete-app review, one

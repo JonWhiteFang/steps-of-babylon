@@ -1,3 +1,44 @@
+## 2026-06-20 — Accessibility wave: #213 button contrast · #214 battle TalkBack live region · #226 color-blind deferral (`[Unreleased]`)
+
+- **Goal:** fix three confirmed `severity:major` accessibility findings as one combined PR. Branch
+  `a11y/contrast-talkback-cvd-213-214-226` off `main`.
+- **Process:** spec-first → both spec and plan through the **Adversarial Review Gate** (ultracode off →
+  lighter single-agent review). One up-front developer decision: #226 → **DEFER honestly + non-color
+  cues** (not build a palette toggle).
+- **Spec review** (1 agent): 5 findings, 0 critical, 1 major (F1 — #214 helper must handle the RAW
+  enum `wavePhase` + `Double`/zero-`maxHp` guards). Independently re-verified the #213 contrast math
+  (4.19 → 5.99) and the #226 survey (no color-only status). All applied.
+- **Plan review** (1 agent): 5 findings incl. a **CRITICAL caught pre-code** — the planned stateful
+  `BattleAnnouncer` mutated inside `derivedStateOf`/`remember` is a side-effect-in-composition (Compose
+  may run/discard the calc → corrupt transition detection). Reworked to a **pure `battleAnnouncement(prev,
+  next)`** advanced inside a `LaunchedEffect`. Plus a major: `size(0.dp)` live-region nodes are pruned
+  from the a11y tree → `size(1.dp).alpha(0f)`; and the localization shape decided (sealed result +
+  composable resolves `stringResource`). All applied.
+- **What changed:**
+  - **#213** — new `OnGold = #4A2618` token in `Color.kt` (~5.99:1 on Gold), wired as `onPrimary` in
+    `Theme.kt` (was `DeepBronze` ~4.19:1). Exposed `GoldArgb`/`OnGoldArgb` plain-Int consts so the pure
+    `ContrastTest` reads the REAL tokens (a regression fails the build — caught during mutation-check that
+    a hardcoded-copy test wouldn't). `StatusDanger`/`RaritySand` left unchanged (icon/fill only).
+  - **#214** — new pure `presentation/battle/BattleAnnouncer.kt` (`BattleSnapshot`, sealed
+    `BattleAnnouncement`, `battleAnnouncement(prev,next)`, `healthBucket`); `BattleScreen` gained a
+    `LaunchedEffect`-driven invisible polite live region (`size(1.dp).alpha(0f)`) + localized strings.
+    Announces wave/phase/25%-health/round-over/error transitions from `uiState`; pre-round + within-bracket
+    = silent.
+  - **#226** — GDD §17:459 reworded to a post-v1.0 deferral (issue #226). No store/master-plan/archived
+    edits; survey of color-only status recorded (none found).
+- **Verification:** `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. **1139 → 1152 JVM**
+  (+13: ContrastTest 2, BattleAnnouncerTest 11). **Mutation-checked both:** regressing `OnGoldArgb` to the
+  DeepBronze value fails `ContrastTest`; breaking health bucketing fails 2 `BattleAnnouncerTest` cases.
+  `DomainPurityTest` green. (En route: fixed a JUnit-Jupiter `assertNull(actual, msg)` arg order and a
+  lint `LocalContextGetResourceValueCall` — moved string resolution from `context.getString` in the
+  effect to `stringResource` in composable scope.)
+- **Doc sync:** CLAUDE.md 1139→1152; CHANGELOG `[Unreleased]` section; source-files.md (Color/Theme/
+  BattleScreen/BattleAnnouncer + 2 tests); GDD §17. No schema/tech/structure/README/ADR change.
+- **Remains / next:** commit + open PR (closes #213/#214/#226 — PR justifies the no-palette close of
+  #226), CI, merge on green. On-device TalkBack confirmation is a developer step (no Compose UI tests,
+  #253). Then more audit backlog: architecture #219–#231; data-integrity #211/#234; i18n #259/#260;
+  med/low #262/#128.
+
 ## 2026-06-20 — Performance wave: #242 background-music caching · #243 projectile-trail throttle (`[Unreleased]`)
 
 - **Goal:** fix two confirmed `severity:major` performance findings from the 2026-06-18 complete-app

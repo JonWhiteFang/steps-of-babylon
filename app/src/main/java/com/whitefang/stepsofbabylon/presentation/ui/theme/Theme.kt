@@ -13,7 +13,7 @@ private val DarkColorScheme = darkColorScheme(
     // Slightly elevated bronze so Material surfaces that use surfaceVariant (chips, tonal buttons,
     // outlined-card containers) lift off the flat background instead of disappearing into it.
     surfaceVariant = BronzeSurface,
-    onPrimary = DeepBronze,      // dark text on gold buttons reads better than ivory (gold is light)
+    onPrimary = OnGold,          // #213: dark-on-gold text at ~5.99:1 (DeepBronze was only ~4.19:1, AA-normal fail)
     onSecondary = Ivory,
     onBackground = TextPrimary,  // Ivory: ~8.8:1 on DeepBronze (AAA)
     onSurface = TextPrimary,
