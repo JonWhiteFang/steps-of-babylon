@@ -4,6 +4,30 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Refactor — Presentation→data cleanup: ViewModel DAO injection / entity leak (#219) · persistence-abstraction consistency (#229)
+
+Finishes the dependency-rule work at the presentation→data boundary (builds on #227/#228). **Behavior-
+preserving structural refactor; no schema/economy-formula/engine change. 1168 → 1169 JVM** (+1: the new
+`PresentationPurityTest`); `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec + plan both
+through the **Adversarial Review Gate** (single-agent, ultracode off). ADR-0035.
+
+- **#219** — 5 ViewModels no longer inject Room DAOs, and `CurrencyDashboardViewModel` no longer constructs/
+  iterates a raw `WeeklyChallengeEntity`. The reads route through repository **ports** (4 new methods:
+  `MissionRepository.observeMissionsForDate`/`observeClaimableCount`, `MilestoneRepository.observeClaimedMilestoneIds`,
+  `WeeklyChallengeRepository.getLastNWeeks`); entities map to domain models at the data boundary. The
+  reactive `Flow` reads stay reactive (impls are `dao.flow().map{}`). The central fix was rewriting
+  `MissionsViewModel`'s display/progress mapping off the raw `missionType` String onto the `DailyMission.type`
+  domain enum. New `architecture/PresentationPurityTest` machine-enforces the boundary (mutation-verified).
+  **Documented exception:** `BattleViewModel` keeps `AppDatabase` for the end-of-round `withTransaction`
+  atomicity seam (a cross-repository transaction boundary, not a 1:1 read) — the single allowlisted import.
+- **#229** — persistence-abstraction rule recorded (ADR-0035): every Room table has a repository port;
+  DAO-direct access is confined to the data layer, never presentation. After #227 the only portless DAO is
+  `BillingReceiptDao`, which is data-internal (only `BillingManagerImpl` calls it, behind the `BillingManager`
+  port) — a deliberate no-port exception, not a redundant new port.
+- Accepted edge-case shift: a daily-mission row whose stored `missionType` no longer resolves to a
+  `DailyMissionType` is now dropped from the list (impl `mapNotNull`, per #227) rather than rendering its raw
+  id; no test covered the old fallback.
+
 ### Refactor — Architecture-invariant wave: domain→data dependency-rule fix (#227) · purity guard (#228)
 
 Restores the Clean-Architecture dependency rule (`presentation → domain ← data`) at the

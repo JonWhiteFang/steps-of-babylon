@@ -17,8 +17,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserFeedbackTest {
@@ -26,7 +24,7 @@ class UserFeedbackTest {
     private val dispatcher = StandardTestDispatcher()
     private lateinit var workshopRepo: FakeWorkshopRepository
     private lateinit var playerRepo: FakePlayerRepository
-    private val dailyMissionDao = mock<com.whitefang.stepsofbabylon.data.local.DailyMissionDao>()
+    private val missionRepo = com.whitefang.stepsofbabylon.fakes.FakeMissionRepository()
 
     @BeforeEach
     fun setup() = runTest(dispatcher) {
@@ -34,7 +32,6 @@ class UserFeedbackTest {
         workshopRepo = FakeWorkshopRepository()
         playerRepo = FakePlayerRepository(PlayerProfile(stepBalance = 0))
         workshopRepo.upgrades.value = UpgradeType.entries.associateWith { 0 }
-        whenever(dailyMissionDao.getByDateOnce(org.mockito.kotlin.any())).thenReturn(emptyList())
     }
 
     @AfterEach
@@ -42,7 +39,7 @@ class UserFeedbackTest {
 
     @Test
     fun `workshop purchase with zero balance shows feedback message`() = runTest(dispatcher) {
-        val vm = WorkshopViewModel(workshopRepo, playerRepo, dailyMissionDao)
+        val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo)
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -55,7 +52,7 @@ class UserFeedbackTest {
 
     @Test
     fun `clearMessage resets userMessage to null`() = runTest(dispatcher) {
-        val vm = WorkshopViewModel(workshopRepo, playerRepo, dailyMissionDao)
+        val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo)
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -70,7 +67,7 @@ class UserFeedbackTest {
 
     @Test
     fun `quickInvest with zero balance shows feedback message`() = runTest(dispatcher) {
-        val vm = WorkshopViewModel(workshopRepo, playerRepo, dailyMissionDao)
+        val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo)
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
 

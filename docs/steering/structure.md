@@ -71,7 +71,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 └── service/            # Foreground step-counting service, WorkManager workers, boot receiver
 
 app/src/test/java/com/whitefang/stepsofbabylon/
-├── architecture/       # DomainPurityTest — machine-enforced dependency-rule guard (#27/#228; no Android, no data-layer, no DI-framework imports in domain/)
+├── architecture/       # DomainPurityTest (#27/#228; no Android/data/DI imports in domain/) + PresentationPurityTest (#219/#229; no data.local DAO/AppDatabase/Entity imports in presentation/, allowlisting the BattleViewModel withTransaction seam)
 ├── fakes/              # In-memory fake repositories (FakePlayerRepository, FakeWorkshopRepository, FakeUltimateWeaponRepository, FakeLabRepository, FakeCardRepository, FakeWalkingEncounterRepository, FakeStepRepository, FakeCosmeticRepository, FakeMissionRepository, FakeMilestoneRepository, FakeDailyLoginRepository, FakeWeeklyChallengeRepository, FakeBillingManager, FakeRewardAdManager, FakeMilestoneDao, FakeDailyMissionDao, FakeDailyLoginDao, FakeWeeklyChallengeDao, FakeDailyStepDao, FakeCosmeticDao, FakeTimeProvider)
 ├── domain/
 │   ├── model/          # Domain model invariant tests (TierConfig, Biome, Loadouts, UpgradeType, EnemyType, Milestone, DailyMissionType, BattleConditionEffects)

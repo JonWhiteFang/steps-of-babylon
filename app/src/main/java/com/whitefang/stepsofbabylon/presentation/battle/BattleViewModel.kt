@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.room.withTransaction
 import com.whitefang.stepsofbabylon.data.local.AppDatabase
-import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
 import com.whitefang.stepsofbabylon.domain.model.AdPlacement
 import com.whitefang.stepsofbabylon.domain.model.AdResult
 import com.whitefang.stepsofbabylon.domain.model.Biome
@@ -24,6 +23,7 @@ import com.whitefang.stepsofbabylon.domain.repository.RewardAdManager
 import com.whitefang.stepsofbabylon.domain.repository.CardRepository
 import com.whitefang.stepsofbabylon.domain.repository.CosmeticRepository
 import com.whitefang.stepsofbabylon.domain.repository.LabRepository
+import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
 import com.whitefang.stepsofbabylon.domain.repository.StepRepository
 import com.whitefang.stepsofbabylon.domain.repository.UltimateWeaponRepository
 import com.whitefang.stepsofbabylon.domain.repository.WorkshopRepository
@@ -71,7 +71,10 @@ class BattleViewModel @Inject constructor(
     private val cosmeticRepository: CosmeticRepository,
     private val labRepository: LabRepository,
     private val stepRepository: StepRepository,
-    private val dailyMissionDao: DailyMissionDao,
+    private val missionRepository: MissionRepository,
+    // #219 documented exception (ADR-0035): AppDatabase stays injected ONLY for the end-of-round
+    // `withTransaction` seam (runInTransaction) — a cross-repository atomicity boundary, not a 1:1
+    // DAO read. Moving it behind a port would mean restructuring the whole end-of-round fan-out.
     private val appDatabase: AppDatabase,
     @param:ApplicationScope private val applicationScope: CoroutineScope,
     private val milestoneNotificationManager: MilestoneNotificationManager,
@@ -349,18 +352,19 @@ class BattleViewModel @Inject constructor(
                 // Write 5: daily-mission progress (battle missions). Same normalisation as #4.
                 runCatching {
                     val today = timeProvider.today().toString()
-                    val missions = dailyMissionDao.getByDateOnce(today)
+                    val missions = missionRepository.getMissionsForDate(today)
                     for (m in missions) {
                         if (m.claimed || m.completed) continue
-                        when (m.missionType) {
-                            DailyMissionType.REACH_WAVE_30.name -> {
+                        when (m.type) {
+                            DailyMissionType.REACH_WAVE_30 -> {
                                 val newProgress = maxOf(m.progress, wave)
-                                dailyMissionDao.updateProgress(m.id, newProgress, newProgress >= m.target)
+                                missionRepository.updateProgress(m.id, newProgress, newProgress >= m.target)
                             }
-                            DailyMissionType.KILL_500_ENEMIES.name -> {
+                            DailyMissionType.KILL_500_ENEMIES -> {
                                 val newProgress = m.progress + eng.totalEnemiesKilled
-                                dailyMissionDao.updateProgress(m.id, newProgress, newProgress >= m.target)
+                                missionRepository.updateProgress(m.id, newProgress, newProgress >= m.target)
                             }
+                            else -> {}
                         }
                     }
                 }.onFailure { Log.w(TAG, "endRound: updateDailyMissionProgress failed", it) }

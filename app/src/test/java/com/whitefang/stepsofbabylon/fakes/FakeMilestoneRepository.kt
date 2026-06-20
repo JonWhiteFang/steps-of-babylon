@@ -3,6 +3,8 @@ package com.whitefang.stepsofbabylon.fakes
 import com.whitefang.stepsofbabylon.data.local.MilestoneEntity
 import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.domain.repository.MilestoneRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import org.mockito.kotlin.mock
 
 /**
@@ -24,6 +26,9 @@ class FakeMilestoneRepository(
 
     override suspend fun getClaimedMilestoneIds(): List<String> =
         dao.getAllOnce().filter { it.claimed }.map { it.milestoneId }
+
+    override fun observeClaimedMilestoneIds(): Flow<Set<String>> =
+        dao.getAll().map { list -> list.filter { it.claimed }.map { it.milestoneId }.toSet() }
 
     override suspend fun claimMilestoneAtomic(
         milestoneId: String,

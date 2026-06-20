@@ -2,7 +2,6 @@ package com.whitefang.stepsofbabylon.presentation.missions
 
 import com.whitefang.stepsofbabylon.data.local.DailyMissionEntity
 import com.whitefang.stepsofbabylon.data.local.MilestoneEntity
-import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
@@ -11,13 +10,13 @@ import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestoneResult
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMission
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMissionResult
 import com.whitefang.stepsofbabylon.domain.usecase.GenerateDailyMissions
-import com.whitefang.stepsofbabylon.data.local.DailyStepDao
 import com.whitefang.stepsofbabylon.fakes.FakeCosmeticRepository
 import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
 import com.whitefang.stepsofbabylon.fakes.FakeMilestoneDao
 import com.whitefang.stepsofbabylon.fakes.FakeMilestoneRepository
 import com.whitefang.stepsofbabylon.fakes.FakeMissionRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
+import com.whitefang.stepsofbabylon.fakes.FakeStepRepository
 import com.whitefang.stepsofbabylon.fakes.FakeTimeProvider
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
 import kotlinx.coroutines.Dispatchers
@@ -33,9 +32,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -117,11 +113,9 @@ class MissionsViewModelTest {
 
     private fun createVm(timeProvider: FakeTimeProvider = FakeTimeProvider(fixedDate = LocalDate.parse(today))) =
         MissionsViewModel(
-            dailyMissionDao = missionDao,
-            milestoneDao = milestoneDao,
             missionRepository = missionRepo,
             milestoneRepository = milestoneRepo,
-            dailyStepDao = mock<DailyStepDao> { onBlocking { sumCreditedSteps(any(), any()) } doReturn 0L },
+            stepRepository = FakeStepRepository(),
             playerRepository = playerRepo,
             cosmeticRepository = FakeCosmeticRepository(),
             timeProvider = timeProvider,

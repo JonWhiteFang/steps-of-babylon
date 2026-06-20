@@ -3,6 +3,8 @@ package com.whitefang.stepsofbabylon.data.repository
 import com.whitefang.stepsofbabylon.data.local.MilestoneDao
 import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.domain.repository.MilestoneRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class MilestoneRepositoryImpl @Inject constructor(
@@ -14,6 +16,9 @@ class MilestoneRepositoryImpl @Inject constructor(
 
     override suspend fun getClaimedMilestoneIds(): List<String> =
         dao.getAllOnce().filter { it.claimed }.map { it.milestoneId }
+
+    override fun observeClaimedMilestoneIds(): Flow<Set<String>> =
+        dao.getAll().map { list -> list.filter { it.claimed }.map { it.milestoneId }.toSet() }
 
     override suspend fun claimMilestoneAtomic(
         milestoneId: String,

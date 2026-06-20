@@ -5,6 +5,8 @@ import com.whitefang.stepsofbabylon.data.local.DailyMissionEntity
 import com.whitefang.stepsofbabylon.domain.model.DailyMission
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class MissionRepositoryImpl @Inject constructor(
@@ -13,6 +15,11 @@ class MissionRepositoryImpl @Inject constructor(
 
     override suspend fun getMissionsForDate(date: String): List<DailyMission> =
         dao.getByDateOnce(date).mapNotNull { it.toDomainOrNull() }
+
+    override fun observeMissionsForDate(date: String): Flow<List<DailyMission>> =
+        dao.getByDate(date).map { list -> list.mapNotNull { it.toDomainOrNull() } }
+
+    override fun observeClaimableCount(date: String): Flow<Int> = dao.countClaimable(date)
 
     override suspend fun generateForDate(date: String, missions: List<DailyMission>) =
         // Preserve the @Transaction batch + (date,missionType) unique-index + IGNORE guard (#127).

@@ -12,10 +12,10 @@ data-integrity #237/#238/#248) via release PR #278 (squash `ffa9973`). **ALL 4 n
 Latest content wave MERGED: data-integrity (PR #276, `0f32ac6`; #237/#238/#248 auto-closed; ADR-0030,
 single-agent review caught a critical pre-code defect). Earlier waves MERGED: #261/#233 (PR #274, `8b50b13`);
 #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.9 (vc 25)** · **1168 JVM + 9 instrumented tests**
+Supersedes **v1.0.9 (vc 25)** · **1169 JVM + 9 instrumented tests**
 green (1110 shipped in v1.0.10; +8 reliability wave #251/#249 → 1118; +8 correctness/UX wave
 #225/#235/#224/#222 → 1126; +4 privacy/monetization #240/#239/#241 → 1130; +9 perf wave #242/#243 → 1139;
-+13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
++13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -33,8 +33,26 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — implemented on branch `arch/domain-purity-227-228`, build-verified, NOT yet
-  committed-as-PR'd; `[Unreleased]`).** **Architecture-invariant wave (#227 · #228)** off the
+- **CURRENT (DONE — implemented on branch `arch/presentation-data-219-229`, build-verified, NOT yet
+  committed-as-PR'd; `[Unreleased]`).** **Presentation→data cleanup (#219 · #229)** — finishes the
+  dependency-rule work at the presentation boundary (builds on #227/#228). **Behavior-preserving structural
+  refactor; no schema/economy/engine change; 1168 → 1169 JVM** (+1: `PresentationPurityTest`).
+  `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec + plan both through the **Adversarial
+  Review Gate** (single-agent, ultracode OFF); plan review caught the under-counted test-rewiring blast
+  radius (Battle/Workshop/UserFeedback ctor sites). **#219:** 5 ViewModels off the raw DAOs; the
+  `CurrencyDashboardViewModel` raw-`WeeklyChallengeEntity` leak removed. 4 new port methods
+  (`Mission.observeMissionsForDate`/`observeClaimableCount`, `Milestone.observeClaimedMilestoneIds`,
+  `WeeklyChallenge.getLastNWeeks`) — reactive reads stay `Flow`. Central fix: `MissionsViewModel` mapping
+  moved off the raw `missionType` String onto `DailyMission.type`. New `PresentationPurityTest` guards the
+  boundary (mutation-verified); **documented exception:** `BattleViewModel` keeps `AppDatabase` for the
+  end-of-round `withTransaction` seam (the lone allowlisted import). **#229:** persistence-abstraction rule
+  recorded — every table has a port; DAO-direct confined to data layer; `BillingReceiptDao` the deliberate
+  data-internal no-port exception. **ADR-0035.** Accepted edge-case shift: unknown-`missionType` rows now
+  drop (mapNotNull) instead of rendering raw ids; no test covered the old fallback. Next: commit + open PR
+  (closes #219/#229), monitor CI, merge on green; then remaining audit backlog (architecture
+  #220/#230/#231/#234; data-integrity #211; i18n #259/#260; med/low #262/#128).
+- **Previous objective (DONE — MERGED PR #299, squash `cfe46f1`; #227/#228 auto-closed; `[Unreleased]`).**
+  **Architecture-invariant wave (#227 · #228)** off the
   complete-app-review backlog: restores the Clean-Architecture dependency rule at the
   dependency-DIRECTION level and machine-enforces it. **Behavior-preserving structural refactor; no
   schema/economy/engine change; 1167 → 1168 JVM** (+1: the new DI-agnostic guard; the 9 use-case tests
@@ -46,10 +64,7 @@ the med/low backlog (#262) remain.
   `PlayerProfileDao` into the DAO `@Transaction` — guarded-deduct intact, ADR-0027); the spec review
   confirmed this is correct (single `@Singleton AppDatabase`). **#228:** `DomainPurityTest` now forbids
   `…data` + `dagger.`/`javax.inject.` imports; mutation-verified (re-added data import → build fails naming
-  the file). ViewModel direct-DAO reads (presentation→data) deliberately left for #219. 4 new fake repos +
-  `FakeStepRepository` carries the atomic-credit emulation. **ADR-0034.** Next: commit + open PR (closes
-  #227/#228), monitor CI, merge on green; then remaining audit backlog (architecture #219/#220/#229/#230/#231/#234;
-  data-integrity #211; i18n #259/#260; med/low #262/#128).
+  the file). 4 new fake repos + `FakeStepRepository` carries the atomic-credit emulation. **ADR-0034.**
 - **Previous objective (DONE — MERGED PR #298, squash `7aac895`; #252 auto-closed, #253 left open for
   follow-up screens; `[Unreleased]`).** **Test-integrity wave (#252 · #253)** off the complete-app-review
   backlog: two adversarially-confirmed `severity:major` testing gaps, one **test-only** PR (no
