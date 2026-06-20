@@ -1,3 +1,21 @@
+## 2026-06-20 — Checkpoint: post-merge reconciliation — presentation→data cleanup merged (PR #300)
+
+- **Context:** the #219/#229 wave's full doc sync (CLAUDE.md→1169, CHANGELOG, source-files.md, structure.md,
+  ADR-0035, and the RUN_LOG entry below) shipped inside PR #300 and merged (`870c938`, HEAD of `main`, tree
+  clean). The only drift left was STATE.md's CURRENT bullet still reading "implemented on branch … NOT yet
+  committed-as-PR'd."
+- **Doc sync (reconciliation only — no code/test change; tree clean on `main`):**
+  - STATE.md CURRENT bullet → `MERGED PR #300, squash 870c938; #219/#229 auto-closed`; trailing
+    "Next: commit + open PR…" replaced with the remaining audit backlog.
+  - STATE.md "Recently shipped" → new entry covering the day's test-integrity + architecture cluster
+    (#298 test-integrity, #299 #227/#228, #300 #219/#229); noted #227/#228/#219/#229 now fully closed.
+  - Demoted #227/#228 (PR #299) confirmed already marked MERGED in the prior checkpoint.
+- **Verification:** doc-only; HEAD `870c938`, `git status` clean on `main`. No build re-run (no source change
+  since PR #300's green CI). Headline test count **1169 JVM**.
+- **Remains / next:** architecture #220 (cyclic data↔domain coupling — likely much smaller now the ports
+  exist), #230/#231 (GameEngine god-class), #234 (process-death); data-integrity #211; i18n #259/#260;
+  med/low #262/#128.
+
 ## 2026-06-20 — Presentation→data cleanup: #219 ViewModel DAO/entity-leak fix · #229 persistence-abstraction consistency (`[Unreleased]`)
 
 - **Goal:** finish the dependency-rule work at the presentation boundary (builds on #227/#228). Branch

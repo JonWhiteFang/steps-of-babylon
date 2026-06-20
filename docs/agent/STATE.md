@@ -33,8 +33,8 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — implemented on branch `arch/presentation-data-219-229`, build-verified, NOT yet
-  committed-as-PR'd; `[Unreleased]`).** **Presentation→data cleanup (#219 · #229)** — finishes the
+- **CURRENT (DONE — MERGED PR #300, squash `870c938`; #219/#229 auto-closed; `[Unreleased]`).**
+  **Presentation→data cleanup (#219 · #229)** — finishes the
   dependency-rule work at the presentation boundary (builds on #227/#228). **Behavior-preserving structural
   refactor; no schema/economy/engine change; 1168 → 1169 JVM** (+1: `PresentationPurityTest`).
   `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec + plan both through the **Adversarial
@@ -48,9 +48,10 @@ the med/low backlog (#262) remain.
   end-of-round `withTransaction` seam (the lone allowlisted import). **#229:** persistence-abstraction rule
   recorded — every table has a port; DAO-direct confined to data layer; `BillingReceiptDao` the deliberate
   data-internal no-port exception. **ADR-0035.** Accepted edge-case shift: unknown-`missionType` rows now
-  drop (mapNotNull) instead of rendering raw ids; no test covered the old fallback. Next: commit + open PR
-  (closes #219/#229), monitor CI, merge on green; then remaining audit backlog (architecture
-  #220/#230/#231/#234; data-integrity #211; i18n #259/#260; med/low #262/#128).
+  drop (mapNotNull) instead of rendering raw ids; no test covered the old fallback. Both CI checks green.
+  Remaining audit backlog: architecture #220 (cyclic data↔domain coupling — likely much smaller now the
+  ports exist), #230/#231 (GameEngine god-class / ADR-0012 simulation-hoist), #234 (process-death /
+  SavedStateHandle); data-integrity #211; i18n #259/#260; med/low #262/#128.
 - **Previous objective (DONE — MERGED PR #299, squash `cfe46f1`; #227/#228 auto-closed; `[Unreleased]`).**
   **Architecture-invariant wave (#227 · #228)** off the
   complete-app-review backlog: restores the Clean-Architecture dependency rule at the
@@ -483,6 +484,14 @@ the med/low backlog (#262) remain.
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-20 — test-integrity + architecture cluster MERGED (all `[Unreleased]`, off the 2026-06-18
+  audit backlog; spec+plan each through the Adversarial Review Gate, single-agent).** **Test-integrity**
+  (#252 concurrent-contention DAO test / #253 Compose-UI-test beachhead) — PR #298, `7aac895`, +15 JVM →
+  **1167** (#253 left open for follow-up screens). **Architecture-invariant** (#227 domain→data
+  dependency-rule fix / #228 `DomainPurityTest` strengthened) — PR #299, `cfe46f1`, +1 JVM, ADR-0034.
+  **Presentation→data cleanup** (#219 ViewModel DAO/entity-leak / #229 persistence-abstraction rule) —
+  PR #300, `870c938`, +1 JVM, ADR-0035 (new `PresentationPurityTest`). The architecture cluster
+  #227/#228/#219/#229 is now fully closed; #220/#230/#231/#234 remain.
 - **2026-06-20 — three complete-app-review fix waves MERGED (all `[Unreleased]`, off the 2026-06-18 audit
   backlog; spec+plan each through the Adversarial Review Gate, ultracode OFF → single-agent).**
   **Accessibility** (#213 button contrast / #214 battle TalkBack live region / #226 color-blind deferral) —
