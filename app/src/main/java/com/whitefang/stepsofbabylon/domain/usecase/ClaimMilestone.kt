@@ -1,11 +1,11 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
-import com.whitefang.stepsofbabylon.data.local.MilestoneDao
-import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.model.MilestoneReward
 import com.whitefang.stepsofbabylon.domain.repository.CosmeticRepository
+import com.whitefang.stepsofbabylon.domain.repository.MilestoneRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
+import com.whitefang.stepsofbabylon.domain.time.TimeProvider
 import kotlinx.coroutines.flow.first
 
 /**
@@ -70,10 +70,10 @@ sealed class ClaimMilestoneResult {
  * (false-negative \u2192 the user retries). There is no correctness window here to close.
  */
 class ClaimMilestone(
-    private val milestoneDao: MilestoneDao,
+    private val milestoneRepository: MilestoneRepository,
     private val playerRepository: PlayerRepository,
-    private val playerProfileDao: PlayerProfileDao,
     private val cosmeticRepository: CosmeticRepository,
+    private val timeProvider: TimeProvider,
 ) {
     suspend operator fun invoke(milestone: Milestone): ClaimMilestoneResult {
         val profile = playerRepository.observeProfile().first()
@@ -91,12 +91,11 @@ class ClaimMilestone(
             }
         }
 
-        val claimed = milestoneDao.claimMilestoneAtomic(
+        val claimed = milestoneRepository.claimMilestoneAtomic(
             milestoneId = milestone.name,
             gems = milestone.totalGems,
             powerStones = milestone.totalPowerStones,
-            claimedAt = System.currentTimeMillis(),
-            playerDao = playerProfileDao,
+            claimedAt = timeProvider.now().toEpochMilli(),
         )
         return if (claimed) ClaimMilestoneResult.Success else ClaimMilestoneResult.AlreadyClaimed
     }

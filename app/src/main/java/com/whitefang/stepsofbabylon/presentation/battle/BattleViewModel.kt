@@ -7,8 +7,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.room.withTransaction
 import com.whitefang.stepsofbabylon.data.local.AppDatabase
 import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
-import com.whitefang.stepsofbabylon.data.local.DailyStepDao
-import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.domain.model.AdPlacement
 import com.whitefang.stepsofbabylon.domain.model.AdResult
 import com.whitefang.stepsofbabylon.domain.model.Biome
@@ -26,6 +24,7 @@ import com.whitefang.stepsofbabylon.domain.repository.RewardAdManager
 import com.whitefang.stepsofbabylon.domain.repository.CardRepository
 import com.whitefang.stepsofbabylon.domain.repository.CosmeticRepository
 import com.whitefang.stepsofbabylon.domain.repository.LabRepository
+import com.whitefang.stepsofbabylon.domain.repository.StepRepository
 import com.whitefang.stepsofbabylon.domain.repository.UltimateWeaponRepository
 import com.whitefang.stepsofbabylon.domain.repository.WorkshopRepository
 import com.whitefang.stepsofbabylon.domain.time.TimeProvider
@@ -71,9 +70,8 @@ class BattleViewModel @Inject constructor(
     private val cardRepository: CardRepository,
     private val cosmeticRepository: CosmeticRepository,
     private val labRepository: LabRepository,
+    private val stepRepository: StepRepository,
     private val dailyMissionDao: DailyMissionDao,
-    private val dailyStepDao: DailyStepDao,
-    private val playerProfileDao: PlayerProfileDao,
     private val appDatabase: AppDatabase,
     @param:ApplicationScope private val applicationScope: CoroutineScope,
     private val milestoneNotificationManager: MilestoneNotificationManager,
@@ -111,8 +109,8 @@ class BattleViewModel @Inject constructor(
     private val checkTierUnlock = CheckTierUnlock()
     private val awardWaveMilestone = AwardWaveMilestone(playerRepository)
     private val applyCardEffects = ApplyCardEffects()
-    private val awardBattleSteps = AwardBattleSteps(dailyStepDao, playerProfileDao, timeProvider)
-    private val awardBossPowerStones = AwardBossPowerStones(dailyStepDao, playerProfileDao, timeProvider)
+    private val awardBattleSteps = AwardBattleSteps(stepRepository, timeProvider)
+    private val awardBossPowerStones = AwardBossPowerStones(stepRepository, timeProvider)
 
     var resolvedStats: ResolvedStats = ResolvedStats(); private set
     var workshopLevels: Map<UpgradeType, Int> = emptyMap(); private set

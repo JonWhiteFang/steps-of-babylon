@@ -1,10 +1,10 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
-import com.whitefang.stepsofbabylon.data.local.DailyStepRecordEntity
+import com.whitefang.stepsofbabylon.domain.model.DailyStepSummary
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
-import com.whitefang.stepsofbabylon.fakes.FakeDailyStepDao
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
-import com.whitefang.stepsofbabylon.fakes.FakeWeeklyChallengeDao
+import com.whitefang.stepsofbabylon.fakes.FakeStepRepository
+import com.whitefang.stepsofbabylon.fakes.FakeWeeklyChallengeRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -16,8 +16,8 @@ import java.time.temporal.TemporalAdjusters
 
 class TrackWeeklyChallengeTest {
 
-    private lateinit var weeklyDao: FakeWeeklyChallengeDao
-    private lateinit var stepDao: FakeDailyStepDao
+    private lateinit var weeklyRepo: FakeWeeklyChallengeRepository
+    private lateinit var stepRepo: FakeStepRepository
     private lateinit var playerRepo: FakePlayerRepository
     private lateinit var useCase: TrackWeeklyChallenge
 
@@ -27,16 +27,17 @@ class TrackWeeklyChallengeTest {
 
     @BeforeEach
     fun setup() {
-        weeklyDao = FakeWeeklyChallengeDao()
-        stepDao = FakeDailyStepDao()
+        weeklyRepo = FakeWeeklyChallengeRepository()
+        stepRepo = FakeStepRepository()
         playerRepo = FakePlayerRepository(PlayerProfile(powerStones = 0))
-        useCase = TrackWeeklyChallenge(weeklyDao, stepDao, playerRepo)
+        useCase = TrackWeeklyChallenge(weeklyRepo, stepRepo, playerRepo)
     }
 
     private fun seedSteps(total: Long) {
-        // Spread steps across the week
-        stepDao.data.value = mapOf(
-            monday.format(fmt) to DailyStepRecordEntity(date = monday.format(fmt), creditedSteps = total)
+        // #227: weekly sum now reads StepRepository.sumCreditedSteps (was DailyStepDao). Seed the
+        // credited steps as a DailyStepSummary in the Monday bucket of the current week.
+        stepRepo.records.value = mapOf(
+            monday.format(fmt) to DailyStepSummary(date = monday.format(fmt), creditedSteps = total)
         )
     }
 

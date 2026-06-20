@@ -1,14 +1,14 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
-import com.whitefang.stepsofbabylon.data.local.DailyLoginDao
-import com.whitefang.stepsofbabylon.data.local.DailyLoginEntity
+import com.whitefang.stepsofbabylon.domain.model.DailyLogin
+import com.whitefang.stepsofbabylon.domain.repository.DailyLoginRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 class TrackDailyLogin(
-    private val dailyLoginDao: DailyLoginDao,
+    private val dailyLoginRepository: DailyLoginRepository,
     private val playerRepository: PlayerRepository,
 ) {
     companion object {
@@ -19,7 +19,7 @@ class TrackDailyLogin(
     }
 
     suspend fun checkAndAward(todayDate: String, todayCreditedSteps: Long, seasonPassActive: Boolean = false, seasonPassExpiry: Long = 0) {
-        val login = dailyLoginDao.getByDate(todayDate) ?: DailyLoginEntity(date = todayDate)
+        val login = dailyLoginRepository.getByDate(todayDate) ?: DailyLogin(date = todayDate)
         var updated = login.copy(stepsWalked = todayCreditedSteps)
 
         // PS for walking 1k+ steps
@@ -52,6 +52,6 @@ class TrackDailyLogin(
             updated = updated.copy(gemsClaimed = true)
         }
 
-        dailyLoginDao.upsert(updated)
+        dailyLoginRepository.upsert(updated)
     }
 }

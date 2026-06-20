@@ -35,4 +35,17 @@ abstract class RepositoryModule {
 
     @Binds @Singleton
     abstract fun bindCosmeticRepository(impl: CosmeticRepositoryImpl): CosmeticRepository
+
+    // #227: ports introduced to remove the domain→data dependency-rule violation.
+    @Binds @Singleton
+    abstract fun bindMissionRepository(impl: MissionRepositoryImpl): MissionRepository
+
+    @Binds @Singleton
+    abstract fun bindMilestoneRepository(impl: MilestoneRepositoryImpl): MilestoneRepository
+
+    @Binds @Singleton
+    abstract fun bindDailyLoginRepository(impl: DailyLoginRepositoryImpl): DailyLoginRepository
+
+    @Binds @Singleton
+    abstract fun bindWeeklyChallengeRepository(impl: WeeklyChallengeRepositoryImpl): WeeklyChallengeRepository
 }

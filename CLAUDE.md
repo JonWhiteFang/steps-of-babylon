@@ -180,7 +180,12 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 ```
 
 Follow Clean Architecture layers: `presentation → domain ← data`. **The domain layer has zero
-Android dependencies** — machine-enforced by `architecture/DomainPurityTest`.
+Android dependencies AND zero data-layer imports** (the full dependency rule, not just "no Android")
+— machine-enforced by `architecture/DomainPurityTest` (#228: it also forbids `com.whitefang.stepsofbabylon.data`
+imports + Dagger/`javax.inject`, so a domain→data violation now fails the build). Use cases depend on
+**repository ports** in `domain/repository/`, never on Room DAOs/entities (#227, ADR-0034). Repo impls
+that wrap a `@Transaction` atomic method inject the real `PlayerProfileDao` and pass it into the DAO call
+so the guarded-deduct credit stays inside the one DB-scoped transaction.
 
 See `docs/steering/source-files.md` for the full file-by-file index, and `docs/steering/structure.md`
 for the structural reference.
@@ -309,13 +314,14 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1167 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1168 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Compose UI tests run on the JVM lane (#253):** `createComposeRule()` under Robolectric
   (`@RunWith(RobolectricTestRunner)` + `@GraphicsMode(NATIVE)`), backed by the `src/test/` fakes — no
   emulator, gated by the PR lane. `ui-test-manifest` must stay on `debugImplementation` (it supplies the
   host `ComponentActivity` the rule launches). See `CardsScreenTest` / `OnboardingScreenTest`.
-- **Notable guards:** `architecture/DomainPurityTest` (fails if `domain/` imports any Android package);
+- **Notable guards:** `architecture/DomainPurityTest` (fails if `domain/` imports any Android package,
+  the `data` layer, or a DI framework — the full dependency rule, #227/#228);
   `SimulationTest` (the extracted pure-domain game-loop core); `AtomicDaoConcurrencyTest` (#252 — the
   guarded-deduct / one-shot-claim atomic DAOs under real concurrent contention on a file-backed Room DB);
   `BattleSurfaceLifecycleTest` + `DeepLinkIntentTest` (instrumented, real-framework regression guards).

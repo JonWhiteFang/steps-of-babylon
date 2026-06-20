@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.data.repository
 
 import com.whitefang.stepsofbabylon.data.local.DailyStepDao
+import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.data.local.DailyStepRecordEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +38,7 @@ class StepRepositoryImplTest {
             creditedSteps = 5000,
         )
         whenever(dao.getByDate("2026-05-28")).thenReturn(MutableStateFlow(entity))
-        val repo = StepRepositoryImpl(dao)
+        val repo = StepRepositoryImpl(dao, mock<PlayerProfileDao>())
 
         val summary = repo.observeTodayRecord("2026-05-28").first()
 
@@ -52,7 +53,7 @@ class StepRepositoryImplTest {
     fun `observeTodayRecord emits null when no entity exists`() = runTest {
         val dao = mock<DailyStepDao>()
         whenever(dao.getByDate("2026-05-28")).thenReturn(MutableStateFlow(null))
-        val repo = StepRepositoryImpl(dao)
+        val repo = StepRepositoryImpl(dao, mock<PlayerProfileDao>())
 
         assertNull(repo.observeTodayRecord("2026-05-28").first())
     }
@@ -64,7 +65,7 @@ class StepRepositoryImplTest {
             DailyStepRecordEntity(date = "2026-05-28", sensorSteps = 1000)
         )
         whenever(dao.getByDateOnce("2026-05-29")).thenReturn(null)
-        val repo = StepRepositoryImpl(dao)
+        val repo = StepRepositoryImpl(dao, mock<PlayerProfileDao>())
 
         assertNotNull(repo.getDailyRecord("2026-05-28"))
         assertEquals(1000L, repo.getDailyRecord("2026-05-28")!!.sensorSteps)
@@ -74,7 +75,7 @@ class StepRepositoryImplTest {
     @Test
     fun `updateDailySteps delegates to the column-targeted setSensorAndCreditedSteps`() = runTest {
         val dao = mock<DailyStepDao>()
-        val repo = StepRepositoryImpl(dao)
+        val repo = StepRepositoryImpl(dao, mock<PlayerProfileDao>())
 
         repo.updateDailySteps("2026-05-28", sensorSteps = 200, creditedSteps = 195)
 
@@ -87,7 +88,7 @@ class StepRepositoryImplTest {
     @Test
     fun `updateHealthConnectSteps delegates to the column-targeted setHealthConnectSteps`() = runTest {
         val dao = mock<DailyStepDao>()
-        val repo = StepRepositoryImpl(dao)
+        val repo = StepRepositoryImpl(dao, mock<PlayerProfileDao>())
 
         repo.updateHealthConnectSteps("2026-05-28", healthConnectSteps = 4800)
 
@@ -98,7 +99,7 @@ class StepRepositoryImplTest {
     @Test
     fun `updateActivityMinutes delegates to the column-targeted setActivityMinutes`() = runTest {
         val dao = mock<DailyStepDao>()
-        val repo = StepRepositoryImpl(dao)
+        val repo = StepRepositoryImpl(dao, mock<PlayerProfileDao>())
 
         repo.updateActivityMinutes("2026-05-28", activityMinutes = mapOf("WALKING" to 10), stepEquivalents = 1000)
 
@@ -109,7 +110,7 @@ class StepRepositoryImplTest {
     @Test
     fun `updateEscrow delegates to the column-targeted setEscrow`() = runTest {
         val dao = mock<DailyStepDao>()
-        val repo = StepRepositoryImpl(dao)
+        val repo = StepRepositoryImpl(dao, mock<PlayerProfileDao>())
 
         repo.updateEscrow("2026-05-28", escrowSteps = 250, syncCount = 2)
 
@@ -120,7 +121,7 @@ class StepRepositoryImplTest {
     @Test
     fun `releaseEscrow delegates to clearEscrow`() = runTest {
         val dao = mock<DailyStepDao>()
-        val repo = StepRepositoryImpl(dao)
+        val repo = StepRepositoryImpl(dao, mock<PlayerProfileDao>())
 
         repo.releaseEscrow("2026-05-28")
 
@@ -130,7 +131,7 @@ class StepRepositoryImplTest {
     @Test
     fun `discardEscrow delegates to clearEscrow`() = runTest {
         val dao = mock<DailyStepDao>()
-        val repo = StepRepositoryImpl(dao)
+        val repo = StepRepositoryImpl(dao, mock<PlayerProfileDao>())
 
         repo.discardEscrow("2026-05-28")
 

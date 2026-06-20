@@ -2,7 +2,7 @@ package com.whitefang.stepsofbabylon.domain.usecase
 
 import com.whitefang.stepsofbabylon.data.local.DailyMissionEntity
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
-import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
+import com.whitefang.stepsofbabylon.fakes.FakeMissionRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -25,17 +25,17 @@ import org.junit.jupiter.api.Test
  */
 class UpdateCompleteResearchMissionProgressTest {
 
-    private lateinit var dao: FakeDailyMissionDao
+    private lateinit var repo: FakeMissionRepository
     private lateinit var useCase: UpdateCompleteResearchMissionProgress
     private val today = "2026-05-19"
 
     @BeforeEach
     fun setup() = runTest {
-        dao = FakeDailyMissionDao()
-        useCase = UpdateCompleteResearchMissionProgress(dao)
+        repo = FakeMissionRepository()
+        useCase = UpdateCompleteResearchMissionProgress(repo)
         // Seed today's COMPLETE_RESEARCH mission row exactly as `GenerateDailyMissions`
         // would. target=1 because that's the value of DailyMissionType.COMPLETE_RESEARCH.
-        dao.insert(
+        repo.dao.insert(
             DailyMissionEntity(
                 date = today,
                 missionType = DailyMissionType.COMPLETE_RESEARCH.name,
@@ -51,7 +51,7 @@ class UpdateCompleteResearchMissionProgressTest {
     fun `R303 does NOT tick when completedCount is 0`() = runTest {
         useCase(completedCount = 0, today = today)
 
-        val missions = dao.getByDateOnce(today)
+        val missions = repo.dao.getByDateOnce(today)
         assertEquals(1, missions.size)
         assertEquals(0, missions[0].progress, "Mission progress must stay at 0 when nothing completed")
         assertFalse(missions[0].completed, "Mission must not be marked completed when nothing completed")
@@ -62,7 +62,7 @@ class UpdateCompleteResearchMissionProgressTest {
         // Defensive guard: caller bug should not corrupt mission state.
         useCase(completedCount = -1, today = today)
 
-        val missions = dao.getByDateOnce(today)
+        val missions = repo.dao.getByDateOnce(today)
         assertEquals(0, missions[0].progress)
         assertFalse(missions[0].completed)
     }
@@ -73,7 +73,7 @@ class UpdateCompleteResearchMissionProgressTest {
     fun `R303 ticks to 1 when completedCount is 1`() = runTest {
         useCase(completedCount = 1, today = today)
 
-        val missions = dao.getByDateOnce(today)
+        val missions = repo.dao.getByDateOnce(today)
         assertEquals(1, missions[0].progress)
         assertTrue(missions[0].completed)
     }
@@ -85,7 +85,7 @@ class UpdateCompleteResearchMissionProgressTest {
         // target instead of overshooting.
         useCase(completedCount = 5, today = today)
 
-        val missions = dao.getByDateOnce(today)
+        val missions = repo.dao.getByDateOnce(today)
         assertEquals(
             DailyMissionType.COMPLETE_RESEARCH.target,
             missions[0].progress,
@@ -101,7 +101,7 @@ class UpdateCompleteResearchMissionProgressTest {
         useCase(completedCount = 1, today = "2099-12-31")
 
         // The seeded row for `today` must remain untouched.
-        val missions = dao.getByDateOnce(today)
+        val missions = repo.dao.getByDateOnce(today)
         assertEquals(0, missions[0].progress)
         assertFalse(missions[0].completed)
     }

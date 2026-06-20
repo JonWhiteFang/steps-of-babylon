@@ -8,6 +8,8 @@ import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
 import com.whitefang.stepsofbabylon.fakes.FakeDailyStepDao
 import com.whitefang.stepsofbabylon.fakes.FakeLabRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
+import com.whitefang.stepsofbabylon.fakes.FakeDailyLoginRepository
+import com.whitefang.stepsofbabylon.fakes.FakeWeeklyChallengeRepository
 import com.whitefang.stepsofbabylon.fakes.FakeStepRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWalkingEncounterRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWeeklyChallengeDao
@@ -60,9 +62,8 @@ class DailyStepManagerTest {
             antiCheatPrefs = antiCheatPrefs,
             walkingEncounterRepository = FakeWalkingEncounterRepository(),
             supplyDropNotificationManager = mock<SupplyDropNotificationManager>(),
-            dailyLoginDao = FakeDailyLoginDao(),
-            weeklyChallengeDao = FakeWeeklyChallengeDao(),
-            dailyStepDao = FakeDailyStepDao(),
+            dailyLoginRepository = FakeDailyLoginRepository(),
+            weeklyChallengeRepository = FakeWeeklyChallengeRepository(),
             dailyMissionDao = dailyMissionDao,
             widgetUpdateHelper = widgetHelper,
             workshopRepository = workshopRepo,
@@ -206,9 +207,8 @@ class DailyStepManagerTest {
             antiCheatPrefs = mock<AntiCheatPreferences>(),
             walkingEncounterRepository = FakeWalkingEncounterRepository(),
             supplyDropNotificationManager = mock<SupplyDropNotificationManager>(),
-            dailyLoginDao = FakeDailyLoginDao(),
-            weeklyChallengeDao = FakeWeeklyChallengeDao(),
-            dailyStepDao = FakeDailyStepDao(),
+            dailyLoginRepository = FakeDailyLoginRepository(),
+            weeklyChallengeRepository = FakeWeeklyChallengeRepository(),
             dailyMissionDao = FakeDailyMissionDao(),
             widgetUpdateHelper = mock<WidgetUpdateHelper>(),
             workshopRepository = workshopRepo,

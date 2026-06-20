@@ -1,17 +1,17 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
-import com.whitefang.stepsofbabylon.data.local.DailyStepDao
-import com.whitefang.stepsofbabylon.data.local.WeeklyChallengeDao
-import com.whitefang.stepsofbabylon.data.local.WeeklyChallengeEntity
+import com.whitefang.stepsofbabylon.domain.model.WeeklyChallenge
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
+import com.whitefang.stepsofbabylon.domain.repository.StepRepository
+import com.whitefang.stepsofbabylon.domain.repository.WeeklyChallengeRepository
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 
 class TrackWeeklyChallenge(
-    private val weeklyChallengeDao: WeeklyChallengeDao,
-    private val dailyStepDao: DailyStepDao,
+    private val weeklyChallengeRepository: WeeklyChallengeRepository,
+    private val stepRepository: StepRepository,
     private val playerRepository: PlayerRepository,
 ) {
     companion object {
@@ -25,8 +25,8 @@ class TrackWeeklyChallenge(
         val weekStart = monday.format(DateTimeFormatter.ISO_LOCAL_DATE)
         val weekEnd = sunday.format(DateTimeFormatter.ISO_LOCAL_DATE)
 
-        val weeklySteps = dailyStepDao.sumCreditedSteps(weekStart, weekEnd)
-        val existing = weeklyChallengeDao.getByWeek(weekStart) ?: WeeklyChallengeEntity(weekStartDate = weekStart)
+        val weeklySteps = stepRepository.sumCreditedSteps(weekStart, weekEnd)
+        val existing = weeklyChallengeRepository.getByWeek(weekStart) ?: WeeklyChallenge(weekStartDate = weekStart)
 
         var newTier = existing.claimedTier
         var psToAward = 0L
@@ -42,9 +42,9 @@ class TrackWeeklyChallenge(
 
         if (newTier > existing.claimedTier) {
             playerRepository.addPowerStones(psToAward)
-            weeklyChallengeDao.upsert(existing.copy(totalSteps = weeklySteps, claimedTier = newTier))
+            weeklyChallengeRepository.upsert(existing.copy(totalSteps = weeklySteps, claimedTier = newTier))
         } else if (weeklySteps != existing.totalSteps) {
-            weeklyChallengeDao.upsert(existing.copy(totalSteps = weeklySteps))
+            weeklyChallengeRepository.upsert(existing.copy(totalSteps = weeklySteps))
         }
     }
 }

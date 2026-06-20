@@ -1,7 +1,7 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
-import com.whitefang.stepsofbabylon.fakes.FakeDailyLoginDao
+import com.whitefang.stepsofbabylon.fakes.FakeDailyLoginRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
@@ -10,15 +10,15 @@ import org.junit.jupiter.api.Test
 
 class TrackDailyLoginTest {
 
-    private lateinit var dao: FakeDailyLoginDao
+    private lateinit var loginRepo: FakeDailyLoginRepository
     private lateinit var playerRepo: FakePlayerRepository
     private lateinit var useCase: TrackDailyLogin
 
     @BeforeEach
     fun setup() {
-        dao = FakeDailyLoginDao()
+        loginRepo = FakeDailyLoginRepository()
         playerRepo = FakePlayerRepository(PlayerProfile(powerStones = 0, gems = 0))
-        useCase = TrackDailyLogin(dao, playerRepo)
+        useCase = TrackDailyLogin(loginRepo, playerRepo)
     }
 
     @Test

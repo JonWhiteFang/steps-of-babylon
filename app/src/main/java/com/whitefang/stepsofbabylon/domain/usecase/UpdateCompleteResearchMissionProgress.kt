@@ -1,7 +1,7 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
-import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
+import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
 import java.time.LocalDate
 
 /**
@@ -24,7 +24,7 @@ import java.time.LocalDate
  * Labs screen was opened, even with no in-flight research.
  */
 class UpdateCompleteResearchMissionProgress(
-    private val dailyMissionDao: DailyMissionDao,
+    private val missionRepository: MissionRepository,
 ) {
     suspend operator fun invoke(
         completedCount: Int,
@@ -36,9 +36,9 @@ class UpdateCompleteResearchMissionProgress(
         // its caller's signal of "how much actually finished".
         if (completedCount <= 0) return
         try {
-            val missions = dailyMissionDao.getByDateOnce(today)
+            val missions = missionRepository.getMissionsForDate(today)
             val m = missions.find {
-                it.missionType == DailyMissionType.COMPLETE_RESEARCH.name &&
+                it.type == DailyMissionType.COMPLETE_RESEARCH &&
                     !it.claimed &&
                     !it.completed
             } ?: return
@@ -49,7 +49,7 @@ class UpdateCompleteResearchMissionProgress(
             // behaviour for the common single-completion path.
             val newProgress = (m.progress + completedCount).coerceAtMost(m.target)
             val isComplete = newProgress >= m.target
-            dailyMissionDao.updateProgress(m.id, newProgress, isComplete)
+            missionRepository.updateProgress(m.id, newProgress, isComplete)
         } catch (_: Exception) {
             // Swallowed: matches the prior LabsViewModel.updateResearchMission contract.
         }

@@ -3,12 +3,14 @@ package com.whitefang.stepsofbabylon.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.data.MilestoneNotificationPreferences
-import com.whitefang.stepsofbabylon.data.local.DailyLoginDao
 import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
 import com.whitefang.stepsofbabylon.data.local.MilestoneDao
 import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.domain.model.Milestone
+import com.whitefang.stepsofbabylon.domain.repository.DailyLoginRepository
 import com.whitefang.stepsofbabylon.domain.repository.LabRepository
+import com.whitefang.stepsofbabylon.domain.repository.MilestoneRepository
+import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.StepRepository
 import com.whitefang.stepsofbabylon.domain.repository.WalkingEncounterRepository
@@ -41,7 +43,11 @@ class HomeViewModel @Inject constructor(
     private val workshopRepository: WorkshopRepository,
     private val labRepository: LabRepository,
     private val walkingEncounterRepository: WalkingEncounterRepository,
-    private val dailyLoginDao: DailyLoginDao,
+    private val missionRepository: MissionRepository,
+    private val milestoneRepository: MilestoneRepository,
+    private val dailyLoginRepository: DailyLoginRepository,
+    // #227: kept for the direct presentation reads (countClaimable / milestone getAll Flow) — those
+    // are presentation→data (permitted; #219), distinct from the use-case violation this wave fixes.
     private val dailyMissionDao: DailyMissionDao,
     private val milestoneDao: MilestoneDao,
     private val milestoneNotificationManager: com.whitefang.stepsofbabylon.service.MilestoneNotificationManager,
@@ -66,7 +72,7 @@ class HomeViewModel @Inject constructor(
      * which gates the DAO write on `completedCount >= 1`. `dailyMissionDao` is already
      * injected for the existing `countClaimable` flow consumer, so no Hilt graph change.
      */
-    private val updateMissionProgress = UpdateCompleteResearchMissionProgress(dailyMissionDao)
+    private val updateMissionProgress = UpdateCompleteResearchMissionProgress(missionRepository)
 
     init {
         viewModelScope.launch {
@@ -81,11 +87,11 @@ class HomeViewModel @Inject constructor(
             val today = _currentDate.value
             val todaySteps = stepRepository.getDailyRecord(today)?.creditedSteps ?: 0
             val profile0 = playerRepository.observeProfile().first()
-            TrackDailyLogin(dailyLoginDao, playerRepository).checkAndAward(today, todaySteps, profile0.seasonPassActive, profile0.seasonPassExpiry)
-            GenerateDailyMissions(dailyMissionDao)(today)
+            TrackDailyLogin(dailyLoginRepository, playerRepository).checkAndAward(today, todaySteps, profile0.seasonPassActive, profile0.seasonPassExpiry)
+            GenerateDailyMissions(missionRepository)(today)
 
             val profile = playerRepository.observeProfile().first()
-            val achievable = CheckMilestones(milestoneDao)(profile.totalStepsEarned)
+            val achievable = CheckMilestones(milestoneRepository)(profile.totalStepsEarned)
             achievable.firstOrNull { !milestoneNotificationPrefs.hasNotified(it) }?.let {
                 milestoneNotificationManager.notifyMilestoneAchieved(it.displayName)
                 milestoneNotificationPrefs.markNotified(it)
@@ -136,7 +142,7 @@ class HomeViewModel @Inject constructor(
         val now = LocalDate.now().toString()
         if (now != _currentDate.value) {
             _currentDate.value = now
-            viewModelScope.launch { GenerateDailyMissions(dailyMissionDao)(now) }
+            viewModelScope.launch { GenerateDailyMissions(missionRepository)(now) }
         }
     }
 }

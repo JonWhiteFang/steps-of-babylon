@@ -4,6 +4,34 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Refactor — Architecture-invariant wave: domain→data dependency-rule fix (#227) · purity guard (#228)
+
+Restores the Clean-Architecture dependency rule (`presentation → domain ← data`) at the
+**dependency-direction** level and makes it machine-enforced. **Behavior-preserving structural refactor;
+no schema / economy-formula / engine change. 1167 → 1168 JVM** (+1: the new DI-agnostic guard; the 9
+use-case tests were rewired, not added); `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL.
+Spec + plan both through the **Adversarial Review Gate** (single-agent, ultracode off): the spec review
+confirmed the atomic-passthrough design is correct (all DAOs come from the single `@Singleton
+AppDatabase`) and bounded the port surface to the use-case layer; the plan review caught that the
+test-rewiring blast radius was undercounted (BattleViewModelTest, the 3 DailyStepManager tests,
+StepRepositoryImplTest). ADR-0034.
+
+- **#227** — 9 domain use cases (AwardBattleSteps, AwardBossPowerStones, CheckMilestones, ClaimMilestone,
+  ClaimMission, GenerateDailyMissions, TrackDailyLogin, TrackWeeklyChallenge,
+  UpdateCompleteResearchMissionProgress) no longer import the data layer. New domain models (`DailyMission`,
+  `DailyLogin`, `WeeklyChallenge`) + 4 repository ports (`MissionRepository`, `MilestoneRepository`,
+  `DailyLoginRepository`, `WeeklyChallengeRepository`) + a `StepRepository` extension (battle/boss atomic
+  credit + `sumCreditedSteps`). All Room access moved into `data/repository/*Impl`. **Atomic-passthrough
+  preserved:** the Milestone + Step impls inject the real `PlayerProfileDao` and hand it into the DAO
+  `@Transaction`, keeping the guarded-deduct credit inside the one DB-scoped transaction
+  (#122/ADR-0020/ADR-0027). Entity→domain mapping null-skips an unknown `missionType` (no `valueOf` crash).
+  ViewModel direct-DAO reads (presentation→data, #219) deliberately left as-is.
+- **#228** — `DomainPurityTest` now forbids `com.whitefang.stepsofbabylon.data` imports (the
+  dependency-direction guard the old Android-only scan missed) **and** `dagger.`/`javax.inject.` (locks
+  domain DI-agnosticism). Mutation-verified: re-adding a data import to a domain file fails the build
+  naming the file + import. Known limitation: the import-line scan won't catch an inline fully-qualified
+  reference (none exist; KDoc `[…]` doc-links are correctly ignored).
+
 ### Test — Test-integrity wave: concurrent-contention DAO test (#252) · Compose-UI-test beachhead (#253)
 
 Two adversarially-confirmed `severity:major` test-integrity gaps from the 2026-06-18 complete-app review,

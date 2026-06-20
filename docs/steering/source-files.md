@@ -59,8 +59,12 @@ data/repository/WorkshopRepositoryImpl.kt        # Workshop upgrades; takes Work
 data/repository/LabRepositoryImpl.kt             # Lab research
 data/repository/CardRepositoryImpl.kt            # Card inventory
 data/repository/UltimateWeaponRepositoryImpl.kt  # Ultimate weapon state (R4-06: toDomain rewrite for 4-column entity → 6-field OwnedWeapon; upgradePathLevel dispatches to per-path DAO methods)
-data/repository/StepRepositoryImpl.kt            # Daily step records + escrow + getDailyRecord(). #121: the 4 per-field updates (updateDailySteps / updateHealthConnectSteps / updateActivityMinutes / updateEscrow) delegate to the DAO's column-targeted upserts instead of read-copy-upsert, so concurrent writers no longer clobber each other's columns
+data/repository/StepRepositoryImpl.kt            # Daily step records + escrow + getDailyRecord(). #121: the 4 per-field updates (updateDailySteps / updateHealthConnectSteps / updateActivityMinutes / updateEscrow) delegate to the DAO's column-targeted upserts instead of read-copy-upsert, so concurrent writers no longer clobber each other's columns. #227: now injects PlayerProfileDao too + exposes sumCreditedSteps / creditBattleStepsAtomic / creditBossPowerStonesAtomic (handed into the DAO @Transaction with the real PlayerProfileDao so the wallet credit stays in one DB-scoped transaction)
 data/repository/WalkingEncounterRepositoryImpl.kt # Walking encounters
+data/repository/MissionRepositoryImpl.kt         # (#227) wraps DailyMissionDao; maps DailyMission↔DailyMissionEntity, null-skipping rows whose stored missionType no longer resolves to a DailyMissionType (no valueOf crash); generateForDate preserves the @Transaction batch + (date,missionType) unique-index + IGNORE guard (#127)
+data/repository/MilestoneRepositoryImpl.kt       # (#227) wraps MilestoneDao + PlayerProfileDao; getClaimedMilestoneIds + claimMilestoneAtomic (hands the real PlayerProfileDao into the DAO @Transaction — guarded-deduct preserved, ADR-0027)
+data/repository/DailyLoginRepositoryImpl.kt      # (#227) wraps DailyLoginDao; maps DailyLogin↔DailyLoginEntity
+data/repository/WeeklyChallengeRepositoryImpl.kt # (#227) wraps WeeklyChallengeDao; maps WeeklyChallenge↔WeeklyChallengeEntity
 data/repository/CosmeticRepositoryImpl.kt        # Cosmetic store items + private ZIGGURAT_COLOR_LOOKUP table (5 palettes: zig_jade @ C.2 PR 2, lapis_lazuli_skin @ PR 3 / IRON_SOLES reward, garden_ziggurat_skin @ PR 3b / MARATHON_WALKER reward, sandals_of_gilgamesh @ PR 3c / GLOBE_TROTTER reward, zig_obsidian @ V1X-14 / store-purchasable dark skin); toDomain populates CosmeticItem.overrideColors from the lookup; SEED_COSMETICS: 11 rows (7 ZIGGURAT_SKIN including the 3 milestone-reward cosmetics + 2 PROJECTILE_EFFECT + 2 ENEMY_SKIN); ensureSeedData uses per-cosmeticId filter so content PRs land on already-seeded installs without a data clear and player `isOwned`/`isEquipped` state survives upgrades
 ```
 
@@ -150,6 +154,9 @@ domain/model/OwnedCard.kt             # Player-owned card instance
 domain/model/OwnedWeapon.kt           # Player-owned ultimate weapon (R4-06: 6 fields — type, damageLevel, secondaryLevel, cooldownLevel, isUnlocked, isEquipped + levelOf(path))
 domain/model/UWPath.kt                # 3-value enum: DAMAGE, SECONDARY, COOLDOWN (R4-06 — used by UpgradeUltimateWeapon + UltimateWeaponRepository)
 domain/model/DailyStepSummary.kt      # Daily step record domain model (with escrow fields)
+domain/model/DailyMission.kt          # (#227) domain view of a daily_mission row (id, type: DailyMissionType, target, progress, rewards, completed, claimed) — removes the DailyMissionEntity import from the mission use cases
+domain/model/DailyLogin.kt            # (#227) domain view of a daily_login row (date, stepsWalked, powerStoneClaimed, gemsClaimed)
+domain/model/WeeklyChallenge.kt       # (#227) domain view of a weekly_challenge row (weekStartDate, totalSteps, claimedTier)
 domain/model/SupplyDrop.kt              # Walking encounter supply drop
 domain/model/SupplyDropTrigger.kt        # 3 trigger types with notification messages
 domain/model/SupplyDropReward.kt         # 4 reward types (Steps, Gems, Power Stones, Card Copy)
@@ -190,8 +197,12 @@ domain/repository/WorkshopRepository.kt         # Workshop upgrades interface (i
 domain/repository/LabRepository.kt              # Lab research interface
 domain/repository/CardRepository.kt             # Card inventory interface
 domain/repository/UltimateWeaponRepository.kt   # Ultimate weapon interface (R4-06: upgradePathLevel replaces upgradeWeapon)
-domain/repository/StepRepository.kt             # Daily step records + escrow + Health Connect methods
+domain/repository/StepRepository.kt             # Daily step records + escrow + Health Connect methods. #227: + sumCreditedSteps / creditBattleStepsAtomic / creditBossPowerStonesAtomic (the battle/boss atomic credit moved off DailyStepDao behind this port)
 domain/repository/WalkingEncounterRepository.kt # Walking encounter interface
+domain/repository/MissionRepository.kt          # (#227) daily-mission port (use-case surface only): getMissionsForDate / generateForDate / markClaimed / updateProgress. Presentation reads getByDate Flow / countClaimable directly off the DAO (#219)
+domain/repository/MilestoneRepository.kt        # (#227) milestone port: getClaimedMilestoneIds + claimMilestoneAtomic. The milestone getAll() Flow stays a direct presentation→DAO read (#219)
+domain/repository/DailyLoginRepository.kt       # (#227) daily-login port: getByDate / upsert (DailyLogin)
+domain/repository/WeeklyChallengeRepository.kt  # (#227) weekly-challenge port: getByWeek / upsert (WeeklyChallenge). getLastNWeeks stays a direct presentation→DAO read (#219)
 domain/repository/BillingManager.kt             # Billing interface (purchase, query, reconcilePendingPurchases with default no-op so fakes inherit do-nothing contract; C.5 PR 1). Plan 31 PR B added `getPriceDisplay(product): String?` (default null) so the Store screen can read live formatted prices from Play Billing's ProductDetails.priceDisplay instead of the static BillingProduct.priceDisplay constants.
 domain/repository/RewardAdManager.kt            # Reward ad interface (show ad, availability)
 domain/repository/CosmeticRepository.kt         # Cosmetic store interface + `idExists(cosmeticId): Boolean` (C.4 — used by ClaimMilestone to pre-flight MilestoneReward.Cosmetic ids and surface UnknownCosmetic result variant for the 3 currently-mismatched milestone cosmetic ids)
@@ -409,14 +420,18 @@ service/WidgetUpdateHelper.kt        # Throttled widget update helper
 All paths relative to `app/src/test/java/com/whitefang/stepsofbabylon/` unless noted otherwise. The `androidTest` source set lives at `app/src/androidTest/java/com/whitefang/stepsofbabylon/` and is documented at the bottom of this section (V1X-08 Phase 1A).
 
 ```
-architecture/DomainPurityTest.kt                 # Machine-enforced domain-purity guard (#27): dependency-free JVM test that fails if any domain/ file imports android./androidx./com.android./com.google.android.; self-validating (asserts domain root dir exists first). 1 test.
+architecture/DomainPurityTest.kt                 # Machine-enforced domain-purity guard (#27/#228): dependency-free JVM test. Test 1 — fails if any domain/ file imports android./androidx./com.android./com.google.android./com.whitefang.stepsofbabylon.data (the full dependency rule, #228 added the data prefix). Test 2 — fails if domain/ imports dagger./javax.inject. (locks DI-agnosticism). Self-validating (asserts domain root dir exists first). KDoc-link `[…data…]` refs are not import lines, so ignored. 2 tests.
 fakes/FakePlayerRepository.kt                    # In-memory StateFlow-backed fake for PlayerRepository
 fakes/FakeWorkshopRepository.kt                  # In-memory StateFlow-backed fake for WorkshopRepository
 fakes/FakeUltimateWeaponRepository.kt            # In-memory StateFlow-backed fake for UltimateWeaponRepository (R4-06: rewritten for upgradePathLevel + per-path level tracking)
 fakes/FakeLabRepository.kt                       # In-memory StateFlow-backed fake for LabRepository
 fakes/FakeCardRepository.kt                      # In-memory StateFlow-backed fake for CardRepository
 fakes/FakeWalkingEncounterRepository.kt          # In-memory StateFlow-backed fake for WalkingEncounterRepository
-fakes/FakeStepRepository.kt                      # In-memory StateFlow-backed fake for StepRepository
+fakes/FakeStepRepository.kt                      # In-memory StateFlow-backed fake for StepRepository. #227: now also carries the battle/boss atomic-credit emulation that FakeDailyStepDao had — per-day battleStepsEarned/bossPsEarnedToday counters under a Mutex, linkedPlayer wallet routing, creditBattleStepsAtomicCallCount/creditBossPsAtomicCallCount, + seed/get test accessors (so the Award*Test cap/partial-credit/concurrency assertions survive the port migration)
+fakes/FakeMissionRepository.kt                   # (#227) wraps FakeDailyMissionDao (exposes it as `.dao` for direct seeding); maps DailyMission↔entity null-skipping unknown missionType
+fakes/FakeMilestoneRepository.kt                 # (#227) wraps FakeMilestoneDao (exposes `.dao` + claimMilestoneAtomicCallCount + upsert); supplies a mockito decoy PlayerProfileDao the wrapped DAO ignores (linkedPlayer routing)
+fakes/FakeDailyLoginRepository.kt                # (#227) in-memory map fake for DailyLoginRepository
+fakes/FakeWeeklyChallengeRepository.kt           # (#227) in-memory map fake for WeeklyChallengeRepository
 fakes/FakeCosmeticRepository.kt                  # In-memory fake for CosmeticRepository
 fakes/FakeBillingManager.kt                      # Configurable fake for BillingManager (+reconcileCallCount for C.5 PR 2 hook assertion + priceDisplayOverrides Map for Plan 31 PR B getPriceDisplay; private set on counter)
 fakes/FakeRewardAdManager.kt                     # Configurable fake for RewardAdManager

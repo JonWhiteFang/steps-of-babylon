@@ -36,7 +36,12 @@ class HomeViewModelTest {
     private lateinit var encounterRepo: FakeWalkingEncounterRepository
     private val milestoneDao = FakeMilestoneDao()
     private val dailyMissionDao = FakeDailyMissionDao()
-    private val dailyLoginDao = mock<com.whitefang.stepsofbabylon.data.local.DailyLoginDao>()
+    // #227: the use cases now take ports; HomeVM keeps the raw DAOs for its direct presentation
+    // reads (countClaimable / milestone getAll Flow). Wrap the SAME fake DAOs so seeding via the
+    // DAO and reading via the use-case port stay consistent.
+    private val missionRepo = FakeMissionRepository(dailyMissionDao)
+    private val milestoneRepo = FakeMilestoneRepository(dao = milestoneDao)
+    private val dailyLoginRepo = FakeDailyLoginRepository()
     private val milestoneNotificationManager = mock<MilestoneNotificationManager>()
     private val milestoneNotificationPrefs = mock<MilestoneNotificationPreferences>()
 
@@ -52,7 +57,6 @@ class HomeViewModelTest {
         workshopRepo = FakeWorkshopRepository()
         labRepo = FakeLabRepository()
         encounterRepo = FakeWalkingEncounterRepository()
-        whenever(dailyLoginDao.getByDate(org.mockito.kotlin.any())).thenReturn(null)
     }
 
     @AfterEach
@@ -60,8 +64,8 @@ class HomeViewModelTest {
 
     private fun createVm() = HomeViewModel(
         playerRepo, stepRepo, workshopRepo, labRepo, encounterRepo,
-        dailyLoginDao, dailyMissionDao, milestoneDao, milestoneNotificationManager,
-        milestoneNotificationPrefs,
+        missionRepo, milestoneRepo, dailyLoginRepo, dailyMissionDao, milestoneDao,
+        milestoneNotificationManager, milestoneNotificationPrefs,
     )
 
     @Test
