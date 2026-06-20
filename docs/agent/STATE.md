@@ -32,8 +32,28 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — implemented on branch `fix/privacy-monetization-240-239-241`, build-verified, NOT yet
-  committed/PR'd; `[Unreleased]`).** **Privacy / monetization wave (#240 · #239 · #241)** off the 2026-06-18
+- **CURRENT (DONE — implemented on branch `perf/music-particle-242-243`, build-verified, NOT yet
+  committed/PR'd; `[Unreleased]`).** **Performance wave (#242 · #243)** off the 2026-06-18
+  complete-app-review backlog: two confirmed `severity:major` perf defects, one combined PR. **No
+  schema/economy/engine-formula change; 1130 → 1139 JVM** (+9); `testDebugUnitTest lintDebug
+  assembleDebug` BUILD SUCCESSFUL. Spec + plan both through the **Adversarial Review Gate** (single-agent,
+  ultracode OFF). Spec: 8 findings (3 major — #242 concurrency model + #243 1× density). Plan: 8 findings
+  incl. **F-C, a real bug caught pre-code** (build-once guard must be built-OR-in-flight, not
+  `desiredTrack` alone, else an A→B→A-faster-than-a-decode interleave double-decodes). Both new test
+  suites **mutation-verified**. **#242 (ADR-0033):** `MusicManager` no longer decodes the 1.3 MB OGG on
+  the main thread per Battle↔menu nav — each track's player built at most once OFF the main thread
+  (injectable decode executor), cached, switched via pause/seekTo(0)/start; executor runs ONLY the
+  decode, ALL state + control on the main thread (posted back via a Handler); desiredTrack/activeTrack
+  split, per-track pending-flag dedup, release-vs-in-flight + muted-deferred + #246 null-degrade handled.
+  **#243:** per-projectile `trailTimer` (loop-thread-only, under entitiesLock) throttles trail emission
+  to one per `TRAIL_INTERVAL=0.03s` of sim-time via pure `advanceTrail` (`ProjectileTrailThrottleTest`),
+  capping ~10 simultaneous particles/projectile at any speed (was unbounded at 4×, starving the 200-slot
+  pool). Fragile zones intact (`GameEngineConcurrencyTest`/`EffectEngineConcurrencyTest` green). Accepted
+  ~1× trail density trade (flag for device feel sign-off). Next: commit + open PR (closes #242/#243),
+  monitor CI, merge on green; then more audit backlog (accessibility #213/#214/#226, architecture
+  #219–#231; med/low #262/#128).
+- **Previous objective (DONE — MERGED PR #294, squash `78846fe`; both CI checks green; #240/#239/#241
+  auto-closed; `[Unreleased]`).** **Privacy / monetization wave (#240 · #239 · #241)** off the 2026-06-18
   complete-app-review backlog: three confirmed before-public privacy/ads-policy findings, one combined PR.
   **Presentation + a single SDK-config call + policy text; no schema/economy/engine change; 1126 → 1130 JVM**
   (+4); `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec + plan both through the
@@ -48,9 +68,8 @@ the med/low backlog (#262) remain.
   `MobileAds.setRequestConfiguration` before the first ad request; `AdRequestConfigurationTest` (3,
   mutation-verified). **#239** `site/index.md` reconciled with the Data-Safety form — all four AdMob
   categories incl. approximate location + PG-cap note, effective date June 18 → **June 20, 2026**,
-  `data-safety-form.md:81` synced (doc-only; a human must confirm the live Pages page refreshed). **ADR-0032;
-  ADR-0006 Q5 amended.** Next: commit + open PR; then back to the audit backlog (remaining `severity:major`
-  clusters — performance #242/#243, accessibility #213/#214/#226, architecture #219–#231; med/low #262/#128).
+  `data-safety-form.md:81` synced (live Pages page refresh CONFIRMED by the developer 2026-06-20). **ADR-0032;
+  ADR-0006 Q5 amended.** (#239 manual follow-up done; #192 manual Play Console Data-Safety submission remains, separate.)
 - **Previous objective (DONE — MERGED PR #292, squash `bc8de3b`; both CI checks green on Gradle 9.6.0; #290 closed as superseded; `[Unreleased]`).**
   **Dependabot all-gradle wave (#290): took 11 of 12 bumps, HELD Kotlin 2.4.0.** Branched from #290's head
   (inherits its Gradle-9.6.0 wrapper regen), reverted the kotlin line to 2.3.0, rebased onto current `main`.

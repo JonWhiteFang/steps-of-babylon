@@ -309,7 +309,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1130 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1139 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Notable guards:** `architecture/DomainPurityTest` (fails if `domain/` imports any Android package);
   `SimulationTest` (the extracted pure-domain game-loop core); `BattleSurfaceLifecycleTest` +

@@ -4,6 +4,33 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — Performance wave: background-music caching (#242) · projectile-trail throttle (#243)
+
+Two confirmed `severity:major` performance findings from the 2026-06-18 complete-app review, one
+combined PR. **No schema / economy / engine-formula change; 1130 → 1139 JVM** (+9);
+`testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec + plan both through the **Adversarial
+Review Gate** (single-agent, ultracode off). Spec: 8 findings (3 major — the #242 concurrency model +
+the #243 1× density decision), all applied. Plan: 8 findings incl. **F-C, a real bug caught pre-code** —
+the build-once guard must be keyed on built-OR-in-flight, not `desiredTrack` alone, else an
+A→B→A-faster-than-a-decode interleave double-decodes. **ADR-0033.** Both new test suites
+mutation-verified (weakening the throttle / removing the in-flight guard each fails a guard test).
+
+- **#242** (ADR-0033) — `MusicManager` decoded a 1.3 MB OGG **synchronously on the main thread** on
+  every Battle↔menu navigation (`stopActive()` released both players, then `MediaPlayer.create()`
+  re-decoded). Now each track's player is built **at most once, off the main thread** (a decode
+  executor), cached, and switched via `pause()`/`seekTo(0)`/`start()`. Concurrency invariant: the
+  executor runs ONLY the decode; ALL state + control calls are serialized on the main thread (decode
+  result posted back via a main `Handler`). `desiredTrack` (last-write-wins) split from `activeTrack`;
+  per-track pending flag dedups in-flight decodes; `release()`-vs-in-flight and muted-deferred paths
+  handled; #246 null-degrade preserved. `MainActivity` construction unchanged.
+- **#243** — the trail effect spawned one particle per alive projectile **per tick**, and `update()`
+  runs up to 4× per render frame at 4× speed → it exhausted the 200-slot `ParticlePool` and starved
+  death/UW effects. Now a per-projectile `trailTimer` (loop-thread-only, under `entitiesLock`) throttles
+  emission to one per `TRAIL_INTERVAL = 0.03 s` of sim-time via a pure `advanceTrail(timer, dt)` helper
+  (`ProjectileTrailThrottleTest`), capping simultaneous trail particles to ~10/projectile at any speed.
+  Trail loop unchanged in placement/locking; no `ParticlePool`/`EffectEngine` change. Accepted, tunable
+  ~1× density trade (~18 → ~10 particles/projectile) — flagged for device feel sign-off.
+
 ### Fix — Privacy / monetization wave: in-app policy link (#240) · policy/form consistency (#239) · AdMob content-rating cap (#241)
 
 Three confirmed before-public privacy/ads-policy findings from the 2026-06-18 complete-app review, one
