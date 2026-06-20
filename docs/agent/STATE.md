@@ -32,7 +32,26 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #292, squash `bc8de3b`; both CI checks green on Gradle 9.6.0; #290 closed as superseded; `[Unreleased]`).**
+- **CURRENT (DONE — implemented on branch `fix/privacy-monetization-240-239-241`, build-verified, NOT yet
+  committed/PR'd; `[Unreleased]`).** **Privacy / monetization wave (#240 · #239 · #241)** off the 2026-06-18
+  complete-app-review backlog: three confirmed before-public privacy/ads-policy findings, one combined PR.
+  **Presentation + a single SDK-config call + policy text; no schema/economy/engine change; 1126 → 1130 JVM**
+  (+4); `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec + plan both through the
+  **Adversarial Review Gate** (single-agent, ultracode OFF — developer chose the lighter review; spec F1–F6
+  [0 critical/major]; plan 1 MAJOR — #241 test passes only because `unitTests.isReturnDefaultValues=true`
+  absorbs an internal `android.util.Log.w` in `setMaxAdContentRating`, now documented — all applied
+  pre-implementation). **#240** in-app Privacy Policy link: new `presentation/ui/PrivacyPolicy.kt`
+  `PRIVACY_POLICY_URL` (drift-guarded by `PrivacyPolicyUrlTest`) + a Settings "Privacy Policy" row →
+  `MainActivity.openPrivacyPolicy` guarded `ACTION_VIEW` (no-browser = safe no-op); onboarding link declined.
+  **#241** AdMob content-rating cap (developer decision: **13+ adult, cap rating only** — no age gate, no
+  child-directed flag; refines ADR-0006 Q5): `buildAdRequestConfiguration()` maxAdContentRating=PG via
+  `MobileAds.setRequestConfiguration` before the first ad request; `AdRequestConfigurationTest` (3,
+  mutation-verified). **#239** `site/index.md` reconciled with the Data-Safety form — all four AdMob
+  categories incl. approximate location + PG-cap note, effective date June 18 → **June 20, 2026**,
+  `data-safety-form.md:81` synced (doc-only; a human must confirm the live Pages page refreshed). **ADR-0032;
+  ADR-0006 Q5 amended.** Next: commit + open PR; then back to the audit backlog (remaining `severity:major`
+  clusters — performance #242/#243, accessibility #213/#214/#226, architecture #219–#231; med/low #262/#128).
+- **Previous objective (DONE — MERGED PR #292, squash `bc8de3b`; both CI checks green on Gradle 9.6.0; #290 closed as superseded; `[Unreleased]`).**
   **Dependabot all-gradle wave (#290): took 11 of 12 bumps, HELD Kotlin 2.4.0.** Branched from #290's head
   (inherits its Gradle-9.6.0 wrapper regen), reverted the kotlin line to 2.3.0, rebased onto current `main`.
   Per the `dependabot-wave-handling` rule: combine safe bumps into ONE build-verified PR, drop the

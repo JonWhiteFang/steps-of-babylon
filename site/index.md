@@ -11,7 +11,7 @@ description: Privacy policy and data-deletion instructions for the Steps of Baby
      URL Play Console's Data-safety form points at; do not rename it. -->
 # Privacy Policy — Steps of Babylon
 
-**Effective Date:** June 18, 2026
+**Effective Date:** June 20, 2026
 
 Whitefang Games ("we", "us", "our") built Steps of Babylon as a free-to-play Android game. This page informs you of our policies regarding the collection, use, and disclosure of information when you use our app.
 
@@ -31,9 +31,16 @@ Health Connect data is accessed only for gameplay validation. You can revoke the
 If you make in-app purchases, transactions are processed by **Google Play Billing**. Google handles your payment information; we never receive or store your payment details. We store a local record of purchased items on your device to unlock the corresponding in-game content.
 
 ### Advertising Identifier (Google AdMob)
-The app integrates **Google AdMob** to show optional, opt-in reward advertisements (for example, watch an ad to earn extra Gems or Power Stones — ads are never forced or interruptive). To serve these ads, Google's advertising SDK collects your device's **advertising ID** and related ad-service identifiers, and may collect device and usage information as described in Google's policies. This data is collected and transmitted **by Google**, not by us.
+The app integrates **Google AdMob** to show optional, opt-in reward advertisements (for example, watch an ad to earn extra Gems or Power Stones — ads are never forced or interruptive). To serve these ads, Google's advertising SDK collects and transmits the following **by Google**, not by us:
 
-The first time advertising is relevant, the app shows a **Google User Messaging Platform (UMP) consent prompt** that governs ad personalisation in line with your choice and your region's requirements.
+- **Device or other identifiers** — your device's **advertising ID** and related ad-service / app-set identifiers.
+- **Approximate location** — derived by Google from your IP address (not from your device's GPS).
+- **App interactions** — ad-related events such as ad launches, taps, and video views.
+- **Diagnostics** — technical data such as launch time, hang rate, and energy usage.
+
+Google uses this data for advertising, analytics, and fraud prevention / security, as described in Google's policies. This data is collected and transmitted **by Google's SDK**, not by us, and we do not receive or store it.
+
+The first time advertising is relevant, the app shows a **Google User Messaging Platform (UMP) consent prompt** that governs ad personalisation in line with your choice and your region's requirements. Ads are capped at a **PG** maximum content rating.
 
 ## How Your Data Is Stored
 
@@ -52,7 +59,7 @@ These services collect and process data as described in their respective privacy
 
 ## Data Sharing
 
-We do **not** sell or trade your personal data, and we do not ourselves share your game, step, or health data with third parties. The Google SDKs above collect and transmit data (including the **advertising ID** for AdMob) directly to Google for the purposes described in their policies.
+We do **not** sell or trade your personal data, and we do not ourselves share your game, step, or health data with third parties. The Google SDKs above collect and transmit data directly to Google for the purposes described in their policies — for AdMob this includes the **advertising ID and device identifiers, approximate location (derived from IP), app-interaction events, and diagnostics** described under "Advertising Identifier" above.
 
 ## Data Retention
 

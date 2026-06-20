@@ -1,3 +1,49 @@
+## 2026-06-20 — Privacy / monetization wave: #240 in-app policy link · #239 policy/form consistency · #241 AdMob content-rating cap (`[Unreleased]`)
+
+- **Goal:** fix three confirmed before-public privacy/ads-policy findings from the 2026-06-18 complete-app
+  review as one combined PR. Branch `fix/privacy-monetization-240-239-241` off `main`.
+- **Process:** spec-first → both spec and plan through the **Adversarial Review Gate**. Ultracode was OFF,
+  so per the protocol I flagged the artifacts as unreviewed and the developer chose the **lighter
+  single-agent review** (option b). One developer decision taken up front via AskUserQuestion: #241 audience
+  stance → **13+ adult, cap content rating only** (no age gate, no child-directed flag).
+- **Spec review** (1 agent, code-grounded + self-refuted): 6 surviving findings F1–F6, 0 critical/major.
+  Highest-value = **F2** — verified (via 25.4.0 bytecode) that `RequestConfiguration` IS JVM-constructible,
+  so the #241 test could commit to a real value-seam instead of a hedged fallback. All 6 applied to the spec.
+- **Plan review** (1 agent): 1 **MAJOR** (CONFIRMED) — the #241 JVM test passes NOT because
+  `setMaxAdContentRating("PG")` is Android-free (it calls `android.util.Log.w` internally) but because the
+  module sets `unitTests.isReturnDefaultValues = true` (`app/build.gradle.kts:198`); documented so the
+  test's dependency on that flag isn't silently fragile. Plus a minor URL-anchor note. Both applied.
+- **What changed:**
+  - **#240** — new `presentation/ui/PrivacyPolicy.kt` `const PRIVACY_POLICY_URL` (single source of truth;
+    same URL as the Data-Safety form + `site/index.md`) + `PrivacyPolicyUrlTest` drift guard (1).
+    `SettingsScreen` gained an `onOpenPrivacyPolicy` param + a "Privacy Policy" `OutlinedCard` in the Data
+    section (above Delete). `MainActivity.openPrivacyPolicy` = a guarded `Intent(ACTION_VIEW, …)`
+    (resolve-before-launch; no-browser device = safe no-op), wired into the Settings composable. Onboarding
+    link declined (one-shot flow; Settings is the durable entry, mirroring the #261 battery row).
+  - **#241** — top-level pure `buildAdRequestConfiguration()` →
+    `RequestConfiguration.Builder().setMaxAdContentRating(MAX_AD_CONTENT_RATING_PG).build()`;
+    `RealRewardedAdAdapter.ensureSdkInitialized` calls `MobileAds.setRequestConfiguration(...)` as the first
+    statement inside its `withContext(Dispatchers.Main)` block, before `MobileAds.initialize`.
+    `AdRequestConfigurationTest` (3) pins PG + both child/under-age tags `UNSPECIFIED`.
+  - **#239** — `site/index.md` "Advertising Identifier" + "Data Sharing" now enumerate all four AdMob SDK
+    categories (Device/other IDs, **approximate location derived from IP**, app interactions, diagnostics) +
+    a PG-cap note; effective date June 18 → June 20, 2026; `data-safety-form.md:81` acceptance-checklist date
+    synced. Children's-Privacy section left unchanged (already consistent with the 13+ stance).
+  - **ADRs:** ADR-0006 Q5 amended (stance retained, refined with the PG cap); new **ADR-0032**.
+- **Verification:** `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL.
+  **1126 → 1130 JVM** (+4: PrivacyPolicyUrlTest 1, AdRequestConfigurationTest 3); both new test classes
+  ran (tests=1/3, 0 failures/skips). **Mutation-checked** the PG assertion: flipping the impl PG→G makes
+  `AdRequestConfigurationTest` fail (1 failure), restoring → green — the test genuinely discriminates.
+  `DomainPurityTest` green (constant lives in `presentation/ui`, not `domain/`).
+- **Doc sync:** CLAUDE.md test count 1126→1130; CHANGELOG `[Unreleased]` new section; source-files.md
+  (PrivacyPolicy.kt, the two new tests, RealRewardedAdAdapter responsibility); STATE.md objective rotated.
+  security-model.md not touched (doesn't enumerate the ads posture); no schema/tech/structure/README change.
+- **Remains / next:** commit + open the PR (not yet committed — outward-facing, awaiting go-ahead). On
+  merge, a human must confirm the live GitHub Pages policy refreshed (Pages caches; #239 checklist) — not
+  claimable from the repo. The separate manual Play Console Data-Safety submission (#192) is unaffected.
+  Then back to the audit backlog: performance #242/#243, accessibility #213/#214/#226, architecture
+  #219–#231; med/low #262/#128.
+
 ## 2026-06-20 — Dependabot all-gradle wave (#290): 11 bumps taken, Kotlin 2.4.0 held (`[Unreleased]`)
 
 - **Goal:** finish the Dependabot wave left after the compileSdk-37 migration. #290 (the reopened grouped
