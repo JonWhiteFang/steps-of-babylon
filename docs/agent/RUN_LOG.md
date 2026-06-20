@@ -1,3 +1,25 @@
+## 2026-06-20 — Checkpoint: post-merge reconciliation — three 2026-06-20 fix waves merged (PRs #294/#295/#296)
+
+- **Context:** session-start review found the doc spine still described the **accessibility wave (#213/#214/#226)**
+  as "implemented on branch, NOT yet committed/PR'd" while `git log` showed it MERGED as **PR #296 (`0ff9662`)**,
+  HEAD of `main`, tree clean. The two earlier 2026-06-20 waves (privacy/monetization PR #294 `78846fe`; performance
+  PR #295 `2363359`) were already reconciled in their own checkpoints; only the a11y wave's STATE bullet was stale.
+- **Doc sync (reconciliation only — no code/test change; tree was clean on `main`):**
+  - **STATE.md headline:** test count `1126` → **`1152`**; expanded the `[Unreleased]` ledger to show the full chain
+    since v1.0.10 (1118 → 1126 → 1130 → 1139 → **1152**).
+  - **STATE.md Current objective:** a11y bullet `CURRENT (… NOT yet committed/PR'd)` → `CURRENT (DONE — MERGED PR
+    #296, squash 0ff9662; #213/#214/#226 auto-closed)`; trailing "Next: commit + open PR…" replaced with the
+    remaining on-device TalkBack developer step + audit backlog.
+  - **STATE.md Recently shipped:** new 2026-06-20 entry summarising all three merged waves (a11y #296, perf #295,
+    privacy/monetization #294) above the 2026-06-19 doc-drift-sweep entry.
+- **Already-correct (verified, not touched):** CLAUDE.md headline `1152`; CHANGELOG `[Unreleased]` a11y section;
+  the pre-merge a11y RUN_LOG entry below (per the never-edit-prior-entries rule); source-files.md / GDD §17.
+- **Verification:** doc-only post-merge reconciliation — no build re-run (no source change since PR #296's green CI).
+  `git status` clean on `main`; HEAD `0ff9662`.
+- **Remains / next:** on-device TalkBack confirmation (#214, developer step — no Compose UI tests, #253); then the
+  audit backlog (architecture #219–#231; data-integrity #211/#234; i18n #259/#260; med/low #262/#128); plus the
+  standing manual Play Console Data-Safety action (#192) and the promote-to-closed judgment call.
+
 ## 2026-06-20 — Accessibility wave: #213 button contrast · #214 battle TalkBack live region · #226 color-blind deferral (`[Unreleased]`)
 
 - **Goal:** fix three confirmed `severity:major` accessibility findings as one combined PR. Branch
