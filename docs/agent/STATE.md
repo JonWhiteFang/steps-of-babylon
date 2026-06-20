@@ -12,9 +12,10 @@ data-integrity #237/#238/#248) via release PR #278 (squash `ffa9973`). **ALL 4 n
 Latest content wave MERGED: data-integrity (PR #276, `0f32ac6`; #237/#238/#248 auto-closed; ADR-0030,
 single-agent review caught a critical pre-code defect). Earlier waves MERGED: #261/#233 (PR #274, `8b50b13`);
 #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.9 (vc 25)** · **1126 JVM + 9 instrumented tests**
+Supersedes **v1.0.9 (vc 25)** · **1152 JVM + 9 instrumented tests**
 green (1110 shipped in v1.0.10; +8 reliability wave #251/#249 → 1118; +8 correctness/UX wave
-#225/#235/#224/#222 → 1126; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
+#225/#235/#224/#222 → 1126; +4 privacy/monetization #240/#239/#241 → 1130; +9 perf wave #242/#243 → 1139;
++13 accessibility wave #213/#214/#226 → 1152; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -32,8 +33,8 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — implemented on branch `a11y/contrast-talkback-cvd-213-214-226`, build-verified, NOT
-  yet committed/PR'd; `[Unreleased]`).** **Accessibility wave (#213 · #214 · #226)** off the complete-app-
+- **CURRENT (DONE — MERGED PR #296, squash `0ff9662`; #213/#214/#226 auto-closed; `[Unreleased]`).**
+  **Accessibility wave (#213 · #214 · #226)** off the complete-app-
   review backlog: three confirmed `severity:major` a11y findings, one combined PR. **No
   schema/economy/engine change; 1139 → 1152 JVM** (+13); `testDebugUnitTest lintDebug assembleDebug`
   BUILD SUCCESSFUL. Spec + plan both through the **Adversarial Review Gate** (single-agent, ultracode OFF).
@@ -50,8 +51,8 @@ the med/low backlog (#262) remain.
   TalkBack is a developer step (no Compose UI tests, #253). **#226:** developer chose DEFER — GDD §17
   reworded to a tracked post-v1.0 deferral; survey confirmed no color-ONLY status (wave-phase bar has its
   label; currencies pair tint+icon+value; dashboard goal uses Check/Close shape) → no code change; store
-  listing has no a11y claim (unchanged). No ADR. Next: commit + open PR (closes #213/#214/#226 — the PR
-  justifies the no-palette close of #226), monitor CI, merge on green; then more audit backlog
+  listing has no a11y claim (unchanged). No ADR. On-device TalkBack confirmation remains a developer step
+  (no Compose UI tests, #253). Next: more audit backlog
   (architecture #219–#231; data-integrity #211/#234; i18n #259/#260; med/low #262/#128).
 - **Previous objective (DONE — MERGED PR #295, squash `2363359`; both CI checks green; #242/#243
   auto-closed; `[Unreleased]`).** **Performance wave (#242 · #243)** off the 2026-06-18
@@ -432,6 +433,13 @@ the med/low backlog (#262) remain.
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
+- **2026-06-20 — three complete-app-review fix waves MERGED (all `[Unreleased]`, off the 2026-06-18 audit
+  backlog; spec+plan each through the Adversarial Review Gate, ultracode OFF → single-agent).**
+  **Accessibility** (#213 button contrast / #214 battle TalkBack live region / #226 color-blind deferral) —
+  PR #296, `0ff9662`, +13 JVM → **1152**. **Performance** (#242 background-music caching / #243
+  projectile-trail throttle) — PR #295, `2363359`, +9 JVM, ADR-0033. **Privacy/monetization** (#240 in-app
+  policy link / #239 policy-form consistency / #241 AdMob PG content-rating cap) — PR #294, `78846fe`, +4
+  JVM, ADR-0032 (+ ADR-0006 Q5 amended). No schema/economy/engine-formula change in any wave.
 - **2026-06-19 — full ultracode doc-drift sweep (docs-only, `[Unreleased]`).** Multi-agent `Workflow`
   (59 agents: 9 live-doc-cluster finders, every claim code-grounded → per-finding adversarial refute →
   cross-doc-coherence + link-integrity lanes → refute). 48 candidates → **48 surviving, 0 refuted**;
