@@ -4,7 +4,10 @@ import androidx.compose.ui.graphics.Color
 
 // --- Core Mesopotamian palette (the five brand colours) -----------------------------------------
 // These are the identity anchors. Use them for fills, brand accents, and primary actions.
-val Gold = Color(0xFFD4A843)
+// Gold's ARGB is exposed as a plain Int const so the pure-JVM `ContrastTest` can verify on-Gold text
+// contrast against the SAME value the token uses (no Compose/Android dependency in the test). #213.
+const val GoldArgb: Int = 0xFFD4A843.toInt()
+val Gold = Color(GoldArgb)
 val LapisLazuli = Color(0xFF26619C)
 val SandStone = Color(0xFFC2B280)
 val DeepBronze = Color(0xFF6B3A2A)
@@ -25,6 +28,16 @@ val LapisLight = Color(0xFFA7C7E7)
 
 /** Slightly elevated bronze for cards/sheets that need to lift off the [DeepBronze] background. */
 val BronzeSurface = Color(0xFF7A4636)
+
+/**
+ * Text/icon colour for content ON [Gold] surfaces (primary buttons). The brand [DeepBronze]
+ * (#6B3A2A) on Gold is only ~4.19:1 — Material3 `Button` labels are `labelLarge` 14sp SemiBold
+ * ("normal" text, 4.5:1 threshold), so DeepBronze fails AA (#213). This darker bronze is ~5.99:1 on
+ * Gold (passes AA-normal). Use [OnGold] as `onPrimary`; keep [DeepBronze] for fills/backgrounds.
+ * Guarded by `ContrastTest` (which reads [OnGoldArgb] vs [GoldArgb] so a token regression fails the build).
+ */
+const val OnGoldArgb: Int = 0xFF4A2618.toInt()
+val OnGold = Color(OnGoldArgb)
 
 /** Body text on bronze. Ivory is ~8.8:1 on [DeepBronze] (passes AAA). */
 val TextPrimary = Ivory

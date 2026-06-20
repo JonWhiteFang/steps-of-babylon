@@ -52,6 +52,14 @@
     <string name="battle_cd_pause">Pause</string>
     <string name="battle_cd_upgrades">Upgrades</string>
 
+    <!-- #214: battle TalkBack live-region announcements (polite). Fed from uiState transitions. -->
+    <string name="battle_a11y_wave">Wave %1$d</string>
+    <string name="battle_a11y_phase_spawning">Wave spawning</string>
+    <string name="battle_a11y_phase_cooldown">Wave cooldown</string>
+    <string name="battle_a11y_health">Ziggurat health %1$d percent</string>
+    <string name="battle_a11y_round_over">Round over. Reached wave %1$d.</string>
+    <string name="battle_a11y_error">Battle stopped due to an error.</string>
+
     <!-- In-round upgrade menu -->
     <string name="inround_free">"  FREE!"</string>
     <string name="inround_level_desc">Lv %1$d · %2$s</string>

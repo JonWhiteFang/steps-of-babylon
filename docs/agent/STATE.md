@@ -32,8 +32,29 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — implemented on branch `perf/music-particle-242-243`, build-verified, NOT yet
-  committed/PR'd; `[Unreleased]`).** **Performance wave (#242 · #243)** off the 2026-06-18
+- **CURRENT (DONE — implemented on branch `a11y/contrast-talkback-cvd-213-214-226`, build-verified, NOT
+  yet committed/PR'd; `[Unreleased]`).** **Accessibility wave (#213 · #214 · #226)** off the complete-app-
+  review backlog: three confirmed `severity:major` a11y findings, one combined PR. **No
+  schema/economy/engine change; 1139 → 1152 JVM** (+13); `testDebugUnitTest lintDebug assembleDebug`
+  BUILD SUCCESSFUL. Spec + plan both through the **Adversarial Review Gate** (single-agent, ultracode OFF).
+  Plan review caught a **CRITICAL pre-code bug** (a stateful announcer mutated inside
+  `derivedStateOf`/`remember` = side-effect-in-composition → reworked to a pure `(prev,next)` diff
+  advanced in a `LaunchedEffect`) + a major (`size(0.dp)` live-region nodes are pruned from the a11y tree
+  → `size(1.dp).alpha(0f)`). Both new suites mutation-verified. **#213:** new `OnGold=#4A2618` text-role
+  token (~5.99:1; `onPrimary` was `DeepBronze` ~4.19:1, AA-normal fail) + plain-Int `GoldArgb`/`OnGoldArgb`
+  consts so the pure `ContrastTest` pins the REAL tokens ≥4.5:1 (regression fails the build);
+  `StatusDanger`/`RaritySand` surveyed = icon/fill only, unchanged. **#214:** pure
+  `battleAnnouncement(prev,next)` + sealed `BattleAnnouncement` (`BattleAnnouncerTest`, 11) feeding a
+  polite Compose live region in `BattleScreen` (invisible `size(1.dp).alpha(0f)` node) — announces
+  wave/phase/25%-health/round-over/error from uiState; health bucketed (no 200ms-poll spam); on-device
+  TalkBack is a developer step (no Compose UI tests, #253). **#226:** developer chose DEFER — GDD §17
+  reworded to a tracked post-v1.0 deferral; survey confirmed no color-ONLY status (wave-phase bar has its
+  label; currencies pair tint+icon+value; dashboard goal uses Check/Close shape) → no code change; store
+  listing has no a11y claim (unchanged). No ADR. Next: commit + open PR (closes #213/#214/#226 — the PR
+  justifies the no-palette close of #226), monitor CI, merge on green; then more audit backlog
+  (architecture #219–#231; data-integrity #211/#234; i18n #259/#260; med/low #262/#128).
+- **Previous objective (DONE — MERGED PR #295, squash `2363359`; both CI checks green; #242/#243
+  auto-closed; `[Unreleased]`).** **Performance wave (#242 · #243)** off the 2026-06-18
   complete-app-review backlog: two confirmed `severity:major` perf defects, one combined PR. **No
   schema/economy/engine-formula change; 1130 → 1139 JVM** (+9); `testDebugUnitTest lintDebug
   assembleDebug` BUILD SUCCESSFUL. Spec + plan both through the **Adversarial Review Gate** (single-agent,
@@ -49,9 +70,7 @@ the med/low backlog (#262) remain.
   to one per `TRAIL_INTERVAL=0.03s` of sim-time via pure `advanceTrail` (`ProjectileTrailThrottleTest`),
   capping ~10 simultaneous particles/projectile at any speed (was unbounded at 4×, starving the 200-slot
   pool). Fragile zones intact (`GameEngineConcurrencyTest`/`EffectEngineConcurrencyTest` green). Accepted
-  ~1× trail density trade (flag for device feel sign-off). Next: commit + open PR (closes #242/#243),
-  monitor CI, merge on green; then more audit backlog (accessibility #213/#214/#226, architecture
-  #219–#231; med/low #262/#128).
+  ~1× trail density trade (on-device feel sign-off is a developer step).
 - **Previous objective (DONE — MERGED PR #294, squash `78846fe`; both CI checks green; #240/#239/#241
   auto-closed; `[Unreleased]`).** **Privacy / monetization wave (#240 · #239 · #241)** off the 2026-06-18
   complete-app-review backlog: three confirmed before-public privacy/ads-policy findings, one combined PR.

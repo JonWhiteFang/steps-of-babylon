@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
@@ -33,15 +34,20 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
@@ -105,6 +111,44 @@ fun BattleScreen(
         state.userMessage?.let { snackbarHostState.showSnackbar(it); viewModel.clearMessage() }
     }
 
+    // #214: battle TalkBack live region. A pure (prev → next) diff (battleAnnouncement) decides what
+    // changed; the result is mapped to a localized string HERE (Compose owns localization) and pushed
+    // into battleAnnouncement state, which feeds a polite live-region node below. The diff runs inside a
+    // LaunchedEffect (a side-effect scope) — NOT derivedStateOf/remember calc — so the prev-snapshot
+    // mutation can't be corrupted by a discarded/replayed recomposition. Health is announced only on
+    // 25% brackets so TalkBack isn't spammed by the 200ms HP poll.
+    // The pure diff runs in a LaunchedEffect (side-effect scope, not a recomposition calc) and stores
+    // only the sealed result + the prev snapshot; the @Composable mapping below resolves it to a
+    // localized string via stringResource (so locale/config changes re-resolve correctly — lint's
+    // LocalContextGetResourceValueCall rule).
+    var lastAnnouncement by remember { mutableStateOf<BattleAnnouncement?>(null) }
+    val prevSnapshot = remember { mutableStateOf<BattleSnapshot?>(null) }
+    LaunchedEffect(
+        state.currentWave, state.wavePhase, state.currentHp, state.maxHp,
+        state.roundEndState != null, state.battleError,
+    ) {
+        val next = BattleSnapshot(
+            currentWave = state.currentWave,
+            wavePhase = state.wavePhase,
+            currentHp = state.currentHp,
+            maxHp = state.maxHp,
+            roundEnded = state.roundEndState != null,
+            battleError = state.battleError,
+        )
+        battleAnnouncement(prevSnapshot.value, next)?.let { lastAnnouncement = it }
+        prevSnapshot.value = next
+    }
+    val battleAnnouncementText = when (val a = lastAnnouncement) {
+        is BattleAnnouncement.Wave -> stringResource(R.string.battle_a11y_wave, a.wave)
+        is BattleAnnouncement.Phase ->
+            if (a.rawPhase == "COOLDOWN") stringResource(R.string.battle_a11y_phase_cooldown)
+            else stringResource(R.string.battle_a11y_phase_spawning)
+        is BattleAnnouncement.Health -> stringResource(R.string.battle_a11y_health, a.bucket * 25)
+        is BattleAnnouncement.RoundOver -> stringResource(R.string.battle_a11y_round_over, a.wave)
+        BattleAnnouncement.Error -> stringResource(R.string.battle_a11y_error)
+        null -> ""
+    }
+
     LaunchedEffect(state.speedMultiplier) { surfaceView.setSpeedMultiplier(state.speedMultiplier) }
     LaunchedEffect(state.isPaused) { surfaceView.setPaused(state.isPaused) }
     // Issue #19: ordering invariant — `surfaceView.configure(...)` MUST run before
@@ -142,6 +186,20 @@ fun BattleScreen(
 
     Box(Modifier.fillMaxSize()) {
         AndroidView(factory = { surfaceView }, modifier = Modifier.fillMaxSize())
+
+        // #214: invisible polite live region for TalkBack — announces wave/phase/health/outcome/error
+        // transitions (the SurfaceView itself is canvas-only pixels). Sized 1.dp + alpha 0 (NOT 0.dp:
+        // a zero-bounds node is pruned from the a11y tree → never announced). Announce-only; carries no
+        // visible content and doesn't touch the other HUD semantics nodes.
+        Box(
+            Modifier
+                .size(1.dp)
+                .alpha(0f)
+                .semantics {
+                    liveRegion = LiveRegionMode.Polite
+                    contentDescription = battleAnnouncementText
+                }
+        )
 
         // Top-left: wave info + cash + battle-step counter.
         // top = 40.dp clears the engine-rendered ziggurat health bar (HealthBarRenderer draws it

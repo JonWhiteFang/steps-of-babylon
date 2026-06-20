@@ -456,7 +456,7 @@ Three random daily missions refresh at midnight:
 - **Indoor workout parity:** Cycling, rowing, swimming earn Step-equivalents via Health Connect Active Minutes.
 - **Rest day encouragement:** After 3+ consecutive 10k+ step days, suggests rest with a bonus Gem reward.
 - **No punishment for inactivity:** Missing days never results in penalties or FOMO mechanics.
-- **Color-blind modes:** Three alternative palettes for common color vision deficiencies.
+- **Color-blind modes (post-v1.0, planned — not in v1.0):** three CVD-safe palettes for common color vision deficiencies are planned as a tracked post-v1.0 deferral (issue #226). v1.0 does not ship a palette toggle; instead, no status is conveyed by color alone — every color-coded status also carries a shape, icon, or text label (e.g. the battle wave-phase bar is labelled with the phase name; currencies pair a tint with an icon + value).
 - **Screen reader support:** All menus compatible with TalkBack. Battle screen provides audio cues.
 - **Adjustable text size:** Respects Android system font size settings.
 
