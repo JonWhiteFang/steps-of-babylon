@@ -68,6 +68,9 @@ navigation-testing = { group = "androidx.navigation", name = "navigation-testing
 compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 compose-material-icons = { group = "androidx.compose.material", name = "material-icons-core" }
 compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+# Compose UI testing (#253) — BOM-managed (version-less); run on the Robolectric/JVM unit-test lane.
+compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 
 # AndroidX
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

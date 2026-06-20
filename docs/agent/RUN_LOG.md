@@ -1,3 +1,46 @@
+## 2026-06-20 — Test-integrity wave: #252 concurrent-contention DAO test · #253 Compose-UI-test beachhead (`[Unreleased]`)
+
+- **Goal:** close the two highest-confidence, lowest-risk `severity:major` test-integrity gaps from the
+  2026-06-18 complete-app review as one **test-only** PR. Branch `test/concurrency-compose-252-253` off `main`.
+- **Process:** spec-first → **both spec and plan through the Adversarial Review Gate** (ultracode OFF →
+  flagged unreviewed; developer chose the lighter single-agent review, consistent with the week's waves).
+  Scope decision (AskUserQuestion): #253 is large-effort → **beachhead** (infra + 2 screens; #253 stays open).
+- **Spec review** (1 agent, code-grounded + self-refuted): 7 findings — 1 **critical**, 3 major, 2 minor,
+  1 refuted. Critical **F1:** an `:memory:` Room DB is a single private connection (no WAL pool) → N threads
+  can't physically race → switched the contention test to a **file-backed** temp DB; assertion made
+  invariant-based. F2: mutation must target a `@Transaction` composite, not a single-statement guarded
+  UPDATE. F3: Onboarding VM is mock-backed (no fakes for the sensor wrappers). F4: ComposeTestRule is JUnit4
+  (vintage engine) + settle `WhileSubscribed`/test-clock handling.
+- **Plan review** (1 agent): 9 findings — 1 **critical**, 4 major, 2 minor, 2 refuted-as-blockers. Critical
+  **F-B:** the `@Transaction` DAO targets have no injectable parking seam (the only in-repo precedent,
+  `DailyStepManager.onBeforeCreditCommit`, is *production* code) → resolved the mutation check to **removing
+  `@Transaction`** (Room autocommit lets the file-pool workers interleave), with a STOP-and-flag gate if that
+  still serialized. F-A (refuted): SQLCipher is DI-only, `AppDatabase` is plain Room → file-DB opens
+  unencrypted framework SQLite, no native-lib wall. F-D/E/F: corrected the Onboarding assertions (Skip jumps
+  to the last slide, does NOT call `onFinished`; a11y target is the page-dots `"Page X of N"`, not a CTA;
+  mock `battery.isIgnoring()=true` to reach "Start playing"). F-G (refuted): all VM ctor deps have fakes/mocks.
+- **What changed (test-only; no `app/src/main/` diff):**
+  - **Build:** `gradle/libs.versions.toml` + `app/build.gradle.kts` — `compose-ui-test-junit4`
+    (`testImplementation`, BOM re-applied to the test classpath) + `compose-ui-test-manifest`
+    (`debugImplementation` — it supplies the host `ComponentActivity` `createComposeRule()` launches; the
+    Phase-A spike proved a `testImplementation` placement fails with "Unable to resolve activity").
+  - **#252** — `data/local/AtomicDaoConcurrencyTest.kt` (7 tests, file-backed Room, 12-thread start-gate).
+  - **#253** — `presentation/cards/CardsScreenTest.kt` (4) + `presentation/onboarding/OnboardingScreenTest.kt`
+    (4), Robolectric `@GraphicsMode(NATIVE)`, fake/mock-backed VMs, `UnconfinedTestDispatcher` + `waitForIdle`.
+- **Verification:** `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. **1152 →
+  1167 JVM** (+15). #252 deterministic across 3 consecutive re-runs (0 flakes). **Mutation-checked all three
+  suites:** removing `@Transaction` from `claimMilestoneAtomic` → 11/12 concurrent claims double-credit
+  (`expected:<1> but was:<11>`), the other 6 #252 tests stayed green (single-statement UPDATEs atomic
+  regardless — confirms specificity); breaking a Cards string → 1 fail; breaking the Onboarding page-dots
+  `contentDescription` → 2 fails. All mutations reverted; `git diff app/src/main/` empty. Threw away the
+  Phase-A Compose-on-Robolectric viability spike once the real tests existed.
+- **Doc sync:** CLAUDE.md test count 1152→1167 + a Compose-UI-test-lane note + `AtomicDaoConcurrencyTest`
+  guard; CHANGELOG `[Unreleased]` new Test section; source-files.md (3 new test entries); tech.md (Compose
+  UI Test dep row); STATE.md headline + Current objective. No schema/structure/README/ADR change.
+- **Remains / next:** commit + open PR (closes #252; #253 stays open — PR notes the beachhead + remaining
+  screens); monitor CI, merge on green. Then more audit backlog: architecture #219–#231; data-integrity
+  #211/#234; i18n #259/#260; med/low #262/#128.
+
 ## 2026-06-20 — Checkpoint: post-merge reconciliation — three 2026-06-20 fix waves merged (PRs #294/#295/#296)
 
 - **Context:** session-start review found the doc spine still described the **accessibility wave (#213/#214/#226)**

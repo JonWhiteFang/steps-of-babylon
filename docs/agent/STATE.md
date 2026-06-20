@@ -12,10 +12,10 @@ data-integrity #237/#238/#248) via release PR #278 (squash `ffa9973`). **ALL 4 n
 Latest content wave MERGED: data-integrity (PR #276, `0f32ac6`; #237/#238/#248 auto-closed; ADR-0030,
 single-agent review caught a critical pre-code defect). Earlier waves MERGED: #261/#233 (PR #274, `8b50b13`);
 #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.9 (vc 25)** · **1152 JVM + 9 instrumented tests**
+Supersedes **v1.0.9 (vc 25)** · **1167 JVM + 9 instrumented tests**
 green (1110 shipped in v1.0.10; +8 reliability wave #251/#249 → 1118; +8 correctness/UX wave
 #225/#235/#224/#222 → 1126; +4 privacy/monetization #240/#239/#241 → 1130; +9 perf wave #242/#243 → 1139;
-+13 accessibility wave #213/#214/#226 → 1152; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
++13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -33,7 +33,27 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #296, squash `0ff9662`; #213/#214/#226 auto-closed; `[Unreleased]`).**
+- **CURRENT (DONE — implemented on branch `test/concurrency-compose-252-253`, build-verified, NOT yet
+  committed-as-PR'd; `[Unreleased]`).** **Test-integrity wave (#252 · #253)** off the complete-app-review
+  backlog: two adversarially-confirmed `severity:major` testing gaps, one **test-only** PR (no
+  production-code change; build-file change adds only test-scope Compose deps). **1152 → 1167 JVM** (+15);
+  `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec + plan both through the **Adversarial
+  Review Gate** (single-agent, ultracode OFF) — **two CRITICALs caught pre-code:** spec — an `:memory:`
+  Room DB is a single connection (no WAL pool) so it can't reproduce a concurrent-writer race → switched to
+  a **file-backed** temp DB; plan — the `@Transaction` DAO targets have no injectable parking seam, so the
+  mutation check must **remove `@Transaction`** (autocommit interleave), not rewrite the body. **#252:**
+  `AtomicDaoConcurrencyTest` (7) — 12 concurrent threads + `CountDownLatch` start-gate at a one-success
+  balance/claim, invariant-based asserts (exactly-one-winner, never over-spent/double-credited) across the
+  guarded deducts, one-shot claims, and the two `@Transaction` composites; deterministic over 3 re-runs;
+  **mutation-verified** (removing `@Transaction` from `claimMilestoneAtomic` → 11/12 double-credit). **#253
+  (beachhead):** the project's first Compose UI tests, on the **Robolectric/JVM lane** (PR gate, no
+  emulator) — `createComposeRule()` + `@GraphicsMode(NATIVE)`, `ui-test-manifest` on `debugImplementation`
+  supplies the host `ComponentActivity`, fakes back the real VMs. `CardsScreenTest` (4) + `OnboardingScreenTest`
+  (4); both mutation-verified. #253 stays **open** for follow-up screens (Home, Battle controls, Store). No
+  ADR (test additions on established patterns). Next: commit + open PR (closes #252; #253 stays open),
+  monitor CI, merge on green; then more audit backlog (architecture #219–#231; data-integrity #211/#234;
+  i18n #259/#260; med/low #262/#128).
+- **Previous objective (DONE — MERGED PR #296, squash `0ff9662`; #213/#214/#226 auto-closed; `[Unreleased]`).**
   **Accessibility wave (#213 · #214 · #226)** off the complete-app-
   review backlog: three confirmed `severity:major` a11y findings, one combined PR. **No
   schema/economy/engine change; 1139 → 1152 JVM** (+13); `testDebugUnitTest lintDebug assembleDebug`

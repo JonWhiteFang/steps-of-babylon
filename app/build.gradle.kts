@@ -315,6 +315,14 @@ dependencies {
     // TestNavHostController for the #161 nav-restore regression guard (BottomNavRestoreTest) —
     // drives the real shared NavOptions on the JVM, no Compose UI rule / activity needed.
     testImplementation(libs.navigation.testing)
+    // Compose UI tests (#253) on the Robolectric/JVM lane — the BOM is otherwise only on
+    // `implementation`, so re-apply it to the test classpath to version-align the ui-test artifacts.
+    testImplementation(composeBom)
+    testImplementation(libs.compose.ui.test.junit4)
+    // ui-test-manifest must be `debugImplementation` (not testImplementation): it contributes the
+    // `androidx.activity.ComponentActivity` declaration that createComposeRule() launches, and that
+    // only merges into the debug manifest Robolectric reads when applied to the variant, not the test set.
+    debugImplementation(libs.compose.ui.test.manifest)
 
     // Instrumented testing (androidTest source set) — V1X-08 Phase 1A.
     // Hilt instrumented DI requires kspAndroidTest so the @HiltAndroidTest classes get
