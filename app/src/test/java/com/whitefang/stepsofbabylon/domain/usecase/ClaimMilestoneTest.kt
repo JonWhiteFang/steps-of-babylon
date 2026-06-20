@@ -1,13 +1,13 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
 import com.whitefang.stepsofbabylon.data.local.MilestoneEntity
-import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.data.repository.CosmeticRepositoryImpl
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.fakes.FakeCosmeticDao
 import com.whitefang.stepsofbabylon.fakes.FakeCosmeticRepository
-import com.whitefang.stepsofbabylon.fakes.FakeMilestoneDao
+import com.whitefang.stepsofbabylon.fakes.FakeMilestoneRepository
+import com.whitefang.stepsofbabylon.fakes.FakeTimeProvider
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -16,21 +16,18 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 
 class ClaimMilestoneTest {
 
-    private lateinit var dao: FakeMilestoneDao
+    private lateinit var repo: FakeMilestoneRepository
     private lateinit var playerRepo: FakePlayerRepository
-    private lateinit var playerProfileDao: PlayerProfileDao
     private lateinit var cosmeticRepo: FakeCosmeticRepository
     private lateinit var useCase: ClaimMilestone
 
     @BeforeEach
     fun setup() {
         playerRepo = FakePlayerRepository(PlayerProfile(totalStepsEarned = 10_000_000))
-        dao = FakeMilestoneDao(linkedPlayer = playerRepo)
-        playerProfileDao = mock()
+        repo = FakeMilestoneRepository(linkedPlayer = playerRepo)
         cosmeticRepo = FakeCosmeticRepository()
         // Default: empty cosmetic catalogue. Tests that need a matching cosmetic id seed
         // `cosmeticRepo.items` themselves. Post-C.2 PR 3b/3c all 3 milestone cosmetic ids
@@ -39,19 +36,19 @@ class ClaimMilestoneTest {
         // synthetic mechanism-under-test scenario, preserved because the rejection path
         // still needs a regression guard for future content work that could accidentally
         // regress the pre-flight cosmetic-id check.
-        useCase = ClaimMilestone(dao, playerRepo, playerProfileDao, cosmeticRepo)
+        useCase = ClaimMilestone(repo, playerRepo, cosmeticRepo, FakeTimeProvider())
     }
 
     @Test
     fun `claiming milestone without reaching step threshold returns InsufficientSteps`() = runTest {
         val lowStepsRepo = FakePlayerRepository(PlayerProfile(totalStepsEarned = 500))
-        val lowDao = FakeMilestoneDao(linkedPlayer = lowStepsRepo)
-        val uc = ClaimMilestone(lowDao, lowStepsRepo, mock(), FakeCosmeticRepository())
+        val lowRepo = FakeMilestoneRepository(linkedPlayer = lowStepsRepo)
+        val uc = ClaimMilestone(lowRepo, lowStepsRepo, FakeCosmeticRepository(), FakeTimeProvider())
         val result = uc(Milestone.MORNING_JOGGER) // requires 10,000
         assertEquals(ClaimMilestoneResult.InsufficientSteps, result)
         assertEquals(0, lowStepsRepo.observeWallet().first().gems)
         // Step-threshold guard short-circuits before the atomic DAO call.
-        assertEquals(0, lowDao.claimMilestoneAtomicCallCount)
+        assertEquals(0, lowRepo.claimMilestoneAtomicCallCount)
     }
 
     @Test
@@ -64,7 +61,7 @@ class ClaimMilestoneTest {
     @Test
     fun `marks milestone as claimed on Success`() = runTest {
         assertEquals(ClaimMilestoneResult.Success, useCase(Milestone.FIRST_STEPS))
-        val entity = dao.getByIdOnce(Milestone.FIRST_STEPS.name)
+        val entity = repo.dao.getByIdOnce(Milestone.FIRST_STEPS.name)
         assertNotNull(entity)
         assertTrue(entity!!.claimed)
         assertNotNull(entity.claimedAt)
@@ -88,7 +85,7 @@ class ClaimMilestoneTest {
         assertEquals(ClaimMilestoneResult.Success, result)
         // Proves the use case delegates to the atomic path (not the legacy
         // addGems + upsert split sequence that this PR replaced).
-        assertEquals(1, dao.claimMilestoneAtomicCallCount)
+        assertEquals(1, repo.claimMilestoneAtomicCallCount)
         // And still credits through the linked player (which the fake routes
         // inside the atomic block, matching the real Room transaction body).
         val wallet = playerRepo.observeWallet().first()
@@ -101,11 +98,11 @@ class ClaimMilestoneTest {
         // MORNING_JOGGER (Gems-only, 25 gems) so the concurrency test stays valid after
         // the cosmetic-id pre-flight check lands. The atomicity invariant being tested
         // (Mutex + claimed-flag serialisation) is independent of reward shape.
-        val repo = FakePlayerRepository(
+        val racePlayer = FakePlayerRepository(
             PlayerProfile(totalStepsEarned = 10_000_000, gems = 0, powerStones = 0),
         )
-        val race = FakeMilestoneDao(linkedPlayer = repo)
-        val uc = ClaimMilestone(race, repo, mock(), FakeCosmeticRepository())
+        val raceRepo = FakeMilestoneRepository(linkedPlayer = racePlayer)
+        val uc = ClaimMilestone(raceRepo, racePlayer, FakeCosmeticRepository(), FakeTimeProvider())
 
         val results = listOf(
             async { uc(Milestone.MORNING_JOGGER) },
@@ -116,13 +113,13 @@ class ClaimMilestoneTest {
         assertEquals(1, results.count { it == ClaimMilestoneResult.Success })
         assertEquals(1, results.count { it == ClaimMilestoneResult.AlreadyClaimed })
         // Wallet credited exactly once (25 Gems), not twice.
-        val wallet = repo.observeWallet().first()
+        val wallet = racePlayer.observeWallet().first()
         assertEquals(25, wallet.gems)
         assertEquals(0, wallet.powerStones)
         // Both callers reached the atomic path; mutex + claimed flag decided the winner.
-        assertEquals(2, race.claimMilestoneAtomicCallCount)
+        assertEquals(2, raceRepo.claimMilestoneAtomicCallCount)
         // Milestone marked claimed exactly once (single row).
-        val entity = race.getByIdOnce(Milestone.MORNING_JOGGER.name)
+        val entity = raceRepo.dao.getByIdOnce(Milestone.MORNING_JOGGER.name)
         assertNotNull(entity)
         assertTrue(entity!!.claimed)
     }
@@ -132,12 +129,12 @@ class ClaimMilestoneTest {
         // Seed the DAO with a claimed entity directly (emulates "claim committed in a
         // previous process lifecycle"). The atomic method should observe claimed=true
         // and return AlreadyClaimed without re-crediting.
-        dao.upsert(MilestoneEntity(Milestone.MORNING_JOGGER.name, claimed = true, claimedAt = 1L))
+        repo.dao.upsert(MilestoneEntity(Milestone.MORNING_JOGGER.name, claimed = true, claimedAt = 1L))
         val result = useCase(Milestone.MORNING_JOGGER)
         assertEquals(ClaimMilestoneResult.AlreadyClaimed, result)
         assertEquals(0, playerRepo.observeWallet().first().gems)
         // The atomic method was still called (guard lives inside it, not outside).
-        assertEquals(1, dao.claimMilestoneAtomicCallCount)
+        assertEquals(1, repo.claimMilestoneAtomicCallCount)
     }
 
     // ----------------------------------------------------------------------
@@ -170,8 +167,8 @@ class ClaimMilestoneTest {
         val wallet = playerRepo.observeWallet().first()
         assertEquals(0, wallet.gems)
         assertEquals(0, wallet.powerStones)
-        assertEquals(0, dao.claimMilestoneAtomicCallCount)
-        assertNull(dao.getByIdOnce(Milestone.MARATHON_WALKER.name))
+        assertEquals(0, repo.claimMilestoneAtomicCallCount)
+        assertNull(repo.dao.getByIdOnce(Milestone.MARATHON_WALKER.name))
     }
 
     // ----------------------------------------------------------------------
@@ -189,7 +186,7 @@ class ClaimMilestoneTest {
         // IRON_SOLES reward: 200 Gems + 50 Power Stones + Cosmetic("lapis_lazuli_skin").
         // lapis_lazuli_skin was seeded in C.2 PR 3.
         val realRepo = CosmeticRepositoryImpl(FakeCosmeticDao())
-        val uc = ClaimMilestone(dao, playerRepo, playerProfileDao, realRepo)
+        val uc = ClaimMilestone(repo, playerRepo, realRepo, FakeTimeProvider())
 
         val result = uc(Milestone.IRON_SOLES)
         assertEquals(ClaimMilestoneResult.Success, result)
@@ -197,7 +194,7 @@ class ClaimMilestoneTest {
         val wallet = playerRepo.observeWallet().first()
         assertEquals(200, wallet.gems)
         assertEquals(50, wallet.powerStones)
-        assertEquals(1, dao.claimMilestoneAtomicCallCount)
+        assertEquals(1, repo.claimMilestoneAtomicCallCount)
     }
 
     @Test
@@ -205,7 +202,7 @@ class ClaimMilestoneTest {
         // MARATHON_WALKER reward: 600 Gems + Cosmetic("garden_ziggurat_skin").
         // garden_ziggurat_skin was seeded in C.2 PR 3b.
         val realRepo = CosmeticRepositoryImpl(FakeCosmeticDao())
-        val uc = ClaimMilestone(dao, playerRepo, playerProfileDao, realRepo)
+        val uc = ClaimMilestone(repo, playerRepo, realRepo, FakeTimeProvider())
 
         val result = uc(Milestone.MARATHON_WALKER)
         assertEquals(ClaimMilestoneResult.Success, result)
@@ -213,7 +210,7 @@ class ClaimMilestoneTest {
         val wallet = playerRepo.observeWallet().first()
         assertEquals(600, wallet.gems)
         assertEquals(0, wallet.powerStones)
-        assertEquals(1, dao.claimMilestoneAtomicCallCount)
+        assertEquals(1, repo.claimMilestoneAtomicCallCount)
     }
 
     @Test
@@ -223,7 +220,7 @@ class ClaimMilestoneTest {
         // themed ziggurat variant so it fits the existing ZIGGURAT_SKIN category without
         // requiring a new CosmeticCategory enum value).
         val realRepo = CosmeticRepositoryImpl(FakeCosmeticDao())
-        val uc = ClaimMilestone(dao, playerRepo, playerProfileDao, realRepo)
+        val uc = ClaimMilestone(repo, playerRepo, realRepo, FakeTimeProvider())
 
         val result = uc(Milestone.GLOBE_TROTTER)
         assertEquals(ClaimMilestoneResult.Success, result)
@@ -231,6 +228,6 @@ class ClaimMilestoneTest {
         val wallet = playerRepo.observeWallet().first()
         assertEquals(500, wallet.gems)
         assertEquals(0, wallet.powerStones)
-        assertEquals(1, dao.claimMilestoneAtomicCallCount)
+        assertEquals(1, repo.claimMilestoneAtomicCallCount)
     }
 }

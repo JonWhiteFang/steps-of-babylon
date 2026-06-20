@@ -2,7 +2,7 @@ package com.whitefang.stepsofbabylon.domain.usecase
 
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.MissionCategory
-import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
+import com.whitefang.stepsofbabylon.fakes.FakeMissionRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -10,25 +10,25 @@ import org.junit.jupiter.api.Test
 
 class GenerateDailyMissionsTest {
 
-    private lateinit var dao: FakeDailyMissionDao
+    private lateinit var dao: FakeMissionRepository
     private lateinit var useCase: GenerateDailyMissions
 
     @BeforeEach
     fun setup() {
-        dao = FakeDailyMissionDao()
+        dao = FakeMissionRepository()
         useCase = GenerateDailyMissions(dao)
     }
 
     @Test
     fun `generates exactly 3 missions`() = runTest {
         useCase("2026-03-09")
-        assertEquals(3, dao.getByDateOnce("2026-03-09").size)
+        assertEquals(3, dao.dao.getByDateOnce("2026-03-09").size)
     }
 
     @Test
     fun `one mission per category`() = runTest {
         useCase("2026-03-09")
-        val missions = dao.getByDateOnce("2026-03-09")
+        val missions = dao.dao.getByDateOnce("2026-03-09")
         val categories = missions.map { m ->
             DailyMissionType.entries.first { it.name == m.missionType }.category
         }.toSet()
@@ -38,12 +38,12 @@ class GenerateDailyMissionsTest {
     @Test
     fun `same date generates same missions (deterministic)`() = runTest {
         useCase("2026-03-09")
-        val first = dao.getByDateOnce("2026-03-09").map { it.missionType }
+        val first = dao.dao.getByDateOnce("2026-03-09").map { it.missionType }
 
-        val dao2 = FakeDailyMissionDao()
+        val dao2 = FakeMissionRepository()
         val useCase2 = GenerateDailyMissions(dao2)
         useCase2("2026-03-09")
-        val second = dao2.getByDateOnce("2026-03-09").map { it.missionType }
+        val second = dao2.dao.getByDateOnce("2026-03-09").map { it.missionType }
 
         assertEquals(first, second)
     }
@@ -51,12 +51,12 @@ class GenerateDailyMissionsTest {
     @Test
     fun `different dates can generate different missions`() = runTest {
         useCase("2026-03-09")
-        val day1 = dao.getByDateOnce("2026-03-09").map { it.missionType }
+        val day1 = dao.dao.getByDateOnce("2026-03-09").map { it.missionType }
 
-        val dao2 = FakeDailyMissionDao()
+        val dao2 = FakeMissionRepository()
         val useCase2 = GenerateDailyMissions(dao2)
         useCase2("2026-03-10")
-        val day2 = dao2.getByDateOnce("2026-03-10").map { it.missionType }
+        val day2 = dao2.dao.getByDateOnce("2026-03-10").map { it.missionType }
 
         // Not guaranteed to differ, but with 2 options per category, very likely at least one differs
         // This test just verifies no crash and correct count
@@ -67,13 +67,13 @@ class GenerateDailyMissionsTest {
     fun `does not regenerate if missions already exist`() = runTest {
         useCase("2026-03-09")
         useCase("2026-03-09") // second call
-        assertEquals(3, dao.getByDateOnce("2026-03-09").size) // still 3, not 6
+        assertEquals(3, dao.dao.getByDateOnce("2026-03-09").size) // still 3, not 6
     }
 
     @Test
     fun `missions start with zero progress and unclaimed`() = runTest {
         useCase("2026-03-09")
-        val missions = dao.getByDateOnce("2026-03-09")
+        val missions = dao.dao.getByDateOnce("2026-03-09")
         missions.forEach { m ->
             assertEquals(0, m.progress)
             assertFalse(m.completed)

@@ -3,7 +3,7 @@ package com.whitefang.stepsofbabylon.domain.usecase
 import com.whitefang.stepsofbabylon.data.local.DailyMissionEntity
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
-import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
+import com.whitefang.stepsofbabylon.fakes.FakeMissionRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -19,20 +19,20 @@ import org.junit.jupiter.api.Test
  */
 class ClaimMissionTest {
 
-    private lateinit var missionDao: FakeDailyMissionDao
+    private lateinit var missionRepo: FakeMissionRepository
     private lateinit var playerRepo: FakePlayerRepository
     private lateinit var useCase: ClaimMission
     private val today = "2026-06-10"
 
     @BeforeEach
     fun setup() {
-        missionDao = FakeDailyMissionDao()
+        missionRepo = FakeMissionRepository()
         playerRepo = FakePlayerRepository(PlayerProfile(gems = 0, powerStones = 0))
-        useCase = ClaimMission(missionDao, playerRepo)
+        useCase = ClaimMission(missionRepo, playerRepo)
     }
 
     private suspend fun seedCompletedMission(gems: Int = 5, powerStones: Int = 0): Int {
-        missionDao.insert(
+        missionRepo.dao.insert(
             DailyMissionEntity(
                 date = today,
                 missionType = DailyMissionType.WALK_5000.name,
@@ -43,7 +43,7 @@ class ClaimMissionTest {
                 rewardPowerStones = powerStones,
             ),
         )
-        return missionDao.getByDateOnce(today).first().id
+        return missionRepo.dao.getByDateOnce(today).first().id
     }
 
     @Test
@@ -52,7 +52,7 @@ class ClaimMissionTest {
         val result = useCase(id, today)
         assertEquals(ClaimMissionResult.Success, result)
         assertEquals(5L, playerRepo.profile.value.gems)
-        assertTrue(missionDao.getByDateOnce(today).first().claimed)
+        assertTrue(missionRepo.dao.getByDateOnce(today).first().claimed)
     }
 
     @Test
@@ -70,7 +70,7 @@ class ClaimMissionTest {
 
     @Test
     fun `incomplete mission is not claimable`() = runTest {
-        missionDao.insert(
+        missionRepo.dao.insert(
             DailyMissionEntity(
                 date = today,
                 missionType = DailyMissionType.WALK_5000.name,
@@ -80,7 +80,7 @@ class ClaimMissionTest {
                 rewardGems = 5,
             ),
         )
-        val id = missionDao.getByDateOnce(today).first().id
+        val id = missionRepo.dao.getByDateOnce(today).first().id
         assertEquals(ClaimMissionResult.NotClaimable, useCase(id, today))
         assertEquals(0L, playerRepo.profile.value.gems)
     }

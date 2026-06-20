@@ -3,9 +3,8 @@ package com.whitefang.stepsofbabylon.data.sensor
 import android.util.Log
 import com.whitefang.stepsofbabylon.data.anticheat.AntiCheatPreferences
 import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
-import com.whitefang.stepsofbabylon.data.local.DailyLoginDao
-import com.whitefang.stepsofbabylon.data.local.DailyStepDao
-import com.whitefang.stepsofbabylon.data.local.WeeklyChallengeDao
+import com.whitefang.stepsofbabylon.domain.repository.DailyLoginRepository
+import com.whitefang.stepsofbabylon.domain.repository.WeeklyChallengeRepository
 import com.whitefang.stepsofbabylon.domain.model.DropGeneratorState
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.MissionCategory
@@ -43,9 +42,8 @@ class DailyStepManager @Inject constructor(
     private val antiCheatPrefs: AntiCheatPreferences,
     private val walkingEncounterRepository: WalkingEncounterRepository,
     private val supplyDropNotificationManager: SupplyDropNotificationManager,
-    private val dailyLoginDao: DailyLoginDao,
-    private val weeklyChallengeDao: WeeklyChallengeDao,
-    private val dailyStepDao: DailyStepDao,
+    private val dailyLoginRepository: DailyLoginRepository,
+    private val weeklyChallengeRepository: WeeklyChallengeRepository,
     private val dailyMissionDao: DailyMissionDao,
     private val widgetUpdateHelper: WidgetUpdateHelper,
     private val workshopRepository: WorkshopRepository,
@@ -128,8 +126,8 @@ class DailyStepManager @Inject constructor(
     // size-trim RMW below still runs under [mutex] for correctness.
     private val stepsPerMinute = ConcurrentHashMap<Long, Long>()
 
-    private val trackDailyLogin by lazy { TrackDailyLogin(dailyLoginDao, playerRepository) }
-    private val trackWeeklyChallenge by lazy { TrackWeeklyChallenge(weeklyChallengeDao, dailyStepDao, playerRepository) }
+    private val trackDailyLogin by lazy { TrackDailyLogin(dailyLoginRepository, playerRepository) }
+    private val trackWeeklyChallenge by lazy { TrackWeeklyChallenge(weeklyChallengeRepository, stepRepository, playerRepository) }
 
     fun getDailyCredited(): Long = dailyCreditedTotal
 

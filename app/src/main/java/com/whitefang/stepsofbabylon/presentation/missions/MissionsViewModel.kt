@@ -11,6 +11,8 @@ import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.model.MissionCategory
 import com.whitefang.stepsofbabylon.domain.repository.CosmeticRepository
+import com.whitefang.stepsofbabylon.domain.repository.MilestoneRepository
+import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestone
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestoneResult
@@ -44,20 +46,21 @@ import javax.inject.Inject
 class MissionsViewModel @Inject constructor(
     private val dailyMissionDao: DailyMissionDao,
     private val milestoneDao: MilestoneDao,
+    private val missionRepository: MissionRepository,
+    private val milestoneRepository: MilestoneRepository,
     private val dailyStepDao: DailyStepDao,
     private val playerRepository: PlayerRepository,
-    private val playerProfileDao: PlayerProfileDao,
     private val cosmeticRepository: CosmeticRepository,
     private val timeProvider: TimeProvider = SystemTimeProvider(),
 ) : ViewModel() {
 
-    private val generateMissions = GenerateDailyMissions(dailyMissionDao)
-    private val claimMissionUseCase = ClaimMission(dailyMissionDao, playerRepository)
+    private val generateMissions = GenerateDailyMissions(missionRepository)
+    private val claimMissionUseCase = ClaimMission(missionRepository, playerRepository)
     private val claimMilestoneUseCase = ClaimMilestone(
-        milestoneDao,
+        milestoneRepository,
         playerRepository,
-        playerProfileDao,
         cosmeticRepository,
+        timeProvider,
     )
     // #195: the current day as a Flow so the missions query RE-SUBSCRIBES on day-rollover. A plain
     // `var` captured once inside combine() never re-subscribed getByDate(), so the screen showed

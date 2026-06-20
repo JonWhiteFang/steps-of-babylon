@@ -1,6 +1,6 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
-import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
+import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 
 /**
@@ -33,16 +33,16 @@ sealed class ClaimMissionResult {
  * rather than duplicating it, which is the safe direction for the player-economy invariant.)
  */
 class ClaimMission(
-    private val dailyMissionDao: DailyMissionDao,
+    private val missionRepository: MissionRepository,
     private val playerRepository: PlayerRepository,
 ) {
     suspend operator fun invoke(id: Int, date: String): ClaimMissionResult {
-        val mission = dailyMissionDao.getByDateOnce(date)
+        val mission = missionRepository.getMissionsForDate(date)
             .find { it.id == id && it.completed && !it.claimed }
             ?: return ClaimMissionResult.NotClaimable
 
         // Mark-first: only the call that actually flips claimed (rows == 1) credits the reward.
-        if (dailyMissionDao.markClaimed(id) != 1) return ClaimMissionResult.NotClaimable
+        if (missionRepository.markClaimed(id) != 1) return ClaimMissionResult.NotClaimable
 
         if (mission.rewardGems > 0) playerRepository.addGems(mission.rewardGems.toLong())
         if (mission.rewardPowerStones > 0) playerRepository.addPowerStones(mission.rewardPowerStones.toLong())

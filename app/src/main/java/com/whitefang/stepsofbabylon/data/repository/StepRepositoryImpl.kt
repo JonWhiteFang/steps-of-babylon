@@ -2,6 +2,7 @@ package com.whitefang.stepsofbabylon.data.repository
 
 import com.whitefang.stepsofbabylon.data.local.DailyStepDao
 import com.whitefang.stepsofbabylon.data.local.DailyStepRecordEntity
+import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
 import com.whitefang.stepsofbabylon.domain.model.DailyStepSummary
 import com.whitefang.stepsofbabylon.domain.repository.StepRepository
 import kotlinx.coroutines.flow.Flow
@@ -10,6 +11,10 @@ import javax.inject.Inject
 
 class StepRepositoryImpl @Inject constructor(
     private val dao: DailyStepDao,
+    // #227: injected so the atomic battle/boss credit can hand the real PlayerProfileDao into the
+    // DAO @Transaction. Both DAOs come from the single @Singleton AppDatabase (DatabaseModule), so
+    // the credit stays inside the one DB-scoped Room transaction (#122/ADR-0027).
+    private val playerProfileDao: PlayerProfileDao,
 ) : StepRepository {
 
     override fun observeTodayRecord(date: String): Flow<DailyStepSummary?> =
@@ -40,6 +45,15 @@ class StepRepositoryImpl @Inject constructor(
     override suspend fun releaseEscrow(date: String) = dao.clearEscrow(date)
 
     override suspend fun discardEscrow(date: String) = dao.clearEscrow(date)
+
+    override suspend fun sumCreditedSteps(startDate: String, endDate: String): Long =
+        dao.sumCreditedSteps(startDate, endDate)
+
+    override suspend fun creditBattleStepsAtomic(date: String, requested: Long, dailyCap: Long): Long =
+        dao.creditBattleStepsAtomic(date, requested, dailyCap, playerDao = playerProfileDao)
+
+    override suspend fun creditBossPowerStonesAtomic(date: String, requested: Long, dailyCap: Long): Long =
+        dao.creditBossPowerStonesAtomic(date, requested, dailyCap, playerDao = playerProfileDao)
 
     private fun DailyStepRecordEntity.toDomain() = DailyStepSummary(
         date = date,

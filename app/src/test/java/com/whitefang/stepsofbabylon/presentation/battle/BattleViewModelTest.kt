@@ -34,12 +34,11 @@ class BattleViewModelTest {
     private lateinit var cardRepo: FakeCardRepository
     private lateinit var labRepo: FakeLabRepository
     private lateinit var adManager: FakeRewardAdManager
-    private lateinit var dailyStepDao: FakeDailyStepDao
+    private lateinit var stepRepo: FakeStepRepository
     private lateinit var applicationScope: CoroutineScope
     private lateinit var cosmeticRepo: FakeCosmeticRepository
     private val biomePreferences = mock<BiomePreferences>()
     private val dailyMissionDao = mock<com.whitefang.stepsofbabylon.data.local.DailyMissionDao>()
-    private val playerProfileDao = mock<com.whitefang.stepsofbabylon.data.local.PlayerProfileDao>()
     private val appDatabase = mock<com.whitefang.stepsofbabylon.data.local.AppDatabase>()
     private val milestoneNotificationManager = mock<MilestoneNotificationManager>()
 
@@ -54,10 +53,10 @@ class BattleViewModelTest {
         adManager = FakeRewardAdManager()
         cosmeticRepo = FakeCosmeticRepository()
         labRepo = FakeLabRepository()
-        // Link the DAO to playerRepo so the VM's internal AwardBattleSteps (post-B.2 PR 2 goes
-        // through DailyStepDao.creditBattleStepsAtomic) still surfaces wallet changes via the
+        // #227: AwardBattleSteps/AwardBossPowerStones now depend on StepRepository; link the fake
+        // to playerRepo so the VM's internal use cases still surface wallet changes via the
         // existing FakePlayerRepository.profile flow.
-        dailyStepDao = FakeDailyStepDao(linkedPlayer = playerRepo)
+        stepRepo = FakeStepRepository(linkedPlayer = playerRepo)
         whenever(biomePreferences.hasSeenBiome(any())).thenReturn(true)
         whenever(dailyMissionDao.getByDateOnce(any())).thenReturn(emptyList())
         // Application-scoped CoroutineScope for B.3 PR 2 onCleared tests. Bound to the test
@@ -71,7 +70,7 @@ class BattleViewModelTest {
 
     private fun createVm(timeProvider: com.whitefang.stepsofbabylon.domain.time.TimeProvider = com.whitefang.stepsofbabylon.data.time.SystemTimeProvider()) = BattleViewModel(
         workshopRepo, playerRepo, biomePreferences, uwRepo, cardRepo, cosmeticRepo, labRepo,
-        dailyMissionDao, dailyStepDao, playerProfileDao, appDatabase, applicationScope, milestoneNotificationManager, adManager,
+        stepRepo, dailyMissionDao, appDatabase, applicationScope, milestoneNotificationManager, adManager,
         timeProvider,
     ).apply {
         // B.2 PR 5: override the transaction seam with a direct pass-through so tests exercise
@@ -385,7 +384,7 @@ class BattleViewModelTest {
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
         // Exhaust today's cap up front.
-        dailyStepDao.incrementBattleSteps(
+        stepRepo.seedBattleStepsEarned(
             java.time.LocalDate.now().toString(),
             AwardBattleSteps.DAILY_BATTLE_STEP_CAP,
         )
@@ -404,7 +403,7 @@ class BattleViewModelTest {
         val vm = createVm()
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
-        dailyStepDao.incrementBattleSteps(
+        stepRepo.seedBattleStepsEarned(
             java.time.LocalDate.now().toString(),
             AwardBattleSteps.DAILY_BATTLE_STEP_CAP,
         )
@@ -439,7 +438,7 @@ class BattleViewModelTest {
         val vm = createVm()
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
-        dailyStepDao.incrementBattleSteps(
+        stepRepo.seedBattleStepsEarned(
             java.time.LocalDate.now().toString(),
             AwardBattleSteps.DAILY_BATTLE_STEP_CAP - 3L,
         )
@@ -469,7 +468,7 @@ class BattleViewModelTest {
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
         // 3 remaining in the cap.
-        dailyStepDao.incrementBattleSteps(
+        stepRepo.seedBattleStepsEarned(
             java.time.LocalDate.now().toString(),
             AwardBattleSteps.DAILY_BATTLE_STEP_CAP - 3L,
         )
@@ -497,7 +496,7 @@ class BattleViewModelTest {
         val fakeDate = java.time.LocalDate.now().plusDays(1)
         val fakeClock = com.whitefang.stepsofbabylon.fakes.FakeTimeProvider(fixedDate = fakeDate)
 
-        dailyStepDao.incrementBattleSteps(
+        stepRepo.seedBattleStepsEarned(
             java.time.LocalDate.now().toString(),
             com.whitefang.stepsofbabylon.domain.usecase.AwardBattleSteps.DAILY_BATTLE_STEP_CAP,
         )
@@ -515,12 +514,12 @@ class BattleViewModelTest {
         // Real-today's bucket is still at cap; fake-tomorrow's bucket got 10.
         assertEquals(
             com.whitefang.stepsofbabylon.domain.usecase.AwardBattleSteps.DAILY_BATTLE_STEP_CAP,
-            dailyStepDao.getBattleStepsEarned(java.time.LocalDate.now().toString()),
+            stepRepo.getBattleStepsEarned(java.time.LocalDate.now().toString()),
             "real-today bucket must stay exhausted — VM must not have written here",
         )
         assertEquals(
             10L,
-            dailyStepDao.getBattleStepsEarned(fakeDate.toString()),
+            stepRepo.getBattleStepsEarned(fakeDate.toString()),
             "fake-tomorrow bucket must receive the credit",
         )
         assertEquals(initialBalance + 10L, playerRepo.profile.value.stepBalance)
@@ -553,7 +552,7 @@ class BattleViewModelTest {
         }
         val vm = BattleViewModel(
             workshopRepo, throwingPlayer, biomePreferences, uwRepo, cardRepo, cosmeticRepo, labRepo,
-            dailyMissionDao, dailyStepDao, playerProfileDao, appDatabase, applicationScope, milestoneNotificationManager, adManager,
+            stepRepo, dailyMissionDao, appDatabase, applicationScope, milestoneNotificationManager, adManager,
         ).apply { runInTransaction = { block -> block() } }
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
@@ -591,7 +590,7 @@ class BattleViewModelTest {
         }
         val vm = BattleViewModel(
             workshopRepo, brokenPlayer, biomePreferences, uwRepo, cardRepo, cosmeticRepo, labRepo,
-            dailyMissionDao, dailyStepDao, playerProfileDao, appDatabase, applicationScope, milestoneNotificationManager, adManager,
+            stepRepo, dailyMissionDao, appDatabase, applicationScope, milestoneNotificationManager, adManager,
         ).apply { runInTransaction = { block -> block() } }
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()

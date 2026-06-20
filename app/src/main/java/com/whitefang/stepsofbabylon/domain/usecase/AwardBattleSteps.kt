@@ -1,8 +1,6 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
-import com.whitefang.stepsofbabylon.data.local.DailyStepDao
-import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
-import com.whitefang.stepsofbabylon.data.time.SystemTimeProvider
+import com.whitefang.stepsofbabylon.domain.repository.StepRepository
 import com.whitefang.stepsofbabylon.domain.time.TimeProvider
 
 /**
@@ -29,19 +27,17 @@ import com.whitefang.stepsofbabylon.domain.time.TimeProvider
  * default path and any code that reads `today` internally.
  */
 class AwardBattleSteps(
-    private val dailyStepDao: DailyStepDao,
-    private val playerProfileDao: PlayerProfileDao,
-    private val timeProvider: TimeProvider = SystemTimeProvider(),
+    private val stepRepository: StepRepository,
+    private val timeProvider: TimeProvider,
 ) {
 
     suspend operator fun invoke(
         amount: Long,
         today: String = timeProvider.today().toString(),
-    ): Long = dailyStepDao.creditBattleStepsAtomic(
+    ): Long = stepRepository.creditBattleStepsAtomic(
         date = today,
         requested = amount,
         dailyCap = DAILY_BATTLE_STEP_CAP,
-        playerDao = playerProfileDao,
     )
 
     companion object {

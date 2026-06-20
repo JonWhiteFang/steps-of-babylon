@@ -1,8 +1,6 @@
 package com.whitefang.stepsofbabylon.domain.usecase
 
-import com.whitefang.stepsofbabylon.data.local.DailyStepDao
-import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
-import com.whitefang.stepsofbabylon.data.time.SystemTimeProvider
+import com.whitefang.stepsofbabylon.domain.repository.StepRepository
 import com.whitefang.stepsofbabylon.domain.time.TimeProvider
 
 /**
@@ -16,19 +14,17 @@ import com.whitefang.stepsofbabylon.domain.time.TimeProvider
  * Returns the amount actually credited (0 when the daily cap is exhausted).
  */
 class AwardBossPowerStones(
-    private val dailyStepDao: DailyStepDao,
-    private val playerProfileDao: PlayerProfileDao,
-    private val timeProvider: TimeProvider = SystemTimeProvider(),
+    private val stepRepository: StepRepository,
+    private val timeProvider: TimeProvider,
 ) {
 
     suspend operator fun invoke(
         tier: Int,
         today: String = timeProvider.today().toString(),
-    ): Long = dailyStepDao.creditBossPowerStonesAtomic(
+    ): Long = stepRepository.creditBossPowerStonesAtomic(
         date = today,
         requested = tier.toLong().coerceAtLeast(1L),
         dailyCap = DAILY_BOSS_PS_CAP,
-        playerDao = playerProfileDao,
     )
 
     companion object {

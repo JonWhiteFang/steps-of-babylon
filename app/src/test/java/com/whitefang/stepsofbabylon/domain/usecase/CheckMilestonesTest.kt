@@ -2,7 +2,7 @@ package com.whitefang.stepsofbabylon.domain.usecase
 
 import com.whitefang.stepsofbabylon.data.local.MilestoneEntity
 import com.whitefang.stepsofbabylon.domain.model.Milestone
-import com.whitefang.stepsofbabylon.fakes.FakeMilestoneDao
+import com.whitefang.stepsofbabylon.fakes.FakeMilestoneRepository
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -10,13 +10,13 @@ import org.junit.jupiter.api.Test
 
 class CheckMilestonesTest {
 
-    private lateinit var dao: FakeMilestoneDao
+    private lateinit var repo: FakeMilestoneRepository
     private lateinit var useCase: CheckMilestones
 
     @BeforeEach
     fun setup() {
-        dao = FakeMilestoneDao()
-        useCase = CheckMilestones(dao)
+        repo = FakeMilestoneRepository()
+        useCase = CheckMilestones(repo)
     }
 
     @Test
@@ -42,7 +42,7 @@ class CheckMilestonesTest {
 
     @Test
     fun `excludes already claimed milestones`() = runTest {
-        dao.upsert(MilestoneEntity(Milestone.FIRST_STEPS.name, claimed = true, claimedAt = 1L))
+        repo.upsert(MilestoneEntity(Milestone.FIRST_STEPS.name, claimed = true, claimedAt = 1L))
         val result = useCase(10_000)
         assertEquals(1, result.size)
         assertEquals(Milestone.MORNING_JOGGER, result[0])

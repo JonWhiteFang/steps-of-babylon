@@ -15,6 +15,8 @@ import com.whitefang.stepsofbabylon.data.local.DailyStepDao
 import com.whitefang.stepsofbabylon.fakes.FakeCosmeticRepository
 import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
 import com.whitefang.stepsofbabylon.fakes.FakeMilestoneDao
+import com.whitefang.stepsofbabylon.fakes.FakeMilestoneRepository
+import com.whitefang.stepsofbabylon.fakes.FakeMissionRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeTimeProvider
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
@@ -43,6 +45,8 @@ class MissionsViewModelTest {
     private val dispatcher = UnconfinedTestDispatcher()
     private lateinit var missionDao: FakeDailyMissionDao
     private lateinit var milestoneDao: FakeMilestoneDao
+    private lateinit var missionRepo: FakeMissionRepository
+    private lateinit var milestoneRepo: FakeMilestoneRepository
     private lateinit var playerRepo: FakePlayerRepository
     private val today = LocalDate.now().toString()
 
@@ -52,6 +56,9 @@ class MissionsViewModelTest {
         missionDao = FakeDailyMissionDao()
         playerRepo = FakePlayerRepository(PlayerProfile(gems = 50, powerStones = 10, totalStepsEarned = 5000))
         milestoneDao = FakeMilestoneDao(linkedPlayer = playerRepo)
+        // #227: VM + use cases take ports; wrap the SAME fake DAOs so direct seeding stays consistent.
+        missionRepo = FakeMissionRepository(missionDao)
+        milestoneRepo = FakeMilestoneRepository(dao = milestoneDao)
     }
 
     @AfterEach
@@ -59,7 +66,7 @@ class MissionsViewModelTest {
 
     @Test
     fun `generate daily missions creates 3 missions`() = runTest {
-        val generate = GenerateDailyMissions(missionDao)
+        val generate = GenerateDailyMissions(missionRepo)
         generate(today)
         val missions = missionDao.getByDateOnce(today)
         assertEquals(3, missions.size)
@@ -71,7 +78,7 @@ class MissionsViewModelTest {
         // exercising the same path MissionsViewModel.claimMission delegates to.
         missionDao.insert(DailyMissionEntity(date = today, missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 5000, completed = true, rewardGems = 5))
         val m = missionDao.getByDateOnce(today).first()
-        val claimMission = ClaimMission(missionDao, playerRepo)
+        val claimMission = ClaimMission(missionRepo, playerRepo)
 
         val result = claimMission(m.id, today)
 
@@ -85,7 +92,7 @@ class MissionsViewModelTest {
         // FIRST_STEPS has no Cosmetic reward, so the empty FakeCosmeticRepository is
         // sufficient (cosmetic-id pre-flight check in C.4 is vacuously true for zero
         // Cosmetic rewards).
-        val claim = ClaimMilestone(milestoneDao, playerRepo, mock<PlayerProfileDao>(), FakeCosmeticRepository())
+        val claim = ClaimMilestone(milestoneRepo, playerRepo, FakeCosmeticRepository(), FakeTimeProvider())
         val result = claim(Milestone.FIRST_STEPS)
         assertEquals(ClaimMilestoneResult.Success, result)
         // FIRST_STEPS rewards 60 Gems
@@ -112,9 +119,10 @@ class MissionsViewModelTest {
         MissionsViewModel(
             dailyMissionDao = missionDao,
             milestoneDao = milestoneDao,
+            missionRepository = missionRepo,
+            milestoneRepository = milestoneRepo,
             dailyStepDao = mock<DailyStepDao> { onBlocking { sumCreditedSteps(any(), any()) } doReturn 0L },
             playerRepository = playerRepo,
-            playerProfileDao = mock<PlayerProfileDao>(),
             cosmeticRepository = FakeCosmeticRepository(),
             timeProvider = timeProvider,
         )

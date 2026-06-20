@@ -2,7 +2,7 @@ package com.whitefang.stepsofbabylon.presentation.labs
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
+import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
 import com.whitefang.stepsofbabylon.domain.model.ResearchType
 import com.whitefang.stepsofbabylon.domain.repository.LabRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
@@ -35,7 +35,7 @@ import kotlin.math.max
 class LabsViewModel @Inject constructor(
     private val labRepository: LabRepository,
     private val playerRepository: PlayerRepository,
-    private val dailyMissionDao: DailyMissionDao,
+    private val missionRepository: MissionRepository,
 ) : ViewModel() {
 
     private val calculateCost = CalculateResearchCost()
@@ -44,7 +44,7 @@ class LabsViewModel @Inject constructor(
     private val rushResearch = RushResearch(labRepository, playerRepository)
     private val unlockLabSlot = UnlockLabSlot(playerRepository)
     private val checkCompletion = CheckResearchCompletion(labRepository)
-    private val updateMissionProgress = UpdateCompleteResearchMissionProgress(dailyMissionDao)
+    private val updateMissionProgress = UpdateCompleteResearchMissionProgress(missionRepository)
 
     private val tick = MutableStateFlow(System.currentTimeMillis())
     private val _processing = MutableStateFlow(false)

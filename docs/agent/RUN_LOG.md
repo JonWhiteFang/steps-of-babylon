@@ -1,3 +1,46 @@
+## 2026-06-20 — Architecture-invariant wave: #227 domain→data dependency-rule fix · #228 purity guard (`[Unreleased]`)
+
+- **Goal:** restore the Clean-Architecture dependency rule (`presentation → domain ← data`) at the
+  dependency-DIRECTION level and machine-enforce it. Branch `arch/domain-purity-227-228`. Developer
+  decisions: **one combined PR**, **full domain models**.
+- **Process:** spec → spec review → plan → plan review → implement, all through the **Adversarial Review
+  Gate** (single-agent, ultracode off, per the developer's choice). Two thorough recon passes (Explore +
+  general-purpose) mapped the full violation before the spec.
+- **Spec review** (1 agent): 11 findings — 0 critical, 5 major, refuted rest. **F1 confirmed-SAFE:** the
+  atomic-passthrough design is correct — `DatabaseModule` provides every DAO off the single `@Singleton
+  AppDatabase`, so a repo impl injecting `PlayerProfileDao` and handing it into the DAO `@Transaction`
+  keeps the credit in one DB-scoped transaction. **F2/F3 (major):** ports cover only the 9 use cases'
+  surface, NOT presentation direct-DAO reads (left for #219) — resolved OQ4, bounded the surface.
+  **F5:** `missionType` String→enum map must null-skip unknown rows, not `valueOf`-throw. All applied.
+- **Plan review** (1 agent): 9 findings — 3 critical, all about **undercounted test blast radius**
+  (BattleViewModelTest, the 3 DailyStepManager tests, StepRepositoryImplTest were missing from the
+  per-cluster rewire lists) + F6 (FakeStepRepository must re-surface the DAO-level credit/cap state the
+  Award tests assert on). All applied before coding.
+- **What changed (production):** 3 domain models (`DailyMission`/`DailyLogin`/`WeeklyChallenge`); 4 ports
+  + 4 impls (`Mission`/`Milestone`/`DailyLogin`/`WeeklyChallenge`Repository); `StepRepository` +
+  `sumCreditedSteps`/`creditBattleStepsAtomic`/`creditBossPowerStonesAtomic` (impl gained `PlayerProfileDao`);
+  9 use cases swapped DAO deps → ports + domain models (`ClaimMilestone` also adopted injected
+  `TimeProvider`); wiring at `BattleViewModel`/`HomeViewModel`/`LabsViewModel`/`MissionsViewModel`/
+  `DailyStepManager`; `RepositoryModule` +4 `@Binds`; `DomainPurityTest` +`data` prefix +DI-agnostic test.
+- **What changed (tests):** 4 new fake repos (`FakeMission`/`FakeMilestone`/`FakeDailyLogin`/
+  `FakeWeeklyChallengeRepository`, wrapping the existing fake DAOs to reuse their logic + call-counts);
+  `FakeStepRepository` extended with the atomic-credit emulation; rewired AwardBattleSteps/BossPowerStones/
+  CheckMilestones/ClaimMilestone/ClaimMission/GenerateDailyMissions/TrackDailyLogin/TrackWeeklyChallenge/
+  UpdateCompleteResearchMissionProgress tests + BattleViewModelTest + StepRepositoryImplTest +
+  HomeViewModelTest + MissionsViewModelTest + the 3 DailyStepManager tests.
+- **Verification:** `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL.
+  **1167 → 1168 JVM** (+1 net — the DI-agnostic guard; the 9 use-case tests were rewired, not added).
+  Domain is clean (`grep import …data domain/` = empty). **#228 mutation-verified:** re-adding
+  `import …data.local.MilestoneDao` to a domain file fails `DomainPurityTest` naming the file+import;
+  reverted. Behavior-preserving: every use-case test passed with **unchanged expected values** (only
+  construction changed: fake DAO → fake repo). `git diff app/src/main/` shows pure structural moves.
+- **Doc sync:** CLAUDE.md (1167→1168 + dependency-rule/guard wording); CHANGELOG `[Unreleased]`;
+  source-files.md (3 models + 4 ports + 4 impls + 4 fakes + StepRepository/Impl + DomainPurityTest);
+  structure.md (guard + fakes list); ADR-0034. No schema/README change.
+- **Remains / next:** commit + open PR (closes #227/#228), monitor CI, merge on green. Then remaining
+  architecture backlog (#219 presentation injects DAOs / #220 cyclic coupling / #229 DAO-without-port /
+  #230/#231 GameEngine god-class), data-integrity #211, i18n #259/#260, med/low #262/#128.
+
 ## 2026-06-20 — Test-integrity wave: #252 concurrent-contention DAO test · #253 Compose-UI-test beachhead (`[Unreleased]`)
 
 - **Goal:** close the two highest-confidence, lowest-risk `severity:major` test-integrity gaps from the

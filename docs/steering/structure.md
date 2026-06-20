@@ -71,8 +71,8 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 └── service/            # Foreground step-counting service, WorkManager workers, boot receiver
 
 app/src/test/java/com/whitefang/stepsofbabylon/
-├── architecture/       # DomainPurityTest — machine-enforced domain-purity guard (#27; no Android imports in domain/)
-├── fakes/              # In-memory fake repositories (FakePlayerRepository, FakeWorkshopRepository, FakeUltimateWeaponRepository, FakeLabRepository, FakeCardRepository, FakeWalkingEncounterRepository, FakeStepRepository, FakeCosmeticRepository, FakeBillingManager, FakeRewardAdManager, FakeMilestoneDao, FakeDailyMissionDao, FakeDailyLoginDao, FakeWeeklyChallengeDao, FakeDailyStepDao, FakeCosmeticDao, FakeTimeProvider)
+├── architecture/       # DomainPurityTest — machine-enforced dependency-rule guard (#27/#228; no Android, no data-layer, no DI-framework imports in domain/)
+├── fakes/              # In-memory fake repositories (FakePlayerRepository, FakeWorkshopRepository, FakeUltimateWeaponRepository, FakeLabRepository, FakeCardRepository, FakeWalkingEncounterRepository, FakeStepRepository, FakeCosmeticRepository, FakeMissionRepository, FakeMilestoneRepository, FakeDailyLoginRepository, FakeWeeklyChallengeRepository, FakeBillingManager, FakeRewardAdManager, FakeMilestoneDao, FakeDailyMissionDao, FakeDailyLoginDao, FakeWeeklyChallengeDao, FakeDailyStepDao, FakeCosmeticDao, FakeTimeProvider)
 ├── domain/
 │   ├── model/          # Domain model invariant tests (TierConfig, Biome, Loadouts, UpgradeType, EnemyType, Milestone, DailyMissionType, BattleConditionEffects)
 │   ├── usecase/        # Use case tests (one per use case in domain/usecase/)
