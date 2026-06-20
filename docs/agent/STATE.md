@@ -32,7 +32,22 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #289, squash `1b6465a`; both CI checks green; #199 auto-closed; `[Unreleased]`).**
+- **CURRENT (DONE — branch `deps/all-gradle-hold-kotlin`, ready to commit/PR; `[Unreleased]`).**
+  **Dependabot all-gradle wave (#290): took 11 of 12 bumps, HELD Kotlin 2.4.0.** Branched from #290's head
+  (inherits its Gradle-9.6.0 wrapper regen), reverted the kotlin line to 2.3.0, rebased onto current `main`.
+  Per the `dependabot-wave-handling` rule: combine safe bumps into ONE build-verified PR, drop the
+  project-blocked one. **Taken:** Gradle wrapper 9.6.0, Compose BOM 2026.06.00, WorkManager 2.11.2, **Play
+  Billing 9.1.0** (additive; `BillingClientAdapter` seam absorbs it), play-services-ads 25.4.0, coroutines
+  1.11.0, **mockito-kotlin 6.3.0** (mockito-core → 5.23.0 transitively; JDK 17 + Kotlin 2 OK), test-runner
+  1.7.0, uiautomator 2.4.0-rc01. **Held — Kotlin 2.4.0** (blocked by TWO unreleased upstream items, researched
+  via 2 parallel agents: Hilt's bundled `kotlin-metadata-jvm` caps at metadata 2.3.0 — fix merged dagger#5179
+  but unreleased past 2.59.2; AND KSP #2964 — Kotlin 2.4's module-name change breaks code-gen, no fix released;
+  fragile workarounds rejected for a load-bearing Hilt/KSP build). `kotlin-compose` plugin tracks the `kotlin`
+  ref so it stays 2.3.0 too. **No app source change; 1126 JVM unchanged;** full `testDebugUnitTest lintDebug
+  assembleDebug` + benchmark assemble BUILD SUCCESSFUL on Gradle 9.6.0. No ADR (dependency hygiene on the
+  established catalog; rationale in the catalog comment + CHANGELOG). Next: commit + PR (supersedes #290) +
+  monitor + merge. Revisit Kotlin 2.4.0 when Dagger > 2.59.2 ships AND KSP #2964 is fixed+released.
+- **Previous objective (DONE — MERGED PR #289, squash `1b6465a`; both CI checks green; #199 auto-closed; `[Unreleased]`).**
   **compileSdk 36 → 37 migration + dependency unblock** — reversed the deliberate compileSdk-36 pin that
   recurrently blocked Dependabot. Raised `compileSdk` 37 in all 3 modules (targetSdk stays 36 — compile-only,
   not behavioral; minSdk 34); unblocked **core-ktx 1.19.0 (closes #199), lifecycle 2.11.0, sqlite-ktx 2.6.2**.

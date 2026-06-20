@@ -4,6 +4,29 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Build — Dependabot all-gradle wave (11 of 12 bumps; Kotlin 2.4.0 held)
+
+Took 11 of the 12 bumps in Dependabot's grouped `all-gradle` PR (#290) as a single build-verified PR,
+and **held the Kotlin 2.3.0 → 2.4.0 bump** (which also drives the `kotlin-compose` plugin via the shared
+`kotlin` ref). **No app source change; 1126 JVM tests unchanged.**
+
+- **Taken (all build-verified together):** Gradle wrapper 9.5.1 → 9.6.0 (checksum-pinned, #212),
+  Compose BOM 2026.05.01 → 2026.06.00, WorkManager 2.11.0 → 2.11.2, **Play Billing 8.3.0 → 9.1.0**
+  (additive only; the `BillingClientAdapter` seam absorbs it — every API used is v9-stable),
+  play-services-ads 25.3.0 → 25.4.0, kotlinx-coroutines 1.10.1 → 1.11.0, **mockito-kotlin 5.4.0 → 6.3.0**
+  (transitively advances mockito-core to 5.23.0; JDK 17 + Kotlin 2 satisfied), androidx.test runner
+  1.6.2 → 1.7.0, uiautomator 2.4.0-beta02 → 2.4.0-rc01.
+- **Held — Kotlin 2.4.0** (catalog comment records why): blocked by **two unreleased upstream items** —
+  (a) Hilt's bundled `kotlin-metadata-jvm` caps at metadata 2.3.0 (fix merged in dagger#5179 but not
+  released past 2.59.2), and (b) **KSP #2964** (Kotlin 2.4's consistent-module-names change breaks KSP
+  code-gen, no fix released). The fragile force-`kotlin-metadata-jvm` + module-name workarounds were
+  rejected for a load-bearing Hilt/KSP build. Revisit when a Dagger release > 2.59.2 ships AND KSP #2964
+  is fixed+released. (Supersedes Dependabot #290, which is closed; Dependabot will re-propose only Kotlin.)
+- Verified: `testDebugUnitTest` (1126) + `lintDebug` + `assembleDebug` + `:baselineprofile:assemble` +
+  `:macrobenchmark:assemble` BUILD SUCCESSFUL on Gradle 9.6.0; mockito-core resolves to 5.23.0. Billing
+  v9 can't be unit-tested against the final SDK — customary manual Play-internal verification still applies
+  on the next release.
+
 ### Build — compileSdk 36 → 37 migration + dependency unblock (closes #199)
 
 Raised `compileSdk` 36 → 37 across all three Android modules (`:app`, `:baselineprofile`,

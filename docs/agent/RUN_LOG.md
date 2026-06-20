@@ -1,3 +1,36 @@
+## 2026-06-20 — Dependabot all-gradle wave (#290): 11 bumps taken, Kotlin 2.4.0 held (`[Unreleased]`)
+
+- **Goal:** finish the Dependabot wave left after the compileSdk-37 migration. #290 (the reopened grouped
+  `all-gradle`, 12 updates) was failing CI on a NEW conflict (not compileSdk): kotlin-compose plugin 2.4.0
+  → Kotlin-metadata 2.4.0 vs Hilt 2.59.2 capping at 2.3.0 → `hiltJavaCompileDebug` fails.
+- **Research (2 parallel agents, live Maven/GitHub data):** (1) **Kotlin 2.4.0 is blocked by TWO unreleased
+  upstream items** — Hilt's bundled `kotlin-metadata-jvm` caps at metadata 2.3.0 (fix merged in dagger#5179
+  but NO Dagger release past 2.59.2 yet); AND **KSP #2964 still OPEN** (Kotlin 2.4's consistent-module-names
+  change puts a `:` in generated identifiers that breaks KSP code-gen, no fix released). `ksp = "2.3.9"` is
+  the CORRECT format (KSP decoupled from Kotlin version at 2.3.0; the old `<kotlin>-<rev>` scheme is dead).
+  Workarounds (force `kotlin-metadata-jvm:2.4.0` + force module-name) are fragile → rejected for a
+  load-bearing Hilt/KSP build. (2) **The other deps are safe drop-ins:** Play Billing 9.0→9.1 is additive,
+  no signature changes; the app's `BillingClientAdapter` seam (sole `com.android.billingclient` consumer
+  cluster) uses only v9-stable APIs. mockito-kotlin 5→6 is additive; transitively advances mockito-core to
+  5.23.0; JDK 17 + Kotlin 2 floors satisfied; no explicit mockito-core pin to conflict.
+- **Decision (per `dependabot-wave-handling` memory):** combine the 11 safe bumps into ONE build-verified PR,
+  HOLD Kotlin 2.4.0. Branched from #290's head (`758ee0137b`, inherits its Gradle-9.6.0 wrapper jar + gradlew
+  regen + verified 9.6.0 checksum), reverted ONLY the kotlin line to 2.3.0 (with a catalog comment recording
+  the two blockers), rebased onto current `main` (clean — #290 was already post-#289, only missing #287/#291
+  which touch different files), fixed the stale uiautomator-beta02 + wrapper-9.5.1-sha comments.
+- **Taken:** Gradle wrapper 9.5.1→9.6.0, Compose BOM 2026.05.01→2026.06.00, WorkManager 2.11.0→2.11.2,
+  Play Billing 8.3.0→9.1.0, play-services-ads 25.3.0→25.4.0, coroutines 1.10.1→1.11.0, mockito-kotlin
+  5.4.0→6.3.0, androidx.test runner 1.6.2→1.7.0, uiautomator 2.4.0-beta02→2.4.0-rc01. **Held:** kotlin 2.3.0
+  (drives kotlin-compose plugin too).
+- **Verify:** `:app:testDebugUnitTest :app:lintDebug :app:assembleDebug :baselineprofile:assemble
+  :macrobenchmark:assemble` BUILD SUCCESSFUL on Gradle 9.6.0 (19m39s — fresh 9.6.0 download + clean compile);
+  **1126 JVM unchanged**; mockito-core resolves to 5.23.0 as predicted. No app source/schema change. No ADR
+  (dependency hygiene; rationale in the catalog comment + CHANGELOG).
+- **Doc-sync:** tech.md (Gradle 9.6.0 + 6 version cells), CLAUDE.md (Gradle 9.6.0), CHANGELOG `[Unreleased]`,
+  catalog kotlin-held + uiautomator comments. STATE + this entry.
+- **Remaining:** commit + PR (supersedes #290 — close it as superseded) + monitor + merge. Revisit Kotlin
+  2.4.0 when a Dagger release > 2.59.2 ships AND KSP #2964 is fixed+released.
+
 ## 2026-06-19 — compileSdk 36 → 37 migration + dependency unblock (`[Unreleased]`, ADR-0031)
 
 - **Goal:** developer hit the recurring compileSdk-36 wall again (Dependabot's grouped `all-gradle` PR #288

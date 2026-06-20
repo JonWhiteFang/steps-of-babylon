@@ -1,13 +1,18 @@
 [versions]
 agp = "9.2.1"
+# Held at 2.3.0: Kotlin 2.4.0 is blocked by two unreleased upstream items — Hilt's bundled
+# kotlin-metadata-jvm caps at metadata 2.3.0 (fix merged in dagger#5179 but unreleased past 2.59.2)
+# AND KSP #2964 (Kotlin 2.4's module-name change breaks code-gen, no fix released). Note: the
+# `kotlin-compose` plugin (org.jetbrains.kotlin.plugin.compose) tracks this ref, so it stays 2.3.0 too.
+# Revisit when a Dagger release > 2.59.2 ships AND KSP #2964 is fixed+released. (Dependabot #290 wave.)
 kotlin = "2.3.0"
 ksp = "2.3.9"
 hilt = "2.59.2"
 room = "2.8.4"
-composeBom = "2026.05.01"
+composeBom = "2026.06.00"
 lifecycle = "2.11.0"
 navigationCompose = "2.9.8"
-workmanager = "2.11.0"
+workmanager = "2.11.2"
 hiltWork = "1.3.0"
 activityCompose = "1.13.0"
 coreKtx = "1.19.0"
@@ -22,22 +27,22 @@ sqliteKtx = "2.6.2"
 # 37, so that half of the gate is cleared; HC 1.2.x stays out until it reaches beta/stable — alpha
 # AndroidX carries no API-stability guarantee and HC is load-bearing.
 healthConnect = "1.1.0"
-billingPlay = "8.3.0"
-playServicesAds = "25.3.0"
+billingPlay = "9.1.0"
+playServicesAds = "25.4.0"
 userMessagingPlatform = "4.0.0"
 junit5 = "6.1.0"
 # #257: pins the coroutines RUNTIME (was floating transitively at 1.9.0 via Room-ktx/Lifecycle/Hilt
 # while tests ran 1.10.1 — a real runtime/test skew). One version ref aligns -android (runtime) and
 # -test so a bump moves both together. Keeps the version-catalog-as-single-source convention.
-coroutines = "1.10.1"
-mockitoKotlin = "5.4.0"
+coroutines = "1.11.0"
+mockitoKotlin = "6.3.0"
 robolectric = "4.16.1"
 # Transitive-dependency security floor (not a direct dep — applied via a constraint in
 # app/build.gradle.kts). guava ships transitively (kotlinx-coroutines-guava + Play Services)
 # at 31.1-android; force >=32 to clear CVE-2023-2976 / CVE-2020-8908.
 guava = "33.6.0-android"
 # Instrumented (androidTest) — V1X-08 Phase 1A
-androidxTestRunner = "1.6.2"
+androidxTestRunner = "1.7.0"
 androidxTestExtJunit = "1.3.0"
 # #26 Gate G — perf measurement infra. The STABLE baselineprofile/benchmark 1.4.1 line predates AGP
 # 9.0 GA and its plugin THROWS at apply time on AGP 9.0.1 ("Module :app is not a supported android
@@ -46,11 +51,11 @@ androidxTestExtJunit = "1.3.0"
 # by the two NON-SHIPPING `com.android.test` modules (:baselineprofile, :macrobenchmark) — it never
 # enters the AAB. The only artifact that ships, `profileinstaller`, stays STABLE 1.4.1. (Contrast #33,
 # which moved load-bearing SHIPPED Health Connect code off alpha — that rationale doesn't apply to dev
-# tooling.) uiautomator 2.4.0-beta02 matches the 1.5.x benchmark/macro line (which pulls UiAutomator 2.4
+# tooling.) uiautomator 2.4.0-rc01 matches the 1.5.x benchmark/macro line (which pulls UiAutomator 2.4
 # transitively). Revisit when 1.5.x reaches stable.
 benchmark = "1.5.0-alpha06"
 profileinstaller = "1.4.1"
-uiautomator = "2.4.0-beta02"
+uiautomator = "2.4.0-rc01"
 
 [libraries]
 # Compose

@@ -5,7 +5,7 @@
 - **Language:** Kotlin (JVM target 17)
 - **Min SDK:** 34 (Android 14) / Compile SDK 37 / Target SDK 36
 - **Architecture:** MVVM + Clean Architecture
-- **Build:** Gradle 9.5.1 with Kotlin DSL, version catalog at `gradle/libs.versions.toml`
+- **Build:** Gradle 9.6.0 with Kotlin DSL, version catalog at `gradle/libs.versions.toml`
 - **Database encryption:** SQLCipher via Android Keystore-managed passphrase
 
 ## Key Libraries & Versions
@@ -17,17 +17,17 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | Kotlin | 2.3.0 | Language |
 | AGP | 9.2.1 | Android Gradle Plugin |
 | KSP | 2.3.9 | Annotation processing (replaces kapt) |
-| Compose BOM | 2026.05.01 | Jetpack Compose UI |
+| Compose BOM | 2026.06.00 | Jetpack Compose UI |
 | Hilt | 2.59.2 | Dependency injection |
 | Room | 2.8.4 | Local SQLite database |
-| Google Play Billing | 8.3.0 | IAP via `billing-ktx`. `BillingManagerImpl` is the sole `BillingManager` binding for debug + release as of C.5 PR 3 (`StubBillingManager` deleted; `BuildConfig.USE_REAL_BILLING` removed). |
-| Google Mobile Ads SDK | 25.3.0 | Reward ads via `play-services-ads`. `RewardAdManagerImpl` is the sole `RewardAdManager` binding for debug + release as of C.6 PR 3 (`StubRewardAdManager` deleted). `BuildConfig.USE_REAL_ADS` is retained only to gate the `MainActivity` UMP consent prefetch on debug emulators. |
+| Google Play Billing | 9.1.0 | IAP via `billing-ktx`. `BillingManagerImpl` is the sole `BillingManager` binding for debug + release as of C.5 PR 3 (`StubBillingManager` deleted; `BuildConfig.USE_REAL_BILLING` removed). |
+| Google Mobile Ads SDK | 25.4.0 | Reward ads via `play-services-ads`. `RewardAdManagerImpl` is the sole `RewardAdManager` binding for debug + release as of C.6 PR 3 (`StubRewardAdManager` deleted). `BuildConfig.USE_REAL_ADS` is retained only to gate the `MainActivity` UMP consent prefetch on debug emulators. |
 | User Messaging Platform | 4.0.0 | GDPR/DSA consent via `user-messaging-platform`; paired with AdMob (C.6 PR 1) |
 | Navigation Compose | 2.9.8 | Compose navigation |
 | Lifecycle | 2.11.0 | ViewModel, StateFlow integration |
-| WorkManager | 2.11.0 | Background step sync |
+| WorkManager | 2.11.2 | Background step sync |
 | JUnit (Jupiter) | 6.1.0 | Unit testing framework — junit-jupiter 6.x (catalog key still `junit5`) |
-| kotlinx-coroutines (-android / -test) | 1.10.1 | Async runtime + test utilities. #257: runtime (`-android`) is now pinned explicitly (shared `coroutines` ref) — was floating transitively at 1.9.0 while tests ran 1.10.1 |
+| kotlinx-coroutines (-android / -test) | 1.11.0 | Async runtime + test utilities. #257: runtime (`-android`) is now pinned explicitly (shared `coroutines` ref) — was floating transitively at 1.9.0 while tests ran 1.10.1 |
 | SQLCipher | 4.16.0 | Database encryption |
 | Health Connect | 1.1.0 (stable) | Step cross-validation, Activity Minute Parity (off alpha per audit #33; compileSdk now 37 so that gate is cleared, but HC 1.2.x is still alpha-only — held until beta/stable) |
 | SQLite KTX | 2.6.2 | SQLite support library |
@@ -38,7 +38,7 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | Mockito Kotlin | 5.4.0 | Kotlin-friendly mocking for tests |
 | Robolectric | 4.16.1 | Android framework simulation for JVM tests (tests pin `@Config(sdk=[34])`, so the 4.16 "JDK 21 for SDK 36" requirement is not triggered) |
 | AndroidX Test Core | 1.7.0 | Test utilities for Android components |
-| WorkManager Testing | 2.11.0 | `WorkManagerTestInitHelper` for tests that exercise `WorkManager.cancelAllWork` (added by V1X-01 `DataDeletionManagerTest`). Same version as the main WorkManager dep. |
+| WorkManager Testing | 2.11.2 | `WorkManagerTestInitHelper` for tests that exercise `WorkManager.cancelAllWork` (added by V1X-01 `DataDeletionManagerTest`). Same version as the main WorkManager dep. |
 | AndroidX Test Runner | 1.6.2 | `AndroidJUnitRunner` for instrumented tests; subclassed by `HiltTestRunner` (V1X-08 Phase 1A). |
 | AndroidX Test Ext JUnit | 1.3.0 | `AndroidJUnit4` runner for instrumented `@RunWith` annotation (V1X-08 Phase 1A). |
 | Hilt Android Testing | 2.59.2 | `HiltTestApplication`, `@HiltAndroidTest`, `HiltAndroidRule` for instrumented Hilt DI (V1X-08 Phase 1A). Pinned to the same `hilt` version as the rest of the graph. |
