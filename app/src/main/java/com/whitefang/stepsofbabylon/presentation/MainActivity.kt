@@ -58,6 +58,7 @@ import com.whitefang.stepsofbabylon.presentation.settings.SettingsScreen
 import com.whitefang.stepsofbabylon.presentation.stats.StatsScreen
 import com.whitefang.stepsofbabylon.presentation.store.StoreScreen
 import com.whitefang.stepsofbabylon.presentation.supplies.UnclaimedSuppliesScreen
+import com.whitefang.stepsofbabylon.presentation.ui.PRIVACY_POLICY_URL
 import com.whitefang.stepsofbabylon.presentation.ui.SobTopAppBar
 import com.whitefang.stepsofbabylon.presentation.ui.theme.StepsOfBabylonTheme
 import com.whitefang.stepsofbabylon.presentation.weapons.UltimateWeaponScreen
@@ -387,6 +388,7 @@ class MainActivity : ComponentActivity() {
                             SettingsScreen(
                                 onReplayTutorial = { navController.navigate(Screen.Onboarding.route) },
                                 onOptimizeBattery = { requestBatteryExemption(context) },
+                                onOpenPrivacyPolicy = { openPrivacyPolicy(context) },
                             )
                         }
                         composable(Screen.Store.route) {
@@ -475,6 +477,19 @@ private fun requestBatteryExemption(context: android.content.Context) {
         direct.resolveActivity(context.packageManager) != null -> context.startActivity(direct)
         settingsList.resolveActivity(context.packageManager) != null -> context.startActivity(settingsList)
         else -> { /* no battery-optimization UI on this device — nothing to do */ }
+    }
+}
+
+/**
+ * #240: open the hosted privacy policy in an external browser. Mirrors the guarded-intent idiom of
+ * [requestBatteryExemption]: resolve before launching so a device with no browser is a safe no-op
+ * rather than an `ActivityNotFoundException`. The URL is the single-source-of-truth [PRIVACY_POLICY_URL]
+ * (same URL declared in the Play Console Data-Safety form and served from `site/index.md`).
+ */
+private fun openPrivacyPolicy(context: android.content.Context) {
+    val view = Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL))
+    if (view.resolveActivity(context.packageManager) != null) {
+        context.startActivity(view)
     }
 }
 

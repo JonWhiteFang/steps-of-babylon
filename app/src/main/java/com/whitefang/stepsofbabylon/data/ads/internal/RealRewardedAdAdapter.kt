@@ -9,6 +9,7 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.OnUserEarnedRewardListener
+import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -135,6 +136,11 @@ internal class RealRewardedAdAdapter @Inject constructor(
     private suspend fun ensureSdkInitialized() {
         if (!initialized.compareAndSet(false, true)) return
         withContext(Dispatchers.Main) {
+            // #241: cap ad content rating before the first ad request. Global, idempotent, static
+            // config — set before MobileAds.initialize so it's in effect for every AdRequest. 13+/
+            // adult stance retained (no child-directed / under-age tag); only the rating is bounded.
+            // ADR-0006 Q5 (refined) / ADR-0032.
+            MobileAds.setRequestConfiguration(buildAdRequestConfiguration())
             // MobileAds.initialize is a one-shot; the completion-listener variant lets us
             // block until Play Services returns the adapter-status map. We ignore the map
             // (no mediation in v1.0 per ADR-0006 non-goals).
@@ -148,3 +154,16 @@ internal class RealRewardedAdAdapter @Inject constructor(
         private const val TAG = "RealRewardedAdAdapter"
     }
 }
+
+/**
+ * #241: the AdMob [RequestConfiguration] applied before the first ad request. Caps ad content at
+ * `PG` for the 13+ casual-game audience and deliberately leaves child-directed / under-age tags
+ * `UNSPECIFIED` (the adult stance of ADR-0006 Q5, refined — no age gate, no personalised-ad
+ * suppression). Extracted as a pure top-level fn so the configured value is JVM-unit-testable
+ * (`AdRequestConfigurationTest`) without initialising the SDK; the `MobileAds.setRequestConfiguration`
+ * call itself stays device/build-verified.
+ */
+internal fun buildAdRequestConfiguration(): RequestConfiguration =
+    RequestConfiguration.Builder()
+        .setMaxAdContentRating(RequestConfiguration.MAX_AD_CONTENT_RATING_PG)
+        .build()

@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun SettingsScreen(
     onReplayTutorial: () -> Unit = {},
     onOptimizeBattery: () -> Unit = {},
+    onOpenPrivacyPolicy: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -87,6 +88,22 @@ fun SettingsScreen(
         }
         Spacer(Modifier.height(24.dp))
         Text("Data", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        // #240: in-app entry point to the hosted privacy policy. Play's User Data policy expects an
+        // easily accessible in-app link, not only the store listing; previously the only in-app path
+        // was buried in the Health Connect permission rationale.
+        OutlinedCard(onClick = onOpenPrivacyPolicy, modifier = Modifier.fillMaxWidth()) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column {
+                    Text("Privacy Policy", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Text(
+                        "How your data is handled",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
         Spacer(Modifier.height(8.dp))
         OutlinedCard(
             onClick = { deleteStep = 1 },

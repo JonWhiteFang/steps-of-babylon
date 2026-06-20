@@ -78,8 +78,9 @@ the top-level `site/` folder ONLY, so the internal `docs/` tree is never publish
       collection marked Optional.
 - [ ] App's own on-device data (Steps, Health Connect, progress, purchases) NOT declared as collected.
 - [ ] "Contains ads" set to Yes.
-- [ ] Privacy-policy URL points to the hosted page and the page shows the **June 18, 2026** effective date
-      with the AdMob/advertising-ID disclosure (GitHub Pages may cache — confirm the live page updated).
+- [ ] Privacy-policy URL points to the hosted page and the page shows the **June 20, 2026** effective date
+      with the AdMob/advertising-ID disclosure — incl. the four declared categories (Device/other IDs,
+      Approximate location, App interactions, Diagnostics) (GitHub Pages may cache — confirm the live page updated).
 - [ ] Data-deletion question answered Yes with the deletion URL.
 - [ ] Re-read the live hosted policy + the in-app Health Connect rationale on a device against this form —
       no "future versions" / "never shared" wording remains.

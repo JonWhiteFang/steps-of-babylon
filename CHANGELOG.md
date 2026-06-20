@@ -4,6 +4,32 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — Privacy / monetization wave: in-app policy link (#240) · policy/form consistency (#239) · AdMob content-rating cap (#241)
+
+Three confirmed before-public privacy/ads-policy findings from the 2026-06-18 complete-app review, one
+combined PR. **Presentation + a single SDK-config call + policy text; no schema / economy / engine
+change. 1126 → 1130 JVM** (+4); `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec +
+plan both through the **Adversarial Review Gate** (single-agent, ultracode off — developer chose the
+lighter review; spec 6 surviving findings F1–F6 [0 critical/major]; plan 1 MAJOR — the #241 test passes
+only because `unitTests.isReturnDefaultValues=true` absorbs an internal `android.util.Log.w` inside
+`setMaxAdContentRating`, now documented — all applied pre-implementation). **ADR-0032; ADR-0006 Q5
+amended.**
+
+- **#240** — in-app Privacy Policy link. New single-source-of-truth `presentation/ui/PrivacyPolicy.kt`
+  `PRIVACY_POLICY_URL` (the URL the Data-Safety form + hosted page use) pinned by `PrivacyPolicyUrlTest`;
+  a "Privacy Policy" row in `SettingsScreen`'s Data section (above Delete) → new `onOpenPrivacyPolicy` →
+  `MainActivity.openPrivacyPolicy`, a guarded `ACTION_VIEW` intent (resolve-before-launch; no-browser
+  device = safe no-op). Onboarding link declined (onboarding is one-shot; Settings is the durable entry).
+- **#241** — AdMob content-rating cap (developer decision: **13+ adult, cap rating only** — no age gate,
+  no child-directed flag; refines ADR-0006 Q5). Pure `buildAdRequestConfiguration()` →
+  `maxAdContentRating = PG`; `MobileAds.setRequestConfiguration(...)` set before the first ad request in
+  `RealRewardedAdAdapter.ensureSdkInitialized`. `AdRequestConfigurationTest` (3) pins PG + both
+  child/under-age tags `UNSPECIFIED` (mutation-verified the PG assertion discriminates).
+- **#239** — hosted policy reconciled with the Data-Safety form: `site/index.md` now enumerates all four
+  AdMob SDK categories (Device/other IDs, **Approximate location** derived from IP, App interactions,
+  Diagnostics) + a PG-cap note; effective date June 18 → **June 20, 2026**; `data-safety-form.md:81`
+  acceptance-checklist date synced. Doc-only — a human must still confirm the live Pages page refreshed.
+
 ### Build — Dependabot all-gradle wave (11 of 12 bumps; Kotlin 2.4.0 held)
 
 Took 11 of the 12 bumps in Dependabot's grouped `all-gradle` PR (#290) as a single build-verified PR,
