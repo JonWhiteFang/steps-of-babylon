@@ -1,3 +1,47 @@
+## 2026-06-20 — Performance wave: #242 background-music caching · #243 projectile-trail throttle (`[Unreleased]`)
+
+- **Goal:** fix two confirmed `severity:major` performance findings from the 2026-06-18 complete-app
+  review as one combined PR. Branch `perf/music-particle-242-243` off `main`.
+- **Process:** spec-first → both spec and plan through the **Adversarial Review Gate** (ultracode OFF →
+  flagged; developer chose the lighter single-agent review, as for the privacy wave). One up-front
+  developer-deferred decision resolved in-spec: #243's `TRAIL_INTERVAL = 0.03s` (a deliberate, tunable
+  ~1× density trade, flagged for device feel sign-off) — an engineering call I made + documented rather
+  than bounce a tuning constant.
+- **Spec review** (1 agent, code-grounded + self-refuted): 8 findings, 0 critical, **3 major** — the
+  #242 concurrency model (split desiredTrack/activeTrack, serialize all state+control on main, define
+  release-vs-in-flight), and the #243 1× density (the proposed interval cut density ~3×, contradicting
+  "indistinguishable at 1×" → reframed as an accepted trade). All applied.
+- **Plan review** (1 agent): 8 findings incl. **F-C — a real bug caught pre-code**: a build-once guard
+  keyed only on `desiredTrack` double-decodes on an A→B→A-faster-than-a-decode interleave; fixed to a
+  per-track built-OR-in-flight pending flag. Also F-A/F-B (the 3 EXISTING MusicManager tests break under
+  the new default async executor → migrate all to a synchronous executor + looper-idle), F-D (executor
+  runnable does nothing but decode + unconditionally post; drop the misleading `@Volatile`), F-E
+  (deferred start must route through `startIfNotMuted`, not bare `start`), F-F (executor lifecycle:
+  own + shut down only the default, leave injected alone), F-H (add ADR-0033). All applied.
+- **What changed:**
+  - **#243** — pure `advanceTrail(timer, dt)` + `TRAIL_INTERVAL = 0.03f` in `ProjectileTrailEffect.kt`;
+    `var trailTimer` on `ProjectileEntity` (loop-thread-only); `GameEngine` trail loop (`:476-486`,
+    under `entitiesLock`, `!reducedMotion`) now advances the timer and emits only on crossing the
+    interval. Caps ~10 simultaneous trail particles/projectile at any speed (was unbounded at 4×).
+    No `ParticlePool`/`EffectEngine`/lock change; not merged with the A28 partition.
+  - **#242 (ADR-0033)** — `MusicManager` rewritten: injectable `decodeExecutor` (owned single-thread
+    default; tests inject synchronous/deferred), `mainHandler` post-back, `desiredTrack`/`activeTrack`
+    split, per-track `pending` flags, `released` flag, `onDecoded` resolving on main
+    (release→free, null→silent re-attemptable, superseded→cache-paused, current→`startIfNotMuted`).
+    `seekTo(0)` preserves restart-at-top. `MainActivity` unchanged (defaulted new ctor param).
+  - **ADR-0033** records the audio threading model + #243 sibling.
+- **Verification:** `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL.
+  **1130 → 1139 JVM** (+9: ProjectileTrailThrottleTest 4, MusicManagerNullPlayerTest 5→8). New suites
+  ran (4/8, 0 failures). `GameEngineConcurrencyTest` (3) + `EffectEngineConcurrencyTest` (1) still
+  green — fragile zone intact. **Mutation-checked both:** always-emit `advanceTrail` → 2 throttle-test
+  failures; removing the `isPending` guard → 1 music-test failure (the F-C race guard). Restored clean.
+- **Doc sync:** CLAUDE.md test count 1130→1139; CHANGELOG `[Unreleased]` new section; source-files.md
+  (MusicManager, ProjectileTrailEffect, ProjectileEntity, GameEngine trail loop, +2 test entries);
+  ADR-0033 added. No schema/tech/structure/README change.
+- **Remains / next:** commit + open PR (closes #242/#243), monitor CI, merge on green. On-device feel
+  sign-off (no battle-nav hitch; 1× trail density) is a developer/device step. Then more audit backlog:
+  accessibility #213/#214/#226, architecture #219–#231; med/low #262/#128.
+
 ## 2026-06-20 — Privacy / monetization wave: #240 in-app policy link · #239 policy/form consistency · #241 AdMob content-rating cap (`[Unreleased]`)
 
 - **Goal:** fix three confirmed before-public privacy/ads-policy findings from the 2026-06-18 complete-app

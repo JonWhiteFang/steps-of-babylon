@@ -28,6 +28,7 @@ import com.whitefang.stepsofbabylon.presentation.battle.effects.DeathEffect
 import com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine
 import com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText
 import com.whitefang.stepsofbabylon.presentation.battle.effects.ProjectileTrailEffect
+import com.whitefang.stepsofbabylon.presentation.battle.effects.advanceTrail
 import com.whitefang.stepsofbabylon.presentation.battle.effects.UWVisualEffect
 import com.whitefang.stepsofbabylon.presentation.battle.effects.WaveAnnouncement
 import com.whitefang.stepsofbabylon.presentation.battle.effects.WaveCooldownText
@@ -479,7 +480,14 @@ class GameEngine {
                 if (fx != null) {
                     for (e in entities) {
                         if (e is ProjectileEntity && e.isAlive) {
-                            ProjectileTrailEffect.spawn(fx.pool, e.x, e.y, biomeTheme.particleColor)
+                            // #243: time-throttle so the per-frame spawn count is bounded by elapsed
+                            // sim-time, not by projectile count × catch-up tick count (which thrashed
+                            // the 200-slot pool at 4×). Loop-thread-only mutation, under entitiesLock.
+                            val (emit, newTimer) = advanceTrail(e.trailTimer, deltaTime)
+                            e.trailTimer = newTimer
+                            if (emit) {
+                                ProjectileTrailEffect.spawn(fx.pool, e.x, e.y, biomeTheme.particleColor)
+                            }
                         }
                     }
                 }
