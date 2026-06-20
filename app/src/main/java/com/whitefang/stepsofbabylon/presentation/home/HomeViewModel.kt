@@ -3,8 +3,6 @@ package com.whitefang.stepsofbabylon.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.data.MilestoneNotificationPreferences
-import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
-import com.whitefang.stepsofbabylon.data.local.MilestoneDao
 import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.repository.DailyLoginRepository
@@ -46,10 +44,6 @@ class HomeViewModel @Inject constructor(
     private val missionRepository: MissionRepository,
     private val milestoneRepository: MilestoneRepository,
     private val dailyLoginRepository: DailyLoginRepository,
-    // #227: kept for the direct presentation reads (countClaimable / milestone getAll Flow) — those
-    // are presentation→data (permitted; #219), distinct from the use-case violation this wave fixes.
-    private val dailyMissionDao: DailyMissionDao,
-    private val milestoneDao: MilestoneDao,
     private val milestoneNotificationManager: com.whitefang.stepsofbabylon.service.MilestoneNotificationManager,
     private val milestoneNotificationPrefs: MilestoneNotificationPreferences,
 ) : ViewModel() {
@@ -69,8 +63,7 @@ class HomeViewModel @Inject constructor(
      *
      * Mirrors the [LabsViewModel] pattern landed in R3-03: capture `completed.size` from
      * [CheckResearchCompletion] and pass it to [UpdateCompleteResearchMissionProgress],
-     * which gates the DAO write on `completedCount >= 1`. `dailyMissionDao` is already
-     * injected for the existing `countClaimable` flow consumer, so no Hilt graph change.
+     * which gates the write on `completedCount >= 1` (#219: now through [MissionRepository]).
      */
     private val updateMissionProgress = UpdateCompleteResearchMissionProgress(missionRepository)
 
@@ -105,10 +98,9 @@ class HomeViewModel @Inject constructor(
                 playerRepository.observeProfile(),
                 stepRepository.observeTodayRecord(date),
                 walkingEncounterRepository.countUnclaimed(),
-                dailyMissionDao.countClaimable(date),
-                milestoneDao.getAll(),
-            ) { profile, stepSummary, unclaimedCount, claimableMissions, milestoneEntities ->
-                val claimedIds = milestoneEntities.filter { it.claimed }.map { it.milestoneId }.toSet()
+                missionRepository.observeClaimableCount(date),
+                milestoneRepository.observeClaimedMilestoneIds(),
+            ) { profile, stepSummary, unclaimedCount, claimableMissions, claimedIds ->
                 val achievableMilestones = Milestone.entries.count { it.requiredSteps <= profile.totalStepsEarned && it.name !in claimedIds }
                 HomeUiState(
                     todaySteps = stepSummary?.creditedSteps ?: 0,

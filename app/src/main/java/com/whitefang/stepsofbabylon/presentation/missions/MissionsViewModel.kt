@@ -3,17 +3,13 @@ package com.whitefang.stepsofbabylon.presentation.missions
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
-import com.whitefang.stepsofbabylon.data.local.DailyStepDao
-import com.whitefang.stepsofbabylon.data.local.MilestoneDao
-import com.whitefang.stepsofbabylon.data.local.PlayerProfileDao
-import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.model.MissionCategory
 import com.whitefang.stepsofbabylon.domain.repository.CosmeticRepository
 import com.whitefang.stepsofbabylon.domain.repository.MilestoneRepository
 import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
+import com.whitefang.stepsofbabylon.domain.repository.StepRepository
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestone
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestoneResult
 import com.whitefang.stepsofbabylon.domain.usecase.ClaimMission
@@ -44,11 +40,9 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MissionsViewModel @Inject constructor(
-    private val dailyMissionDao: DailyMissionDao,
-    private val milestoneDao: MilestoneDao,
     private val missionRepository: MissionRepository,
     private val milestoneRepository: MilestoneRepository,
-    private val dailyStepDao: DailyStepDao,
+    private val stepRepository: StepRepository,
     private val playerRepository: PlayerRepository,
     private val cosmeticRepository: CosmeticRepository,
     private val timeProvider: TimeProvider = SystemTimeProvider(),
@@ -94,21 +88,18 @@ class MissionsViewModel @Inject constructor(
     val uiState: StateFlow<MissionsUiState> = combine(_today, _retry) { today, _ -> today }
         .flatMapLatest { today ->
         combine(
-            dailyMissionDao.getByDate(today),
-            milestoneDao.getAll(),
+            missionRepository.observeMissionsForDate(today),
+            milestoneRepository.observeClaimedMilestoneIds(),
             playerRepository.observeProfile(),
             tick,
             userMessage,
-        ) { missions, claimedMilestones, profile, _, message ->
-            val claimedIds = claimedMilestones.filter { it.claimed }.map { it.milestoneId }.toSet()
+        ) { missions, claimedIds, profile, _, message ->
             val midnight = Duration.between(LocalTime.now(), LocalTime.MIDNIGHT.minusNanos(1)).toMillis()
                 .let { if (it < 0) it + 86_400_000 else it }
 
             MissionsUiState(
                 missions = missions.map { m ->
-                    MissionDisplayInfo(m.id, m.missionType.let { type ->
-                        DailyMissionType.entries.find { it.name == type }?.description ?: type
-                    }, m.target, m.progress, m.rewardGems, m.rewardPowerStones, m.completed, m.claimed)
+                    MissionDisplayInfo(m.id, m.type.description, m.target, m.progress, m.rewardGems, m.rewardPowerStones, m.completed, m.claimed)
                 },
                 milestones = Milestone.entries.map { ms ->
                     MilestoneDisplayInfo(ms, profile.totalStepsEarned >= ms.requiredSteps, ms.name in claimedIds, profile.totalStepsEarned)
@@ -190,14 +181,13 @@ class MissionsViewModel @Inject constructor(
 
     private suspend fun updateWalkingMissionProgress() {
         val today = _today.value
-        val missions = dailyMissionDao.getByDateOnce(today)
-        val todaySteps = dailyStepDao.sumCreditedSteps(today, today)
+        val missions = missionRepository.getMissionsForDate(today)
+        val todaySteps = stepRepository.sumCreditedSteps(today, today)
         for (m in missions) {
             if (m.claimed || m.completed) continue
-            val type = DailyMissionType.entries.find { it.name == m.missionType } ?: continue
-            if (type.category != MissionCategory.WALKING) continue
+            if (m.type.category != MissionCategory.WALKING) continue
             val progress = todaySteps.toInt().coerceAtMost(m.target)
-            dailyMissionDao.updateProgress(m.id, progress, progress >= m.target)
+            missionRepository.updateProgress(m.id, progress, progress >= m.target)
         }
     }
 }

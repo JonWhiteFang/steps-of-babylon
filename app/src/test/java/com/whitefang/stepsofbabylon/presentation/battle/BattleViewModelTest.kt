@@ -38,7 +38,7 @@ class BattleViewModelTest {
     private lateinit var applicationScope: CoroutineScope
     private lateinit var cosmeticRepo: FakeCosmeticRepository
     private val biomePreferences = mock<BiomePreferences>()
-    private val dailyMissionDao = mock<com.whitefang.stepsofbabylon.data.local.DailyMissionDao>()
+    private val missionRepo = com.whitefang.stepsofbabylon.fakes.FakeMissionRepository()
     private val appDatabase = mock<com.whitefang.stepsofbabylon.data.local.AppDatabase>()
     private val milestoneNotificationManager = mock<MilestoneNotificationManager>()
 
@@ -58,7 +58,6 @@ class BattleViewModelTest {
         // existing FakePlayerRepository.profile flow.
         stepRepo = FakeStepRepository(linkedPlayer = playerRepo)
         whenever(biomePreferences.hasSeenBiome(any())).thenReturn(true)
-        whenever(dailyMissionDao.getByDateOnce(any())).thenReturn(emptyList())
         // Application-scoped CoroutineScope for B.3 PR 2 onCleared tests. Bound to the test
         // dispatcher so `advanceUntilIdle()` drains launches made on it. SupervisorJob so a
         // child failure doesn't kill the scope for later tests (mirrors prod semantics).
@@ -70,7 +69,7 @@ class BattleViewModelTest {
 
     private fun createVm(timeProvider: com.whitefang.stepsofbabylon.domain.time.TimeProvider = com.whitefang.stepsofbabylon.data.time.SystemTimeProvider()) = BattleViewModel(
         workshopRepo, playerRepo, biomePreferences, uwRepo, cardRepo, cosmeticRepo, labRepo,
-        stepRepo, dailyMissionDao, appDatabase, applicationScope, milestoneNotificationManager, adManager,
+        stepRepo, missionRepo, appDatabase, applicationScope, milestoneNotificationManager, adManager,
         timeProvider,
     ).apply {
         // B.2 PR 5: override the transaction seam with a direct pass-through so tests exercise
@@ -552,7 +551,7 @@ class BattleViewModelTest {
         }
         val vm = BattleViewModel(
             workshopRepo, throwingPlayer, biomePreferences, uwRepo, cardRepo, cosmeticRepo, labRepo,
-            stepRepo, dailyMissionDao, appDatabase, applicationScope, milestoneNotificationManager, adManager,
+            stepRepo, missionRepo, appDatabase, applicationScope, milestoneNotificationManager, adManager,
         ).apply { runInTransaction = { block -> block() } }
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
@@ -590,7 +589,7 @@ class BattleViewModelTest {
         }
         val vm = BattleViewModel(
             workshopRepo, brokenPlayer, biomePreferences, uwRepo, cardRepo, cosmeticRepo, labRepo,
-            stepRepo, dailyMissionDao, appDatabase, applicationScope, milestoneNotificationManager, adManager,
+            stepRepo, missionRepo, appDatabase, applicationScope, milestoneNotificationManager, adManager,
         ).apply { runInTransaction = { block -> block() } }
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()

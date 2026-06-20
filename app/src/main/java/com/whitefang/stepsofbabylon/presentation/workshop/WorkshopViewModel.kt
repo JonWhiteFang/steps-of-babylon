@@ -2,7 +2,7 @@ package com.whitefang.stepsofbabylon.presentation.workshop
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.whitefang.stepsofbabylon.data.local.DailyMissionDao
+import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
@@ -35,7 +35,7 @@ import javax.inject.Inject
 class WorkshopViewModel @Inject constructor(
     private val workshopRepository: WorkshopRepository,
     private val playerRepository: PlayerRepository,
-    private val dailyMissionDao: DailyMissionDao,
+    private val missionRepository: MissionRepository,
 ) : ViewModel() {
 
     private val calculateCost = CalculateUpgradeCost()
@@ -125,11 +125,11 @@ class WorkshopViewModel @Inject constructor(
                 if (success) {
                     try {
                         val today = LocalDate.now().toString()
-                        val missions = dailyMissionDao.getByDateOnce(today)
-                        val m = missions.find { it.missionType == DailyMissionType.SPEND_5000_WORKSHOP.name && !it.claimed && !it.completed }
+                        val missions = missionRepository.getMissionsForDate(today)
+                        val m = missions.find { it.type == DailyMissionType.SPEND_5000_WORKSHOP && !it.claimed && !it.completed }
                         if (m != null) {
                             val newProgress = m.progress + cost.toInt()
-                            dailyMissionDao.updateProgress(m.id, newProgress, newProgress >= m.target)
+                            missionRepository.updateProgress(m.id, newProgress, newProgress >= m.target)
                         }
                     } catch (_: Exception) { }
                 } else {

@@ -1,3 +1,44 @@
+## 2026-06-20 — Presentation→data cleanup: #219 ViewModel DAO/entity-leak fix · #229 persistence-abstraction consistency (`[Unreleased]`)
+
+- **Goal:** finish the dependency-rule work at the presentation boundary (builds on #227/#228). Branch
+  `arch/presentation-data-219-229`. Developer decisions: route the reads through ports + keep the
+  `BattleViewModel` `withTransaction` seam as a documented exception.
+- **Process:** spec → spec review → plan → plan review → implement, all through the **Adversarial Review
+  Gate** (single-agent, ultracode off). A thorough Explore pass mapped every presentation→DAO call site +
+  the exact port methods to add before the spec.
+- **Spec review** (1 agent): 9 findings — 1 major, 3 minor, 5 refuted-favorable. **F1 (major):**
+  `MissionsViewModel` reads the raw `missionType` String, which `DailyMission` doesn't expose — the
+  display/progress mapping must be rewritten to `m.type`, not just port-swapped (the real #219 fix).
+  F2 (unknown-type rows now drop), F3 (stale `PlayerProfileDao` import), F4 (FakeWeeklyChallenge has no
+  backing DAO). Refuted-favorable: reactivity preserved, BillingReceiptDao data-internal, exception scope
+  + greps accurate.
+- **Plan review** (1 agent): 8 findings — 3 major, all **under-counted test-rewiring** (the ctor-arity
+  edits to BattleViewModelTest's 3 sites, MissionsViewModelTest, HomeViewModelTest weren't spelled out;
+  also caught UserFeedbackTest builds WorkshopViewModel). F-5 (fake field is `data` not `values`), F-8
+  (mutation target). Verdict: no VM rewrite wrong; reactive `List<Entity>→Set<String>` collapse safe in
+  both combine blocks. All applied.
+- **What changed (production, behavior-preserving):** 4 new port methods +impls
+  (`MissionRepository.observeMissionsForDate`/`observeClaimableCount`,
+  `MilestoneRepository.observeClaimedMilestoneIds`, `WeeklyChallengeRepository.getLastNWeeks`); the 5
+  ViewModels rerouted off raw DAOs onto ports (`CurrencyDashboard`/`Missions`/`Home`/`Workshop`/`Battle`);
+  `CurrencyDashboardViewModel` raw-`WeeklyChallengeEntity` leak removed; `MissionsViewModel` mapping moved
+  to `DailyMission.type`. `BattleViewModel` keeps `AppDatabase`/`runInTransaction` (documented exception,
+  the sole allowlisted import). New `architecture/PresentationPurityTest`.
+- **What changed (tests):** 3 fake repos gained the new methods (`FakeMission`/`FakeMilestone`/
+  `FakeWeeklyChallengeRepository`); 5 VM tests + `UserFeedbackTest` rewired to fakes (Mockito DAO stubs →
+  fake-state seeding with domain types); dead mockito/DAO imports removed.
+- **Verification:** `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL.
+  **1168 → 1169 JVM** (+1: `PresentationPurityTest`). Acceptance greps: only `BattleViewModel`'s
+  `AppDatabase` import remains in presentation; zero `@Entity` imports in presentation. **#219
+  mutation-verified:** a literal `import …data.local.MilestoneDao` added to `HomeViewModel` fails
+  `PresentationPurityTest` naming it; reverted. `DomainPurityTest` + `#252 AtomicDaoConcurrencyTest` green.
+- **Doc sync:** CLAUDE.md (1168→1169 + presentation-purity guard + persistence rule); CHANGELOG
+  `[Unreleased]`; source-files.md (4 port methods + PresentationPurityTest); structure.md (2 guards);
+  ADR-0035. No schema/README change.
+- **Remains / next:** commit + open PR (closes #219/#229), monitor CI, merge on green. Remaining
+  architecture backlog: #220 (cyclic data↔domain coupling), #230/#231 (GameEngine god-class), #234
+  (process-death/SavedStateHandle); plus #211 (device clock), i18n #259/#260, med/low #262/#128.
+
 ## 2026-06-20 — Architecture-invariant wave: #227 domain→data dependency-rule fix · #228 purity guard (`[Unreleased]`)
 
 - **Goal:** restore the Clean-Architecture dependency rule (`presentation → domain ← data`) at the

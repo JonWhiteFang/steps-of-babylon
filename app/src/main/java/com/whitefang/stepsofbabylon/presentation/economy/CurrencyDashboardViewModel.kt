@@ -2,11 +2,11 @@ package com.whitefang.stepsofbabylon.presentation.economy
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.whitefang.stepsofbabylon.data.local.DailyLoginDao
-import com.whitefang.stepsofbabylon.data.local.DailyStepDao
-import com.whitefang.stepsofbabylon.data.local.WeeklyChallengeDao
-import com.whitefang.stepsofbabylon.data.local.WeeklyChallengeEntity
+import com.whitefang.stepsofbabylon.domain.model.WeeklyChallenge
+import com.whitefang.stepsofbabylon.domain.repository.DailyLoginRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
+import com.whitefang.stepsofbabylon.domain.repository.StepRepository
+import com.whitefang.stepsofbabylon.domain.repository.WeeklyChallengeRepository
 import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,9 +28,9 @@ import javax.inject.Inject
 @HiltViewModel
 class CurrencyDashboardViewModel @Inject constructor(
     private val playerRepository: PlayerRepository,
-    private val weeklyChallengeDao: WeeklyChallengeDao,
-    private val dailyLoginDao: DailyLoginDao,
-    private val dailyStepDao: DailyStepDao,
+    private val weeklyChallengeRepository: WeeklyChallengeRepository,
+    private val dailyLoginRepository: DailyLoginRepository,
+    private val stepRepository: StepRepository,
 ) : ViewModel() {
 
     private data class SnapshotData(
@@ -83,21 +83,21 @@ class CurrencyDashboardViewModel @Inject constructor(
             val weekStart = monday.format(DateTimeFormatter.ISO_LOCAL_DATE)
             val weekEnd = sunday.format(DateTimeFormatter.ISO_LOCAL_DATE)
 
-            val weeklySteps = dailyStepDao.sumCreditedSteps(weekStart, weekEnd)
-            val weekly = weeklyChallengeDao.getByWeek(weekStart) ?: WeeklyChallengeEntity(weekStartDate = weekStart)
-            val login = dailyLoginDao.getByDate(todayStr)
+            val weeklySteps = stepRepository.sumCreditedSteps(weekStart, weekEnd)
+            val weekly = weeklyChallengeRepository.getByWeek(weekStart) ?: WeeklyChallenge(weekStartDate = weekStart)
+            val login = dailyLoginRepository.getByDate(todayStr)
 
             // V1X-16: fetch last 4 weeks excluding the current week (newest first → drop current,
             // keeping the previous 4). If fewer than 5 rows exist, show whatever's available.
-            val historyRows = weeklyChallengeDao.getLastNWeeks(5)
+            val historyRows = weeklyChallengeRepository.getLastNWeeks(5)
                 .filter { it.weekStartDate != weekStart }
                 .take(4)
-                .map { entity ->
+                .map { wc ->
                     WeeklyResult(
-                        weekStartDate = entity.weekStartDate,
-                        totalSteps = entity.totalSteps,
-                        claimedTier = entity.claimedTier,
-                        powerStonesEarned = WeeklyResult.powerStonesForTier(entity.claimedTier),
+                        weekStartDate = wc.weekStartDate,
+                        totalSteps = wc.totalSteps,
+                        claimedTier = wc.claimedTier,
+                        powerStonesEarned = WeeklyResult.powerStonesForTier(wc.claimedTier),
                     )
                 }
 

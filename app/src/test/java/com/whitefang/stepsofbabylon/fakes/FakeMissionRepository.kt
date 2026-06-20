@@ -4,6 +4,8 @@ import com.whitefang.stepsofbabylon.data.local.DailyMissionEntity
 import com.whitefang.stepsofbabylon.domain.model.DailyMission
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 /**
  * In-memory fake for [MissionRepository] (#227). Delegates to a wrapped [FakeDailyMissionDao] so the
@@ -16,6 +18,11 @@ class FakeMissionRepository(
 
     override suspend fun getMissionsForDate(date: String): List<DailyMission> =
         dao.getByDateOnce(date).mapNotNull { it.toDomainOrNull() }
+
+    override fun observeMissionsForDate(date: String): Flow<List<DailyMission>> =
+        dao.getByDate(date).map { list -> list.mapNotNull { it.toDomainOrNull() } }
+
+    override fun observeClaimableCount(date: String): Flow<Int> = dao.countClaimable(date)
 
     override suspend fun generateForDate(date: String, missions: List<DailyMission>) {
         if (dao.getByDateOnce(date).isNotEmpty()) return

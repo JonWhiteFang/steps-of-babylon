@@ -15,6 +15,9 @@ class WeeklyChallengeRepositoryImpl @Inject constructor(
 
     override suspend fun upsert(challenge: WeeklyChallenge) = dao.upsert(challenge.toEntity())
 
+    override suspend fun getLastNWeeks(limit: Int): List<WeeklyChallenge> =
+        dao.getLastNWeeks(limit).map { it.toDomain() }
+
     private fun WeeklyChallengeEntity.toDomain() =
         WeeklyChallenge(weekStartDate = weekStartDate, totalSteps = totalSteps, claimedTier = claimedTier)
 

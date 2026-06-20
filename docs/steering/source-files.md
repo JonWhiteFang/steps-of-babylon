@@ -199,10 +199,10 @@ domain/repository/CardRepository.kt             # Card inventory interface
 domain/repository/UltimateWeaponRepository.kt   # Ultimate weapon interface (R4-06: upgradePathLevel replaces upgradeWeapon)
 domain/repository/StepRepository.kt             # Daily step records + escrow + Health Connect methods. #227: + sumCreditedSteps / creditBattleStepsAtomic / creditBossPowerStonesAtomic (the battle/boss atomic credit moved off DailyStepDao behind this port)
 domain/repository/WalkingEncounterRepository.kt # Walking encounter interface
-domain/repository/MissionRepository.kt          # (#227) daily-mission port (use-case surface only): getMissionsForDate / generateForDate / markClaimed / updateProgress. Presentation reads getByDate Flow / countClaimable directly off the DAO (#219)
-domain/repository/MilestoneRepository.kt        # (#227) milestone port: getClaimedMilestoneIds + claimMilestoneAtomic. The milestone getAll() Flow stays a direct presentation→DAO read (#219)
+domain/repository/MissionRepository.kt          # (#227/#219) daily-mission port: getMissionsForDate / generateForDate / markClaimed / updateProgress + reactive presentation reads observeMissionsForDate(Flow) / observeClaimableCount(Flow) (#219 moved these off the raw DAO)
+domain/repository/MilestoneRepository.kt        # (#227/#219) milestone port: getClaimedMilestoneIds + claimMilestoneAtomic + observeClaimedMilestoneIds(): Flow<Set<String>> (#219 — Home/Missions claimed-set read)
 domain/repository/DailyLoginRepository.kt       # (#227) daily-login port: getByDate / upsert (DailyLogin)
-domain/repository/WeeklyChallengeRepository.kt  # (#227) weekly-challenge port: getByWeek / upsert (WeeklyChallenge). getLastNWeeks stays a direct presentation→DAO read (#219)
+domain/repository/WeeklyChallengeRepository.kt  # (#227/#219) weekly-challenge port: getByWeek / upsert + getLastNWeeks(limit): List<WeeklyChallenge> (#219 — Economy dashboard history, was a direct DAO read)
 domain/repository/BillingManager.kt             # Billing interface (purchase, query, reconcilePendingPurchases with default no-op so fakes inherit do-nothing contract; C.5 PR 1). Plan 31 PR B added `getPriceDisplay(product): String?` (default null) so the Store screen can read live formatted prices from Play Billing's ProductDetails.priceDisplay instead of the static BillingProduct.priceDisplay constants.
 domain/repository/RewardAdManager.kt            # Reward ad interface (show ad, availability)
 domain/repository/CosmeticRepository.kt         # Cosmetic store interface + `idExists(cosmeticId): Boolean` (C.4 — used by ClaimMilestone to pre-flight MilestoneReward.Cosmetic ids and surface UnknownCosmetic result variant for the 3 currently-mismatched milestone cosmetic ids)
@@ -421,6 +421,7 @@ All paths relative to `app/src/test/java/com/whitefang/stepsofbabylon/` unless n
 
 ```
 architecture/DomainPurityTest.kt                 # Machine-enforced domain-purity guard (#27/#228): dependency-free JVM test. Test 1 — fails if any domain/ file imports android./androidx./com.android./com.google.android./com.whitefang.stepsofbabylon.data (the full dependency rule, #228 added the data prefix). Test 2 — fails if domain/ imports dagger./javax.inject. (locks DI-agnosticism). Self-validating (asserts domain root dir exists first). KDoc-link `[…data…]` refs are not import lines, so ignored. 2 tests.
+architecture/PresentationPurityTest.kt           # (#219/#229) presentation→data guard: fails if any presentation/ file imports a data.local.*Dao / data.local.AppDatabase / data.local.*Entity. Allowlist = BattleViewModel.kt's AppDatabase (the end-of-round withTransaction atomicity seam, ADR-0035). Non-local data.* imports (data.time/onboarding/sensor/…) are out of scope. Same import-line-scan limitation as DomainPurityTest. 1 test.
 fakes/FakePlayerRepository.kt                    # In-memory StateFlow-backed fake for PlayerRepository
 fakes/FakeWorkshopRepository.kt                  # In-memory StateFlow-backed fake for WorkshopRepository
 fakes/FakeUltimateWeaponRepository.kt            # In-memory StateFlow-backed fake for UltimateWeaponRepository (R4-06: rewritten for upgradePathLevel + per-path level tracking)

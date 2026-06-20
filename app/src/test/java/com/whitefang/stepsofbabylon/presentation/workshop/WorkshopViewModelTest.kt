@@ -17,8 +17,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WorkshopViewModelTest {
@@ -26,7 +24,7 @@ class WorkshopViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private lateinit var workshopRepo: FakeWorkshopRepository
     private lateinit var playerRepo: FakePlayerRepository
-    private val dailyMissionDao = mock<com.whitefang.stepsofbabylon.data.local.DailyMissionDao>()
+    private val missionRepo = com.whitefang.stepsofbabylon.fakes.FakeMissionRepository()
 
     @BeforeEach
     fun setup() = runTest(dispatcher) {
@@ -34,13 +32,12 @@ class WorkshopViewModelTest {
         playerRepo = FakePlayerRepository(PlayerProfile(stepBalance = 10_000))
         workshopRepo = FakeWorkshopRepository(linkedPlayer = playerRepo)
         workshopRepo.upgrades.value = UpgradeType.entries.associateWith { 0 }
-        whenever(dailyMissionDao.getByDateOnce(org.mockito.kotlin.any())).thenReturn(emptyList())
     }
 
     @AfterEach
     fun tearDown() { Dispatchers.resetMain() }
 
-    private fun createVm() = WorkshopViewModel(workshopRepo, playerRepo, dailyMissionDao)
+    private fun createVm() = WorkshopViewModel(workshopRepo, playerRepo, missionRepo)
 
     @Test
     fun `initial state shows ATTACK upgrades`() = runTest(dispatcher) {

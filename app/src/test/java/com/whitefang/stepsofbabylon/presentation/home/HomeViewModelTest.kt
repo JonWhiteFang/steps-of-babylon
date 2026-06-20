@@ -64,7 +64,7 @@ class HomeViewModelTest {
 
     private fun createVm() = HomeViewModel(
         playerRepo, stepRepo, workshopRepo, labRepo, encounterRepo,
-        missionRepo, milestoneRepo, dailyLoginRepo, dailyMissionDao, milestoneDao,
+        missionRepo, milestoneRepo, dailyLoginRepo,
         milestoneNotificationManager, milestoneNotificationPrefs,
     )
 
