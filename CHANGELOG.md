@@ -4,6 +4,36 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Test — Test-integrity wave: concurrent-contention DAO test (#252) · Compose-UI-test beachhead (#253)
+
+Two adversarially-confirmed `severity:major` test-integrity gaps from the 2026-06-18 complete-app review,
+one combined **test-only** PR (no production-code change; build-file change adds only test-scope Compose
+deps). **1152 → 1167 JVM** (+15); `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec + plan
+both through the **Adversarial Review Gate** (single-agent, ultracode off). Spec review caught a **critical**
+flaw (an `:memory:` Room DB is a single connection with no WAL pool → cannot reproduce a concurrent-writer
+race); plan review caught another **critical** (the `@Transaction` DAO targets have no injectable parking
+seam, so the mutation check must remove `@Transaction` rather than rewrite the body). Both new suites
+mutation-verified.
+
+- **#252** — `AtomicDaoConcurrencyTest` (7 tests): fires 12 concurrent workers (real threads, `CountDownLatch`
+  start-gate) at a balance/claim affording exactly one success, on a **file-backed** Room DB (real connection
+  pool + WAL — the only build path that physically contends; in-memory serializes). Covers the
+  single-statement guarded deducts (`adjustStepBalanceIfSufficient`, `spendGemsAtomic`,
+  `spendPowerStonesAtomic`), the one-shot claims (`WalkingEncounterDao`/`DailyMissionDao.markClaimed`), and
+  the `@Transaction` composites (`MilestoneDao.claimMilestoneAtomic`, `WorkshopDao.purchaseUpgradeAtomic`).
+  Assertions are invariant-based (exactly-one-winner + never-over-spent), deterministic across 3 re-runs.
+  **Mutation-verified:** removing `@Transaction` from `claimMilestoneAtomic` made the test fail with 11 of 12
+  workers double-crediting the wallet — the race the serial `GuardedClaimDaoTest` can't see.
+- **#253 (beachhead)** — the project's first Compose UI tests, on the Robolectric/JVM lane (the PR gate, no
+  emulator): `createComposeRule()` under `@GraphicsMode(NATIVE)`; `ui-test-manifest` on `debugImplementation`
+  supplies the host `ComponentActivity`; the `src/test/` fakes back the real ViewModels (no Hilt graph).
+  `CardsScreenTest` (4) — gem balance + owned count, the 3/3 equipped cap, pack-button enabled/disabled by
+  affordability, opening a pack grants a card. `OnboardingScreenTest` (4) — first slide + the page-position
+  `contentDescription` (a11y), Skip jumps to the final slide without finishing, and the final-slide CTA
+  branches ("Enable step counting" vs "Start playing"). **Mutation-verified** (broke a string + the page-dots
+  content description → assertions failed). #253 stays **open** for follow-up screen slices (Home, Battle
+  controls, Store).
+
 ### Fix — Accessibility wave: button contrast (#213) · battle TalkBack live region (#214) · color-blind deferral (#226)
 
 Three confirmed `severity:major` accessibility findings from the complete-app reviews, one combined PR.

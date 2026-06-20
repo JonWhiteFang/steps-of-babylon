@@ -39,6 +39,7 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 | Robolectric | 4.16.1 | Android framework simulation for JVM tests (tests pin `@Config(sdk=[34])`, so the 4.16 "JDK 21 for SDK 36" requirement is not triggered) |
 | AndroidX Test Core | 1.7.0 | Test utilities for Android components |
 | WorkManager Testing | 2.11.2 | `WorkManagerTestInitHelper` for tests that exercise `WorkManager.cancelAllWork` (added by V1X-01 `DataDeletionManagerTest`). Same version as the main WorkManager dep. |
+| Compose UI Test (`ui-test-junit4`, `ui-test-manifest`) | (BOM) | (#253) Compose UI tests on the JVM/Robolectric lane via `createComposeRule()` (`@GraphicsMode(NATIVE)`). BOM-managed (version-less); the BOM is re-applied to the `test` classpath. `ui-test-manifest` is on `debugImplementation` (NOT test) — it supplies the host `ComponentActivity` the rule launches. See `CardsScreenTest`/`OnboardingScreenTest`. |
 | AndroidX Test Runner | 1.6.2 | `AndroidJUnitRunner` for instrumented tests; subclassed by `HiltTestRunner` (V1X-08 Phase 1A). |
 | AndroidX Test Ext JUnit | 1.3.0 | `AndroidJUnit4` runner for instrumented `@RunWith` annotation (V1X-08 Phase 1A). |
 | Hilt Android Testing | 2.59.2 | `HiltTestApplication`, `@HiltAndroidTest`, `HiltAndroidRule` for instrumented Hilt DI (V1X-08 Phase 1A). Pinned to the same `hilt` version as the rest of the graph. |
