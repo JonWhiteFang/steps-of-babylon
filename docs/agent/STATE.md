@@ -32,7 +32,7 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — branch `deps/all-gradle-hold-kotlin`, ready to commit/PR; `[Unreleased]`).**
+- **CURRENT (DONE — MERGED PR #292, squash `bc8de3b`; both CI checks green on Gradle 9.6.0; #290 closed as superseded; `[Unreleased]`).**
   **Dependabot all-gradle wave (#290): took 11 of 12 bumps, HELD Kotlin 2.4.0.** Branched from #290's head
   (inherits its Gradle-9.6.0 wrapper regen), reverted the kotlin line to 2.3.0, rebased onto current `main`.
   Per the `dependabot-wave-handling` rule: combine safe bumps into ONE build-verified PR, drop the
@@ -45,8 +45,9 @@ the med/low backlog (#262) remain.
   fragile workarounds rejected for a load-bearing Hilt/KSP build). `kotlin-compose` plugin tracks the `kotlin`
   ref so it stays 2.3.0 too. **No app source change; 1126 JVM unchanged;** full `testDebugUnitTest lintDebug
   assembleDebug` + benchmark assemble BUILD SUCCESSFUL on Gradle 9.6.0. No ADR (dependency hygiene on the
-  established catalog; rationale in the catalog comment + CHANGELOG). Next: commit + PR (supersedes #290) +
-  monitor + merge. Revisit Kotlin 2.4.0 when Dagger > 2.59.2 ships AND KSP #2964 is fixed+released.
+  established catalog; rationale in the catalog comment + CHANGELOG). **MERGED PR #292 (`bc8de3b`); both CI
+  checks green on Gradle 9.6.0; #290 closed as superseded.** Revisit Kotlin 2.4.0 when Dagger > 2.59.2 ships
+  AND KSP #2964 is fixed+released (Dependabot will re-propose Kotlin on its own).
 - **Previous objective (DONE — MERGED PR #289, squash `1b6465a`; both CI checks green; #199 auto-closed; `[Unreleased]`).**
   **compileSdk 36 → 37 migration + dependency unblock** — reversed the deliberate compileSdk-36 pin that
   recurrently blocked Dependabot. Raised `compileSdk` 37 in all 3 modules (targetSdk stays 36 — compile-only,

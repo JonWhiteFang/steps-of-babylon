@@ -28,8 +28,9 @@
   (dependency hygiene; rationale in the catalog comment + CHANGELOG).
 - **Doc-sync:** tech.md (Gradle 9.6.0 + 6 version cells), CLAUDE.md (Gradle 9.6.0), CHANGELOG `[Unreleased]`,
   catalog kotlin-held + uiautomator comments. STATE + this entry.
-- **Remaining:** commit + PR (supersedes #290 — close it as superseded) + monitor + merge. Revisit Kotlin
-  2.4.0 when a Dagger release > 2.59.2 ships AND KSP #2964 is fixed+released.
+- **Merged:** PR #292 (squash `bc8de3b`); both CI checks green on Gradle 9.6.0 (build-and-test 8m38s +
+  connected 7m29s); #290 closed as superseded; no open PRs remain. Revisit Kotlin 2.4.0 when a Dagger
+  release > 2.59.2 ships AND KSP #2964 is fixed+released (Dependabot will re-propose Kotlin on its own).
 
 ## 2026-06-19 — compileSdk 36 → 37 migration + dependency unblock (`[Unreleased]`, ADR-0031)
 
