@@ -343,3 +343,9 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Gradle in non-TTY environments:** Gradle buffers output when stdout isn't a terminal (e.g., CI).
   Use `./run-gradle.sh <task>` instead of `./gradlew <task>` to avoid hanging. The script is gitignored
   — see `README.md` for how to recreate it.
+- **Preferred CLI tooling** (use these over the defaults when available):
+  - **`ast-grep`/`sg`** — prefer over `grep` for *structural* Kotlin searches (call sites, enum-name
+    surfacing, API-shape sweeps). Reach for plain `grep`/`rg` only for literal text/log scans.
+  - **`fd`** — prefer over `find` for file discovery.
+  - **`detekt`/`ktlint`** — run for Kotlin static analysis / formatting checks.
+  - **`delta`** — use for viewing git diffs.
