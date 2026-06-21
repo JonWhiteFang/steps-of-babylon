@@ -29,10 +29,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyCost
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
@@ -159,7 +162,12 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
                             }
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                if (r.isNew) formatName(r.type.name) else "${formatName(r.type.name)} +1 Copy",
+                                if (r.isNew) formatName(r.type.name)
+                                else stringResource(
+                                    R.string.card_pull_result,
+                                    formatName(r.type.name),
+                                    pluralStringResource(R.plurals.card_copies, r.copiesAwarded, r.copiesAwarded),
+                                ),
                                 color = rowColor,
                             )
                         }

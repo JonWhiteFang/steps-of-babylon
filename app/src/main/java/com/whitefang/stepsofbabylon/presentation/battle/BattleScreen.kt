@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
@@ -209,7 +210,14 @@ fun BattleScreen(
         // status-bar inset via innerPadding, and the ActionBar was removed app-wide in #159. The
         // stale 80.dp left the HUD text floating ~53dp below the health bar (verified on-device).
         Column(Modifier.align(Alignment.TopStart).padding(start = 16.dp, top = 40.dp)) {
-            Text(stringResource(R.string.battle_wave_header, state.currentWave, state.enemyCount), color = Color.White, style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(
+                    R.string.battle_wave_header,
+                    state.currentWave,
+                    pluralStringResource(R.plurals.wave_enemies, state.enemyCount, state.enemyCount),
+                ),
+                color = Color.White, style = MaterialTheme.typography.titleMedium,
+            )
             Text(state.wavePhase.lowercase().replaceFirstChar { it.uppercase() }, color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
             LinearProgressIndicator(
                 progress = { state.waveProgress },
@@ -221,7 +229,11 @@ fun BattleScreen(
             if (state.stepsEarnedThisRound > 0) {
                 val stepsDesc = stringResource(R.string.battle_steps_earned_desc, state.stepsEarnedThisRound)
                 Text(
-                    stringResource(R.string.steps_earned_banner, state.stepsEarnedThisRound),
+                    pluralStringResource(
+                        R.plurals.steps_earned_banner,
+                        state.stepsEarnedThisRound.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
+                        state.stepsEarnedThisRound,
+                    ),
                     color = Color(0xFF4CAF50),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.semantics { contentDescription = stepsDesc },

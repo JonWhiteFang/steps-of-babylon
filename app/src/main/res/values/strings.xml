@@ -40,11 +40,12 @@
     <string name="upgrade_cost_steps">%1$d Steps</string>
     <string name="upgrade_best_buy">★ BEST BUY</string>
     <string name="upgrade_best_buy_save_up">★ BEST BUY · SAVE UP</string>
+    <!-- #260: card-pull result line; %1$s = card name, %2$s = pre-formatted copy plural -->
+    <string name="card_pull_result">%1$s %2$s</string>
 
     <!-- Battle HUD + bottom controls -->
-    <string name="battle_wave_header">Wave %1$d · %2$d enemies</string>
+    <string name="battle_wave_header">Wave %1$d · %2$s</string>
     <string name="cash_amount">$%1$d</string>
-    <string name="steps_earned_banner">👟 +%1$d Steps</string>
     <string name="battle_steps_earned_desc">Battle Steps earned this round: %1$d</string>
     <string name="battle_cd_quit_round">Quit round</string>
     <string name="battle_speed_label">%1$dx</string>
