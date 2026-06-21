@@ -8,7 +8,6 @@ import androidx.compose.ui.test.performClick
 import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.domain.model.OwnedCard
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
-import com.whitefang.stepsofbabylon.domain.usecase.PackTier
 import com.whitefang.stepsofbabylon.fakes.FakeCardRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeRewardAdManager
@@ -104,7 +103,7 @@ class CardsScreenTest {
         composeRule.waitForIdle()
 
         // COMMON is the cheapest tier; with 0 gems every pack is unaffordable → disabled.
-        composeRule.onNodeWithText(PackTier.COMMON.name).assertIsNotEnabled()
+        composeRule.onNodeWithText("Common").assertIsNotEnabled()
     }
 
     @Test
@@ -115,8 +114,8 @@ class CardsScreenTest {
         composeRule.setContent { CardsScreen(viewModel = viewModel) }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(PackTier.COMMON.name).assertIsEnabled()
-        composeRule.onNodeWithText(PackTier.COMMON.name).performClick()
+        composeRule.onNodeWithText("Common").assertIsEnabled()
+        composeRule.onNodeWithText("Common").performClick()
         composeRule.waitForIdle()
 
         // openPack routed through the VM → the fake repo opened a pack (granting ≥1 card).

@@ -8,6 +8,7 @@ import com.whitefang.stepsofbabylon.fakes.FakeCardRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWalkingEncounterRepository
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
+import com.whitefang.stepsofbabylon.presentation.ui.ClaimReward
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -77,14 +78,15 @@ class UnclaimedSuppliesViewModelTest {
         assertEquals(0, vm.uiState.value.drops.size)
     }
 
-    // Pure label-builder test — no VM, no dispatcher. Covers the LABEL CONTENT path.
+    // Pure mapping test — no VM, no dispatcher. toClaimReward resolves NO resources, so it stays
+    // a plain JVM test; the celebration *formatting* is covered by ClaimRewardFormatTest (#260).
     @Test
-    fun `supplyLabel formats each reward type`() {
+    fun `toClaimReward maps each reward type to a structured bundle`() {
         fun drop(r: SupplyDropReward, amt: Int) = SupplyDrop(id = 1, trigger = SupplyDropTrigger.RANDOM, reward = r, rewardAmount = amt, claimed = false, createdAt = 0L)
-        assertEquals("+100 Steps claimed!", supplyLabel(drop(SupplyDropReward.STEPS, 100)))
-        assertEquals("+5 Gems claimed!", supplyLabel(drop(SupplyDropReward.GEMS, 5)))
-        assertEquals("+2 Power Stones claimed!", supplyLabel(drop(SupplyDropReward.POWER_STONES, 2)))
-        assertEquals("Card claimed!", supplyLabel(drop(SupplyDropReward.CARD_COPY, 0)))
+        assertEquals(ClaimReward.Bundle(steps = 150), drop(SupplyDropReward.STEPS, 150).toClaimReward())
+        assertEquals(ClaimReward.Bundle(gems = 5), drop(SupplyDropReward.GEMS, 5).toClaimReward())
+        assertEquals(ClaimReward.Bundle(powerStones = 2), drop(SupplyDropReward.POWER_STONES, 2).toClaimReward())
+        assertEquals(ClaimReward.Bundle(cards = 1), drop(SupplyDropReward.CARD_COPY, 0).toClaimReward())
     }
 
     @Test

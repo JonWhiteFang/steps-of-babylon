@@ -77,7 +77,7 @@ class StoreViewModel @Inject constructor(
             seasonPassExpiry = profile.seasonPassExpiry,
             seasonPassDaysRemaining = daysRemaining,
             cosmetics = cosmetics.map {
-                CosmeticDisplayInfo(it.cosmeticId, it.category.name, it.name, it.description, it.priceGems, it.isOwned, it.isEquipped)
+                CosmeticDisplayInfo(it.cosmeticId, it.category, it.name, it.description, it.priceGems, it.isOwned, it.isEquipped)
             },
             isPurchasing = purchasing,
             isLoading = false,

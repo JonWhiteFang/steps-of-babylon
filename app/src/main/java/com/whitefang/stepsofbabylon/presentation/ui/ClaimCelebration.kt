@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -16,12 +17,56 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.battle.effects.ReducedMotionCheck
 import kotlinx.coroutines.delay
 
-/** One-shot claim/reward payload (Bundle C, #162). A flat, pre-formatted label built in the VM. */
-data class ClaimCelebrationEvent(val label: String)
+/** Structured one-shot reward payload (#260). Formatted at the Compose boundary (localized + plural). */
+sealed interface ClaimReward {
+    data class Bundle(
+        val gems: Int = 0,
+        val powerStones: Int = 0,
+        val steps: Int = 0,
+        val cosmeticNames: List<String> = emptyList(),
+        val cards: Int = 0,
+    ) : ClaimReward
+    /** Pre-localized fixed message (e.g. "All supplies claimed!"). */
+    data class Message(@StringRes val res: Int) : ClaimReward
+    data object Generic : ClaimReward
+}
+data class ClaimCelebrationEvent(val reward: ClaimReward)
+
+/**
+ * The joined reward parts WITHOUT the "claimed!" verb, e.g. "+5 Gems +2 Power Stones" — used by BOTH
+ * the milestone row (Task 9) and [formatClaimReward]. Single factored helper (no removeSuffix hack).
+ */
+@Composable
+fun formatRewardParts(bundle: ClaimReward.Bundle): String {
+    val parts = buildList {
+        if (bundle.gems > 0) add(pluralStringResource(R.plurals.reward_gems, bundle.gems, bundle.gems))
+        if (bundle.powerStones > 0) add(pluralStringResource(R.plurals.reward_power_stones, bundle.powerStones, bundle.powerStones))
+        if (bundle.steps > 0) add(pluralStringResource(R.plurals.reward_steps, bundle.steps, bundle.steps))
+        if (bundle.cards > 0) add(pluralStringResource(R.plurals.card_copies, bundle.cards, bundle.cards))
+        addAll(bundle.cosmeticNames)
+    }
+    return parts.joinToString(stringResource(R.string.reward_join))
+}
+
+/** Full celebration text. Returns "" for null/empty (exit-safe). */
+@Composable
+fun formatClaimReward(reward: ClaimReward?): String = when (reward) {
+    null -> ""
+    is ClaimReward.Generic -> stringResource(R.string.reward_generic)
+    is ClaimReward.Message -> stringResource(reward.res)
+    is ClaimReward.Bundle -> {
+        val parts = formatRewardParts(reward)
+        if (parts.isEmpty()) stringResource(R.string.reward_generic)
+        else stringResource(R.string.reward_claimed, parts)
+    }
+}
 
 /**
  * Brief one-shot reward chip shown when a claim succeeds. Scales+fades in, fires a success haptic
@@ -53,7 +98,7 @@ fun ClaimCelebration(event: ClaimCelebrationEvent?, onConsumed: () -> Unit) {
                 shape = MaterialTheme.shapes.large,
             ) {
                 Text(
-                    event?.label ?: "",
+                    formatClaimReward(event?.reward),
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
                     style = MaterialTheme.typography.titleMedium,
                 )

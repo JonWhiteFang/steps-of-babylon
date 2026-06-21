@@ -1,3 +1,52 @@
+## 2026-06-21 — i18n correctness wave: #259 plurals · #260 concatenation + raw enum-name surfacing (`[Unreleased]`)
+
+- **Goal:** fix the two genuine i18n *correctness* bugs from the 2026-06-18 complete-app review — grammatically-
+  wrong plurals (#259) and translation-hostile sentence concatenation + raw `CONSTANT_CASE` enum surfacing
+  (#260) — on the existing ADR-0014 i18n architecture. Bounded scope (developer-chosen): NOT the ~412-literal
+  #34 bulk extraction.
+- **Process (ultracode ON):** brainstorm → spec → **Adversarial Review Gate** → plan → Gate → subagent-driven
+  execution → final whole-branch Gate. An 8-agent surface map first inventoried the whole i18n surface (~412
+  hardcoded, ~102 concat, ~54 enum, ~50 plural sites) to ground scope. Spec review: 39 agents, 33 findings →
+  31 surviving / 2 refuted (3 critical — incl. the structured payload couldn't hold milestone Cosmetic names,
+  WavePhase/CosmeticCategory are Strings-at-site not enums, the engine fallback raw-name contradiction). Plan
+  review: 37 agents, 32 → 28 / 4 (7 critical — caught `coerceIn(0, Int.MAX_VALUE)` won't compile on a Long, the
+  headline `fx_step_reward` plural was never wired into `AndroidStrings.stepReward`, and 5 un-updated breaking
+  tests). Final review: 11 agents, 6 → 6 surviving / 0 critical-major (all minor polish, applied).
+- **What changed (branch `feat/i18n-correctness-259-260`, 16 commits):**
+  - **#259:** new `res/values/plurals.xml` (13 count-driven `<plurals>`, one/other). Compose →
+    `pluralStringResource` (battle HUD enemy count + steps banner [HUD + PostRoundOverlay], card-pull copies,
+    season-pass days, onboarding "Page X of N"); off-Compose → `getQuantityString` (engine `stepReward`/boss
+    countdown, notif `notif_today_steps`, widget `widget_steps`, smart-reminder). Flat noun-baking strings
+    migrated/split (`fx_step_reward`, `steps_earned_banner`, `battle_wave_header` enemy clause,
+    `notif_step_content`→`notif_today_steps`+`notif_balance`). Long→Int selector idiom `coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()`.
+  - **#260:** extended `domain/Strings` (+`enemyTypeName`/`waveComposition`/`bossCountdown`, impl in
+    `AndroidStrings`, `FakeStrings` double) so the engine's off-thread wave-composition + boss-countdown is
+    templated + localized (no `+`/`joinToString`, no raw `EnemyType.name`; literal fallback kept byte-identical
+    so the pure-JVM GameEngineTest stays green). New `presentation/ui/EnumLabels.kt` `@StringRes` labels for the
+    raw-`CONSTANT_CASE` enums (`UpgradeCategory` InRoundUpgradeMenu+WorkshopScreen, `PackTier`, `CardRarity`,
+    UW-rarity, `CosmeticCategory`); `WavePhase` via String→`@StringRes` lookup (uiState stays String → `== "SPAWNING"`
+    color branch intact); `CosmeticDisplayInfo.category` String→enum; `StatsViewModel` locale-aware
+    `DayOfWeek.getDisplayName(SHORT)`. Structured **`ClaimReward`** (`Bundle`/`Message`/`Generic`) formatted at the
+    Compose boundary (`formatClaimReward`/`formatRewardParts`) replaces celebration/milestone/supply concatenation;
+    `ClaimCelebrationEvent` type name kept (screens + `Channel.CONFLATED`/`cancelForTest` ticker untouched);
+    `Milestone.rewardsSummary()`/`missionRewardLabel`/`supplyLabel` removed. `NoRawEnumNameInUiTest` widened.
+- **Tests:** new `PluralsResourceTest` (9), `AndroidStringsTest` (4), `EnumLabelResTest`, `ClaimRewardFormatTest`,
+  `FakeStrings`, a GameEngine seam-consulted test; `SupplyRewardFormatTest` migrated Jupiter→Robolectric keeping
+  the **#20 CARD_COPY** guard; `MissionsViewModelTest`/`UnclaimedSuppliesViewModelTest` assert the structured
+  payload; `RarityTest`/`MilestoneTest` label cases re-homed/removed. **Notable catch:** the structured mission
+  assertion surfaced a latent test gap — `claimMission` reads the reward off `uiState.value` (WhileSubscribed),
+  so the test must collect `uiState` (as the real screen does) or it emits `Generic`; manifested as a `runTest`
+  ticker hang, diagnosed via thread-dump, fixed by adding the `uiState` collector.
+- **Verification:** `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL; **1169 → 1195
+  JVM** (+26), 0 failures; lint clean (no unused-resource warning). HEAD `f790402`.
+- **Doc sync:** CLAUDE.md headline 1169→1195 (+ the new CLI-tooling note: ast-grep/fd/detekt/ktlint/delta);
+  CHANGELOG `[Unreleased]` new i18n section; source-files.md (AndroidStrings/Strings/ClaimCelebration/both VMs
+  updated; EnumLabels.kt + plurals.xml added; strings.xml entry); STATE.md (current objective rotated, headline
+  count). No ADR (extends ADR-0014). structure.md/database-schema/tech/lib-*/README unaffected.
+- **Scope / remains:** **#259 closeable; #260 stays OPEN** — its OnboardingSlide/Help *prose* evidence is
+  English-prose extraction deferred to **#34**. **Next:** open the PR (flag #260-partial in the body so it isn't
+  auto-closed); then audit backlog — #220, #230/#231, #234, #211, #34, med/low #262/#128.
+
 ## 2026-06-20 — Checkpoint: post-merge reconciliation — presentation→data cleanup merged (PR #300)
 
 - **Context:** the #219/#229 wave's full doc sync (CLAUDE.md→1169, CHANGELOG, source-files.md, structure.md,

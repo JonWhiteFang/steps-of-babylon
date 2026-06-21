@@ -33,6 +33,7 @@ import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.presentation.ui.EmptyState
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.labelRes
 
 @Composable
 fun WorkshopScreen(onNavigateToWeapons: () -> Unit = {}, onNavigateToCards: () -> Unit = {}, viewModel: WorkshopViewModel = hiltViewModel()) {
@@ -72,7 +73,7 @@ fun WorkshopScreen(onNavigateToWeapons: () -> Unit = {}, onNavigateToCards: () -
                     Tab(
                         selected = index == selectedIndex,
                         onClick = { viewModel.selectCategory(category) },
-                        text = { Text(category.name) },
+                        text = { Text(stringResource(category.labelRes())) },
                     )
                 }
             }

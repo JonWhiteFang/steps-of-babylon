@@ -4,7 +4,9 @@
     <!-- Step counter notification -->
     <string name="notif_step_channel_name">Step Counter</string>
     <string name="notif_step_channel_desc">Shows your daily step count</string>
-    <string name="notif_step_content">Today: %1$d steps | Balance: %2$d Steps</string>
+    <!-- #259: composed from notif_today_steps (plural, in plurals.xml) + notif_balance; word order in the resource. -->
+    <string name="notif_step_content">%1$s | %2$s</string>
+    <string name="notif_balance">Balance: %1$d Steps</string>
     <string name="notif_step_action_workshop">Workshop</string>
     <string name="notif_step_action_battle">Battle</string>
     <string name="notif_step_minimal">Step tracking active</string>
@@ -26,8 +28,22 @@
     <string name="fx_heal_hp">+%1$d HP</string>
     <string name="fx_rapid_fire">RAPID FIRE!</string>
     <string name="fx_cash_reward">+%1$d</string>
-    <string name="fx_step_reward">+%1$d Step</string>
     <string name="fx_power_stone_reward">+%1$d PS</string>
+
+    <!-- #260: localized enemy-type names (replace raw EnemyType.name in the wave-composition overlay) -->
+    <string name="enemy_basic">Basic</string>
+    <string name="enemy_fast">Fast</string>
+    <string name="enemy_tank">Tank</string>
+    <string name="enemy_ranged">Ranged</string>
+    <string name="enemy_boss">Boss</string>
+    <string name="enemy_scatter">Scatter</string>
+
+    <!-- #260: next-wave composition (ENEMY_INTEL overlay). %1$s = the joined per-type list. -->
+    <string name="wave_composition">Next: %1$s</string>
+    <!-- per-type entry: %1$d = count, %2$s = localized enemy name -->
+    <string name="wave_comp_entry">%1$d %2$s</string>
+    <!-- separator between entries -->
+    <string name="wave_composition_separator">", "</string>
 
     <!-- Workshop screen -->
     <string name="workshop_weapons">⚔ Ultimate Weapons</string>
@@ -40,11 +56,12 @@
     <string name="upgrade_cost_steps">%1$d Steps</string>
     <string name="upgrade_best_buy">★ BEST BUY</string>
     <string name="upgrade_best_buy_save_up">★ BEST BUY · SAVE UP</string>
+    <!-- #260: card-pull result line; %1$s = card name, %2$s = pre-formatted copy plural -->
+    <string name="card_pull_result">%1$s %2$s</string>
 
     <!-- Battle HUD + bottom controls -->
-    <string name="battle_wave_header">Wave %1$d · %2$d enemies</string>
+    <string name="battle_wave_header">Wave %1$d · %2$s</string>
     <string name="cash_amount">$%1$d</string>
-    <string name="steps_earned_banner">👟 +%1$d Steps</string>
     <string name="battle_steps_earned_desc">Battle Steps earned this round: %1$d</string>
     <string name="battle_cd_quit_round">Quit round</string>
     <string name="battle_speed_label">%1$dx</string>
@@ -103,4 +120,36 @@
     <string name="battle_error_body">Something went wrong and the battle had to stop. Your progress for this round wasn\'t saved.</string>
     <string name="battle_error_return">Return to menu</string>
     <string name="crash_notice_last_session">The game closed unexpectedly last time. Sorry about that!</string>
+
+    <!-- #260: localized enum display names (replace raw CONSTANT_CASE surfacing) -->
+    <string name="upgrade_cat_attack">Attack</string>
+    <string name="upgrade_cat_defense">Defense</string>
+    <string name="upgrade_cat_utility">Utility</string>
+    <string name="pack_tier_common">Common</string>
+    <string name="pack_tier_rare">Rare</string>
+    <string name="pack_tier_epic">Epic</string>
+    <string name="rarity_common">COMMON</string>
+    <string name="rarity_rare">RARE</string>
+    <string name="rarity_epic">EPIC</string>
+    <string name="uw_rarity_rare">RARE</string>
+    <string name="uw_rarity_epic">EPIC</string>
+    <string name="uw_rarity_legendary">LEGENDARY</string>
+    <string name="cosmetic_cat_ziggurat_skin">Ziggurat Skin</string>
+    <string name="cosmetic_cat_projectile_effect">Projectile Effect</string>
+    <string name="cosmetic_cat_enemy_skin">Enemy Skin</string>
+    <string name="wave_phase_spawning">Spawning</string>
+    <string name="wave_phase_cooldown">Cooldown</string>
+
+    <!-- #260: claim-celebration formatting. reward_join glues multiple reward parts; the leading
+         "+" lives inside the per-reward plurals (reward_gems/etc.). -->
+    <string name="reward_join">" "</string>
+    <string name="reward_claimed">%1$s claimed!</string>
+    <string name="reward_generic">Reward claimed!</string>
+    <string name="reward_all_supplies">All supplies claimed!</string>
+
+    <!-- #259: widget + smart-reminder copy (run outside Compose; getString/getQuantityString) -->
+    <string name="widget_balance">Balance: %1$s</string>
+    <string name="reminder_channel_name">Smart Reminders</string>
+    <string name="reminder_channel_desc">Upgrade proximity reminders</string>
+    <string name="reminder_title">Almost there!</string>
 </resources>

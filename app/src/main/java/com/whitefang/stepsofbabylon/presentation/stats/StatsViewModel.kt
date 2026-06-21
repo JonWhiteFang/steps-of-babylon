@@ -19,8 +19,10 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
+import java.util.Locale
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -97,7 +99,7 @@ class StatsViewModel @Inject constructor(
                 val d = today.minusDays(daysAgo.toLong())
                 val rec = byDate[d.format(fmt)]
                 DailyBarData(
-                    label = d.dayOfWeek.name.take(3),
+                    label = d.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
                     sensorSteps = (rec?.creditedSteps ?: 0) - (rec?.stepEquivalents ?: 0),
                     stepEquivalents = rec?.stepEquivalents ?: 0,
                 )

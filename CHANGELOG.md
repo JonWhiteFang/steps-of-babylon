@@ -4,6 +4,41 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### i18n correctness wave: plurals (#259) · concatenation + raw enum-name surfacing (#260)
+
+Fixes the two genuine i18n *correctness* bugs from the 2026-06-18 complete-app review, on the existing
+ADR-0014 architecture. **No schema/economy-formula/engine change; 1169 → 1195 JVM** (+26);
+`testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec + plan **and** a final whole-branch
+review all through the **Adversarial Review Gate** (ultracode: spec 33 findings → 31 surviving / 2
+refuted; plan 32 → 28 / 4; final 6 → 6 surviving, 0 critical/major). 14-task subagent-driven execution.
+
+- **#259 — plurals.** New `res/values/plurals.xml` (13 count-driven `<plurals>`, one/other) for the sites
+  where singular/plural was visibly wrong: step/enemy/wave/gem/power-stone/copy/day counts, the
+  notification + widget + smart-reminder step counts, and the onboarding "Page X of N" a11y label.
+  Compose sites use `pluralStringResource`; off-Compose (engine seam, notifications, widget, reminder)
+  use `getQuantityString`. Flat noun-baking strings (`fx_step_reward`, `steps_earned_banner`, the
+  `battle_wave_header` enemy count, `notif_step_content`) migrated/split to plurals. `PluralsResourceTest`
+  (Robolectric) pins one-vs-other for every plural.
+- **#260 — concatenation + raw enum names.** Extended the `domain/Strings` seam (+`enemyTypeName`/
+  `waveComposition`/`bossCountdown`, impl in `AndroidStrings`, `FakeStrings` test double) so the engine's
+  off-thread wave-composition + boss-countdown text is templated + localized (no `+`/`joinToString`, no raw
+  `EnemyType.name`). New `presentation/ui/EnumLabels.kt` gives `@StringRes` labels to the enums that
+  surfaced raw `CONSTANT_CASE` — `UpgradeCategory` (InRoundUpgradeMenu + WorkshopScreen tabs), `PackTier`,
+  `CardRarity`, UW rarity, `WavePhase` (String→`@StringRes` lookup; uiState stays a String so the
+  `== "SPAWNING"` color branch is intact), `CosmeticCategory` (`CosmeticDisplayInfo.category` tightened
+  String→enum). `StatsViewModel` chart axis uses locale-aware `DayOfWeek.getDisplayName(SHORT)`. The
+  claim-celebration / milestone-reward / supply-reward concatenation is replaced by a **structured
+  `ClaimReward`** payload (`Bundle`/`Message`/`Generic`) formatted at the Compose boundary
+  (`formatClaimReward`/`formatRewardParts`); `ClaimCelebrationEvent` carries the structured value (type
+  name unchanged → screens untouched; `Channel.CONFLATED` + ticker harness intact); `Milestone.rewardsSummary()`,
+  `missionRewardLabel`, and `supplyLabel` removed. `NoRawEnumNameInUiTest` widened to ban `.name.take(`/
+  `.name.lowercase(` de-casing.
+- **Scope:** **#259 closeable; #260 stays partially open** — its OnboardingSlide/Help *prose* evidence is
+  English-prose extraction deferred to #34 (not a grammatical/enum bug). The `#20` CARD_COPY supply-row
+  behavior (card name + "x1") is preserved; its `SupplyRewardFormatTest` migrated Jupiter→Robolectric.
+  New tests: `PluralsResourceTest`, `AndroidStringsTest`, `EnumLabelResTest`, `ClaimRewardFormatTest`,
+  `FakeStrings` + a GameEngine seam-consulted test. No ADR (extends ADR-0014; no new architecture).
+
 ### Refactor — Presentation→data cleanup: ViewModel DAO injection / entity leak (#219) · persistence-abstraction consistency (#229)
 
 Finishes the dependency-rule work at the presentation→data boundary (builds on #227/#228). **Behavior-

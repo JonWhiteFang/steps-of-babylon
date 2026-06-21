@@ -12,10 +12,10 @@ data-integrity #237/#238/#248) via release PR #278 (squash `ffa9973`). **ALL 4 n
 Latest content wave MERGED: data-integrity (PR #276, `0f32ac6`; #237/#238/#248 auto-closed; ADR-0030,
 single-agent review caught a critical pre-code defect). Earlier waves MERGED: #261/#233 (PR #274, `8b50b13`);
 #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.9 (vc 25)** · **1169 JVM + 9 instrumented tests**
+Supersedes **v1.0.9 (vc 25)** · **1195 JVM + 9 instrumented tests**
 green (1110 shipped in v1.0.10; +8 reliability wave #251/#249 → 1118; +8 correctness/UX wave
 #225/#235/#224/#222 → 1126; +4 privacy/monetization #240/#239/#241 → 1130; +9 perf wave #242/#243 → 1139;
-+13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
++13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; +26 i18n correctness wave #259/#260 → 1195; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -33,7 +33,35 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #300, squash `870c938`; #219/#229 auto-closed; `[Unreleased]`).**
+- **CURRENT (DONE — branch `feat/i18n-correctness-259-260`, 16 commits, ready to PR; `[Unreleased]`).**
+  **i18n correctness wave (#259 plurals · #260 concatenation + raw enum-name surfacing)** off the
+  2026-06-18 complete-app-review backlog. **No schema/economy/engine change; 1169 → 1195 JVM** (+26);
+  `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec + plan **and** a final whole-branch
+  review all through the **Adversarial Review Gate** (ultracode ON: spec 33→31 surviving/2 refuted; plan
+  32→28/4 — caught a `coerceIn(0,…)` Long compile bug, the never-wired `fx_step_reward` plural, and 5
+  un-updated breaking tests pre-implementation; final 6→6 surviving / 0 critical-major). Subagent-driven
+  execution (14 tasks); the structured-payload unit (Tasks 8–10) committed as one compile-coupled commit.
+  **#259:** new `res/values/plurals.xml` (13 count-driven `<plurals>`) — Compose via `pluralStringResource`,
+  off-Compose (engine seam / notifications / widget / reminder) via `getQuantityString`; flat noun-baking
+  strings migrated/split; `PluralsResourceTest` pins one-vs-other. **#260:** extended the `domain/Strings`
+  seam (`enemyTypeName`/`waveComposition`/`bossCountdown` + `FakeStrings`) for off-thread engine text;
+  new `presentation/ui/EnumLabels.kt` `@StringRes` labels for the raw-`CONSTANT_CASE` enums
+  (`UpgradeCategory`×2/`PackTier`/`CardRarity`/UW-rarity/`CosmeticCategory`); `WavePhase` via a
+  String→`@StringRes` lookup (uiState stays String so the `== "SPAWNING"` color branch is intact);
+  `CosmeticDisplayInfo.category` String→enum; `StatsViewModel` locale-aware `DayOfWeek` short name; and a
+  **structured `ClaimReward`** payload (`Bundle`/`Message`/`Generic`, formatted at the Compose boundary)
+  replacing the celebration/milestone/supply reward concatenation (`rewardsSummary`/`missionRewardLabel`/
+  `supplyLabel` removed; `ClaimCelebrationEvent` type name kept → screens + `Channel.CONFLATED`/ticker
+  intact). `NoRawEnumNameInUiTest` widened (`.name.take(`/`.name.lowercase(`). **#20 CARD_COPY** supply-row
+  behavior preserved; `SupplyRewardFormatTest` migrated Jupiter→Robolectric. New tests: `PluralsResourceTest`,
+  `AndroidStringsTest`, `EnumLabelResTest`, `ClaimRewardFormatTest`, `FakeStrings`, a GameEngine seam test.
+  **No ADR** (extends ADR-0014; no new architecture). **Scope: #259 closeable; #260 stays OPEN** — its
+  OnboardingSlide/Help *prose* evidence is English-prose extraction deferred to **#34** (not a
+  grammatical/enum bug; flag at PR/issue time). **Next:** open the PR; then remaining audit backlog —
+  architecture #220 (cyclic data↔domain — smaller now the ports exist), #230/#231 (GameEngine god-class /
+  ADR-0012 hoist), #234 (process-death/SavedStateHandle); data-integrity #211; remaining i18n #34/#259-tail;
+  med/low #262/#128.
+- **Previous objective (DONE — MERGED PR #300, squash `870c938`; #219/#229 auto-closed; `[Unreleased]`).**
   **Presentation→data cleanup (#219 · #229)** — finishes the
   dependency-rule work at the presentation boundary (builds on #227/#228). **Behavior-preserving structural
   refactor; no schema/economy/engine change; 1168 → 1169 JVM** (+1: `PresentationPurityTest`).

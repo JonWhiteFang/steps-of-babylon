@@ -30,12 +30,4 @@ enum class Milestone(
 
     val totalGems: Long get() = rewards.filterIsInstance<MilestoneReward.Gems>().sumOf { it.amount }
     val totalPowerStones: Long get() = rewards.filterIsInstance<MilestoneReward.PowerStones>().sumOf { it.amount }
-
-    fun rewardsSummary(): String = rewards.joinToString(", ") { reward ->
-        when (reward) {
-            is MilestoneReward.Gems -> "${reward.amount} Gems"
-            is MilestoneReward.PowerStones -> "${reward.amount} Power Stones"
-            is MilestoneReward.Cosmetic -> reward.name
-        }
-    }
 }

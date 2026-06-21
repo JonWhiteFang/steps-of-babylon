@@ -320,7 +320,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1169 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1195 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Compose UI tests run on the JVM lane (#253):** `createComposeRule()` under Robolectric
   (`@RunWith(RobolectricTestRunner)` + `@GraphicsMode(NATIVE)`), backed by the `src/test/` fakes — no
@@ -343,3 +343,9 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Gradle in non-TTY environments:** Gradle buffers output when stdout isn't a terminal (e.g., CI).
   Use `./run-gradle.sh <task>` instead of `./gradlew <task>` to avoid hanging. The script is gitignored
   — see `README.md` for how to recreate it.
+- **Preferred CLI tooling** (use these over the defaults when available):
+  - **`ast-grep`/`sg`** — prefer over `grep` for *structural* Kotlin searches (call sites, enum-name
+    surfacing, API-shape sweeps). Reach for plain `grep`/`rg` only for literal text/log scans.
+  - **`fd`** — prefer over `find` for file discovery.
+  - **`detekt`/`ktlint`** — run for Kotlin static analysis / formatting checks.
+  - **`delta`** — use for viewing git diffs.

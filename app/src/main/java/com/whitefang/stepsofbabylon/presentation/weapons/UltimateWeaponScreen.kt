@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -32,7 +33,7 @@ import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.RarityBadge
 import com.whitefang.stepsofbabylon.presentation.ui.rarityBorder
-import com.whitefang.stepsofbabylon.presentation.ui.uwRarityLabel
+import com.whitefang.stepsofbabylon.presentation.ui.uwRarityLabelRes
 import com.whitefang.stepsofbabylon.presentation.ui.uwRarityTier
 import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
@@ -110,7 +111,7 @@ private fun UWCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        RarityBadge(tier, uwRarityLabel(tier), alpha = rarityAlpha)
+                        RarityBadge(tier, stringResource(uwRarityLabelRes(tier)), alpha = rarityAlpha)
                         Text(
                             info.type.name.toDisplayName(),
                             fontWeight = FontWeight.Bold,

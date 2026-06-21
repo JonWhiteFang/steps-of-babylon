@@ -1,5 +1,7 @@
 package com.whitefang.stepsofbabylon.domain
 
+import com.whitefang.stepsofbabylon.domain.model.EnemyType
+
 /**
  * Seam for engine-internal display strings (battle floating-text feedback) so the
  * battle engine / ViewModel can emit localized text without reading Android resources
@@ -22,4 +24,13 @@ interface Strings {
 
     /** Boss Power Stone reward floating-text, e.g. "+5 PS". */
     fun powerStoneReward(ps: Long): String
+
+    /** Localized enemy-type display name, e.g. "Basic"/"Boss" (replaces raw EnemyType.name). */
+    fun enemyTypeName(type: EnemyType): String
+
+    /** Whole next-wave composition line, e.g. "Next: 1 Boss, 12 Basic" (no concatenation). */
+    fun waveComposition(counts: Map<EnemyType, Int>): String
+
+    /** Plural-correct boss countdown, e.g. "Boss next wave" / "Boss in 2 waves". */
+    fun bossCountdown(waves: Int): String
 }

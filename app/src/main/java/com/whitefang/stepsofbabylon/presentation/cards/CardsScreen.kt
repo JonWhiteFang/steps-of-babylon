@@ -29,10 +29,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyCost
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
@@ -41,9 +44,10 @@ import com.whitefang.stepsofbabylon.presentation.ui.EquippedChip
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.RarityBadge
-import com.whitefang.stepsofbabylon.presentation.ui.cardRarityLabel
+import com.whitefang.stepsofbabylon.presentation.ui.cardRarityLabelRes
 import com.whitefang.stepsofbabylon.presentation.ui.cardRarityTier
 import com.whitefang.stepsofbabylon.presentation.ui.color
+import com.whitefang.stepsofbabylon.presentation.ui.labelRes
 import com.whitefang.stepsofbabylon.presentation.ui.rarityBorder
 import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
@@ -114,7 +118,7 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
                         modifier = Modifier.weight(1f).pulseScale(packPulse),
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(pack.tier.name)
+                            Text(stringResource(pack.tier.labelRes()))
                             CurrencyCost(CurrencyType.GEMS, pack.tier.gemCost)
                         }
                     }
@@ -159,7 +163,12 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
                             }
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                if (r.isNew) formatName(r.type.name) else "${formatName(r.type.name)} +1 Copy",
+                                if (r.isNew) formatName(r.type.name)
+                                else stringResource(
+                                    R.string.card_pull_result,
+                                    formatName(r.type.name),
+                                    pluralStringResource(R.plurals.card_copies, r.copiesAwarded, r.copiesAwarded),
+                                ),
                                 color = rowColor,
                             )
                         }
@@ -186,7 +195,7 @@ private fun CardItem(
         Column(Modifier.padding(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    RarityBadge(tier, cardRarityLabel(card.type.rarity))
+                    RarityBadge(tier, stringResource(cardRarityLabelRes(card.type.rarity)))
                     Text(formatName(card.type.name), style = MaterialTheme.typography.titleSmall)
                 }
                 if (card.isEquipped) {

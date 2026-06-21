@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.store
 
 import com.whitefang.stepsofbabylon.domain.model.BillingProduct
+import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
 
 data class StoreUiState(
     val gems: Long = 0,
@@ -25,7 +26,7 @@ data class StoreUiState(
 
 data class CosmeticDisplayInfo(
     val cosmeticId: String,
-    val category: String,
+    val category: CosmeticCategory,
     val name: String,
     val description: String,
     val priceGems: Long,

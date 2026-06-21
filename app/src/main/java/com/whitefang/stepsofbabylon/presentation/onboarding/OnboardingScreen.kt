@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -186,12 +187,16 @@ fun OnboardingScreen(
 
                 // Page dots. The dots convey page position via colour+size only — invisible to TalkBack
                 // (HorizontalPager does not auto-announce "page X of N"), so the ROW carries a single
-                // semantic label and the individual dots stay decorative.
+                // semantic label and the individual dots stay decorative. The label is resolved here in
+                // @Composable scope (the semantics{} lambda is not composable) via pluralStringResource.
+                val pageLabel = pluralStringResource(
+                    R.plurals.page_x_of_n, slides.size, pagerState.currentPage + 1, slides.size,
+                )
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp)
-                        .semantics { contentDescription = "Page ${pagerState.currentPage + 1} of ${slides.size}" },
+                        .semantics { contentDescription = pageLabel },
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     repeat(slides.size) { i ->

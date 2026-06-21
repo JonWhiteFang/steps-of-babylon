@@ -32,15 +32,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.BillingProduct
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyCost
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
+import com.whitefang.stepsofbabylon.presentation.ui.labelRes
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
@@ -145,7 +149,14 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(4.dp))
-                                    Text("Active — ${state.seasonPassDaysRemaining ?: 0} days remaining", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        pluralStringResource(
+                                            R.plurals.days_remaining,
+                                            state.seasonPassDaysRemaining ?: 0,
+                                            state.seasonPassDaysRemaining ?: 0,
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
                                 }
                             } else {
                                 Text(
@@ -199,7 +210,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                     Column(Modifier.weight(1f)) {
                         Text(cosmetic.name, fontWeight = FontWeight.Bold)
                         Text(cosmetic.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(cosmetic.category.replace("_", " "), style = MaterialTheme.typography.labelSmall)
+                        Text(stringResource(cosmetic.category.labelRes()), style = MaterialTheme.typography.labelSmall)
                     }
                     when {
                         cosmetic.isEquipped -> OutlinedButton(onClick = { cosmeticHaptics.tap(); viewModel.unequipCosmetic(cosmetic.cosmeticId) }) { Text("Unequip") }

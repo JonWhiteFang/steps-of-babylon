@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -73,7 +74,11 @@ fun PostRoundOverlay(
         }
         if (state.stepsEarned > 0) add {
             Text(
-                stringResource(R.string.steps_earned_banner, state.stepsEarned),
+                pluralStringResource(
+                    R.plurals.steps_earned_banner,
+                    state.stepsEarned.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
+                    state.stepsEarned,
+                ),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color(0xFF4CAF50),
             )
