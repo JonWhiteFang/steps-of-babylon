@@ -119,8 +119,9 @@ private fun SupplyDropCard(drop: SupplyDrop, onClaim: () -> Unit) {
  * is a card-TYPE index (0..8), and ClaimSupplyDrop always awards exactly ONE copy of
  * `CardType.entries[rewardAmount % size]`. Rendering it as "+N Card Copy" produced misleading
  * labels ("+0 Card Copy" reads as an empty reward). CARD_COPY now renders the resolved card name
- * + a fixed "x1"; the genuine-quantity rewards keep the "+N <label>" shape. Pure + top-level for
- * unit coverage (SupplyRewardFormatTest).
+ * + a fixed "x1"; the genuine-quantity rewards render the localized plural form (e.g. "+1 Power
+ * Stone" / "+5 Gems"). `@Composable` because it resolves plural string resources — covered by
+ * `SupplyRewardFormatTest` on the Robolectric/Compose lane.
  */
 @Composable
 internal fun formatSupplyReward(drop: SupplyDrop): String = when (drop.reward) {

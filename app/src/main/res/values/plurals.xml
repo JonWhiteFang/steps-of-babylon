@@ -3,22 +3,19 @@
     <!-- #259 i18n correctness wave: count-driven nouns. English needs only one/other;
          the structure lets a future locale add few/many/zero. -->
 
-    <!-- Engine floating-text (via domain/Strings → getQuantityString, Task 4 rewires AndroidStrings.stepReward).
-         The flat <string name="fx_step_reward"> is DELETED in Task 4 (coexists harmlessly until then —
-         different R type — but we delete it so the buggy singular form can't ship). -->
+    <!-- Engine floating-text, via AndroidStrings.stepReward (getQuantityString, off the main thread). -->
     <plurals name="fx_step_reward">
         <item quantity="one">+%1$d Step</item>
         <item quantity="other">+%1$d Steps</item>
     </plurals>
 
-    <!-- Battle HUD banner + post-round overlay (Compose). The flat <string name="steps_earned_banner">
-         is DELETED in Task 2 (both consumers rewired there). Keeps the 👟 glyph. -->
+    <!-- Battle HUD banner + post-round overlay (Compose, pluralStringResource). Keeps the 👟 glyph. -->
     <plurals name="steps_earned_banner">
         <item quantity="one">👟 +%1$d Step</item>
         <item quantity="other">👟 +%1$d Steps</item>
     </plurals>
 
-    <!-- Wave header enemy count (Compose). Used by the split battle_wave_header (Task 2). -->
+    <!-- Wave-header enemy count (Compose); composed into battle_wave_header. -->
     <plurals name="wave_enemies">
         <item quantity="one">%1$d enemy</item>
         <item quantity="other">%1$d enemies</item>
@@ -44,7 +41,7 @@
         <item quantity="other">+%1$d Steps</item>
     </plurals>
 
-    <!-- Card pull copy count (Compose). Used by card_pull_result (Task 2). -->
+    <!-- Card-pull copy count (Compose); composed into card_pull_result. -->
     <plurals name="card_copies">
         <item quantity="one">+%1$d Copy</item>
         <item quantity="other">+%1$d Copies</item>
@@ -74,7 +71,7 @@
         <item quantity="other">You\'re %1$d steps from upgrading %2$s!</item>
     </plurals>
 
-    <!-- Notification: daily steps half of the split notif_step_content (Task 11). -->
+    <!-- Notification: the daily-steps half composed into notif_step_content. -->
     <plurals name="notif_today_steps">
         <item quantity="one">Today: %1$d step</item>
         <item quantity="other">Today: %1$d steps</item>

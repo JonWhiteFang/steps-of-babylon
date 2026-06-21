@@ -145,7 +145,6 @@
     <string name="reward_join">" "</string>
     <string name="reward_claimed">%1$s claimed!</string>
     <string name="reward_generic">Reward claimed!</string>
-    <string name="reward_card">Card</string>
     <string name="reward_all_supplies">All supplies claimed!</string>
 
     <!-- #259: widget + smart-reminder copy (run outside Compose; getString/getQuantityString) -->

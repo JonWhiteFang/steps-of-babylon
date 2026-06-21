@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.ui
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import com.whitefang.stepsofbabylon.R
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -48,6 +49,18 @@ class ClaimRewardFormatTest {
             "+200 Gems +50 Power Stones Lapis Lazuli Ziggurat Skin claimed!",
             format(ClaimReward.Bundle(gems = 200, powerStones = 50, cosmeticNames = listOf("Lapis Lazuli Ziggurat Skin"))),
         )
+    }
+    @Test fun `cards and steps branches render through the formatter`() {
+        // The supply CARD_COPY claim celebration is Bundle(cards = 1); the steps drop is Bundle(steps = N).
+        // (Distinct from the supply ROW, which resolves the card name + "x1" — see SupplyRewardFormatTest.)
+        // Both formatted in ONE composition (setContent may be called only once per test).
+        val (cards, steps) = formatAll(ClaimReward.Bundle(cards = 1), ClaimReward.Bundle(steps = 150))
+        assertEquals("+1 Copy claimed!", cards)
+        assertEquals("+150 Steps claimed!", steps)
+    }
+    @Test fun `message branch renders its fixed string`() {
+        // claimAll() emits Message(reward_all_supplies); pin the branch + the actual aggregate string.
+        assertEquals("All supplies claimed!", format(ClaimReward.Message(R.string.reward_all_supplies)))
     }
     @Test fun `generic and null`() {
         val (generic, nullText) = formatAll(ClaimReward.Generic, null)
