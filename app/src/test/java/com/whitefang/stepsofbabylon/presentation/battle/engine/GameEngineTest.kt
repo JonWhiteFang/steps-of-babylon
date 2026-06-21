@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.battle.engine
 
 import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationEvent
+import com.whitefang.stepsofbabylon.fakes.FakeStrings
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
@@ -75,6 +76,40 @@ class GameEngineTest {
             "Boss in 9 waves",
             eng.bossCountdownLabel(),
             "L10 overlay must surface the boss-arrival countdown",
+        )
+    }
+
+    // ---- #260: label helpers delegate to the injected Strings seam (non-null branch) ----
+    // The :55-79 fallback tests cover `strings == null` (raw-English literal). These pin the
+    // OTHER branch: when a Strings instance IS attached (as GameSurfaceView does in production),
+    // the engine must route through it rather than the literal fallback. Mirrors the L1/L10
+    // construction above, then attaches FakeStrings and asserts its recognizable marker.
+
+    @Test
+    fun `V1X15b nextWaveCompositionLabel delegates to the injected Strings seam when set`() {
+        val eng = freshEngine() // opens on wave 1
+        eng.enemyIntelLevel = 1 // currentWave 1 → next wave 2: comp = {BASIC: 7} (same as L1 test)
+        eng.strings = FakeStrings()
+        val label = eng.nextWaveCompositionLabel()
+        assertEquals(
+            "FAKE_COMP:7:BASIC",
+            label,
+            "with a Strings instance attached, the composition label must route through " +
+                "strings.waveComposition(...) (the FAKE_COMP marker), not the raw-English fallback",
+        )
+    }
+
+    @Test
+    fun `V1X15b bossCountdownLabel delegates to the injected Strings seam when set`() {
+        val eng = freshEngine() // wave 1, bossWaveInterval 10 (tier 1) → 9 waves until boss
+        eng.enemyIntelLevel = 10
+        eng.strings = FakeStrings()
+        val label = eng.bossCountdownLabel()
+        assertEquals(
+            "FAKE_BOSS_9",
+            label,
+            "with a Strings instance attached, the boss countdown must route through " +
+                "strings.bossCountdown(...) (the FAKE_BOSS marker), not the raw-English fallback",
         )
     }
 
