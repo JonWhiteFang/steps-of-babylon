@@ -56,4 +56,41 @@ class NoRawEnumNameInUiTest {
                 "instead of .name.replace('_', ' ')):\n" + offenders.sorted().joinToString("\n")
         }
     }
+
+    /**
+     * #260 (IC-9): widen the #225 guard to the OTHER low-quality enum-name de-casing transforms the
+     * wave removed — `enum.name.take(n)` (the raw DayOfWeek/abbreviation form) and `enum.name.lowercase(…)`
+     * — so they can't drift back into the UI. These are routed through localized `@StringRes` labels
+     * / the `Strings` seam now.
+     *
+     * Deliberately NOT banned (would false-positive — see the wave spec/plan IC-9 note): a *bare*
+     * `Text(x.name)` is syntactically indistinguishable from surfacing a legitimate content `.name`
+     * field (e.g. `Text(cosmetic.name)` renders the free-text cosmetic display name, not an enum), and
+     * a bare `.replace("_", " ")` is used on out-of-scope String activity keys (StatsScreen). The
+     * fixed bare-enum-name sites (PackTier/UpgradeCategory/CosmeticCategory) are regression-covered by
+     * [EnumLabelResTest] + the screens' rendered-text tests, not by this source scan.
+     */
+    @Test
+    fun `no presentation source de-cases an enum name via name dot take or lowercase`() {
+        val presentationRoot = File("src/main/java/com/whitefang/stepsofbabylon/presentation")
+        assertTrue(presentationRoot.isDirectory) { "presentation source root not found at ${presentationRoot.absolutePath}" }
+
+        val rawNameTransform = Regex("""\.name\.take\(|\.name\.lowercase\(""")
+        var fileCount = 0
+        val offenders = mutableListOf<String>()
+        presentationRoot.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .forEach { file ->
+                fileCount++
+                file.readText().lineSequence().forEachIndexed { idx, line ->
+                    if (rawNameTransform.containsMatchIn(line)) offenders += "${file.name}:${idx + 1}: ${line.trim()}"
+                }
+            }
+
+        assertTrue(fileCount >= 10) { "Expected to discover presentation sources; walked only $fileCount .kt files" }
+        assertTrue(offenders.isEmpty()) {
+            "Raw enum-name de-casing found in presentation UI (#260 — use a @StringRes label / the " +
+                "Strings seam, not .name.take()/.name.lowercase()):\n" + offenders.sorted().joinToString("\n")
+        }
+    }
 }
