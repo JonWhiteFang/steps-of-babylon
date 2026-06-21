@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- #259 i18n correctness wave: count-driven nouns. English needs only one/other;
+         the structure lets a future locale add few/many/zero. -->
+
+    <!-- Engine floating-text (via domain/Strings → getQuantityString, Task 4 rewires AndroidStrings.stepReward).
+         The flat <string name="fx_step_reward"> is DELETED in Task 4 (coexists harmlessly until then —
+         different R type — but we delete it so the buggy singular form can't ship). -->
+    <plurals name="fx_step_reward">
+        <item quantity="one">+%1$d Step</item>
+        <item quantity="other">+%1$d Steps</item>
+    </plurals>
+
+    <!-- Battle HUD banner + post-round overlay (Compose). The flat <string name="steps_earned_banner">
+         is DELETED in Task 2 (both consumers rewired there). Keeps the 👟 glyph. -->
+    <plurals name="steps_earned_banner">
+        <item quantity="one">👟 +%1$d Step</item>
+        <item quantity="other">👟 +%1$d Steps</item>
+    </plurals>
+
+    <!-- Wave header enemy count (Compose). Used by the split battle_wave_header (Task 2). -->
+    <plurals name="wave_enemies">
+        <item quantity="one">%1$d enemy</item>
+        <item quantity="other">%1$d enemies</item>
+    </plurals>
+
+    <!-- Boss countdown (engine via seam). -->
+    <plurals name="boss_in_waves">
+        <item quantity="one">Boss next wave</item>
+        <item quantity="other">Boss in %1$d waves</item>
+    </plurals>
+
+    <!-- Reward amounts (celebration + milestone row + supply row). -->
+    <plurals name="reward_gems">
+        <item quantity="one">+%1$d Gem</item>
+        <item quantity="other">+%1$d Gems</item>
+    </plurals>
+    <plurals name="reward_power_stones">
+        <item quantity="one">+%1$d Power Stone</item>
+        <item quantity="other">+%1$d Power Stones</item>
+    </plurals>
+    <plurals name="reward_steps">
+        <item quantity="one">+%1$d Step</item>
+        <item quantity="other">+%1$d Steps</item>
+    </plurals>
+
+    <!-- Card pull copy count (Compose). Used by card_pull_result (Task 2). -->
+    <plurals name="card_copies">
+        <item quantity="one">+%1$d Copy</item>
+        <item quantity="other">+%1$d Copies</item>
+    </plurals>
+
+    <!-- Season pass days remaining (Compose). -->
+    <plurals name="days_remaining">
+        <item quantity="one">Active — %1$d day remaining</item>
+        <item quantity="other">Active — %1$d days remaining</item>
+    </plurals>
+
+    <!-- Onboarding page dots a11y (Compose). %1$d = current page, %2$d = total. Plural on the total. -->
+    <plurals name="page_x_of_n">
+        <item quantity="one">Page %1$d of %2$d</item>
+        <item quantity="other">Page %1$d of %2$d</item>
+    </plurals>
+
+    <!-- Widget daily steps (RemoteViews → getQuantityString). %1$s = a pre-formatted (grouped) count. -->
+    <plurals name="widget_steps">
+        <item quantity="one">%1$s step</item>
+        <item quantity="other">%1$s steps</item>
+    </plurals>
+
+    <!-- Smart reminder body (notification → getQuantityString). %1$d = gap, %2$s = upgrade name. -->
+    <plurals name="reminder_steps_away">
+        <item quantity="one">You\'re %1$d step from upgrading %2$s!</item>
+        <item quantity="other">You\'re %1$d steps from upgrading %2$s!</item>
+    </plurals>
+
+    <!-- Notification: daily steps half of the split notif_step_content (Task 11). -->
+    <plurals name="notif_today_steps">
+        <item quantity="one">Today: %1$d step</item>
+        <item quantity="other">Today: %1$d steps</item>
+    </plurals>
+</resources>
