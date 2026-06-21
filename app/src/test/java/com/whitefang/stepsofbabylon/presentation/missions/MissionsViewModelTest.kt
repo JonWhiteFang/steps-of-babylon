@@ -19,6 +19,7 @@ import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeStepRepository
 import com.whitefang.stepsofbabylon.fakes.FakeTimeProvider
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
+import com.whitefang.stepsofbabylon.presentation.ui.ClaimReward
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -108,8 +109,9 @@ class MissionsViewModelTest {
     // --- Bundle C Task 8: claim celebration event (Success-gated) ---------------------------------
     // The VM's init launches a viewModelScope while(true) ticker on Main (the test dispatcher); a
     // bare runTest{} would HANG on end-of-test cleanup spinning the rescheduling ticker. Every test
-    // that constructs the VM therefore calls vm.cancelForTest() as its LAST statement. Label *content*
-    // is covered by the pure missionRewardLabel test below (no VM); the VM tests assert emission COUNT.
+    // that constructs the VM therefore calls vm.cancelForTest() as its LAST statement. Reward *content*
+    // (formatting) is covered by the Compose-boundary ClaimRewardFormatTest; these VM tests assert the
+    // structured ClaimReward payload emitted (#260).
 
     private fun createVm(timeProvider: FakeTimeProvider = FakeTimeProvider(fixedDate = LocalDate.parse(today))) =
         MissionsViewModel(
@@ -122,28 +124,21 @@ class MissionsViewModelTest {
         )
 
     @Test
-    fun `missionRewardLabel formats gems, power-stones, both, and fallback`() {
-        assertEquals("+5 Gems claimed!", missionRewardLabel(infoWith(gems = 5, ps = 0)))
-        assertEquals("+2 Power Stones claimed!", missionRewardLabel(infoWith(gems = 0, ps = 2)))
-        assertEquals("+5 Gems +2 Power Stones claimed!", missionRewardLabel(infoWith(gems = 5, ps = 2)))
-        assertEquals("Reward claimed!", missionRewardLabel(null))
-    }
-
-    private fun infoWith(gems: Int, ps: Int) = MissionDisplayInfo(
-        id = 1, description = "d", target = 1, progress = 1, rewardGems = gems, rewardPowerStones = ps,
-        completed = true, claimed = false,
-    )
-
-    @Test
     fun `claiming a completed mission emits one celebration`() = runTest {
         missionDao.insert(DailyMissionEntity(date = today, missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 5000, completed = true, rewardGems = 5))
         val vm = createVm()
         val events = mutableListOf<ClaimCelebrationEvent>()
         backgroundScope.launch { vm.celebration.toList(events) }
+        // claimMission reads the reward off uiState.value.missions; uiState is WhileSubscribed, so a
+        // collector must be active (as the real screen always is) for the seeded mission to be present.
+        backgroundScope.launch { vm.uiState.collect {} }
+        runCurrent()
         val id = missionDao.getByDateOnce(today).first().id
         vm.claimMission(id)
         runCurrent()
         assertEquals(1, events.size)
+        // Seeded mission: 5 gems, 0 power stones.
+        assertEquals(ClaimReward.Bundle(gems = 5, powerStones = 0), events.single().reward)
         vm.cancelForTest()   // stop the while(true) ticker or runTest cleanup hangs
     }
 
@@ -155,6 +150,11 @@ class MissionsViewModelTest {
         vm.claimMilestone(Milestone.FIRST_STEPS)   // player has >= FIRST_STEPS requirement (5000 >= 1000)
         runCurrent()
         assertEquals(1, events.size)
+        // FIRST_STEPS rewards 60 Gems (no power stones, no cosmetics).
+        assertEquals(
+            ClaimReward.Bundle(gems = 60, powerStones = 0, cosmeticNames = emptyList()),
+            events.single().reward,
+        )
         vm.cancelForTest()
     }
 

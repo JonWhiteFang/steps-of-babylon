@@ -4,6 +4,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.domain.model.Milestone
+import com.whitefang.stepsofbabylon.domain.model.MilestoneReward
 import com.whitefang.stepsofbabylon.domain.model.MissionCategory
 import com.whitefang.stepsofbabylon.domain.repository.CosmeticRepository
 import com.whitefang.stepsofbabylon.domain.repository.MilestoneRepository
@@ -18,6 +19,7 @@ import com.whitefang.stepsofbabylon.domain.usecase.GenerateDailyMissions
 import com.whitefang.stepsofbabylon.domain.time.TimeProvider
 import com.whitefang.stepsofbabylon.data.time.SystemTimeProvider
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
+import com.whitefang.stepsofbabylon.presentation.ui.ClaimReward
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -142,7 +144,10 @@ class MissionsViewModel @Inject constructor(
             if (claimMissionUseCase(id, _today.value) == ClaimMissionResult.Success) {
                 // Bundle C (#162): celebrate only on a real credit (Success-gated).
                 val m = uiState.value.missions.find { it.id == id }
-                _celebration.trySend(ClaimCelebrationEvent(label = missionRewardLabel(m)))
+                _celebration.trySend(ClaimCelebrationEvent(
+                    reward = if (m == null) ClaimReward.Generic
+                    else ClaimReward.Bundle(gems = m.rewardGems, powerStones = m.rewardPowerStones),
+                ))
             }
         }
     }
@@ -156,8 +161,14 @@ class MissionsViewModel @Inject constructor(
             // ids to seed rows \u2014 is C.2 PR 3+ content work; until then those 3 milestones
             // cannot be claimed and the snackbar explains why.
             when (val result = claimMilestoneUseCase.invoke(milestone)) {
-                ClaimMilestoneResult.Success ->
-                    _celebration.trySend(ClaimCelebrationEvent(label = "${milestone.rewardsSummary()} claimed!"))
+                ClaimMilestoneResult.Success -> {
+                    val gems = milestone.rewards.filterIsInstance<MilestoneReward.Gems>().sumOf { it.amount }.toInt()
+                    val ps = milestone.rewards.filterIsInstance<MilestoneReward.PowerStones>().sumOf { it.amount }.toInt()
+                    val cosmetics = milestone.rewards.filterIsInstance<MilestoneReward.Cosmetic>().map { it.name }
+                    _celebration.trySend(ClaimCelebrationEvent(
+                        reward = ClaimReward.Bundle(gems = gems, powerStones = ps, cosmeticNames = cosmetics),
+                    ))
+                }
                 ClaimMilestoneResult.InsufficientSteps ->
                     userMessage.value = "You haven't walked enough steps yet."
                 ClaimMilestoneResult.AlreadyClaimed ->
@@ -190,14 +201,4 @@ class MissionsViewModel @Inject constructor(
             missionRepository.updateProgress(m.id, progress, progress >= m.target)
         }
     }
-}
-
-/** Pure celebration-label builder for a claimed mission (testable without the VM). */
-internal fun missionRewardLabel(m: MissionDisplayInfo?): String {
-    if (m == null) return "Reward claimed!"
-    val parts = buildList {
-        if (m.rewardGems > 0) add("+${m.rewardGems} Gems")
-        if (m.rewardPowerStones > 0) add("+${m.rewardPowerStones} Power Stones")
-    }
-    return if (parts.isEmpty()) "Reward claimed!" else parts.joinToString(" ") + " claimed!"
 }

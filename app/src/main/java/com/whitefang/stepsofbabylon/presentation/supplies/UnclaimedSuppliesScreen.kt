@@ -27,10 +27,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebration
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
@@ -120,12 +122,13 @@ private fun SupplyDropCard(drop: SupplyDrop, onClaim: () -> Unit) {
  * + a fixed "x1"; the genuine-quantity rewards keep the "+N <label>" shape. Pure + top-level for
  * unit coverage (SupplyRewardFormatTest).
  */
+@Composable
 internal fun formatSupplyReward(drop: SupplyDrop): String = when (drop.reward) {
-    SupplyDropReward.STEPS -> "+${drop.rewardAmount} Steps"
-    SupplyDropReward.GEMS -> "+${drop.rewardAmount} Gems"
-    SupplyDropReward.POWER_STONES -> "+${drop.rewardAmount} Power Stones"
+    SupplyDropReward.STEPS -> pluralStringResource(R.plurals.reward_steps, drop.rewardAmount, drop.rewardAmount)
+    SupplyDropReward.GEMS -> pluralStringResource(R.plurals.reward_gems, drop.rewardAmount, drop.rewardAmount)
+    SupplyDropReward.POWER_STONES -> pluralStringResource(R.plurals.reward_power_stones, drop.rewardAmount, drop.rewardAmount)
     SupplyDropReward.CARD_COPY -> {
-        // Resolve the SAME card type ClaimSupplyDrop awards so the display matches the grant.
+        // #20: rewardAmount is a card-TYPE index, NOT a quantity — resolve the card name + "x1".
         val cardType = CardType.entries[drop.rewardAmount % CardType.entries.size]
         "${cardType.name.toDisplayName()} x1"
     }

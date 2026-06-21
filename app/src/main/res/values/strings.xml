@@ -137,4 +137,12 @@
     <string name="cosmetic_cat_enemy_skin">Enemy Skin</string>
     <string name="wave_phase_spawning">Spawning</string>
     <string name="wave_phase_cooldown">Cooldown</string>
+
+    <!-- #260: claim-celebration formatting. reward_join glues multiple reward parts; the leading
+         "+" lives inside the per-reward plurals (reward_gems/etc.). -->
+    <string name="reward_join">" "</string>
+    <string name="reward_claimed">%1$s claimed!</string>
+    <string name="reward_generic">Reward claimed!</string>
+    <string name="reward_card">Card</string>
+    <string name="reward_all_supplies">All supplies claimed!</string>
 </resources>

@@ -44,12 +44,4 @@ class MilestoneTest {
         assertEquals(1, cosmetic.size)
         assertEquals("garden_ziggurat_skin", cosmetic[0].id)
     }
-
-    @Test
-    fun `rewardsSummary includes all reward types`() {
-        val summary = Milestone.IRON_SOLES.rewardsSummary()
-        assertTrue(summary.contains("Gems"))
-        assertTrue(summary.contains("Power Stones"))
-        assertTrue(summary.contains("Lapis Lazuli"))
-    }
 }

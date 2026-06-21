@@ -23,9 +23,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.domain.model.Milestone
+import com.whitefang.stepsofbabylon.domain.model.MilestoneReward
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebration
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
+import com.whitefang.stepsofbabylon.presentation.ui.ClaimReward
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
+import com.whitefang.stepsofbabylon.presentation.ui.formatRewardParts
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
@@ -162,7 +165,16 @@ private fun MilestoneCard(ms: MilestoneDisplayInfo, onClaim: () -> Unit, fmt: Nu
             Text("${fmt.format(milestone.requiredSteps)} steps", style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))
-            Text(milestone.rewardsSummary(), style = MaterialTheme.typography.bodySmall)
+            Text(
+                formatRewardParts(
+                    ClaimReward.Bundle(
+                        gems = milestone.rewards.filterIsInstance<MilestoneReward.Gems>().sumOf { it.amount }.toInt(),
+                        powerStones = milestone.rewards.filterIsInstance<MilestoneReward.PowerStones>().sumOf { it.amount }.toInt(),
+                        cosmeticNames = milestone.rewards.filterIsInstance<MilestoneReward.Cosmetic>().map { it.name },
+                    ),
+                ),
+                style = MaterialTheme.typography.bodySmall,
+            )
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = { progress },
