@@ -36,3 +36,13 @@ import com.whitefang.stepsofbabylon.domain.usecase.PackTier
     CosmeticCategory.PROJECTILE_EFFECT -> R.string.cosmetic_cat_projectile_effect
     CosmeticCategory.ENEMY_SKIN -> R.string.cosmetic_cat_enemy_skin
 }
+
+/**
+ * #260: BattleUiState.wavePhase is a String ("SPAWNING"/"COOLDOWN"/""), not the WavePhase enum,
+ * so this resolves from the raw string. Returns null for the blank/unknown default (render nothing).
+ */
+@StringRes fun wavePhaseLabelRes(rawPhase: String): Int? = when (rawPhase) {
+    "SPAWNING" -> R.string.wave_phase_spawning
+    "COOLDOWN" -> R.string.wave_phase_cooldown
+    else -> null
+}

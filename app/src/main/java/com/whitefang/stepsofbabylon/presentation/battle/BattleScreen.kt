@@ -65,6 +65,7 @@ import com.whitefang.stepsofbabylon.presentation.battle.ui.InRoundUpgradeMenu
 import com.whitefang.stepsofbabylon.presentation.battle.ui.UltimateWeaponBar
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PauseOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PostRoundOverlay
+import com.whitefang.stepsofbabylon.presentation.ui.wavePhaseLabelRes
 
 @Composable
 fun BattleScreen(
@@ -218,7 +219,9 @@ fun BattleScreen(
                 ),
                 color = Color.White, style = MaterialTheme.typography.titleMedium,
             )
-            Text(state.wavePhase.lowercase().replaceFirstChar { it.uppercase() }, color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+            wavePhaseLabelRes(state.wavePhase)?.let { phaseRes ->
+                Text(stringResource(phaseRes), color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+            }
             LinearProgressIndicator(
                 progress = { state.waveProgress },
                 modifier = Modifier.width(120.dp).height(4.dp).padding(top = 2.dp),
