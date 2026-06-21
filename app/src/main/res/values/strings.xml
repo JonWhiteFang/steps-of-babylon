@@ -4,7 +4,9 @@
     <!-- Step counter notification -->
     <string name="notif_step_channel_name">Step Counter</string>
     <string name="notif_step_channel_desc">Shows your daily step count</string>
-    <string name="notif_step_content">Today: %1$d steps | Balance: %2$d Steps</string>
+    <!-- #259: composed from notif_today_steps (plural, in plurals.xml) + notif_balance; word order in the resource. -->
+    <string name="notif_step_content">%1$s | %2$s</string>
+    <string name="notif_balance">Balance: %1$d Steps</string>
     <string name="notif_step_action_workshop">Workshop</string>
     <string name="notif_step_action_battle">Battle</string>
     <string name="notif_step_minimal">Step tracking active</string>
@@ -145,4 +147,10 @@
     <string name="reward_generic">Reward claimed!</string>
     <string name="reward_card">Card</string>
     <string name="reward_all_supplies">All supplies claimed!</string>
+
+    <!-- #259: widget + smart-reminder copy (run outside Compose; getString/getQuantityString) -->
+    <string name="widget_balance">Balance: %1$s</string>
+    <string name="reminder_channel_name">Smart Reminders</string>
+    <string name="reminder_channel_desc">Upgrade proximity reminders</string>
+    <string name="reminder_title">Almost there!</string>
 </resources>

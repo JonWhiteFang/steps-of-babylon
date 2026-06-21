@@ -57,7 +57,17 @@ class StepNotificationManager @Inject constructor(
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_directions)
             .setContentTitle(context.getString(R.string.app_name))
-            .setContentText(context.getString(R.string.notif_step_content, dailySteps, balance))
+            .setContentText(
+                context.getString(
+                    R.string.notif_step_content,
+                    context.resources.getQuantityString(
+                        R.plurals.notif_today_steps,
+                        dailySteps.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
+                        dailySteps,
+                    ),
+                    context.getString(R.string.notif_balance, balance),
+                )
+            )
             .setContentIntent(tapIntent)
             .addAction(0, context.getString(R.string.notif_step_action_workshop), workshopIntent)
             .addAction(0, context.getString(R.string.notif_step_action_battle), battleIntent)

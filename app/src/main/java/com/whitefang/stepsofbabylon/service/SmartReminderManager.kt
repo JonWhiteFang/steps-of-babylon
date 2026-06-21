@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.data.NotificationPreferences
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
@@ -38,8 +39,8 @@ class SmartReminderManager @Inject constructor(
     private val calculateCost = CalculateUpgradeCost()
 
     init {
-        val channel = NotificationChannel(CHANNEL_ID, "Smart Reminders", NotificationManager.IMPORTANCE_DEFAULT)
-            .apply { description = "Upgrade proximity reminders" }
+        val channel = NotificationChannel(CHANNEL_ID, context.getString(R.string.reminder_channel_name), NotificationManager.IMPORTANCE_DEFAULT)
+            .apply { description = context.getString(R.string.reminder_channel_desc) }
         notificationManager.createNotificationChannel(channel)
     }
 
@@ -76,8 +77,14 @@ class SmartReminderManager @Inject constructor(
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_directions)
-            .setContentTitle("Almost there!")
-            .setContentText("You're $bestGap steps from upgrading $bestName!")
+            .setContentTitle(context.getString(R.string.reminder_title))
+            .setContentText(
+                context.resources.getQuantityString(
+                    R.plurals.reminder_steps_away,
+                    bestGap.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
+                    bestGap, bestName,
+                )
+            )
             .setContentIntent(intent)
             .setAutoCancel(true)
             .build()

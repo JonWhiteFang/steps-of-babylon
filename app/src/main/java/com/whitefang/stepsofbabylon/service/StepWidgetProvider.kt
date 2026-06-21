@@ -34,8 +34,15 @@ class StepWidgetProvider : AppWidgetProvider() {
             val balance = prefs.getLong(KEY_BALANCE, 0)
             val fmt = NumberFormat.getNumberInstance()
             val views = RemoteViews(context.packageName, R.layout.widget_step_counter).apply {
-                setTextViewText(R.id.widget_daily_steps, "${fmt.format(steps)} steps")
-                setTextViewText(R.id.widget_balance, "Balance: ${fmt.format(balance)}")
+                setTextViewText(
+                    R.id.widget_daily_steps,
+                    context.resources.getQuantityString(
+                        R.plurals.widget_steps,
+                        steps.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
+                        fmt.format(steps),
+                    ),
+                )
+                setTextViewText(R.id.widget_balance, context.getString(R.string.widget_balance, fmt.format(balance)))
                 setOnClickPendingIntent(R.id.widget_root, PendingIntent.getActivity(
                     context, 0, Intent(context, MainActivity::class.java),
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
