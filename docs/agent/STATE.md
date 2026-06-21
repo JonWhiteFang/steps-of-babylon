@@ -12,10 +12,10 @@ data-integrity #237/#238/#248) via release PR #278 (squash `ffa9973`). **ALL 4 n
 Latest content wave MERGED: data-integrity (PR #276, `0f32ac6`; #237/#238/#248 auto-closed; ADR-0030,
 single-agent review caught a critical pre-code defect). Earlier waves MERGED: #261/#233 (PR #274, `8b50b13`);
 #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.9 (vc 25)** · **1195 JVM + 9 instrumented tests**
+Supersedes **v1.0.9 (vc 25)** · **1196 JVM + 9 instrumented tests**
 green (1110 shipped in v1.0.10; +8 reliability wave #251/#249 → 1118; +8 correctness/UX wave
 #225/#235/#224/#222 → 1126; +4 privacy/monetization #240/#239/#241 → 1130; +9 perf wave #242/#243 → 1139;
-+13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; +26 i18n correctness wave #259/#260 → 1195; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
++13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; +26 i18n correctness wave #259/#260 → 1195; +1 #220 domain-purity guard hardening → 1196; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -33,7 +33,19 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — branch `feat/i18n-correctness-259-260`, 16 commits, ready to PR; `[Unreleased]`).**
+- **CURRENT (DONE — branch `chore/220-harden-domain-purity-guard`, ready to PR; `[Unreleased]`).**
+  **Close the data↔domain cycle (#220, ARCH-3).** Investigation found the cycle was **already resolved**
+  by the #227/#228/#229 cluster — its back-edge (`domain.usecase → data.local`) is gone, `domain/` has
+  zero `data.*` imports (only KDoc doc-links remain), independently re-verified. So #220 is a
+  verify-and-close, not a refactor. To lock it ahead of a future `domain` Gradle-module extraction (#27),
+  `DomainPurityTest` gains a third check: fails on an **inline fully-qualified** `…data…` reference in
+  domain *code* (the import scan would miss it), comment-stripped so KDoc doc-links don't false-positive;
+  mutation-verified. **Test-only; 1195 → 1196 JVM**; `testDebugUnitTest lintDebug` BUILD SUCCESSFUL.
+  **Closes #220.** No ADR (extends the #228 guard). **Next:** PR; then remaining audit majors — #230/#231
+  (GameEngine god-class / ADR-0012 hoist — the big one), #234 (process-death/SavedStateHandle), #211
+  (clock-tamper), #258 (schema docs), #253 (Compose UI tests); i18n #34; med/low #262/#128.
+- **Previous objective (DONE — MERGED PR #302, squash `7cc02d1`; #259 auto-closed; #260 left open for the
+  #34 prose tail; `[Unreleased]`).**
   **i18n correctness wave (#259 plurals · #260 concatenation + raw enum-name surfacing)** off the
   2026-06-18 complete-app-review backlog. **No schema/economy/engine change; 1169 → 1195 JVM** (+26);
   `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec + plan **and** a final whole-branch

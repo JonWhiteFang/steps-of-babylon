@@ -320,14 +320,15 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1195 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1196 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Compose UI tests run on the JVM lane (#253):** `createComposeRule()` under Robolectric
   (`@RunWith(RobolectricTestRunner)` + `@GraphicsMode(NATIVE)`), backed by the `src/test/` fakes — no
   emulator, gated by the PR lane. `ui-test-manifest` must stay on `debugImplementation` (it supplies the
   host `ComponentActivity` the rule launches). See `CardsScreenTest` / `OnboardingScreenTest`.
 - **Notable guards:** `architecture/DomainPurityTest` (fails if `domain/` imports any Android package,
-  the `data` layer, or a DI framework — the full dependency rule, #227/#228);
+  the `data` layer, or a DI framework — the full dependency rule, #227/#228; also catches inline
+  fully-qualified `data.*` refs in domain code, comment-stripped so KDoc doc-links are ignored — #220);
   `architecture/PresentationPurityTest` (fails if `presentation/` imports a `data.local` DAO/`AppDatabase`/
   `@Entity` — #219/#229; allowlists the `BattleViewModel` `AppDatabase` seam);
   `SimulationTest` (the extracted pure-domain game-loop core); `AtomicDaoConcurrencyTest` (#252 — the
