@@ -24,6 +24,11 @@ class PluralsResourceTest {
         assertEquals("+3 Steps", res.getQuantityString(R.plurals.fx_step_reward, 3, 3))
     }
 
+    @Test fun `steps_earned_banner one vs other keeps emoji`() {
+        assertEquals("👟 +1 Step", res.getQuantityString(R.plurals.steps_earned_banner, 1, 1))
+        assertEquals("👟 +3 Steps", res.getQuantityString(R.plurals.steps_earned_banner, 3, 3))
+    }
+
     @Test fun `wave_enemies one vs other`() {
         assertEquals("1 enemy", res.getQuantityString(R.plurals.wave_enemies, 1, 1))
         assertEquals("5 enemies", res.getQuantityString(R.plurals.wave_enemies, 5, 5))
@@ -38,7 +43,9 @@ class PluralsResourceTest {
         assertEquals("+1 Gem", res.getQuantityString(R.plurals.reward_gems, 1, 1))
         assertEquals("+2 Gems", res.getQuantityString(R.plurals.reward_gems, 2, 2))
         assertEquals("+1 Power Stone", res.getQuantityString(R.plurals.reward_power_stones, 1, 1))
+        assertEquals("+2 Power Stones", res.getQuantityString(R.plurals.reward_power_stones, 2, 2))
         assertEquals("+1 Step", res.getQuantityString(R.plurals.reward_steps, 1, 1))
+        assertEquals("+4 Steps", res.getQuantityString(R.plurals.reward_steps, 4, 4))
     }
 
     @Test fun `card_copies and days_remaining one vs other`() {
@@ -50,8 +57,20 @@ class PluralsResourceTest {
 
     @Test fun `widget and notif and reminder steps one vs other`() {
         assertEquals("1 step", res.getQuantityString(R.plurals.widget_steps, 1, 1))
+        assertEquals("5 steps", res.getQuantityString(R.plurals.widget_steps, 5, 5))
         assertEquals("Today: 1 step", res.getQuantityString(R.plurals.notif_today_steps, 1, 1))
         assertEquals("Today: 9 steps", res.getQuantityString(R.plurals.notif_today_steps, 9, 9))
+    }
+
+    @Test fun `reminder_steps_away one vs other carries upgrade name and apostrophe`() {
+        assertEquals(
+            "You're 1 step from upgrading Damage!",
+            res.getQuantityString(R.plurals.reminder_steps_away, 1, 1, "Damage"),
+        )
+        assertEquals(
+            "You're 250 steps from upgrading Damage!",
+            res.getQuantityString(R.plurals.reminder_steps_away, 250, 250, "Damage"),
+        )
     }
 
     @Test fun `page_x_of_n carries both args`() {
