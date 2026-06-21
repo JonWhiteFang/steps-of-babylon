@@ -44,9 +44,10 @@ import com.whitefang.stepsofbabylon.presentation.ui.EquippedChip
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.RarityBadge
-import com.whitefang.stepsofbabylon.presentation.ui.cardRarityLabel
+import com.whitefang.stepsofbabylon.presentation.ui.cardRarityLabelRes
 import com.whitefang.stepsofbabylon.presentation.ui.cardRarityTier
 import com.whitefang.stepsofbabylon.presentation.ui.color
+import com.whitefang.stepsofbabylon.presentation.ui.labelRes
 import com.whitefang.stepsofbabylon.presentation.ui.rarityBorder
 import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
@@ -117,7 +118,7 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
                         modifier = Modifier.weight(1f).pulseScale(packPulse),
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(pack.tier.name)
+                            Text(stringResource(pack.tier.labelRes()))
                             CurrencyCost(CurrencyType.GEMS, pack.tier.gemCost)
                         }
                     }
@@ -194,7 +195,7 @@ private fun CardItem(
         Column(Modifier.padding(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    RarityBadge(tier, cardRarityLabel(card.type.rarity))
+                    RarityBadge(tier, stringResource(cardRarityLabelRes(card.type.rarity)))
                     Text(formatName(card.type.name), style = MaterialTheme.typography.titleSmall)
                 }
                 if (card.isEquipped) {

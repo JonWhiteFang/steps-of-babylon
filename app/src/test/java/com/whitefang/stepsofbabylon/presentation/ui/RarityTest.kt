@@ -54,20 +54,6 @@ class RarityTest {
     }
 
     @Test
-    fun `uw labels never say COMMON`() {
-        assertEquals("RARE", uwRarityLabel(RarityTier.TIER_0))
-        assertEquals("EPIC", uwRarityLabel(RarityTier.TIER_1))
-        assertEquals("LEGENDARY", uwRarityLabel(RarityTier.TIER_2))
-    }
-
-    @Test
-    fun `card labels are the rarity name`() {
-        assertEquals("COMMON", cardRarityLabel(CardRarity.COMMON))
-        assertEquals("RARE", cardRarityLabel(CardRarity.RARE))
-        assertEquals("EPIC", cardRarityLabel(CardRarity.EPIC))
-    }
-
-    @Test
     fun `the three tiers map to three distinct colours`() {
         // Exercises the REAL color() (plain fun, JVM-reachable) — not a parallel shadow mapping.
         assertEquals(3, RarityTier.entries.map { it.color() }.toSet().size)

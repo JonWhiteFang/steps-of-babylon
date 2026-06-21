@@ -118,4 +118,22 @@
     <string name="battle_error_body">Something went wrong and the battle had to stop. Your progress for this round wasn\'t saved.</string>
     <string name="battle_error_return">Return to menu</string>
     <string name="crash_notice_last_session">The game closed unexpectedly last time. Sorry about that!</string>
+
+    <!-- #260: localized enum display names (replace raw CONSTANT_CASE surfacing) -->
+    <string name="upgrade_cat_attack">Attack</string>
+    <string name="upgrade_cat_defense">Defense</string>
+    <string name="upgrade_cat_utility">Utility</string>
+    <string name="pack_tier_common">Common</string>
+    <string name="pack_tier_rare">Rare</string>
+    <string name="pack_tier_epic">Epic</string>
+    <string name="rarity_common">COMMON</string>
+    <string name="rarity_rare">RARE</string>
+    <string name="rarity_epic">EPIC</string>
+    <string name="uw_rarity_rare">RARE</string>
+    <string name="uw_rarity_epic">EPIC</string>
+    <string name="uw_rarity_legendary">LEGENDARY</string>
+    <!-- (Task 6 consumes these; added here so EnumLabels.kt compiles) -->
+    <string name="cosmetic_cat_ziggurat_skin">Ziggurat Skin</string>
+    <string name="cosmetic_cat_projectile_effect">Projectile Effect</string>
+    <string name="cosmetic_cat_enemy_skin">Enemy Skin</string>
 </resources>

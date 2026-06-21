@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.padding
@@ -14,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.CardRarity
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
 import com.whitefang.stepsofbabylon.presentation.ui.theme.LapisLight
@@ -62,19 +64,24 @@ fun uwRarityTier(unlockCost: Int): RarityTier = when {
 }
 
 /** Card label = the rarity name (COMMON / RARE / EPIC). */
-fun cardRarityLabel(rarity: CardRarity): String = rarity.name
+@StringRes fun cardRarityLabelRes(rarity: CardRarity): Int = when (rarity) {
+    CardRarity.COMMON -> R.string.rarity_common
+    CardRarity.RARE -> R.string.rarity_rare
+    CardRarity.EPIC -> R.string.rarity_epic
+}
 
 /** UW label shifts up so no UW reads as "common" (RARE / EPIC / LEGENDARY). */
-fun uwRarityLabel(tier: RarityTier): String = when (tier) {
-    RarityTier.TIER_0 -> "RARE"
-    RarityTier.TIER_1 -> "EPIC"
-    RarityTier.TIER_2 -> "LEGENDARY"
+@StringRes fun uwRarityLabelRes(tier: RarityTier): Int = when (tier) {
+    RarityTier.TIER_0 -> R.string.uw_rarity_rare
+    RarityTier.TIER_1 -> R.string.uw_rarity_epic
+    RarityTier.TIER_2 -> R.string.uw_rarity_legendary
 }
 
 /**
  * Filled pill badge in the tier colour, dark text for contrast on the light tier colours.
- * [label] is supplied by the caller ([cardRarityLabel] / [uwRarityLabel]) so the same badge serves
- * both screens' naming. [alpha] dims the badge for a locked UW (spec D6); default 1f = full opacity.
+ * [label] is supplied by the caller (resolving [cardRarityLabelRes] / [uwRarityLabelRes] via
+ * stringResource) so the same badge serves both screens' naming. [alpha] dims the badge for a
+ * locked UW (spec D6); default 1f = full opacity.
  */
 @Composable
 fun RarityBadge(tier: RarityTier, label: String, alpha: Float = 1f) {

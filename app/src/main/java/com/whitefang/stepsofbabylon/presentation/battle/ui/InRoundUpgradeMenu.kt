@@ -32,6 +32,7 @@ import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.usecase.UpgradeEffectReadout
+import com.whitefang.stepsofbabylon.presentation.ui.labelRes
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
@@ -107,7 +108,7 @@ fun InRoundUpgradeMenu(
         PrimaryTabRow(selectedTabIndex = selectedTab) {
             tabs.forEachIndexed { i, cat ->
                 Tab(selected = i == selectedTab, onClick = { selectedTab = i },
-                    text = { Text(cat.name, fontSize = 12.sp) })
+                    text = { Text(stringResource(cat.labelRes()), fontSize = 12.sp) })
             }
         }
 
