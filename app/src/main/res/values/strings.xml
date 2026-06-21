@@ -26,8 +26,22 @@
     <string name="fx_heal_hp">+%1$d HP</string>
     <string name="fx_rapid_fire">RAPID FIRE!</string>
     <string name="fx_cash_reward">+%1$d</string>
-    <string name="fx_step_reward">+%1$d Step</string>
     <string name="fx_power_stone_reward">+%1$d PS</string>
+
+    <!-- #260: localized enemy-type names (replace raw EnemyType.name in the wave-composition overlay) -->
+    <string name="enemy_basic">Basic</string>
+    <string name="enemy_fast">Fast</string>
+    <string name="enemy_tank">Tank</string>
+    <string name="enemy_ranged">Ranged</string>
+    <string name="enemy_boss">Boss</string>
+    <string name="enemy_scatter">Scatter</string>
+
+    <!-- #260: next-wave composition (ENEMY_INTEL overlay). %1$s = the joined per-type list. -->
+    <string name="wave_composition">Next: %1$s</string>
+    <!-- per-type entry: %1$d = count, %2$s = localized enemy name -->
+    <string name="wave_comp_entry">%1$d %2$s</string>
+    <!-- separator between entries -->
+    <string name="wave_composition_separator">", "</string>
 
     <!-- Workshop screen -->
     <string name="workshop_weapons">⚔ Ultimate Weapons</string>

@@ -837,7 +837,8 @@ class GameEngine {
         val spawner = waveSpawner ?: return null
         val comp = spawner.getWaveComposition(spawner.currentWave + 1)
         if (comp.isEmpty()) return null
-        return "Next: " + comp.entries.joinToString(", ") { "${it.value} ${it.key.name}" }
+        return strings?.waveComposition(comp)
+            ?: ("Next: " + comp.entries.joinToString(", ") { "${it.value} ${it.key.name}" })
     }
 
     /**
@@ -849,7 +850,8 @@ class GameEngine {
         if (enemyIntelLevel < 10) return null
         val spawner = waveSpawner ?: return null
         val waves = spawner.wavesUntilNextBoss()
-        return if (waves == 1) "Boss next wave" else "Boss in $waves waves"
+        return strings?.bossCountdown(waves)
+            ?: if (waves == 1) "Boss next wave" else "Boss in $waves waves"
     }
 
     // --- Orb management ---
