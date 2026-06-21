@@ -19,10 +19,13 @@ import java.io.File
  * `import com.whitefang.stepsofbabylon.data.local.SomeDao` to a domain file) fails the build with
  * the offending file + import listed.
  *
- * Known limitation (#228): the scan matches only `import` lines, so an inline fully-qualified
- * reference (`com.whitefang.stepsofbabylon.data.local.X` with no import) would evade it. No domain
- * file does this today; the existing `…data.*` strings in domain are all KDoc `[…]` doc-links, which
- * are not `import` lines and so are correctly ignored. A full AST/Konsist check is out of scope.
+ * The import scan is complemented by an **inline fully-qualified reference** check (#220): a domain
+ * file could reach the data layer without an `import` by writing `com.whitefang.stepsofbabylon.data.local.X`
+ * inline in code — which the import scan would miss. The third test strips comments (so the existing
+ * `…data.*` KDoc `[…]` doc-links are correctly ignored) and fails on any inline `…data.*` reference in
+ * executable code. Together the two checks close the cycle the #227/#228/#229 cluster broke (GitHub #220),
+ * so it stays build-enforced ahead of any future `domain` Gradle-module extraction (#27). A full
+ * AST/Konsist check remains out of scope; the comment-strip is a pragmatic line-level approximation.
  *
  * Forbidden prefixes cover the framework (`android.`, `androidx.`), the two third-party SDK
  * namespaces that must never leak into domain (`com.android.` — Play Billing;
@@ -78,5 +81,53 @@ class DomainPurityTest {
             "domain/ must not import a DI framework (Dagger/Hilt/javax.inject) — found:\n" +
                 offenders.joinToString("\n")
         }
+    }
+
+    /**
+     * #220: an inline fully-qualified `com.whitefang.stepsofbabylon.data…` reference in domain CODE
+     * (no `import` line) would reach the data layer while evading the import scan above. Strip comments
+     * first so the legitimate `…data.*` KDoc `[…]` doc-links (BillingManager / PlayerRepository /
+     * BillingProduct) are ignored, then fail on any data-layer FQN left in executable code.
+     */
+    @Test
+    fun `domain layer has no inline fully-qualified data-layer references`() {
+        val dataFqn = Regex("""\bcom\.whitefang\.stepsofbabylon\.data\b""")
+        val offenders = domainSourceFiles().flatMap { file ->
+            stripComments(file.readText()).lineSequence()
+                .mapIndexedNotNull { idx, line ->
+                    // Ignore the `import` lines — those are covered (and asserted) by the import scan.
+                    if (!line.trim().startsWith("import ") && dataFqn.containsMatchIn(line)) {
+                        "${file.name}:${idx + 1}: ${line.trim()}"
+                    } else null
+                }
+        }.toList()
+
+        assertTrue(offenders.isEmpty()) {
+            "domain/ must have zero inline fully-qualified data-layer references (#220) — found:\n" +
+                offenders.joinToString("\n")
+        }
+    }
+
+    private fun domainSourceFiles(): List<File> {
+        val domainRoot = File("src/main/java/com/whitefang/stepsofbabylon/domain")
+        assertTrue(domainRoot.isDirectory) {
+            "domain source root not found at ${domainRoot.absolutePath} (working dir = ${File(".").absolutePath})"
+        }
+        return domainRoot.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
+    }
+
+    /**
+     * Removes Kotlin `/* … */` (incl. KDoc `/** … */`) block comments and `//` line comments so the
+     * inline-FQN scan sees executable code only. Deliberately simple (no string-literal awareness): a
+     * data-layer FQN never legitimately appears inside a domain string literal, so the approximation is
+     * safe for this guard.
+     */
+    private fun stripComments(source: String): String {
+        // Replace each block comment with the SAME number of newlines it spanned, so line numbers in
+        // the offender report stay aligned with the original file.
+        val noBlock = source.replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL)) { match ->
+            "\n".repeat(match.value.count { it == '\n' })
+        }
+        return noBlock.lines().joinToString("\n") { it.substringBefore("//") }
     }
 }

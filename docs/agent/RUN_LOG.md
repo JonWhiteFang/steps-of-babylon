@@ -1,3 +1,31 @@
+## 2026-06-21 — Close the data↔domain cycle (#220, ARCH-3): verify resolved + harden the purity guard (`[Unreleased]`)
+
+- **Goal:** address audit major #220 — "cyclic data↔domain package coupling blocks extracting a domain
+  module" (filed 2026-06-17, cites `DailyStepManager.kt:19-21` importing `domain.usecase.*` while those
+  use cases import `data.local.*` back).
+- **Finding:** the cycle was **already resolved** by the #227/#228/#229 architecture cluster (#220 predates
+  it). The back-edge `domain.usecase → data.local` is gone — `GenerateSupplyDrop` is pure, and #227
+  (`cfe46f1`) rewired `TrackDailyLogin`/`TrackWeeklyChallenge` onto domain repository ports. **Zero `domain/`
+  files import `data.*`** (only 6 KDoc `[…]` doc-links reference data types, which the build tolerates); no
+  `android`/`R`/`BuildConfig`/Room/DI refs either. The remaining `data → domain.usecase` edge
+  (`DailyStepManager`) is the one *legal* Clean-Architecture direction. Independently re-verified by a
+  second agent (forward edge + back edge + transitive + guard + git-blame): verdict FULLY RESOLVED.
+- **Change (test-only, to lock it ahead of the #27 domain-module extraction):** `DomainPurityTest` gains a
+  third test — fails on an **inline fully-qualified** `com.whitefang.stepsofbabylon.data…` reference in
+  domain *code* (the existing import scan would miss a no-import FQN). `stripComments()` removes block +
+  line comments first (preserving line numbers) so the legitimate KDoc doc-links don't false-positive.
+  **Mutation-verified:** injecting `private val leak = com…data.local.AppDatabase::class…` into
+  `GenerateSupplyDrop` turned the new test RED (and the import-scan test did NOT catch it — proving the new
+  test closes the documented gap); reverted clean.
+- **Verification:** `./run-gradle.sh testDebugUnitTest lintDebug` BUILD SUCCESSFUL; DomainPurityTest 2→3
+  tests; **1195 → 1196 JVM**, 0 failures.
+- **Doc sync:** CLAUDE.md headline 1195→1196 + the DomainPurityTest "notable guards" line (inline-FQN check);
+  CHANGELOG `[Unreleased]` new #220 section; STATE.md current objective rotated (+ i18n bullet marked MERGED
+  PR #302) + headline count. No ADR (extends the #228 guard).
+- **Remains / next:** **Closes #220.** Open the PR. Then remaining audit majors: #230/#231 (GameEngine
+  god-class / ADR-0012 Simulation-hoist — the large one), #234 (process-death/SavedStateHandle), #211
+  (clock-tamper), #258 (schema-doc staleness), #253 (Compose UI follow-up screens); i18n #34; med/low #262/#128.
+
 ## 2026-06-21 — i18n correctness wave: #259 plurals · #260 concatenation + raw enum-name surfacing (`[Unreleased]`)
 
 - **Goal:** fix the two genuine i18n *correctness* bugs from the 2026-06-18 complete-app review — grammatically-

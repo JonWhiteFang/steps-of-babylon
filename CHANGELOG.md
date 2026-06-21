@@ -4,6 +4,18 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Architecture — close the data↔domain cycle (#220): verify resolved + harden the purity guard
+
+The cyclic `data↔domain` coupling #220 (ARCH-3) flagged was **already resolved** by the #227/#228/#229
+architecture cluster — the back-edge (`domain.usecase → data.local`) is gone; `domain/` has zero
+`data.*` imports and the only `data.*` strings left are KDoc doc-links. Independently re-verified
+(no domain→data edge remains; `data → domain` is the one legal direction). To lock it shut ahead of any
+future `domain` Gradle-module extraction (#27), `DomainPurityTest` gains a third check: it now also
+fails on an **inline fully-qualified** `com.whitefang.stepsofbabylon.data…` reference in domain *code*
+(the import scan would miss it). Comment-stripped first so the legitimate KDoc doc-links don't
+false-positive; mutation-verified. **Test-only — no production code; 1195 → 1196 JVM**;
+`testDebugUnitTest lintDebug` BUILD SUCCESSFUL. Closes #220. No ADR (extends the #228 guard).
+
 ### i18n correctness wave: plurals (#259) · concatenation + raw enum-name surfacing (#260)
 
 Fixes the two genuine i18n *correctness* bugs from the 2026-06-18 complete-app review, on the existing
