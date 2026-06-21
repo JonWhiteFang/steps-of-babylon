@@ -12,12 +12,43 @@
 
 ---
 
+> **Plan reviewed via the Adversarial Review Gate** (37-agent run, 32 findings → 28 surviving / 4 refuted;
+> 7 critical). All surviving findings are folded into the tasks below. Two facts the review nailed down:
+> (1) a `<string>` and a `<plurals>` with the **same name coexist** (different R types — confirmed against
+> the Android docs), so the flat→plural migration does not collide; we still **delete the flat string and
+> rewire its consumer** so the buggy form can't ship. (2) `GameEngineTest:55-79` **does** assert
+> `nextWaveCompositionLabel()=="Next: 7 BASIC"` and `bossCountdownLabel()=="Boss in 9 waves"` — these stay
+> green **because** Task 4's literal fallback keeps that exact raw English (FZ-1 degraded-fallback framing).
+
+## Breaking-test ledger (every existing test this wave changes — keep in sync)
+
+A subagent executing a task **must** update the listed test in the SAME task/commit, or the build breaks:
+
+| Test (file:line) | Why it breaks | Task that fixes it |
+|---|---|---|
+| `MissionsViewModelTest.kt:125-129` (`missionRewardLabel …`) + the private `infoWith` helper | `missionRewardLabel` deleted | Task 9 Step 4 (delete that test + `infoWith`) |
+| `UnclaimedSuppliesViewModelTest.kt:82-87` (`supplyLabel formats each reward type`) | `supplyLabel` deleted | Task 10 Step 4 (delete; replaced by `toClaimReward` asserts) |
+| `MilestoneTest.kt:49-50` (`rewardsSummary includes all reward types`) | `Milestone.rewardsSummary()` deleted | Task 9 Step 3a (delete; coverage → `ClaimRewardFormatTest`) |
+| `CardsScreenTest.kt:107,118,119` (`onNodeWithText(PackTier.COMMON.name)`) | tier renders "Common" not "COMMON" | Task 5 Step 4a (→ `onNodeWithText("Common")`) |
+| `RarityTest.kt:58-67` (`uwRarityLabel`/`cardRarityLabel` String asserts) | fns become `@StringRes Int` | Task 5 Step 5a (re-point to `*Res` + resolve via Robolectric, OR keep label-text asserts in `EnumLabelResTest`) |
+| `StatsViewModelTest` (if it asserts `"MON"`) | DayOfWeek short name is now `"Mon"` | Task 7 Step 2 |
+| `GameEngineTest.kt:55-79` (composition/countdown literals) | **does NOT break** — fallback keeps raw English | Task 4 Step 6 (acknowledge only) |
+| `OnboardingScreenTest` (`"Page 1 of N"`) | **does NOT break** — plural renders identical English | Task 2 Step 5 |
+| `StepWidgetProviderTest` | tests `saveData`, not text — **does NOT break** | Task 11 (verify only) |
+
 ## Conventions for this plan
 
 - **Build/test command:** `./run-gradle.sh <task>` (never `./gradlew` — non-TTY hang). Single JVM test:
   `./run-gradle.sh testDebugUnitTest --tests "com.whitefang.stepsofbabylon.<FQCN>"`.
 - **Resource-resolving tests are Robolectric** (`@RunWith(RobolectricTestRunner)`, `@Config(sdk=[34], application = android.app.Application::class)`, `ApplicationProvider.getApplicationContext()`). `unitTests.isIncludeAndroidResources = true` is already set, so Robolectric reads real `R.string`/`R.plurals`. Pure-JVM (JUnit Jupiter) tests **cannot** resolve resources (they hit `isReturnDefaultValues` stubs).
-- **Commit after every task** (the step is explicit). Keep commits scoped to the task.
+- **Commit after every task** (the step is explicit) — **EXCEPT Tasks 8–10**, which are ONE compile-coupled
+  unit (the `ClaimCelebrationEvent` shape change breaks all 4 call sites until both VMs are migrated): do
+  **not** commit until Task 10 Step 5, which builds + commits all three together. Do NOT introduce a
+  temporary `label` secondary constructor — implement 8→9→10 back-to-back.
+- **Long→Int plural selector idiom (use verbatim — CC-1):** `value.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()`
+  as the `getQuantityString`/`pluralStringResource` *quantity selector* (the bounds must be `Long` literals
+  `0L`/`Int.MAX_VALUE.toLong()` — `coerceIn(0, Int.MAX_VALUE)` does NOT compile on a `Long`); pass the full
+  value as the `%1$d` format arg.
 - **Do NOT touch** (fragile zones, spec §6): `entitiesLock`/game-loop ordering, `GameLoopThread` guard, `MissionsViewModel` `_today` ticker / `cancelForTest()` / `Channel.CONFLATED` mechanics, `formatCurrency`'s `Locale.US`, the `OnboardingSlide` pure model, the #20 CARD_COPY supply behavior, the #43 balance fold.
 
 ## File Structure (created / modified)
@@ -65,13 +96,16 @@
     <!-- #259 i18n correctness wave: count-driven nouns. English needs only one/other;
          the structure lets a future locale add few/many/zero. -->
 
-    <!-- Engine floating-text (via domain/Strings → getQuantityString). Replaces flat fx_step_reward. -->
+    <!-- Engine floating-text (via domain/Strings → getQuantityString, Task 4 rewires AndroidStrings.stepReward).
+         The flat <string name="fx_step_reward"> is DELETED in Task 4 Step 4 (coexists harmlessly until then —
+         different R type — but we delete it so the buggy singular form can't ship). -->
     <plurals name="fx_step_reward">
         <item quantity="one">+%1$d Step</item>
         <item quantity="other">+%1$d Steps</item>
     </plurals>
 
-    <!-- Battle HUD banner (Compose). Replaces flat steps_earned_banner. Keeps the 👟 glyph. -->
+    <!-- Battle HUD banner + post-round overlay (Compose). The flat <string name="steps_earned_banner">
+         is DELETED in Task 2 Step 1 (both consumers rewired in Task 2 Step 2). Keeps the 👟 glyph. -->
     <plurals name="steps_earned_banner">
         <item quantity="one">👟 +%1$d Step</item>
         <item quantity="other">👟 +%1$d Steps</item>
@@ -225,13 +259,15 @@ git commit -m "feat(i18n): add plurals.xml for count-driven nouns (#259) + Robol
 These are main-thread Compose sites — use `pluralStringResource`. (Engine/notification plurals come in Tasks 4 & 11.) The `battle_wave_header` flat string is split so the enemy count is plural-aware.
 
 **Files:**
-- Modify: `app/src/main/res/values/strings.xml` (split `battle_wave_header`, add `card_pull_result`)
-- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/BattleScreen.kt:213,228`
+- Modify: `app/src/main/res/values/strings.xml` (split `battle_wave_header`, **delete flat `steps_earned_banner`**, add `card_pull_result`)
+- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/BattleScreen.kt:213,224` (HUD wave header + steps banner)
+- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/ui/PostRoundOverlay.kt:76` (**second `steps_earned_banner` consumer**, CL-2)
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/cards/CardsScreen.kt:162`
+- Modify: `app/src/test/java/com/whitefang/stepsofbabylon/presentation/cards/CardsScreenTest.kt:107,118,119` (TRW-2 — N/A here; PackTier text changes in Task 5, but the card-pull plural at :162 is unrelated to those lookups)
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/store/StoreScreen.kt:148`
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/onboarding/OnboardingScreen.kt:194`
 
-- [ ] **Step 1: Split `battle_wave_header` + add `card_pull_result` in `strings.xml`**
+- [ ] **Step 1: Split `battle_wave_header`, delete flat `steps_earned_banner`, add `card_pull_result` in `strings.xml`**
 
 Replace line 45 (`<string name="battle_wave_header">Wave %1$d · %2$d enemies</string>`) with a wave label that takes the pre-formatted enemy plural as a string:
 
@@ -239,14 +275,14 @@ Replace line 45 (`<string name="battle_wave_header">Wave %1$d · %2$d enemies</s
     <string name="battle_wave_header">Wave %1$d · %2$s</string>
 ```
 
-Add near the upgrade/card strings:
+**Delete** the now-replaced flat string (line 47): `<string name="steps_earned_banner">👟 +%1$d Steps</string>` (the `<plurals name="steps_earned_banner">` from Task 1 takes over; both consumers are rewired in Step 2). Add near the upgrade/card strings:
 
 ```xml
     <!-- #260: card-pull result line; %1$s = card name, %2$s = pre-formatted copy plural -->
     <string name="card_pull_result">%1$s %2$s</string>
 ```
 
-- [ ] **Step 2: Update `BattleScreen.kt` — wave header enemies plural + steps banner plural**
+- [ ] **Step 2: Update `BattleScreen.kt` + `PostRoundOverlay.kt` — wave header + BOTH steps-banner consumers**
 
 At `BattleScreen.kt:213`, the wave header currently is:
 ```kotlin
@@ -264,16 +300,29 @@ Text(
 )
 ```
 
-At `BattleScreen.kt:228` the steps banner currently is `stringResource(R.string.steps_earned_banner, state.stepsEarnedThisRound)`. `stepsEarnedThisRound` is a `Long` — narrow the **selector** to Int (spec §3a Long→Int rule), keep the full value as the format arg:
+At `BattleScreen.kt:224` the steps banner currently is `stringResource(R.string.steps_earned_banner, state.stepsEarnedThisRound)`. `stepsEarnedThisRound` is a `Long` — narrow the **selector** to Int (the verbatim CC-1 idiom — bounds must be `Long`), keep the full value as the format arg:
 ```kotlin
 pluralStringResource(
     R.plurals.steps_earned_banner,
-    state.stepsEarnedThisRound.coerceIn(0, Int.MAX_VALUE.toLong()).toInt(),
+    state.stepsEarnedThisRound.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
     state.stepsEarnedThisRound,
 )
 ```
 
-Add imports to `BattleScreen.kt` if absent: `import androidx.compose.ui.res.pluralStringResource`.
+At `PostRoundOverlay.kt:76` (the **second** consumer, `state.stepsEarned: Long`) currently:
+```kotlin
+stringResource(R.string.steps_earned_banner, state.stepsEarned),
+```
+Replace with:
+```kotlin
+pluralStringResource(
+    R.plurals.steps_earned_banner,
+    state.stepsEarned.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
+    state.stepsEarned,
+),
+```
+
+Add `import androidx.compose.ui.res.pluralStringResource` to both files if absent.
 
 - [ ] **Step 3: Update `CardsScreen.kt:162` — card-pull copy plural + templated join**
 
@@ -306,35 +355,35 @@ pluralStringResource(
     state.seasonPassDaysRemaining ?: 0,
 )
 ```
-(Add `pluralStringResource` import. Confirm `seasonPassDaysRemaining` is `Int?` in `StoreUiState`; if `Long?`, apply the Int-narrowing on the selector.)
+(Add `pluralStringResource` import. `seasonPassDaysRemaining` is `Int?` — confirmed in `StoreUiState.kt:10` — so the Int selector is correct, no narrowing needed.)
 
 - [ ] **Step 5: Update `OnboardingScreen.kt:194` — page-dots a11y plural**
 
-Current:
+Current (the `.semantics` lambda is on the page-dots `Row` at ~:190-194):
 ```kotlin
 .semantics { contentDescription = "Page ${pagerState.currentPage + 1} of ${slides.size}" },
 ```
-Replace with (resolve outside the lambda — `pluralStringResource` is `@Composable`):
+The `semantics {}` lambda is **not** a `@Composable` scope, so `pluralStringResource` cannot be called inside it. **Declare the `val` on its own line BEFORE the `Row(` call** (not inside the Modifier chain — that's impossible), then reference it:
 ```kotlin
-// computed just before the .semantics modifier, in composable scope:
+// On its own line, in @Composable scope, immediately before the `Row(` that hosts the page dots:
 val pageLabel = pluralStringResource(
     R.plurals.page_x_of_n, slides.size, pagerState.currentPage + 1, slides.size,
 )
-// ...then:
+// ...then inside that Row's Modifier chain:
 .semantics { contentDescription = pageLabel },
 ```
-(Add `pluralStringResource` import. Note `OnboardingScreenTest` asserts the exact "Page X of N" text — it still reads "Page 1 of 4", so it stays green.)
+(Add `pluralStringResource` import. `OnboardingScreenTest` asserts `onNodeWithContentDescription("Page 1 of N")` — the plural renders the identical English text, so it stays green; verify in Step 6.)
 
 - [ ] **Step 6: Build + run the touched screens' tests**
 
-Run: `./run-gradle.sh testDebugUnitTest lintDebug`
-Expected: BUILD SUCCESSFUL. `OnboardingScreenTest`/`CardsScreenTest` green (text unchanged in English).
+Run: `./run-gradle.sh testDebugUnitTest --tests "com.whitefang.stepsofbabylon.presentation.onboarding.*" --tests "com.whitefang.stepsofbabylon.presentation.cards.*" lintDebug`
+Expected: BUILD SUCCESSFUL. `OnboardingScreenTest`/`CardsScreenTest` green (text unchanged in English — note `CardsScreenTest`'s `PackTier.COMMON.name` lookups still pass here because the tier text change lands in Task 5).
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add app/src/main/res/values/strings.xml app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/BattleScreen.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/cards/CardsScreen.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/store/StoreScreen.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/onboarding/OnboardingScreen.kt
-git commit -m "feat(i18n): Compose-side plurals — wave enemies, steps banner, card copies, season-pass days, onboarding page dots (#259)"
+git add app/src/main/res/values/strings.xml app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/BattleScreen.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/ui/PostRoundOverlay.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/cards/CardsScreen.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/store/StoreScreen.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/onboarding/OnboardingScreen.kt
+git commit -m "feat(i18n): Compose-side plurals — wave enemies, steps banner (HUD + post-round), card copies, season-pass days, onboarding page dots (#259)"
 ```
 
 ---
@@ -402,11 +451,12 @@ git commit -m "feat(i18n): extend domain/Strings seam (enemyTypeName/waveComposi
 ## Task 4: Implement the seam in `AndroidStrings` + route `GameEngine` through it
 
 **Files:**
-- Modify: `app/src/main/res/values/strings.xml` (enemy names + composition templates)
-- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/data/AndroidStrings.kt`
-- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/engine/GameEngine.kt:835-853`
-- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/effects/WaveAnnouncement.kt:36`
+- Modify: `app/src/main/res/values/strings.xml` (enemy names + composition templates; **delete flat `fx_step_reward`**)
+- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/data/AndroidStrings.kt` (3 new methods + **rewire `stepReward`**)
+- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/engine/GameEngine.kt:840,852`
 - Create: `app/src/test/java/com/whitefang/stepsofbabylon/data/AndroidStringsTest.kt`
+
+(`WaveAnnouncement.kt`'s Canvas "BOSS INCOMING"/"Wave N" banners are **left as literals** — deferred to #34; not touched here. See Step 7.)
 
 - [ ] **Step 1: Add enemy-name + composition strings to `strings.xml`**
 
@@ -425,10 +475,9 @@ git commit -m "feat(i18n): extend domain/Strings seam (enemyTypeName/waveComposi
     <string name="wave_comp_entry">%1$d %2$s</string>
     <!-- separator between entries -->
     <string name="wave_composition_separator">", "</string>
-
-    <!-- #260: boss-incoming banner (WaveAnnouncement, Canvas) -->
-    <string name="boss_incoming">⚠ BOSS INCOMING</string>
 ```
+
+(Do **not** add a `boss_incoming` string — `WaveAnnouncement` stays a literal, so any such resource would be a dead orphan, CL-3.)
 
 - [ ] **Step 2: Write the failing `AndroidStringsTest` (Robolectric)**
 
@@ -515,6 +564,17 @@ Add the import `import com.whitefang.stepsofbabylon.domain.model.EnemyType` and 
         context.resources.getQuantityString(R.plurals.boss_in_waves, waves, waves)
 ```
 
+Also **rewire `stepReward` to the plural** (CL-1/CC-2 — the spec's lead §3a site) and **delete the flat string**:
+```kotlin
+    // was: context.getString(R.string.fx_step_reward, steps)
+    override fun stepReward(steps: Long): String = context.resources.getQuantityString(
+        R.plurals.fx_step_reward,
+        steps.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
+        steps,
+    )
+```
+Then **delete** `<string name="fx_step_reward">+%1$d Step</string>` from `strings.xml:29` (the `<plurals name="fx_step_reward">` from Task 1 is now the live resource; they coexist by R-type but we remove the flat one so the singular form can't be read). `FakeStrings.stepReward` is unchanged (returns its own form), so JVM `GameEngineTest`/`BattleViewModelTest` step-float assertions are unaffected.
+
 - [ ] **Step 5: Run — expect PASS**
 
 Run: `./run-gradle.sh testDebugUnitTest --tests "com.whitefang.stepsofbabylon.data.AndroidStringsTest"`
@@ -522,48 +582,38 @@ Expected: PASS (4 tests).
 
 - [ ] **Step 6: Route `GameEngine` through the seam (with literal fallback)**
 
-`GameEngine.kt:835` `nextWaveCompositionLabel()` — replace the return line:
+`GameEngine.kt:840` `nextWaveCompositionLabel()` — replace the return line:
 ```kotlin
 return strings?.waveComposition(comp)
     ?: ("Next: " + comp.entries.joinToString(", ") { "${it.value} ${it.key.name}" })
 ```
-`GameEngine.kt:849` `bossCountdownLabel()` — replace the return line:
+`GameEngine.kt:852` `bossCountdownLabel()` — replace the return line:
 ```kotlin
 return strings?.bossCountdown(waves)
     ?: if (waves == 1) "Boss next wave" else "Boss in $waves waves"
 ```
 (The literal fallback is intentionally the *current raw English* — a degraded `strings==null` last-resort, spec §3c/FZ-1. `comp` ordering is unchanged; `GameEngine.strings` already exists.)
 
-- [ ] **Step 7: Route `WaveAnnouncement` "BOSS INCOMING" through resources**
+**Acknowledge (TRW-5):** `GameEngineTest.kt:55-79` already asserts `nextWaveCompositionLabel()=="Next: 7 BASIC"` and `bossCountdownLabel()=="Boss in 9 waves"` on the **pure-JVM (`strings == null`) path**. These assertions stay **green and unchanged** precisely because the `?:` fallback above keeps that exact raw English. Do NOT "fix" them to localized text — the engine test runs without `AndroidStrings`.
 
-`WaveAnnouncement.kt:36` draws `"⚠ BOSS INCOMING"` on Canvas (render thread). It has no `Context`; pass the resolved string in. Inspect the `WaveAnnouncement` constructor + its single construction site (in `GameEngine`/`triggerWaveAnnouncement`). **Minimal approach:** add a `bossLabel: String` constructor param defaulting to `"⚠ BOSS INCOMING"` and set it from `strings?.let { context...}` at the construction site, OR (simpler, no API change) leave the Canvas literal as-is and note it. **Decision for this plan:** since `WaveAnnouncement` has no string seam and adding one is API churn on a render-thread effect, **leave the "Wave N"/"BOSS INCOMING" Canvas banners as literals** and record them as #34 follow-up (they are not in #260's evidence list). Remove `boss_incoming` from strings.xml if unused, OR keep it for the #34 follow-up with a comment. *(Keep it, commented as reserved for #34.)*
+- [ ] **Step 7: `WaveAnnouncement` Canvas banners — left as literals (deferred to #34)**
 
-- [ ] **Step 8: Add the GameEngine "seam consulted" test**
+`WaveAnnouncement.kt:36` draws `"⚠ BOSS INCOMING"` (and the "Wave N" banner) on Canvas on the render thread. It has no `Context` and no string seam; adding one is API churn on a render-thread effect, and these banners are **not** in #260's evidence list. **Leave them as literals** and record as a #34 follow-up. No code change, no `boss_incoming` resource (it would be a dead orphan, CL-3).
 
-In `app/src/test/java/com/whitefang/stepsofbabylon/presentation/battle/engine/GameEngineTest.kt`, add (uses `FakeStrings`):
-```kotlin
-    @Test
-    fun `nextWaveCompositionLabel uses the strings seam when set`() {
-        val engine = GameEngine(/* existing test-construction args */).apply {
-            strings = com.whitefang.stepsofbabylon.fakes.FakeStrings()
-            // set enemyIntelLevel >= 1 and a spawner with a known composition via existing test helpers
-        }
-        val label = engine.nextWaveCompositionLabel()
-        assertTrue(label == null || label.startsWith("FAKE_COMP:") || label.startsWith("Next:"))
-    }
-```
-*(If `GameEngineTest`'s construction/seam helpers don't make this cheap, the executing agent may instead assert the seam at the `AndroidStrings` level only — the seam consultation is already structurally guaranteed by the `?:` and covered by AndroidStringsTest. Keep this test only if it's a clean addition; do not perturb the engine test harness.)*
+- [ ] **Step 8: GameEngine "seam consulted" — already covered; do NOT perturb the harness**
+
+The seam consultation is structurally guaranteed by the `?:` in Step 6 and verified at the impl level by `AndroidStringsTest` (Step 2). The pure-JVM `GameEngineTest` deliberately runs with `strings == null` (Step 6 acknowledgment) — **do not** add a `FakeStrings`-wired engine test if it requires reworking the engine test construction/seam helpers (that harness is fragile). Skip this step unless a one-line seam assertion is trivially clean; coverage does not depend on it.
 
 - [ ] **Step 9: Build all**
 
 Run: `./run-gradle.sh testDebugUnitTest lintDebug`
-Expected: BUILD SUCCESSFUL.
+Expected: BUILD SUCCESSFUL. `GameEngineTest` (composition/countdown literals) green via the fallback; `BattleViewModelTest` step-float green (FakeStrings unchanged).
 
 - [ ] **Step 10: Commit**
 
 ```bash
-git add app/src/main/res/values/strings.xml app/src/main/java/com/whitefang/stepsofbabylon/data/AndroidStrings.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/engine/GameEngine.kt app/src/test/java/com/whitefang/stepsofbabylon/data/AndroidStringsTest.kt app/src/test/java/com/whitefang/stepsofbabylon/presentation/battle/engine/GameEngineTest.kt
-git commit -m "feat(i18n): engine wave-composition/boss-countdown/enemy-names via Strings seam (#260)"
+git add app/src/main/res/values/strings.xml app/src/main/java/com/whitefang/stepsofbabylon/data/AndroidStrings.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/engine/GameEngine.kt app/src/test/java/com/whitefang/stepsofbabylon/data/AndroidStringsTest.kt
+git commit -m "feat(i18n): engine wave-composition/boss-countdown/enemy-names + step-reward plural via Strings seam (#260, #259)"
 ```
 
 ---
@@ -658,6 +708,18 @@ text = { Text(stringResource(category.labelRes())) },
 Text(stringResource(pack.tier.labelRes()))
 ```
 
+- [ ] **Step 4a: Re-point `CardsScreenTest` pack-tier lookups (TRW-2)**
+
+`CardsScreenTest.kt:107,118,119` find the pack button via `onNodeWithText(PackTier.COMMON.name)` (i.e. `"COMMON"`). After Step 4 the button renders **"Common"** (`pack_tier_common`). Update all three lookups:
+```kotlin
+// was: onNodeWithText(PackTier.COMMON.name)  → "COMMON"
+composeRule.onNodeWithText("Common").assertIsNotEnabled()   // :107
+// ...
+composeRule.onNodeWithText("Common").assertIsEnabled()      // :118
+composeRule.onNodeWithText("Common").performClick()         // :119
+```
+(`CardsScreenTest` is a Robolectric Compose test; the rendered text is now "Common". Add `CardsScreenTest.kt` to this task's git add.)
+
 - [ ] **Step 5: Update `Rarity.kt` — card + UW rarity labels become `@StringRes`**
 
 `cardRarityLabel` and `uwRarityLabel` currently return raw/literal `String`. Convert to `@StringRes`:
@@ -676,18 +738,35 @@ Text(stringResource(pack.tier.labelRes()))
     RarityTier.TIER_2 -> R.string.uw_rarity_legendary
 }
 ```
-Add `import androidx.annotation.StringRes` + `import com.whitefang.stepsofbabylon.R`. Keep the old `cardRarityLabel`/`uwRarityLabel` String fns **only if** other callers exist (grep first); otherwise replace. Update the call sites: in `CardsScreen` (RarityBadge label) → `stringResource(cardRarityLabelRes(rarity))`; in `UltimateWeaponScreen.kt:113` → `stringResource(uwRarityLabelRes(tier))`. `RarityBadge(label: String)` keeps its String param (caller resolves).
+Add `import androidx.annotation.StringRes` + `import com.whitefang.stepsofbabylon.R`. **Replace** the old `cardRarityLabel`/`uwRarityLabel` String fns (verified: their only callers are the two screen sites below + two `RarityTest` cases — no other main-src caller). Update the two call sites: `CardsScreen.kt:189` `RarityBadge(tier, cardRarityLabel(card.type.rarity))` → `RarityBadge(tier, stringResource(cardRarityLabelRes(card.type.rarity)))`; `UltimateWeaponScreen.kt:113` `RarityBadge(tier, uwRarityLabel(tier), ...)` → `RarityBadge(tier, stringResource(uwRarityLabelRes(tier)), ...)`. Fix the imports in both screens (`cardRarityLabel`→`cardRarityLabelRes` etc. + `androidx.compose.ui.res.stringResource`). `RarityBadge(label: String)` keeps its String param (caller resolves).
+
+- [ ] **Step 5a: Move the two `RarityTest` label assertions to Robolectric (TRW-4)**
+
+`RarityTest.kt:57-67` (`uw labels never say COMMON`, `card labels are the rarity name`) call the old String fns — they no longer exist, AND `RarityTest` is pure-JVM JUnit Jupiter so it can't resolve `@StringRes`. **Delete both `@Test`s from `RarityTest.kt`** (keep the rest — `cardRarityTier`/`uwRarityTier` tier-drift tests are unaffected). Re-home the label-text coverage in the Robolectric `EnumLabelResTest` (Task 6 Step 5) by adding:
+```kotlin
+    @Test fun `uw rarity labels never say COMMON`() {
+        assertEquals("RARE", str(uwRarityLabelRes(RarityTier.TIER_0)))
+        assertEquals("EPIC", str(uwRarityLabelRes(RarityTier.TIER_1)))
+        assertEquals("LEGENDARY", str(uwRarityLabelRes(RarityTier.TIER_2)))
+    }
+    @Test fun `card rarity labels are the rarity name`() {
+        assertEquals("COMMON", str(cardRarityLabelRes(CardRarity.COMMON)))
+        assertEquals("RARE", str(cardRarityLabelRes(CardRarity.RARE)))
+        assertEquals("EPIC", str(cardRarityLabelRes(CardRarity.EPIC)))
+    }
+```
+(Add `RarityTier` import to `EnumLabelResTest`. These assert the exact rendered text the deleted `RarityTest` cases pinned, now via Robolectric.)
 
 - [ ] **Step 6: Build + lint**
 
-Run: `./run-gradle.sh testDebugUnitTest lintDebug`
-Expected: BUILD SUCCESSFUL. (`RarityTest` may assert `cardRarityLabel`/`uwRarityLabel` — update those assertions to the `*Res` form or to the resolved text via Robolectric in Task 6's EnumLabelResTest; if `RarityTest` breaks, adjust it to call the new fn names.)
+Run: `./run-gradle.sh testDebugUnitTest --tests "com.whitefang.stepsofbabylon.presentation.ui.*" --tests "com.whitefang.stepsofbabylon.presentation.cards.*" lintDebug`
+Expected: BUILD SUCCESSFUL. `RarityTest` (tier tests only), `CardsScreenTest` ("Common"), and `EnumLabelResTest` (label text, added in Task 6) all green. *(Note: `EnumLabelResTest` is authored in Task 6; if running Task 5 standalone, the two re-homed assertions land with Task 6 — so the full green is confirmed at Task 6 Step 6.)*
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add -A
-git commit -m "feat(i18n): @StringRes labels for UpgradeCategory/PackTier/CardRarity/UW rarity (#260)"
+git add app/src/main/res/values/strings.xml app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/EnumLabels.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/Rarity.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/ui/InRoundUpgradeMenu.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop/WorkshopScreen.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/cards/CardsScreen.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/weapons/UltimateWeaponScreen.kt app/src/test/java/com/whitefang/stepsofbabylon/presentation/cards/CardsScreenTest.kt app/src/test/java/com/whitefang/stepsofbabylon/presentation/ui/RarityTest.kt
+git commit -m "feat(i18n): @StringRes labels for UpgradeCategory/PackTier/CardRarity/UW rarity; re-point CardsScreenTest/RarityTest (#260)"
 ```
 
 ---
@@ -762,16 +841,20 @@ import com.whitefang.stepsofbabylon.domain.model.CardRarity
 import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.usecase.PackTier
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+// + com.whitefang.stepsofbabylon.domain.model.CardRarity, .CosmeticCategory, .UpgradeCategory,
+//   com.whitefang.stepsofbabylon.domain.usecase.PackTier, .presentation.ui.RarityTier (for Step 5a)
 
 /**
  * #260: every in-scope enum constant (and the WavePhase string keys) maps to a non-blank, non-raw
  * localized label. Catches a missing mapping when a constant is added. Robolectric resolves text.
+ * Also re-homes the two RarityTest label-text assertions (TRW-4) that can no longer be pure-JVM.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
@@ -799,8 +882,21 @@ class EnumLabelResTest {
         assertTrue(wavePhaseLabelRes("") == null)
         assertTrue(wavePhaseLabelRes("GARBAGE") == null)
     }
+
+    // Re-homed from RarityTest (TRW-4) — exact rendered label text, now via Robolectric.
+    @Test fun `uw rarity labels never say COMMON`() {
+        assertEquals("RARE", str(uwRarityLabelRes(RarityTier.TIER_0)))
+        assertEquals("EPIC", str(uwRarityLabelRes(RarityTier.TIER_1)))
+        assertEquals("LEGENDARY", str(uwRarityLabelRes(RarityTier.TIER_2)))
+    }
+    @Test fun `card rarity labels are the rarity name`() {
+        assertEquals("COMMON", str(cardRarityLabelRes(CardRarity.COMMON)))
+        assertEquals("RARE", str(cardRarityLabelRes(CardRarity.RARE)))
+        assertEquals("EPIC", str(cardRarityLabelRes(CardRarity.EPIC)))
+    }
 }
 ```
+*(Note: `CardRarity.labelRes()` [EnumLabels.kt] and `cardRarityLabelRes()` [Rarity.kt] both map to the same `rarity_*` strings. Keep BOTH — `labelRes()` is the general enum extension used by the `EnumLabelResTest` non-blank sweep; `cardRarityLabelRes`/`uwRarityLabelRes` are the rarity-badge-specific fns the screens call. They are intentionally redundant for the COMMON/RARE/EPIC card case; the UW set differs [tier→RARE/EPIC/LEGENDARY], so they can't be collapsed.)*
 
 - [ ] **Step 6: Run + build**
 
@@ -881,22 +977,33 @@ sealed interface ClaimReward {
 }
 data class ClaimCelebrationEvent(val reward: ClaimReward)
 
-/** Pure-ish formatter (needs a Composable for plurals). Returns "" for null/empty (exit-safe, AF-4). */
+/**
+ * The joined reward parts WITHOUT the "claimed!" verb, e.g. "+5 Gems +2 Power Stones" — used by BOTH
+ * the milestone row (Task 9, no verb) and [formatClaimReward] (which wraps it in reward_claimed). This
+ * is the single factored helper (FZ-3/CC-8) so there is no removeSuffix hack and no divergent formatter.
+ */
+@Composable
+fun formatRewardParts(bundle: ClaimReward.Bundle): String {
+    val parts = buildList {
+        if (bundle.gems > 0) add(pluralStringResource(R.plurals.reward_gems, bundle.gems, bundle.gems))
+        if (bundle.powerStones > 0) add(pluralStringResource(R.plurals.reward_power_stones, bundle.powerStones, bundle.powerStones))
+        if (bundle.steps > 0) add(pluralStringResource(R.plurals.reward_steps, bundle.steps, bundle.steps))
+        if (bundle.cards > 0) add(pluralStringResource(R.plurals.card_copies, bundle.cards, bundle.cards))
+        addAll(bundle.cosmeticNames)
+    }
+    return parts.joinToString(stringResource(R.string.reward_join))
+}
+
+/** Full celebration text. Returns "" for null/empty (exit-safe, AF-4). */
 @Composable
 fun formatClaimReward(reward: ClaimReward?): String = when (reward) {
     null -> ""
     is ClaimReward.Generic -> stringResource(R.string.reward_generic)
     is ClaimReward.Message -> stringResource(reward.res)
     is ClaimReward.Bundle -> {
-        val parts = buildList {
-            if (reward.gems > 0) add(pluralStringResource(R.plurals.reward_gems, reward.gems, reward.gems))
-            if (reward.powerStones > 0) add(pluralStringResource(R.plurals.reward_power_stones, reward.powerStones, reward.powerStones))
-            if (reward.steps > 0) add(pluralStringResource(R.plurals.reward_steps, reward.steps, reward.steps))
-            if (reward.cards > 0) add(pluralStringResource(R.plurals.card_copies, reward.cards, reward.cards))
-            addAll(reward.cosmeticNames)
-        }
+        val parts = formatRewardParts(reward)
         if (parts.isEmpty()) stringResource(R.string.reward_generic)
-        else stringResource(R.string.reward_claimed, parts.joinToString(stringResource(R.string.reward_join)))
+        else stringResource(R.string.reward_claimed, parts)
     }
 }
 ```
@@ -968,17 +1075,14 @@ class ClaimRewardFormatTest {
 ```
 *(Note: `formatClaimReward` is `@Composable`-returning-String, captured via `setContent`. This mirrors the #253 Compose-Robolectric harness already in the repo.)*
 
-- [ ] **Step 4: Run — expect FAIL on compile (callers still pass `label =`), then it cascades to Task 9/10**
+- [ ] **Step 4: Run — expect FAIL on MAIN compile (Tasks 8–10 are one compile unit)**
 
 Run: `./run-gradle.sh compileDebugKotlin 2>&1 | tail -5`
-Expected: FAIL — `MissionsViewModel`/`UnclaimedSuppliesViewModel` still construct `ClaimCelebrationEvent(label = …)`. Fixed in Tasks 9 & 10. **Do not commit until callers compile** — combine Step 5/Task 9/Task 10 build green before committing, OR temporarily keep a `label` secondary constructor. **Cleaner:** implement Tasks 9 & 10 immediately after this step, then run the formatter test + commit all three together.
+Expected: FAIL — `MissionsViewModel.kt:145,160` + `UnclaimedSuppliesViewModel.kt:56,66` still construct `ClaimCelebrationEvent(label = …)`, and `MissionsScreen.kt:165` still calls `rewardsSummary()`. This is **expected**: per the top-of-file convention, **Tasks 8–10 do NOT commit individually** — proceed straight into Tasks 9 & 10, then build + commit all three at Task 10 Step 5. Do **NOT** add a temporary `label` secondary constructor (it would ship as dead code). Note `compileDebugKotlin` is MAIN-only; the TEST source set (`MissionsViewModelTest` `missionRewardLabel`, `UnclaimedSuppliesViewModelTest` `supplyLabel`, `MilestoneTest` `rewardsSummary`) also stays red until Tasks 9–10 update it — the first command that compiles tests is Task 10 Step 5. Do not interpret a green main compile as task completion.
 
-- [ ] **Step 5: (after Tasks 9 & 10) run the formatter test**
+- [ ] **Step 5: (after Tasks 9 & 10) run the formatter test** — see Task 10 Step 5 (combined build).
 
-Run: `./run-gradle.sh testDebugUnitTest --tests "com.whitefang.stepsofbabylon.presentation.ui.ClaimRewardFormatTest"`
-Expected: PASS.
-
-- [ ] **Step 6: Commit** (deferred — see Task 10 Step 5, which commits Tasks 8–10 together)
+- [ ] **Step 6: Commit** — deferred; Task 10 Step 5 commits Tasks 8–10 together.
 
 ---
 
@@ -988,6 +1092,8 @@ Expected: PASS.
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/missions/MissionsViewModel.kt:145,160` (+ delete `missionRewardLabel`)
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/domain/model/Milestone.kt` (delete `rewardsSummary()`)
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/missions/MissionsScreen.kt:165`
+- Modify: `app/src/test/java/com/whitefang/stepsofbabylon/presentation/missions/MissionsViewModelTest.kt:125-135` (delete `missionRewardLabel` test + `infoWith` helper; replace with structured asserts)
+- Modify: `app/src/test/java/com/whitefang/stepsofbabylon/domain/model/MilestoneTest.kt:49-50` (delete `rewardsSummary includes all reward types`, FZ-1/TRW-1)
 
 - [ ] **Step 1: Mission claim emits a `ClaimReward.Bundle` (MissionsViewModel.kt:145)**
 
@@ -1016,36 +1122,40 @@ Add `import com.whitefang.stepsofbabylon.domain.model.MilestoneReward`.
 
 - [ ] **Step 3: Remove `Milestone.rewardsSummary()` + update `MissionsScreen.kt:165`**
 
-Delete `rewardsSummary()` from `Milestone.kt`. `MissionsScreen.kt:165` (`Text(milestone.rewardsSummary(), …)`) → render the same parts via the formatter:
+Delete `rewardsSummary()` from `Milestone.kt`. `MissionsScreen.kt:165` (`Text(milestone.rewardsSummary(), …)`) → render the reward list via the **factored `formatRewardParts`** helper (defined in Task 8 Step 2 — joined parts, no "claimed!" verb; no `removeSuffix` hack):
 ```kotlin
 Text(
-    formatClaimReward(
+    formatRewardParts(
         ClaimReward.Bundle(
             gems = milestone.rewards.filterIsInstance<MilestoneReward.Gems>().sumOf { it.amount }.toInt(),
             powerStones = milestone.rewards.filterIsInstance<MilestoneReward.PowerStones>().sumOf { it.amount }.toInt(),
             cosmeticNames = milestone.rewards.filterIsInstance<MilestoneReward.Cosmetic>().map { it.name },
         ),
-    ).removeSuffix(" claimed!"),  // the row shows the reward list without the "claimed!" verb
+    ),
     style = MaterialTheme.typography.bodySmall,
 )
 ```
-*(Alternative if `removeSuffix` reads as a hack: add a `formatRewardList(reward)` that returns just the joined parts, and have `formatClaimReward` wrap it. The executing agent should prefer the explicit `formatRewardList` helper — cleaner — and the milestone row + celebration both call it.)*
-**Decision:** extract a `@Composable fun formatRewardParts(reward: ClaimReward.Bundle): String` (the joined list, no "claimed!"), have `formatClaimReward` call it, and the milestone row call `formatRewardParts` directly. Update Task 8's formatter accordingly.
+Add imports `com.whitefang.stepsofbabylon.presentation.ui.formatRewardParts`, `com.whitefang.stepsofbabylon.presentation.ui.ClaimReward`, `com.whitefang.stepsofbabylon.domain.model.MilestoneReward`.
 
-- [ ] **Step 4: Update `MissionsViewModelTest`**
+- [ ] **Step 3a: Delete the `MilestoneTest` rewardsSummary case (FZ-1/TRW-1)**
 
-Replace the retired `missionRewardLabel` literal assertions (MissionsViewModelTest ~125-130) with structured assertions on the emitted `ClaimReward`:
+`MilestoneTest.kt:49-50` (`rewardsSummary includes all reward types`) calls the now-deleted `Milestone.IRON_SOLES.rewardsSummary()`. **Delete that `@Test`** (the rest of `MilestoneTest` — reward totals etc. — is unaffected). Its display-text coverage is replaced by `ClaimRewardFormatTest`'s cosmetic-name case (Task 8 Step 3). Verify no other test references `rewardsSummary`: `grep -rn rewardsSummary app/src/test` → must be empty after this.
+
+- [ ] **Step 4: Update `MissionsViewModelTest` (preserve the existing CONFLATED-channel harness, SF-5)**
+
+The existing celebration tests collect via `backgroundScope.launch { vm.celebration.toList(events) }` then `vm.cancelForTest()` last. **Delete** the pure `missionRewardLabel formats …` test (`:125-129`) AND its private `infoWith` helper (`:132-135`) — both reference the deleted fn. The two existing `claiming … emits one celebration` tests already collect into `events`; **change their assertions** from emission-count to structured payload (keep the `backgroundScope`/`toList`/`cancelForTest` mechanics verbatim):
 ```kotlin
-// after claimMission(...) success, collect the celebration event:
-val event = vm.celebration.first()
-assertEquals(ClaimReward.Bundle(gems = 5, powerStones = 0), event.reward)
-// ... cover gems-only, ps-only, both, and the null→Generic case
+// inside `claiming a completed mission emits one celebration` (already has: val events = mutableListOf<ClaimCelebrationEvent>(); backgroundScope.launch { vm.celebration.toList(events) })
+// ... after the claim + advanceUntilIdle:
+assertEquals(1, events.size)
+assertEquals(ClaimReward.Bundle(gems = /* seeded mission gems */, powerStones = /* seeded */), events.single().reward)
+vm.cancelForTest()   // LAST statement — stops the while(true) ticker
 ```
-Keep the `cancelForTest()` call as the last statement (ticker harness, #162). Run with the existing test dispatcher pattern.
+Do **not** switch to `vm.celebration.first()` (it contradicts the CONFLATED-channel `toList` harness and can hang the ticker). Cover gems-only / ps-only / both via the seeded mission data, and the milestone path's cosmetic-carrying `Bundle`. Add `import com.whitefang.stepsofbabylon.presentation.ui.ClaimReward`.
 
 - [ ] **Step 5: Build (still needs Task 10 for full compile)** — defer commit to Task 10.
 
-Run: `./run-gradle.sh compileDebugKotlin 2>&1 | tail -5` (expect only `UnclaimedSuppliesViewModel` errors remaining).
+Run: `./run-gradle.sh compileDebugKotlin 2>&1 | tail -5` (expect only `UnclaimedSuppliesViewModel` errors remaining; the test set is still red until Task 10).
 
 ---
 
@@ -1054,7 +1164,8 @@ Run: `./run-gradle.sh compileDebugKotlin 2>&1 | tail -5` (expect only `Unclaimed
 **Files:**
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/supplies/UnclaimedSuppliesViewModel.kt:56,66` (+ delete/replace `supplyLabel`)
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/supplies/UnclaimedSuppliesScreen.kt:97,124` (`formatSupplyReward` → plurals)
-- Modify: `app/src/test/java/com/whitefang/stepsofbabylon/presentation/supplies/SupplyRewardFormatTest.kt` (re-point)
+- Modify: `app/src/test/java/com/whitefang/stepsofbabylon/presentation/supplies/SupplyRewardFormatTest.kt` (Jupiter→Robolectric/JUnit4 migration; keep #20 guard)
+- Modify: `app/src/test/java/com/whitefang/stepsofbabylon/presentation/supplies/UnclaimedSuppliesViewModelTest.kt:82-87` (**delete `supplyLabel formats each reward type`**, TRW-3/FZ-2; add `toClaimReward` asserts)
 
 - [ ] **Step 1: `claimDrop` / `claimAll` emit structured `ClaimReward`**
 
@@ -1098,29 +1209,46 @@ internal fun formatSupplyReward(drop: SupplyDrop): String = when (drop.reward) {
 ```
 (Add `pluralStringResource` import. The CARD_COPY path is unchanged behavior. Note: the row "+N Steps" form now matches the celebration "+N Steps" via `reward_steps`.)
 
-- [ ] **Step 3: Re-point `SupplyRewardFormatTest` (keep the #20 guard)**
+- [ ] **Step 3: Re-point `SupplyRewardFormatTest` — full Jupiter→Robolectric/JUnit4 migration (SF-4), keep the #20 guard**
 
-`formatSupplyReward` is now `@Composable`, so the quantity assertions must run under Robolectric/Compose. Convert the test to the `createComposeRule` harness (like `ClaimRewardFormatTest`), capturing the formatter output via `setContent`. Keep ALL #20 CARD_COPY assertions (they assert the card-name + "x1" + no "+N"). Update the quantity expectations to the plural output:
+`formatSupplyReward` is now `@Composable`, so the test must resolve plurals under Robolectric/Compose. The existing file is **JUnit Jupiter** (`org.junit.jupiter.api.Test`, `Assertions.assertEquals`) and calls the formatter directly — both must change. Rewrite the file:
+- Swap imports: `org.junit.jupiter.api.Test` → `org.junit.Test`; `org.junit.jupiter.api.Assertions.*` → `org.junit.Assert.*`; add `androidx.compose.ui.test.junit4.createComposeRule`, `org.junit.Rule`, `org.junit.runner.RunWith`, `org.robolectric.RobolectricTestRunner`, `org.robolectric.annotation.{Config, GraphicsMode}`.
+- Add class annotations `@RunWith(RobolectricTestRunner::class) @GraphicsMode(GraphicsMode.Mode.NATIVE) @Config(sdk = [34], application = android.app.Application::class)` + `@get:Rule val rule = createComposeRule()`.
+- Add a capture helper (formatSupplyReward is `@Composable`):
 ```kotlin
-// "+150 Steps" (other), "+1 Power Stone" (one) etc. — n=1 now uses the singular form.
-assertEquals("+150 Steps", capture(drop(SupplyDropReward.STEPS, 150)))
-assertEquals("+1 Power Stone", capture(drop(SupplyDropReward.POWER_STONES, 1)))  // was "+1 Power Stones"
-// CARD_COPY assertions unchanged: "Iron Skin x1", no "+", endsWith "x1", resolves same CardType.
+    private fun capture(drop: SupplyDrop): String {
+        var out = ""; rule.setContent { out = formatSupplyReward(drop) }; rule.waitForIdle(); return out
+    }
 ```
-Add `@RunWith(RobolectricTestRunner)` + `@GraphicsMode(NATIVE)` + `createComposeRule()`; the CARD_COPY index loop stays.
+- Wrap **every** assertion (quantity AND the #20 CARD_COPY loop) in `capture(...)`. Update the quantity expectations to the plural output (the singular form now appears at n=1):
+```kotlin
+assertEquals("+150 Steps", capture(drop(SupplyDropReward.STEPS, 150)))
+assertEquals("+5 Gems",    capture(drop(SupplyDropReward.GEMS, 5)))
+assertEquals("+1 Power Stone", capture(drop(SupplyDropReward.POWER_STONES, 1)))  // was "+1 Power Stones"
+// #20 CARD_COPY assertions UNCHANGED in intent, now via capture(): "Iron Skin x1", no leading "+", endsWith "x1",
+// resolves CardType.entries[index % size] for index 0..8.
+for (index in 0..8) {
+    val label = capture(drop(SupplyDropReward.CARD_COPY, index))
+    assertFalse(label.startsWith("+")); assertTrue(label.endsWith("x1"))
+}
+```
+The CARD_COPY index loop + the "resolves the same CardType" assertion stay (the #20 guard). `drop(...)` helper is unchanged.
 
-- [ ] **Step 4: Add the `UnclaimedSuppliesViewModelTest` structured assertion**
+- [ ] **Step 4: `UnclaimedSuppliesViewModelTest` — delete the `supplyLabel` test, add `toClaimReward` asserts (TRW-3)**
 
-Assert `claimDrop` emits the right `ClaimReward`:
+**Delete** `supplyLabel formats each reward type` (`:82-87`) — `supplyLabel` no longer exists. Add structured assertions on the new mapper:
 ```kotlin
 assertEquals(ClaimReward.Bundle(steps = 150), drop(SupplyDropReward.STEPS, 150).toClaimReward())
+assertEquals(ClaimReward.Bundle(gems = 5), drop(SupplyDropReward.GEMS, 5).toClaimReward())
+assertEquals(ClaimReward.Bundle(powerStones = 2), drop(SupplyDropReward.POWER_STONES, 2).toClaimReward())
 assertEquals(ClaimReward.Bundle(cards = 1), drop(SupplyDropReward.CARD_COPY, 0).toClaimReward())
 ```
+(This is pure-JVM — `toClaimReward` resolves no resources — so it stays in the existing JUnit Jupiter file. Add `import com.whitefang.stepsofbabylon.presentation.ui.ClaimReward`. Verify no remaining `supplyLabel` reference: `grep -rn supplyLabel app/src` → empty.)
 
 - [ ] **Step 5: Full build + commit Tasks 8–10 together**
 
 Run: `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug`
-Expected: BUILD SUCCESSFUL. `ClaimRewardFormatTest`, `SupplyRewardFormatTest`, `MissionsViewModelTest`, `UnclaimedSuppliesViewModelTest` all green.
+Expected: BUILD SUCCESSFUL. `ClaimRewardFormatTest`, `SupplyRewardFormatTest` (migrated), `MissionsViewModelTest`, `UnclaimedSuppliesViewModelTest`, `MilestoneTest` (case deleted) all green.
 ```bash
 git add -A
 git commit -m "feat(i18n): structured ClaimReward payload kills VM/domain reward concatenation; supply-row plurals; keep #20 CARD_COPY guard (#260, #259)"
@@ -1166,51 +1294,52 @@ Replace with:
         R.string.notif_step_content,
         context.resources.getQuantityString(
             R.plurals.notif_today_steps,
-            dailySteps.coerceIn(0, Int.MAX_VALUE.toLong()).toInt(),
+            dailySteps.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
             dailySteps,
         ),
         context.getString(R.string.notif_balance, balance),
     )
 )
 ```
-(`dailySteps`/`balance` are `Long` — selector narrowed; the #43 balance value is passed unchanged.)
+(`dailySteps`/`balance` are `Long` — selector bounds are `Long` (CC-1); the #43 balance value is passed unchanged.)
 
 - [ ] **Step 3: `StepWidgetProvider.kt:37-38` use plurals + balance string**
 
-```kotlin
-setTextViewText(
-    R.id.widget_daily_steps,
-    context.resources.getQuantityString(
-        R.plurals.widget_steps,
-        steps.coerceIn(0, Int.MAX_VALUE).toInt(),
-        fmt.format(steps),
-    ),
-)
-setTextViewText(R.id.widget_balance, context.getString(R.string.widget_balance, fmt.format(balance)))
-```
-*(Caveat: `widget_steps` plural arg uses `fmt.format(steps)` as `%1$d`? No — `%1$d` needs an Int/Long, not a formatted String. Change `widget_steps` to use `%1$s` and pass `fmt.format(steps)`:)*
-Adjust `plurals.xml` `widget_steps` to `%1$s`:
+`steps`/`balance` are `Long`. `widget_steps`'s `%1$d` cannot take the **formatted** `fmt.format(steps)` String — so `widget_steps` uses `%1$s` (per Task 1 it is already `%1$s`; if you authored it as `%1$d`, change it now to `%1$s`):
 ```xml
     <plurals name="widget_steps">
         <item quantity="one">%1$s step</item>
         <item quantity="other">%1$s steps</item>
     </plurals>
 ```
-and the call passes the **Int selector** + the **formatted string arg**:
+The call passes the **Int selector** (Long-narrowed, CC-1) + the **formatted-String arg**:
 ```kotlin
-context.resources.getQuantityString(R.plurals.widget_steps, steps.coerceIn(0, Int.MAX_VALUE).toInt(), fmt.format(steps))
+setTextViewText(
+    R.id.widget_daily_steps,
+    context.resources.getQuantityString(
+        R.plurals.widget_steps,
+        steps.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
+        fmt.format(steps),
+    ),
+)
+setTextViewText(R.id.widget_balance, context.getString(R.string.widget_balance, fmt.format(balance)))
 ```
-Update `StepWidgetProviderTest` if it asserts the old `"N steps"` literal (it tests `saveData`, not text — likely unaffected; verify).
+**Re-run `PluralsResourceTest` after this `%1$s` edit** (Task 1's `widget_steps` assertion `getQuantityString(R.plurals.widget_steps, 1, 1)` still renders `"1 step"` because `String.format("%1$s", 1)` → `"1"`, so it stays green — but confirm). `StepWidgetProviderTest` tests `saveData`, not rendered text — unaffected (verify).
 
 - [ ] **Step 4: `SmartReminderManager.kt:80` reminder body plural + externalize channel/title**
 
+`bestGap` is a `Long` (`SmartReminderManager.kt:58`). `reminder_steps_away`'s count is `%1$d` (a `%d` accepts a `Long`), so pass `bestGap` as the format arg with the Int selector:
 `.setContentText("You're $bestGap steps from upgrading $bestName!")` →
 ```kotlin
 .setContentText(
-    context.resources.getQuantityString(R.plurals.reminder_steps_away, bestGap.coerceIn(0, Int.MAX_VALUE).toInt(), bestGap, bestName)
+    context.resources.getQuantityString(
+        R.plurals.reminder_steps_away,
+        bestGap.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
+        bestGap, bestName,
+    )
 )
 ```
-*(Adjust `reminder_steps_away` first arg: it must be `%1$s` if `bestGap` is large, or `%1$d` if Int. Confirm `bestGap`'s type; if `Int`, keep `%1$d`.)* Also replace the hardcoded channel name/desc/title (lines ~41-42, 79) with `context.getString(R.string.reminder_channel_name/desc/title)`.
+(`reminder_steps_away` = `"You're %1$d step(s) from upgrading %2$s!"` — `%1$d` takes the `Long` `bestGap`, `%2$s` takes `bestName`.) Also replace the hardcoded channel name/desc/title (lines ~41-42, 79) with `context.getString(R.string.reminder_channel_name / reminder_channel_desc / reminder_title)`.
 
 - [ ] **Step 5: Build + run service tests**
 
@@ -1238,10 +1367,13 @@ Add to the existing class (keep the existing `.name.replace(` test):
     @Test
     fun `no presentation Text or contentDescription surfaces a raw enum name`() {
         val presentationRoot = File("src/main/java/com/whitefang/stepsofbabylon/presentation")
-        // Bare raw-name surfacing the wave fixed: Text(x.name) / contentDescription = "...x.name..." /
-        // .name.take( / .name.lowercase(. Scoped to lines that render text so legitimate non-UI
-        // .name uses (keys, logging, when-branches) don't false-positive.
-        val rawNameSurface = Regex("""(Text\([^)]*\.name\b|\.name\.take\(|\.name\.lowercase\(|contentDescription\s*=\s*"[^"]*\$\{[^}]*\.name)""")
+        // Patterns the wave fixed (spec IC-9): Text(x.name) / contentDescription="...x.name..." /
+        // .name.take( / .name.lowercase( / .replace("_"  (the StoreScreen CONSTANT_CASE de-caser).
+        // Scoped to text-rendering lines so legitimate non-UI .name uses (list keys, logging,
+        // when-branches) don't false-positive.
+        val rawNameSurface = Regex(
+            """(Text\([^)]*\.name\b|\.name\.take\(|\.name\.lowercase\(|\.replace\("_"|contentDescription\s*=\s*"[^"]*\$\{[^}]*\.name)"""
+        )
         val offenders = mutableListOf<String>()
         presentationRoot.walkTopDown().filter { it.isFile && it.extension == "kt" }.forEach { file ->
             file.readText().lineSequence().forEachIndexed { idx, line ->
@@ -1284,8 +1416,12 @@ Expected: BUILD SUCCESSFUL, 0 failures. Record the new JVM test count.
 Run:
 ```bash
 grep -rn "joinToString.*\.name\|+ \" claimed\|\.name }\|Text(cat.name\|Text(category.name\|Text(pack.tier.name\|category.replace" app/src/main/java/com/whitefang/stepsofbabylon/presentation app/src/main/java/com/whitefang/stepsofbabylon/domain || echo "clean"
+# No leftover compile shim from the Tasks 8-10 unit, and no orphan flat strings:
+grep -rn "val label: String" app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/ClaimCelebration.kt || echo "no label shim"
+grep -n "name=\"fx_step_reward\"\|name=\"steps_earned_banner\"" app/src/main/res/values/strings.xml  # expect ONLY if any flat <string> survived — should be 0
+grep -rn "supplyLabel\|missionRewardLabel\|rewardsSummary" app/src/main app/src/test || echo "all removed"
 ```
-Expected: no in-scope hits (the wave-composition `it.key.name` survives ONLY in the GameEngine literal fallback, which is acceptable per FZ-1).
+Expected: no in-scope hits; "no label shim"; the `fx_step_reward`/`steps_earned_banner` grep returns **no `<string>`** lines (only the `<plurals>` remain — `grep` for `<string name=` specifically); "all removed". (The wave-composition `it.key.name` survives ONLY in the GameEngine literal fallback, which is acceptable per FZ-1.)
 
 - [ ] **Step 3: Sync current-state docs (PR Task-List Convention)**
 
@@ -1313,5 +1449,22 @@ git commit -m "docs(i18n): sync current-state docs + STATE/RUN_LOG for the i18n 
 ## Self-review notes (author)
 
 - **Spec coverage:** §3a→Tasks 1,2,4,10,11; §3c→Tasks 3,4; §3d enums→Tasks 5,6,7; §3e concat→Tasks 4,9,10; §3f payload→Task 8; §3g supply row→Task 10; §3h card pull→Task 2; §3i notif split→Task 11; §5 tests→each task + Task 12; §6 fragile zones→respected per-task; §9 traceability→Task 13 Step 5. ✓
-- **Ordering hazard:** Tasks 8–10 form a compile-coupled unit (the payload type change breaks both VMs) — committed together (Task 10 Step 5). Flagged in Task 8 Step 4.
-- **Known plan risks for the reviewer:** (a) the `widget_steps`/`reminder_steps_away` `%d` vs `%s` arg-type detail (formatted-string args need `%s`) is called out inline in Task 11; (b) the milestone-row "no 'claimed!'" formatting uses an extracted `formatRewardParts` helper (Task 9 Step 3); (c) the `NoRawEnumNameInUiTest` regex may need tightening against legitimate `.name` list-keys (Task 12 Step 2); (d) the GameEngineTest seam test is optional if it perturbs the harness (Task 4 Step 8).
+- **Ordering hazard:** Tasks 8–10 form a compile-coupled unit (the payload type change breaks both VMs) — committed together (Task 10 Step 5); banner + per-task no-commit notes in the conventions block + Task 8 Step 4.
+
+## Plan-review amendments applied (Adversarial Review Gate, 28 surviving / 4 refuted)
+
+- **CC-1 (crit):** every Long→Int plural selector uses `coerceIn(0L, Int.MAX_VALUE.toLong())` (was `0, Int.MAX_VALUE` — wouldn't compile). Tasks 2, 11.
+- **CL-1/CC-2/SF-1 (crit):** `fx_step_reward` is now actually delivered — Task 4 Step 4 rewires `AndroidStrings.stepReward` to `getQuantityString` + deletes the flat string (same-name `<string>`/`<plurals>` coexist per Android docs; we delete the flat one anyway).
+- **CL-2/SF-2 (crit/major):** `steps_earned_banner` second consumer `PostRoundOverlay.kt:76` added to Task 2; flat string deleted.
+- **FZ-1/TRW-1 (crit):** `MilestoneTest:49-50` deletion added (Task 9 Step 3a).
+- **FZ-2/TRW-3 (crit):** `UnclaimedSuppliesViewModelTest:82-87` `supplyLabel` test deletion added (Task 10 Step 4).
+- **TRW-2 (crit):** `CardsScreenTest:107/118/119` `"COMMON"`→`"Common"` re-point added (Task 5 Step 4a).
+- **TRW-4 (major):** `RarityTest:58-67` deleted + re-homed to `EnumLabelResTest` (Task 5 Step 5a / Task 6 Step 5).
+- **TRW-5:** documented that `GameEngineTest:55-79` DOES assert the fallback literals and stays green (Task 4 Step 6); the optional FakeStrings engine test is dropped (Task 4 Step 8).
+- **IC-1/CG-2/AF-2 (crit/major):** WavePhase = String→@StringRes lookup; CosmeticCategory carried as enum (Task 6).
+- **FZ-3/CC-8 (major):** `formatRewardParts` factored once in Task 8 Step 2; Task 9 row uses it (no `removeSuffix`).
+- **SF-3 (major):** Task 12 regex now includes `.replace("_"`.
+- **SF-4 (major):** Task 10 Step 3 spells out the full Jupiter→Robolectric/JUnit4 `SupplyRewardFormatTest` migration.
+- **SF-5 (minor):** Task 9 Step 4 keeps the `backgroundScope`/`toList`/`cancelForTest` harness (no `.first()`).
+- **SF-7/CC-4/CL-3/CL-4 + nits:** GameEngine line cites→:840/:852; OnboardingScreen hoist-before-`Row(`; `boss_incoming` orphan removed; `widget_steps` `%1$s` + PluralsResourceTest re-run noted.
+- **Refuted (not applied):** SF-1's "duplicate-resource compile error" (string+plurals coexist), CC-3 (StoreViewModel:80 line/named-arg), SF-6 (missionRewardLabel test deletion already covered), SF-9 (no test constructs CosmeticDisplayInfo), FZ-6 (regex doesn't flag the CARD_COPY toDisplayName line).
