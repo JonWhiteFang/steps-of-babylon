@@ -63,12 +63,9 @@ fun uwRarityTier(unlockCost: Int): RarityTier = when {
     else -> RarityTier.TIER_2
 }
 
-/** Card label = the rarity name (COMMON / RARE / EPIC). */
-@StringRes fun cardRarityLabelRes(rarity: CardRarity): Int = when (rarity) {
-    CardRarity.COMMON -> R.string.rarity_common
-    CardRarity.RARE -> R.string.rarity_rare
-    CardRarity.EPIC -> R.string.rarity_epic
-}
+/** Card label = the rarity name (COMMON / RARE / EPIC). Delegates to [CardRarity.labelRes] so the
+ *  rarity→string mapping lives in exactly one place (EnumLabels.kt); this keeps the badge call-site name. */
+@StringRes fun cardRarityLabelRes(rarity: CardRarity): Int = rarity.labelRes()
 
 /** UW label shifts up so no UW reads as "common" (RARE / EPIC / LEGENDARY). */
 @StringRes fun uwRarityLabelRes(tier: RarityTier): Int = when (tier) {
