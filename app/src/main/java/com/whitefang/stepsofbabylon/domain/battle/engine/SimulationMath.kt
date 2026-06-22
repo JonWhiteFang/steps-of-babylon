@@ -43,6 +43,49 @@ object SimulationMath {
         return (maxHp * percent).coerceAtLeast(1.0)
     }
 
+    // ---- Cash reward formulas (#230 — hoisted from GameEngine) ----
+
+    /** Base cash granted at the end of each wave, before per-level + multiplier scaling. */
+    const val BASE_CASH_PER_WAVE = 20L
+
+    /** Extra wave-end cash per CASH_PER_WAVE workshop level. */
+    const val FLAT_BONUS_PER_WAVE_LEVEL = 5L
+
+    /** Per-level CASH_BONUS workshop multiplier increment (3 % per level). */
+    const val CASH_BONUS_PER_LEVEL = 0.03
+
+    /**
+     * Per-kill cash reward. Identical to the pre-hoist `GameEngine.handleEnemyDeath` formula:
+     * `baseCash × tierMult × (1 + cashBonusLevel × 0.03) × fortune × (1 + cashBonusPercent/100) × cashResearch`,
+     * truncated to Long. Stacks the workshop CASH_BONUS, tier cash multiplier, GOLDEN_ZIGGURAT
+     * fortune buff, the CASH_BONUS_GAIN card (cashBonusPercent), and the CASH_RESEARCH lab.
+     */
+    fun killCashReward(
+        baseCash: Long,
+        tierMultiplier: Double,
+        cashBonusLevel: Int,
+        fortuneMultiplier: Double,
+        cashBonusPercent: Double,
+        cashResearchMultiplier: Double,
+    ): Long {
+        val cashBonus = 1.0 + cashBonusLevel * CASH_BONUS_PER_LEVEL
+        return (baseCash * tierMultiplier * cashBonus * fortuneMultiplier *
+            (1.0 + cashBonusPercent / 100.0) * cashResearchMultiplier).toLong()
+    }
+
+    /**
+     * Wave-complete cash payout. Identical to the pre-hoist `GameEngine.handleWaveComplete` formula:
+     * `(BASE_CASH_PER_WAVE + cashPerWaveLevel × FLAT_BONUS_PER_WAVE_LEVEL) × fortune × cashResearch`,
+     * truncated to Long.
+     */
+    fun waveCompleteCash(
+        cashPerWaveLevel: Int,
+        fortuneMultiplier: Double,
+        cashResearchMultiplier: Double,
+    ): Long =
+        ((BASE_CASH_PER_WAVE + cashPerWaveLevel * FLAT_BONUS_PER_WAVE_LEVEL) *
+            fortuneMultiplier * cashResearchMultiplier).toLong()
+
     // ---- Chrono Field UW (RO-09 #1) ----
 
     /**

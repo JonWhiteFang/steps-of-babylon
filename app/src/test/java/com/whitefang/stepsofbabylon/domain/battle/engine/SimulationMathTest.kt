@@ -302,4 +302,24 @@ class SimulationMathTest {
         // small enough to bound worst-case per-iteration work (so the loop can't spiral).
         assertTrue(SimulationMath.MAX_CATCHUP_TICKS in 2..20)
     }
+
+    // ---- Cash reward formulas (#230 hoist) ----
+
+    @Test
+    fun `killCashReward applies all multipliers like the pre-hoist engine formula`() {
+        assertEquals(5L, SimulationMath.killCashReward(5L, 1.0, 0, 1.0, 0.0, 1.0))
+        assertEquals(6L, SimulationMath.killCashReward(5L, 1.0, 10, 1.0, 0.0, 1.0))
+        assertEquals(25L, SimulationMath.killCashReward(5L, 1.0, 0, 5.0, 0.0, 1.0))
+        assertEquals(150L, SimulationMath.killCashReward(100L, 1.0, 0, 1.0, 50.0, 1.0))
+        assertEquals(200L, SimulationMath.killCashReward(100L, 1.0, 0, 1.0, 0.0, 2.0))
+        assertEquals(150L, SimulationMath.killCashReward(100L, 1.5, 0, 1.0, 0.0, 1.0))
+    }
+
+    @Test
+    fun `waveCompleteCash applies base plus per-level flat bonus times multipliers`() {
+        assertEquals(20L, SimulationMath.waveCompleteCash(0, 1.0, 1.0))
+        assertEquals(35L, SimulationMath.waveCompleteCash(3, 1.0, 1.0))
+        assertEquals(150L, SimulationMath.waveCompleteCash(2, 5.0, 1.0))
+        assertEquals(40L, SimulationMath.waveCompleteCash(0, 1.0, 2.0))
+    }
 }
