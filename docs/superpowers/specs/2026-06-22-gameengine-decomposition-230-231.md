@@ -1,8 +1,8 @@
 # Design Spec — GameEngine god-class decomposition (#230 + #231)
 
 **Date:** 2026-06-22
-**Issues:** #230 (ADR-0012 extraction only partial — GameEngine still a 1223-line complexity hotspot),
-#231 (1223-line god class mixing simulation orchestration, rendering, UW lifecycle, cash economy,
+**Issues:** #230 (ADR-0012 extraction only partial — GameEngine still a 1233-line complexity hotspot),
+#231 (1233-line god class mixing simulation orchestration, rendering, UW lifecycle, cash economy,
 targeting, Paint allocation)
 **Status:** Draft — pending Adversarial Review Gate (spec stage)
 **Scope decision (developer):** ONE comprehensive PR; **Hybrid** decomposition; GameEngine stays sole
@@ -36,10 +36,23 @@ forces re-reading the whole `entitiesLock` concurrency contract. This is the cos
 
 ## 2. Goal & non-goals
 
-**Goal:** decompose `GameEngine` into focused collaborators (sub-400-line files), each with one clear
-responsibility, **strictly behavior-preserving**, satisfying both #230 (domain hoist of pure formulas +
-an explicit tracker for the entity-coupled remainder) and #231 (presentation collaborators +
-`BattleRenderer` for Canvas/Paint).
+**Goal:** decompose `GameEngine` into focused collaborators, each with one clear responsibility,
+**strictly behavior-preserving**, satisfying both #230 (domain hoist of pure formulas + an explicit
+tracker for the entity-coupled remainder) and #231 (presentation collaborators + `BattleRenderer` for
+Canvas/Paint).
+
+**Line-count targets (corrected after spec review).** Each *new* collaborator file
+(`BattleRenderer` / `UWController` / `BuffTickers` / `CombatResolver`) must be **< 400 lines** — that is
+the achievable, enforced goal and the substance of #231 ("sub-400-line files per responsibility"). The
+**slimmed `GameEngine` is NOT held to < 400**: a dry-run accounting of the §5.E kept members
+(≈281 code + ≈211 load-bearing KDoc/concurrency comments + blanks, *before* the render shell, the four
+collaborator fields + construction, and the three host-interface impls) lands the engine at **~500–560
+lines**. The #118/#191 concurrency comments and kept-field KDoc are load-bearing (CLAUDE.md treats them
+so) and the §4 "move, don't rewrite" rule forbids trimming them — so sub-400 on the engine is
+unattainable without a forbidden rewrite. **The engine target is therefore "as small as the kept
+responsibilities allow (~500–560 lines), every other concern lifted into a < 400-line collaborator"** —
+the win is single-responsibility files, not an arbitrary engine line count. The plan pins the measured
+post-split engine count via a trial extraction.
 
 **Non-goals (explicitly out of scope, tracked as future ADR-0012 slices):**
 - Hoisting UW *effect resolution* (the `when(type)` damage/pull/DoT bodies) into the domain. They call
@@ -105,14 +118,36 @@ countdown. **All `Paint` allocation leaves `GameEngine`.**
 entities.toList() }` — lock stays in the engine), then call
 `battleRenderer.render(canvas, snapshot, …)` passing the per-frame reads it needs (enemyIntelLevel,
 chronoActive, the boss/composition labels, the ziggurat HP). Pure draw logic; mutates nothing shared.
-The A31 cached-Paint property and the `setChronoActiveForTest` seam move with it (the seam becomes a
-pass-through on the engine if `GameEngineTest` still needs it, or re-points to the renderer).
+The A31 cached-Paint property moves into `BattleRenderer`. The `setChronoActiveForTest` seam (a
+`@VisibleForTesting` writer of `chronoActive`) stays a pass-through **on `GameEngine`** that delegates
+the write to `UWController` (the new owner of `chronoActive` per §5.B) — it does **not** re-point to the
+renderer, which only *reads* `chronoActive` as a per-frame parameter and owns no such field. (Review
+corrected the evidence: this seam's actual consumer is `ChronoOverlayPaintTest:28`, not `GameEngineTest`
+— `GameEngineTest` reaches `chronoActive`/`chronoSlowFactor` via its own separate field-reflection
+helper; both paths are enumerated in the plan's reflection-migration step.)
 
 ### B. `UWController` — Ultimate Weapon lifecycle (#231 "UW lifecycle state machine")
 Owns `uwStates`, the `UWState` data class, and the UW flags/multipliers: `chronoActive`,
 `chronoSlowFactor`, `goldenZigActive`, `preGoldenStats`, `goldenDamageMult`, `fortuneMultiplier`.
-Methods: `initUWs`, `uwSnapshot`, `activateUW`, `updateUWs`, `resetUWCooldowns`. Delegates timer
-arithmetic to the **unchanged** `Simulation.advanceUWTimers` / `isUWReadyToFire`.
+Methods: `initUWs`, `uwSnapshot`, `activateUW`, `updateUWs`, `resetUWCooldowns`, plus a
+**`resetRoundState()`** entry point (see below). Delegates timer arithmetic to the **unchanged**
+`Simulation.advanceUWTimers` / `isUWReadyToFire`.
+
+**`init()`-reset ownership (review fix).** `GameEngine.init()` today resets these UW fields inline
+(`fortuneMultiplier = 1.0`; `chronoActive = false`; `chronoSlowFactor = 1f`; `goldenZigActive = false`;
+`preGoldenStats = null`; `goldenDamageMult = 1.0`; `uwStates.clear()` — GameEngine.kt:322–324) on the
+**main thread, inside `synchronized(entitiesLock)`**. After the move, those fields live in `UWController`,
+so the engine's `init()` must call `uwController.resetRoundState()` (which performs the same field
+resets) **from inside the engine's held `entitiesLock`**. This reset is NOT folded into `initUWs`
+(`initUWs` is a separate VM call that populates `uwStates` from equipped weapons; the field reset is a
+distinct round-start concern). `UWController` itself takes no monitor — the caller (engine `init`/`update`)
+holds the lock (§3.1).
+
+**`Simulation` access.** `updateUWs` calls `Simulation.advanceUWTimers` / `isUWReadyToFire`. Those are
+**pure, stateless** helpers (read no `Simulation` instance state — Simulation.kt:233–253). `UWController`
+reaches them by being handed the engine-owned `Simulation` **via its constructor** (chosen route; the
+single instance the engine already owns at GameEngine.kt:115). `UWHost` therefore does NOT need a
+`simulation` member.
 
 Reads the engine can't give up are exposed back to `UWController` via a `UWHost` interface (§6).
 `chronoActive` / `chronoSlowFactor` are read by the engine's tick (`simulation.tickEntities` slow
@@ -124,38 +159,75 @@ formulas (CombatResolver) → exposed as a read.
 `updateZigguratStats` (engine, main thread) re-captures `preGoldenStats` to the new base and re-applies
 `goldenDamageMult` when GOLDEN is active; `updateUWs` expiry restores `preGoldenStats`. After the split,
 `goldenZigActive`/`preGoldenStats`/`goldenDamageMult` live in `UWController` but `updateZigguratStats`
-(engine façade) must read/write them — exposed via the host or via `UWController` methods
-(`onBaseStatsChanged(newStats)` encapsulating the re-layer). The `effectWasActive` / `justExpired`
-semantics from `advanceUWTimers` (ongoing effect runs one final time on the expiry frame) must be
-preserved exactly.
+(engine façade) must read/write them — encapsulated in a single `UWController.onBaseStatsChanged(newStats)`
+method the engine calls. The `effectWasActive` / `justExpired` semantics from `advanceUWTimers` (ongoing
+effect runs one final time on the expiry frame) must be preserved exactly.
+
+**Pre-existing race — must NOT be widened (review fix).** `updateZigguratStats` runs on the **main
+thread WITHOUT `entitiesLock`** today (GameEngine.kt:392–399; `applyStats` only locks in the
+orbCount-changed branch, which a damage-only purchase skips), while the GOLDEN expiry in `updateUWs`
+runs on the **loop thread under `entitiesLock`**. The GOLDEN trio is read/written from both — so it is
+**not** thread-confined; this is a known, pre-existing main-vs-loop race that the refactor must
+**preserve exactly, not enlarge**. Therefore `onBaseStatsChanged` must remain a single adjacent
+read-modify-write of the trio (check `goldenZigActive` → set `preGoldenStats` → `host.applyStats(copy)`)
+with **no host round-trips that re-read the trio mid-sequence** and must keep the same (lock-free,
+main-thread) access shape `updateZigguratStats` has today — do not silently add a lock, an
+`entitiesLock` acquisition, or a single-thread assertion. `GameEngineTest` R119 is single-threaded and
+will not catch a cross-thread desync; the guard for this path is the no-widening invariant, not a test.
 
 ### C. `BuffTickers` — per-mechanic timers (#231 "per-mechanic timers")
 Owns `recoveryTimer`, `rapidFireTimer`, `rapidFireActiveRemaining`, `lifestealAccumulator`. Methods:
-`tickRecoveryPackages(dt)`, `tickRapidFire(dt)`, `applyLifesteal(healAmount)`. Reads ziggurat, wave
-phase, effect engine, strings, and the level map via a `BuffHost` interface. The
-"reset-to-zero-during-COOLDOWN-phase" behavior and the L10 rapid-fire seamless-transition ordering are
-preserved verbatim.
+`tickRecovery(dt)` (renamed from `tickRecoveryPackages`), `tickRapidFire(dt)`,
+`applyLifesteal(healAmount)`. Reads ziggurat, wave phase, effect engine, strings, and the level map via
+a `BuffHost` interface. The "reset-to-zero-during-COOLDOWN-phase" behavior and the L10 rapid-fire
+seamless-transition ordering are preserved verbatim.
 
 ### D. `CombatResolver` — damage / targeting / death
-Owns `onProjectileHitEnemy`, `onOrbHitEnemy`, `applyDamageToZiggurat`, `applyThorn`,
-`findNearestEnemies`, `getAliveEnemies`, `handleEnemyDeath`, `handleWaveComplete`. Computes reward
-amounts via the new `SimulationMath` formulas (§7) then runs the entity/effect side effects exactly as
-before (`simulation.creditCash`, sound, `DeathEffect`, `FloatingText`, `SimulationEvent.emit`, SCATTER
-child spawn into `pendingAdd` via host). Reaches engine state via a `CombatHost` interface.
+Owns the methods `onProjectileHitEnemy`, `onOrbHitEnemy`, `applyDamageToZiggurat`, `applyThorn`,
+`handleEnemyDeath`, `handleWaveComplete`. **Owns the fields** `calculateDamage = CalculateDamage()` and
+`calculateDefense = CalculateDefense()` (GameEngine.kt:74–75 — their only callers are
+`onProjectileHitEnemy:1050` / `applyDamageToZiggurat:1091`, both moving here; constructed inside
+CombatResolver with the production default `Random`, so the §3.3 test contract is unaffected — no host
+member needed). Computes reward amounts via the new `SimulationMath` formulas (§7) then runs the
+entity/effect side effects exactly as before (`host.simulation.creditCash`, sound, `DeathEffect`,
+`FloatingText`, `SimulationEvent.emit`, SCATTER child spawn into `pendingAdd` via `host.addPending`).
+Reaches engine state via a `CombatHost` interface.
 
-Note `findNearestEnemies` / `getAliveEnemies` iterate `entities` (engine-owned). To honor "`entities`
-never leaves the engine", the engine keeps the iteration and exposes `aliveEnemies()` (and the
-nearest-N targeting) through the host; CombatResolver and UWController call `host.aliveEnemies()`. (This
-preserves the #125 no-cache hot-path contract — the engine method re-derives live each call.)
+**Second-wind / death-defy (review fix).** `applyDamageToZiggurat` (GameEngine.kt:1092–1099) reads
+`secondWindHpPercent` and performs a one-shot test-and-set on `secondWindUsed`
+(`if (… && !secondWindUsed …) { secondWindUsed = true; … }`). Both are `@Volatile` fields the VM writes,
+kept on `GameEngine` per §6. `deathDefyChance` is read off `stats` (covered by `currentStats`). So
+`CombatHost` must expose: `val secondWindHpPercent: Double` (read) and **`fun consumeSecondWind(): Boolean`**
+— an atomic test-and-set on the engine's `secondWindUsed` (returns `true` exactly once, then `false`),
+preserving the `!secondWindUsed → secondWindUsed = true` semantics. A read-only getter is insufficient
+(it's a write-back).
 
-### E. `GameEngine` (slimmed) — orchestrator + lock owner + façade (target ~350–400 lines)
+**Targeting & three distinct `entities` queries.** Three different queries iterate engine-owned
+`entities`; to honor "`entities` never leaves the engine", the engine keeps the iteration and exposes
+each through the host (the #125 no-cache hot-path contract — the engine re-derives live each call):
+1. `aliveEnemies()` — all live enemies (was `getAliveEnemies`, GameEngine.kt:893).
+2. `nearestEnemies(n)` — live enemies within `zig.attackRange`, sorted by distance **from the ziggurat**
+   (was `findNearestEnemies`, GameEngine.kt:1155–1163; range-gating preserved verbatim). This stays
+   bound into `ZigguratEntity` via `::findNearestEnemies` at the engine's `init` (GameEngine.kt:341) —
+   it does **not** move to CombatResolver, so no circular construction is introduced.
+3. **Bounce-target** (GameEngine.kt:1073–1076) — a THIRD, distinct query: live enemies `!in
+   proj.hitEnemies`, `minByOrNull { distance from the just-hit enemy }`, **no `attackRange` gate**. This
+   is NOT `nearestEnemies(n)` (different ordering origin + no range filter). CombatResolver obtains
+   candidates via `host.aliveEnemies()` and applies the `!in hitEnemies` + min-by-distance-from-hit-enemy
+   filter itself.
+
+### E. `GameEngine` (slimmed) — orchestrator + lock owner + façade (target ~500–560 lines — see §2)
 Keeps: `entities` / `pendingAdd` / `entitiesLock`, the A28 scratch buffers, `init`, `update` (the locked
 tick sequencing the collaborators), `applyStats` / `updateZigguratStats` (stats-mutation point + orb
-reconcile — both touch `entities` under lock), `spawnOrbs`, the wave-announcement triggers
-(`triggerWaveAnnouncement`, `nextWaveCompositionLabel`, `bossCountdownLabel`), `aliveEnemyCount()`, and
-the delegating façade getters/fields (`cash`, `totalCashEarned`, `events`, `hasWaveProgress`,
-`spendCash`, `setStats`, `updateEffectiveLevels`, plus the `@Volatile` VM-written fields). Implements
-`UWHost` / `BuffHost` / `CombatHost`. Constructs the four collaborators in `init` (or as fields).
+reconcile — both touch `entities` under lock), `spawnOrbs`, **`addEntity(entity)`** (public test seam
+that writes engine-owned `pendingAdd`, GameEngine.kt:587 → :49; stays public for GameEngineTest's 14
+direct call sites), the wave-announcement triggers (`triggerWaveAnnouncement`, `nextWaveCompositionLabel`,
+`bossCountdownLabel`), `aliveEnemyCount()`, the engine-owned host-impl query methods (`aliveEnemies()`,
+`nearestEnemies(n)`, `wsLevel(type)`, `effectiveLevels` field), and the delegating façade getters/fields
+(`cash`, `totalCashEarned`, `events`, `hasWaveProgress`, `spendCash`, `setStats`,
+`updateEffectiveLevels`, plus the `@Volatile` VM-written fields). Implements `UWHost` / `BuffHost` /
+`CombatHost`. Constructs the four collaborators as fields (handing `UWController` the engine-owned
+`Simulation`; handing each collaborator its host = `this`).
 
 ## 6. Host-interface seam & where `@Volatile` fields land
 
@@ -173,7 +245,9 @@ interface UWHost {            // implemented by GameEngine
   val soundManager: SoundManager?
   val currentStats: ResolvedStats
   fun applyStats(stats: ResolvedStats)
-  fun aliveEnemies(): List<EnemyEntity>
+  fun aliveEnemies(): List<EnemyEntity>   // #125 no-cache contract — see note below
+  // NOTE: no `simulation` member — UWController gets the engine-owned Simulation via its
+  // constructor (advanceUWTimers / isUWReadyToFire are pure stateless helpers). See §5.B.
 }
 interface BuffHost {
   val ziggurat: ZigguratEntity?
@@ -192,30 +266,45 @@ interface CombatHost {
   val simulation: Simulation
   val fortuneMultiplier: Double   // read from UWController
   val cashResearchMultiplier: Double; val cashBonusPercent: Double
+  val secondWindHpPercent: Double           // read (applyDamageToZiggurat, GameEngine.kt:1097)
+  fun consumeSecondWind(): Boolean          // one-shot test-and-set on engine's secondWindUsed
   fun addPending(entity: Entity)
-  fun aliveEnemies(): List<EnemyEntity>
+  fun aliveEnemies(): List<EnemyEntity>     // #125 no-cache contract — see note below
   fun nearestEnemies(n: Int): List<EnemyEntity>
   fun wsLevel(type: UpgradeType): Int
-  fun applyLifesteal(healAmount: Double)   // delegates to BuffTickers
+  fun applyLifesteal(healAmount: Double)    // delegates to BuffTickers
 }
+// CONTRACT on aliveEnemies() (declared in two hosts, single engine impl): the host impl is
+// UNSYNCHRONIZED and re-derives the list LIVE on every call — NEVER cache/snapshot it (#125: a
+// stale list lets an ongoing UW effect re-hit a corpse and double-credit the kill). Caller holds
+// entitiesLock (or is the single-threaded test / main-thread activateUW path). Do NOT add a
+// `synchronized(entitiesLock)` inside the host impl — getAliveEnemies is a #125 60fps×4 hot path
+// and an extra reentrant acquisition per call would deviate from move-don't-rewrite.
 ```
 
-**`@Volatile` placement.** The VM-written fields (`cashResearchMultiplier`, `uwCooldownMultiplier`,
-`enemyIntelLevel`, `cashBonusPercent`, `secondWindHpPercent`, `secondWindUsed`, `cosmeticOverrides`,
-`roundOver`) stay on `GameEngine` (the façade the VM writes). `fortuneMultiplier` moves to
-`UWController` and stays accessible — it is written only on the loop thread (`activateUW` / GOLDEN
-expiry, both inside the tick) and read by CombatResolver on the same thread, so it does **not** need
-`@Volatile` once it is loop-thread-confined; **but** to be conservative and preserve the exact current
-memory semantics, it keeps no weaker guarantee than today (today it is a plain `var` read/written only
-under the tick — confirm during implementation; if any cross-thread read exists it stays `@Volatile`).
-`chronoActive`/`chronoSlowFactor` are today `@Volatile`-free plain vars written under the tick and read
-by `render` (different thread) — they move to `UWController` **keeping the same `@Volatile`-or-not
-status they have today** (verify exact current modifiers during implementation; the render read is the
-reason any volatility exists).
+**Field placement & memory semantics (corrected after review).** The eight VM-written fields
+(`cashResearchMultiplier`, `uwCooldownMultiplier`, `enemyIntelLevel`, `cashBonusPercent`,
+`secondWindHpPercent`, `secondWindUsed`, `cosmeticOverrides`, `roundOver`) are `@Volatile` and **stay on
+`GameEngine`** (the façade the VM writes). The UW fields (`fortuneMultiplier`, `chronoActive`,
+`chronoSlowFactor`, `goldenZigActive`, `preGoldenStats`, `goldenDamageMult`) are today **plain
+non-`@Volatile` vars** (verified: GameEngine.kt:169/267/275/276/277/287) and move to `UWController`
+**staying plain `var`**.
 
-> **Review focus:** the volatility audit above must be verified against the actual current field
-> modifiers during the plan stage — the spec's claim "preserve exactly" is the contract; the plan
-> pins the per-field truth.
+The reason they need no `@Volatile` is **lock-provided happens-before, NOT thread-confinement** — the
+earlier "loop-thread-confined" framing was *factually wrong*: these fields are also written on the
+**main thread** in `init()` (GameEngine.kt:322/324, under `entitiesLock`), and `chronoActive`/
+`chronoSlowFactor` are read by `render()` on the loop thread. Every write (loop-thread tick + main-thread
+`init`) and every read happens under the **same `entitiesLock`**, which supplies the visibility edge.
+**Consequences the plan must hold:**
+- The `init()`-path reset of the UW fields must stay **under `entitiesLock`** post-move (via
+  `uwController.resetRoundState()` called from the engine's locked `init`; §5.B).
+- The plan must **not** "optimize" any of these into a single-thread assumption (no
+  same-thread assertion, no dropping the lock) on the strength of the (false) confinement story.
+- **Exception — the GOLDEN trio's `updateZigguratStats` path is lock-FREE today** (main thread, no
+  `entitiesLock` — GameEngine.kt:392–399) and races the loop-thread expiry. That is a pre-existing race;
+  `onBaseStatsChanged` must **preserve that exact lock-free shape, not widen it** (§5.B highest-scrutiny
+  zone). Do not add a lock there either — adding one would change behavior/timing, not just "fix" a race
+  the corpus doesn't exercise.
 
 ## 7. The #230 domain hoist (pure formulas → `SimulationMath`)
 
@@ -247,7 +336,8 @@ slices explicitly so the file shrinks toward the documented intent."
 2. `synchronized(entitiesLock) {`
    - `simulation.tickElapsed(dt)`; `backgroundRenderer?.update(dt)`; `effectEngine?.update(dt)`
    - `uwController.update(dt)`  *(was `updateUWs`)*
-   - `buffTickers.tickRecovery(dt)`; `buffTickers.tickRapidFire(dt)`
+   - `buffTickers.tickRecovery(dt)`; `buffTickers.tickRapidFire(dt)`  *(`tickRecovery` was
+     `tickRecoveryPackages` — the canonical new name is `tickRecovery`; the reflection table re-points it)*
    - wave-change announce (`triggerWaveAnnouncement`)
    - `waveSpawner?.update(...)`; `entities.addAll(pendingAdd); pendingAdd.clear()`
    - `simulation.tickEntities(entities, dt, if (uwController.chronoActive) uwController.chronoSlowFactor else 1f)`
@@ -263,17 +353,39 @@ slices explicitly so the file shrinks toward the documented intent."
 
 1. **Existing corpus is the behavior oracle.** No behavior added → every existing test stays green or
    is deliberately re-pointed (never weakened).
-2. **Reflection migration** of `GameEngineTest` — the main test work. Each moved member's reflection is
-   re-pointed to the collaborator (reached via `@VisibleForTesting engine.<collaborator>ForTest`) or
-   converted to a direct collaborator test. Red-before-green per move.
+2. **Reflection migration** of `GameEngineTest` — the main test work. The plan MUST carry a **per-site
+   migration table** enumerating, for each reflection site, (a) destination class, (b) how reached, and
+   (c) whether the member is **renamed**. Three groups (review-corrected — do NOT blanket "all break"):
+   - **Moves + RENAMED on a collaborator/engine:** `updateUWs`→`UWController.update`,
+     `tickRecoveryPackages`→`BuffTickers.tickRecovery` (resolve the §C "tickRecoveryPackages" vs §8
+     "tickRecovery" naming — pick one, pin it), `getAliveEnemies`→engine `aliveEnemies()` (re-point to
+     the **engine**'s renamed method, NOT CombatResolver, which delegates back via `host.aliveEnemies()`).
+   - **Moves, name-identical on a collaborator** (reach via `@VisibleForTesting engine.<collaborator>ForTest`):
+     `chronoActive`/`chronoSlowFactor`/`fortuneMultiplier`/`tickRapidFire` → `UWController`/`BuffTickers`;
+     `handleEnemyDeath`/`onProjectileHitEnemy` → `CombatResolver`. Plus `setChronoActiveForTest`'s two
+     consumers: `ChronoOverlayPaintTest:28` (engine pass-through) + `GameEngineTest`'s own
+     `setChronoActive` field-reflection helper (re-point to `UWControllerForTest`).
+   - **Stays on the engine — NO change:** `entities`, `pendingAdd`, `effectiveLevels` (and `addEntity`,
+     a direct non-reflective public seam). Do not re-point these.
+   Red-before-green per move; no assertion weakened, only the plumbing that reaches the code.
 3. **New focused unit tests** (the win — previously trapped behind Robolectric reflection):
    - `SimulationMathTest` += `killCashReward` / `waveCompleteCash` cases (pure JVM).
-   - `UWControllerTest`, `BuffTickersTest`, `CombatResolverTest` against fake hosts (no engine, minimal
-     Robolectric — only where `EnemyEntity`/`ZigguratEntity`/`EffectEngine` force it).
-4. **Concurrency guards sacrosanct** — `GameEngineConcurrencyTest` + `EffectEngineConcurrencyTest` pass
-   unchanged.
-5. **Instrumented** `BattleSurfaceLifecycleTest` stays valid via public-API preservation.
-6. **Build gate:** `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL; full
+   - `UWControllerTest`, `BuffTickersTest`, `CombatResolverTest` against fake hosts. These run on the
+     **plain JVM lane** (`unitTests.isReturnDefaultValues = true`, app/build.gradle.kts:198) exactly as
+     `GameEngineTest` does today — plain JUnit Jupiter, **no Robolectric**: the stubbed `Paint()` is a
+     no-op and the combat/UW/buff logic paths never read `Paint`. **Caveat:** a fake-host test must NOT
+     invoke a `render()`/`draw()` path (those read `Paint` → NPE under the default stub); collaborators
+     A–D expose no such path to the logic under test.
+4. **Cash-credit false-green guard.** After re-pointing the cash-delta tests, add/keep a standalone
+   **positive-delta** assertion on `simulateBasicKillCash` (delta > 0) so a misrouted credit
+   (CombatResolver crediting its own `Simulation` instead of `host.simulation`, the one `GameEngine.cash`
+   reads) fails loudly instead of yielding a false-green 0-delta. (R146/A28 already carry `> before`
+   guards; RO11 compares two deltas — but `simulateBasicKillCash` itself lacks a standalone one.)
+5. **Concurrency guards sacrosanct** — `GameEngineConcurrencyTest` + `EffectEngineConcurrencyTest` pass
+   unchanged (verified: both use only public API, zero reflection on moving members). The §10 red-flag
+   rule (stop if they need editing) is the guard that the lock model survived.
+6. **Instrumented** `BattleSurfaceLifecycleTest` stays valid via public-API preservation.
+7. **Build gate:** `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL; full
    JVM suite green; headline test count updated.
 
 ## 10. Risks & mitigations
@@ -281,20 +393,29 @@ slices explicitly so the file shrinks toward the documented intent."
 | Risk | Mitigation |
 |---|---|
 | Concurrency model silently changes | Engine stays sole lock owner; collaborators have no monitor; concurrency tests must pass unchanged (stop if they don't). |
-| GOLDEN_ZIGGURAT #119 re-layer breaks | Highest-scrutiny zone; `onBaseStatsChanged` encapsulation keeps the re-capture+re-apply in one place; existing `GameEngineTest` GOLDEN cases re-pointed, not weakened. |
+| GOLDEN_ZIGGURAT #119 re-layer breaks | Highest-scrutiny zone (§5.B); `onBaseStatsChanged` keeps the re-capture+re-apply as one adjacent read-modify-write; existing `GameEngineTest` GOLDEN cases re-pointed, not weakened. |
+| GOLDEN trio main-vs-loop race widened | Pre-existing lock-free race (`updateZigguratStats`, GameEngine.kt:392–399); `onBaseStatsChanged` preserves the exact lock-free shape — **no** added lock / round-trip / re-read (§5.B, §6). R119 is single-threaded; the guard is the no-widening invariant, not a test. |
 | UW expiry `effectWasActive`/`justExpired` semantics drift | Timer arithmetic stays in unchanged `Simulation.advanceUWTimers`; UWController only applies results — same as today. |
-| `@Volatile` semantics lost in the move | §6 volatility audit pinned in the plan against actual current modifiers; "preserve exactly" is the contract. |
+| `@Volatile` semantics lost in the move | §6 field-placement pinned against actual modifiers (UW fields are plain `var`, lock-provides happens-before; init-reset stays under `entitiesLock`); no single-thread "optimization" permitted. |
+| CombatResolver can't reach engine state (second-wind / calculators / Simulation) | §6 CombatHost gains `secondWindHpPercent` + `consumeSecondWind()`; calculators become CombatResolver fields; UWController gets `Simulation` via constructor. |
 | Reflection-heavy test breakage underestimated | Plan enumerates every reflection site in `GameEngineTest` and its destination before any extraction. |
 | One big PR is hard to review | Collaborator-by-collaborator extraction (small internal steps); both spec & plan through the Adversarial Review Gate (ultracode ON, full multi-agent). |
 
 ## 11. Acceptance criteria
 
-- `GameEngine.kt` and every new collaborator file are **< 400 lines**.
+- **Every new collaborator file** (`BattleRenderer` / `UWController` / `BuffTickers` / `CombatResolver`)
+  is **< 400 lines**. The slimmed `GameEngine` is **~500–560 lines** (not < 400 — see §2; the plan pins
+  the measured value via trial extraction). No single responsibility outside the engine exceeds its
+  < 400-line collaborator.
 - `BattleRenderer` owns all `Paint`; `GameEngine` has zero `android.graphics.Paint` fields.
 - Pure cash formulas live in `SimulationMath` with new pure-JVM tests.
-- Public API on `GameEngine` unchanged (consumer list in §3.2 compiles untouched).
+- Public API on `GameEngine` unchanged (consumer list in §3.2 compiles untouched; `addEntity` stays
+  public per §5.E).
 - `GameEngineConcurrencyTest` + `EffectEngineConcurrencyTest` pass **unchanged**.
 - Full `testDebugUnitTest lintDebug assembleDebug` green; headline count updated.
 - ADR-0012 updated: Phase 4 (presentation collaborator split + pure-formula hoist) recorded; the
   entity-coupled UW-effect / HP-mutation remainder tracked as an explicit future slice.
-- #230 + #231 closeable.
+- **#231 closeable on this PR.** **#230 closeable iff** the issue owner accepts the partial-domain-hoist
+  basis (pure cash formulas → `SimulationMath` + entity-coupled remainder tracked in ADR-0012); if #230
+  requires the full UW-effect/damage *domain* migration, it stays open (or splits into a follow-up
+  ADR-0012 slice) while #231 closes. Confirm at PR/issue time.
