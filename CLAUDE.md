@@ -364,9 +364,19 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Gradle in non-TTY environments:** Gradle buffers output when stdout isn't a terminal (e.g., CI).
   Use `./run-gradle.sh <task>` instead of `./gradlew <task>` to avoid hanging. The script is gitignored
   — see `README.md` for how to recreate it.
-- **Preferred CLI tooling** (use these over the defaults when available):
-  - **`ast-grep`/`sg`** — prefer over `grep` for *structural* Kotlin searches (call sites, enum-name
-    surfacing, API-shape sweeps). Reach for plain `grep`/`rg` only for literal text/log scans.
-  - **`fd`** — prefer over `find` for file discovery.
-  - **`detekt`/`ktlint`** — run for Kotlin static analysis / formatting checks.
-  - **`delta`** — use for viewing git diffs.
+- **Preferred CLI tooling** (use these over the defaults — they are installed; `command -v` to confirm).
+  **This applies to subagents too:** when dispatching an implementer/reviewer/explorer that will search
+  or touch Kotlin, copy the relevant rule below into its prompt — subagents do NOT see this file.
+  - **`ast-grep`/`sg`** — DEFAULT for any *structural* Kotlin search: call sites, ctor/param sweeps,
+    enum-name surfacing, API-shape audits, "who calls X". Use `sg -l kotlin -p '<pattern>' <path>`
+    (e.g. `sg -l kotlin -p '$X.checkAndAward($$$)' app/src`). Reach for `grep`/`rg` ONLY for literal
+    text/log/comment scans where structure doesn't matter. If you catch yourself `grep`-ing for a
+    function/class/call, switch to `sg`.
+  - **`fd`** — DEFAULT for file discovery (`fd -e kt Foo`, `fd -t f pattern path`). Use `find` only when
+    `fd` genuinely can't express the query.
+  - **`detekt`/`ktlint`** — Kotlin static analysis / formatting. **Run on the Kotlin you changed before
+    committing** (not the whole tree) via the standalone CLIs; `ktlint -F` auto-formats. (Build/PR-gate
+    wiring is in progress — until it lands, these are a manual local check, not yet CI-enforced.)
+  - **`delta`** — git-diff pager for a **human at a terminal** (`core.pager`). In this non-TTY agent
+    harness git disables the pager, so delta does NOT render for you — read diffs with `git show`/`git
+    diff` directly, or force readable output with `delta --paging=never` / `git -c core.pager=delta show`.
