@@ -14,6 +14,7 @@ import com.whitefang.stepsofbabylon.fakes.FakeWorkshopRepository
 import com.whitefang.stepsofbabylon.domain.model.SupplyDropReward
 import com.whitefang.stepsofbabylon.domain.model.SupplyDropTrigger
 import com.whitefang.stepsofbabylon.domain.repository.WalkingEncounterRepository
+import com.whitefang.stepsofbabylon.domain.time.TimeReading
 import com.whitefang.stepsofbabylon.service.SupplyDropNotificationManager
 import com.whitefang.stepsofbabylon.service.WidgetUpdateHelper
 import kotlinx.coroutines.flow.Flow
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 /**
  * #232: the four follow-on-pipeline stages in [DailyStepManager.runFollowOnPipeline]
@@ -50,6 +52,13 @@ class DailyStepManagerErrorReportingTest {
         override suspend fun enforceInboxCap(maxSize: Int) {}
     }
 
+    // #211: stub the non-null currentTimeReading() so TimeIntegrity.evaluate (in the economy stage)
+    // hits the Trusted/null branch instead of NPEing on a null reading. No baseTime here — literal.
+    private fun stubbedAntiCheatPrefs(): AntiCheatPreferences =
+        mock<AntiCheatPreferences>().also {
+            whenever(it.currentTimeReading()).thenReturn(TimeReading(0, 1_710_000_000_000L))
+        }
+
     private fun newManager(
         playerRepo: FakePlayerRepository,
         walkingRepo: WalkingEncounterRepository,
@@ -58,7 +67,7 @@ class DailyStepManagerErrorReportingTest {
         playerRepository = playerRepo,
         rateLimiter = StepRateLimiter(),
         velocityAnalyzer = StepVelocityAnalyzer(),
-        antiCheatPrefs = mock<AntiCheatPreferences>(),
+        antiCheatPrefs = stubbedAntiCheatPrefs(),
         walkingEncounterRepository = walkingRepo,
         supplyDropNotificationManager = mock<SupplyDropNotificationManager>(),
         dailyLoginRepository = FakeDailyLoginRepository(),
