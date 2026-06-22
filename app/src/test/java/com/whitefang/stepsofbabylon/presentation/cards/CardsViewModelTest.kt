@@ -1,8 +1,10 @@
 package com.whitefang.stepsofbabylon.presentation.cards
 
+import androidx.lifecycle.SavedStateHandle
 import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.domain.model.OwnedCard
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
+import com.whitefang.stepsofbabylon.domain.usecase.PackTier
 import com.whitefang.stepsofbabylon.fakes.FakeCardRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeRewardAdManager
@@ -38,7 +40,8 @@ class CardsViewModelTest {
     @AfterEach
     fun tearDown() { Dispatchers.resetMain() }
 
-    private fun createVm() = CardsViewModel(cardRepo, playerRepo, adManager)
+    private fun createVm(handle: SavedStateHandle = SavedStateHandle()) =
+        CardsViewModel(cardRepo, playerRepo, adManager, handle)
 
     @Test
     fun `displays owned cards`() = runTest(dispatcher) {
@@ -219,5 +222,38 @@ class CardsViewModelTest {
             vm.uiState.value.userMessage,
             "blank Error.message must not surface as an empty snackbar (PR A: ad-error UX)",
         )
+    }
+
+    @Test
+    fun `R234 pack reveal survives process death via the same SavedStateHandle`() = runTest(dispatcher) {
+        val handle = SavedStateHandle()
+        val vm1 = createVm(handle)
+        backgroundScope.launch { vm1.uiState.collect {} }
+        advanceUntilIdle()
+        vm1.openPack(PackTier.COMMON)
+        advanceUntilIdle()
+        val revealed = vm1.uiState.value.lastPackResult
+        assertNotNull(revealed, "pack open must produce a reveal")
+
+        // simulate process death: a FRESH VM constructed from the SAME (populated) handle
+        val vm2 = createVm(handle)
+        backgroundScope.launch { vm2.uiState.collect {} }
+        advanceUntilIdle()
+        assertEquals(revealed, vm2.uiState.value.lastPackResult,
+            "the pack reveal must reappear after process death (restored from SavedStateHandle)")
+    }
+
+    @Test
+    fun `R234 dismissPackResult clears the SavedStateHandle reveal`() = runTest(dispatcher) {
+        val handle = SavedStateHandle()
+        val vm = createVm(handle)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        vm.openPack(PackTier.COMMON)
+        advanceUntilIdle()
+        vm.dismissPackResult()
+        advanceUntilIdle()
+        assertNull(vm.uiState.value.lastPackResult, "dismiss must clear the reveal")
+        assertNull(handle.get<PackRevealState?>("packReveal"), "dismiss must clear the handle key")
     }
 }
