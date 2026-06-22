@@ -248,6 +248,12 @@ Each entity gets its own DAO:
 - Current schema version: 12
 - Active migrations: `MIGRATION_7_8` (adds `battleStepsEarned`), `MIGRATION_8_9` (adds `billing_receipt` table, C.5 PR 1), `MIGRATION_9_10` (recreates `ultimate_weapon_state` table with per-path columns + adds `bossPsEarnedToday` to `daily_step_record`, R4-06 + R4-07 / ADR-0008 + ADR-0009), `MIGRATION_10_11` (recreates `card_inventory` aggregating duplicate rows by `cardType` into `copyCount` + adds unique index on `cardType`, R4-08 / ADR-0010), `MIGRATION_11_12` (recreates `daily_mission` deduping duplicate `(date, missionType)` rows + adds unique index, #127)
 - _Pre-v7 schemas (v1→v7) predate the first explicit `Migration` object and were handled by destructive downgrade fallback during early development — the **migration floor is v7** (`MIGRATION_FLOOR = 7`, #237). The per-step deltas below are retained for history only:_
+- **Pre-v7 upgrade behavior:** there is no v1→v7 *upgrade* path — those migrations were never written
+  (floor assumed at v7). A surviving pre-v7 install hitting an upgrade would therefore throw Room's
+  missing-migration `IllegalStateException` (a launch crash), **not** silently reset — because only
+  `fallbackToDestructiveMigrationOnDowngrade` is configured, never the bare
+  `fallbackToDestructiveMigration()`. The floor is safe because the app first shipped to the Play
+  internal track at schema ≥ v7, so no public/pre-v7 install exists to upgrade (#258).
 - v1→v2: Added `highestUnlockedTier` column to `player_profile` (Plan 13).
 - v2→v3: Added `labSlotCount` column to `player_profile` (Plan 16).
 - v3→v4: Added `WeeklyChallengeEntity`, `DailyLoginEntity`, streak fields on `player_profile` (Plan 20).
