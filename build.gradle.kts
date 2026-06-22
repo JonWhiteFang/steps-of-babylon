@@ -12,4 +12,5 @@ plugins {
     // org.jetbrains.kotlin.android to a com.android.* module is an ERROR under AGP 9.
     alias(libs.plugins.android.test) apply false
     alias(libs.plugins.androidx.baselineprofile) apply false
+    alias(libs.plugins.detekt) apply false
 }

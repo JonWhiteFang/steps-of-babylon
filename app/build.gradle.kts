@@ -8,6 +8,14 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.androidx.baselineprofile)
+    alias(libs.plugins.detekt)
+}
+
+detekt {
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+    baseline = file("$rootDir/config/detekt/baseline.xml")
+    buildUponDefaultConfig = true
+    parallel = true
 }
 
 // Load keystore credentials from gitignored file (optional — debug builds work without it)

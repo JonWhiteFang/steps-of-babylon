@@ -1,0 +1,11 @@
+# Detekt 2.0 config — layered on top of the default ruleset via buildUponDefaultConfig = true.
+# Only overrides/disables listed here; everything else uses detekt's defaults.
+# ktlint owns formatting (detekt 2.0 has no built-in formatting ruleset without the formatting plugin).
+# Valid rulesets: comments, complexity, coroutines, empty-blocks, exceptions, naming, performance,
+# potential-bugs, style.
+
+style:
+  MagicNumber:
+    active: false
+  WildcardImport:
+    active: false

@@ -1,0 +1,502 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:BattleScreen.kt:@Composable fun BattleScreen</ID>
+    <ID>CyclomaticComplexMethod:BattleViewModel.kt:BattleViewModel$fun startPollingEngine</ID>
+    <ID>CyclomaticComplexMethod:DescribeUpgradeEffect.kt:DescribeUpgradeEffect$private fun format: String</ID>
+    <ID>CyclomaticComplexMethod:GameEngine.kt:GameEngine$fun update</ID>
+    <ID>CyclomaticComplexMethod:MainActivity.kt:MainActivity$override fun onCreate</ID>
+    <ID>CyclomaticComplexMethod:OnboardingScreen.kt:@Composable fun OnboardingScreen</ID>
+    <ID>CyclomaticComplexMethod:PostRoundOverlay.kt:@Composable fun PostRoundOverlay</ID>
+    <ID>CyclomaticComplexMethod:StepCrossValidator.kt:StepCrossValidator$suspend fun validate</ID>
+    <ID>CyclomaticComplexMethod:StoreScreen.kt:@Composable fun StoreScreen</ID>
+    <ID>CyclomaticComplexMethod:UWController.kt:UWController$fun activateUW</ID>
+    <ID>CyclomaticComplexMethod:UWController.kt:UWController$fun update</ID>
+    <ID>CyclomaticComplexMethod:UltimateWeaponScreen.kt:private fun pathLabel: String</ID>
+    <ID>CyclomaticComplexMethod:UltimateWeaponScreen.kt:private fun pathValueAtNext: String</ID>
+    <ID>CyclomaticComplexMethod:UpgradeCard.kt:@Composable fun UpgradeCard</ID>
+    <ID>CyclomaticComplexMethod:WalkingHistoryChart.kt:@Composable fun WalkingHistoryChart</ID>
+    <ID>CyclomaticComplexMethod:WaveSpawner.kt:WaveSpawner$private fun pickType: EnemyType</ID>
+    <ID>CyclomaticComplexMethod:WorkshopViewModel.kt:WorkshopViewModel$private fun statValueFor: String</ID>
+    <ID>EmptyFunctionBlock:CombatResolverTest.kt:CombatResolverTest.FakeCombatHost${}</ID>
+    <ID>EmptyFunctionBlock:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository${}</ID>
+    <ID>EmptyFunctionBlock:DataTransformMigrationsTest.kt:DataTransformMigrationsTest.&lt;no name provided&gt;${}</ID>
+    <ID>EmptyFunctionBlock:EffectEngineConcurrencyTest.kt:EffectEngineConcurrencyTest.StubEffect${}</ID>
+    <ID>EmptyFunctionBlock:FakeCosmeticRepository.kt:FakeCosmeticRepository${}</ID>
+    <ID>EmptyFunctionBlock:FakeLabRepository.kt:FakeLabRepository${}</ID>
+    <ID>EmptyFunctionBlock:FakePlayerRepository.kt:FakePlayerRepository${}</ID>
+    <ID>EmptyFunctionBlock:FakeWorkshopRepository.kt:FakeWorkshopRepository${}</ID>
+    <ID>EmptyFunctionBlock:Migration11To12Test.kt:Migration11To12Test.&lt;no name provided&gt;${}</ID>
+    <ID>EmptyFunctionBlock:StepCounterService.kt:StepCounterService.&lt;no name provided&gt;${}</ID>
+    <ID>EmptyFunctionBlock:StepSensorDataSource.kt:StepSensorDataSource.&lt;no name provided&gt;${}</ID>
+    <ID>EmptyFunctionBlock:StepSyncWorker.kt:StepSyncWorker.&lt;no name provided&gt;${}</ID>
+    <ID>EmptyFunctionBlock:WaveAnnouncement.kt:WaveCooldownText${}</ID>
+    <ID>FunctionNaming:BattleControlRail.kt:@Composable fun BattleControlRail</ID>
+    <ID>FunctionNaming:BattleErrorOverlay.kt:@Composable fun BattleErrorOverlay</ID>
+    <ID>FunctionNaming:BattleScreen.kt:@Composable fun BattleScreen</ID>
+    <ID>FunctionNaming:BiomeTransitionOverlay.kt:@Composable fun BiomeTransitionOverlay</ID>
+    <ID>FunctionNaming:BottomNavBar.kt:@Composable fun BottomNavBar</ID>
+    <ID>FunctionNaming:CardsScreen.kt:@Composable fun CardsScreen</ID>
+    <ID>FunctionNaming:CardsScreen.kt:@Composable private fun CardItem</ID>
+    <ID>FunctionNaming:ClaimCelebration.kt:@Composable fun ClaimCelebration</ID>
+    <ID>FunctionNaming:CurrencyDashboardScreen.kt:@Composable fun CurrencyDashboardScreen</ID>
+    <ID>FunctionNaming:CurrencyDashboardScreen.kt:@Composable private fun BalanceCard</ID>
+    <ID>FunctionNaming:CurrencyDashboardScreen.kt:@Composable private fun HistoryRow</ID>
+    <ID>FunctionNaming:CurrencyDashboardScreen.kt:@Composable private fun ThresholdRow</ID>
+    <ID>FunctionNaming:CurrencyDisplay.kt:@Composable fun CurrencyCost</ID>
+    <ID>FunctionNaming:CurrencyDisplay.kt:@Composable fun CurrencyValue</ID>
+    <ID>FunctionNaming:EmptyState.kt:@Composable fun EmptyState</ID>
+    <ID>FunctionNaming:ErrorState.kt:@Composable fun ErrorState</ID>
+    <ID>FunctionNaming:HelpScreen.kt:@Composable fun HelpScreen</ID>
+    <ID>FunctionNaming:HelpScreen.kt:@Composable private fun HelpSection</ID>
+    <ID>FunctionNaming:HomeScreen.kt:@Composable fun HomeScreen</ID>
+    <ID>FunctionNaming:HomeScreen.kt:@Composable private fun CurrencyItem</ID>
+    <ID>FunctionNaming:HomeScreen.kt:@Composable private fun MenuButton</ID>
+    <ID>FunctionNaming:InRoundUpgradeMenu.kt:@Composable fun InRoundUpgradeMenu</ID>
+    <ID>FunctionNaming:LabsScreen.kt:@Composable fun LabsScreen</ID>
+    <ID>FunctionNaming:LabsScreen.kt:@Composable private fun ResearchCard</ID>
+    <ID>FunctionNaming:LoadingBox.kt:@Composable fun LoadingBox</ID>
+    <ID>FunctionNaming:MissionsScreen.kt:@Composable private fun MilestoneCard</ID>
+    <ID>FunctionNaming:MissionsScreen.kt:@Composable private fun MissionCard</ID>
+    <ID>FunctionNaming:MissionsScreen.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun MissionsScreen</ID>
+    <ID>FunctionNaming:OnboardingScreen.kt:@Composable fun OnboardingScreen</ID>
+    <ID>FunctionNaming:PauseOverlay.kt:@Composable fun PauseOverlay</ID>
+    <ID>FunctionNaming:PostRoundOverlay.kt:@Composable fun PostRoundOverlay</ID>
+    <ID>FunctionNaming:PostRoundOverlay.kt:@Composable private fun StatRow</ID>
+    <ID>FunctionNaming:Rarity.kt:@Composable fun EquippedChip</ID>
+    <ID>FunctionNaming:Rarity.kt:@Composable fun RarityBadge</ID>
+    <ID>FunctionNaming:SettingsScreen.kt:@Composable fun SettingsScreen</ID>
+    <ID>FunctionNaming:SettingsScreen.kt:@Composable private fun ToggleRow</ID>
+    <ID>FunctionNaming:SobTopAppBar.kt:@OptIn(ExperimentalMaterial3Api::class) @Composable fun SobTopAppBar</ID>
+    <ID>FunctionNaming:StatsScreen.kt:@Composable fun StatsScreen</ID>
+    <ID>FunctionNaming:StatsScreen.kt:@Composable private fun StatRow</ID>
+    <ID>FunctionNaming:StoreScreen.kt:@Composable fun StoreScreen</ID>
+    <ID>FunctionNaming:Theme.kt:@Composable fun StepsOfBabylonTheme</ID>
+    <ID>FunctionNaming:TierSelector.kt:@Composable fun TierSelector</ID>
+    <ID>FunctionNaming:UltimateWeaponBar.kt:@Composable fun UltimateWeaponBar</ID>
+    <ID>FunctionNaming:UltimateWeaponScreen.kt:@Composable fun UltimateWeaponScreen</ID>
+    <ID>FunctionNaming:UltimateWeaponScreen.kt:@Composable private fun UWCard</ID>
+    <ID>FunctionNaming:UltimateWeaponScreen.kt:@Composable private fun UWPathRow</ID>
+    <ID>FunctionNaming:UnclaimedSuppliesScreen.kt:@Composable fun UnclaimedSuppliesScreen</ID>
+    <ID>FunctionNaming:UnclaimedSuppliesScreen.kt:@Composable private fun SupplyDropCard</ID>
+    <ID>FunctionNaming:UpgradeCard.kt:@Composable fun UpgradeCard</ID>
+    <ID>FunctionNaming:UpgradeCard.kt:@Composable private fun BestBuyChip</ID>
+    <ID>FunctionNaming:UpgradeCard.kt:@Composable private fun ValueBar</ID>
+    <ID>FunctionNaming:WalkingHistoryChart.kt:@Composable fun WalkingHistoryChart</ID>
+    <ID>FunctionNaming:WalkingHistoryChart.kt:@Composable private fun LegendDot</ID>
+    <ID>FunctionNaming:WorkshopScreen.kt:@Composable fun WorkshopScreen</ID>
+    <ID>LargeClass:BattleViewModelTest.kt:BattleViewModelTest</ID>
+    <ID>LargeClass:GameEngineTest.kt:GameEngineTest</ID>
+    <ID>LongMethod:BattleScreen.kt:@Composable fun BattleScreen</ID>
+    <ID>LongMethod:BattleViewModel.kt:BattleViewModel$private suspend fun runEndRoundPersistence</ID>
+    <ID>LongMethod:CardsScreen.kt:@Composable fun CardsScreen</ID>
+    <ID>LongMethod:CurrencyDashboardScreen.kt:@Composable fun CurrencyDashboardScreen</ID>
+    <ID>LongMethod:HelpScreen.kt:@Composable fun HelpScreen</ID>
+    <ID>LongMethod:HomeScreen.kt:@Composable fun HomeScreen</ID>
+    <ID>LongMethod:InRoundUpgradeMenu.kt:@Composable fun InRoundUpgradeMenu</ID>
+    <ID>LongMethod:LabsScreen.kt:@Composable private fun ResearchCard</ID>
+    <ID>LongMethod:MainActivity.kt:MainActivity$override fun onCreate</ID>
+    <ID>LongMethod:OnboardingScreen.kt:@Composable fun OnboardingScreen</ID>
+    <ID>LongMethod:PostRoundOverlay.kt:@Composable fun PostRoundOverlay</ID>
+    <ID>LongMethod:SettingsScreen.kt:@Composable fun SettingsScreen</ID>
+    <ID>LongMethod:StatsScreen.kt:@Composable fun StatsScreen</ID>
+    <ID>LongMethod:StepCrossValidator.kt:StepCrossValidator$suspend fun validate</ID>
+    <ID>LongMethod:StoreScreen.kt:@Composable fun StoreScreen</ID>
+    <ID>LongMethod:UltimateWeaponScreen.kt:@Composable private fun UWCard</ID>
+    <ID>LongMethod:UpgradeCard.kt:@Composable fun UpgradeCard</ID>
+    <ID>LongMethod:WalkingHistoryChart.kt:@Composable fun WalkingHistoryChart</ID>
+    <ID>LoopWithTooManyJumpStatements:ActivityMinuteValidator.kt:ActivityMinuteValidator$for</ID>
+    <ID>LoopWithTooManyJumpStatements:BattleViewModel.kt:BattleViewModel$while</ID>
+    <ID>LoopWithTooManyJumpStatements:BillingManagerImpl.kt:BillingManagerImpl$for</ID>
+    <ID>LoopWithTooManyJumpStatements:CostCurveTest.kt:CostCurveTest$for</ID>
+    <ID>LoopWithTooManyJumpStatements:DailyStepManager.kt:DailyStepManager$for</ID>
+    <ID>LoopWithTooManyJumpStatements:MissionsViewModel.kt:MissionsViewModel$for</ID>
+    <ID>LoopWithTooManyJumpStatements:StepEconomyTest.kt:StepEconomyTest$while</ID>
+    <ID>LoopWithTooManyJumpStatements:TierProgressionTest.kt:TierProgressionTest$while</ID>
+    <ID>MatchingDeclarationName:BattleControlRail.kt:BattleControlRailDefaults</ID>
+    <ID>MatchingDeclarationName:BiomeTransitionOverlay.kt:BiomeTransitionInfo</ID>
+    <ID>MatchingDeclarationName:CurrencyDisplay.kt:CurrencyType</ID>
+    <ID>MatchingDeclarationName:Migrations.kt:AppMigrations</ID>
+    <ID>MatchingDeclarationName:PurchasePulse.kt:PulseState</ID>
+    <ID>MaxLineLength:AntiCheatPreferencesTimeBaselineTest.kt:AntiCheatPreferencesTimeBaselineTest$TimeBaseline(lastElapsedRealtime = 1234, lastWallClock = 5678, maxWallClockSeen = 9999, trustedWallClock = 7777)</ID>
+    <ID>MaxLineLength:BackgroundRenderer.kt:BackgroundRenderer$Particle(Random.nextFloat() * width, Random.nextFloat() * height, 0.4f + Random.nextFloat() * 0.6f, 2f + Random.nextFloat() * 3f)</ID>
+    <ID>MaxLineLength:BackgroundRenderer.kt:BackgroundRenderer$shader = LinearGradient(0f, 0f, 0f, height * 0.70f, theme.skyColorTop, theme.skyColorBottom, Shader.TileMode.CLAMP)</ID>
+    <ID>MaxLineLength:BattleControlRail.kt:)</ID>
+    <ID>MaxLineLength:BattleControlRail.kt:containerColor = if (showUpgradeMenu) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)</ID>
+    <ID>MaxLineLength:BattleErrorOverlay.kt:Button(onClick = onReturnToMenu, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.battle_error_return)) }</ID>
+    <ID>MaxLineLength:BattleErrorOverlay.kt:Text(stringResource(R.string.battle_error_body), style = MaterialTheme.typography.bodyMedium, color = Color.White)</ID>
+    <ID>MaxLineLength:BattleErrorOverlay.kt:Text(stringResource(R.string.battle_error_title), style = MaterialTheme.typography.headlineLarge, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)</ID>
+    <ID>MaxLineLength:BattleRenderer.kt:BattleRenderer$color = 0xFFF44336.toInt(); textSize = 26f; textAlign = android.graphics.Paint.Align.RIGHT; isFakeBoldText = true</ID>
+    <ID>MaxLineLength:BattleScreen.kt:Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.battle_cd_quit_round), tint = Color.White)</ID>
+    <ID>MaxLineLength:BattleScreen.kt:IconButton</ID>
+    <ID>MaxLineLength:BattleScreen.kt:PostRoundOverlay(state = roundEnd, onPlayAgain = { viewModel.playAgain() }, onExitBattle = onExitBattle, onWatchGemAd = { viewModel.watchGemAd() }, onWatchPsAd = { viewModel.watchPsAd() })</ID>
+    <ID>MaxLineLength:BattleScreen.kt:Text(stringResource(R.string.cash_amount, state.cash), color = Color(0xFFD4A843), style = MaterialTheme.typography.titleSmall)</ID>
+    <ID>MaxLineLength:BattleScreen.kt:state.biomeTransition?.let { BiomeTransitionOverlay(info = it, onContinue = { viewModel.dismissBiomeTransition() }) }</ID>
+    <ID>MaxLineLength:BattleScreen.kt:surfaceView.configure(viewModel.resolvedStats, viewModel.tier, viewModel.workshopLevels, viewModel.startWave)</ID>
+    <ID>MaxLineLength:BattleViewModel.kt:BattleViewModel$speedMultiplier = it.speedMultiplier</ID>
+    <ID>MaxLineLength:BattleViewModel.kt:BattleViewModel$val dur = if (s.phase == WavePhase.SPAWNING) WaveSpawner.SPAWN_DURATION else WaveSpawner.COOLDOWN_DURATION</ID>
+    <ID>MaxLineLength:BattleViewModel.kt:BattleViewModel$val transition = if (!biomePreferences.hasSeenBiome(biome)) BiomeTransitionInfo(biome, profile.totalStepsEarned) else null</ID>
+    <ID>MaxLineLength:BattleViewModelTest.kt:BattleViewModelTest$fun</ID>
+    <ID>MaxLineLength:BattleViewModelTest.kt:BattleViewModelTest$private</ID>
+    <ID>MaxLineLength:BattleViewModelTest.kt:BattleViewModelTest$val jadeColors = listOf(0xFF104E3C.toInt(), 0xFF1A6B52.toInt(), 0xFF2A8F6E.toInt(), 0xFF3CAB82.toInt(), 0xFF54C79A.toInt())</ID>
+    <ID>MaxLineLength:BillingManagerImplTest.kt:BillingManagerImplTest$"failed product-details query must surface as null so the UI falls back to the static priceDisplay constant"</ID>
+    <ID>MaxLineLength:BiomeTest.kt:BiomeTest$assertTrue(Biome.CELESTIAL_GATE.isComingSoon, "CELESTIAL_GATE must be Coming Soon (Tier 11+ unreachable in v1.0)")</ID>
+    <ID>MaxLineLength:BiomeTheme.kt:BiomeTheme.Companion$zigguratColors = listOf(0xFF2D1B4E.toInt(), 0xFF3D2B5E.toInt(), 0xFF4A3570.toInt(), 0xFF6A4C93.toInt(), 0xFF9B59B6.toInt())</ID>
+    <ID>MaxLineLength:BiomeTheme.kt:BiomeTheme.Companion$zigguratColors = listOf(0xFF4169E1.toInt(), 0xFF6A5ACD.toInt(), 0xFF9370DB.toInt(), 0xFFBA55D3.toInt(), 0xFFFFD700.toInt())</ID>
+    <ID>MaxLineLength:BiomeTheme.kt:BiomeTheme.Companion$zigguratColors = listOf(0xFF4682B4.toInt(), 0xFF6CA6CD.toInt(), 0xFF87CEEB.toInt(), 0xFFB0E0E6.toInt(), 0xFFE0F0FF.toInt())</ID>
+    <ID>MaxLineLength:BiomeTheme.kt:BiomeTheme.Companion$zigguratColors = listOf(0xFF8B4513.toInt(), 0xFFA0522D.toInt(), 0xFFB8742C.toInt(), 0xFFCD853F.toInt(), 0xFFFF8C00.toInt())</ID>
+    <ID>MaxLineLength:BiomeTheme.kt:BiomeTheme.Companion$zigguratColors = listOf(0xFF8B7355.toInt(), 0xFF9C8565.toInt(), 0xFFA09060.toInt(), 0xFF7BA05B.toInt(), 0xFFD4A843.toInt())</ID>
+    <ID>MaxLineLength:BiomeTransitionOverlay.kt:Button(onClick = onContinue, modifier = Modifier.fillMaxWidth(0.5f)) { Text(stringResource(R.string.action_continue)) }</ID>
+    <ID>MaxLineLength:BiomeTransitionOverlay.kt:Text(stringResource(R.string.biome_steps_walked, info.totalSteps), style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.6f))</ID>
+    <ID>MaxLineLength:BiomeTransitionOverlay.kt:Text(stringResource(R.string.biome_welcome), style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.7f))</ID>
+    <ID>MaxLineLength:BiomeTransitionOverlay.kt:style = MaterialTheme.typography.headlineLarge</ID>
+    <ID>MaxLineLength:CardDao.kt:CardDao$@Query("UPDATE card_inventory SET copyCount = copyCount - :amount, level = level + 1 WHERE id = :id AND copyCount &gt;= :amount")</ID>
+    <ID>MaxLineLength:CardType.kt:CardType$WALKING_FORTRESS : CardType</ID>
+    <ID>MaxLineLength:CardTypeTest.kt:CardTypeTest$assertNotEquals(type.effectDescriptionAtLevel(type.maxLevel), mid, "$type Lv4 must differ from Lv${type.maxLevel}")</ID>
+    <ID>MaxLineLength:CardsScreen.kt:Button(onClick = { haptics.tap(); onEquip() }, enabled = equippedCount &lt; 3, modifier = Modifier.weight(1f)) { Text("Equip") }</ID>
+    <ID>MaxLineLength:CardsScreen.kt:Icon(Icons.Filled.Autorenew, contentDescription = "Duplicate", tint = rowColor, modifier = Modifier.size(18.dp))</ID>
+    <ID>MaxLineLength:CardsScreen.kt:Icon(Icons.Filled.FiberNew, contentDescription = "New", tint = rowColor, modifier = Modifier.size(18.dp))</ID>
+    <ID>MaxLineLength:CardsScreen.kt:OutlinedButton(onClick = { haptics.tap(); onUnequip() }, modifier = Modifier.weight(1f)) { Text("Unequip") }</ID>
+    <ID>MaxLineLength:CardsScreen.kt:Row</ID>
+    <ID>MaxLineLength:CardsScreen.kt:Text(card.effectDescription, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:CardsScreen.kt:message = "Open a pack above to start your collection. Equip up to 3 cards for per-round bonuses in battle."</ID>
+    <ID>MaxLineLength:CardsViewModel.kt:CardsViewModel$if (packResult is OpenCardPack.Result.Opened) savedStateHandle[KEY_PACK_REVEAL] = packResult.cards.toPackRevealState()</ID>
+    <ID>MaxLineLength:CashEconomyTest.kt:CashEconomyTest$assertTrue(affordableUpgrades &gt;= 2, "By wave 5: $totalCash cash, cheapest upgrade $cheapest, can afford $affordableUpgrades")</ID>
+    <ID>MaxLineLength:CashEconomyTest.kt:CashEconomyTest$assertTrue(interestRatio &lt; 0.65, "Interest ratio: $interestRatio (should be &lt;0.65, interest shouldn't dominate)")</ID>
+    <ID>MaxLineLength:ClaimCelebration.kt:if (bundle.powerStones &gt; 0) add(pluralStringResource(R.plurals.reward_power_stones, bundle.powerStones, bundle.powerStones))</ID>
+    <ID>MaxLineLength:ClaimRewardFormatTest.kt:ClaimRewardFormatTest$format(ClaimReward.Bundle(gems = 200, powerStones = 50, cosmeticNames = listOf("Lapis Lazuli Ziggurat Skin")))</ID>
+    <ID>MaxLineLength:ClaimSupplyDropTest.kt:ClaimSupplyDropTest$SupplyDrop(id = 1, trigger = SupplyDropTrigger.RANDOM, reward = reward, rewardAmount = amount, claimed = claimed, createdAt = 1000)</ID>
+    <ID>MaxLineLength:CollisionSystemScratchTest.kt:CollisionSystemScratchTest$val proj = ProjectileEntity(startX = 10f, startY = 10f, targetX = 10f, targetY = 10f, speed = 100f, damage = 1.0)</ID>
+    <ID>MaxLineLength:CombatPowerTest.kt:CombatPowerTest$assertTrue(sut(ResolvedStats(damage = 10.0, attackSpeed = 1.0, critChance = 0.1, critMultiplier = 3.0)) &gt; baseline)</ID>
+    <ID>MaxLineLength:CombatPowerTest.kt:CombatPowerTest$assertTrue(sut(ResolvedStats(damage = 10.0, attackSpeed = 1.0, critChance = 0.2, critMultiplier = 2.0)) &gt; baseline)</ID>
+    <ID>MaxLineLength:CombatPowerTest.kt:CombatPowerTest$assertTrue(sut(ResolvedStats(damage = 10.0, attackSpeed = 1.1, critChance = 0.1, critMultiplier = 2.0)) &gt; baseline)</ID>
+    <ID>MaxLineLength:CombatPowerTest.kt:CombatPowerTest$assertTrue(sut(ResolvedStats(damage = 11.0, attackSpeed = 1.0, critChance = 0.1, critMultiplier = 2.0)) &gt; baseline)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "enemy_neon", category = "ENEMY_SKIN", name = "Neon Enemies", description = "Glowing neon outlines", priceGems = 100)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "enemy_shadow", category = "ENEMY_SKIN", name = "Shadow Enemies", description = "Dark silhouette enemies", priceGems = 100)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "garden_ziggurat_skin", category = "ZIGGURAT_SKIN", name = "Garden Ziggurat Skin", description = "Cascading hanging gardens draped over terracotta stone", priceGems = 600)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "lapis_lazuli_skin", category = "ZIGGURAT_SKIN", name = "Lapis Lazuli Ziggurat Skin", description = "Deep lapis lazuli stone with pyrite-gold flecks", priceGems = 500)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "proj_fire", category = "PROJECTILE_EFFECT", name = "Fire Trails", description = "Blazing projectile trails", priceGems = 150)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "proj_lightning", category = "PROJECTILE_EFFECT", name = "Lightning Arcs", description = "Electric projectile arcs", priceGems = 150)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "sandals_of_gilgamesh", category = "ZIGGURAT_SKIN", name = "Sandals of Gilgamesh", description = "Bronze ziggurat in honour of Gilgamesh, whose sandals walked the edges of the world", priceGems = 500)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "zig_crystal", category = "ZIGGURAT_SKIN", name = "Crystal Ziggurat", description = "Translucent crystal layers", priceGems = 200)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "zig_golden", category = "ZIGGURAT_SKIN", name = "Golden Ziggurat", description = "Pure gold plating", priceGems = 300)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "zig_jade", category = "ZIGGURAT_SKIN", name = "Jade Ziggurat", description = "Deep jade stone with pale highlights", priceGems = 150)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "zig_obsidian", category = "ZIGGURAT_SKIN", name = "Obsidian Ziggurat", description = "Dark volcanic stone", priceGems = 100)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$"ZIGGURAT_COLOR_LOOKUP contract: exactly 5 colors, one per ziggurat layer (matches ZigguratEntity.DEFAULT_COLORS)"</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "enemy_neon", category = "ENEMY_SKIN", name = "Neon Enemies", description = "Glowing neon outlines", priceGems = 100)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "enemy_shadow", category = "ENEMY_SKIN", name = "Shadow Enemies", description = "Dark silhouette enemies", priceGems = 100)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "proj_fire", category = "PROJECTILE_EFFECT", name = "Fire Trails", description = "Blazing projectile trails", priceGems = 150)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "proj_lightning", category = "PROJECTILE_EFFECT", name = "Lightning Arcs", description = "Electric projectile arcs", priceGems = 150)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "zig_crystal", category = "ZIGGURAT_SKIN", name = "Crystal Ziggurat", description = "Translucent crystal layers", priceGems = 200)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "zig_golden", category = "ZIGGURAT_SKIN", name = "Golden Ziggurat", description = "Pure gold plating", priceGems = 300)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "zig_obsidian", category = "ZIGGURAT_SKIN", name = "Obsidian Ziggurat", description = "Dark volcanic stone", priceGems = 100)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$assertEquals(11, countAfterFirst, "C.2 PR 3b/3c ships 11 seed rows (7 ziggurat incl. zig_jade + lapis_lazuli_skin + garden_ziggurat_skin + sandals_of_gilgamesh, 2 projectile, 2 enemy)")</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$assertEquals(11, dao.count(), "after ensureSeedData: zig_jade + lapis_lazuli_skin + garden_ziggurat_skin + sandals_of_gilgamesh added, legacy 7 preserved")</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$assertNotNull(garden.overrideColors, "garden_ziggurat_skin must have overrideColors populated from ZIGGURAT_COLOR_LOOKUP")</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$assertNotNull(lapis.overrideColors, "lapis_lazuli_skin must have overrideColors populated from ZIGGURAT_COLOR_LOOKUP")</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$assertNotNull(sandals.overrideColors, "sandals_of_gilgamesh must have overrideColors populated from ZIGGURAT_COLOR_LOOKUP")</ID>
+    <ID>MaxLineLength:CurrencyDashboardScreen.kt:Card</ID>
+    <ID>MaxLineLength:CurrencyDashboardScreen.kt:Column</ID>
+    <ID>MaxLineLength:CurrencyDashboardScreen.kt:Icon(Icons.Default.Check, contentDescription = null, tint = StatusSuccess, modifier = Modifier.size(16.dp))</ID>
+    <ID>MaxLineLength:CurrencyDashboardScreen.kt:Icon(Icons.Default.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))</ID>
+    <ID>MaxLineLength:CurrencyDashboardScreen.kt:Row</ID>
+    <ID>MaxLineLength:CurrencyDashboardScreen.kt:Text("$day", style = MaterialTheme.typography.labelSmall, color = if (filled) Color.Black else MaterialTheme.colorScheme.onSurface)</ID>
+    <ID>MaxLineLength:CurrencyDashboardScreen.kt:Text("%,d".format(amount), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = color)</ID>
+    <ID>MaxLineLength:CurrencyDashboardScreen.kt:Text("Open the app daily for Gems!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:CurrencyDashboardScreen.kt:Text("Past Weeks", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:CurrencyDashboardScreen.kt:Text("Today's Gems claimed", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:CurrencyDashboardScreen.kt:Text("Weekly Step Challenge", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)</ID>
+    <ID>MaxLineLength:CurrencyDashboardScreen.kt:Text(state.weeklyTimeRemaining, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:CurrencyDashboardScreen.kt:Text(week.weekStartDate, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:DailyStepManager.kt:DailyStepManager$// writeTimeBaseline uses SharedPreferences.apply() (async, non-throwing) — it cannot abort the checkAndAward below.</ID>
+    <ID>MaxLineLength:DailyStepManager.kt:DailyStepManager$milestoneTriggered = dropState.milestoneTriggered || (drop?.trigger == SupplyDropTrigger.DAILY_MILESTONE)</ID>
+    <ID>MaxLineLength:DailyStepManager.kt:DailyStepManager$private val trackWeeklyChallenge by lazy { TrackWeeklyChallenge(weeklyChallengeRepository, stepRepository, playerRepository) }</ID>
+    <ID>MaxLineLength:DailyStepManager.kt:DailyStepManager$val timeVerdict = TimeIntegrity.evaluate(antiCheatPrefs.readTimeBaseline(), antiCheatPrefs.currentTimeReading())</ID>
+    <ID>MaxLineLength:DailyStepManager.kt:DailyStepManager$val workshopBonus = com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath.stepMultiplierBonus(wsLevel)</ID>
+    <ID>MaxLineLength:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository$override fun observeHistory: Flow&lt;List&lt;com.whitefang.stepsofbabylon.domain.model.SupplyDrop&gt;&gt;</ID>
+    <ID>MaxLineLength:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository$override fun observeUnclaimed: Flow&lt;List&lt;com.whitefang.stepsofbabylon.domain.model.SupplyDrop&gt;&gt;</ID>
+    <ID>MaxLineLength:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository$override suspend fun createDrop: Long</ID>
+    <ID>MaxLineLength:DatabaseKeyManager.kt:DatabaseKeyManager$val</ID>
+    <ID>MaxLineLength:DeathEffect.kt:DeathEffect$EnemyType.FAST -&gt; { p.vx = (if (i % 2 == 0) 1f else -1f) * speedBase * (0.5f + Random.nextFloat()); p.vy = Random.nextFloat() * 30f - 15f }</ID>
+    <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val atMax = describe.workshopPreview(mapOf(UpgradeType.CRITICAL_CHANCE to 160), type = UpgradeType.CRITICAL_CHANCE)</ID>
+    <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val nearMax = describe.workshopPreview(mapOf(UpgradeType.CRITICAL_CHANCE to 159), type = UpgradeType.CRITICAL_CHANCE)</ID>
+    <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val r = describe(mapOf(UpgradeType.RECOVERY_PACKAGES to 75), emptyMap(), emptyMap(), UpgradeType.RECOVERY_PACKAGES)</ID>
+    <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val r100 = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 100), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)</ID>
+    <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val r99 = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 99), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)</ID>
+    <ID>MaxLineLength:EnemyEntity.kt:EnemyEntity$HP_FILL.color = when { ratio &gt; 0.6f -&gt; 0xFF4CAF50.toInt(); ratio &gt; 0.3f -&gt; 0xFFFFEB3B.toInt(); else -&gt; 0xFFF44336.toInt() }</ID>
+    <ID>MaxLineLength:EnemyEntity.kt:EnemyEntity$bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = if (enemyTint != 0) blendColor(baseColor, enemyTint, 0.3f) else baseColor }</ID>
+    <ID>MaxLineLength:EnemyEntity.kt:EnemyEntity$trianglePath.moveTo(x, y - r)</ID>
+    <ID>MaxLineLength:EnemyEntity.kt:EnemyEntity.Companion$private val ARMOR_PAINT = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x5500BCD4; style = Paint.Style.STROKE; strokeWidth = 2f }</ID>
+    <ID>MaxLineLength:EvaluateUpgradeValueTest.kt:EvaluateUpgradeValueTest$assertTrue(best.type != UpgradeType.DAMAGE, "DAMAGE is unaffordable here, so it cannot be the affordable best buy")</ID>
+    <ID>MaxLineLength:EvaluateUpgradeValueTest.kt:EvaluateUpgradeValueTest$val result = sut(mapOf(UpgradeType.CRITICAL_CHANCE to 160), stepBalance = 100_000, candidates = listOf(UpgradeType.CRITICAL_CHANCE))</ID>
+    <ID>MaxLineLength:FakeDailyStepDao.kt:FakeDailyStepDao$data.value = data.value + (date to base.copy(activityMinutes = activityMinutes, stepEquivalents = stepEquivalents))</ID>
+    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$open override suspend fun addPowerStones</ID>
+    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$open override suspend fun updateHighestUnlockedTier</ID>
+    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$override suspend fun addGems</ID>
+    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$override suspend fun spendCardDust</ID>
+    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$override suspend fun updateFreeCardPackAdUsed</ID>
+    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$override suspend fun updateSeasonPass</ID>
+    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$override suspend fun updateStreak</ID>
+    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$profile.update { it.copy(powerStones = it.powerStones - amount, totalPowerStonesSpent = it.totalPowerStonesSpent + amount) }</ID>
+    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$profile.update { it.copy(totalRoundsPlayed = it.totalRoundsPlayed + rounds, totalEnemiesKilled = it.totalEnemiesKilled + kills, totalCashEarned = it.totalCashEarned + cash) }</ID>
+    <ID>MaxLineLength:FakeStepRepository.kt:FakeStepRepository$records.value = records.value + (date to existing.copy(activityMinutes = activityMinutes, stepEquivalents = stepEquivalents))</ID>
+    <ID>MaxLineLength:FakeStepRepository.kt:FakeStepRepository$records.value = records.value + (date to existing.copy(sensorSteps = sensorSteps, creditedSteps = creditedSteps))</ID>
+    <ID>MaxLineLength:FakeWalkingEncounterRepository.kt:FakeWalkingEncounterRepository$val drop = SupplyDrop(id = id, trigger = trigger, reward = reward, rewardAmount = rewardAmount, claimed = false, createdAt = System.currentTimeMillis())</ID>
+    <ID>MaxLineLength:GameEngine.kt:GameEngine$/** Engine-internal display strings (V1X-13, ADR-0014). Set by [GameSurfaceView]; null in pure-JVM tests, which fall back to literals. */</ID>
+    <ID>MaxLineLength:GameEngine.kt:GameEngine$pendingAdd.add(ProjectileEntity(sx, sy, tx, ty, ZigguratBaseStats.PROJECTILE_SPEED, bouncesRemaining = stats.bounceCount))</ID>
+    <ID>MaxLineLength:GameEngine.kt:GameEngine$simulation.tickEntities(entities, deltaTime, if (uwController.chronoActive) uwController.chronoSlowFactor else 1f)</ID>
+    <ID>MaxLineLength:GameEngine.kt:GameEngine$val</ID>
+    <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$OwnedWeapon(UltimateWeaponType.BLACK_HOLE, damageLevel = 10, secondaryLevel = 10, cooldownLevel = 1, isUnlocked = true, isEquipped = true)</ID>
+    <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$OwnedWeapon(UltimateWeaponType.POISON_SWAMP, damageLevel = 10, secondaryLevel = 10, cooldownLevel = 1, isUnlocked = true, isEquipped = true)</ID>
+    <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$eng.initUWs(listOf(OwnedWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT, damageLevel = level, secondaryLevel = level, cooldownLevel = level, isUnlocked = true, isEquipped = true)))</ID>
+    <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$eng1.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, cooldownLevel = 1, isUnlocked = true, isEquipped = true)))</ID>
+    <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$eng2.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, cooldownLevel = 1, isUnlocked = true, isEquipped = true)))</ID>
+    <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$fun</ID>
+    <ID>MaxLineLength:GameSurfaceView.kt:GameSurfaceView$engine.init(width.toFloat(), height.toFloat(), currentStats, currentTier, currentWsLevels, isReducedMotion, currentStartWave)</ID>
+    <ID>MaxLineLength:GameSurfaceView.kt:GameSurfaceView$if (surfaceReady) engine.init(width.toFloat(), height.toFloat(), stats, tier, wsLevels, isReducedMotion, startWave)</ID>
+    <ID>MaxLineLength:GenerateSupplyDrop.kt:GenerateSupplyDrop$SupplyDrop(id = 0, trigger = trigger, reward = reward, rewardAmount = amount, claimed = false, createdAt = timestampMs)</ID>
+    <ID>MaxLineLength:GenerateSupplyDrop.kt:GenerateSupplyDrop$makeDrop(SupplyDropTrigger.STEP_THRESHOLD, SupplyDropReward.GEMS, random.nextInt(1, 4), timestampMs)</ID>
+    <ID>MaxLineLength:GenerateSupplyDrop.kt:GenerateSupplyDrop$makeDrop(SupplyDropTrigger.STEP_THRESHOLD, SupplyDropReward.STEPS, random.nextInt(50, 201), timestampMs)</ID>
+    <ID>MaxLineLength:GuardedClaimDaoTest.kt:GuardedClaimDaoTest$DailyMissionEntity(date = "2026-06-10", missionType = "WALK_5000", target = 5000, progress = 5000, completed = true)</ID>
+    <ID>MaxLineLength:HealthBarRenderer.kt:HealthBarRenderer$canvas.drawRoundRect(RectF(barMargin, barTop, barMargin + barWidth * ratio, barTop + barHeight), 8f, 8f, fillPaint)</ID>
+    <ID>MaxLineLength:HelpScreen.kt:"• Duplicate cards add copies. Collect enough copies to level up (3 Common / 4 Rare / 5 Epic per level).\n"</ID>
+    <ID>MaxLineLength:HelpScreen.kt:"• Gems — earned from milestones, daily login streaks, and card packs. Spent on card packs and Lab rush.\n"</ID>
+    <ID>MaxLineLength:HelpScreen.kt:"• Power Stones — earned from weekly challenges, wave milestones, and boss kills. Spent on Ultimate Weapon upgrades.\n"</ID>
+    <ID>MaxLineLength:HelpScreen.kt:"• Upgrade button — opens the in-round upgrade menu. Spend Cash on temporary upgrades that last one round.\n\n"</ID>
+    <ID>MaxLineLength:HomeScreen.kt:Brush.verticalGradient(listOf(Color(theme.skyColorTop).copy(alpha = 0.55f), Color(theme.skyColorBottom).copy(alpha = 0.30f)))</ID>
+    <ID>MaxLineLength:HomeScreen.kt:Button</ID>
+    <ID>MaxLineLength:HomeScreen.kt:Icon(Icons.Default.Star, contentDescription = null, tint = StatusWarning, modifier = Modifier.size(16.dp))</ID>
+    <ID>MaxLineLength:HomeScreen.kt:OutlinedButton</ID>
+    <ID>MaxLineLength:HomeScreen.kt:Row</ID>
+    <ID>MaxLineLength:HomeScreen.kt:Text("Best Wave: ${state.bestWave}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)</ID>
+    <ID>MaxLineLength:HomeViewModel.kt:HomeViewModel$seasonPassActive = profile.seasonPassActive &amp;&amp; profile.seasonPassExpiry &gt; System.currentTimeMillis()</ID>
+    <ID>MaxLineLength:HomeViewModel.kt:HomeViewModel$val achievableMilestones = Milestone.entries.count { it.requiredSteps &lt;= profile.totalStepsEarned &amp;&amp; it.name !in claimedIds }</ID>
+    <ID>MaxLineLength:HomeViewModelTest.kt:HomeViewModelTest$assertEquals(0, mission.progress, "Mission must stay at 0 when no research actually completed (R3-03 false-trigger regression guard)")</ID>
+    <ID>MaxLineLength:HomeViewModelTest.kt:HomeViewModelTest$assertEquals(1, mission.progress, "Expected mission progress to advance to 1 after background research completion")</ID>
+    <ID>MaxLineLength:HomeViewModelTest.kt:HomeViewModelTest$fun</ID>
+    <ID>MaxLineLength:InRoundUpgradeMenu.kt:Text(stringResource(R.string.cash_amount, cash), color = Color(0xFFD4A843), style = MaterialTheme.typography.titleMedium)</ID>
+    <ID>MaxLineLength:InRoundUpgradeMenu.kt:Text(stringResource(R.string.inround_level_desc, level, type.config.description), color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)</ID>
+    <ID>MaxLineLength:InRoundUpgradeMenu.kt:Text(stringResource(R.string.upgrade_max), color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(end = 8.dp))</ID>
+    <ID>MaxLineLength:LabRepositoryImplTest.kt:LabRepositoryImplTest$fun</ID>
+    <ID>MaxLineLength:LabsScreen.kt:Row</ID>
+    <ID>MaxLineLength:LabsScreen.kt:Text("No Slot Available", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)</ID>
+    <ID>MaxLineLength:LabsScreen.kt:Text(String.format("%.1fh", info.timeToCompleteHours), style = MaterialTheme.typography.bodySmall)</ID>
+    <ID>MaxLineLength:LabsScreen.kt:Text(info.type.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:LabsViewModel.kt:LabsViewModel$canAffordSlotUnlock = profile.labSlotCount &lt; UnlockLabSlot.MAX_SLOTS &amp;&amp; profile.gems &gt;= UnlockLabSlot.SLOT_COST_GEMS</ID>
+    <ID>MaxLineLength:LabsViewModel.kt:LabsViewModel$if (result !is UnlockLabSlot.Result.Unlocked) _userMessage.value = "Not enough Gems or max slots reached"</ID>
+    <ID>MaxLineLength:LabsViewModel.kt:LabsViewModel$seasonPassFreeRushAvailable = profile.seasonPassActive &amp;&amp; profile.seasonPassExpiry &gt; now &amp;&amp; profile.freeLabRushUsedToday != LocalDate.now().toString()</ID>
+    <ID>MaxLineLength:MainActivity.kt:MainActivity$Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f</ID>
+    <ID>MaxLineLength:MainActivity.kt:MainActivity$popEnterTransition = { if (reducedMotion) fadeIn(snap()) else fadeIn(tween(200)) + slideInHorizontally(tween(200)) { -it / 4 } }</ID>
+    <ID>MaxLineLength:MainActivity.kt:MainActivity$popExitTransition = { if (reducedMotion) fadeOut(snap()) else fadeOut(tween(200)) + slideOutHorizontally(tween(200)) { it / 4 } }</ID>
+    <ID>MaxLineLength:MainActivity.kt:MainActivity$val enterAnim = if (reducedMotion) fadeIn(snap()) else fadeIn(tween(200)) + slideInHorizontally(tween(200)) { it / 4 }</ID>
+    <ID>MaxLineLength:MainActivity.kt:MainActivity$val exitAnim = if (reducedMotion) fadeOut(snap()) else fadeOut(tween(200)) + slideOutHorizontally(tween(200)) { -it / 4 }</ID>
+    <ID>MaxLineLength:MissionsScreen.kt:CurrencyValue(CurrencyType.GEMS, mission.rewardGems.toLong(), style = MaterialTheme.typography.bodySmall)</ID>
+    <ID>MaxLineLength:MissionsScreen.kt:CurrencyValue(CurrencyType.POWER_STONES, mission.rewardPowerStones.toLong(), style = MaterialTheme.typography.bodySmall)</ID>
+    <ID>MaxLineLength:MissionsScreen.kt:Icon(Icons.Filled.CheckCircle, contentDescription = "Claimed", tint = MaterialTheme.colorScheme.primary)</ID>
+    <ID>MaxLineLength:MissionsScreen.kt:if (ms.isClaimed) Icon(Icons.Filled.CheckCircle, contentDescription = "Claimed", tint = MaterialTheme.colorScheme.primary)</ID>
+    <ID>MaxLineLength:MissionsScreen.kt:powerStones = milestone.rewards.filterIsInstance&lt;MilestoneReward.PowerStones&gt;().sumOf { it.amount }.toInt()</ID>
+    <ID>MaxLineLength:MissionsScreen.kt:progress = { if (mission.target &gt; 0) (mission.progress.toFloat() / mission.target).coerceIn(0f, 1f) else 0f }</ID>
+    <ID>MaxLineLength:MissionsViewModel.kt:MissionsViewModel$MilestoneDisplayInfo(ms, profile.totalStepsEarned &gt;= ms.requiredSteps, ms.name in claimedIds, profile.totalStepsEarned)</ID>
+    <ID>MaxLineLength:MissionsViewModel.kt:MissionsViewModel$MissionDisplayInfo(m.id, m.type.description, m.target, m.progress, m.rewardGems, m.rewardPowerStones, m.completed, m.claimed)</ID>
+    <ID>MaxLineLength:MissionsViewModel.kt:MissionsViewModel$userMessage.value = "Reward temporarily unavailable (cosmetic \u201c${result.cosmeticId}\u201d is being finalised). Try again after the next update."</ID>
+    <ID>MaxLineLength:MissionsViewModel.kt:MissionsViewModel$val ps = milestone.rewards.filterIsInstance&lt;MilestoneReward.PowerStones&gt;().sumOf { it.amount }.toInt()</ID>
+    <ID>MaxLineLength:MissionsViewModelTest.kt:MissionsViewModelTest$missionDao.insert(DailyMissionEntity(date = day1.toString(), missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 10, completed = false, rewardGems = 1))</ID>
+    <ID>MaxLineLength:MissionsViewModelTest.kt:MissionsViewModelTest$missionDao.insert(DailyMissionEntity(date = day2.toString(), missionType = DailyMissionType.WALK_12000.name, target = 12000, progress = 20, completed = false, rewardGems = 2))</ID>
+    <ID>MaxLineLength:MissionsViewModelTest.kt:MissionsViewModelTest$missionDao.insert(DailyMissionEntity(date = today, missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 5000, completed = true, rewardGems = 5))</ID>
+    <ID>MaxLineLength:MusicManagerNullPlayerTest.kt:MusicManagerNullPlayerTest$playerFactory = { _, resId -&gt; if (resId == com.whitefang.stepsofbabylon.R.raw.bgm_walking) walking else battle }</ID>
+    <ID>MaxLineLength:NoRawEnumNameInUiTest.kt:NoRawEnumNameInUiTest$assertTrue(presentationRoot.isDirectory) { "presentation source root not found at ${presentationRoot.absolutePath}" }</ID>
+    <ID>MaxLineLength:OnboardingScreen.kt:*</ID>
+    <ID>MaxLineLength:OnboardingScreen.kt:Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))</ID>
+    <ID>MaxLineLength:OnboardingScreen.kt:Text(slide.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)</ID>
+    <ID>MaxLineLength:OrbStateTest.kt:OrbStateTest$// angularSpeed PI/2 rad/s over dt 1s → angle PI/2 → x ~ zigX, y ~ zigY + R (radius MID at phase 0... phase also advances)</ID>
+    <ID>MaxLineLength:OrbStateTest.kt:OrbStateTest$val s = OrbState(zigX = 0f, zigY = 0f, angle = 0f, angularSpeed = (Math.PI / 2).toFloat(), initialRadialPhase = 0f)</ID>
+    <ID>MaxLineLength:ParticlePool.kt:Particle$fun reset</ID>
+    <ID>MaxLineLength:PauseOverlay.kt:Button(onClick = { haptics.tap(); onResume() }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_resume)) }</ID>
+    <ID>MaxLineLength:PauseOverlay.kt:OutlinedButton(onClick = onQuitRound, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.pause_quit_round)) }</ID>
+    <ID>MaxLineLength:PauseOverlay.kt:Text(stringResource(R.string.pause_title), style = MaterialTheme.typography.headlineLarge, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)</ID>
+    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$@Query("UPDATE player_profile SET currentStepBalance = MAX(0, currentStepBalance + :delta), totalStepsEarned = CASE WHEN :delta &gt; 0 THEN totalStepsEarned + :delta ELSE totalStepsEarned END WHERE id = 1")</ID>
+    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$@Query("UPDATE player_profile SET currentStepBalance = currentStepBalance - :cost WHERE id = 1 AND currentStepBalance &gt;= :cost")</ID>
+    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$@Query("UPDATE player_profile SET gems = gems - :amount, totalGemsSpent = totalGemsSpent + :amount WHERE id = 1 AND gems &gt;= :amount")</ID>
+    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$@Query("UPDATE player_profile SET powerStones = powerStones - :amount, totalPowerStonesSpent = totalPowerStonesSpent + :amount WHERE id = 1 AND powerStones &gt;= :amount")</ID>
+    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$@Query("UPDATE player_profile SET totalRoundsPlayed = totalRoundsPlayed + :rounds, totalEnemiesKilled = totalEnemiesKilled + :kills, totalCashEarned = totalCashEarned + :cash WHERE id = 1")</ID>
+    <ID>MaxLineLength:PlayerRepositoryImpl.kt:PlayerRepositoryImpl$override suspend fun incrementBattleStats</ID>
+    <ID>MaxLineLength:PostRoundOverlay.kt:StatRow(stringResource(R.string.postround_stat_cash), stringResource(R.string.cash_amount, state.totalCashEarned))</ID>
+    <ID>MaxLineLength:PostRoundOverlay.kt:StatRow(stringResource(R.string.postround_stat_steps), stringResource(R.string.postround_stat_steps_value, state.stepsEarned))</ID>
+    <ID>MaxLineLength:PostRoundOverlay.kt:StatRow(stringResource(R.string.postround_stat_time), stringResource(R.string.postround_time_value, minutes, seconds))</ID>
+    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_cash_multiplier, TierConfig.forTier(tier).cashMultiplier.toString()), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)</ID>
+    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_gem_earned), color = Color(0xFF4CAF50), style = MaterialTheme.typography.bodySmall)</ID>
+    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_new_record), style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFD700))</ID>
+    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_power_stones, state.powerStonesAwarded), style = MaterialTheme.typography.titleMedium, color = Color(0xFF9C27B0))</ID>
+    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_previous_best, state.previousBest), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)</ID>
+    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_ps_doubled), color = Color(0xFF9C27B0), style = MaterialTheme.typography.bodySmall)</ID>
+    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_tier_unlocked, tier), style = MaterialTheme.typography.titleMedium, color = Color(0xFF4CAF50))</ID>
+    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_title), style = MaterialTheme.typography.headlineMedium, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)</ID>
+    <ID>MaxLineLength:PostRoundOverlay.kt:val shareText = stringResource(R.string.postround_share_text, state.waveReached, BuildConfig.PLAY_STORE_URL)</ID>
+    <ID>MaxLineLength:PremiumSpendDaoTest.kt:PremiumSpendDaoTest$val result = cardDao.openCardPackAtomic(gemCost = 50, cardTypeNames = listOf("IRON_SKIN"), playerDao = playerDao)</ID>
+    <ID>MaxLineLength:RewardAdManagerImpl.kt:RewardAdManagerImpl$.</ID>
+    <ID>MaxLineLength:Screen.kt:Screen.Companion$listOf(Home, Workshop, Battle, Labs, Stats, Weapons, Cards, Supplies, Economy, Missions, Settings, Store, Help)</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:Text("Background activity", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:Text("Delete All Data", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:Text("Permanently erase all progress", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:ToggleRow("Haptic Feedback", "Vibrate on taps, claims, and rewards", state.hapticsEnabled, viewModel::setHapticsEnabled)</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:ToggleRow("Live Step Updates", "Update notification with live step count and balance. A minimal tracking notification is always shown while step counting is active.", state.persistentSteps, viewModel::setPersistent)</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:ToggleRow("Milestone Alerts", "Wave records and step milestones", state.milestoneAlerts, viewModel::setMilestoneAlerts)</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f))</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:confirmButton = { TextButton(onClick = { deleteStep = 2 }) { Text("Continue", color = MaterialTheme.colorScheme.error) } }</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:text = { Text("All steps, upgrades, cards, weapons, and purchases will be lost forever. The app will restart.") }</ID>
+    <ID>MaxLineLength:SettingsScreen.kt:text = { Text("This will permanently delete all your progress, steps history, upgrades, and currency. This cannot be undone.") }</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt:SettingsViewModel$fun setHapticsEnabled</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt:SettingsViewModel$fun setMilestoneAlerts</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt:SettingsViewModel$fun setPersistent</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt:SettingsViewModel$fun setSmartReminders</ID>
+    <ID>MaxLineLength:SettingsViewModel.kt:SettingsViewModel$fun setSupplyDrops</ID>
+    <ID>MaxLineLength:Simulation.kt:Simulation$val newCooldown = if (cooldownRemaining &gt; 0f) (cooldownRemaining - deltaTime).coerceAtLeast(0f) else cooldownRemaining</ID>
+    <ID>MaxLineLength:SmartReminderManager.kt:SmartReminderManager$val</ID>
+    <ID>MaxLineLength:SoundManager.kt:SoundManager$.</ID>
+    <ID>MaxLineLength:StatsViewModelTest.kt:StatsViewModelTest$assertEquals(5000L, bars.last().let { it.sensorSteps + it.stepEquivalents }, "this week's record lands in the final bucket")</ID>
+    <ID>MaxLineLength:StatsViewModelTest.kt:StatsViewModelTest$thisWeekA.format(fmt) to DailyStepSummary(thisWeekA.format(fmt), creditedSteps = 5000, stepEquivalents = 1000)</ID>
+    <ID>MaxLineLength:StatsViewModelTest.kt:StatsViewModelTest$today.minusDays(35).format(fmt) to DailyStepSummary(today.minusDays(35).format(fmt), creditedSteps = 2000, stepEquivalents = 0)</ID>
+    <ID>MaxLineLength:StatsViewModelTest.kt:StatsViewModelTest$val thisWeekB = today.minusDays(1).let { if (it.isBefore(today.with(java.time.DayOfWeek.MONDAY))) today else it }</ID>
+    <ID>MaxLineLength:StepIngestionTest.kt:StepIngestionTest$val decision = StepSyncWorker.computeCatchUp(dayStart, currentCounter, roomSensorSteps, sensorStepsAtDayStart)</ID>
+    <ID>MaxLineLength:StepsOfBabylonCrashHandlerTest.kt:StepsOfBabylonCrashHandlerTest$val throwingRecord: (String, Throwable, Long) -&gt; Unit = { _, _, _ -&gt; throw IllegalStateException("record blew up") }</ID>
+    <ID>MaxLineLength:StoreScreen.kt:Card</ID>
+    <ID>MaxLineLength:StoreScreen.kt:CurrencyValue(CurrencyType.GEMS, product.gemAmount, style = MaterialTheme.typography.titleMedium)</ID>
+    <ID>MaxLineLength:StoreScreen.kt:Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess, modifier = Modifier.size(18.dp))</ID>
+    <ID>MaxLineLength:StoreScreen.kt:Text("Free vs Season Pass:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)</ID>
+    <ID>MaxLineLength:StoreScreen.kt:Text("More cosmetic visuals are still being finalized. Jade and Obsidian Ziggurat skins are available now.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:StoreScreen.kt:Text(cosmetic.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:StoreScreen.kt:Text(state.priceDisplays[product] ?: product.priceDisplay, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:StoreScreen.kt:android.net.Uri.parse("https://play.google.com/store/account/subscriptions?package=com.whitefang.stepsofbabylon")</ID>
+    <ID>MaxLineLength:StoreScreen.kt:cosmetic.isEquipped -&gt; OutlinedButton(onClick = { cosmeticHaptics.tap(); viewModel.unequipCosmetic(cosmetic.cosmeticId) }) { Text("Unequip") }</ID>
+    <ID>MaxLineLength:StoreScreen.kt:cosmetic.isOwned -&gt; Button(onClick = { cosmeticHaptics.tap(); viewModel.equipCosmetic(cosmetic.cosmeticId) }) { Text("Equip") }</ID>
+    <ID>MaxLineLength:StoreScreen.kt:onClick = { cosmeticPulse.trigger(); cosmeticHaptics.tap(); viewModel.purchaseCosmetic(cosmetic.cosmeticId) }</ID>
+    <ID>MaxLineLength:StoreScreen.kt:state.priceDisplays[BillingProduct.AD_REMOVAL] ?: BillingProduct.AD_REMOVAL.priceDisplay</ID>
+    <ID>MaxLineLength:StoreScreen.kt:state.priceDisplays[BillingProduct.SEASON_PASS] ?: BillingProduct.SEASON_PASS.priceDisplay</ID>
+    <ID>MaxLineLength:StoreScreen.kt:val gemPacks = listOf(BillingProduct.GEM_PACK_SMALL, BillingProduct.GEM_PACK_MEDIUM, BillingProduct.GEM_PACK_LARGE)</ID>
+    <ID>MaxLineLength:StoreViewModel.kt:StoreViewModel$CosmeticDisplayInfo(it.cosmeticId, it.category, it.name, it.description, it.priceGems, it.isOwned, it.isEquipped)</ID>
+    <ID>MaxLineLength:StoreViewModelTest.kt:StoreViewModelTest$billingManager.nextResult = com.whitefang.stepsofbabylon.domain.model.PurchaseResult.Error("billing unavailable")</ID>
+    <ID>MaxLineLength:SupplyRewardFormatTest.kt:SupplyRewardFormatTest$SupplyDrop(id = 1, trigger = SupplyDropTrigger.RANDOM, reward = reward, rewardAmount = amount, claimed = false, createdAt = 0L)</ID>
+    <ID>MaxLineLength:SupplyRewardFormatTest.kt:SupplyRewardFormatTest$assertFalse("CARD_COPY must show the resolved card name, not the raw label: \"$label\"", label.contains("Card Copy"))</ID>
+    <ID>MaxLineLength:TierSelector.kt:Column</ID>
+    <ID>MaxLineLength:TimeIntegrity.kt:TimeIntegrity$if</ID>
+    <ID>MaxLineLength:UWController.kt:UWController$fx.addEffect(UWVisualEffect(uw.type, fx.pool, cx, cy, host.screenWidth, host.screenHeight, effectDuration, host.reducedMotion))</ID>
+    <ID>MaxLineLength:UWVisualEffect.kt:UWVisualEffect$fallbackPaint.color = 0xFFE53935.toInt()</ID>
+    <ID>MaxLineLength:UltimateWeaponDao.kt:UltimateWeaponDao$*</ID>
+    <ID>MaxLineLength:UltimateWeaponScreen.kt:Row</ID>
+    <ID>MaxLineLength:UltimateWeaponType.kt:UltimateWeaponType$*</ID>
+    <ID>MaxLineLength:UnclaimedSuppliesScreen.kt:Row</ID>
+    <ID>MaxLineLength:UnclaimedSuppliesScreen.kt:SupplyDropReward.POWER_STONES -&gt; pluralStringResource(R.plurals.reward_power_stones, drop.rewardAmount, drop.rewardAmount)</ID>
+    <ID>MaxLineLength:UnclaimedSuppliesScreen.kt:Text("No supply drops yet — keep walking!", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
+    <ID>MaxLineLength:UnclaimedSuppliesViewModel.kt:UnclaimedSuppliesViewModel$if (anySuccess) _celebration.trySend(ClaimCelebrationEvent(reward = ClaimReward.Message(R.string.reward_all_supplies)))</ID>
+    <ID>MaxLineLength:UnclaimedSuppliesViewModelTest.kt:UnclaimedSuppliesViewModelTest$fun drop</ID>
+    <ID>MaxLineLength:UpgradeCard.kt:text = if (affordable) stringResource(R.string.upgrade_best_buy) else stringResource(R.string.upgrade_best_buy_save_up)</ID>
+    <ID>MaxLineLength:UpgradeCard.kt:text = if (info.isMaxed) stringResource(R.string.upgrade_max) else stringResource(R.string.upgrade_level, info.level)</ID>
+    <ID>MaxLineLength:UpgradeType.kt:UpgradeType.Companion$BOUNCE_SHOT to UpgradeConfig(8_000, 1.5, 10, 1.0, "+1 bounce per level (in-round Cash purchase or Labs research; cap 10)")</ID>
+    <ID>MaxLineLength:UpgradeType.kt:UpgradeType.Companion$MULTISHOT to UpgradeConfig(5_000, 1.5, 10, 1.0, "+1 additional target per level (in-round Cash purchase or Labs research; cap 11 incl. baseline)")</ID>
+    <ID>MaxLineLength:UpgradeType.kt:UpgradeType.Companion$RAPID_FIRE to UpgradeConfig(2_000, 1.18, 10, 1.0, "Periodic attack-speed burst (60s/5s/2.0\u00d7 \u2192 permanent/3.0\u00d7 at max)")</ID>
+    <ID>MaxLineLength:UpgradeType.kt:UpgradeType.Companion$STEP_MULTIPLIER to UpgradeConfig(1_000, 1.35, 100, 1.0, "Bonus steps from walking — asymptotic curve approaches +100%")</ID>
+    <ID>MaxLineLength:WalkingEncounterDao.kt:WalkingEncounterDao$@Query("DELETE FROM walking_encounter WHERE claimed = 0 AND id = (SELECT id FROM walking_encounter WHERE claimed = 0 ORDER BY createdAt ASC LIMIT 1)")</ID>
+    <ID>MaxLineLength:WaveAnnouncement.kt:WaveAnnouncement$val alpha = if (age &lt; holdDuration) 255 else ((1f - (age - holdDuration) / fadeDuration) * 255).toInt().coerceIn(0, 255)</ID>
+    <ID>MaxLineLength:WaveSpawner.kt:WaveSpawner$else -&gt; mapOf(EnemyType.SCATTER to 0.10, EnemyType.TANK to 0.10, EnemyType.RANGED to 0.15, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.45)</ID>
+    <ID>MaxLineLength:WaveSpawner.kt:WaveSpawner$wave &lt;= 30 -&gt; mapOf(EnemyType.TANK to 0.10, EnemyType.RANGED to 0.15, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.55)</ID>
+    <ID>MaxLineLength:WorkshopRepositoryImplTest.kt:WorkshopRepositoryImplTest$fun</ID>
+    <ID>MaxLineLength:WorkshopRepositoryImplTest.kt:WorkshopRepositoryImplTest$val seededCount = rows.count { it.upgradeType != "RETIRED_ENUM_NAME" &amp;&amp; it.upgradeType != UpgradeType.DAMAGE.name }</ID>
+    <ID>MaxLineLength:WorkshopScreen.kt:OutlinedButton</ID>
+    <ID>MaxLineLength:WorkshopScreen.kt:fun</ID>
+    <ID>MaxLineLength:WorkshopViewModel.kt:WorkshopViewModel$val m = missions.find { it.type == DailyMissionType.SPEND_5000_WORKSHOP &amp;&amp; !it.claimed &amp;&amp; !it.completed }</ID>
+    <ID>MaxLineLength:WorkshopViewModelTest.kt:WorkshopViewModelTest$assertEquals(0, vm.uiState.value.upgrades.count { it.value?.isBestBuy == true }, "no Best Buy on the Defense tab")</ID>
+    <ID>MaxLineLength:WorkshopViewModelTest.kt:WorkshopViewModelTest$assertFalse(item.canAfford, "${type.name} at cap must NOT be affordable (drives disabled buy control) even with MAX_VALUE balance")</ID>
+    <ID>MaxLineLength:ZigguratEntity.kt:ZigguratEntity$private val rangeStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x44FFFFFF; style = Paint.Style.STROKE; strokeWidth = 1.5f }</ID>
+    <ID>MaxLineLength:ZigguratEntity.kt:ZigguratEntity.Companion$val DEFAULT_COLORS = listOf(0xFF8B7355.toInt(), 0xFF9C8565.toInt(), 0xFFC2B280.toInt(), 0xFFCDBFA0.toInt(), 0xFFD4A843.toInt())</ID>
+    <ID>NestedBlockDepth:GameLoopThread.kt:GameLoopThread$override fun run</ID>
+    <ID>NestedBlockDepth:UWController.kt:UWController$fun update</ID>
+    <ID>ReturnCount:BattleAnnouncer.kt:fun battleAnnouncement: BattleAnnouncement?</ID>
+    <ID>ReturnCount:BattleViewModel.kt:BattleViewModel$fun purchaseInRoundUpgrade</ID>
+    <ID>ReturnCount:BillingManagerImpl.kt:BillingManagerImpl$private suspend fun handleCompletedPurchase: PurchaseResult</ID>
+    <ID>ReturnCount:BuffTickers.kt:BuffTickers$fun tickRapidFire</ID>
+    <ID>ReturnCount:BuffTickers.kt:BuffTickers$fun tickRecovery</ID>
+    <ID>ReturnCount:ClaimMilestone.kt:ClaimMilestone$suspend operator fun invoke: ClaimMilestoneResult</ID>
+    <ID>ReturnCount:ClaimMission.kt:ClaimMission$suspend operator fun invoke: ClaimMissionResult</ID>
+    <ID>ReturnCount:ClaimSupplyDrop.kt:ClaimSupplyDrop$suspend operator fun invoke: Result</ID>
+    <ID>ReturnCount:CombatResolver.kt:CombatResolver$fun applyDamageToZiggurat</ID>
+    <ID>ReturnCount:CompleteResearch.kt:CompleteResearch$suspend operator fun invoke: Result</ID>
+    <ID>ReturnCount:DailyStepDao.kt:DailyStepDao$@Transaction suspend fun creditBattleStepsAtomic: Long</ID>
+    <ID>ReturnCount:DailyStepDao.kt:DailyStepDao$@Transaction suspend fun creditBossPowerStonesAtomic: Long</ID>
+    <ID>ReturnCount:DailyStepManager.kt:DailyStepManager$private suspend fun applyStepMultiplier: Long</ID>
+    <ID>ReturnCount:DailyStepManager.kt:DailyStepManager$suspend fun recordActivityMinutes</ID>
+    <ID>ReturnCount:DailyStepManager.kt:DailyStepManager$suspend fun recordSteps</ID>
+    <ID>ReturnCount:EnemyEntity.kt:EnemyEntity$fun takeDamage: Double</ID>
+    <ID>ReturnCount:EnemyState.kt:EnemyState$fun update: Boolean</ID>
+    <ID>ReturnCount:ExerciseSessionReader.kt:ExerciseSessionReader$suspend fun getSessionsForDate: List&lt;ExerciseSessionInfo&gt;</ID>
+    <ID>ReturnCount:FakeCardRepository.kt:FakeCardRepository$override suspend fun decrementCopiesAndLevelUp: Boolean</ID>
+    <ID>ReturnCount:FakeDailyMissionDao.kt:FakeDailyMissionDao$override suspend fun markClaimed: Int</ID>
+    <ID>ReturnCount:FakeUltimateWeaponRepository.kt:FakeUltimateWeaponRepository$override suspend fun unlockWeaponAtomic: Boolean</ID>
+    <ID>ReturnCount:FakeWalkingEncounterRepository.kt:FakeWalkingEncounterRepository$override suspend fun claimDrop: Boolean</ID>
+    <ID>ReturnCount:GameEngine.kt:GameEngine$fun bossCountdownLabel: String?</ID>
+    <ID>ReturnCount:GameEngine.kt:GameEngine$fun nextWaveCompositionLabel: String?</ID>
+    <ID>ReturnCount:GenerateSupplyDrop.kt:GenerateSupplyDrop$operator fun invoke: SupplyDrop?</ID>
+    <ID>ReturnCount:HealthConnectStepReader.kt:HealthConnectStepReader$suspend fun getStepsForDate: Long?</ID>
+    <ID>ReturnCount:MusicManager.kt:MusicManager$private fun switchTo</ID>
+    <ID>ReturnCount:OpenCardPack.kt:OpenCardPack$suspend operator fun invoke: Result</ID>
+    <ID>ReturnCount:PurchaseUpgrade.kt:PurchaseUpgrade$suspend operator fun invoke: Boolean</ID>
+    <ID>ReturnCount:RealPurchaseVerifier.kt:RealPurchaseVerifier$override fun isValidPurchase: Boolean</ID>
+    <ID>ReturnCount:RushResearch.kt:RushResearch$suspend operator fun invoke: Result</ID>
+    <ID>ReturnCount:SimulationMath.kt:SimulationMath$fun clampAccumulator: Long</ID>
+    <ID>ReturnCount:SmartReminderManager.kt:SmartReminderManager$suspend fun checkAndNotify</ID>
+    <ID>ReturnCount:StartResearch.kt:StartResearch$suspend operator fun invoke: Result</ID>
+    <ID>ReturnCount:StepCrossValidator.kt:StepCrossValidator$suspend fun validate</ID>
+    <ID>ReturnCount:StepSyncWorker.kt:StepSyncWorker$private suspend fun sensorCatchUp</ID>
+    <ID>ReturnCount:StepSyncWorker.kt:StepSyncWorker.Companion$fun computeCatchUp: CatchUpDecision</ID>
+    <ID>ReturnCount:StepVelocityAnalyzer.kt:StepVelocityAnalyzer$fun analyze: Double</ID>
+    <ID>ReturnCount:StepVelocityAnalyzer.kt:StepVelocityAnalyzer$private fun checkConstantRate: Boolean</ID>
+    <ID>ReturnCount:StepVelocityAnalyzer.kt:StepVelocityAnalyzer$private fun checkInstantJump: Boolean</ID>
+    <ID>ReturnCount:UWController.kt:UWController$fun activateUW</ID>
+    <ID>ReturnCount:UltimateWeaponDao.kt:UltimateWeaponDao$@Transaction suspend fun unlockWeaponAtomic: Boolean</ID>
+    <ID>ReturnCount:UnlockLabSlot.kt:UnlockLabSlot$suspend operator fun invoke: Result</ID>
+    <ID>ReturnCount:UnlockUltimateWeapon.kt:UnlockUltimateWeapon$suspend operator fun invoke: Boolean</ID>
+    <ID>ReturnCount:UpgradeCard.kt:UpgradeCard$suspend operator fun invoke: Result</ID>
+    <ID>ReturnCount:UpgradeUltimateWeapon.kt:UpgradeUltimateWeapon$suspend operator fun invoke: Boolean</ID>
+    <ID>SwallowedException:DataTransformMigrationsTest.kt:DataTransformMigrationsTest$e: android.database.sqlite.SQLiteConstraintException</ID>
+    <ID>SwallowedException:Migration11To12Test.kt:Migration11To12Test$e: android.database.sqlite.SQLiteConstraintException</ID>
+    <ID>TooGenericExceptionCaught:DailyStepManager.kt:DailyStepManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DataDeletionManager.kt:DataDeletionManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:DatabaseKeyManager.kt:DatabaseKeyManager$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:GameLoopThread.kt:GameLoopThread$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:StepCounterService.kt:e: RuntimeException</ID>
+    <ID>TooGenericExceptionCaught:StepSyncWorker.kt:StepSyncWorker$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:StepSyncWorker.kt:e: Exception</ID>
+    <ID>TooGenericExceptionThrown:BattleViewModelTest.kt:BattleViewModelTest.&lt;no name provided&gt;$throw RuntimeException("simulated DB failure on updateBestWave")</ID>
+    <ID>TooGenericExceptionThrown:BattleViewModelTest.kt:BattleViewModelTest.&lt;no name provided&gt;$throw RuntimeException("w1")</ID>
+    <ID>TooGenericExceptionThrown:BattleViewModelTest.kt:BattleViewModelTest.&lt;no name provided&gt;$throw RuntimeException("w2")</ID>
+    <ID>TooGenericExceptionThrown:BattleViewModelTest.kt:BattleViewModelTest.&lt;no name provided&gt;$throw RuntimeException("w3")</ID>
+    <ID>TooGenericExceptionThrown:BattleViewModelTest.kt:BattleViewModelTest.&lt;no name provided&gt;$throw RuntimeException("w4")</ID>
+    <ID>TooGenericExceptionThrown:ReconcileBillingSafelyTest.kt:ReconcileBillingSafelyTest.&lt;no name provided&gt;$throw RuntimeException("boom")</ID>
+    <ID>TooGenericExceptionThrown:StatsViewModelTest.kt:StatsViewModelTest.ThrowingPlayerRepository$throw RuntimeException("boom")</ID>
+    <ID>TooManyFunctions:AppDatabase.kt:AppDatabase : RoomDatabase</ID>
+    <ID>TooManyFunctions:BattleViewModel.kt:BattleViewModel : ViewModel</ID>
+    <ID>TooManyFunctions:BillingManagerImpl.kt:BillingManagerImpl : BillingManager</ID>
+    <ID>TooManyFunctions:CardRepository.kt:CardRepository</ID>
+    <ID>TooManyFunctions:CardRepositoryImpl.kt:CardRepositoryImpl : CardRepository</ID>
+    <ID>TooManyFunctions:DailyStepDao.kt:DailyStepDao</ID>
+    <ID>TooManyFunctions:DatabaseModule.kt:DatabaseModule</ID>
+    <ID>TooManyFunctions:GameEngine.kt:GameEngine : UWHostBuffHostCombatHost</ID>
+    <ID>TooManyFunctions:MusicManager.kt:MusicManager : OnAudioFocusChangeListener</ID>
+    <ID>TooManyFunctions:PlayerProfileDao.kt:PlayerProfileDao</ID>
+    <ID>TooManyFunctions:PlayerRepository.kt:PlayerRepository</ID>
+    <ID>TooManyFunctions:PlayerRepositoryImpl.kt:PlayerRepositoryImpl : PlayerRepository</ID>
+    <ID>TooManyFunctions:RepositoryModule.kt:RepositoryModule</ID>
+    <ID>TooManyFunctions:Simulation.kt:Simulation</ID>
+    <ID>TooManyFunctions:StepRepository.kt:StepRepository</ID>
+    <ID>TooManyFunctions:StepRepositoryImpl.kt:StepRepositoryImpl : StepRepository</ID>
+    <ID>TopLevelPropertyNaming:Color.kt:/** * Text/icon colour for content ON [Gold] surfaces (primary buttons). The brand [DeepBronze] * (#6B3A2A) on Gold is only ~4.19:1 — Material3 `Button` labels are `labelLarge` 14sp SemiBold * ("normal" text, 4.5:1 threshold), so DeepBronze fails AA (#213). This darker bronze is ~5.99:1 on * Gold (passes AA-normal). Use [OnGold] as `onPrimary`; keep [DeepBronze] for fills/backgrounds. * Guarded by `ContrastTest` (which reads [OnGoldArgb] vs [GoldArgb] so a token regression fails the build). */ const val OnGoldArgb: Int = 0xFF4A2618.toInt()</ID>
+    <ID>TopLevelPropertyNaming:Color.kt:// --- Core Mesopotamian palette (the five brand colours) ----------------------------------------- // These are the identity anchors. Use them for fills, brand accents, and primary actions. // Gold's ARGB is exposed as a plain Int const so the pure-JVM `ContrastTest` can verify on-Gold text // contrast against the SAME value the token uses (no Compose/Android dependency in the test). #213. const val GoldArgb: Int = 0xFFD4A843.toInt()</ID>
+    <ID>UnusedParameter:BattleViewModel.kt:BattleViewModel$t: Throwable</ID>
+    <ID>UnusedParameter:CombatResolver.kt:CombatResolver$wave: Int</ID>
+    <ID>UnusedParameter:TierSelector.kt:bestWavePerTier: Map&lt;Int, Int&gt;</ID>
+    <ID>VariableNaming:CalculateDamage.kt:CalculateDamage$val final_ = if (isCrit) raw * stats.critMultiplier else raw</ID>
+    <ID>VariableNaming:EnemyScalingTest.kt:EnemyScalingTest$private val COMBAT_MULTIPLIER = 3.0 // Crits + in-round upgrades + multishot + orbs</ID>
+    <ID>VariableNaming:TierProgressionTest.kt:TierProgressionTest$private val COMBAT_MULTIPLIER = 5.0 // Crits + in-round upgrades + multishot + orbs + cards</ID>
+  </CurrentIssues>
+</SmellBaseline>
