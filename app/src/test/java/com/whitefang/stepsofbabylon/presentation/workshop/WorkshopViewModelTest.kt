@@ -4,6 +4,7 @@ import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
+import androidx.lifecycle.SavedStateHandle
 import com.whitefang.stepsofbabylon.fakes.FakeWorkshopRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,7 +38,8 @@ class WorkshopViewModelTest {
     @AfterEach
     fun tearDown() { Dispatchers.resetMain() }
 
-    private fun createVm() = WorkshopViewModel(workshopRepo, playerRepo, missionRepo)
+    private fun createVm(handle: SavedStateHandle = SavedStateHandle()) =
+        WorkshopViewModel(workshopRepo, playerRepo, missionRepo, handle)
 
     @Test
     fun `initial state shows ATTACK upgrades`() = runTest(dispatcher) {
@@ -217,5 +219,27 @@ class WorkshopViewModelTest {
         advanceUntilIdle()
         val best = vm.uiState.value.upgrades.single { it.value?.isBestBuy == true }
         assertFalse(best.value!!.bestBuyAffordable, "with 0 Steps the Best Buy falls back to greyed")
+    }
+
+    @Test
+    fun `R234 selected category restores from a seeded SavedStateHandle`() = runTest(dispatcher) {
+        val handle = SavedStateHandle(mapOf("selectedCategory" to UpgradeCategory.DEFENSE))
+        val vm = createVm(handle)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        assertEquals(UpgradeCategory.DEFENSE, vm.uiState.value.selectedCategory,
+            "selected tab must restore from SavedStateHandle (process-death survival)")
+    }
+
+    @Test
+    fun `R234 selectCategory writes through to the SavedStateHandle`() = runTest(dispatcher) {
+        val handle = SavedStateHandle()
+        val vm = createVm(handle)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        vm.selectCategory(UpgradeCategory.UTILITY)
+        advanceUntilIdle()
+        assertEquals(UpgradeCategory.UTILITY, handle["selectedCategory"],
+            "selectCategory must persist to SavedStateHandle")
     }
 }

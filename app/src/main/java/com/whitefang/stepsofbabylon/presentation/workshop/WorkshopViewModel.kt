@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.workshop
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
@@ -36,6 +37,7 @@ class WorkshopViewModel @Inject constructor(
     private val workshopRepository: WorkshopRepository,
     private val playerRepository: PlayerRepository,
     private val missionRepository: MissionRepository,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val calculateCost = CalculateUpgradeCost()
@@ -45,7 +47,8 @@ class WorkshopViewModel @Inject constructor(
     private val describeUpgradeEffect = DescribeUpgradeEffect()
     private val evaluateUpgradeValue = EvaluateUpgradeValue()
 
-    private val _selectedCategory = MutableStateFlow(UpgradeCategory.ATTACK)
+    private val selectedCategory: StateFlow<UpgradeCategory> =
+        savedStateHandle.getStateFlow(KEY_SELECTED_CATEGORY, UpgradeCategory.ATTACK)
     private val _processing = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<String?>(null)
     // #194: bump to re-subscribe the data flow after a load error (retry).
@@ -57,7 +60,7 @@ class WorkshopViewModel @Inject constructor(
     combine(
         workshopRepository.observeAllUpgrades(),
         playerRepository.observeWallet(),
-        _selectedCategory,
+        selectedCategory,
         _processing,
         _userMessage,
     ) { upgrades, wallet, category, processing, message ->
@@ -106,7 +109,7 @@ class WorkshopViewModel @Inject constructor(
     /** #194: re-subscribe the data flow after a load error. */
     fun retry() { _retry.value++ }
 
-    fun selectCategory(category: UpgradeCategory) { _selectedCategory.value = category }
+    fun selectCategory(category: UpgradeCategory) { savedStateHandle[KEY_SELECTED_CATEGORY] = category }
 
     fun purchase(type: UpgradeType) {
         if (_processing.value) return
@@ -161,6 +164,10 @@ class WorkshopViewModel @Inject constructor(
     }
 
     fun clearMessage() { _userMessage.value = null }
+
+    private companion object {
+        const val KEY_SELECTED_CATEGORY = "selectedCategory"
+    }
 
     private fun statValueFor(type: UpgradeType, s: ResolvedStats): String = when (type) {
         UpgradeType.DAMAGE -> "%.1f dmg".format(s.damage)
