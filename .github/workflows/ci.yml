@@ -1,6 +1,14 @@
 # Plan 32 / ADR-0018 — core PR gate. Secret-free: a debug build needs no signing
 # keystore and AdMob falls back to Google test IDs (see app/build.gradle.kts).
 # Actions are SHA-pinned (decision #5); Dependabot maintains the pins.
+#
+# Docs-only fast path: the `changes` job classifies the diff; `build-and-test` ALWAYS runs
+# (so the required status check always reports), but its heavy steps are gated on
+# `needs.changes.outputs.code == 'true'`. A docs-only change (only `docs/**` / `*.md`) skips the
+# build/lint/test entirely and the check goes green in seconds — no PR/CI overhead for checkpoint
+# doc syncs. Anything else (app code, `.github/`, `app/schemas/`, gradle/config, `site/` non-md)
+# is treated as code and runs the full gate. Fail-safe: when the diff base is unknown the verdict
+# defaults to code (full gate). Keep the classifier in sync with instrumented.yml.
 name: CI
 
 on:
@@ -16,27 +24,77 @@ permissions:
   contents: read
 
 jobs:
+  # Fast classifier: outputs code=true unless EVERY changed path is docs (`docs/**` or `*.md`).
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.detect.outputs.code }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - id: detect
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "pull_request" ]; then
+            base="$BASE_SHA"; head="$HEAD_SHA"
+          elif [ "$EVENT" = "push" ] && [ -n "${BEFORE:-}" ] \
+               && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            base="$BEFORE"; head="$AFTER"
+          else
+            # Unknown base (schedule / manual / first push) → run the full gate, never silently skip.
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "Event=$EVENT with no usable diff base → full gate."
+            exit 0
+          fi
+          files="$(git diff --name-only "$base" "$head")"
+          echo "Changed files:"; echo "$files"
+          # Non-docs = anything NOT under docs/ and NOT a .md file. Conservative: unknown → code.
+          non_docs="$(printf '%s\n' "$files" | grep -vE '^$' | grep -vE '^docs/|\.md$' || true)"
+          if [ -z "$non_docs" ]; then
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "Verdict: docs-only → skipping the heavy build/lint/test steps."
+          else
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "Verdict: code change → full gate (first non-docs path: $(printf '%s' "$non_docs" | head -1))."
+          fi
+
   build-and-test:
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        if: needs.changes.outputs.code == 'true'
       # #212 (CICD-1): validate the checked-in gradle-wrapper.jar against known-good Gradle release
       # checksums before any Gradle invocation. Pairs with distributionSha256Sum in
       # gradle-wrapper.properties (which verifies the downloaded distribution).
       - uses: gradle/actions/wrapper-validation@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        if: needs.changes.outputs.code == 'true'
       - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5.3.0
+        if: needs.changes.outputs.code == 'true'
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+        if: needs.changes.outputs.code == 'true'
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        if: needs.changes.outputs.code == 'true'
 
       # The documented one-call gate (docs/archive/smoke_tests/.../README.md): lint + unit + debug build.
       - name: Lint, unit tests, debug build
+        if: needs.changes.outputs.code == 'true'
         run: ./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace
 
       - name: Compile benchmark modules (type-check only; benchmarks run locally, never CI-gated)
+        if: needs.changes.outputs.code == 'true'
         run: ./gradlew :baselineprofile:assemble :macrobenchmark:assemble --stacktrace
 
       # KSP re-exports the Room schema during assembleDebug; fail if it drifts from the
@@ -46,6 +104,7 @@ jobs:
       # intent-to-add so `git diff` then sees both modified AND new files; `--porcelain` is a final
       # belt-and-braces check that nothing untracked remains.
       - name: Room schema-drift guard
+        if: needs.changes.outputs.code == 'true'
         run: |
           git add -N app/schemas
           git diff --exit-code app/schemas || { echo "::error::Room schema drift — commit the app/schemas changes (new or modified)"; exit 1; }
@@ -56,7 +115,7 @@ jobs:
           fi
 
       - name: Upload reports
-        if: always()
+        if: always() && needs.changes.outputs.code == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ci-reports
@@ -66,3 +125,7 @@ jobs:
             **/build/outputs/apk/debug/*.apk
           if-no-files-found: ignore
           retention-days: 7
+
+      - name: Docs-only — heavy gate skipped
+        if: needs.changes.outputs.code != 'true'
+        run: echo "Docs-only change — build/lint/test skipped; required check satisfied."

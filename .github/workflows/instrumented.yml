@@ -4,6 +4,12 @@
 # Scoped to :app (#26): the :baselineprofile / :macrobenchmark `com.android.test` modules run
 # locally on a benchmark variant only — their connected tests refuse a debuggable build
 # (EMULATOR DEBUGGABLE) and must NOT run in this debug-app lane.
+#
+# Docs-only fast path: the `changes` job classifies the diff; `connected` ALWAYS runs (so the
+# required status check always reports), but its heavy emulator steps are gated on
+# `needs.changes.outputs.code == 'true'`. A docs-only PR skips the emulator entirely (green in
+# seconds). The nightly schedule + manual dispatch have no PR base, so the classifier defaults to
+# code=true (full canary always runs). Keep the classifier in sync with ci.yml.
 name: Instrumented Tests
 
 on:
@@ -21,26 +27,67 @@ permissions:
   contents: read
 
 jobs:
+  # Fast classifier: outputs code=true unless EVERY changed path is docs (`docs/**` or `*.md`).
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.detect.outputs.code }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - id: detect
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = "pull_request" ]; then
+            files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+            echo "Changed files:"; echo "$files"
+            non_docs="$(printf '%s\n' "$files" | grep -vE '^$' | grep -vE '^docs/|\.md$' || true)"
+            if [ -z "$non_docs" ]; then
+              echo "code=false" >> "$GITHUB_OUTPUT"
+              echo "Verdict: docs-only → skipping the emulator suite."
+            else
+              echo "code=true" >> "$GITHUB_OUTPUT"
+              echo "Verdict: code change → full instrumented gate (first non-docs path: $(printf '%s' "$non_docs" | head -1))."
+            fi
+          else
+            # schedule / workflow_dispatch → no PR base; always run the canary.
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "Event=$EVENT → full instrumented run."
+          fi
+
   connected:
+    needs: changes
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        if: needs.changes.outputs.code == 'true'
       - uses: actions/setup-java@ad2b38190b15e4d6bdf0c97fb4fca8412226d287 # v5.3.0
+        if: needs.changes.outputs.code == 'true'
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+        if: needs.changes.outputs.code == 'true'
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        if: needs.changes.outputs.code == 'true'
 
       # Hardware acceleration — without KVM the emulator boot is prohibitively slow.
       - name: Enable KVM
+        if: needs.changes.outputs.code == 'true'
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
       - name: AVD cache
+        if: needs.changes.outputs.code == 'true'
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: avd-cache
         with:
@@ -50,7 +97,7 @@ jobs:
           key: avd-api34-googleapis-x86_64
 
       - name: Create AVD snapshot
-        if: steps.avd-cache.outputs.cache-hit != 'true'
+        if: needs.changes.outputs.code == 'true' && steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@e89f39f1abbbd05b1113a29cf4db69e7540cae5a # v2.37.0
         with:
           api-level: 34
@@ -62,6 +109,7 @@ jobs:
           script: echo "Generated AVD snapshot for caching."
 
       - name: Run instrumented tests
+        if: needs.changes.outputs.code == 'true'
         uses: reactivecircus/android-emulator-runner@e89f39f1abbbd05b1113a29cf4db69e7540cae5a # v2.37.0
         with:
           api-level: 34
@@ -73,10 +121,14 @@ jobs:
           script: ./gradlew :app:connectedDebugAndroidTest
 
       - name: Upload androidTest results
-        if: always()
+        if: always() && needs.changes.outputs.code == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: androidTest-results
           path: '**/build/outputs/androidTest-results/**'
           if-no-files-found: ignore
           retention-days: 7
+
+      - name: Docs-only — instrumented suite skipped
+        if: needs.changes.outputs.code != 'true'
+        run: echo "Docs-only change — emulator suite skipped; required check satisfied."
