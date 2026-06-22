@@ -4,32 +4,22 @@ import android.graphics.Canvas
 import com.whitefang.stepsofbabylon.domain.Strings
 import com.whitefang.stepsofbabylon.domain.battle.engine.Simulation
 import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationEvent
-import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath
 import com.whitefang.stepsofbabylon.domain.model.BattleConditionEffects
 import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
 import com.whitefang.stepsofbabylon.domain.model.CosmeticItem
-import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
-import com.whitefang.stepsofbabylon.domain.model.RapidFireSchedule
-import com.whitefang.stepsofbabylon.domain.model.UWPath
-import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.TierConfig
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.model.ZigguratBaseStats
-import com.whitefang.stepsofbabylon.domain.usecase.CalculateDamage
-import com.whitefang.stepsofbabylon.domain.usecase.CalculateDefense
 import com.whitefang.stepsofbabylon.presentation.audio.SoundEffect
 import com.whitefang.stepsofbabylon.presentation.audio.SoundManager
 import com.whitefang.stepsofbabylon.presentation.battle.biome.BackgroundRenderer
 import com.whitefang.stepsofbabylon.presentation.battle.biome.BiomeTheme
-import com.whitefang.stepsofbabylon.presentation.battle.effects.DeathEffect
 import com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine
-import com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText
 import com.whitefang.stepsofbabylon.presentation.battle.effects.ProjectileTrailEffect
 import com.whitefang.stepsofbabylon.presentation.battle.effects.advanceTrail
-import com.whitefang.stepsofbabylon.presentation.battle.effects.UWVisualEffect
 import com.whitefang.stepsofbabylon.presentation.battle.effects.WaveAnnouncement
 import com.whitefang.stepsofbabylon.presentation.battle.effects.WaveCooldownText
 import com.whitefang.stepsofbabylon.presentation.battle.entities.EnemyEntity
@@ -37,13 +27,11 @@ import com.whitefang.stepsofbabylon.presentation.battle.entities.EnemyProjectile
 import com.whitefang.stepsofbabylon.presentation.battle.entities.OrbEntity
 import com.whitefang.stepsofbabylon.presentation.battle.entities.ProjectileEntity
 import com.whitefang.stepsofbabylon.presentation.battle.entities.ZigguratEntity
-import com.whitefang.stepsofbabylon.presentation.battle.ui.HealthBarRenderer
 import kotlinx.coroutines.flow.SharedFlow
 import kotlin.math.PI
 import kotlin.math.hypot
-import kotlin.random.Random
 
-class GameEngine {
+class GameEngine : UWHost, BuffHost, CombatHost {
 
     private val entities = mutableListOf<Entity>()
     private val pendingAdd = mutableListOf<Entity>()
@@ -70,19 +58,15 @@ class GameEngine {
     private val enemyScratch = ArrayList<EnemyEntity>()
     private val enemyProjScratch = ArrayList<EnemyProjectileEntity>()
 
-    private val healthBarRenderer = HealthBarRenderer()
-    private val calculateDamage = CalculateDamage()
-    private val calculateDefense = CalculateDefense()
-
-    var screenWidth: Float = 0f; private set
-    var screenHeight: Float = 0f; private set
-    var ziggurat: ZigguratEntity? = null; private set
+    override var screenWidth: Float = 0f; private set
+    override var screenHeight: Float = 0f; private set
+    override var ziggurat: ZigguratEntity? = null; private set
     var waveSpawner: WaveSpawner? = null; private set
     // @Volatile: written by [applyStats] from the main thread (in-round purchase) and read by
     // the loop thread every tick (#118).
     @Volatile private var stats: ResolvedStats = ResolvedStats()
-    private var tier: Int = 1
-    private var conditions: BattleConditionEffects = BattleConditionEffects()
+    private var currentTier: Int = 1
+    private var battleConditions: BattleConditionEffects = BattleConditionEffects()
     /**
      * Effective level lookup for cash-utility computations (`CASH_BONUS`, `CASH_PER_WAVE`,
      * `INTEREST`, `FREE_UPGRADES`). Initially seeded from the player's Workshop levels at
@@ -99,11 +83,11 @@ class GameEngine {
     private var biomeTheme: BiomeTheme = BiomeTheme.forBiome(Biome.HANGING_GARDENS)
 
     // Effects
-    var effectEngine: EffectEngine? = null; private set
-    var soundManager: SoundManager? = null
+    override var effectEngine: EffectEngine? = null; private set
+    override var soundManager: SoundManager? = null
     /** Engine-internal display strings (V1X-13, ADR-0014). Set by [GameSurfaceView]; null in pure-JVM tests, which fall back to literals. */
-    var strings: Strings? = null
-    private var reducedMotion: Boolean = false
+    override var strings: Strings? = null
+    override var reducedMotion: Boolean = false; private set
     private var cooldownText: WaveCooldownText? = null
     private var lastWave: Int = 0
 
@@ -112,16 +96,26 @@ class GameEngine {
      * (ADR-0012). The engine delegates its `cash` / `totalCashEarned` / `spendCash` public
      * surface here; callers (BattleViewModel polling, BattleScreen, tests) are unchanged.
      */
-    private val simulation = Simulation()
+    override val simulation: Simulation = Simulation()
+
+    @Suppress("LeakingThis")
+    private val uwController = UWController(this, simulation)
+
+    @Suppress("LeakingThis")
+    private val buffTickers = BuffTickers(this)
+
+    @Suppress("LeakingThis")
+    private val combatResolver = CombatResolver(this)
+    private val battleRenderer = BattleRenderer()
     val cash: Long get() = simulation.cash
     val totalCashEarned: Long get() = simulation.totalCashEarned
     @Volatile var roundOver: Boolean = false
     val totalEnemiesKilled: Int get() = simulation.totalEnemiesKilled
     val totalStepsEarned: Long get() = simulation.totalStepsEarned
     val elapsedTimeSeconds: Float get() = simulation.elapsedSeconds
-    @Volatile var secondWindHpPercent: Double = 0.0
+    @Volatile override var secondWindHpPercent: Double = 0.0
     @Volatile var secondWindUsed: Boolean = false
-    @Volatile var cashBonusPercent: Double = 0.0
+    @Volatile override var cashBonusPercent: Double = 0.0
 
     /**
      * CASH_RESEARCH lab multiplier (RO-11 #A.2). Applied to every kill-cash and wave-end-cash
@@ -130,7 +124,7 @@ class GameEngine {
      * `1.0 + level × 0.05` (max L20 → 2.0×) and pushed onto the engine in
      * `init` and `playAgain`. Pre-RO-11 the CASH_RESEARCH enum was dead.
      */
-    @Volatile var cashResearchMultiplier: Double = 1.0
+    @Volatile override var cashResearchMultiplier: Double = 1.0
 
     /**
      * UW_COOLDOWN lab multiplier (RO-11 #A.2). Applied at the [activateUW] cooldown-set
@@ -144,7 +138,7 @@ class GameEngine {
      * is recomputed from `cooldownAtLevel × uwCooldownMultiplier` so the visual progress
      * stays in sync with the actual cooldown duration.
      */
-    @Volatile var uwCooldownMultiplier: Float = 1f
+    @Volatile override var uwCooldownMultiplier: Float = 1f
 
     /**
      * ENEMY_INTEL lab research level (V1X-15b, ADR-0017). Drives three information overlays:
@@ -157,56 +151,6 @@ class GameEngine {
      * ENEMY_INTEL is applied separately via `ResolveStats` (PR #84 combat foundation).
      */
     @Volatile var enemyIntelLevel: Int = 0
-
-    /**
-     * GOLDEN_ZIGGURAT cash buff multiplier. Written by [activateUW] (set to 5.0×) and reset
-     * to 1.0× by the GOLDEN expiry branch in [updateUWs]. Pre-R4-01 this multiplier was
-     * shared between Step Overdrive (FORTUNE, 3.0×) and the Ultimate Weapon (GOLDEN, 5.0×)
-     * with a coerceAtLeast lifecycle that preserved the higher of the two across
-     * activation/expiry interactions; R4-01 deletes Step Overdrive entirely so GOLDEN is
-     * the sole writer.
-     */
-    private var fortuneMultiplier: Double = 1.0
-
-    /**
-     * Recovery Packages periodic-heal timer (RO-08). Accumulates during the SPAWNING wave
-     * phase only (not during cooldown — heals between waves with no enemies on screen would
-     * feel disconnected from the upgrade's "during waves" framing). Fires when the timer
-     * crosses [SimulationMath.RECOVERY_INTERVAL_SECONDS]; reset to zero on each fire and on round init.
-     */
-    private var recoveryTimer: Float = 0f
-
-    /**
-     * Rapid Fire timer (R4-03). Accumulates during the SPAWNING wave phase only — mirrors
-     * the [recoveryTimer] / [tickRecoveryPackages] pattern, including the "reset to zero
-     * during cooldown phase" behaviour so a player who survives a wave doesn't carry over
-     * a partial cooldown into the next wave's first 0–60 s window. Fires when the timer
-     * crosses [RapidFireSchedule.interval] for the player's RAPID_FIRE level. Reset to
-     * zero on each fire and on round init.
-     */
-    private var rapidFireTimer: Float = 0f
-
-    /**
-     * Rapid Fire active-burst countdown (R4-03). When [rapidFireTimer] crosses interval,
-     * this is set to [RapidFireSchedule.duration] for the level and the ziggurat's
-     * [com.whitefang.stepsofbabylon.presentation.battle.entities.ZigguratEntity.rapidFireMultiplier]
-     * is set to the level's multiplier; both reset when the countdown reaches zero. At
-     * L10 duration == interval (30 s) so the next burst fires before the previous one
-     * expires — effectively a permanent +3.0× attack-speed buff.
-     */
-    private var rapidFireActiveRemaining: Float = 0f
-
-    /**
-     * LIFESTEAL fractional-heal accumulator (R3-02 / GitHub issue #4). Each projectile-hit
-     * and orb-hit applies the mathematically-correct heal directly to `zig.currentHp` (a
-     * `Double`, so sub-1-HP heals are conserved); this counter accumulates the same
-     * fractional amount in parallel and emits a `+X HP` floating-text indicator each time
-     * the accumulated amount crosses an integer HP threshold. Pre-R3-02 LIFESTEAL was
-     * mathematically correct but visually invisible at low levels (Lv 1 = 0.2 % lifesteal
-     * × base damage 10 → 0.02 HP per shot — a sub-pixel HP-bar nudge users could not
-     * perceive). Reset to 0.0 in [init] so accumulator state never leaks across rounds.
-     */
-    private var lifestealAccumulator: Double = 0.0
 
     /**
      * One-shot side-effect events from the in-round simulation (V1X-09 Phase 3 final slice,
@@ -245,53 +189,24 @@ class GameEngine {
      */
     @Volatile var cosmeticOverrides: Map<CosmeticCategory, CosmeticItem> = emptyMap()
 
+    // --- Host interface members (UWHost / BuffHost / CombatHost, #230/#231) ---
 
+    override val currentStats: ResolvedStats get() = stats
+    override val conditions: BattleConditionEffects get() = battleConditions
+    override val tier: Int get() = currentTier
+    override val wavePhase: WavePhase? get() = waveSpawner?.phase
+    override val fortuneMultiplier: Double get() = uwController.fortuneMultiplier
 
-    /**
-     * R4-06: per-UW state with three independent path levels (see [UWPath]). Pre-R4-06
-     * this held a single `level: Int`; the engine now reads each path explicitly via
-     * [damageLevel] / [secondaryLevel] / [cooldownLevel] and computes the per-path
-     * effect via [UltimateWeaponType.valueAtLevel]. The active CHRONO_FIELD slow factor
-     * is captured in [chronoSlowFactor] at activation time so a re-equip / level-up
-     * mid-effect can't change the slow strength on an already-firing UW.
-     */
-    data class UWState(
-        val type: UltimateWeaponType,
-        val damageLevel: Int,
-        val secondaryLevel: Int,
-        val cooldownLevel: Int,
-        var cooldownRemaining: Float = 0f,
-        var effectTimeRemaining: Float = 0f,
-    )
-    val uwStates = mutableListOf<UWState>()
-    private var chronoActive = false
-
-    /**
-     * Active CHRONO_FIELD slow factor. Set to the firing UW's [UltimateWeaponType.damageAtLevel]
-     * value at activation; reset to 1.0 when [chronoActive] flips back to false. Replaces
-     * the pre-R4-06 [CHRONO_SLOW_FACTOR] companion constant (which was the single value
-     * the slow path produced regardless of UW level). Smaller value = stronger slow.
-     */
-    private var chronoSlowFactor: Float = 1f
-    private var goldenZigActive = false
-    private var preGoldenStats: ResolvedStats? = null
-
-    /**
-     * Active GOLDEN_ZIGGURAT damage multiplier (#119). Captured at [activateUW] from the
-     * SECONDARY path and reset to `1.0` on expiry / [init]. GOLDEN is modelled as a damage
-     * *layer* re-derived over the current base stats rather than a one-shot snapshot: when an
-     * in-round upgrade lands while GOLDEN is active, [updateZigguratStats] re-captures
-     * [preGoldenStats] to the new base and re-applies this multiplier, so the purchase
-     * survives GOLDEN expiry instead of being rolled back to the stale activation snapshot.
-     */
-    private var goldenDamageMult: Double = 1.0
-
-    companion object {
-        const val BASE_CASH_PER_WAVE = 20L
-        const val FLAT_BONUS_PER_WAVE_LEVEL = 5L
-        // Recovery Packages constants moved to domain/battle/engine/SimulationMath
-        // as part of V1X-09 Phase 1 simulation extraction (ADR-0012).
+    override fun consumeSecondWind(): Boolean {
+        if (secondWindUsed) return false
+        secondWindUsed = true
+        return true
     }
+    override fun addPending(entity: Entity) { pendingAdd.add(entity) }
+    override fun aliveEnemies(): List<EnemyEntity> = getAliveEnemies()
+    override fun nearestEnemies(n: Int): List<EnemyEntity> = findNearestEnemies(n)
+    override fun applyLifesteal(healAmount: Double) = buffTickers.applyLifesteal(healAmount)
+    override fun wsLevel(type: UpgradeType): Int = effectiveLevels[type] ?: 0
 
     fun init(
         width: Float, height: Float,
@@ -319,17 +234,13 @@ class GameEngine {
             screenWidth = width; screenHeight = height
             entities.clear(); pendingAdd.clear()
             simulation.reset(); roundOver = false
-            fortuneMultiplier = 1.0
             secondWindUsed = false
-            uwStates.clear(); chronoActive = false; chronoSlowFactor = 1f; goldenZigActive = false; preGoldenStats = null; goldenDamageMult = 1.0
-            recoveryTimer = 0f
-            rapidFireTimer = 0f
-            rapidFireActiveRemaining = 0f
-            lifestealAccumulator = 0.0
-            stats = resolvedStats; tier = playerTier; effectiveLevels = wsLevels
+            uwController.resetRoundState()
+            buffTickers.reset()
+            stats = resolvedStats; currentTier = playerTier; effectiveLevels = wsLevels
             reducedMotion = isReducedMotion
-            conditions = BattleConditionEffects.fromTier(tier)
-            biomeTheme = BiomeTheme.forBiome(Biome.forTier(tier))
+            battleConditions = BattleConditionEffects.fromTier(currentTier)
+            biomeTheme = BiomeTheme.forBiome(Biome.forTier(currentTier))
             backgroundRenderer = BackgroundRenderer(width, height, biomeTheme)
 
             // Initialize effect engine
@@ -353,19 +264,19 @@ class GameEngine {
             waveSpawner = WaveSpawner(
                 onSpawnEnemy = { pendingAdd.add(it) },
                 zigguratX = zig.originX, zigguratY = zig.originY,
-                onEnemyDeath = ::handleEnemyDeath,
+                onEnemyDeath = combatResolver::handleEnemyDeath,
                 // R3-02: forward the attacker reference so applyThorn can reflect damage back
                 // to the melee enemy. Pre-R3-02 this was `{ dmg -> ... null }` and THORN_DAMAGE
                 // never fired on melee hits despite being plumbed through ResolvedStats.
-                onMeleeHit = { atk, dmg -> applyDamageToZiggurat(dmg, atk) },
+                onMeleeHit = { atk, dmg -> combatResolver.applyDamageToZiggurat(dmg, atk) },
                 onEnemyFireProjectile = { shooter, sx, sy, tx, ty, dmg ->
                     pendingAdd.add(EnemyProjectileEntity(sx, sy, tx, ty, damage = dmg, shooter = shooter))
                 },
-                onWaveComplete = ::handleWaveComplete,
-                conditions = conditions,
+                onWaveComplete = combatResolver::handleWaveComplete,
+                conditions = battleConditions,
                 enemyTint = biomeTheme.enemyTint,
                 startWave = safeStartWave,
-                tierMultiplier = TierConfig.forTier(tier).cashMultiplier,
+                tierMultiplier = TierConfig.forTier(currentTier).cashMultiplier,
             )
 
             // Initial wave announcement. #16: seed lastWave to the opening wave so the first
@@ -382,20 +293,14 @@ class GameEngine {
     /**
      * In-round-purchase stats channel (called by `BattleViewModel.purchaseInRoundUpgrade`).
      *
-     * #119: when GOLDEN_ZIGGURAT is active, treat [newStats] as the new BASE: re-capture it
-     * into [preGoldenStats] (so expiry restores the upgraded base, not the stale activation
-     * snapshot) and re-apply the active [goldenDamageMult] on top, so the player keeps the
-     * GOLDEN damage buff over their just-purchased upgrade until GOLDEN expires. When GOLDEN is
-     * inactive this is the plain pre-#119 behaviour. [setStats] (init-time push) deliberately
-     * does NOT re-layer — it runs before GOLDEN can be active, so the multiplier is 1.0× there.
+     * #119: when GOLDEN_ZIGGURAT is active, the [UWController] relayer treats [newStats] as the
+     * new BASE — re-capturing it and re-applying the active GOLDEN damage multiplier on top so the
+     * player keeps the GOLDEN damage buff over their just-purchased upgrade until GOLDEN expires.
+     * When GOLDEN is inactive the relayer returns [newStats] unchanged. [setStats] (init-time push)
+     * deliberately does NOT re-layer — it runs before GOLDEN can be active, so the multiplier is 1.0× there.
      */
     fun updateZigguratStats(newStats: ResolvedStats) {
-        if (goldenZigActive) {
-            preGoldenStats = newStats
-            applyStats(newStats.copy(damage = newStats.damage * goldenDamageMult))
-        } else {
-            applyStats(newStats)
-        }
+        applyStats(uwController.relayerBaseStats(newStats))
     }
 
     /**
@@ -415,7 +320,7 @@ class GameEngine {
      * - Rebalances `zig.currentHp` proportionally if `maxHealth` changed (preserves HP %).
      * - Re-spawns orbs if `orbCount` changed (entity-level reconciliation).
      */
-    private fun applyStats(newStats: ResolvedStats) {
+    override fun applyStats(newStats: ResolvedStats) {
         val oldStats = stats
         stats = newStats
         val zig = ziggurat ?: return
@@ -444,19 +349,19 @@ class GameEngine {
         if (roundOver) return
         val zig = ziggurat ?: return
         // #118: the entire tick reads and structurally mutates `entities` (addAll/removeAll
-        // here, plus iteration in updateUWs→getAliveEnemies, the projectile-trail loop,
+        // here, plus iteration in uwController.update→getAliveEnemies, the projectile-trail loop,
         // CollisionSystem, and the simulation entity tick). Hold [entitiesLock] for the whole
         // tick so a main-thread [applyStats] orb-reconcile or [init] rebuild can never mutate
         // the list mid-iteration. The lock is reentrant, so the loop-thread GOLDEN path
-        // (updateUWs→activateUW→applyStats) re-acquiring it is safe.
+        // (uwController.update→host.applyStats) re-acquiring it is safe.
         synchronized(entitiesLock) {
             simulation.tickElapsed(deltaTime)
             backgroundRenderer?.update(deltaTime)
             effectEngine?.update(deltaTime)
 
-            updateUWs(deltaTime)
-            tickRecoveryPackages(deltaTime)
-            tickRapidFire(deltaTime)
+            uwController.update(deltaTime)
+            buffTickers.tickRecovery(deltaTime)
+            buffTickers.tickRapidFire(deltaTime)
 
             // Check for new wave to trigger announcement
             val currentWave = waveSpawner?.currentWave ?: 1
@@ -472,7 +377,7 @@ class GameEngine {
             // now lives in the pure-domain [Simulation]; the engine just supplies the active
             // slow factor (1f when inactive). Projectiles, orbs, and the ziggurat tick at full
             // `deltaTime` because they report `isChronoSlowable = false`.
-            simulation.tickEntities(entities, deltaTime, if (chronoActive) chronoSlowFactor else 1f)
+            simulation.tickEntities(entities, deltaTime, if (uwController.chronoActive) uwController.chronoSlowFactor else 1f)
 
             // Spawn projectile trails
             if (!reducedMotion) {
@@ -510,9 +415,9 @@ class GameEngine {
                 simulation,
                 projScratch, enemyScratch, enemyProjScratch,
                 zig.x, zig.y, zig.width,
-                onProjectileHitEnemy = ::onProjectileHitEnemy,
+                onProjectileHitEnemy = combatResolver::onProjectileHitEnemy,
                 onEnemyProjectileHitZiggurat = { proj ->
-                    applyDamageToZiggurat(proj.damage, proj.shooter)
+                    combatResolver.applyDamageToZiggurat(proj.damage, proj.shooter)
                     proj.isAlive = false
                 },
             )
@@ -525,64 +430,26 @@ class GameEngine {
     }
 
     fun render(canvas: Canvas) {
-        backgroundRenderer?.render(canvas) ?: canvas.drawColor(0xFF6B3A2A.toInt())
-
-        val fx = effectEngine
-        // Screen shake
-        if (fx != null && !reducedMotion) fx.screenShake.apply(canvas)
-
-        // #118: snapshot `entities` under [entitiesLock] then draw outside the lock, so the
-        // render iteration can't collide with a concurrent structural mutation (a main-thread
-        // ORBS reconcile / re-init) and we don't hold the monitor across the Canvas draw.
+        // #118: snapshot `entities` under [entitiesLock] then draw outside the lock.
         val renderSnapshot = synchronized(entitiesLock) { entities.toList() }
-        renderSnapshot.forEach { it.render(canvas) }
-
-        // Render effects (particles, floating text, UW visuals, auras, announcements)
-        fx?.render(canvas)
-
-        // Chrono field overlay
-        if (chronoActive) {
-            canvas.drawRect(0f, 0f, screenWidth, screenHeight, chronoOverlayPaint)
-        }
-
-        if (fx != null && !reducedMotion) fx.screenShake.restore(canvas)
-
-        // V1X-15b: ENEMY_INTEL L5+ per-enemy HP-% label above each enemy's HP bar. Drawn here
-        // (not in EnemyEntity.render) so the level gate stays out of the entity constructor.
-        if (enemyIntelLevel >= 5) {
-            for (e in renderSnapshot) {
-                if (e is EnemyEntity && e.isAlive) {
-                    val pct = ((e.currentHp / e.maxHp).coerceIn(0.0, 1.0) * 100).toInt()
-                    canvas.drawText("$pct%", e.x, e.y - e.height / 2f - 14f, hpPercentPaint)
-                }
-            }
-        }
-
-        ziggurat?.let { healthBarRenderer.render(canvas, it.currentHp, it.maxHp, screenWidth) }
-
-        // V1X-15b: ENEMY_INTEL L10 boss-arrival countdown, right-aligned to clear the
-        // centre-aligned cooldown banner.
-        bossCountdownLabel()?.let { canvas.drawText(it, screenWidth - 16f, 90f, bossCountdownPaint) }
-    }
-
-    // A31 (audit): cached CHRONO_FIELD overlay paint — was allocated per frame in render(). Colour
-    // 0x222196F3 preserved exactly (semi-transparent blue). The literal intentionally keeps the
-    // existing value; the alpha nuance the audit flagged is left unchanged (no observable colour
-    // change in this PR).
-    private val chronoOverlayPaint = android.graphics.Paint().apply {
-        color = 0x222196F3; style = android.graphics.Paint.Style.FILL
+        battleRenderer.render(
+            canvas = canvas,
+            backgroundRenderer = backgroundRenderer,
+            effectEngine = effectEngine,
+            reducedMotion = reducedMotion,
+            renderSnapshot = renderSnapshot,
+            chronoActive = uwController.chronoActive,
+            screenWidth = screenWidth,
+            screenHeight = screenHeight,
+            enemyIntelLevel = enemyIntelLevel,
+            ziggurat = ziggurat,
+            bossCountdownLabel = bossCountdownLabel(),
+        )
     }
 
     /** A31 test seam: toggle the CHRONO_FIELD overlay so the render-path Paint reuse is JVM-testable. */
     @androidx.annotation.VisibleForTesting
-    internal fun setChronoActiveForTest(active: Boolean) { chronoActive = active }
-
-    private val hpPercentPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFFFF8E7.toInt(); textSize = 22f; textAlign = android.graphics.Paint.Align.CENTER
-    }
-    private val bossCountdownPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFF44336.toInt(); textSize = 26f; textAlign = android.graphics.Paint.Align.RIGHT; isFakeBoldText = true
-    }
+    internal fun setChronoActiveForTest(active: Boolean) { uwController.setChronoActiveForTest(active) }
 
     fun addEntity(entity: Entity) { pendingAdd.add(entity) }
 
@@ -599,211 +466,27 @@ class GameEngine {
     }
 
     /**
-     * R4-06: populates [uwStates] from the player's equipped UWs, mapping each
-     * [OwnedWeapon]'s 3 path levels onto a [UWState] and zeroing the active timers.
-     * Called by [BattleViewModel] after loading the equipped-UW set from the repository.
+     * R4-06: populates the UW lifecycle states from the player's equipped UWs (delegated to
+     * [UWController]).
+     *
+     * #191 CONC-2: initUWs runs on the main thread (playAgain) while the loop thread iterates
+     * uwStates in [UWController.update] under entitiesLock. Take the same monitor for mutual
+     * exclusion so the main-thread clear/add can never race the loop-thread iteration.
      */
     fun initUWs(equipped: List<OwnedWeapon>) {
-        // #191 CONC-2: initUWs runs on the main thread (playAgain) while the loop thread iterates
-        // uwStates in updateUWs under entitiesLock. Take the same monitor for mutual exclusion so
-        // the main-thread clear/add can never race the loop-thread iteration. (Reentrant: harmless
-        // if any future loop-thread path calls this.)
-        synchronized(entitiesLock) {
-            uwStates.clear()
-            equipped.forEach {
-                uwStates.add(
-                    UWState(
-                        type = it.type,
-                        damageLevel = it.damageLevel,
-                        secondaryLevel = it.secondaryLevel,
-                        cooldownLevel = it.cooldownLevel,
-                    ),
-                )
-            }
-        }
+        synchronized(entitiesLock) { uwController.initUWs(equipped) }
     }
 
     /**
-     * #191 CONC-2: a thread-safe copy of [uwStates] for the 200ms polling read in BattleViewModel.
-     * Snapshots the LIST STRUCTURE under [entitiesLock] (the only thing the replay race corrupts);
-     * the scalar fields it reads for display are torn-read-tolerant (one stale cooldown frame is
-     * cosmetic, never a crash).
+     * #191 CONC-2: a thread-safe copy of the UW states for the 200ms polling read in BattleViewModel.
+     * Snapshots the LIST STRUCTURE under [entitiesLock] (the only thing the replay race corrupts).
      */
-    fun uwSnapshot(): List<UWState> = synchronized(entitiesLock) { uwStates.toList() }
+    fun uwSnapshot(): List<UWController.UWState> = synchronized(entitiesLock) { uwController.uwSnapshot() }
 
-    /**
-     * R4-06: fires the UW at [index] if it's off cooldown and not already mid-effect.
-     * Pre-R4-06 this was the entry point for the player-tap activation path; post-R4-06
-     * the UW is auto-fired from [updateUWs] when its cooldown reaches 0 AND enemies are
-     * present (`UltimateWeaponBar` is now a passive cooldown indicator). The method
-     * stays public for direct invocation by tests.
-     *
-     * Per-path reads (replaces the pre-R4-06 single-`level` reads):
-     * - DEATH_WAVE: damage from DAMAGE path; SECONDARY (radius fraction) feeds visual but
-     *   damage applies to all aliveEnemies for v1 of R4-06 (radius UI deferred).
-     * - CHAIN_LIGHTNING: damage from DAMAGE path; chain length from SECONDARY path.
-     * - BLACK_HOLE: ongoing-effect handled in [updateUWs]; activation just primes the
-     *   timer + visual.
-     * - CHRONO_FIELD: slow factor from DAMAGE path written to [chronoSlowFactor];
-     *   duration from SECONDARY path overrides [UltimateWeaponType.effectDurationSeconds].
-     * - POISON_SWAMP: ongoing-effect handled in [updateUWs].
-     * - GOLDEN_ZIGGURAT: cash multiplier from DAMAGE path → [fortuneMultiplier]
-     *   (`coerceAtLeast` preserves any pre-existing higher buff, defensive for future
-     *   multi-source stacking); damage multiplier from SECONDARY path → stats copy.
-     */
-    fun activateUW(index: Int) {
-        val uw = uwStates.getOrNull(index) ?: return
-        if (uw.cooldownRemaining > 0f) return
-        if (uw.effectTimeRemaining > 0f) return
-        // R4-06: cooldown comes from per-UW-state COOLDOWN path. RO-11 #A.2 outer multiplier
-        // (UW_COOLDOWN lab research) still stacks via [uwCooldownMultiplier].
-        uw.cooldownRemaining = uw.type.cooldownAtLevel(uw.cooldownLevel) * uwCooldownMultiplier
-        val zig = ziggurat ?: return
+    /** R4-06: fires the UW at [index] (delegated to [UWController]). Public for direct invocation by tests. */
+    fun activateUW(index: Int) = uwController.activateUW(index)
 
-        // CHRONO_FIELD overrides the flat [effectDurationSeconds] with the SECONDARY-path
-        // value; all other UWs use the flat constant.
-        val duration = if (uw.type == UltimateWeaponType.CHRONO_FIELD) {
-            uw.type.secondaryAtLevel(uw.secondaryLevel).toFloat()
-        } else {
-            uw.type.effectDurationSeconds
-        }
-        if (duration > 0f) uw.effectTimeRemaining = duration
-
-        soundManager?.play(SoundEffect.UW_ACTIVATE)
-
-        // Spawn particle-based UW visual effect
-        val fx = effectEngine
-        if (fx != null) {
-            val effectDuration = when {
-                uw.type == UltimateWeaponType.DEATH_WAVE -> 1.2f
-                duration > 0f -> duration
-                else -> 0.5f
-            }
-            val cx: Float; val cy: Float
-            when (uw.type) {
-                UltimateWeaponType.BLACK_HOLE -> { cx = screenWidth / 2f; cy = screenHeight * 0.35f }
-                UltimateWeaponType.POISON_SWAMP -> { cx = screenWidth / 2f; cy = screenHeight * 0.6f }
-                else -> { cx = zig.x; cy = zig.originY }
-            }
-            fx.addEffect(UWVisualEffect(uw.type, fx.pool, cx, cy, screenWidth, screenHeight, effectDuration, reducedMotion))
-        }
-
-        // Screen shake for Death Wave
-        if (uw.type == UltimateWeaponType.DEATH_WAVE && !reducedMotion) {
-            fx?.screenShake?.trigger(12f, 0.4f)
-        }
-
-        when (uw.type) {
-            UltimateWeaponType.DEATH_WAVE -> {
-                val dmg = uw.type.damageAtLevel(uw.damageLevel)
-                getAliveEnemies().forEach { it.takeDamage(dmg) }
-            }
-            UltimateWeaponType.CHAIN_LIGHTNING -> {
-                val dmg = uw.type.damageAtLevel(uw.damageLevel)
-                val chainLen = uw.type.secondaryAtLevel(uw.secondaryLevel).toInt().coerceAtLeast(1)
-                val targets = getAliveEnemies().sortedBy { hypot(it.x - zig.x, it.y - zig.y) }.take(chainLen)
-                targets.forEach { it.takeDamage(dmg) }
-            }
-            UltimateWeaponType.BLACK_HOLE -> {} // Ongoing effect in updateUWs
-            UltimateWeaponType.CHRONO_FIELD -> {
-                chronoActive = true
-                chronoSlowFactor = uw.type.damageAtLevel(uw.damageLevel).toFloat()
-            }
-            UltimateWeaponType.POISON_SWAMP -> {} // Ongoing effect in updateUWs
-            UltimateWeaponType.GOLDEN_ZIGGURAT -> {
-                goldenZigActive = true; preGoldenStats = stats
-                // R4-06: cash multiplier comes from DAMAGE path. coerceAtLeast preserves any
-                // pre-existing higher fortuneMultiplier value (defensive for future
-                // multi-source stacking; R4-01 already removed Step Overdrive as the only
-                // other writer, so in practice this only matters across overlapping GOLDEN
-                // activations — prevented by cooldown gating but harmless).
-                val cashMult = uw.type.damageAtLevel(uw.damageLevel)
-                fortuneMultiplier = fortuneMultiplier.coerceAtLeast(cashMult)
-                // Damage multiplier comes from SECONDARY path (replaces hard-coded 1.5×).
-                // #119: persist the multiplier so an in-round purchase mid-GOLDEN can re-layer
-                // it over the new base (see [updateZigguratStats]).
-                val dmgMult = uw.type.secondaryAtLevel(uw.secondaryLevel)
-                goldenDamageMult = dmgMult
-                applyStats(stats.copy(damage = stats.damage * dmgMult))
-            }
-        }
-    }
-
-    private fun updateUWs(deltaTime: Float) {
-        val zig = ziggurat ?: return
-        for (uw in uwStates) {
-            // V1X-09 Phase 3 (ADR-0012): the pure cooldown + effect-duration timer arithmetic
-            // lives in the domain [Simulation]. The engine applies the result and runs the
-            // presentation-coupled side-effects (expiry stat/flag writes, ongoing enemy
-            // damage). Behaviour is identical to the pre-extraction inline block — the ongoing
-            // `when` still runs on the tick the effect expires because it is gated on
-            // [Simulation.UWTimerAdvance.effectWasActive] (the old `effectTimeRemaining > 0f` guard).
-            val timers = simulation.advanceUWTimers(uw.cooldownRemaining, uw.effectTimeRemaining, deltaTime)
-            uw.cooldownRemaining = timers.cooldownRemaining
-            uw.effectTimeRemaining = timers.effectTimeRemaining
-            if (timers.effectWasActive) {
-                if (timers.justExpired) {
-                    when (uw.type) {
-                        UltimateWeaponType.CHRONO_FIELD -> {
-                            chronoActive = false
-                            chronoSlowFactor = 1f
-                        }
-                        UltimateWeaponType.GOLDEN_ZIGGURAT -> {
-                            // #119: preGoldenStats now reflects any in-round upgrade bought
-                            // during the GOLDEN window (re-captured by updateZigguratStats), so
-                            // restoring it preserves the purchase instead of discarding it.
-                            goldenZigActive = false; preGoldenStats?.let { applyStats(it) }; preGoldenStats = null
-                            goldenDamageMult = 1.0
-                            // R4-01 / R4-06: GOLDEN is the sole writer of fortuneMultiplier
-                            // post-R4-01 (Step Overdrive removed). Per-path damage value
-                            // determines activation strength but expiry always resets to 1.0×
-                            // because no other writer exists.
-                            fortuneMultiplier = 1.0
-                        }
-                        else -> {}
-                    }
-                }
-                // Ongoing effects (per-path reads)
-                when (uw.type) {
-                    UltimateWeaponType.BLACK_HOLE -> {
-                        val cx = screenWidth / 2f; val cy = screenHeight * 0.35f
-                        // R4-06: damage DPS from DAMAGE path; pull strength from SECONDARY path.
-                        val dps = uw.type.damageAtLevel(uw.damageLevel)
-                        val pull = uw.type.secondaryAtLevel(uw.secondaryLevel).toFloat()
-                        getAliveEnemies().forEach { e ->
-                            val dx = cx - e.x; val dy = cy - e.y; val d = hypot(dx, dy).coerceAtLeast(1f)
-                            e.x += dx / d * pull * deltaTime; e.y += dy / d * pull * deltaTime
-                            e.takeDamage(dps * deltaTime)
-                        }
-                    }
-                    UltimateWeaponType.POISON_SWAMP -> {
-                        // R4-06: DoT % MaxHP/sec from DAMAGE path. Area path (SECONDARY) is
-                        // captured for visual / future filtering but every alive enemy is
-                        // hit in v1 of R4-06.
-                        val dotFrac = uw.type.damageAtLevel(uw.damageLevel)
-                        getAliveEnemies().forEach { e -> e.takeDamage(e.maxHp * dotFrac * deltaTime) }
-                    }
-                    else -> {}
-                }
-            }
-        }
-
-        // R4-06: auto-trigger. Fire any UW whose cooldown has reached 0 AND that's not
-        // currently mid-effect, but only when at least one enemy is alive on screen —
-        // empty-screen fires would burn cooldowns during wave-cooldown breaks for no
-        // benefit. Pre-R4-06 activation came from a player tap on `UltimateWeaponBar`;
-        // post-R4-06 the bar is a passive indicator and this loop is the sole activator.
-        if (uwStates.isNotEmpty() && getAliveEnemies().isNotEmpty()) {
-            for (i in uwStates.indices) {
-                val uw = uwStates[i]
-                if (simulation.isUWReadyToFire(uw.cooldownRemaining, uw.effectTimeRemaining)) {
-                    activateUW(i)
-                }
-            }
-        }
-    }
-
-    fun resetUWCooldowns() { uwStates.forEach { it.cooldownRemaining = 0f } }
+    fun resetUWCooldowns() = uwController.resetUWCooldowns()
 
     // --- Wave announcements ---
 
@@ -871,7 +554,7 @@ class GameEngine {
                 zigX = zig.originX, zigY = zig.originY,
                 angle = angle, damage = damage,
                 getEnemies = ::getAliveEnemies,
-                onHitEnemy = ::onOrbHitEnemy,
+                onHitEnemy = combatResolver::onOrbHit,
             ))
         }
     }
@@ -898,24 +581,7 @@ class GameEngine {
         return result
     }
 
-    private fun onOrbHitEnemy(enemy: EnemyEntity, damage: Double) {
-        // #17: gate knockback + lifesteal on damage actually dealt (0.0 when armor-absorbed).
-        val dealt = enemy.takeDamage(damage)
-        val zig = ziggurat ?: return
-        if (dealt > 0.0 && stats.knockbackForce > 0f) {
-            val dx = enemy.x - zig.originX; val dy = enemy.y - zig.originY
-            val d = hypot(dx, dy).coerceAtLeast(1f)
-            val kb = stats.knockbackForce * 0.5f * conditions.knockbackMultiplier
-            enemy.applyKnockback(dx / d * kb, dy / d * kb)
-        }
-        if (dealt > 0.0 && stats.lifestealPercent > 0) {
-            applyLifesteal(dealt * stats.lifestealPercent)
-        }
-    }
-
     // --- Cash economy ---
-
-    private fun wsLevel(type: UpgradeType): Int = effectiveLevels[type] ?: 0
 
     /**
      * Replaces the engine's effective cash-utility level map. Called by
@@ -932,225 +598,7 @@ class GameEngine {
         effectiveLevels = combined
     }
 
-    /**
-     * RECOVERY_PACKAGES periodic-heal pulse (RO-08). Runs every game-loop tick during the
-     * SPAWNING phase only; resets the accumulated timer between waves so the first pulse of
-     * a new wave waits a full [RECOVERY_INTERVAL_SECONDS]. Pulses are no-ops at full HP, but
-     * the timer still advances so HP that drops mid-wave doesn't immediately trigger a fresh
-     * pulse from a stale timer.
-     *
-     * Heal amount: `min(level × 1 %, 50 %)` of `maxHp` per pulse, capped to prevent godmode
-     * at high levels. Floors at 1 HP healed (so any non-zero level produces visible feedback).
-     * Spawns a green floating-text indicator above the ziggurat for visual feedback.
-     */
-    private fun tickRecoveryPackages(deltaTime: Float) {
-        val zig = ziggurat ?: return
-        val spawner = waveSpawner ?: return
-        if (spawner.phase != WavePhase.SPAWNING) {
-            recoveryTimer = 0f
-            return
-        }
-        val level = wsLevel(UpgradeType.RECOVERY_PACKAGES)
-        if (level <= 0) return
-        recoveryTimer += deltaTime
-        if (recoveryTimer < SimulationMath.RECOVERY_INTERVAL_SECONDS) return
-        recoveryTimer = 0f
-        if (zig.currentHp >= zig.maxHp) return
-        val healAmount = SimulationMath.recoveryPulseAmount(level, zig.maxHp)
-        zig.currentHp = SimulationMath.clampHp(zig.currentHp + healAmount, zig.maxHp)
-        effectEngine?.addEffect(
-            FloatingText(
-                x = zig.x,
-                y = zig.originY - 30f,
-                text = strings?.healHp(healAmount.toInt()) ?: "+${healAmount.toInt()} HP",
-                color = FloatingText.STEP_COLOR,
-            ),
-        )
-    }
-
-    /**
-     * Rapid Fire periodic-burst tick (R4-03). Mirrors [tickRecoveryPackages]: only fires
-     * during the SPAWNING wave phase; resets state on cooldown phase so a partial timer
-     * doesn't leak across the wave boundary; level 0 (no purchase) is a no-op. Reads the
-     * player's RAPID_FIRE level via [wsLevel] (which the engine seeds in [init] and
-     * keeps in sync via [updateEffectiveLevels] for in-round purchases of cash utilities;
-     * RAPID_FIRE is purchased only via the Workshop / DAO, so the level here is whatever
-     * was loaded at battle start).
-     *
-     * State machine each tick:
-     *  1. If a burst is active, decrement [rapidFireActiveRemaining] by `deltaTime`. When
-     *     it reaches zero, reset the ziggurat's [com.whitefang.stepsofbabylon.presentation.battle.entities.ZigguratEntity.rapidFireMultiplier]
-     *     to `1f` so attack-speed reads return to baseline.
-     *  2. Increment [rapidFireTimer] by `deltaTime`. When it crosses the level's interval,
-     *     reset the timer, kick off a new burst (set the ziggurat multiplier and arm the
-     *     active countdown), and emit a yellow-gold `"RAPID FIRE!"` floating text above
-     *     the ziggurat for visual feedback.
-     *
-     * Order matters: the active-decrement step runs *before* the timer-fire step so that
-     * at L10 (interval == duration) the multiplier transitions from one burst to the next
-     * within a single tick, with no observable 1-frame gap of `1f`.
-     */
-    private fun tickRapidFire(deltaTime: Float) {
-        val zig = ziggurat ?: return
-        val spawner = waveSpawner ?: return
-        if (spawner.phase != WavePhase.SPAWNING) {
-            // Wave-cooldown reset matches RECOVERY_PACKAGES semantics: a survived wave
-            // shouldn't grant a head-start on the next wave's first burst.
-            rapidFireTimer = 0f
-            rapidFireActiveRemaining = 0f
-            zig.rapidFireMultiplier = 1f
-            return
-        }
-        val level = wsLevel(UpgradeType.RAPID_FIRE)
-        if (level <= 0) return
-
-        val interval = RapidFireSchedule.interval(level)
-        val duration = RapidFireSchedule.duration(level)
-        val multiplier = RapidFireSchedule.multiplier(level)
-
-        // 1. Tick down the active burst countdown.
-        if (rapidFireActiveRemaining > 0f) {
-            rapidFireActiveRemaining -= deltaTime
-            if (rapidFireActiveRemaining <= 0f) {
-                rapidFireActiveRemaining = 0f
-                zig.rapidFireMultiplier = 1f
-            }
-        }
-
-        // 2. Tick up the inter-burst timer; fire when it crosses interval.
-        rapidFireTimer += deltaTime
-        if (rapidFireTimer >= interval) {
-            rapidFireTimer = 0f
-            rapidFireActiveRemaining = duration
-            zig.rapidFireMultiplier = multiplier
-            effectEngine?.addEffect(
-                FloatingText(
-                    x = zig.x,
-                    y = zig.originY - 30f,
-                    text = strings?.rapidFireBurst() ?: "RAPID FIRE!",
-                    color = FloatingText.DEFAULT_COLOR,
-                ),
-            )
-        }
-    }
-
-    private fun handleWaveComplete(wave: Int) {
-        // RO-11 #A.2: CASH_RESEARCH multiplies the wave-end cash payout.
-        val waveCash = ((BASE_CASH_PER_WAVE + wsLevel(UpgradeType.CASH_PER_WAVE) * FLAT_BONUS_PER_WAVE_LEVEL) *
-            fortuneMultiplier * cashResearchMultiplier).toLong()
-        simulation.creditCash(waveCash)
-        simulation.applyInterest(wsLevel(UpgradeType.INTEREST))
-    }
-
-    // --- Combat mechanics ---
-
-    private fun onProjectileHitEnemy(proj: ProjectileEntity, enemy: EnemyEntity) {
-        val zig = ziggurat ?: return
-        val dist = hypot(zig.originX - enemy.x, zig.originY - enemy.y)
-        val result = calculateDamage(stats, dist)
-
-        // #17: gate knockback + lifesteal on damage actually dealt — takeDamage returns 0.0
-        // when the hit is fully absorbed by an armor charge, so an armored enemy no longer
-        // grants free healing/CC on a hit that did no HP damage.
-        val dealt = enemy.takeDamage(result.amount)
-        proj.hitEnemies.add(enemy)
-        proj.isAlive = false
-
-        soundManager?.play(SoundEffect.HIT)
-
-        if (dealt > 0.0 && stats.knockbackForce > 0f) {
-            val dx = enemy.x - zig.originX; val dy = enemy.y - zig.originY
-            val d = hypot(dx, dy).coerceAtLeast(1f)
-            val kb = stats.knockbackForce * conditions.knockbackMultiplier
-            enemy.applyKnockback(dx / d * kb, dy / d * kb)
-        }
-        if (dealt > 0.0 && stats.lifestealPercent > 0) {
-            applyLifesteal(dealt * stats.lifestealPercent)
-        }
-
-        // Bounce shot
-        if (proj.bouncesRemaining > 0) {
-            val nextTarget = entities.asSequence()
-                .filterIsInstance<EnemyEntity>()
-                .filter { it.isAlive && it !in proj.hitEnemies }
-                .minByOrNull { hypot(it.x - enemy.x, it.y - enemy.y) }
-            if (nextTarget != null) {
-                pendingAdd.add(ProjectileEntity(
-                    startX = enemy.x, startY = enemy.y,
-                    targetX = nextTarget.x, targetY = nextTarget.y,
-                    speed = ZigguratBaseStats.PROJECTILE_SPEED,
-                    bouncesRemaining = proj.bouncesRemaining - 1,
-                    hitEnemies = proj.hitEnemies,
-                ))
-            }
-        }
-    }
-
-    private fun applyDamageToZiggurat(rawDamage: Double, attacker: EnemyEntity?) {
-        val zig = ziggurat ?: return
-        val mitigated = calculateDefense(rawDamage, stats)
-        if (zig.currentHp - mitigated <= 0.0 && stats.deathDefyChance > 0) {
-            if (Random.nextDouble() < stats.deathDefyChance) {
-                zig.currentHp = 1.0; applyThorn(rawDamage, attacker); return
-            }
-        }
-        if (zig.currentHp - mitigated <= 0.0 && !secondWindUsed && secondWindHpPercent > 0.0) {
-            secondWindUsed = true
-            zig.currentHp = zig.maxHp * secondWindHpPercent
-            applyThorn(rawDamage, attacker); return
-        }
-        val prevHpRatio = zig.currentHp / zig.maxHp
-        zig.currentHp = (zig.currentHp - mitigated).coerceAtLeast(0.0)
-        val newHpRatio = zig.currentHp / zig.maxHp
-        // Screen shake when HP drops below 25%
-        if (prevHpRatio > 0.25 && newHpRatio <= 0.25 && !reducedMotion) {
-            effectEngine?.screenShake?.trigger(5f, 0.2f)
-        }
-        applyThorn(rawDamage, attacker)
-    }
-
-    private fun applyThorn(rawDamage: Double, attacker: EnemyEntity?) {
-        if (attacker == null || !attacker.isAlive) return
-        val reflection = SimulationMath.thornReflectionDamage(
-            rawDamage = rawDamage,
-            thornPercent = stats.thornPercent,
-            conditionMultiplier = conditions.thornMultiplier.toDouble(),
-        )
-        if (reflection > 0) attacker.takeDamage(reflection)
-    }
-
-    /**
-     * Applies a lifesteal heal of [healAmount] HP to the ziggurat (R3-02). The HP delta is
-     * added directly to `zig.currentHp` (a `Double`, so sub-1-HP heals are conserved). The
-     * same fractional amount is accumulated in [lifestealAccumulator]; each time the
-     * accumulator crosses an integer HP threshold a `+X HP` `FloatingText` indicator is
-     * spawned above the ziggurat so the player gets visible feedback on heals that would
-     * otherwise be sub-pixel HP-bar movement.
-     *
-     * The math is identical to the pre-R3-02 in-place heal at `onProjectileHitEnemy` and
-     * `onOrbHitEnemy` — only the visible feedback is new. At cap (15 % lifesteal × base
-     * damage 10 = 1.5 HP / hit) every shot emits a `+1 HP` indicator; at Lv 1 (0.2 % × 10
-     * = 0.02 HP / hit) it takes ~50 hits to accumulate one visible burst, which matches
-     * the expectation that low-level lifesteal is weak but still observable.
-     */
-    private fun applyLifesteal(healAmount: Double) {
-        val zig = ziggurat ?: return
-        zig.currentHp = SimulationMath.clampHp(zig.currentHp + healAmount, zig.maxHp)
-        val tick = SimulationMath.tickLifestealAccumulator(lifestealAccumulator, healAmount)
-        lifestealAccumulator = tick.newAccumulator
-        if (tick.visibleHp > 0) {
-            effectEngine?.addEffect(
-                FloatingText(
-                    x = zig.x,
-                    y = zig.originY - 30f,
-                    text = strings?.healHp(tick.visibleHp) ?: "+${tick.visibleHp} HP",
-                    color = FloatingText.STEP_COLOR,
-                ),
-            )
-        }
-    }
-
-    // --- Targeting & death ---
+    // --- Targeting ---
 
     private fun findNearestEnemies(n: Int): List<EnemyEntity> {
         val zig = ziggurat ?: return emptyList()
@@ -1162,72 +610,9 @@ class GameEngine {
             .toList()
     }
 
-    private fun handleEnemyDeath(enemy: EnemyEntity) {
-        simulation.recordEnemyKilled()
-        val baseCash = EnemyScaler.cashReward(enemy.enemyType)
-        val tierMult = TierConfig.forTier(tier).cashMultiplier
-        val cashBonus = 1.0 + wsLevel(UpgradeType.CASH_BONUS) * 0.03
-        // RO-11 #A.2: CASH_RESEARCH multiplies the per-kill cash. Stacks multiplicatively
-        // with workshop CASH_BONUS, tier cash multiplier, GOLDEN_ZIGGURAT UW, and the
-        // CASH_BONUS_GAIN card. Default 1.0× means "no CASH_RESEARCH research".
-        val killCash = (baseCash * tierMult * cashBonus * fortuneMultiplier *
-            (1.0 + cashBonusPercent / 100.0) * cashResearchMultiplier).toLong()
-        simulation.creditCash(killCash)
-        // #146: the on-screen enemy count is now derived live by [aliveEnemyCount] from the
-        // entity list, so there is no hand-kept WaveSpawner tally to decrement here (the old
-        // tally drifted negative — SCATTER children bypassed its only increment, and onDeath
-        // re-fires double-decremented). The enemy is marked `!isAlive` by `takeDamage` before
-        // this runs and is swept from `entities` at end of frame.
+    // --- @VisibleForTesting collaborator accessors (#230/#231) ---
 
-        soundManager?.play(SoundEffect.ENEMY_DEATH)
-
-        // Death effect particles + floating cash text
-        val fx = effectEngine
-        if (fx != null) {
-            if (!reducedMotion) DeathEffect.spawn(fx.pool, enemy.x, enemy.y, enemy.enemyType)
-            fx.addEffect(FloatingText(enemy.x, enemy.y, strings?.cashReward(killCash) ?: "+$killCash"))
-            // Boss death screen shake
-            if (enemy.enemyType == EnemyType.BOSS && !reducedMotion) {
-                fx.screenShake.trigger(8f, 0.3f)
-            }
-        }
-
-        // Boss-kill Power Stone reward — tier-scaled, capped at 100/day. Emitted as a
-        // SimulationEvent; BattleViewModel's collector awards the PS via AwardBossPowerStones.
-        if (enemy.enemyType == EnemyType.BOSS) {
-            simulation.emit(SimulationEvent.BossKilled(tier, enemy.x, enemy.y + 24f))
-        }
-
-        // Battle Step reward — flat per enemy type, independent of multipliers.
-        // Actual wallet credit, cap enforcement, and floating-text spawn all
-        // live in the collector (BattleViewModel) so a capped reward can be
-        // silently dropped without a misleading "+N Step" indicator.
-        val stepReward = EnemyScaler.stepReward(enemy.enemyType)
-        if (stepReward > 0L) {
-            simulation.creditSteps(stepReward)
-            simulation.emit(SimulationEvent.StepReward(stepReward, enemy.x, enemy.y + 24f))
-        }
-
-        if (enemy.enemyType == EnemyType.SCATTER) {
-            val zig = ziggurat ?: return
-            val childCount = (2..3).random()
-            repeat(childCount) { i ->
-                val child = EnemyEntity(
-                    enemyType = EnemyType.BASIC,
-                    currentHp = enemy.maxHp * 0.5, maxHp = enemy.maxHp * 0.5,
-                    speed = EnemyScaler.scaleSpeed(EnemyType.SCATTER) * conditions.enemySpeedMultiplier,
-                    damage = enemy.damage * 0.5,
-                    targetX = zig.originX, targetY = zig.originY,
-                    onDeath = ::handleEnemyDeath,
-                    // R3-02: SCATTER child enemies also forward their attacker reference
-                    // so THORN_DAMAGE reflects against them (same fix as the wave-spawner
-                    // path — these melee-hit lambdas previously dropped the attacker).
-                    onMeleeHit = { atk, dmg -> applyDamageToZiggurat(dmg, atk) },
-                ).apply {
-                    x = enemy.x + (i - childCount / 2f) * 15f; y = enemy.y; initDistance()
-                }
-                pendingAdd.add(child)
-            }
-        }
-    }
+    @get:androidx.annotation.VisibleForTesting internal val uwControllerForTest get() = uwController
+    @get:androidx.annotation.VisibleForTesting internal val combatResolverForTest get() = combatResolver
+    @get:androidx.annotation.VisibleForTesting internal val buffTickersForTest get() = buffTickers
 }

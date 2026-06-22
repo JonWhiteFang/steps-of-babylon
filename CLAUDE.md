@@ -168,7 +168,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── onboarding/     # First-launch tutorial carousel + permission primer (OnboardingScreen/ViewModel/Slide)
 │   ├── home/ workshop/ weapons/ labs/ cards/ supplies/ economy/ missions/ settings/ stats/ store/ help/
 │   ├── battle/         # BattleScreen, BattleViewModel, GameSurfaceView, GameLoopThread
-│   │   ├── engine/     #   GameEngine (render/presentation shell), WaveSpawner, EnemyScaler, CollisionSystem, Entity
+│   │   ├── engine/     #   GameEngine (orchestrator+lock-owner+façade) + collaborators: BattleRenderer (Canvas/Paint), UWController (UW lifecycle), BuffTickers (recovery/rapid-fire/lifesteal), CombatResolver (damage/death), BattleHosts (UW/Buff/Combat host interfaces); WaveSpawner, EnemyScaler, CollisionSystem, Entity
 │   │   ├── entities/   #   ZigguratEntity, EnemyEntity, ProjectileEntity, EnemyProjectileEntity, OrbEntity
 │   │   ├── effects/    #   ParticlePool, EffectEngine, ScreenShake, DeathEffect, UWVisualEffect, FloatingText, …
 │   │   ├── biome/      #   BiomeTheme, BackgroundRenderer
@@ -275,8 +275,17 @@ from game logic — the simulation has been extracted to a pure-domain core:
 - **`domain/battle/engine/Simulation`** — pure-Kotlin game-loop core (cash economy, round-progress
   counters, entity tick, collision sweep, UW lifecycle timers, `SimulationEvent` flow). Fully
   JVM-testable, no Android. This is where game-logic changes should land. (V1X-09, ADR-0012.)
-- **`presentation/battle/engine/GameEngine`** — the presentation/render shell that delegates simulation
-  to `Simulation` and keeps render + UW activation side-effects.
+- **`presentation/battle/engine/GameEngine`** — the presentation orchestrator + sole `entitiesLock`
+  owner + public façade. It delegates simulation to `Simulation` and, since #230/#231 (ADR-0012 Phase 4),
+  delegates the remaining presentation mechanics to four collaborators it composes and reaches via narrow
+  host interfaces (`UWHost`/`BuffHost`/`CombatHost` in `BattleHosts.kt`): **`BattleRenderer`** (Canvas
+  draw + all `Paint`), **`UWController`** (UW lifecycle + CHRONO/GOLDEN/fortune state, incl. the #119
+  re-layer), **`BuffTickers`** (recovery/rapid-fire/lifesteal timers), **`CombatResolver`**
+  (damage/defense/thorn/second-wind, targeting, enemy death + reward side-effects). Collaborators hold
+  **no monitor of their own** — they run inside the engine's held `entitiesLock`. Pure cash-reward
+  formulas live in `SimulationMath` (`killCashReward`/`waveCompleteCash`). The entity-coupled remainder
+  (UW effect resolution + HP-mutation) is NOT yet domain-hoisted — tracked as a future ADR-0012 slice
+  (needs `EntityProtocol` surgery).
 - **`GameLoopThread`** runs `update()`/`render()` on a dedicated thread with a fixed timestep. Its
   per-tick `update()`/`render()` is wrapped in a `try/catch` (#190): on a throw it records a crash
   breadcrumb, stops the loop, and fires `onLoopError` → a "Battle error" UI state — **never silent
@@ -320,7 +329,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1196 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1205 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Compose UI tests run on the JVM lane (#253):** `createComposeRule()` under Robolectric
   (`@RunWith(RobolectricTestRunner)` + `@GraphicsMode(NATIVE)`), backed by the `src/test/` fakes — no

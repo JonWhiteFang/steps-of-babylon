@@ -49,7 +49,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── home/           # Home screen, ViewModel, UiState
 │   ├── workshop/       # Workshop screen, ViewModel, UpgradeCard
 │   ├── battle/         # Battle renderer (SurfaceView, game loop, entities)
-│   │   ├── engine/     # GameEngine, Entity, WaveSpawner, EnemyScaler, CollisionSystem
+│   │   ├── engine/     # GameEngine (orchestrator+lock-owner+façade) + collaborators BattleRenderer/UWController/BuffTickers/CombatResolver + BattleHosts (host interfaces); Entity, WaveSpawner, EnemyScaler, CollisionSystem
 │   │   ├── entities/   # ZigguratEntity, ProjectileEntity, EnemyEntity, EnemyProjectileEntity, OrbEntity
 │   │   ├── effects/   # ParticlePool, EffectEngine, ScreenShake, DeathEffect, UWVisualEffect, WaveAnnouncement, FloatingText, ProjectileTrailEffect, ReducedMotionCheck
 │   │   ├── biome/      # BiomeTheme, BackgroundRenderer (gradient sky + ambient particles)
@@ -202,7 +202,12 @@ All in `domain/model/`:
 | `presentation/home/HomeViewModel.kt` | Combines profile + step flows into HomeUiState |
 | `presentation/battle/GameSurfaceView.kt` | SurfaceView managing game loop thread lifecycle |
 | `presentation/battle/GameLoopThread.kt` | Fixed timestep (60 UPS), accumulator, speed multiplier |
-| `presentation/battle/engine/GameEngine.kt` | Central coordinator: entity list, update/render dispatch, wave/collision integration |
+| `presentation/battle/engine/GameEngine.kt` | Orchestrator + sole `entitiesLock` owner + public façade; composes the 4 collaborators via host interfaces (ADR-0012 Phase 4, #230/#231) |
+| `presentation/battle/engine/BattleHosts.kt` | `UWHost`/`BuffHost`/`CombatHost` capability interfaces GameEngine implements (#230/#231) |
+| `presentation/battle/engine/BattleRenderer.kt` | Canvas draw + all `Paint` (#231) |
+| `presentation/battle/engine/UWController.kt` | Ultimate Weapon lifecycle + CHRONO/GOLDEN/fortune state, #119 re-layer (#231) |
+| `presentation/battle/engine/BuffTickers.kt` | Recovery / rapid-fire / lifesteal in-round timers (#231) |
+| `presentation/battle/engine/CombatResolver.kt` | Damage/defense/thorn/second-wind, targeting, enemy death + reward side-effects (#231/#230) |
 | `presentation/battle/engine/WaveSpawner.kt` | Wave lifecycle: 26s spawn + 9s cooldown, enemy composition by wave |
 | `presentation/battle/engine/EnemyScaler.kt` | Wave-based stat scaling (1.05^wave), cash rewards per type |
 | `presentation/battle/engine/CollisionSystem.kt` | Projectile↔enemy and enemy projectile↔ziggurat collision |

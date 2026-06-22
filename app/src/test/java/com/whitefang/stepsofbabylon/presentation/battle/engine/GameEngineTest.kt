@@ -142,6 +142,7 @@ class GameEngineTest {
         // simulation). Cash deltas are deterministic because TierConfig.tier(1).cashMultiplier
         // and EnemyScaler.cashReward(BASIC) are constants and no GOLDEN_ZIGGURAT buff is active.
         val cashBaseline = simulateBasicKillCash(eng)
+        assertTrue(cashBaseline > 0L, "kill must credit positive cash via host.simulation (false-green guard)")
 
         // Reset engine, push the +100 % multiplier, kill the same enemy.
         val eng2 = freshEngine()
@@ -165,13 +166,13 @@ class GameEngineTest {
         val eng1 = freshEngine()
         eng1.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, cooldownLevel = 1, isUnlocked = true, isEquipped = true)))
         eng1.activateUW(0)
-        val cooldownBaseline = eng1.uwStates[0].cooldownRemaining
+        val cooldownBaseline = eng1.uwControllerForTest.uwStates[0].cooldownRemaining
 
         val eng2 = freshEngine()
         eng2.uwCooldownMultiplier = 0.55f
         eng2.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, cooldownLevel = 1, isUnlocked = true, isEquipped = true)))
         eng2.activateUW(0)
-        val cooldownBoosted = eng2.uwStates[0].cooldownRemaining
+        val cooldownBoosted = eng2.uwControllerForTest.uwStates[0].cooldownRemaining
 
         assertEquals(
             cooldownBaseline * 0.55f,
@@ -1041,10 +1042,11 @@ class GameEngineTest {
      * (used by the #146 guards).
      */
     private fun engineDeathHandler(eng: GameEngine): (EnemyEntity) -> Unit {
-        val method = GameEngine::class.java
+        val resolver = eng.combatResolverForTest
+        val method = CombatResolver::class.java
             .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
             .apply { isAccessible = true }
-        return { enemy -> method.invoke(eng, enemy) }
+        return { enemy -> method.invoke(resolver, enemy) }
     }
 
     /** Reflectively invokes the private `getAliveEnemies()` helper. */
@@ -1069,10 +1071,11 @@ class GameEngineTest {
      * collisions) so the heal-only assertions stay deterministic.
      */
     private fun invokeTickRecovery(eng: GameEngine, deltaTime: Float) {
-        val method = GameEngine::class.java
-            .getDeclaredMethod("tickRecoveryPackages", Float::class.javaPrimitiveType)
+        val tickers = eng.buffTickersForTest
+        val method = BuffTickers::class.java
+            .getDeclaredMethod("tickRecovery", Float::class.javaPrimitiveType)
             .apply { isAccessible = true }
-        method.invoke(eng, deltaTime)
+        method.invoke(tickers, deltaTime)
     }
 
     /**
@@ -1082,10 +1085,11 @@ class GameEngineTest {
      * collisions.
      */
     private fun invokeTickRapidFire(eng: GameEngine, deltaTime: Float) {
-        val method = GameEngine::class.java
+        val tickers = eng.buffTickersForTest
+        val method = BuffTickers::class.java
             .getDeclaredMethod("tickRapidFire", Float::class.javaPrimitiveType)
             .apply { isAccessible = true }
-        method.invoke(eng, deltaTime)
+        method.invoke(tickers, deltaTime)
     }
 
     /**
@@ -1105,13 +1109,14 @@ class GameEngineTest {
      *  R4-06: also sets `chronoSlowFactor` to 0.10f (the pre-R4-06 constant) so the
      *  entity-update loop applies the expected slow. */
     private fun setChronoActive(eng: GameEngine, active: Boolean) {
-        val field = GameEngine::class.java.getDeclaredField("chronoActive")
+        val controller = eng.uwControllerForTest
+        val field = UWController::class.java.getDeclaredField("chronoActive")
             .apply { isAccessible = true }
-        field.setBoolean(eng, active)
+        field.setBoolean(controller, active)
         if (active) {
-            val sfField = GameEngine::class.java.getDeclaredField("chronoSlowFactor")
+            val sfField = UWController::class.java.getDeclaredField("chronoSlowFactor")
                 .apply { isAccessible = true }
-            sfField.setFloat(eng, 0.10f)
+            sfField.setFloat(controller, 0.10f)
         }
     }
 
@@ -1151,9 +1156,10 @@ class GameEngineTest {
 
     /** Reflectively reads the engine's private `fortuneMultiplier` field. */
     private fun readFortuneMultiplier(eng: GameEngine): Double {
-        val field = GameEngine::class.java.getDeclaredField("fortuneMultiplier")
+        val controller = eng.uwControllerForTest
+        val field = UWController::class.java.getDeclaredField("fortuneMultiplier")
             .apply { isAccessible = true }
-        return field.getDouble(eng)
+        return field.getDouble(controller)
     }
 
     /**
@@ -1174,10 +1180,11 @@ class GameEngineTest {
      * would also spawn enemies / run collisions / drive other engine subsystems.
      */
     private fun invokeUpdateUWs(eng: GameEngine, deltaTime: Float) {
-        val method = GameEngine::class.java
-            .getDeclaredMethod("updateUWs", Float::class.javaPrimitiveType)
+        val controller = eng.uwControllerForTest
+        val method = UWController::class.java
+            .getDeclaredMethod("update", Float::class.javaPrimitiveType)
             .apply { isAccessible = true }
-        method.invoke(eng, deltaTime)
+        method.invoke(controller, deltaTime)
     }
 
     /**
@@ -1201,10 +1208,10 @@ class GameEngineTest {
             onDeath = { },
         ).apply { x = zig.originX; y = zig.originY + 200f }
         val cashBefore = eng.cash
-        val method = GameEngine::class.java
+        val method = CombatResolver::class.java
             .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
             .apply { isAccessible = true }
-        method.invoke(eng, enemy)
+        method.invoke(eng.combatResolverForTest, enemy)
         return eng.cash - cashBefore
     }
 
@@ -1349,12 +1356,13 @@ class GameEngineTest {
         proj: ProjectileEntity,
         enemy: EnemyEntity,
     ) {
-        val method = GameEngine::class.java.getDeclaredMethod(
+        val resolver = eng.combatResolverForTest
+        val method = CombatResolver::class.java.getDeclaredMethod(
             "onProjectileHitEnemy",
             ProjectileEntity::class.java,
             EnemyEntity::class.java,
         ).apply { isAccessible = true }
-        method.invoke(eng, proj, enemy)
+        method.invoke(resolver, proj, enemy)
     }
 
     /** Reflectively reads the engine's `EffectEngine.pendingEffects` list and returns the
@@ -1386,10 +1394,10 @@ class GameEngineTest {
             currentHp = 1.0, maxHp = 1.0, speed = 0f, damage = 0.0,
             targetX = zig.originX, targetY = zig.originY, onDeath = {},
         )
-        val method = GameEngine::class.java
+        val method = CombatResolver::class.java
             .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
             .apply { isAccessible = true }
-        method.invoke(eng, boss)
+        method.invoke(eng.combatResolverForTest, boss)
         advanceUntilIdle()
         collector.cancel()
         val bossEvents = events.filterIsInstance<SimulationEvent.BossKilled>()
@@ -1409,10 +1417,10 @@ class GameEngineTest {
                 currentHp = 1.0, maxHp = 1.0, speed = 0f, damage = 0.0,
                 targetX = zig.originX, targetY = zig.originY, onDeath = {},
             )
-            val method = GameEngine::class.java
+            val method = CombatResolver::class.java
                 .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
                 .apply { isAccessible = true }
-            method.invoke(eng, enemy)
+            method.invoke(eng.combatResolverForTest, enemy)
         }
         advanceUntilIdle()
         collector.cancel()
@@ -1435,10 +1443,10 @@ class GameEngineTest {
             currentHp = 1.0, maxHp = 1.0, speed = 0f, damage = 0.0,
             targetX = zig.originX, targetY = zig.originY, onDeath = {},
         )
-        val method = GameEngine::class.java
+        val method = CombatResolver::class.java
             .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
             .apply { isAccessible = true }
-        method.invoke(eng, boss)
+        method.invoke(eng.combatResolverForTest, boss)
         advanceUntilIdle()
         collector.cancel()
         assertEquals(
