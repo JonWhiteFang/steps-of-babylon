@@ -9292,3 +9292,57 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - Doc sync: CLAUDE.md headline (1098→1100), CHANGELOG `[Unreleased]` Fix entry, ADR-0029, source-files.md (BatteryOptimizationStatus + OnboardingViewModel/MainActivity/SettingsScreen/BattleScreen), step-tracking.md (battery-whitelist marked implemented), STATE.md (headline/objective/2 fragile-zone entries/backlog), RUN_LOG (this entry).
 - **All 4 net-new HIGHs (#233/#236/#250/#261) now fixed.** Next: commit + PR + CI + merge + checkpoint. Remaining audit work: the larger #233 clean Simulation-hoist (deferred), med/low #262, the manual Play Console Data-Safety action (#192), and a `v*` release tag for all the accumulated `[Unreleased]` work.
 - **DONE (merged):** PR **#274** opened, both CI checks green (build-and-test 5m19s, connected/instrumented 6m58s), squash-merged as **`8b50b13`** 2026-06-19; branch deleted; **#261/#233 auto-closed**. Post-merge checkpoint reconciled STATE.md. **All 4 net-new HIGHs (#233/#236/#250/#261) now done.** Remaining: the larger #233 clean Simulation-hoist (ADR-0012, deferred), med/low #262, the manual Play Console Data-Safety action (#192), and a `v*` release tag for all the accumulated `[Unreleased]` work.
+
+## 2026-06-22 — GameEngine god-class decomposition (#230 · #231; ADR-0012 Phase 4)
+
+- User: "lets fix 230/231" (ultracode ON). Twin `severity:major` architecture findings off the 2026-06-18
+  complete-app-review: `presentation/battle/engine/GameEngine.kt` (1233 LOC) is the app's highest-churn,
+  hardest-to-reason-about file (next largest 720) — ADR-0012's Simulation extraction pulled out the
+  pure-domain core but left the bulk of *presentation* mechanics (Canvas render + Paint, UW lifecycle,
+  per-mechanic buff timers, combat/death) co-habiting one Canvas-coupled class. Via AskUserQuestion the
+  developer chose: **one comprehensive PR**, **Hybrid** decomposition (presentation collaborators per #231
+  + opportunistic pure-formula hoist per #230), **GameEngine stays sole `entitiesLock` owner**.
+- **Brainstorm → spec → Adversarial Review Gate → plan → Adversarial Review Gate → subagent-driven exec.**
+  Spec (`docs/superpowers/specs/2026-06-22-gameengine-decomposition-230-231.md`); plan
+  (`docs/superpowers/plans/2026-06-22-gameengine-decomposition-230-231.md`).
+- **Spec review** (multi-agent, 43 agents): 37 findings → **24 surviving / 13 refuted**. Applied: CombatHost
+  completeness (second-wind read + `consumeSecondWind()` test-and-set; calculators become CombatResolver
+  fields); UWController gets the engine `Simulation` via ctor (advanceUWTimers/isUWReadyToFire are pure
+  stateless helpers — no host member); corrected the thread-safety rationale (UW fields are plain `var`,
+  safe by `entitiesLock` happens-before NOT loop-confinement — `init()` writes them on the main thread;
+  GOLDEN-trio `updateZigguratStats` race is pre-existing/lock-free → preserve, don't widen); relaxed the
+  unachievable <400 engine target (KDoc is load-bearing → ~500-560; hard <400 kept for the 4 new files).
+- **Plan review** (39 agents): 34 findings → **18 surviving / 16 refuted** — **caught 3 CRITICAL pre-code
+  compile-breakers:** (1) renaming the private `tier` field to `playerTier` collides with the existing
+  `init(playerTier)` param → `playerTier = playerTier` "Val cannot be reassigned"; fixed to `currentTier`.
+  (2) `GameEngineTest` reads `eng.uwStates[0]` DIRECTLY (non-reflective, lines 168/174) — the migration
+  table missed it → would not compile after `uwStates` moves; re-pointed to `uwControllerForTest.uwStates`.
+  (3) `CashEconomyTest.kt:25` references the deleted `GameEngine.BASE_CASH_PER_WAVE` → migrate to
+  `SimulationMath` in the same commit. Plus editorial: VM-written `@Volatile` fields stay public settable
+  `var` w/ `override`; `simulation` → `override val` (no backing-field rename); null-spawner bare-return
+  preserved in BuffTickers; comment-verbatim fidelity note; positive-cash-delta false-green guard.
+- **Subagent-driven execution (12 tasks, fresh implementer per task).** Tasks 1-6 (mechanical, sonnet):
+  SimulationMath cash hoist → BattleHosts interfaces → BattleRenderer → BuffTickers → CombatResolver →
+  UWController (each a verbatim move + mechanical reference-rewrites; per-task fidelity check vs the
+  GameEngine original; build green per commit). **Task 7 (the cutover, capable model):** GameEngine
+  `implements UWHost,BuffHost,CombatHost`, constructs the 4 collaborators, deletes the moved members,
+  re-points the `GameEngineTest` reflection table; **1233 → 618 LOC**. Two-stage review on Task 7: spec
+  compliance ✅ (8/8 incl. the two lynchpins — lock model + cash crediting through the one `Simulation`);
+  code quality Approved-with-minors (fixed: dropped `activateUW` KDoc + stale `updateUWs→` comment refs).
+  Task 8: 7 collaborator unit tests on the plain JVM lane (no Robolectric — the decomposition payoff;
+  no expectations needed adjusting). Task 9: line-count + Paint-free verification.
+- **Behavior-preserving by construction** (move, don't rewrite). **Thread-safety unchanged** —
+  collaborators hold no monitor, run inside the engine's held lock; `GameEngineConcurrencyTest` +
+  `EffectEngineConcurrencyTest` pass **UNCHANGED** (empty diff vs `main`, verified). Public API unchanged.
+- **#230's domain half:** `SimulationMath.killCashReward` / `waveCompleteCash` (+ constants), bit-identical
+  to the inline formulas. **Tracked remaining slice:** UW *effect resolution* + HP-mutation NOT hoisted to
+  the domain (needs `EntityProtocol` surgery) — documented in ADR-0012 Phase 4.
+- Verification: `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` **BUILD SUCCESSFUL** (2m04s);
+  **1196 → 1205 JVM** (+2 cash-formula + 7 collaborator), 0 failures. No schema/economy/engine-logic change.
+- Doc sync: CLAUDE.md (architecture tree + Battle Renderer section + headline 1196→1205), CHANGELOG
+  `[Unreleased]`, **ADR-0012 Phase 4**, source-files.md (5 new file entries + SimulationMath/GameEngine
+  responsibility updates), structure.md (engine module + file table), STATE.md (headline/objective), this
+  RUN_LOG entry.
+- **#231 closeable; #230 closeable on the partial-domain-hoist + explicit-tracking basis** (confirm with
+  issue owner if #230 demands the full UW-effect domain migration). Next: open PR; watch CI; merge;
+  checkpoint. Then remaining audit majors — #234, #211, #258, #253; i18n #34; med/low #262/#128.
