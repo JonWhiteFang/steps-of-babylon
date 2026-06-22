@@ -46,7 +46,7 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 
 ## Gradle Plugins
 
-`android.application`, `kotlin.compose`, `hilt`, `ksp`, `room` — all aliased from version catalog.
+`android.application`, `kotlin.compose`, `kotlin.parcelize`, `hilt`, `ksp`, `room` — all aliased from version catalog. (`kotlin.parcelize` added in #234 for the presentation-layer `PackRevealState` Parcelable DTO; applied in `:app` via `kotlin("plugin.parcelize")` since it's bundled with the AGP-9 Kotlin distribution, declared `apply false` at the root.)
 
 ## Architecture Layers
 
