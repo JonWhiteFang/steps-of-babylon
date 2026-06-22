@@ -1,3 +1,21 @@
+## 2026-06-22 — HomeScreen Compose UI tests (#253) + close #260 (`[Unreleased]`)
+
+- **Goal:** expand Compose UI test coverage to the Home screen (the highest-traffic screen flagged by the
+  audit as entirely unverified at the UI layer); close #260 since its code defects were already fixed.
+- **What shipped (PR #316, squash `1eb01ed`):**
+  - `HomeScreenTest.kt` — 4 Robolectric-backed Compose tests: loaded-state content (today steps + best wave),
+    BATTLE button existence, first-walk prompt shown when eligible, prompt hidden above threshold.
+  - Same infrastructure as CardsScreenTest/OnboardingScreenTest (createComposeRule + @GraphicsMode(NATIVE) +
+    UnconfinedTestDispatcher + fake-wired VM).
+  - Closed #260 with a resolution comment — its code defects (concat + raw enum.name) were all fixed in
+    PR #302; only the #34 bulk prose-extraction tail remained (OnboardingSlide/HelpScreen).
+- **CI note:** first push failed on ktlint formatting (wildcard import + wrapping rules on the new file).
+  Auto-fixed and pushed; second push green on both lanes (build-and-test 8m43s, connected 7m3s).
+- **1230 → 1234 JVM.** No production code change. No schema/economy/engine change.
+- **Doc sync:** CLAUDE.md test count; CHANGELOG entry; STATE.md rotated; this RUN_LOG entry.
+- **Remains / next:** #253 (more screens: Store, Battle controls); i18n #34; med/low #262/#128; the
+  larger #233 Simulation-hoist (ADR-0012).
+
 ## 2026-06-22 — Gradle dependency verification: SHA-256 supply-chain integrity (#256) (`[Unreleased]`)
 
 - **Goal:** close audit major #256 — add `gradle/verification-metadata.xml` with SHA-256 checksums for

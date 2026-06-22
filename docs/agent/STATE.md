@@ -12,10 +12,10 @@ data-integrity #237/#238/#248) via release PR #278 (squash `ffa9973`). **ALL 4 n
 Latest content wave MERGED: data-integrity (PR #276, `0f32ac6`; #237/#238/#248 auto-closed; ADR-0030,
 single-agent review caught a critical pre-code defect). Earlier waves MERGED: #261/#233 (PR #274, `8b50b13`);
 #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.9 (vc 25)** · **1230 JVM + 9 instrumented tests**
+Supersedes **v1.0.9 (vc 25)** · **1234 JVM + 9 instrumented tests**
 green (1110 shipped in v1.0.10; +8 reliability wave #251/#249 → 1118; +8 correctness/UX wave
 #225/#235/#224/#222 → 1126; +4 privacy/monetization #240/#239/#241 → 1130; +9 perf wave #242/#243 → 1139;
-+13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; +26 i18n correctness wave #259/#260 → 1195; +1 #220 domain-purity guard hardening → 1196; +9 GameEngine decomposition #230/#231 → 1205; +8 process-death state survival #234 → 1213; +17 time-axis anti-cheat #211/#258 → 1230; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
++13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; +26 i18n correctness wave #259/#260 → 1195; +1 #220 domain-purity guard hardening → 1196; +9 GameEngine decomposition #230/#231 → 1205; +8 process-death state survival #234 → 1213; +17 time-axis anti-cheat #211/#258 → 1230; +4 HomeScreen Compose UI #253 → 1234; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -33,17 +33,14 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #314, squash `966d049`; #256 auto-closed; `[Unreleased]`).**
-  **Gradle dependency verification: SHA-256 supply-chain integrity (#256).** Build-infra only — no
-  production Kotlin, no schema/economy/engine change, no test-count change (1230 JVM + 9 instrumented
-  unchanged). Commits `gradle/verification-metadata.xml` (~6000 lines SHA-256 checksums covering all
-  CI-used configs) + `dependency-verification=strict` in `gradle.properties` (global enforcement, local +
-  CI). Platform-specific aapt2 (linux/osx/windows) all included for cross-platform builds.
-  Mutation-tested: corrupted checksum → BUILD FAILED immediately. Ran into two CI-only failures (guava-parent
-  POM + aapt2-linux.jar not in the locally-generated metadata); fixed via `--refresh-dependencies` regen +
-  manual platform-artifact addition. Both CI lanes green on third push. **Next:** remaining audit majors —
-  #260 (i18n string concatenation); #253 (Compose UI follow-up screens); i18n #34; med/low #262/#128; the
-  larger #233 Simulation-hoist (ADR-0012).
+- **CURRENT (DONE — MERGED PR #316, squash `1eb01ed`; `[Unreleased]`).**
+  **HomeScreen Compose UI tests (#253).** 4 Robolectric-backed tests for the Home screen (loaded state,
+  BATTLE button, first-walk prompt show/hide). Same pattern as Cards/Onboarding. **1230 → 1234 JVM**;
+  no production code change. Also closed #260 (its code defects were fixed in PR #302; only #34 prose
+  tail remained). **Next:** remaining audit majors — #253 (more screens: Store, Battle controls); i18n
+  #34; med/low #262/#128; the larger #233 Simulation-hoist (ADR-0012).
+- **Previous objective (DONE — MERGED PR #314, squash `966d049`; #256 auto-closed; `[Unreleased]`).**
+  **Gradle dependency verification (#256).** See RUN_LOG for detail.
 - **Previous objective (DONE — MERGED PR #312, squash `6236a42`; `[Unreleased]`).**
   **Kotlin lint enforcement: detekt + ktlint CI gate (#311; ADR-0037).** Build-infra + config + CI only —
   no production Kotlin, no schema/economy/engine change, no test-count change (1230 JVM + 9 instrumented
