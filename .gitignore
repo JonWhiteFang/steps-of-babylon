@@ -30,3 +30,6 @@ app/src/main/assets/adi-registration.properties
 # repowise API keys (local)
 .repowise/.env
 .superpowers/
+
+# ktlint cache (CI downloads here)
+.ktlint/
