@@ -4,6 +4,22 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Build — Kotlin lint enforcement: detekt + ktlint CI gate (#311; ADR-0037)
+
+**Build-infra + config + CI only — no production Kotlin, no schema/economy/engine change, no test-count
+change** (1230 JVM + 9 instrumented unchanged). Wires two Kotlin lint tools into the PR gate
+(baseline-gated: only NEW violations fail). **detekt:** `dev.detekt` 2.0.0-alpha.5 Gradle plugin — the
+alpha is unavoidable (no stable detekt for Kotlin 2.3.0); plain `:app:detekt` (no type resolution); custom
+config `config/detekt/detekt.yml` (MagicNumber + WildcardImport disabled; no `formatting:` ruleset — it
+doesn't exist in detekt 2.0 without a plugin); baseline 502 lines. **ktlint:** 1.8.0 CLI via committed
+`lint-kotlin.sh` (SHA-256-pinned download in CI); `.editorconfig` at root; baseline 10141 lines; no parser
+failures on the 2.2.x engine (known version gap vs Kotlin 2.3.0 — documented caveat, not an observed
+issue). **CI:** two new steps in `build-and-test`, code-gated behind the docs-only fast path; `connected`
+job untouched. **Mutation-tested:** LongParameterList (detekt) + max-line-length (ktlint) both exit
+non-zero, both reverted. Accepted boundary: alpha dep to monitor; type resolution deferred; ktlint-gradle
+plugin rejected (unproven AGP-9); `:baselineprofile`/`:macrobenchmark` not linted (dev-tooling only).
+**ADR-0037.**
+
 ### Fix — clock-tamper resistance for time-gated mechanics (#211) + schema-doc gap-fill (#258)
 
 Time-gated mechanics (daily-login streak, Labs research auto-completion) no longer trust the unguarded
