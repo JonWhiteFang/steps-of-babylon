@@ -12,10 +12,10 @@ data-integrity #237/#238/#248) via release PR #278 (squash `ffa9973`). **ALL 4 n
 Latest content wave MERGED: data-integrity (PR #276, `0f32ac6`; #237/#238/#248 auto-closed; ADR-0030,
 single-agent review caught a critical pre-code defect). Earlier waves MERGED: #261/#233 (PR #274, `8b50b13`);
 #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.9 (vc 25)** · **1213 JVM + 9 instrumented tests**
+Supersedes **v1.0.9 (vc 25)** · **1230 JVM + 9 instrumented tests**
 green (1110 shipped in v1.0.10; +8 reliability wave #251/#249 → 1118; +8 correctness/UX wave
 #225/#235/#224/#222 → 1126; +4 privacy/monetization #240/#239/#241 → 1130; +9 perf wave #242/#243 → 1139;
-+13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; +26 i18n correctness wave #259/#260 → 1195; +1 #220 domain-purity guard hardening → 1196; +9 GameEngine decomposition #230/#231 → 1205; +8 process-death state survival #234 → 1213; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
++13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; +26 i18n correctness wave #259/#260 → 1195; +1 #220 domain-purity guard hardening → 1196; +9 GameEngine decomposition #230/#231 → 1205; +8 process-death state survival #234 → 1213; +17 time-axis anti-cheat #211/#258 → 1230; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -33,7 +33,39 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #307, squash `051c1cf`; #234 auto-closed; `[Unreleased]`).** Both CI lanes
+- **CURRENT (DONE — branch `fix/211-258-clock-tamper-schema-doc`, ready to PR; `[Unreleased]`).**
+  **Time-axis anti-cheat: clock-tamper resistance (#211, `severity:major`/TIME-1) + schema-doc gap-fill
+  (#258, `severity:major`).** Time-gated mechanics no longer trust the raw device clock. New pure-Kotlin
+  `domain/time/TimeIntegrity.kt` (zero Android — `DomainPurityTest` green) decides `Trusted`/`Rollback`
+  from a persisted 4-slot `TimeBaseline(lastElapsedRealtime, lastWallClock, maxWallClockSeen,
+  trustedWallClock)` + a fresh `TimeReading`: a **reboot-durable max-wall-clock floor** (`wallClock <
+  maxWallClockSeen` → Rollback) + an **order-independent `trustedWallClock` capped-accrual anchor**
+  (advances only by `min(wallDelta, elapsedDelta)`, so an in-session forward-jump's excess is never folded
+  in — replaced an earlier race-defeatable `lastWallClock + trustedElapsedSince` derivation the plan-review
+  caught). Baseline persists in the existing `anti_cheat_prefs` (4 Long slots + a set-flag) via the
+  pure-domain `TimeBaselineSource` read seam (`AntiCheatPreferences` implements it; `DataDeletionManager`'s
+  existing clear wipes them — no `PREFS_NAMES` change). **Single owner = `DailyStepManager`** (evaluates +
+  persists under its #120 mutex); `HomeViewModel`/`LabsViewModel` are **read-only** consumers (derive
+  trusted-now/verdict, never `writeTimeBaseline` — invariant `sg`-verified: one production writer).
+  **Two exploits closed:** (a) backward rollback → `TrackDailyLogin.checkAndAward(isRollback=true)` refuses
+  ALL credit for the tampered date and writes NOTHING (no streak/gem/season-bonus, no `DailyLogin` row, no
+  `gemsClaimed` latch — the latch-free design avoids denying later legitimate credit); (b) in-session
+  forward jump → research auto-completion (`CheckResearchCompletion`) gates on trusted-now. **No
+  schema/economy/engine change; 1213 → 1230 JVM** (+17); `testDebugUnitTest lintDebug assembleDebug`
+  BUILD SUCCESSFUL. Spec + plan each through the **Adversarial Review Gate** (spec 22→20 surviving; plan
+  applied a CRITICAL anchoring fix + survivors). Subagent-driven execution (10 tasks, spec+quality review
+  per task — caught a missing DailyStepManager integration-rollback test + a Hilt `@Singleton` binding
+  inconsistency, both fixed). **#258 (docs-only, committed `546e1f1`):** `database-schema.md` now states a
+  surviving pre-v7 install would throw Room's missing-migration `IllegalStateException` on upgrade (NOT
+  silently reset — only `…OnDowngrade` is configured); floor safe because the app first shipped to internal
+  at schema ≥ v7 (verified against dated CHANGELOG rollout). **#237 had pre-resolved the headline staleness.**
+  **ADR-0036.** **Accepted boundary (documented, not overclaimed):** rooted/file-edit adversary (same trust
+  tier as the whole plaintext anti-cheat stack); reboot-spanning forward jump on research (elapsedRealtime
+  resets across process death — capped delta falls back to full wallDelta by design; the floor guards only
+  the backward direction); `RushResearch` gem rush-cost left raw; `freeRush` direct completion;
+  BillingManager season-pass authority unchanged. **Next:** PR + CI; then remaining audit majors — #253
+  (Compose UI follow-up screens); i18n #34; med/low #262/#128; the larger #233 Simulation-hoist (ADR-0012).
+- **Previous objective (DONE — MERGED PR #307, squash `051c1cf`; #234 auto-closed; `[Unreleased]`).** Both CI lanes
   green (build-and-test 7m41s, connected/instrumented 6m35s); squash-merged 2026-06-22; branch deleted.
   **Process-death state survival (#234, `severity:major`).** Transient UI state Android drops on a
   process kill now survives via `SavedStateHandle` (ViewModels) / `rememberSaveable` (Compose): Workshop

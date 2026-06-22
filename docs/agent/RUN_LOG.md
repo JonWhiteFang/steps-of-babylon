@@ -1,3 +1,60 @@
+## 2026-06-22 — Time-axis anti-cheat: clock-tamper resistance (#211) + schema-doc gap-fill (#258) (`[Unreleased]`)
+
+- **Goal:** address audit major #211 (TIME-1 — "time-gated mechanics trust the unguarded device clock;
+  Labs/season-pass/streak cheatable") + #258 (schema-doc migration-floor gap). Developer-scoped #211 to a
+  **proportionate** guard for an offline single-player game (monotonic anti-rollback + reboot-durable
+  max-wall-clock floor), NOT a full time-integrity subsystem; #258 is a small gap-fill (the headline
+  staleness was already resolved by #237).
+- **Process (ultracode ON):** spec → **Adversarial Review Gate** → plan → Gate (both committed before this
+  session: spec 22→20 surviving; plan applied a CRITICAL anchoring fix — the `trustedWallClock` anchor
+  replacing a race-defeatable `lastWallClock + trustedElapsedSince` re-derivation) → subagent-driven
+  execution (10 tasks, fresh implementer + two-stage spec+quality review each).
+- **Design:** pure-Kotlin `domain/time/TimeIntegrity.kt` (`object evaluate(baseline, reading)` + 4-slot
+  `TimeBaseline` + `TimeReading` + `TimeVerdict.Trusted/Rollback` + the `TimeBaselineSource` read seam) —
+  zero Android (`DomainPurityTest` green). Floor: `wallClock < maxWallClockSeen` → Rollback (persisted, so
+  reboot-durable — a reboot doesn't move the wall clock back). Anchor: `trustedWallClock` advances only by
+  `min(wallDelta, elapsedDelta).coerceAtLeast(0)` (reboot fallback = full wallDelta, no monotonic cap
+  survives process death), so a forward-jump's excess is never folded in AND a read-only consumer
+  re-evaluating an owner-advanced baseline still gets the capped value (order-independent). Baseline lives
+  in the existing `anti_cheat_prefs` (4 Long slots + set-flag); `AntiCheatPreferences` implements
+  `TimeBaselineSource`; `DataDeletionManager`'s existing clear wipes it (no `PREFS_NAMES` change).
+- **Single-owner model:** `DailyStepManager` evaluates + persists the baseline under its #120 mutex (the
+  sole `writeTimeBaseline` caller — `sg`-verified); `HomeViewModel`/`LabsViewModel` are **read-only**
+  consumers (derive trusted-now/verdict, never persist). Two closed exploits: backward rollback →
+  `TrackDailyLogin.checkAndAward(isRollback=true)` early-returns, writing NOTHING for the tampered date
+  (no streak/gem/season-bonus, no `DailyLogin` row, no `gemsClaimed` latch — latch-free so a later
+  legitimate arrival isn't denied); in-session forward jump → `CheckResearchCompletion` gates on
+  trusted-now. Research use cases already took `now` — callers now pass the anchor instead of raw
+  `System.currentTimeMillis()`.
+- **Review catches (subagent-driven, this session):** the DailyStepManager integration-rollback path had
+  zero direct coverage (every existing DSM test stubbed to Trusted) → added one end-to-end test
+  (`recordSteps` under a rollback baseline credits no gems); the new Hilt `@Binds bindTimeBaselineSource`
+  lacked `@Singleton` (inconsistent with the sibling `bindTimeProvider`) → fixed; the Home tests' default
+  fake masked trusted-now gating → added a VM-level rollback-suppresses-completion test; ADR status line
+  normalized to the house `Accepted (YYYY-MM-DD)` format. The mandatory `currentTimeReading()` mock-stub
+  (plan-review CRITICAL — an unstubbed mock NPEs `evaluate` and silently skips the economy block) applied
+  at all 4 DSM mock sites.
+- **#258 (docs-only, `546e1f1`):** `database-schema.md` now documents that a surviving pre-v7 install would
+  throw Room's missing-migration `IllegalStateException` on upgrade (NOT a silent reset — only
+  `fallbackToDestructiveMigrationOnDowngrade` is configured), and the floor is safe because the app first
+  shipped to internal at schema ≥ v7 (v9 — verified against the dated CHANGELOG rollout entries, not a
+  keyword grep). The STOP-condition refutation (a <v7 build distributed to a tester) did not hold.
+- **Verification:** `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL, 0
+  failures. **1213 → 1230 JVM** (+17: TimeIntegrityTest 7, AntiCheatPreferencesTimeBaselineTest 3 [Robolectric],
+  TrackDailyLoginTest +3, research contract +2, DailyStepManagerTest +1 integration rollback, HomeViewModelTest
+  +1 VM gate); instrumented unchanged (9). No schema/economy/engine change.
+- **Doc sync:** `ADR-0036-time-axis-anticheat.md` (new); `security-model.md` time-axis subsection;
+  CLAUDE.md headline 1213→1230 + one anti-cheat conventions line; CHANGELOG `[Unreleased]` #211/#258 entry;
+  `source-files.md` entries for `TimeIntegrity.kt`/`TimeBaselineSource`/`FakeTimeBaselineSource` + updated
+  AntiCheatPreferences/DailyStepManager/VMs/use-case entries; STATE.md current objective rotated + count.
+- **Accepted boundary (ADR-0036, documented not overclaimed):** rooted/file-edit adversary (same trust tier
+  as the whole plaintext anti-cheat stack); reboot-spanning forward jump on research; `RushResearch` gem
+  rush-cost left raw; `freeRush` direct completion; BillingManager season-pass authority unchanged;
+  `CompleteResearch` is dead production code (guard contract-only).
+- **Remains / next:** **Closes #211 + #258.** Push + open the PR; CI (PR gate + instrumented lane). Then
+  remaining audit majors: #253 (Compose UI follow-up screens), i18n #34, med/low #262/#128; the larger
+  #233 Simulation-hoist (ADR-0012).
+
 ## 2026-06-21 — Close the data↔domain cycle (#220, ARCH-3): verify resolved + harden the purity guard (`[Unreleased]`)
 
 - **Goal:** address audit major #220 — "cyclic data↔domain package coupling blocks extracting a domain
