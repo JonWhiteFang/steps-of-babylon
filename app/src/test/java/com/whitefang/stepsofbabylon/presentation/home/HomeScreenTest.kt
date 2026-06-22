@@ -5,7 +5,17 @@ import androidx.compose.ui.test.onNodeWithText
 import com.whitefang.stepsofbabylon.data.MilestoneNotificationPreferences
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.domain.time.TimeReading
-import com.whitefang.stepsofbabylon.fakes.*
+import com.whitefang.stepsofbabylon.fakes.FakeDailyLoginRepository
+import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
+import com.whitefang.stepsofbabylon.fakes.FakeLabRepository
+import com.whitefang.stepsofbabylon.fakes.FakeMilestoneDao
+import com.whitefang.stepsofbabylon.fakes.FakeMilestoneRepository
+import com.whitefang.stepsofbabylon.fakes.FakeMissionRepository
+import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
+import com.whitefang.stepsofbabylon.fakes.FakeStepRepository
+import com.whitefang.stepsofbabylon.fakes.FakeTimeBaselineSource
+import com.whitefang.stepsofbabylon.fakes.FakeWalkingEncounterRepository
+import com.whitefang.stepsofbabylon.fakes.FakeWorkshopRepository
 import com.whitefang.stepsofbabylon.service.MilestoneNotificationManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,7 +37,6 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], application = android.app.Application::class)
 class HomeScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -50,16 +59,29 @@ class HomeScreenTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun createVm(profile: PlayerProfile = PlayerProfile(
-        stepBalance = 5000, gems = 100, powerStones = 20,
-        currentTier = 2, highestUnlockedTier = 3,
-        bestWavePerTier = mapOf(1 to 15, 2 to 10),
-    )): HomeViewModel {
+    private fun createVm(
+        profile: PlayerProfile =
+            PlayerProfile(
+                stepBalance = 5000,
+                gems = 100,
+                powerStones = 20,
+                currentTier = 2,
+                highestUnlockedTier = 3,
+                bestWavePerTier = mapOf(1 to 15, 2 to 10),
+            ),
+    ): HomeViewModel {
         playerRepo = FakePlayerRepository(profile)
         return HomeViewModel(
-            playerRepo, stepRepo, FakeWorkshopRepository(), FakeLabRepository(),
-            encounterRepo, missionRepo, milestoneRepo, dailyLoginRepo,
-            milestoneNotificationManager, milestoneNotificationPrefs,
+            playerRepo,
+            stepRepo,
+            FakeWorkshopRepository(),
+            FakeLabRepository(),
+            encounterRepo,
+            missionRepo,
+            milestoneRepo,
+            dailyLoginRepo,
+            milestoneNotificationManager,
+            milestoneNotificationPrefs,
             FakeTimeBaselineSource(reading = TimeReading(0, Long.MAX_VALUE)),
         )
     }
