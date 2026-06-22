@@ -14,7 +14,8 @@
 
 ## Guiding rules for every task
 
-- **Move, do not rewrite.** Moved method bodies are copied **verbatim**, including all KDoc and inline `#118`/`#191`/`#119`/`#125`/`#146` comments. The ONLY edits to a moved body are the mechanical reference rewrites listed per task (e.g. `stats` → `host.currentStats`, `effectEngine` → `host.effectEngine`, `getAliveEnemies()` → `host.aliveEnemies()`, `simulation` → the injected/`host.simulation`). Do not "improve" anything.
+- **Move, do not rewrite.** Moved method bodies are copied **verbatim**, including all KDoc and inline `#118`/`#191`/`#119`/`#125`/`#146`/`R4-01`/`RO-11` comments. The ONLY edits to a moved body are the mechanical reference rewrites listed per task (e.g. `stats` → `host.currentStats`, `effectEngine` → `host.effectEngine`, `getAliveEnemies()` → `host.aliveEnemies()`, `simulation` → the injected/`host.simulation`). Do not "improve" anything.
+- **The code blocks in this plan are ILLUSTRATIVE for structure/signatures; their KDoc and inline comments are abbreviated for brevity.** When implementing, paste the **full original KDoc and every inline comment verbatim** from the `GameEngine.kt` source of each moved member — do NOT reproduce the plan's trimmed doc text. Specifically restore: the `#146` no-tally block + the RO-11 `#A.2` cash rationale + the Boss-PS "tier-scaled, capped at 100/day" + Step-reward rationale in `CombatResolver.handleEnemyDeath` (GameEngine.kt:1170-1204); the "Heal amount: min(level × 1%, 50%) …" paragraph in `BuffTickers.tickRecovery` (942-944); the `R4-06`/`#119` comments in `UWController.activateUW`'s GOLDEN branch (715-726) and the full `#119` + `R4-01/R4-06 sole-writer` comments in `UWController.update`'s GOLDEN expiry (752-761).
 - **No new monitors.** No collaborator contains a `synchronized` block. The engine keeps every `synchronized(entitiesLock)` exactly where it is today.
 - **Red-before-green on the test re-points.** After each collaborator extraction, the relevant existing `GameEngineTest` cases must compile and pass through the new path before moving on. Assertions are never weakened.
 - **Build command:** `./run-gradle.sh testDebugUnitTest` (full JVM suite) and the final gate `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug`. Save output to a temp file and tail/grep it (it is large).
@@ -469,6 +470,11 @@ class BuffTickers(private val host: BuffHost) {
      */
     fun tickRecovery(deltaTime: Float) {
         val zig = host.ziggurat ?: return
+        // Preserve the original `waveSpawner ?: return` bare-return: when no spawner exists yet,
+        // leave timers untouched (host.wavePhase is null → would otherwise fall into the reset
+        // branch below). Behaviorally dead in production (init always creates spawner+ziggurat
+        // together) but keeps the move verbatim-equivalent.
+        if (host.wavePhase == null) return
         if (host.wavePhase != WavePhase.SPAWNING) {
             recoveryTimer = 0f
             return
@@ -499,6 +505,8 @@ class BuffTickers(private val host: BuffHost) {
      */
     fun tickRapidFire(deltaTime: Float) {
         val zig = host.ziggurat ?: return
+        // Preserve the original `waveSpawner ?: return` bare-return (see tickRecovery).
+        if (host.wavePhase == null) return
         if (host.wavePhase != WavePhase.SPAWNING) {
             rapidFireTimer = 0f
             rapidFireActiveRemaining = 0f
@@ -1068,9 +1076,15 @@ Change `class GameEngine {` to:
 class GameEngine : UWHost, BuffHost, CombatHost {
 ```
 
-Delete these now-moved fields from GameEngine: `healthBarRenderer` (73), `calculateDamage`/`calculateDefense` (74–75), `fortuneMultiplier` (169), `recoveryTimer` (177), `rapidFireTimer` (187), `rapidFireActiveRemaining` (197), `lifestealAccumulator` (209), the `UWState` data class (258–265), `uwStates` (266), `chronoActive` (267), `chronoSlowFactor` (275), `goldenZigActive` (276), `preGoldenStats` (277), `goldenDamageMult` (287), and the three Paint properties + `chronoOverlayPaint`/`hpPercentPaint`/`bossCountdownPaint` (568–585). Delete the `BASE_CASH_PER_WAVE`/`FLAT_BONUS_PER_WAVE_LEVEL` companion constants (now in SimulationMath).
+Delete these now-moved fields from GameEngine: `healthBarRenderer` (73), `calculateDamage`/`calculateDefense` (74–75), `fortuneMultiplier` (169), `recoveryTimer` (177), `rapidFireTimer` (187), `rapidFireActiveRemaining` (197), `lifestealAccumulator` (209), the `UWState` data class (258–265), `uwStates` (266), `chronoActive` (267), `chronoSlowFactor` (275), `goldenZigActive` (276), `preGoldenStats` (277), `goldenDamageMult` (287), and the three Paint properties `chronoOverlayPaint`/`hpPercentPaint`/`bossCountdownPaint` (568–585).
 
-Add the collaborator fields (after `private val simulation = Simulation()` at line 115):
+**Before deleting the cash constants, sweep for external references:**
+```bash
+rg -n "BASE_CASH_PER_WAVE|FLAT_BONUS_PER_WAVE_LEVEL" app/src
+```
+Expected hits: `GameEngine.kt` (companion + the two formula call sites — all being deleted/moved) AND **`app/src/test/java/com/whitefang/stepsofbabylon/balance/CashEconomyTest.kt:25`** (`val waveCash = GameEngine.BASE_CASH_PER_WAVE`). Then delete the `BASE_CASH_PER_WAVE`/`FLAT_BONUS_PER_WAVE_LEVEL` companion constants from GameEngine (now in SimulationMath) **and** in the SAME commit re-point `CashEconomyTest.kt:25` to `SimulationMath.BASE_CASH_PER_WAVE` (add `import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath`), so no commit leaves the JVM suite uncompilable. (Add `CashEconomyTest.kt` to this task's modified-files set.)
+
+Add the collaborator fields **after** the `override val simulation: Simulation = Simulation()` declaration (which was line 115's `private val simulation` — see clash note item 4; it MUST stay first so the `UWController` ctor can read it):
 ```kotlin
     private val uwController = UWController(this, simulation)
     private val buffTickers = BuffTickers(this)
@@ -1078,7 +1092,7 @@ Add the collaborator fields (after `private val simulation = Simulation()` at li
     private val battleRenderer = BattleRenderer()
 ```
 
-> The collaborators capture `this` as their host. `this`-escape in a constructor is safe here: collaborators store the reference but invoke no host method until `init()`/`update()` run (well after construction). Suppress the lint if it fires: `@Suppress("LeakingThis")` is unnecessary for interface-typed `this` passed to a field initializer of a final class, but if detekt flags it, add the suppression on the field.
+> The collaborators capture `this` as their host. `this`-escape in a field initializer is safe here: collaborators store the reference but invoke no host method until `init()`/`update()` run (well after construction). If detekt flags it, add `@Suppress("LeakingThis")` on the fields.
 
 - [ ] **Step 2: Implement the host members on GameEngine**
 
@@ -1088,11 +1102,10 @@ The engine already has most of these as fields/methods. Make them satisfy the in
     // --- Host interface implementations (#230/#231 decomposition) ---
 
     override val currentStats: ResolvedStats get() = stats
-    override val conditions: BattleConditionEffects get() = battleConditions   // see rename note below
-    override val tier: Int get() = playerTier                                  // see rename note below
+    override val conditions: BattleConditionEffects get() = battleConditions   // private field renamed conditions→battleConditions
+    override val tier: Int get() = currentTier                                 // private field renamed tier→currentTier (see clash note)
     override val wavePhase: WavePhase? get() = waveSpawner?.phase
     override val fortuneMultiplier: Double get() = uwController.fortuneMultiplier
-    override val secondWindHpPercent: Double get() = secondWindHpPercentField  // see rename note below
 
     override fun consumeSecondWind(): Boolean {
         if (secondWindUsed) return false
@@ -1111,10 +1124,12 @@ The engine already has most of these as fields/methods. Make them satisfy the in
     override fun wsLevel(type: UpgradeType): Int = effectiveLevels[type] ?: 0
 ```
 
-**Rename note (resolve naming clashes):** the interfaces declare `conditions`, `tier`, `secondWindHpPercent`, `currentStats`. GameEngine already has private fields `conditions` (85), `tier` (84), `secondWindHpPercent` (122), `stats` (83). A `val conditions: ... get() = conditions` is a self-reference and won't compile. Resolve by renaming the **private backing fields**: `tier` → keep as the override target by renaming the field to `playerTier`; `conditions` → `battleConditions`; `secondWindHpPercent` (the @Volatile VM-written field) → `secondWindHpPercentField` with `override val secondWindHpPercent get() = secondWindHpPercentField`. **OR** simpler: keep the field names and drop the redundant override getters by declaring the interface members to match existing fields directly — i.e. make the existing fields `override`:
-- `tier` is `private var tier` → change to `override val tier: Int get() = _tier` is awkward; instead rename the field. **Chosen approach:** rename private fields to avoid clash: `tier`→`playerTier`, `conditions`→`battleConditions`, and for the @Volatile VM field keep `secondWindHpPercent` as the PUBLIC @Volatile var and satisfy the interface by making that var itself the override: `@Volatile override var secondWindHpPercent: Double = 0.0`. Since the interface declares `val secondWindHpPercent`, a `var` override is legal. Do the same for any other VM field that collides — `cashResearchMultiplier`/`cashBonusPercent` are already public @Volatile vars; mark them `override` (interface declares them `val`, `var` override is legal). `effectEngine`/`soundManager`/`strings`/`reducedMotion`/`screenWidth`/`screenHeight`/`uwCooldownMultiplier`/`ziggurat`/`simulation` similarly become `override`.
+**Naming-clash resolution (CRITICAL — review-corrected).** Three categories:
 
-> Apply `override` to: `screenWidth`, `screenHeight`, `ziggurat`, `reducedMotion`, `effectEngine`, `soundManager`, `strings`, `uwCooldownMultiplier`, `cashResearchMultiplier`, `cashBonusPercent`, `secondWindHpPercent`, `simulation` (expose `val simulation` — it's currently `private val`; make it `override val simulation: Simulation get() = simulationField` or rename the field). Keep `applyStats` `override fun`. Rename the two clashing private fields (`tier`→`playerTier`, `conditions`→`battleConditions`) and update their ~6 internal references.
+1. **`tier` (private field, line 84) → rename to `currentTier`.** ⚠️ Do NOT rename it to `playerTier`: `init()` ALREADY has a parameter named `playerTier` (line 299), and `init()` assigns the field from it (`tier = playerTier`, line 329). Renaming the field to `playerTier` would make line 329 read `playerTier = playerTier` — a `Val cannot be reassigned` compile error (the param shadows the field). Rename the field to **`currentTier`** instead. Update its ~5 internal references: line 329 (`currentTier = playerTier`), 331 (`BattleConditionEffects.fromTier(currentTier)`), 332 (`Biome.forTier(currentTier)`), 368 (`TierConfig.forTier(currentTier)`), 1168/1198 (`TierConfig.forTier(currentTier)` inside the now-moved `handleEnemyDeath`/`handleWaveComplete` — but those move to CombatResolver and read `host.tier`, so the engine's host-impl `override val tier get() = currentTier` covers them). The `init()` parameter `playerTier` stays as-is.
+2. **`conditions` (private field, line 85) → rename to `battleConditions`.** Its backing field is private and never externally written, so the `override val conditions get() = battleConditions` getter form is correct. Update its internal references (the `WaveSpawner(conditions = …)` wiring at line 365, the `onProjectileHitEnemy`/`applyDamageToZiggurat`/etc. reads — but those move to CombatResolver and read `host.conditions`).
+3. **The VM-written `@Volatile var` fields stay PUBLIC SETTABLE `var` and just gain `override`** (a `var` legally overrides an interface `val`). ⚠️ Do NOT convert them to a read-only `get()`-backed form or rename their backing field — `BattleViewModel` writes them externally (`engine.secondWindHpPercent = …` at BattleViewModel.kt:204/490; `engine.cashResearchMultiplier = …` at 625; `engine.cashBonusPercent = …` at 204/490). Mark these `override`: `@Volatile override var secondWindHpPercent: Double = 0.0`, `@Volatile override var cashResearchMultiplier: Double = 1.0`, `@Volatile override var cashBonusPercent: Double = 0.0`.
+4. **Other engine fields the interfaces declare become `override`** (no rename, no getter indirection — just add `override`): `screenWidth`, `screenHeight`, `ziggurat`, `reducedMotion`, `effectEngine`, `soundManager`, `strings`, `uwCooldownMultiplier`. For `simulation` (currently `private val simulation = Simulation()`, line 115): simply change it to **`override val simulation: Simulation = Simulation()`** — keep it FIRST (before the collaborator fields) so `UWController(this, simulation)` can read it. Keep `applyStats` as `override fun`.
 
 - [ ] **Step 3: Rewrite `init()` resets to delegate**
 
@@ -1134,7 +1149,7 @@ with:
             uwController.resetRoundState()
             buffTickers.reset()
 ```
-(The `simulation.reset()` / `roundOver = false` lines stay.) Update the `tier`/`conditions` references to `playerTier`/`battleConditions`.
+(The `simulation.reset()` / `roundOver = false` lines stay.) Update the `tier`/`conditions` field references to `currentTier`/`battleConditions` per the clash note — but NOT the `init()` parameter `playerTier`, which is unchanged: line 329 becomes `currentTier = playerTier` (field = parameter).
 
 - [ ] **Step 4: Rewrite `updateZigguratStats` to use the relayer**
 
@@ -1200,7 +1215,7 @@ Replace `setChronoActiveForTest`:
 ```
 Delete the now-moved private methods: `updateUWs`, `tickRecoveryPackages`, `tickRapidFire`, `applyLifesteal`, `onProjectileHitEnemy`, `onOrbHitEnemy`, `applyDamageToZiggurat`, `applyThorn`, `handleEnemyDeath`, `handleWaveComplete`. Keep `getAliveEnemies`, `findNearestEnemies`, `spawnOrbs`, `addEntity`, `aliveEnemyCount`, the wave-announcement methods, `wsLevel` (now also the host impl), `updateEffectiveLevels`, `applyStats`, `setStats`.
 
-> The `init` block wires `WaveSpawner` callbacks: `onEnemyDeath = ::handleEnemyDeath` → `combatResolver::handleEnemyDeath`; `onMeleeHit = { atk, dmg -> applyDamageToZiggurat(dmg, atk) }` → `{ atk, dmg -> combatResolver.applyDamageToZiggurat(dmg, atk) }`; `onWaveComplete = ::handleWaveComplete` → `combatResolver::handleWaveComplete`. The orb `onHitEnemy = ::onOrbHitEnemy` in `spawnOrbs` → `combatResolver::onOrbHitEnemy`.
+> The `init` block wires `WaveSpawner` callbacks: `onEnemyDeath = ::handleEnemyDeath` → `combatResolver::handleEnemyDeath`; `onMeleeHit = { atk, dmg -> applyDamageToZiggurat(dmg, atk) }` → `{ atk, dmg -> combatResolver.applyDamageToZiggurat(dmg, atk) }`; `onWaveComplete = ::handleWaveComplete` → `combatResolver::handleWaveComplete`. The orb `onHitEnemy = ::onOrbHitEnemy` in `spawnOrbs` → `combatResolver::onOrbHitEnemy`. **`onEnemyFireProjectile` is intentionally LEFT UNCHANGED** — its lambda only calls `pendingAdd.add(EnemyProjectileEntity(...))`, and `pendingAdd` stays engine-owned, so it compiles as-is. Likewise the `ZigguratEntity` construction's `::findNearestEnemies` binding (GameEngine.kt:341) and `spawnOrbs`'s `getEnemies = ::getAliveEnemies` (873) stay — both methods are KEPT on the engine.
 
 - [ ] **Step 8: Re-point GameEngineTest reflection (per-site migration table)**
 
@@ -1214,7 +1229,8 @@ Apply these re-points in `GameEngineTest.kt` (the reflection helpers around line
 | Test helper (line) | Old target | New target |
 |---|---|---|
 | `engineDeathHandler` / `simulateBasicKillCash` / R407 (1043,1205,1390,1413,1439) | `GameEngine.getDeclaredMethod("handleEnemyDeath", EnemyEntity)` | `eng.combatResolverForTest`, method `"handleEnemyDeath"` on `CombatResolver::class.java` |
-| `invokeGetAliveEnemies` (1053) | `GameEngine.getDeclaredMethod("getAliveEnemies")` | **stays** `GameEngine.getDeclaredMethod("aliveEnemies")` (renamed engine method — it's the host impl; do NOT target CombatResolver) |
+| `invokeGetAliveEnemies` (1053) | `GameEngine.getDeclaredMethod("getAliveEnemies")` | **NO CHANGE** — `getAliveEnemies` is KEPT on the engine (Step 7 keep-list); reflection stays `GameEngine.getDeclaredMethod("getAliveEnemies")`. (The engine ALSO gains a public `aliveEnemies()` host wrapper delegating to it, but the test keeps targeting the original private name.) |
+| **`RO11 uwCooldownMultiplier` test direct access (GameEngineTest.kt:168, 174)** | `eng1.uwStates[0]` / `eng2.uwStates[0]` (NON-reflective public-field read) | **`eng1.uwControllerForTest.uwStates[0]`** / `eng2.uwControllerForTest.uwStates[0]` — `GameEngine.uwStates` is deleted; `UWController.uwStates` is public and reached via the `uwControllerForTest` getter. **This is a direct Kotlin access, not reflection — it fails to COMPILE if missed (CRITICAL).** |
 | `readEffectiveLevel` (1059) | `GameEngine` field `effectiveLevels` | **no change** (stays on engine) |
 | `invokeTickRecovery` (1073) | `GameEngine.getDeclaredMethod("tickRecoveryPackages", Float)` | `eng.buffTickersForTest`, method `"tickRecovery"` on `BuffTickers::class.java` |
 | `invokeTickRapidFire` (1086) | `GameEngine.getDeclaredMethod("tickRapidFire", Float)` | `eng.buffTickersForTest`, method `"tickRapidFire"` on `BuffTickers::class.java` |
@@ -1248,7 +1264,7 @@ Example rewrite for `setChronoActive`:
         }
     }
 ```
-Apply the analogous change to every row above. **`activateUW`/`initUWs`** in the test call the public `eng.activateUW(0)`/`eng.initUWs(...)` — **no change** (the engine still exposes them).
+Apply the analogous change to every row above. **`activateUW`/`initUWs`** in the test call the public `eng.activateUW(0)`/`eng.initUWs(...)` — **no change** (the engine still exposes them). **`ChronoOverlayPaintTest`** calls `engine.setChronoActiveForTest(true)` — **no change**: the engine keeps that `@VisibleForTesting` pass-through (Step 7 Step 7 re-points its body to `uwController.setChronoActiveForTest`, public signature preserved), so the Robolectric test compiles untouched.
 
 - [ ] **Step 9: Build + full JVM suite (red-before-green oracle)**
 
@@ -1257,12 +1273,11 @@ Expected: BUILD SUCCESSFUL, all tests pass (incl. `GameEngineTest`, `ChronoOverl
 
 - [ ] **Step 10: Add the positive cash-delta false-green guard**
 
-In `simulateBasicKillCash`'s test caller (the RO11 test, ~line 138), add a standalone assertion that the kill produced a positive delta:
+In the existing `RO11 cashResearchMultiplier scales kill cash` test (GameEngineTest.kt:138), assert against the variable **already bound** from the existing `simulateBasicKillCash` call (named `cashBaseline` at ~line 144) — do NOT add a new `val delta = simulateBasicKillCash(eng)` call (that would add a redundant third reflection invocation). Add, after line 144:
 ```kotlin
-        val delta = simulateBasicKillCash(eng)
-        assertTrue(delta > 0L, "kill must credit positive cash via host.simulation (false-green guard)")
+        assertTrue(cashBaseline > 0L, "kill must credit positive cash via host.simulation (false-green guard)")
 ```
-(Place it in the existing RO11 cash test alongside the existing comparison; do not remove existing asserts.)
+This catches a misrouted credit (CombatResolver crediting a detached `Simulation` instead of `host.simulation`, which `eng.cash` reads) → it would yield a 0 delta and trip the guard. Do not remove existing asserts.
 
 - [ ] **Step 11: Re-run suite + commit**
 
