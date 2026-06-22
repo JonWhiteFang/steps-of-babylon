@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.stats
 
+import androidx.lifecycle.SavedStateHandle
 import com.whitefang.stepsofbabylon.domain.model.DailyStepSummary
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
@@ -42,7 +43,8 @@ class StatsViewModelTest {
     @AfterEach
     fun tearDown() { Dispatchers.resetMain() }
 
-    private fun createVm() = StatsViewModel(stepRepo, playerRepo, workshopRepo)
+    private fun createVm(handle: SavedStateHandle = SavedStateHandle()) =
+        StatsViewModel(stepRepo, playerRepo, workshopRepo, handle)
 
     @Test
     fun `initial state populates`() = runTest(dispatcher) {
@@ -203,5 +205,27 @@ class StatsViewModelTest {
         assertNull(state.error, "retry() must clear the error after the source heals")
         assertFalse(state.isLoading)
         assertEquals(4242, state.allTimeSteps, "recovered state must reflect the healed source data")
+    }
+
+    @Test
+    fun `R234 selected period restores from a seeded SavedStateHandle`() = runTest(dispatcher) {
+        val handle = SavedStateHandle(mapOf("selectedPeriod" to StatsPeriod.MONTH))
+        val vm = createVm(handle)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        assertEquals(StatsPeriod.MONTH, vm.uiState.value.selectedPeriod,
+            "selected period must restore from SavedStateHandle (process-death survival)")
+    }
+
+    @Test
+    fun `R234 selectPeriod writes through to the SavedStateHandle`() = runTest(dispatcher) {
+        val handle = SavedStateHandle()
+        val vm = createVm(handle)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+        vm.selectPeriod(StatsPeriod.MONTH)
+        advanceUntilIdle()
+        assertEquals(StatsPeriod.MONTH, handle["selectedPeriod"],
+            "selectPeriod must persist to SavedStateHandle")
     }
 }

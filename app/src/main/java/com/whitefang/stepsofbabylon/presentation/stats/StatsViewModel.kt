@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.stats
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.domain.model.DailyStepSummary
@@ -31,9 +32,11 @@ class StatsViewModel @Inject constructor(
     private val stepRepository: StepRepository,
     private val playerRepository: PlayerRepository,
     private val workshopRepository: WorkshopRepository,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _selectedPeriod = MutableStateFlow(StatsPeriod.WEEK)
+    private val selectedPeriod: StateFlow<StatsPeriod> =
+        savedStateHandle.getStateFlow(KEY_SELECTED_PERIOD, StatsPeriod.WEEK)
     private val _today = MutableStateFlow(LocalDate.now())
     // #194: bump to re-subscribe the data flow after a load error (retry).
     private val _retry = MutableStateFlow(0)
@@ -48,7 +51,7 @@ class StatsViewModel @Inject constructor(
             playerRepository.observeProfile(),
             historyFlow,
             workshopRepository.observeAllUpgrades(),
-            _selectedPeriod,
+            selectedPeriod,
         ) { profile, history, upgrades, period ->
             val todayRecord = history.find { it.date == today.format(fmt) }
             val bars = buildBars(history, period, today)
@@ -82,7 +85,7 @@ class StatsViewModel @Inject constructor(
         .catch { emit(StatsUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), StatsUiState())
 
-    fun selectPeriod(period: StatsPeriod) { _selectedPeriod.value = period }
+    fun selectPeriod(period: StatsPeriod) { savedStateHandle[KEY_SELECTED_PERIOD] = period }
 
     /** #194: re-subscribe the data flow after a load error. */
     fun retry() { _retry.value++ }
@@ -90,6 +93,10 @@ class StatsViewModel @Inject constructor(
     fun refreshDate() {
         val now = LocalDate.now()
         if (now != _today.value) _today.value = now
+    }
+
+    private companion object {
+        const val KEY_SELECTED_PERIOD = "selectedPeriod"
     }
 
     private fun buildBars(history: List<DailyStepSummary>, period: StatsPeriod, today: LocalDate): List<DailyBarData> {
