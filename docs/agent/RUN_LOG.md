@@ -9391,3 +9391,4 @@ After the fix, tests pass on first try and assembleDebug is clean.
   (kotlin.parcelize plugin), STATE.md (current objective), this RUN_LOG entry.
 - **#234 closeable on this scope.** Next: open PR; watch CI; merge; checkpoint. Then #211 (clock-tamper),
   #258 (schema docs), #253 (Compose UI tests); i18n #34; med/low #262/#128.
+- **DONE (merged):** PR **#307** opened; both CI checks green (build-and-test 7m41s, connected/instrumented 6m35s); squash-merged as **`051c1cf`** 2026-06-22; branch deleted; **#234 auto-closed** (`Closes #234`). Post-merge reconciliation: STATE.md current-objective flipped ready-to-PR→MERGED. (Signal-drop note: only the plan-review *workflow* stalled earlier — stopped + restarted clean, no work lost; implementation + CI ran smoothly.) Remaining audit majors: #211 (clock-tamper), #258 (schema docs), #253 (Compose UI tests); i18n #34; med/low #262/#128.
