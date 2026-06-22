@@ -2,9 +2,9 @@ package com.whitefang.stepsofbabylon.balance
 
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
+import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath
 import com.whitefang.stepsofbabylon.domain.usecase.CalculateUpgradeCost
 import com.whitefang.stepsofbabylon.presentation.battle.engine.EnemyScaler
-import com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import kotlin.math.min
@@ -22,7 +22,7 @@ class CashEconomyTest {
         // Simplified: assume all Basic enemies
         val cashPerKill = EnemyScaler.cashReward(EnemyType.BASIC)
         val killCash = cashPerKill * enemyCount
-        val waveCash = GameEngine.BASE_CASH_PER_WAVE
+        val waveCash = SimulationMath.BASE_CASH_PER_WAVE
         return killCash + waveCash
     }
 
