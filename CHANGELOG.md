@@ -4,6 +4,29 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — clock-tamper resistance for time-gated mechanics (#211) + schema-doc gap-fill (#258)
+
+Time-gated mechanics (daily-login streak, Labs research auto-completion) no longer trust the unguarded
+device wall-clock. A new pure-domain `domain/time/TimeIntegrity` decides `Trusted | Rollback` from a
+persisted 4-slot `TimeBaseline` + a fresh `TimeReading`: a **reboot-durable `maxWallClockSeen` floor**
+closes the **backward-rollback** exploit (re-collecting an already-claimed daily-login streak/gem/
+season-bonus — `TrackDailyLogin.checkAndAward(isRollback = true)` refuses ALL credit and writes nothing),
+and an **order-independent capped-accrual `trustedWallClock` anchor** (advances only by
+`min(wallDelta, elapsedDelta)`) closes the **in-session forward-jump** exploit on research
+(`CheckResearchCompletion` gates on the capped trusted-now). The baseline rides the existing
+`anti_cheat_prefs` SharedPreferences behind the pure `TimeBaselineSource` seam — **no Room schema or
+migration change**. `DailyStepManager` is the **single baseline owner** (evaluates + persists under its
+#120 mutex); `HomeViewModel`/`LabsViewModel` are read-only consumers. **Accepted residual boundary**
+(documented in ADR-0036): rooted/file-editing adversary, reboot-spanning forward jump on research,
+`RushResearch` rush-cost, season-pass-expiry authority. **No engine change; 1213 → 1230 JVM** (+17:
+TimeIntegrityTest 7, AntiCheatPreferencesTimeBaselineTest 3, TrackDailyLoginTest +3,
+CheckResearchCompletion/CompleteResearch +2, DailyStepManagerTest +1 integration rollback,
+HomeViewModelTest +1 VM rollback gate); instrumented unchanged (9). `testDebugUnitTest lintDebug
+assembleDebug` BUILD SUCCESSFUL. Spec + plan each through the Adversarial Review Gate (the plan-review
+caught the race-defeatable `lastWallClock + trustedElapsedSince` derivation, replaced by the persisted
+anchor). **ADR-0036.** **#258** — the schema-doc migration-floor gap-fill note (committed earlier in this
+branch); the headline schema-version staleness it tracked had already been pre-resolved by #237.
+
 ### Fix — process-death state survival (#234)
 
 Transient UI state that Android silently drops on a process kill now survives via `SavedStateHandle`
