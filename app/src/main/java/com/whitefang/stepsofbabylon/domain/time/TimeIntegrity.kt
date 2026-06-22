@@ -26,6 +26,13 @@ sealed interface TimeVerdict {
     data class Rollback(override val newBaseline: TimeBaseline) : TimeVerdict
 }
 
+/** Read-side seam over the persisted baseline + a fresh reading. AntiCheatPreferences implements it; a
+ *  fake backs the plain-JVM VM tests (they can't construct a Context-backed AntiCheatPreferences). #211. */
+interface TimeBaselineSource {
+    fun readTimeBaseline(): TimeBaseline?
+    fun currentTimeReading(): TimeReading
+}
+
 object TimeIntegrity {
 
     /**

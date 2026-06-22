@@ -1,7 +1,11 @@
 package com.whitefang.stepsofbabylon.data.anticheat
 
 import android.content.Context
+import android.os.SystemClock
 import android.util.Log
+import com.whitefang.stepsofbabylon.domain.time.TimeBaseline
+import com.whitefang.stepsofbabylon.domain.time.TimeBaselineSource
+import com.whitefang.stepsofbabylon.domain.time.TimeReading
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -10,7 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AntiCheatPreferences @Inject constructor(@ApplicationContext context: Context) {
+class AntiCheatPreferences @Inject constructor(@ApplicationContext context: Context) : TimeBaselineSource {
 
     private val prefs = context.getSharedPreferences("anti_cheat_prefs", Context.MODE_PRIVATE)
 
@@ -23,6 +27,11 @@ class AntiCheatPreferences @Inject constructor(@ApplicationContext context: Cont
         private const val KEY_CV_OFFENSE_COUNT = "cv_offense_count"
         private const val KEY_CV_LAST_OFFENSE_DATE = "cv_last_offense_date"
         private const val DECAY_DAYS = 7L
+        private const val KEY_TAMPER_LAST_ELAPSED = "tamper_last_elapsed"
+        private const val KEY_TAMPER_LAST_WALL = "tamper_last_wall"
+        private const val KEY_TAMPER_MAX_WALL = "tamper_max_wall"
+        private const val KEY_TAMPER_TRUSTED_WALL = "tamper_trusted_wall"
+        private const val KEY_TAMPER_SET = "tamper_baseline_set"
     }
 
     fun resetDailyCounters(date: String) {
@@ -79,5 +88,31 @@ class AntiCheatPreferences @Inject constructor(@ApplicationContext context: Cont
                 Log.d(TAG, "CV offense decayed ($count → $newCount)")
             }
         } catch (_: Exception) { /* malformed date — leave as-is */ }
+    }
+
+    /** #211: a fresh clock reading (the one Android-coupled time seam). */
+    override fun currentTimeReading(): TimeReading =
+        TimeReading(elapsedRealtime = SystemClock.elapsedRealtime(), wallClock = System.currentTimeMillis())
+
+    /** #211: the persisted tamper baseline, or null until first written. */
+    override fun readTimeBaseline(): TimeBaseline? {
+        if (!prefs.getBoolean(KEY_TAMPER_SET, false)) return null
+        return TimeBaseline(
+            lastElapsedRealtime = prefs.getLong(KEY_TAMPER_LAST_ELAPSED, 0),
+            lastWallClock = prefs.getLong(KEY_TAMPER_LAST_WALL, 0),
+            maxWallClockSeen = prefs.getLong(KEY_TAMPER_MAX_WALL, 0),
+            trustedWallClock = prefs.getLong(KEY_TAMPER_TRUSTED_WALL, 0),
+        )
+    }
+
+    /** #211: persists the (advanced) tamper baseline. */
+    fun writeTimeBaseline(baseline: TimeBaseline) {
+        prefs.edit()
+            .putLong(KEY_TAMPER_LAST_ELAPSED, baseline.lastElapsedRealtime)
+            .putLong(KEY_TAMPER_LAST_WALL, baseline.lastWallClock)
+            .putLong(KEY_TAMPER_MAX_WALL, baseline.maxWallClockSeen)
+            .putLong(KEY_TAMPER_TRUSTED_WALL, baseline.trustedWallClock)
+            .putBoolean(KEY_TAMPER_SET, true)
+            .apply()
     }
 }
