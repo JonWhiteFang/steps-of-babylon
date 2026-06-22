@@ -33,7 +33,8 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — branch `fix/234-process-death-state-survival`, ready to PR; `[Unreleased]`).**
+- **CURRENT (DONE — MERGED PR #307, squash `051c1cf`; #234 auto-closed; `[Unreleased]`).** Both CI lanes
+  green (build-and-test 7m41s, connected/instrumented 6m35s); squash-merged 2026-06-22; branch deleted.
   **Process-death state survival (#234, `severity:major`).** Transient UI state Android drops on a
   process kill now survives via `SavedStateHandle` (ViewModels) / `rememberSaveable` (Compose): Workshop
   selected tab, Stats selected period, the Cards **pack-reveal payload** (the reveal-once card-flip
@@ -52,9 +53,8 @@ the med/low backlog (#262) remain.
   overlay (engine holds no serializable snapshot — not survivable without major work); `onboardingComplete`
   already durable via `OnboardingPreferences`; the "onboarding-finish bug" #234 alleged was investigated
   and found NOT real (`OnboardingScreen` persists before `onFinished`). permissionAsked restore is an
-  on-device dev step. No ADR (established platform APIs). **Next:** open the PR; watch CI; merge;
-  checkpoint. Then remaining audit majors — #211 (clock-tamper), #258 (schema docs), #253 (Compose UI
-  tests); i18n #34; med/low #262/#128.
+  on-device dev step. No ADR (established platform APIs). **Next:** remaining audit majors — #211
+  (clock-tamper), #258 (schema docs), #253 (Compose UI tests); i18n #34; med/low #262/#128.
 - **Previous objective (DONE — MERGED PR #304, squash `3d33240`; #231 auto-closed; #230 left OPEN by design; `[Unreleased]`).**
   Both CI lanes green (build-and-test 5m17s, connected/instrumented 4m42s); squash-merged 2026-06-22;
   branch deleted. **#230 deliberately NOT auto-closed** — the PR omitted a `Closes #230` directive because
