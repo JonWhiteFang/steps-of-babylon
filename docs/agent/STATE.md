@@ -33,7 +33,7 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — branch `feat/lint-enforcement-detekt-ktlint`, ready to PR; `[Unreleased]`).**
+- **CURRENT (DONE — MERGED PR #312, squash `6236a42`; `[Unreleased]`).**
   **Kotlin lint enforcement: detekt + ktlint CI gate (#311; ADR-0037).** Build-infra + config + CI only —
   no production Kotlin, no schema/economy/engine change, no test-count change (1230 JVM + 9 instrumented
   unchanged). **detekt:** `dev.detekt` 2.0.0-alpha.5 Gradle plugin (alpha unavoidable — no stable for
@@ -49,7 +49,7 @@ the med/low backlog (#262) remain.
   plugin rejected (unproven AGP-9 source-set detection); `:baselineprofile`/`:macrobenchmark` not linted.
   **ADR-0037.** **Next:** PR + CI; then remaining audit majors — #253 (Compose UI follow-up screens);
   i18n #34; med/low #262/#128; the larger #233 Simulation-hoist (ADR-0012).
-- **Previous objective (DONE — branch `fix/211-258-clock-tamper-schema-doc`, ready to PR; `[Unreleased]`).**
+- **Previous objective (DONE — MERGED PR #309, squash `0baf9bc`; #211/#258 auto-closed; `[Unreleased]`).**
   **Time-axis anti-cheat: clock-tamper resistance (#211) + schema-doc gap-fill (#258).** ADR-0036.
   Pure-domain `TimeIntegrity` (4-slot baseline, `Trusted`/`Rollback`), reboot-durable max-wall-clock floor +
   capped-accrual `trustedWallClock` anchor. Two exploits closed (backward rollback + in-session forward
