@@ -4,6 +4,29 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Architecture — GameEngine god-class decomposition (#230 · #231; ADR-0012 Phase 4)
+
+The 1233-line `presentation/battle/engine/GameEngine` — the highest-churn, hardest-to-reason-about file
+in the app — was decomposed into focused collaborators while staying **strictly behavior-preserving**.
+ADR-0012's earlier phases extracted the pure-domain simulation core; this finishes the *presentation*
+split. `GameEngine` is now an orchestrator + sole `entitiesLock` owner + public façade (unchanged public
+API) that composes four collaborators reached via narrow host interfaces (`UWHost`/`BuffHost`/`CombatHost`
+in new `BattleHosts.kt`): **`BattleRenderer`** (Canvas draw + ALL `Paint` — `GameEngine` now holds zero
+Paint fields), **`UWController`** (UW lifecycle + CHRONO/GOLDEN/fortune state incl. the #119 re-layer),
+**`BuffTickers`** (recovery/rapid-fire/lifesteal timers), **`CombatResolver`** (damage/defense/thorn/
+second-wind, targeting, enemy death + reward side-effects). The two pure cash-reward formulas hoisted to
+`SimulationMath` (`killCashReward`/`waveCompleteCash`, #230's domain half), bit-identical. **No
+schema/economy/engine-logic change; 1196 → 1205 JVM** (+2 cash-formula + 7 collaborator tests, the latter
+exercising logic previously trapped behind Robolectric-style reflection — the decomposition payoff);
+`testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. `GameEngine.kt` 1233 → 618 LOC; every new
+collaborator < 400 LOC. **Thread-safety preserved exactly** — collaborators hold no monitor of their own
+and run inside the engine's held lock; `GameEngineConcurrencyTest`/`EffectEngineConcurrencyTest` pass
+UNCHANGED. Spec + plan each through the Adversarial Review Gate (spec 37→24 surviving; **plan 34→18,
+catching 3 critical pre-code compile-breakers** — a field-rename/param collision, a missed direct
+`uwStates[0]` test access, and a dangling `CashEconomyTest` constant ref). **ADR-0012 Phase 4.** #231
+closeable; #230 closeable on the partial-domain-hoist + explicit-tracking basis (UW effect-resolution
+domain hoist deferred — needs `EntityProtocol` surgery, tracked in ADR-0012).
+
 ### Architecture — close the data↔domain cycle (#220): verify resolved + harden the purity guard
 
 The cyclic `data↔domain` coupling #220 (ARCH-3) flagged was **already resolved** by the #227/#228/#229

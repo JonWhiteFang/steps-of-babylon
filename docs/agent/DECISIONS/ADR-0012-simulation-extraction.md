@@ -74,6 +74,21 @@ Estimated effort: 3-4 days. Requires V1X-08 (instrumented tests) as a safety net
 
 Phase 3 is complete: the in-round cash economy, round-progress counters, chrono-aware entity tick, collision sweep, UW lifecycle timers, and the side-effect event hand-off all live in the pure-domain `Simulation`.
 
+**Phase 4 (#230/#231, COMPLETE — 2026-06-22):** Presentation-layer decomposition of the still-1233-line `GameEngine`. Phase 3 extracted the pure-domain core, but the bulk of the *presentation* mechanics (Canvas render, UW lifecycle, per-mechanic buff timers, combat/death resolution) remained co-habiting one Canvas-coupled god class. #230/#231 split it into focused collaborators that `GameEngine` composes and reaches via three narrow capability interfaces (`UWHost`/`BuffHost`/`CombatHost`, in `presentation/battle/engine/BattleHosts.kt`), which `GameEngine` implements:
+
+- **`BattleRenderer`** (89 LOC) — owns all Canvas `Paint` + the per-frame draw sequence (lifted verbatim from `GameEngine.render()`). `GameEngine` zero longer holds any `android.graphics.Paint` field.
+- **`UWController`** (303 LOC) — UW cooldown/effect state machine, auto-trigger, ongoing effects (BLACK_HOLE/POISON_SWAMP), CHRONO_FIELD/GOLDEN_ZIGGURAT activation+expiry, and the #119 GOLDEN re-layer (`relayerBaseStats`). Owns `uwStates`, `chronoActive`/`chronoSlowFactor`/`fortuneMultiplier` (plain `var private set`). Delegates pure timer arithmetic to the engine-owned `Simulation` (passed via ctor).
+- **`BuffTickers`** (150 LOC) — RECOVERY_PACKAGES / RAPID_FIRE / LIFESTEAL timers + accumulator.
+- **`CombatResolver`** (209 LOC) — projectile/orb hits, ziggurat damage+defense+thorn+second-wind+death-defy, enemy death (reward credit/feedback + SCATTER split), wave-complete cash. Owns its own `CalculateDamage`/`CalculateDefense`.
+
+**Pure-formula hoist (#230's domain half):** the two inline cash-reward formulas moved to `SimulationMath` as `killCashReward(...)` / `waveCompleteCash(...)` (+ named constants `BASE_CASH_PER_WAVE`/`FLAT_BONUS_PER_WAVE_LEVEL`/`CASH_BONUS_PER_LEVEL`), arithmetically bit-identical, now pure-JVM tested.
+
+**Thread-safety preserved exactly:** `GameEngine` stays the SOLE owner of `entitiesLock` (held across the whole `update()` tick); collaborators contain no `synchronized` block and run inside the held lock (or the main-thread `init`/`initUWs`/`uwSnapshot` paths the engine wraps, #191). The acyclic `entitiesLock → effectsLock` order is unchanged. `GameEngineConcurrencyTest` + `EffectEngineConcurrencyTest` pass **unchanged** (empty diff vs `main`) — the proof the concurrency model survived.
+
+**Result:** `GameEngine.kt` 1233 → 618 LOC (orchestrator + lock owner + façade; public API unchanged); every new collaborator < 400 LOC. Behavior-preserving (the existing corpus is the oracle; `GameEngineTest` reflection re-pointed to collaborators via `@VisibleForTesting` getters, no assertion weakened). +9 JVM tests (2 cash-formula + 7 collaborator) → 1196 → 1205.
+
+**Explicitly NOT done (tracked remaining slice, per #230's "track remaining slices explicitly"):** UW *effect resolution* (the `when(type)` damage/pull/DoT bodies) and `applyDamageToZiggurat`/`applyThorn` HP mutation are NOT hoisted to the pure-domain `Simulation` — they call `EnemyEntity.takeDamage`/`applyKnockback`/`ZigguratEntity.currentHp`, none of which `EntityProtocol` exposes. A true domain hoist needs entity-model surgery (extend `EntityProtocol` / new domain ports) — a separate large refactor. #231 closes on this PR; #230 closes on the partial-domain-hoist + explicit-tracking basis (confirm with the issue owner if #230 demands the full domain migration).
+
 ## References
 
 - `domain/battle/engine/SimulationMath.kt` — extracted pure-math helpers
