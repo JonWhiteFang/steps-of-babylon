@@ -33,7 +33,12 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — branch `refactor/230-231-gameengine-decomposition`, ready to PR; `[Unreleased]`).**
+- **CURRENT (DONE — MERGED PR #304, squash `3d33240`; #231 auto-closed; #230 left OPEN by design; `[Unreleased]`).**
+  Both CI lanes green (build-and-test 5m17s, connected/instrumented 4m42s); squash-merged 2026-06-22;
+  branch deleted. **#230 deliberately NOT auto-closed** — the PR omitted a `Closes #230` directive because
+  full closure is a judgment call on the partial-domain-hoist basis (UW *effect-resolution* domain hoist
+  deferred to a future ADR-0012 slice needing `EntityProtocol` surgery); close #230 manually if that basis
+  is accepted, else leave it open as the tracked follow-up.
   **GameEngine god-class decomposition (#230 · #231; ADR-0012 Phase 4).** The 1233-line
   `presentation/battle/engine/GameEngine` — the app's highest-churn/highest-risk file — split into an
   orchestrator + sole-`entitiesLock`-owner + façade composing four collaborators via narrow host
@@ -53,9 +58,9 @@ the med/low backlog (#262) remain.
   KDoc + stale `updateUWs→` comment refs — fixed). **ADR-0012 Phase 4.** **#231 closeable; #230 closeable
   on the partial-domain-hoist + explicit-tracking basis** (UW *effect-resolution* domain hoist deferred —
   needs `EntityProtocol` surgery, tracked in ADR-0012; confirm with issue owner if #230 demands the full
-  domain migration). **Next:** open the PR; then remaining audit majors — #234 (process-death/
-  SavedStateHandle), #211 (clock-tamper), #258 (schema docs), #253 (Compose UI tests); i18n #34; med/low
-  #262/#128.
+  domain migration). **Next:** the #230 close/keep-open call; then remaining audit majors — #234
+  (process-death/SavedStateHandle), #211 (clock-tamper), #258 (schema docs), #253 (Compose UI tests);
+  i18n #34; med/low #262/#128.
 - **Previous objective (DONE — branch `chore/220-harden-domain-purity-guard`, ready to PR; `[Unreleased]`).**
   **Close the data↔domain cycle (#220, ARCH-3).** Investigation found the cycle was **already resolved**
   by the #227/#228/#229 cluster — its back-edge (`domain.usecase → data.local`) is gone, `domain/` has
