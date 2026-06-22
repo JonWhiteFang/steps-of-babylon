@@ -21,11 +21,11 @@ wiring so the claim becomes true.
 **Why this is non-trivial (the real constraint):** the toolchain is bleeding-edge — **Kotlin 2.3.0 / AGP
 9.2.1 / Gradle 9.6.0**, with **AGP-9 built-in Kotlin** (the project applies NO `org.jetbrains.kotlin.android`
 plugin; doing so on a `com.android.*` module is an apply-time ERROR under AGP 9 — see `build.gradle.kts`
-lines 10-13). Kotlin 2.3.0 has **no stable lint tooling yet** (research, 2026-06-22):
+lines 11-13). Kotlin 2.3.0 has **no stable lint tooling yet** (research, 2026-06-22):
 - **detekt:** no stable release supports Kotlin 2.3.0. Only the `2.0.0-alpha` line does. Latest published =
   `2.0.0-alpha.5` (Maven `dev.detekt:detekt-gradle-plugin`, plugin id **`dev.detekt`** — the legacy
   `io.gitlab.arturbosch.detekt` id is the dead 1.x line). The chosen pin alpha.5 (and alpha.4) bundles an
-  engine **built against Kotlin 2.4.0 / AGP 9.2.1 / Gradle 9.5.1** (exact AGP match) and declares
+  engine **built against Kotlin 2.4.0 / AGP 9.2.1 / (approx Gradle 9.5.x)** (exact AGP match) and declares
   config-cache compatibility; alpha.5 is a dep-leak/POM hotfix on top of alpha.4. The 2.4.0 Kotlin frontend
   is backward-compatible and parses the project's 2.3.0 source — and it is still the **only line supporting
   Kotlin 2.3.x at all** (a Kotlin-2.3.0-built engine first shipped in alpha.2; the alpha line is the only one
@@ -83,7 +83,7 @@ no `.editorconfig` today. CI is `ci.yml` (`build-and-test` job, the required PR-
 ## 3. Invariants & constraints
 
 1. **Do NOT apply `org.jetbrains.kotlin.android`** to satisfy either tool — apply-time ERROR under AGP 9
-   (`build.gradle.kts:10-13`). detekt keys off AGP, not the Kotlin plugin; ktlint CLI needs no Gradle plugin
+   (`build.gradle.kts:11-13`). detekt keys off AGP, not the Kotlin plugin; ktlint CLI needs no Gradle plugin
    at all.
 2. **Version-catalog single source.** The detekt plugin version pins in `gradle/libs.versions.toml`
    (`[versions]` + `[plugins]`), declared `apply false` on the root `build.gradle.kts`, applied by alias in
@@ -123,7 +123,7 @@ no `.editorconfig` today. CI is `ci.yml` (`build-and-test` job, the required PR-
 ```toml
 # [versions]
 # detekt 2.0.0-alpha line: the ONLY line supporting Kotlin 2.3.x (stable 1.23.8 caps at Kotlin 2.0.21).
-# alpha.5 (and alpha.4) bundle an engine built against Kotlin 2.4.0 / AGP 9.2.1 / Gradle 9.5.1 + declare
+# alpha.5 (and alpha.4) bundle an engine built against Kotlin 2.4.0 / AGP 9.2.1 / (approx Gradle 9.5.x) + declare
 # config-cache compat; the 2.4.0 Kotlin frontend is backward-compatible and parses this project's 2.3.0
 # source (a Kotlin-2.3.0-built engine first shipped in alpha.2). alpha.5 = dep-leak/POM hotfix on alpha.4.
 # The exact AGP match (9.2.1) is what governs the plugin applying under AGP-9 built-in Kotlin. Alpha is
@@ -195,7 +195,7 @@ glob is ever needed it MUST be quoted — `"app/src/**/*.kt"` — so ktlint's An
 the shell). **Check-only by default (runs WITH `--baseline`); `lint-kotlin.sh --format` runs `-F` WITHOUT
 `--baseline`.** Emits a reporter file under `app/build/reports/ktlint/` (e.g.
 `--reporter=plain,output=app/build/reports/ktlint/ktlint.txt`) so a failing run leaves a triage artifact,
-symmetric with detekt's reports. **Locating ktlint:** prefer a repo-cached `./.ktlint/ktlint-1.8.0`
+symmetric with detekt's reports. **Locating ktlint:** prefer a repo-cached `./.ktlint/ktlint`
 (CI-downloaded), else a PATH `ktlint` whose version matches — and parse the prefixed output, since
 `ktlint --version` prints `ktlint version 1.8.0` (literal `ktlint version <X.Y.Z>` format), NOT a bare
 `1.8.0`: e.g. `installed=$(ktlint --version | awk '{print $NF}')` then `[ "$installed" = "$KTLINT_VERSION" ]`,
@@ -209,8 +209,9 @@ then caches it and runs `lint-kotlin.sh`. The control:
   `ktlint` self-executing jar), mirroring the existing `distributionSha256Sum` provenance comment. ktlint
   publishes NO `.sha256` sidecar — its release assets are `ktlint`, `ktlint.asc`, `ktlint-1.8.0.zip`,
   `ktlint.bat` — so the hash is computed once at implementation time when the jar is downloaded, not fetched.
-- **Verify command:** `echo "$KTLINT_SHA256  ktlint" | shasum -a 256 -c -` (or `sha256sum -c`) before
-  `chmod +x`/exec, **fail-closed on mismatch**.
+- **Verify command:** `echo "$KTLINT_SHA256  .ktlint/ktlint" | shasum -a 256 -c -` (or `sha256sum -c`) before
+  `chmod +x`/exec, **fail-closed on mismatch** (two spaces between hash and path, per shasum format; the path
+  matches the `.ktlint/ktlint` download target + cache name exactly).
 SHA-pinned + checksum-verified = consistent with #212.
 
 ### C. CI integration (`.github/workflows/ci.yml`, `build-and-test` job)

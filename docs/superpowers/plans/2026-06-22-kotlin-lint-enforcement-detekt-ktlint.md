@@ -10,8 +10,10 @@ the ~500-file existing-violation set so the gate fails only on NEW violations.
 
 **Spec:** `docs/superpowers/specs/2026-06-22-kotlin-lint-enforcement-detekt-ktlint.md` (Adversarial-Review-Gate-passed: 23→12 surviving applied).
 
+**Plan reviewed:** Adversarial Review Gate applied (16 raised → 9 surviving → 7 refuted).
+
 **Toolchain (do not fight it):** Kotlin 2.3.0 / AGP 9.2.1 / Gradle 9.6.0, AGP-9 built-in Kotlin (NO
-`org.jetbrains.kotlin.android` — apply-time error, root `build.gradle.kts:10-13`). Version catalog at
+`org.jetbrains.kotlin.android` — apply-time error, root `build.gradle.kts:11-13`). Version catalog at
 `gradle/libs.versions.toml`; build via `./run-gradle.sh`.
 
 ---
@@ -64,7 +66,7 @@ gate + push + PR.
 - [ ] **Step 1: Catalog pin.** In `gradle/libs.versions.toml` add to `[versions]`:
   ```toml
   # detekt 2.0.0-alpha line: the ONLY line supporting Kotlin 2.3.x (stable 1.23.8 caps at Kotlin 2.0.21).
-  # alpha.4/.5 built against Kotlin 2.4.0 / AGP 9.2.1 / Gradle 9.5.1 — the 2.4.0 frontend parses the
+  # alpha.4/.5 built against Kotlin 2.4.0 / AGP 9.2.1 / (approx Gradle 9.5.x) — the 2.4.0 frontend parses the
   # project's 2.3.0 source (backward-compatible; a Kotlin-2.3.0-built engine first shipped in alpha.2).
   # AGP 9.2.1 is the exact match that governs whether the plugin applies under AGP-9 built-in Kotlin.
   # alpha.5 = dep-leak/POM hotfix on alpha.4 + config-cache compat. Alpha is unavoidable here and is
@@ -95,11 +97,16 @@ gate + push + PR.
   `config/detekt/detekt.yml`), then trim to a sane house ruleset: keep code-smell/complexity rules; **disable
   the `formatting` ruleset** (ktlint owns formatting — avoid dual ownership); keep the default generated-source
   exclusion + a belt `.*/build/.*` exclude. If `detektGenerateConfig` isn't available on the alpha, hand-write a
-  minimal `detekt.yml` with `build: { maxIssues: 0 }`-style config + `buildUponDefaultConfig` doing the heavy
-  lifting. Keep the file small + commented.
+  minimal `detekt.yml` — detekt 2.0 has NO `build:/maxIssues` key (removed in 2.0); its fail mechanism is the
+  severity threshold `failOnSeverity` (default `Error`), and `buildUponDefaultConfig = true` already restores
+  `failOnSeverity = Error` with detekt emitting findings at `error` severity by default, so the hand-written
+  file needs NO explicit fail key — rely on `buildUponDefaultConfig = true` + default severity gating, with
+  `buildUponDefaultConfig` doing the heavy lifting. Keep the file small + commented.
 
 - [ ] **Step 5: Generate the baseline.** `./run-gradle.sh :app:detektBaseline > /tmp/dbase.log 2>&1; tail -20 /tmp/dbase.log`
-  → writes `config/detekt/baseline.xml` (suppresses the current ~500-file violation set).
+  → writes `config/detekt/baseline.xml` (suppresses the current ~500-file violation set). If `:app:detektBaseline`
+  isn't present on the alpha (mirroring the Step-4 hedge, and linking to the Step-6 contingency): either register a
+  `DetektCreateBaselineTask` (detekt.dev documented: `val detektProjectBaseline by tasks.registering(DetektCreateBaselineTask::class) { baseline.set(file("$rootDir/config/detekt/baseline.xml")); config.setFrom(...); buildUponDefaultConfig.set(true); setSource(files("app/src")) }`) and run that, OR — if the plugin path is being abandoned per Step 6 — generate the baseline via the CLI-via-JavaExec path (`detekt-cli … -b config/detekt/baseline.xml`, which auto-creates a missing baseline). Re-verify.
 
 - [ ] **Step 6: BUILD-GREEN-FIRST verification (do NOT skip).**
   ```
@@ -216,9 +223,12 @@ gate + push + PR.
 ### Task 4: Mutation-test both gates (prove they're not no-ops)
 
 - [ ] **Step 1: detekt** — introduce a deliberate detekt smell of a severity the config FAILS on (verify the
-  config's fail threshold first — a non-failing severity proves nothing). Confirm `./run-gradle.sh :app:detekt`
-  exits non-zero, then REVERT. (If the chosen ruleset only warns, tighten the config so at least one rule
-  fails the build, else the gate is decorative.)
+  config's fail threshold first — a non-failing severity proves nothing). Confirm the active config fails the
+  build at `error` severity (detekt 2.0 `failOnSeverity = Error`, restored by `buildUponDefaultConfig = true`);
+  pick the deliberate smell from a STILL-ACTIVE ruleset (NOT the disabled `formatting` ruleset — ktlint owns
+  that) and at a rule whose severity is `error`, else `:app:detekt` won't fail and the test proves nothing.
+  Confirm `./run-gradle.sh :app:detekt` exits non-zero, then REVERT. (If the chosen ruleset only warns, tighten
+  the config so at least one rule fails the build, else the gate is decorative.)
 
 - [ ] **Step 2: ktlint** — introduce a NEW ktlint violation NOT in the baseline (e.g. a wildcard import or an
   over-long line in a scratch file under `app/src`). Confirm `./lint-kotlin.sh` exits non-zero, then REVERT.
@@ -231,7 +241,9 @@ gate + push + PR.
 ### Task 5: ADR + current-state doc sync
 
 **Files:** `docs/agent/DECISIONS/ADR-00NN-kotlin-lint-enforcement.md` (next free number — check
-`ls docs/agent/DECISIONS/`; ADR-0036 is taken, so likely ADR-0037), `CLAUDE.md`, `CHANGELOG.md`, `README.md`,
+`ls docs/agent/DECISIONS/` for the next free number; the resolved number is currently **ADR-0037** (ADR-0036
+is the highest committed, no branch claims 0037), and that resolved number MUST be substituted everywhere
+`ADR-00NN` appears in Task 5 before acting), `CLAUDE.md`, `CHANGELOG.md`, `README.md`,
 `docs/steering/source-files.md`, `docs/steering/tech.md`, `docs/steering/structure.md`.
 
 - [ ] **Step 1: ADR** — the decision (detekt as `dev.detekt` alpha.5 Gradle plugin, plain task; ktlint as
@@ -250,7 +262,9 @@ gate + push + PR.
   production-code/schema/test-count change; detekt alpha rationale; ktlint CLI + SHA pin; ADR number).
 
 - [ ] **Step 4: README.md** — Build & Run section: document `./lint-kotlin.sh [--format]` + `./run-gradle.sh :app:detekt`
-  alongside the existing `run-gradle.sh` test/build entries (new committed dev commands = user-facing).
+  alongside the existing `run-gradle.sh` test/build entries (new committed dev commands = user-facing). Do NOT
+  touch the README JVM-test count — this PR adds no tests; any existing test-count drift is a separate
+  pre-existing concern, out of scope here.
 
 - [ ] **Step 5: steering docs** — `source-files.md`: add `lint-kotlin.sh`, `config/detekt/*`, `config/ktlint/*`,
   `.editorconfig` entries. `tech.md`: note detekt/ktlint versions + the alpha/CLI rationale (dependency/tooling
@@ -258,6 +272,7 @@ gate + push + PR.
 
 - [ ] **Step 6: Commit.**
   ```
+  # NOTE: ADR-00NN below must be the RESOLVED filename (e.g. ADR-0037-kotlin-lint-enforcement.md), not the literal placeholder.
   git add docs/agent/DECISIONS/ADR-00NN-kotlin-lint-enforcement.md CLAUDE.md CHANGELOG.md README.md docs/steering/
   git commit -m "docs: ADR + sync for Kotlin lint enforcement (detekt + ktlint) (#lint)"
   ```
