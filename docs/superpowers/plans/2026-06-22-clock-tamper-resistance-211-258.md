@@ -28,8 +28,10 @@
 | File | Change | Responsibility |
 |---|---|---|
 | `docs/database-schema.md` | Modify | #258: add the pre-v7 upgrade-crash note (docs-only) |
-| `domain/time/TimeIntegrity.kt` | Create | pure decision core: `TimeBaseline`/`TimeReading`/`TimeVerdict` + `evaluate`/`trustedElapsedSince` |
-| `data/anticheat/AntiCheatPreferences.kt` | Modify | 3 new `Long` slots + `readTimeBaseline()`/`writeTimeBaseline()` + `currentTimeReading()` (the Android clock reads) |
+| `domain/time/TimeIntegrity.kt` | Create | pure core: `TimeBaseline`(4 slots)/`TimeReading`/`TimeVerdict` + `evaluate` (capped-accrual `trustedWallClock`) + `TimeBaselineSource` interface |
+| `data/anticheat/AntiCheatPreferences.kt` | Modify | implements `TimeBaselineSource`; 4 new `Long` slots + `readTimeBaseline()`/`writeTimeBaseline()`/`currentTimeReading()` (the Android clock reads) |
+| `di/TimeModule.kt` | Modify | `@Binds TimeBaselineSource` → `AntiCheatPreferences` |
+| `app/.../fakes/FakeTimeBaselineSource.kt` | Create | test double for the VM tests |
 | `domain/usecase/TrackDailyLogin.kt` | Modify | gains a `TimeVerdict` param; on `Rollback` → early no-credit return |
 | `domain/usecase/CheckResearchCompletion.kt` | Modify | `now` becomes the trusted-now passed by callers (no signature-shape change) |
 | `domain/usecase/CompleteResearch.kt` | Modify | same — gate on the trusted-now |
@@ -53,7 +55,7 @@
 
 - [ ] **Step 1: Confirm the floor-safety fact from release history**
 
-Run: `rg -n "1.0.0|v1.0.0|first release|internal track" CHANGELOG.md | head` and confirm the app first shipped at schema ≥ v7 (no pre-v7 public install). This is the rationale the note asserts. (If CHANGELOG contradicts it, STOP and report — the alternative is a developer decision, not this doc fix.)
+Verify the floor-safety fact against the **dated internal-track rollout entries** in CHANGELOG (NOT a keyword grep — that's too narrow to confirm schema-at-first-ship). Run `rg -n "internal track|schema v|versionCode|Plan 31|C.5 PR 1" CHANGELOG.md | head -40` and confirm the documented sequence: schema reached **v9** (Phase C.5 PR 1, ~2026-05-11) BEFORE the first internal-track distribution (Plan 31 walk-through ~2026-05-13/14; v2/v3 rollout ~2026-05-15; "AAB v9 verified on internal track" ~2026-05-23). So the first distributed build was schema v9 (≥ v7). **STOP only if** a CHANGELOG entry shows a build at schema < v7 was distributed to a tester (the genuine refutation) — then it's a separate developer decision, not this doc fix.
 
 - [ ] **Step 2: Add the note near the migration-floor line**
 
@@ -95,67 +97,77 @@ import org.junit.jupiter.api.Test
 
 class TimeIntegrityTest {
     private fun reading(elapsed: Long, wall: Long) = TimeReading(elapsed, wall)
+    // 4-slot baseline helper (lastElapsed, lastWall, maxSeen, trustedWall)
+    private fun base(elapsed: Long, wall: Long, max: Long, trusted: Long) =
+        TimeBaseline(elapsed, wall, max, trusted)
 
     @Test
-    fun `first run with null baseline is Trusted and seeds maxWallClockSeen`() {
+    fun `first run with null baseline is Trusted and seeds maxSeen and trustedWallClock`() {
         val v = TimeIntegrity.evaluate(null, reading(elapsed = 1000, wall = 5000))
         assertTrue(v is TimeVerdict.Trusted)
         assertEquals(5000, v.newBaseline.maxWallClockSeen)
+        assertEquals(5000, v.newBaseline.trustedWallClock)   // seeded to wall
         assertEquals(5000, v.newBaseline.lastWallClock)
         assertEquals(1000, v.newBaseline.lastElapsedRealtime)
     }
 
     @Test
-    fun `normal forward advance is Trusted and advances maxWallClockSeen`() {
-        val base = TimeBaseline(lastElapsedRealtime = 1000, lastWallClock = 5000, maxWallClockSeen = 5000)
-        val v = TimeIntegrity.evaluate(base, reading(elapsed = 4000, wall = 8000))
+    fun `normal forward advance is Trusted; trustedWallClock advances by the capped delta`() {
+        val b = base(elapsed = 1000, wall = 5000, max = 5000, trusted = 5000)
+        val v = TimeIntegrity.evaluate(b, reading(elapsed = 4000, wall = 8000))
         assertTrue(v is TimeVerdict.Trusted)
         assertEquals(8000, v.newBaseline.maxWallClockSeen)
+        // wallDelta=3000, elapsedDelta=3000 → capped=3000 → trusted 5000+3000=8000
+        assertEquals(8000, v.newBaseline.trustedWallClock)
         assertEquals(8000, v.newBaseline.lastWallClock)
         assertEquals(4000, v.newBaseline.lastElapsedRealtime)
     }
 
     @Test
-    fun `backward jump below the floor is Rollback even when elapsed advanced`() {
-        val base = TimeBaseline(lastElapsedRealtime = 1000, lastWallClock = 9000, maxWallClockSeen = 9000)
-        // wall jumped BACK to 4000 (< maxSeen 9000) while elapsed advanced normally
-        val v = TimeIntegrity.evaluate(base, reading(elapsed = 2000, wall = 4000))
+    fun `in-session forward JUMP advances trustedWallClock only by the elapsed delta (excess discarded)`() {
+        val b = base(elapsed = 1000, wall = 5000, max = 5000, trusted = 5000)
+        // wall leapt +30 min (1_800_000) but only 5 min (300_000) of monotonic time passed
+        val v = TimeIntegrity.evaluate(b, reading(elapsed = 301_000, wall = 1_805_000))
+        assertTrue(v is TimeVerdict.Trusted)            // forward, not below floor
+        // capped = min(1_800_000, 300_000) = 300_000 → trusted 5000+300_000 = 305_000 (NOT 1_805_000)
+        assertEquals(305_000, v.newBaseline.trustedWallClock)
+        assertEquals(1_805_000, v.newBaseline.maxWallClockSeen) // floor advances to the raw wall
+    }
+
+    @Test
+    fun `backward jump below the floor is Rollback; trustedWallClock does not move backward`() {
+        val b = base(elapsed = 1000, wall = 9000, max = 9000, trusted = 9000)
+        // wall jumped BACK to 4000 (< maxSeen 9000) while elapsed advanced
+        val v = TimeIntegrity.evaluate(b, reading(elapsed = 2000, wall = 4000))
         assertTrue(v is TimeVerdict.Rollback)
         assertEquals(9000, v.newBaseline.maxWallClockSeen) // floor unchanged (max of prev, 4000)
+        // capped = max(0, min(wallDelta=-5000, elapsedDelta=1000)) = 0 → trusted stays 9000
+        assertEquals(9000, v.newBaseline.trustedWallClock)
         assertEquals(4000, v.newBaseline.lastWallClock)
         assertEquals(2000, v.newBaseline.lastElapsedRealtime)
     }
 
     @Test
-    fun `reboot (elapsed reset to small) with wall still above floor is Trusted not false-rollback`() {
-        val base = TimeBaseline(lastElapsedRealtime = 900_000, lastWallClock = 9000, maxWallClockSeen = 9000)
+    fun `reboot (elapsed reset) with wall above floor is Trusted not false-rollback`() {
+        val b = base(elapsed = 900_000, wall = 9000, max = 9000, trusted = 9000)
         // after reboot elapsedRealtime resets near 0; wall still >= floor
-        val v = TimeIntegrity.evaluate(base, reading(elapsed = 50, wall = 9500))
+        val v = TimeIntegrity.evaluate(b, reading(elapsed = 50, wall = 9500))
         assertTrue(v is TimeVerdict.Trusted)
         assertEquals(9500, v.newBaseline.maxWallClockSeen)
+        // reboot fallback (elapsedDelta<0) → capped = full wallDelta 500 → trusted 9000+500=9500 (accepted §2 gap)
+        assertEquals(9500, v.newBaseline.trustedWallClock)
     }
 
     @Test
-    fun `trustedElapsedSince caps a forward wall jump at the elapsed delta`() {
-        val base = TimeBaseline(lastElapsedRealtime = 1000, lastWallClock = 5000, maxWallClockSeen = 5000)
-        // wall leapt +30 min (1_800_000) but only 5 min (300_000) of monotonic time passed
-        val trusted = TimeIntegrity.trustedElapsedSince(base, reading(elapsed = 301_000, wall = 1_805_000))
-        assertEquals(300_000, trusted) // min(1_800_000, 300_000)
-    }
-
-    @Test
-    fun `trustedElapsedSince returns full wall delta on reboot (elapsed delta negative)`() {
-        val base = TimeBaseline(lastElapsedRealtime = 900_000, lastWallClock = 5000, maxWallClockSeen = 5000)
-        // reboot: elapsed reset → elapsedDelta negative → fall back to wall delta (the accepted gap)
-        val trusted = TimeIntegrity.trustedElapsedSince(base, reading(elapsed = 100, wall = 8000))
-        assertEquals(3000, trusted)
-    }
-
-    @Test
-    fun `trustedElapsedSince clamps a backward wall move to zero`() {
-        val base = TimeBaseline(lastElapsedRealtime = 1000, lastWallClock = 9000, maxWallClockSeen = 9000)
-        val trusted = TimeIntegrity.trustedElapsedSince(base, reading(elapsed = 2000, wall = 4000))
-        assertEquals(0, trusted) // min(-5000, 1000) = -5000 → clamp ≥ 0
+    fun `order-independence: advancing the baseline then re-deriving from it keeps the jump capped`() {
+        // simulates: single owner advances on a forward-jump pass, THEN a read-only consumer
+        // re-evaluates against the persisted (advanced) baseline with the same jumped reading.
+        val b0 = base(elapsed = 1000, wall = 5000, max = 5000, trusted = 5000)
+        val owner = TimeIntegrity.evaluate(b0, reading(elapsed = 301_000, wall = 1_805_000))
+        assertEquals(305_000, owner.newBaseline.trustedWallClock)
+        // consumer reads the advanced baseline + the same (still-jumped) reading → no further excess folds in
+        val consumer = TimeIntegrity.evaluate(owner.newBaseline, reading(elapsed = 301_000, wall = 1_805_000))
+        assertEquals(305_000, consumer.newBaseline.trustedWallClock) // unchanged — the jump never re-accepted
     }
 }
 ```
@@ -177,11 +189,13 @@ package com.whitefang.stepsofbabylon.domain.time
  * layer (AntiCheatPreferences); this object only reasons over the values.
  */
 
-/** Persisted tamper baseline (three Long slots in anti_cheat_prefs). */
+/** Persisted tamper baseline (FOUR Long slots in anti_cheat_prefs). */
 data class TimeBaseline(
     val lastElapsedRealtime: Long,   // monotonic since-boot clock at last checkpoint
-    val lastWallClock: Long,         // wall-clock at last checkpoint
+    val lastWallClock: Long,         // raw wall-clock at last checkpoint (to compute the next wallDelta)
     val maxWallClockSeen: Long,      // highest wall-clock ever observed — the reboot-durable rollback floor
+    val trustedWallClock: Long,      // capped-accrual anchor — the trusted "now"; only ever advances by
+                                     // min(wallDelta, elapsedDelta), so a forward jump's excess is never folded in
 )
 
 /** A fresh pair of readings taken together at one instant. */
@@ -197,44 +211,46 @@ sealed interface TimeVerdict {
 object TimeIntegrity {
 
     /**
-     * Update the baseline from a fresh reading and classify the time axis.
-     * - baseline == null (first run): Trusted; seed maxWallClockSeen = reading.wallClock.
+     * Update the baseline from a fresh reading and classify the time axis. `newBaseline.trustedWallClock`
+     * IS the trusted "now" callers use to gate research.
+     * - baseline == null (first run): Trusted; seed maxWallClockSeen = trustedWallClock = reading.wallClock.
      * - reading.wallClock < baseline.maxWallClockSeen: Rollback (backward jump — reboot-durable).
      * - else: Trusted.
      *
-     * In ALL branches the new baseline advances lastWallClock / lastElapsedRealtime to "now"; only
-     * maxWallClockSeen is the monotonic-max floor (max of prev and reading.wallClock).
+     * In ALL branches: lastWallClock/lastElapsedRealtime advance to "now"; maxWallClockSeen =
+     * max(prev, reading.wallClock); trustedWallClock advances by the CAPPED delta (so an in-session
+     * forward jump's excess is discarded). The capped-accrual anchor is order-independent — a read-only
+     * consumer re-evaluating against an owner-advanced baseline still gets the capped value (it never
+     * re-accepts the jump). Reboot (elapsedDelta < 0) → cappedDelta falls back to the full wallDelta
+     * (accepted §2 forward-jump-across-reboot gap); the Rollback floor guards only the backward direction.
      */
     fun evaluate(baseline: TimeBaseline?, reading: TimeReading): TimeVerdict {
         if (baseline == null) {
             return TimeVerdict.Trusted(
-                TimeBaseline(reading.elapsedRealtime, reading.wallClock, reading.wallClock),
+                TimeBaseline(
+                    lastElapsedRealtime = reading.elapsedRealtime,
+                    lastWallClock = reading.wallClock,
+                    maxWallClockSeen = reading.wallClock,
+                    trustedWallClock = reading.wallClock,
+                ),
             )
         }
-        val newMax = maxOf(baseline.maxWallClockSeen, reading.wallClock)
-        val advanced = TimeBaseline(reading.elapsedRealtime, reading.wallClock, newMax)
+        val wallDelta = reading.wallClock - baseline.lastWallClock
+        val elapsedDelta = reading.elapsedRealtime - baseline.lastElapsedRealtime
+        val cappedDelta =
+            if (elapsedDelta < 0) wallDelta.coerceAtLeast(0)          // reboot: no monotonic cap available
+            else minOf(wallDelta, elapsedDelta).coerceAtLeast(0)
+        val advanced = TimeBaseline(
+            lastElapsedRealtime = reading.elapsedRealtime,
+            lastWallClock = reading.wallClock,
+            maxWallClockSeen = maxOf(baseline.maxWallClockSeen, reading.wallClock),
+            trustedWallClock = baseline.trustedWallClock + cappedDelta,
+        )
         return if (reading.wallClock < baseline.maxWallClockSeen) {
             TimeVerdict.Rollback(advanced)
         } else {
             TimeVerdict.Trusted(advanced)
         }
-    }
-
-    /**
-     * Trusted elapsed wall-time since the baseline, for the in-session forward-jump guard:
-     * min(wallDelta, elapsedDelta) clamped to >= 0. A forward wall jump can't claim more "real time"
-     * than the monotonic clock advanced this session.
-     *
-     * Reboot fallback (accepted §2 gap): when elapsedDelta < 0 the device rebooted (elapsedRealtime is
-     * since-boot) so there is no in-session monotonic delta to cap against → returns the FULL wall delta.
-     * The Rollback floor does NOT guard this (it catches only backward jumps), so a reboot-spanning
-     * forward jump passes through — the documented-accepted boundary.
-     */
-    fun trustedElapsedSince(baseline: TimeBaseline, reading: TimeReading): Long {
-        val wallDelta = reading.wallClock - baseline.lastWallClock
-        val elapsedDelta = reading.elapsedRealtime - baseline.lastElapsedRealtime
-        if (elapsedDelta < 0) return wallDelta.coerceAtLeast(0) // reboot: no monotonic cap available
-        return minOf(wallDelta, elapsedDelta).coerceAtLeast(0)
     }
 }
 ```
@@ -285,11 +301,13 @@ class AntiCheatPreferencesTimeBaselineTest {
     }
 
     @Test
-    fun `writeTimeBaseline then readTimeBaseline round-trips all three slots`() {
+    fun `writeTimeBaseline then readTimeBaseline round-trips all four slots`() {
         val prefs = AntiCheatPreferences(RuntimeEnvironment.getApplication())
-        prefs.writeTimeBaseline(TimeBaseline(lastElapsedRealtime = 1234, lastWallClock = 5678, maxWallClockSeen = 9999))
+        prefs.writeTimeBaseline(
+            TimeBaseline(lastElapsedRealtime = 1234, lastWallClock = 5678, maxWallClockSeen = 9999, trustedWallClock = 7777),
+        )
         val read = prefs.readTimeBaseline()
-        assertEquals(TimeBaseline(1234, 5678, 9999), read)
+        assertEquals(TimeBaseline(1234, 5678, 9999, 7777), read)
     }
 
     @Test
@@ -310,32 +328,46 @@ Expected: FAIL — `readTimeBaseline`/`writeTimeBaseline`/`currentTimeReading` u
 
 - [ ] **Step 3: Add the baseline store to `AntiCheatPreferences`**
 
-Add these imports at the top of `AntiCheatPreferences.kt`:
+First, add the **`TimeBaselineSource` interface** (pure domain — the test seam the VMs inject) to
+`domain/time/TimeIntegrity.kt` (same file as the rest; Android-free):
+```kotlin
+/** Read-side seam over the persisted baseline + a fresh reading. AntiCheatPreferences implements it; a
+ *  fake backs the plain-JVM VM tests (they can't construct a Context-backed AntiCheatPreferences). #211. */
+interface TimeBaselineSource {
+    fun readTimeBaseline(): TimeBaseline?
+    fun currentTimeReading(): TimeReading
+}
+```
+Then add the store + the Android clock reads to `AntiCheatPreferences.kt`. Add imports:
 ```kotlin
 import android.os.SystemClock
 import com.whitefang.stepsofbabylon.domain.time.TimeBaseline
+import com.whitefang.stepsofbabylon.domain.time.TimeBaselineSource
 import com.whitefang.stepsofbabylon.domain.time.TimeReading
 ```
-Add to the `companion object` (alongside the existing keys):
+Make the class implement the interface: `class AntiCheatPreferences @Inject constructor(...) : TimeBaselineSource {`.
+Add to the `companion object` (alongside the existing keys) — note the **4th** slot:
 ```kotlin
         private const val KEY_TAMPER_LAST_ELAPSED = "tamper_last_elapsed"
         private const val KEY_TAMPER_LAST_WALL = "tamper_last_wall"
         private const val KEY_TAMPER_MAX_WALL = "tamper_max_wall"
+        private const val KEY_TAMPER_TRUSTED_WALL = "tamper_trusted_wall"
         private const val KEY_TAMPER_SET = "tamper_baseline_set"
 ```
-Add these methods to the class body:
+Add these methods to the class body (`override` since they satisfy `TimeBaselineSource`):
 ```kotlin
     /** #211: a fresh clock reading (the one Android-coupled time seam). */
-    fun currentTimeReading(): TimeReading =
+    override fun currentTimeReading(): TimeReading =
         TimeReading(elapsedRealtime = SystemClock.elapsedRealtime(), wallClock = System.currentTimeMillis())
 
     /** #211: the persisted tamper baseline, or null until first written. */
-    fun readTimeBaseline(): TimeBaseline? {
+    override fun readTimeBaseline(): TimeBaseline? {
         if (!prefs.getBoolean(KEY_TAMPER_SET, false)) return null
         return TimeBaseline(
             lastElapsedRealtime = prefs.getLong(KEY_TAMPER_LAST_ELAPSED, 0),
             lastWallClock = prefs.getLong(KEY_TAMPER_LAST_WALL, 0),
             maxWallClockSeen = prefs.getLong(KEY_TAMPER_MAX_WALL, 0),
+            trustedWallClock = prefs.getLong(KEY_TAMPER_TRUSTED_WALL, 0),
         )
     }
 
@@ -345,11 +377,12 @@ Add these methods to the class body:
             .putLong(KEY_TAMPER_LAST_ELAPSED, baseline.lastElapsedRealtime)
             .putLong(KEY_TAMPER_LAST_WALL, baseline.lastWallClock)
             .putLong(KEY_TAMPER_MAX_WALL, baseline.maxWallClockSeen)
+            .putLong(KEY_TAMPER_TRUSTED_WALL, baseline.trustedWallClock)
             .putBoolean(KEY_TAMPER_SET, true)
             .apply()
     }
 ```
-(The 3 keys live in the existing `anti_cheat_prefs` file, so `DataDeletionManager`'s existing clear of that file wipes them — no `PREFS_NAMES` change. Confirm `DataDeletionPrefsCoverageTest` stays green in the full gate.)
+(The 4 keys live in the existing `anti_cheat_prefs` file, so `DataDeletionManager`'s existing clear of that file wipes them — no `PREFS_NAMES` change. Confirm `DataDeletionPrefsCoverageTest` stays green in the full gate. `writeTimeBaseline` is NOT on the `TimeBaselineSource` interface — only the owner `DailyStepManager` and the concrete prefs write; read-only consumers use the interface.)
 
 - [ ] **Step 4: Run to verify pass**
 
@@ -373,40 +406,37 @@ git commit -m "feat(anticheat): TimeBaseline store in AntiCheatPreferences (#211
 
 - [ ] **Step 1: Write the failing tests**
 
-Add to `TrackDailyLoginTest.kt` (match the file's existing fakes + `runTest`; the existing tests pass `seasonPassExpiry = Long.MAX_VALUE` to dodge the inline clock):
+Add to `TrackDailyLoginTest.kt`. **Use the file's REAL fixtures — `loginRepo`, `playerRepo`, and the
+already-built `useCase` field** (the `@BeforeEach` constructs `useCase = TrackDailyLogin(loginRepo, playerRepo)`;
+do NOT re-`val vm = TrackDailyLogin(...)`). The existing tests pass `seasonPassExpiry = Long.MAX_VALUE` to
+dodge the inline clock:
 ```kotlin
 @Test
 fun `R211 rollback verdict writes nothing for the tampered date`() = runTest {
-    // arrange: a fresh date, normal profile
-    val vm = TrackDailyLogin(dailyLoginRepo, playerRepo)
     val gemsBefore = playerRepo.observeProfile().first().gems
-    vm.checkAndAward("2026-03-09", todayCreditedSteps = 0, isRollback = true)
-    // no DailyLogin row persisted for the tampered date
-    assertNull(dailyLoginRepo.getByDate("2026-03-09"))
-    // no gems credited
-    assertEquals(gemsBefore, playerRepo.observeProfile().first().gems)
+    useCase.checkAndAward("2026-03-09", todayCreditedSteps = 0, isRollback = true)
+    assertNull(loginRepo.getByDate("2026-03-09"))                       // no DailyLogin row
+    assertEquals(gemsBefore, playerRepo.observeProfile().first().gems)  // no gems credited
 }
 
 @Test
 fun `R211 trusted verdict credits normally (regression)`() = runTest {
-    val vm = TrackDailyLogin(dailyLoginRepo, playerRepo)
-    vm.checkAndAward("2026-03-09", todayCreditedSteps = 0, isRollback = false)
-    // a row is written + streak/gems advance exactly as before
-    assertNotNull(dailyLoginRepo.getByDate("2026-03-09"))
+    useCase.checkAndAward("2026-03-09", todayCreditedSteps = 0, isRollback = false)
+    assertNotNull(loginRepo.getByDate("2026-03-09"))                    // row written + streak/gems advance
 }
 
 @Test
-fun `R211 latched future clock then legit date is still denied while rolled back`() = runTest {
-    val vm = TrackDailyLogin(dailyLoginRepo, playerRepo)
-    // a rolled-back pass for date D writes nothing...
-    vm.checkAndAward("2026-03-09", todayCreditedSteps = 0, isRollback = true)
-    assertNull(dailyLoginRepo.getByDate("2026-03-09"))
-    // ...so when D legitimately arrives the credit is NOT pre-suppressed by a stale gemsClaimed=true
-    vm.checkAndAward("2026-03-09", todayCreditedSteps = 0, isRollback = false)
-    assertNotNull(dailyLoginRepo.getByDate("2026-03-09"))
+fun `R211 latched future clock then legit date is still credited`() = runTest {
+    // a rolled-back pass for date D writes nothing (no stale gemsClaimed=true latched)...
+    useCase.checkAndAward("2026-03-09", todayCreditedSteps = 0, isRollback = true)
+    assertNull(loginRepo.getByDate("2026-03-09"))
+    // ...so when D legitimately arrives the credit is NOT pre-suppressed
+    useCase.checkAndAward("2026-03-09", todayCreditedSteps = 0, isRollback = false)
+    assertNotNull(loginRepo.getByDate("2026-03-09"))
 }
 ```
-(Match the actual fake field names in the file — `dailyLoginRepo`/`playerRepo`. Add `assertNull`/`assertNotNull` imports from `org.junit.jupiter.api.Assertions` if absent, and `kotlinx.coroutines.flow.first`.)
+(Confirm the real fixture names at the top of the test file — they are `loginRepo`/`playerRepo`/`useCase`.
+Add `assertNull`/`assertNotNull` from `org.junit.jupiter.api.Assertions` + `kotlinx.coroutines.flow.first` if absent.)
 
 - [ ] **Step 2: Run to verify failure**
 
@@ -456,11 +486,21 @@ git commit -m "fix(login): refuse daily-login/streak credit on a clock rollback 
 ### Task 5: Research trusted-now guard + tests
 
 **Files:**
-- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/domain/usecase/CheckResearchCompletion.kt` (no signature change — the existing `now` param IS the seam)
-- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/domain/usecase/CompleteResearch.kt` (same)
+- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/domain/usecase/CheckResearchCompletion.kt` (no signature change — the existing `now` param IS the seam; this is the LIVE guarded path)
+- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/domain/usecase/CompleteResearch.kt` (**CONTRACT-ONLY — no production caller**, see note)
 - Test: `app/src/test/java/com/whitefang/stepsofbabylon/domain/usecase/CheckResearchCompletionTest.kt`, `CompleteResearchTest.kt`
 
-> The use cases ALREADY take `now: Long`. The guard is entirely in the CALLER: it passes a *trusted now* instead of the raw `System.currentTimeMillis()` default. So the use-case CODE needs no change — but the tests gain a "forward jump → trusted now < completesAt → not complete" case that documents/locks the contract that callers pass trusted-now. (If review prefers an explicit comment in the use cases pointing callers at trusted-now, add a one-line KDoc; no logic change.)
+> The use cases ALREADY take `now: Long`. The guard is entirely in the CALLER: it passes the *trusted now*
+> (the `trustedWallClock` anchor) instead of the raw `System.currentTimeMillis()` default. So the use-case
+> CODE needs no logic change — the tests + a KDoc lock the contract that callers pass trusted-now.
+>
+> **`CompleteResearch` is dead production code (plan-review finding):** `rg "CompleteResearch\(" app/src/main`
+> returns only its class definition — NO production caller (the real manual research-completion path is
+> `RushResearch` + the season-pass `freeRush` calling `labRepository.completeResearch` directly, both
+> §2-accepted out of scope; the rush-cost forward-jump is documented-accepted in the ADR). So
+> `CompleteResearch`'s test + KDoc here are CONTRACT-ONLY (lock the seam for a currently-unused use case);
+> do NOT hunt for a `CompleteResearch` caller to wire in Task 7. `CheckResearchCompletion` (auto-complete
+> in Home/Labs init) is the genuinely live guarded path.
 
 - [ ] **Step 1: Write the failing/locking tests**
 
@@ -499,10 +539,10 @@ Expected: PASS. (The behavior — "gate on the passed `now`" — already exists;
 In `CheckResearchCompletion.kt`, above `invoke`:
 ```kotlin
     /**
-     * @param now the TRUSTED current time. Callers under #211 pass a monotonically-capped trusted-now
-     *   (TimeIntegrity.trustedElapsedSince applied to the baseline), NOT the raw wall-clock, so an
-     *   in-session forward clock jump can't complete research early. The default is the raw clock for
-     *   tests / non-guarded call sites.
+     * @param now the TRUSTED current time. Callers under #211 pass the monotonically-capped trusted-now
+     *   (the `TimeIntegrity` `trustedWallClock` anchor), NOT the raw wall-clock, so an in-session forward
+     *   clock jump can't complete research early. The default is the raw clock for tests / non-guarded
+     *   call sites.
      */
     suspend operator fun invoke(now: Long = System.currentTimeMillis()): List<ResearchType> {
 ```
@@ -522,8 +562,11 @@ git commit -m "test(research): lock trusted-now completion contract + KDoc (#211
 
 **Files:**
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/data/sensor/DailyStepManager.kt`
+- Test (MANDATORY mock stub — not optional): `app/src/test/java/com/whitefang/stepsofbabylon/data/sensor/DailyStepManagerTest.kt`, `DailyStepManagerConcurrencyTest.kt`, `DailyStepManagerErrorReportingTest.kt`
 
 `DailyStepManager` already injects `antiCheatPrefs: AntiCheatPreferences` (line 42) and calls `trackDailyLogin.checkAndAward(...)` (line ~329) inside the #120 mutex (`runFollowOnPipeline`, under `mutex.withLock`). This is the single owner.
+
+> **MANDATORY mock-stub (plan-review CRITICAL):** these tests use `antiCheatPrefs = mock<AntiCheatPreferences>()` (DailyStepManagerTest.kt:55 + the process-restart manager at :207; ConcurrencyTest:56; ErrorReportingTest:61). An unstubbed mock returns `null` for the non-null `currentTimeReading(): TimeReading`, so `TimeIntegrity.evaluate(null, null)` NPEs. Even though that NPE lands in the `economy` try/catch and is swallowed (so some tests still pass), it silently routes a startup NPE through the error seam every credit — and the gem-delta tests (DailyStepManagerTest +11/+1 cases) WOULD regress. So stub it in every `@BeforeEach`/mock site (Step 3).
 
 - [ ] **Step 1: Add the imports**
 
@@ -552,15 +595,25 @@ and change the `checkAndAward(...)` call to pass `isRollback = timeVerdict is Ti
 ```
 (Preserve the existing positional args exactly — only append `isRollback`.)
 
-- [ ] **Step 3: Build + run the DailyStepManager tests**
+- [ ] **Step 3: Stub the AntiCheatPreferences mock in the 3 DailyStepManager test files (MANDATORY)**
+
+In each test's `@BeforeEach`/mock-construction site (DailyStepManagerTest.kt:55 + :207; DailyStepManagerConcurrencyTest.kt:56; DailyStepManagerErrorReportingTest.kt:61), after the `mock<AntiCheatPreferences>()`, add (import `org.mockito.kotlin.whenever` + `com.whitefang.stepsofbabylon.domain.time.TimeReading`):
+```kotlin
+        whenever(antiCheatPrefs.currentTimeReading()).thenReturn(TimeReading(elapsedRealtime = 0, wallClock = baseTime))
+        // readTimeBaseline() left unstubbed → returns null → evaluate hits the Trusted baseline==null
+        // branch (no rollback, no behavior change). writeTimeBaseline(...) is a void no-op on a mock.
+```
+(Use the test's existing `baseTime`/fixed-clock value if one exists, else any positive Long. Mockito-inline already mocks this final class today, so the stub works.)
+
+- [ ] **Step 4: Build + run the DailyStepManager tests**
 
 Run: `./run-gradle.sh testDebugUnitTest --tests "*DailyStepManager*" > /tmp/t6.log 2>&1; tail -25 /tmp/t6.log`
-Expected: PASS (existing DailyStepManager tests stay green; the baseline reads/writes go through the real `AntiCheatPreferences` under Robolectric or the existing fake — confirm the test harness; if `AntiCheatPreferences` is mocked in those tests, stub `readTimeBaseline()`/`currentTimeReading()`/`writeTimeBaseline()` to no-op/Trusted).
+Expected: PASS — all three suites green (the stub makes `evaluate` hit the Trusted branch → `isRollback=false` → existing economy behavior unchanged; the +11/+1 gem-delta assertions hold).
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add app/src/main/java/com/whitefang/stepsofbabylon/data/sensor/DailyStepManager.kt
+git add app/src/main/java/com/whitefang/stepsofbabylon/data/sensor/DailyStepManager.kt app/src/test/java/com/whitefang/stepsofbabylon/data/sensor/DailyStepManagerTest.kt app/src/test/java/com/whitefang/stepsofbabylon/data/sensor/DailyStepManagerConcurrencyTest.kt app/src/test/java/com/whitefang/stepsofbabylon/data/sensor/DailyStepManagerErrorReportingTest.kt
 git commit -m "feat(steps): DailyStepManager owns the time baseline; passes rollback to login (#211)"
 ```
 
@@ -571,54 +624,93 @@ git commit -m "feat(steps): DailyStepManager owns the time baseline; passes roll
 **Files:**
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/home/HomeViewModel.kt`
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/labs/LabsViewModel.kt`
+- Test: `app/src/test/java/com/whitefang/stepsofbabylon/presentation/home/HomeViewModelTest.kt` (ctor + `createVm` helper gains the source) + a new `FakeTimeBaselineSource`
+- (`LabsViewModelTest` never constructs `LabsViewModel` — it tests use cases directly, per its line-42 comment — so the LabsViewModel ctor change is compile-safe for that test with NO edit needed.)
 
-Both are `@HiltViewModel` and construct the research use cases inline. They get `AntiCheatPreferences` via Hilt (add to the constructor) and pass a **trusted-now** to `checkCompletion()` / `CompleteResearch`. They are READ-ONLY: they read the baseline + reading and compute trusted-now, but do **NOT** call `writeTimeBaseline` (that's DailyStepManager's job). `HomeViewModel`'s `TrackDailyLogin` call passes `isRollback` derived from a read-only `evaluate` (no persist).
+Both VMs are `@HiltViewModel`. They inject the **`TimeBaselineSource` interface** (Hilt binds it to `AntiCheatPreferences`; the VM tests are plain-JVM and can't build a `Context`-backed prefs, so the interface + a fake is the seam — committed, not optional). They are READ-ONLY: they derive the trusted-now / verdict from the current baseline but do **NOT** persist. The trusted-now is the **`trustedWallClock` anchor** straight off `evaluate(...).newBaseline` — order-independent, no `trustedElapsedSince`.
 
-- [ ] **Step 1: HomeViewModel — inject AntiCheatPreferences + pass trusted-now / rollback**
+- [ ] **Step 0: Add the Hilt binding for TimeBaselineSource**
 
-Add `private val antiCheatPrefs: AntiCheatPreferences` to the `@Inject constructor`. Add the import `import com.whitefang.stepsofbabylon.data.anticheat.AntiCheatPreferences` + `TimeIntegrity`/`TimeVerdict`. In `init` where it computes research completion + daily login (~lines 77/83):
+In `di/TimeModule.kt` (or the module that binds `AntiCheatPreferences`-adjacent types), add a `@Binds`:
 ```kotlin
-            val baseline = antiCheatPrefs.readTimeBaseline()
-            val reading = antiCheatPrefs.currentTimeReading()
-            // read-only verdict + trusted-now (does NOT persist — DailyStepManager owns the baseline)
-            val verdict = TimeIntegrity.evaluate(baseline, reading)
-            val trustedNow = if (baseline == null) reading.wallClock
-                else baseline.lastWallClock + TimeIntegrity.trustedElapsedSince(baseline, reading)
+    @Binds
+    abstract fun bindTimeBaselineSource(impl: AntiCheatPreferences): TimeBaselineSource
+```
+(AntiCheatPreferences is `@Singleton @Inject` and now `: TimeBaselineSource` from Task 3 — bindable directly.)
+
+- [ ] **Step 1: HomeViewModel — inject TimeBaselineSource + pass trusted-now / rollback (read-only)**
+
+Add `private val timeBaselineSource: TimeBaselineSource` to the `@Inject constructor`. Imports: `com.whitefang.stepsofbabylon.domain.time.TimeBaselineSource` + `TimeIntegrity` + `TimeVerdict`. In `init` where it computes research completion + daily login (~lines 77/83):
+```kotlin
+            // #211 read-only: derive verdict + trusted-now from the CURRENT baseline; do NOT persist
+            // (DailyStepManager owns the baseline). trustedWallClock is the capped-accrual anchor — a
+            // forward jump's excess is never folded in, regardless of owner/consumer ordering.
+            val verdict = TimeIntegrity.evaluate(
+                timeBaselineSource.readTimeBaseline(), timeBaselineSource.currentTimeReading(),
+            )
+            val trustedNow = verdict.newBaseline.trustedWallClock
             val completed = CheckResearchCompletion(labRepository)(now = trustedNow)
             // ...
             TrackDailyLogin(dailyLoginRepository, playerRepository)
                 .checkAndAward(today, todaySteps, profile0.seasonPassActive, profile0.seasonPassExpiry,
                     isRollback = verdict is TimeVerdict.Rollback)
 ```
-(Adapt to the actual surrounding code; the point: trusted-now into research, rollback flag into login, NO persist.)
+(Adapt to the actual surrounding code; the point: `trustedWallClock` into research-`now`, rollback flag into login, NO `writeTimeBaseline`.)
 
-- [ ] **Step 2: LabsViewModel — inject AntiCheatPreferences + pass trusted-now to checkCompletion**
+- [ ] **Step 2: LabsViewModel — inject TimeBaselineSource + pass trusted-now to checkCompletion (read-only)**
 
-Add `private val antiCheatPrefs: AntiCheatPreferences` to its `@Inject constructor` + imports. Where it calls `checkCompletion()` (~line 58) and `CompleteResearch`, pass a trusted-now:
+Add `private val timeBaselineSource: TimeBaselineSource` to its `@Inject constructor` + imports. Where it calls `checkCompletion()` (~line 58):
 ```kotlin
-            val baseline = antiCheatPrefs.readTimeBaseline()
-            val reading = antiCheatPrefs.currentTimeReading()
-            val trustedNow = if (baseline == null) reading.wallClock
-                else baseline.lastWallClock + TimeIntegrity.trustedElapsedSince(baseline, reading)
-            val completed = checkCompletion(now = trustedNow)
+            val verdict = TimeIntegrity.evaluate(
+                timeBaselineSource.readTimeBaseline(), timeBaselineSource.currentTimeReading(),
+            )
+            val completed = checkCompletion(now = verdict.newBaseline.trustedWallClock)
 ```
-For the manual `CompleteResearch` collect path, pass `now = trustedNow` similarly. READ-ONLY (no `writeTimeBaseline`).
+READ-ONLY (no `writeTimeBaseline`). **Do NOT wire a `CompleteResearch` path — LabsViewModel has none** (its manual paths are `rushResearch`→`RushResearch` and `freeRush`→`labRepository.completeResearch` directly, both §2-accepted out of scope; the rush-cost forward-jump is documented-accepted in the ADR, Task 8).
 
-> Helper to avoid duplication: if the trusted-now derivation appears 3+ times, extract a tiny private `fun AntiCheatPreferences.trustedNow(): Long` extension in a shared presentation util OR a method on the store — implementer's call; keep it DRY but don't over-engineer. (A `TimeBaselineStore.trustedNow()` convenience on AntiCheatPreferences is reasonable since the derivation is pure given a baseline+reading.)
+> DRY: if the `evaluate→trustedWallClock` derivation appears in both VMs, it's a 3-line block reading the
+> injected source — leave it inline (small, clear) or extract a `TimeBaselineSource.trustedNowAndVerdict()`
+> default method on the interface. Implementer's call; don't over-engineer.
 
-- [ ] **Step 3: Build + run the VM tests**
+- [ ] **Step 3: Add `FakeTimeBaselineSource` + fix HomeViewModelTest's createVm (MANDATORY)**
+
+`HomeViewModelTest` is plain-JVM JUnit Jupiter (no Robolectric) and its `createVm()` constructs `HomeViewModel` positionally with fakes — the new ctor param breaks it. Create `app/src/test/java/com/whitefang/stepsofbabylon/fakes/FakeTimeBaselineSource.kt`:
+```kotlin
+package com.whitefang.stepsofbabylon.fakes
+
+import com.whitefang.stepsofbabylon.domain.time.TimeBaseline
+import com.whitefang.stepsofbabylon.domain.time.TimeBaselineSource
+import com.whitefang.stepsofbabylon.domain.time.TimeReading
+
+/** Test double for [TimeBaselineSource]. Default: null baseline + a fixed reading → evaluate() returns
+ *  Trusted with trustedWallClock == the reading's wall (no rollback, no jump). Tests can set [baseline]
+ *  / [reading] to drive rollback / forward-jump cases. */
+class FakeTimeBaselineSource(
+    var baseline: TimeBaseline? = null,
+    var reading: TimeReading = TimeReading(elapsedRealtime = 0, wallClock = 0),
+) : TimeBaselineSource {
+    override fun readTimeBaseline(): TimeBaseline? = baseline
+    override fun currentTimeReading(): TimeReading = reading
+}
+```
+Update `HomeViewModelTest`'s `createVm()` helper to pass `FakeTimeBaselineSource()` for the new param. (The default null-baseline → Trusted → `trustedNow = reading.wallClock`; the existing #55 background-research-completion test still completes research because the fake's reading.wallClock can be set ≥ completesAt — set `reading = TimeReading(0, <large wall>)` in that test's fake if its completesAt fixture requires it. Confirm the #55 test's expected completion still holds with the trusted-now value.) **LabsViewModelTest needs NO change** (it never constructs LabsViewModel).
+
+- [ ] **Step 4: Build + run the VM tests**
 
 Run: `./run-gradle.sh testDebugUnitTest --tests "*HomeViewModelTest*" --tests "*LabsViewModelTest*" > /tmp/t7.log 2>&1; tail -25 /tmp/t7.log`
-Expected: PASS. The VM test helpers now must construct the VMs with an `AntiCheatPreferences` — if the tests build these VMs directly, add the new ctor arg (a real `AntiCheatPreferences(RuntimeEnvironment.getApplication())` if the test is Robolectric, or confirm how the VM tests instantiate; if they're plain-JVM and can't get a real prefs, this is the one spot that may need the store behind a tiny interface — flag as a likely fix-up at implementation).
+Expected: PASS (HomeViewModelTest with the fake-injected source; LabsViewModelTest unchanged/green).
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add app/src/main/java/com/whitefang/stepsofbabylon/presentation/home/HomeViewModel.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/labs/LabsViewModel.kt
-git commit -m "feat(research): Home/Labs pass trusted-now to research completion (read-only guard) (#211)"
+git add app/src/main/java/com/whitefang/stepsofbabylon/presentation/home/HomeViewModel.kt app/src/main/java/com/whitefang/stepsofbabylon/presentation/labs/LabsViewModel.kt app/src/main/java/com/whitefang/stepsofbabylon/di/TimeModule.kt app/src/test/java/com/whitefang/stepsofbabylon/fakes/FakeTimeBaselineSource.kt app/src/test/java/com/whitefang/stepsofbabylon/presentation/home/HomeViewModelTest.kt
+git commit -m "feat(research): Home/Labs pass trusted-now to research completion via TimeBaselineSource (read-only) (#211)"
 ```
 
-> **Implementer note (flagged risk):** Step 3 is the integration seam most likely to need adjustment — if `HomeViewModelTest`/`LabsViewModelTest` are plain-JVM (no Robolectric) they can't construct a real `AntiCheatPreferences`. If so, the cleanest fix is a tiny domain interface (e.g. `TimeBaselineSource { fun readTimeBaseline(): TimeBaseline?; fun currentTimeReading(): TimeReading }`) that `AntiCheatPreferences` implements and a fake implements in tests — report DONE_WITH_CONCERNS and surface this rather than forcing Robolectric into those VM tests.
+> **Resolved (was a flagged risk; the plan-review confirmed it):** `HomeViewModelTest` IS plain-JVM and
+> would break on a concrete-`AntiCheatPreferences` ctor param — so the `TimeBaselineSource` interface +
+> `FakeTimeBaselineSource` (Step 3) is a COMMITTED part of this task, not a maybe. `LabsViewModelTest`
+> never constructs `LabsViewModel` (tests use cases directly), so its ctor change needs no test edit.
 
 ---
 
@@ -635,7 +727,7 @@ Expected: BUILD SUCCESSFUL. Count: `rg -c "<testcase" app/build/test-results/tes
 
 - [ ] **Step 2: Write the ADR**
 
-Create `docs/agent/DECISIONS/ADR-00NN-time-axis-anticheat.md` (use the next number after the highest existing ADR-00xx; check `ls docs/agent/DECISIONS/`). Content: the decision (monotonic anti-rollback guard + reboot-durable max-wall-clock floor in a pure `TimeIntegrity` core + AntiCheatPreferences baseline; single owner = DailyStepManager; refuse-credit-on-rollback; research trusted-now); the **scope boundary** (rooted/file-edit out of scope per the project threat model; reboot-spanning forward jump on research accepted; BillingManager season-pass authority unchanged); consequences; alternatives rejected (accept-and-document; full subsystem).
+Create `docs/agent/DECISIONS/ADR-00NN-time-axis-anticheat.md` (use the next number after the highest existing ADR-00xx; check `ls docs/agent/DECISIONS/`). Content: the decision (monotonic anti-rollback guard + reboot-durable max-wall-clock floor + the order-independent **`trustedWallClock` capped-accrual anchor** in a pure `TimeIntegrity` core + AntiCheatPreferences baseline via the `TimeBaselineSource` seam; single owner = DailyStepManager persists, VMs read-only; refuse-credit-on-rollback; research trusted-now); the **scope boundary** (rooted/file-edit out of scope per the project threat model; reboot-spanning forward jump on research accepted; **`RushResearch` rush-cost forward-jump accepted** — the auto-complete path is guarded but the gem rush-cost reads raw `now`; `freeRush` direct-completion accepted; BillingManager season-pass authority unchanged); consequences; alternatives rejected (accept-and-document; full subsystem).
 
 - [ ] **Step 3: security-model.md — add the time axis**
 
@@ -696,5 +788,5 @@ gh pr create --title "fix: time-axis anti-cheat (#211) + schema-doc pre-v7 note 
 
 - **Spec coverage:** §4.A `TimeIntegrity`→Task 2; §4.B store→Task 3; §4.C login-rollback→Task 4 + owner Task 6; §4.C research trusted-now→Task 5 + callers Task 7; §3.5 single-owner→Task 6 (persist) + Task 7 (read-only); §5 #258→Task 1; §6 tests→Tasks 2-7; ADR/security-model→Task 8. ✓
 - **Domain purity:** TimeIntegrity Android-free (Task 2), asserted green Task 2 Step 4 + Task 10. ✓
-- **Type consistency:** `TimeBaseline`/`TimeReading`/`TimeVerdict(.Trusted/.Rollback, .newBaseline)`/`evaluate`/`trustedElapsedSince` defined Task 2, used Tasks 3/6/7; `readTimeBaseline`/`writeTimeBaseline`/`currentTimeReading` defined Task 3, used Tasks 6/7; `TrackDailyLogin.checkAndAward(..., isRollback)` defined Task 4, called Tasks 6/7. ✓
-- **Flagged open items** (plan-stage honest): (a) Task 6 — whether DailyStepManager tests mock `AntiCheatPreferences` (stub the 3 new methods if so); (b) Task 7 — whether Home/Labs VM tests can construct a real `AntiCheatPreferences` (plain-JVM → may need a tiny `TimeBaselineSource` interface + fake; report DONE_WITH_CONCERNS). These are the two integration seams the implementer confirms against the real test harness.
+- **Type consistency:** `TimeBaseline`(4 slots incl. `trustedWallClock`)/`TimeReading`/`TimeVerdict(.Trusted/.Rollback, .newBaseline)`/`evaluate` (capped-accrual, NO `trustedElapsedSince`) + `TimeBaselineSource` defined Task 2/3, used Tasks 6/7; `readTimeBaseline`/`currentTimeReading` (interface) + `writeTimeBaseline` (owner-only) defined Task 3, used Tasks 6/7; consumers read `verdict.newBaseline.trustedWallClock` as trusted-now; `TrackDailyLogin.checkAndAward(..., isRollback)` defined Task 4, called Tasks 6/7. ✓
+- **Plan-review CRITICALs resolved (not deferred):** (a) the anchoring race → `trustedWallClock` capped-accrual anchor, order-independent (Task 2); (b) DailyStepManager mock NPE → mandatory stub (Task 6 Step 3); (c) HomeViewModelTest ctor break → `TimeBaselineSource` + `FakeTimeBaselineSource` committed (Task 7 Step 3); (d) dead `CompleteResearch` wiring removed + RushResearch rush-cost documented-accepted (Task 5/ADR); (e) #258 verification re-pointed at dated rollout entries (Task 1). ✓
