@@ -51,6 +51,13 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 # Lint
 ./gradlew lint
 
+# Kotlin static analysis (detekt — baseline-gated, fails on NEW violations only)
+./run-gradle.sh :app:detekt
+
+# Kotlin formatting check (ktlint — baseline-gated; add --format to auto-fix)
+./lint-kotlin.sh
+./lint-kotlin.sh --format   # auto-fix formatting issues
+
 # Clean
 ./gradlew clean
 

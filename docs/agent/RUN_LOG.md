@@ -1,3 +1,36 @@
+## 2026-06-22 — Kotlin lint enforcement: detekt + ktlint CI gate (#311; ADR-0037) (`[Unreleased]`)
+
+- **Goal:** wire Kotlin static analysis (code-smell/complexity) + formatting enforcement into the CI PR
+  gate, baseline-gated so existing violations are grandfathered and only NEW violations fail.
+- **Process:** spec → **Adversarial Review Gate** → plan → Gate → subagent-driven execution (4 tasks:
+  detekt plugin, ktlint CLI script + baseline, CI wiring, mutation-test verification).
+- **What shipped:**
+  - **detekt:** `dev.detekt` 2.0.0-alpha.5 Gradle plugin (alpha unavoidable — no stable for Kotlin 2.3.0).
+    `:app:detekt` task (no type resolution). Custom config `config/detekt/detekt.yml` disables MagicNumber +
+    WildcardImport. Baseline `config/detekt/baseline.xml` (502 lines).
+  - **ktlint:** 1.8.0 CLI via committed `lint-kotlin.sh` (SHA-256-verified download in CI). CHECK mode uses
+    baseline; FORMAT mode (`--format`) runs without it. `.editorconfig` at root. Baseline
+    `config/ktlint/baseline.xml` (10141 lines).
+  - **CI:** two new steps in `build-and-test` job, code-gated behind `needs.changes.outputs.code == 'true'`.
+    `connected` job untouched. Docs-only PRs still skip.
+- **Config discovery:** the `formatting:` ruleset key doesn't exist in detekt 2.0 without a separate plugin
+  (not a contingency or failure — just a fact of the 2.0 rewrite that the initial config attempt surfaced).
+  No parser failures on ktlint's 2.2.x engine against this codebase (documented as a known limitation of
+  the version gap vs Kotlin 2.3.0, not an observed problem).
+- **Mutation-test results:** `LongParameterList` insertion exits non-zero on detekt (enforcement works);
+  `max-line-length` violation exits non-zero on ktlint (enforcement works). Both reverted.
+- **Accepted boundary (ADR-0037):** alpha dep to monitor for breaking changes on Kotlin/AGP bumps; type
+  resolution deferred (needs proven AGP-9-variant classpath wiring); ktlint-gradle plugin rejected
+  (unproven AGP-9 source-set detection); `:baselineprofile`/`:macrobenchmark` not linted (dev-tooling only);
+  auto-format not in CI (gate-only, not rewriter).
+- **No production Kotlin changed. No test-count change (1230 JVM + 9 instrumented). No schema/economy/engine change.**
+- **Doc sync:** ADR-0037 (new); CLAUDE.md detekt/ktlint bullet updated from "not CI-enforced" to
+  "CI-enforced + baseline-gated"; CHANGELOG `[Unreleased]` Build entry; README lint commands added;
+  `source-files.md` lint-config section; `tech.md` lint-tooling subsection; `structure.md` `config/`
+  directory entry; STATE.md rotated; this RUN_LOG entry.
+- **Remains / next:** open the PR; CI (PR gate). Then remaining audit majors: #253 (Compose UI follow-up
+  screens); i18n #34; med/low #262/#128; the larger #233 Simulation-hoist (ADR-0012).
+
 ## 2026-06-22 — Time-axis anti-cheat: clock-tamper resistance (#211) + schema-doc gap-fill (#258) (`[Unreleased]`)
 
 - **Goal:** address audit major #211 (TIME-1 — "time-gated mechanics trust the unguarded device clock;

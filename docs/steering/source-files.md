@@ -409,6 +409,18 @@ macrobenchmark/src/main/java/com/whitefang/stepsofbabylon/macrobenchmark/Startup
 macrobenchmark/src/main/java/com/whitefang/stepsofbabylon/macrobenchmark/JourneyBenchmark.kt  # Macrobenchmark: FrameTimingMetric journey (measures jank on a representative navigation path). (#26 Gate-G)
 ```
 
+## Lint Config & Tooling
+
+All paths repo-root-relative. Wired into the `build-and-test` CI job (code-gated). ADR-0037.
+
+```
+lint-kotlin.sh                    # Committed ktlint runner script (SHA-256-verified download of ktlint 1.8.0 in CI; CHECK mode with baseline, FORMAT mode without). `./lint-kotlin.sh` to check; `./lint-kotlin.sh --format` to auto-fix.
+.editorconfig                     # Root EditorConfig — configures ktlint's formatting rules (indent, max line length, import ordering, etc.). Consumed by ktlint and most IDEs.
+config/detekt/detekt.yml          # detekt custom config (2.0.0-alpha.5): disables MagicNumber + WildcardImport; no `formatting:` ruleset (doesn't exist in detekt 2.0 without a plugin).
+config/detekt/baseline.xml        # detekt baseline (502 lines): grandfathers existing violations; only NEW violations fail `:app:detekt`.
+config/ktlint/baseline.xml        # ktlint baseline (10141 lines): grandfathers existing formatting violations; only NEW violations fail the check.
+```
+
 ## Service Layer
 
 ```

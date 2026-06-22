@@ -48,6 +48,26 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 
 `android.application`, `kotlin.compose`, `kotlin.parcelize`, `hilt`, `ksp`, `room` — all aliased from version catalog. (`kotlin.parcelize` added in #234 for the presentation-layer `PackRevealState` Parcelable DTO; applied in `:app` via `kotlin("plugin.parcelize")` since it's bundled with the AGP-9 Kotlin distribution, declared `apply false` at the root.)
 
+## Kotlin Lint Tooling (ADR-0037)
+
+| Tool | Version | Integration | Purpose |
+|---|---|---|---|
+| detekt | 2.0.0-alpha.5 | Gradle plugin (`dev.detekt`) | Code-smell / complexity analysis (`:app:detekt`) |
+| ktlint | 1.8.0 | CLI (`lint-kotlin.sh`, SHA-pinned) | Formatting enforcement (EditorConfig-driven) |
+
+**Alpha rationale:** no stable detekt supports Kotlin 2.3.0 (stable 1.23.x targets ≤ 2.0); ktlint 1.8.0 embeds a 2.2.x Kotlin parser (no actual parse failures in this codebase). The alpha is dev-tooling only — never shipped in the AAB.
+
+**Baseline approach:** both tools use committed baselines (`config/detekt/baseline.xml`, `config/ktlint/baseline.xml`) so existing violations are grandfathered. Only NEW violations fail the build. Baselines shrink as violations are fixed.
+
+**CI enforcement:** two steps in the `build-and-test` job, code-gated behind the docs-only fast path. `connected` job untouched.
+
+**Local usage:**
+```bash
+./run-gradle.sh :app:detekt      # Code-smell / complexity check
+./lint-kotlin.sh                  # Formatting check (baseline-gated)
+./lint-kotlin.sh --format         # Auto-fix formatting (no baseline)
+```
+
 ## Architecture Layers
 
 - **presentation** — ViewModels (expose `StateFlow`), Compose screens, SurfaceView battle renderer

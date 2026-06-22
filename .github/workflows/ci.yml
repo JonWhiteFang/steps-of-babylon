@@ -114,6 +114,21 @@ jobs:
             exit 1
           fi
 
+      - name: detekt (code-smell / complexity gate)
+        if: needs.changes.outputs.code == 'true'
+        run: ./gradlew :app:detekt --stacktrace
+
+      - name: ktlint (formatting gate)
+        if: needs.changes.outputs.code == 'true'
+        run: |
+          KTLINT_VERSION="1.8.0"
+          KTLINT_SHA256="a3fd620207d5c40da6ca789b95e7f823c54e854b7fade7f613e91096a3706d75"
+          mkdir -p .ktlint
+          curl -sSfL "https://github.com/pinterest/ktlint/releases/download/${KTLINT_VERSION}/ktlint" -o .ktlint/ktlint
+          echo "$KTLINT_SHA256  .ktlint/ktlint" | shasum -a 256 -c -
+          chmod +x .ktlint/ktlint
+          ./lint-kotlin.sh
+
       - name: Upload reports
         if: always() && needs.changes.outputs.code == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

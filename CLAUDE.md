@@ -374,9 +374,10 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
     function/class/call, switch to `sg`.
   - **`fd`** — DEFAULT for file discovery (`fd -e kt Foo`, `fd -t f pattern path`). Use `find` only when
     `fd` genuinely can't express the query.
-  - **`detekt`/`ktlint`** — Kotlin static analysis / formatting. **Run on the Kotlin you changed before
-    committing** (not the whole tree) via the standalone CLIs; `ktlint -F` auto-formats. (Build/PR-gate
-    wiring is in progress — until it lands, these are a manual local check, not yet CI-enforced.)
+  - **`detekt`/`ktlint`** — Kotlin static analysis / formatting. **CI-enforced** (PR gate);
+    `./run-gradle.sh :app:detekt` (code-smell/complexity) + `./lint-kotlin.sh` (formatting check;
+    `--format` for auto-fix). Baseline-gated — fails only on NEW violations. See `config/detekt/` +
+    `.editorconfig`. (ADR-0037.)
   - **`delta`** — git-diff pager for a **human at a terminal** (`core.pager`). In this non-TTY agent
     harness git disables the pager, so delta does NOT render for you — read diffs with `git show`/`git
     diff` directly, or force readable output with `delta --paging=never` / `git -c core.pager=delta show`.

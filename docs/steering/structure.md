@@ -19,6 +19,7 @@ The committed Baseline Profile lives at `app/src/release/generated/baselineProfi
 ├── workflows/          # CI: ci.yml (PR gate) + instrumented.yml (emulator) + release.yml (Play internal) + pages.yml (privacy-policy → GitHub Pages, site/ only) + dependency-submission.yml — SHA-pinned (Plan 32 / ADR-0018)
 └── dependabot.yml      # gradle + github-actions weekly updates
 site/                   # PUBLIC web root published to GitHub Pages by pages.yml — site/index.md = canonical privacy policy + site/_config.yml; ONLY this dir is served publicly (internal docs/ is not)
+config/                 # Lint tooling config (ADR-0037): config/detekt/ (detekt.yml + baseline.xml) + config/ktlint/ (baseline.xml). CI-enforced, baseline-gated.
 baselineprofile/        # :baselineprofile module — dev tooling; generates baseline-prof.txt; never ships
 macrobenchmark/         # :macrobenchmark module — dev tooling; StartupBenchmark + JourneyBenchmark; never ships, not CI-gated on timings
 app/src/main/java/com/whitefang/stepsofbabylon/
