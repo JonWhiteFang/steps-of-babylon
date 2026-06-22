@@ -117,6 +117,17 @@ git commit -m "build: add kotlin-parcelize plugin for #234 SavedStateHandle DTOs
 **Files:**
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop/WorkshopViewModel.kt`
 - Test: `app/src/test/java/com/whitefang/stepsofbabylon/presentation/workshop/WorkshopViewModelTest.kt`
+- Test (CTOR-SITE FIX): `app/src/test/java/com/whitefang/stepsofbabylon/presentation/ux/UserFeedbackTest.kt` — constructs `WorkshopViewModel(...)` positionally at **lines 42, 55, 70**; the new required ctor param breaks compilation unless updated.
+
+> **Grep guard (run FIRST):** `rg -rn "WorkshopViewModel\(|StatsViewModel\(|CardsViewModel\(" app/src/test app/src/androidTest` — every hit that passes the OLD positional arg count must get a trailing `SavedStateHandle()` (or route through the `createVm` helper). For Workshop this is `WorkshopViewModelTest` + the 3 `UserFeedbackTest` sites. `testDebugUnitTest` compiles the WHOLE test source set, so a missed site is a hard compile failure at the build gate, not a silent skip.
+
+- [ ] **Step 0: Fix the external WorkshopViewModel ctor call sites (UserFeedbackTest)**
+
+In `UserFeedbackTest.kt`, the three `val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo)` calls (lines 42/55/70) each gain a trailing `SavedStateHandle()`:
+```kotlin
+        val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo, SavedStateHandle())
+```
+(Add `import androidx.lifecycle.SavedStateHandle` to that file. These tests don't assert restore — they just need to compile; a fresh empty handle defaults `selectedCategory` to `ATTACK`, preserving their behavior.)
 
 - [ ] **Step 1: Refit the test helper + write the failing restore/save tests**
 
@@ -127,10 +138,18 @@ private fun createVm(handle: SavedStateHandle = SavedStateHandle()) =
 ```
 (Match the actual fake field names already in the test file. Add `import androidx.lifecycle.SavedStateHandle` and `import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory` if absent.)
 
-Add these tests (use the file's existing collect+advanceUntilIdle pattern — `backgroundScope.launch { vm.uiState.collect {} }; advanceUntilIdle()` — and `runTest`):
+Add these tests. **Use `runTest(dispatcher)` — NOT bare `runTest {}`** — where `dispatcher` is the
+test file's existing `StandardTestDispatcher()` field (the same one `@BeforeEach` passes to
+`Dispatchers.setMain(dispatcher)`). This is mandatory: the VM's `uiState` is
+`stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), …)` and `viewModelScope` runs on
+`Dispatchers.Main` = the field dispatcher's scheduler. A bare `runTest {}` creates its OWN scheduler, so
+its `advanceUntilIdle()` would never drive the VM's coroutines — the seeded value would never restore
+(you'd observe the `stateIn` initial default) and `viewModelScope.launch` bodies would never run. Use
+the file's existing collect+advance pattern — `backgroundScope.launch { vm.uiState.collect {} };
+advanceUntilIdle()` — and read `vm.uiState.value` AFTER `advanceUntilIdle()`.
 ```kotlin
 @Test
-fun `R234 selected category restores from a seeded SavedStateHandle`() = runTest {
+fun `R234 selected category restores from a seeded SavedStateHandle`() = runTest(dispatcher) {
     val handle = SavedStateHandle(mapOf("selectedCategory" to UpgradeCategory.DEFENSE))
     val vm = createVm(handle)
     backgroundScope.launch { vm.uiState.collect {} }
@@ -140,7 +159,7 @@ fun `R234 selected category restores from a seeded SavedStateHandle`() = runTest
 }
 
 @Test
-fun `R234 selectCategory writes through to the SavedStateHandle`() = runTest {
+fun `R234 selectCategory writes through to the SavedStateHandle`() = runTest(dispatcher) {
     val handle = SavedStateHandle()
     val vm = createVm(handle)
     backgroundScope.launch { vm.uiState.collect {} }
@@ -198,7 +217,7 @@ Expected: PASS (all WorkshopViewModelTest green — existing tests unaffected si
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop/WorkshopViewModel.kt app/src/test/java/com/whitefang/stepsofbabylon/presentation/workshop/WorkshopViewModelTest.kt
+git add app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop/WorkshopViewModel.kt app/src/test/java/com/whitefang/stepsofbabylon/presentation/workshop/WorkshopViewModelTest.kt app/src/test/java/com/whitefang/stepsofbabylon/presentation/ux/UserFeedbackTest.kt
 git commit -m "fix(workshop): selected tab survives process death via SavedStateHandle (#234)"
 ```
 
@@ -222,7 +241,7 @@ private fun createVm(handle: SavedStateHandle = SavedStateHandle()) =
 Add:
 ```kotlin
 @Test
-fun `R234 selected period restores from a seeded SavedStateHandle`() = runTest {
+fun `R234 selected period restores from a seeded SavedStateHandle`() = runTest(dispatcher) {
     val handle = SavedStateHandle(mapOf("selectedPeriod" to StatsPeriod.MONTH))
     val vm = createVm(handle)
     backgroundScope.launch { vm.uiState.collect {} }
@@ -232,7 +251,7 @@ fun `R234 selected period restores from a seeded SavedStateHandle`() = runTest {
 }
 
 @Test
-fun `R234 selectPeriod writes through to the SavedStateHandle`() = runTest {
+fun `R234 selectPeriod writes through to the SavedStateHandle`() = runTest(dispatcher) {
     val handle = SavedStateHandle()
     val vm = createVm(handle)
     backgroundScope.launch { vm.uiState.collect {} }
@@ -404,6 +423,17 @@ git commit -m "feat(cards): @Parcelize PackRevealState DTO for process-death sur
 **Files:**
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/cards/CardsViewModel.kt`
 - Test: `app/src/test/java/com/whitefang/stepsofbabylon/presentation/cards/CardsViewModelTest.kt`
+- Test (CTOR-SITE FIX): `app/src/test/java/com/whitefang/stepsofbabylon/presentation/cards/CardsScreenTest.kt` — its `vm()` helper at **line 63** constructs `CardsViewModel(cardRepo, playerRepo, adManager)` positionally; the new required ctor param breaks compilation unless updated.
+
+> **Grep guard (run FIRST):** `rg -rn "CardsViewModel\(" app/src/test app/src/androidTest` — both `CardsViewModelTest` and `CardsScreenTest` must pass a 4th `SavedStateHandle()` arg. (`testDebugUnitTest` compiles the whole test source set; a missed site is a hard compile failure.)
+
+- [ ] **Step 0: Fix the external CardsViewModel ctor call site (CardsScreenTest)**
+
+In `CardsScreenTest.kt`, update the `vm()` helper (line 63):
+```kotlin
+    private fun vm() = CardsViewModel(cardRepo, playerRepo, adManager, SavedStateHandle())
+```
+(Add `import androidx.lifecycle.SavedStateHandle`. A fresh empty handle defaults the reveal to null — preserving the screen test's behavior; it doesn't assert restore.)
 
 - [ ] **Step 1: Refit the test helper + write the failing round-trip test**
 
@@ -417,7 +447,7 @@ private fun createVm(handle: SavedStateHandle = SavedStateHandle()) =
 Add the round-trip test. **Deterministic `isNew`:** `FakeCardRepository.openCardPackAtomic` derives `isNew` from existing-cards novelty, so assert against the *actual* returned reveal rather than a hard-coded badge vector:
 ```kotlin
 @Test
-fun `R234 pack reveal survives process death via the same SavedStateHandle`() = runTest {
+fun `R234 pack reveal survives process death via the same SavedStateHandle`() = runTest(dispatcher) {
     val handle = SavedStateHandle()
     val vm1 = createVm(handle)
     backgroundScope.launch { vm1.uiState.collect {} }
@@ -437,7 +467,7 @@ fun `R234 pack reveal survives process death via the same SavedStateHandle`() = 
 }
 
 @Test
-fun `R234 dismissPackResult clears the SavedStateHandle reveal`() = runTest {
+fun `R234 dismissPackResult clears the SavedStateHandle reveal`() = runTest(dispatcher) {
     val handle = SavedStateHandle()
     val vm = createVm(handle)
     backgroundScope.launch { vm.uiState.collect {} }
@@ -474,15 +504,23 @@ class CardsViewModel @Inject constructor(
 ```kotlin
     private val _lastPackResult = MutableStateFlow<List<CardResult>?>(null)
 ```
-with a derived flow that maps the saved DTO back to `List<CardResult>?` (so `CardsUiState.lastPackResult` stays `List<CardResult>?` and the screen is unchanged):
+with the raw saved-DTO `StateFlow` (NOT pre-mapped — see note):
 ```kotlin
-    private val lastPackResult: StateFlow<List<CardResult>?> =
-        savedStateHandle.getStateFlow<PackRevealState?>(KEY_PACK_REVEAL, null)
-            .map { it?.toCardResultsOrNull() }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    private val packRevealHandleFlow: StateFlow<PackRevealState?> =
+        savedStateHandle.getStateFlow(KEY_PACK_REVEAL, null)
 ```
-   (Add imports `kotlinx.coroutines.flow.map` + `kotlinx.coroutines.flow.stateIn` + `kotlinx.coroutines.flow.SharingStarted` if absent. `SharingStarted.Eagerly` keeps it a hot `StateFlow` matching the prior `MutableStateFlow` semantics inside the combine.)
-4. In the `combine(...)`, change the source `_lastPackResult,` to `lastPackResult,` (lambda param `packResult` unchanged).
+   (No extra `map`/`stateIn`/`SharingStarted` imports needed — keep it a single hot stage.)
+4. In the `combine(...)`, change the source `_lastPackResult,` to `packRevealHandleFlow,` and map the
+   DTO → `List<CardResult>?` **INSIDE the combine lambda** (this matches the reviewed spec §Surface 3 —
+   "mapped inside the combine" — and preserves today's single-MutableStateFlow topology exactly; the
+   pre-mapped `.map{}.stateIn(Eagerly,null)` alternative would add a second hot stage that can publish a
+   transient null on the restore path). Rename the lambda param and map it:
+```kotlin
+        // ...combine(... , packRevealHandleFlow, _processing, _userMessage) { cards, profile, packReveal, processing, message ->
+        // and inside the body, where it built CardsUiState(... lastPackResult = packResult ...):
+            lastPackResult = packReveal?.toCardResultsOrNull(),
+```
+   (`CardsUiState.lastPackResult` stays `List<CardResult>?`, so `CardsScreen` is unchanged.)
 5. In `openPack` (line ~98), change:
 ```kotlin
                     _lastPackResult.value = result.cards
@@ -516,7 +554,7 @@ Expected: PASS (incl. the round-trip + dismiss tests + all existing CardsViewMod
 - [ ] **Step 5: Commit**
 
 ```bash
-git add app/src/main/java/com/whitefang/stepsofbabylon/presentation/cards/CardsViewModel.kt app/src/test/java/com/whitefang/stepsofbabylon/presentation/cards/CardsViewModelTest.kt
+git add app/src/main/java/com/whitefang/stepsofbabylon/presentation/cards/CardsViewModel.kt app/src/test/java/com/whitefang/stepsofbabylon/presentation/cards/CardsViewModelTest.kt app/src/test/java/com/whitefang/stepsofbabylon/presentation/cards/CardsScreenTest.kt
 git commit -m "fix(cards): pack reveal survives process death via SavedStateHandle DTO (#234)"
 ```
 
@@ -565,8 +603,8 @@ git commit -m "fix(onboarding): permissionAsked survives process death via remem
 **Files:**
 - Modify: `CLAUDE.md` (headline test count + a SavedStateHandle convention note if warranted)
 - Modify: `CHANGELOG.md` (`[Unreleased]` entry + test count)
-- Modify: `docs/steering/source-files.md` (new `PackRevealState.kt`; the 3 VMs' SavedStateHandle responsibility note)
-- Modify: `docs/steering/tech.md` (only if it enumerates plugins — add `kotlin-parcelize`)
+- Modify: `docs/steering/source-files.md` (new `PackRevealState.kt`; the 3 VMs' SavedStateHandle responsibility note; the `CardsScreenTest` entry now constructs the VM with a `SavedStateHandle`)
+- Modify: `docs/steering/tech.md` (it enumerates the plugin list at ~line 49 — add `kotlin.parcelize` to it; condition confirmed true at review)
 
 - [ ] **Step 1: Run the full gate to get the final test count**
 
@@ -583,12 +621,12 @@ Add an `[Unreleased]` entry at the top: "fix: process-death state survival (#234
 
 - [ ] **Step 4: Update source-files.md**
 
-Add an entry for `presentation/cards/PackRevealState.kt` (the @Parcelize DTO + mappers). Append to the three VM entries that they now take a `SavedStateHandle` and persist their selection/reveal across process death (#234).
+Add an entry for `presentation/cards/PackRevealState.kt` (the @Parcelize DTO + mappers). Append to the three VM entries that they now take a `SavedStateHandle` and persist their selection/reveal across process death (#234). Update the `CardsScreenTest` entry (its `vm()` helper now passes a `SavedStateHandle`). Also add `kotlin.parcelize` to the enumerated plugin list in `docs/steering/tech.md` (~line 49).
 
 - [ ] **Step 5: Commit docs**
 
 ```bash
-git add CLAUDE.md CHANGELOG.md docs/steering/source-files.md
+git add CLAUDE.md CHANGELOG.md docs/steering/source-files.md docs/steering/tech.md
 git commit -m "docs: sync for process-death state survival (#234)"
 ```
 
