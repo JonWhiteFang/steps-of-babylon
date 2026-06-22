@@ -1,3 +1,29 @@
+## 2026-06-22 — Gradle dependency verification: SHA-256 supply-chain integrity (#256) (`[Unreleased]`)
+
+- **Goal:** close audit major #256 — add `gradle/verification-metadata.xml` with SHA-256 checksums for
+  all resolved dependencies and enforce strict verification so a compromised/typo-squatted artifact fails
+  the build immediately.
+- **What shipped:**
+  - `gradle/verification-metadata.xml` (~6000 lines) — SHA-256 checksums covering debug build, unit tests,
+    lint, detekt, androidTest, and benchmark modules. Generated with `--write-verification-metadata sha256
+    --refresh-dependencies`.
+  - `gradle.properties` — `dependency-verification=strict` (global, local + CI).
+  - Platform-specific aapt2 artifacts (linux/osx/windows) manually added (macOS generation only captures osx).
+  - README updated with the regeneration command for dep bumps.
+- **CI failures (resolved):** First push failed on `guava-parent-33.6.0-android.pom` (local cache resolved
+  via Google mirror; CI fetches from MavenCentral). Fixed with `--refresh-dependencies`. Second push failed
+  on `aapt2-9.2.1-15009934-linux.jar` (platform-specific binary — macOS build captures only -osx). Fixed by
+  manually fetching linux + windows JARs from dl.google.com and computing SHA-256. Third push: both CI lanes
+  green (build-and-test 9m24s, connected 7m17s).
+- **Mutation-test:** corrupting one SHA-256 value → BUILD FAILED with "dependency has been compromised"
+  pointing to the exact artifact and version.
+- **No production Kotlin changed. No test-count change (1230 JVM + 9 instrumented). No schema/economy/engine change.**
+- **Doc sync:** CHANGELOG `[Unreleased]` Build entry; `structure.md` new file entry; `tech.md`
+  Dependency Verification section; README regen command; STATE.md rotated; this RUN_LOG entry.
+- **Closes #256.**
+- **Remains / next:** remaining audit majors — #260 (i18n string concatenation); #253 (Compose UI
+  follow-up screens); i18n #34; med/low #262/#128; the larger #233 Simulation-hoist (ADR-0012).
+
 ## 2026-06-22 — Kotlin lint enforcement: detekt + ktlint CI gate (#311; ADR-0037) (`[Unreleased]`)
 
 - **Goal:** wire Kotlin static analysis (code-smell/complexity) + formatting enforcement into the CI PR

@@ -33,22 +33,21 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #312, squash `6236a42`; `[Unreleased]`).**
+- **CURRENT (DONE — MERGED PR #314, squash `966d049`; #256 auto-closed; `[Unreleased]`).**
+  **Gradle dependency verification: SHA-256 supply-chain integrity (#256).** Build-infra only — no
+  production Kotlin, no schema/economy/engine change, no test-count change (1230 JVM + 9 instrumented
+  unchanged). Commits `gradle/verification-metadata.xml` (~6000 lines SHA-256 checksums covering all
+  CI-used configs) + `dependency-verification=strict` in `gradle.properties` (global enforcement, local +
+  CI). Platform-specific aapt2 (linux/osx/windows) all included for cross-platform builds.
+  Mutation-tested: corrupted checksum → BUILD FAILED immediately. Ran into two CI-only failures (guava-parent
+  POM + aapt2-linux.jar not in the locally-generated metadata); fixed via `--refresh-dependencies` regen +
+  manual platform-artifact addition. Both CI lanes green on third push. **Next:** remaining audit majors —
+  #260 (i18n string concatenation); #253 (Compose UI follow-up screens); i18n #34; med/low #262/#128; the
+  larger #233 Simulation-hoist (ADR-0012).
+- **Previous objective (DONE — MERGED PR #312, squash `6236a42`; `[Unreleased]`).**
   **Kotlin lint enforcement: detekt + ktlint CI gate (#311; ADR-0037).** Build-infra + config + CI only —
   no production Kotlin, no schema/economy/engine change, no test-count change (1230 JVM + 9 instrumented
-  unchanged). **detekt:** `dev.detekt` 2.0.0-alpha.5 Gradle plugin (alpha unavoidable — no stable for
-  Kotlin 2.3.0); plain `:app:detekt` (no type resolution); `config/detekt/detekt.yml` disables
-  MagicNumber + WildcardImport; no `formatting:` ruleset (doesn't exist in detekt 2.0 without a plugin —
-  config discovery, not a contingency); baseline 502 lines. Plugin applied cleanly on AGP-9 built-in
-  Kotlin (no `org.jetbrains.kotlin.android` required). **ktlint:** 1.8.0 CLI via committed `lint-kotlin.sh`
-  (SHA-256-verified download in CI); `.editorconfig` at root; baseline 10141 lines; no parser failures on
-  the 2.2.x engine (documented caveat, not observed). **CI:** two new steps in `build-and-test`,
-  code-gated (docs-only PRs still skip); `connected` untouched. **Mutation-tested:** LongParameterList
-  exits non-zero on detekt; max-line-length exits non-zero on ktlint; both reverted. **Accepted boundary:**
-  alpha dep to monitor; type resolution deferred (needs proven AGP-9-variant classpath wiring); ktlint-gradle
-  plugin rejected (unproven AGP-9 source-set detection); `:baselineprofile`/`:macrobenchmark` not linted.
-  **ADR-0037.** **Next:** PR + CI; then remaining audit majors — #253 (Compose UI follow-up screens);
-  i18n #34; med/low #262/#128; the larger #233 Simulation-hoist (ADR-0012).
+  unchanged). **ADR-0037.** See RUN_LOG for detail.
 - **Previous objective (DONE — MERGED PR #309, squash `0baf9bc`; #211/#258 auto-closed; `[Unreleased]`).**
   **Time-axis anti-cheat: clock-tamper resistance (#211) + schema-doc gap-fill (#258).** ADR-0036.
   Pure-domain `TimeIntegrity` (4-slot baseline, `Trusted`/`Rollback`), reboot-durable max-wall-clock floor +

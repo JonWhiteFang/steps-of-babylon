@@ -221,6 +221,7 @@ All in `domain/model/`:
 | `docs/release/store-assets/StepsOfBabylonArt.png` | User-supplied 1376×768 pixel-art source for the feature graphic |
 | `docs/release/store-assets/play-store-feature-graphic-1024x500.png` | Play Store feature graphic (1024×500, ~621 KB). Center-vertical-cropped + LANCZOS-downscaled from the source PNG |
 | `gradle/libs.versions.toml` | All dependency versions |
+| `gradle/verification-metadata.xml` | SHA-256 checksums for all resolved dependencies (#256). Strict enforcement via `gradle.properties`. Regenerate after dep bumps with `--write-verification-metadata sha256 --refresh-dependencies` |
 | `app/schemas/` | Room schema exports (commit these) |
 | `docs/plans/` | Numbered implementation plans (01–32) + 10b/R/R2/R3/R4/V1X (38 master-plan entries) |
 
