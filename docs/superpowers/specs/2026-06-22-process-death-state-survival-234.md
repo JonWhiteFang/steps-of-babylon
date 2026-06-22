@@ -68,9 +68,12 @@ Android imports — machine-enforced by `architecture/DomainPurityTest`).
 3. **Pack-reveal render contract unchanged.** The DTO↔UI mapping must preserve every field the
    `CardsScreen` reveal UI reads (`CardType`, `isNew`, `copiesAwarded`) 1:1. The plan pins
    `CardsUiState.lastPackResult`'s exact type + the screen's read sites before implementation.
-4. **Hilt DI unchanged in shape.** All four affected VMs are `@HiltViewModel` + `@Inject constructor`,
-   obtained via `hiltViewModel()` — Hilt auto-provides `SavedStateHandle` to the constructor, so adding
-   the param requires no factory/module change.
+4. **Hilt DI unchanged in shape.** The **three** affected ViewModels (Workshop/Stats/Cards) are
+   `@HiltViewModel` + `@Inject constructor`, obtained via `hiltViewModel()` — Hilt auto-provides
+   `SavedStateHandle` to the constructor, so adding the param requires no factory/module change.
+   Surface 4 (`permissionAsked`) is a Compose `remember{}` flag in `MainActivity` (an
+   `@AndroidEntryPoint` Activity, not a ViewModel), fixed via `rememberSaveable` (§4) — it does NOT get
+   a Hilt-injected `SavedStateHandle`.
 
 ## 4. Per-surface design
 
@@ -107,9 +110,12 @@ data class RevealedCard(
 - On pack open (`openPack` :98 / `watchFreePackAd` :147): after computing the domain `List<CardResult>`,
   map → `PackRevealState` and write `savedStateHandle[KEY_PACK_REVEAL] = packRevealState`.
 - `dismissPackResult()` (:136): `savedStateHandle[KEY_PACK_REVEAL] = null`.
-- The combine source (:52) switches from `_lastPackResult` to
-  `savedStateHandle.getStateFlow<PackRevealState?>(KEY_PACK_REVEAL, null)`, mapped (DTO → whatever
-  `CardsUiState.lastPackResult` expects) inside the combine.
+- The combine source (the `_lastPackResult` argument in the `combine(...)` block, ~:53) switches to
+  `savedStateHandle.getStateFlow<PackRevealState?>(KEY_PACK_REVEAL, null)`, mapped inside the combine to
+  **`List<CardResult>?`** — `CardsUiState.lastPackResult` is `List<CardResult>?` and `CardsScreen`
+  (~:150-170) reads `r.type`/`r.isNew`/`r.copiesAwarded` directly, so the screen + uiState type stay
+  **unchanged**; the DTO is purely the SavedStateHandle serialization layer (DTO → `List<CardResult>` on
+  read, `List<CardResult>` → DTO on write).
 - Mapping functions are pure + unit-testable: `List<CardResult>.toPackRevealState()` and
   `PackRevealState.toUiModel()` (or to `List<CardResult>` if the UI model IS `CardResult` — pinned in
   plan). `CardType` encodes as `.name`; decodes via `CardType.valueOf(name)`.
@@ -126,6 +132,20 @@ data class RevealedCard(
 other change. (`onboardingComplete` at :115-117 is left as-is — it's seeded from the durable
 `OnboardingPreferences`, see §2.)
 
+**Behavioral interaction (the one place this matters).** `permissionAsked` feeds the onboarding
+final-slide `when`-block (`OnboardingScreen.kt:232-330`), which branches: `!stepSensorAvailable` →
+`stepCountingGranted` → `!permissionAsked` ("Enable step counting", :305) → else ("Open Settings" +
+"Continue without step counting", :310). The only case the change affects is **asked + still-denied**:
+post-process-death-restore the slide now shows the **:310 denied-recovery branch** instead of
+re-prompting "Enable step counting". **This is the intended/correct outcome** — the system dialog was
+already shown; re-firing it would be worse UX and contradicts the codebase's "never strand the player"
+intent. `stepCountingGranted` is re-derived fresh from `ContextCompat.checkSelfPermission` on every
+`onCreate` (not from saved state), so a since-granted permission still shows the satisfied branch
+regardless. `permissionAsked` is the only flag this PR persists. (The framing here supersedes
+`OnboardingScreen.kt:63`'s "shown this session" KDoc — it now survives process-death-with-restore, not
+a true cold start with no saved-state bundle; a one-line KDoc tweak from "this session" to "this process
+instance" is in scope.)
+
 ### Build change
 Add the `kotlin-parcelize` plugin to `:app` via the version catalog
 (`org.jetbrains.kotlin.plugin.parcelize`, tracking the existing `kotlin` version ref — never hardcode).
@@ -133,18 +153,39 @@ Confirm it composes with KSP/Hilt (additive Kotlin compiler plugin; the build ga
 
 ## 5. Testing strategy
 
-1. **Selection survival (Workshop/Stats)** — the process-death simulation: construct the VM with a
-   `SavedStateHandle` pre-seeded with a non-default selection
-   (`SavedStateHandle(mapOf("selectedCategory" to UpgradeCategory.DEFENSE))`) and assert the first uiState
-   emission reflects it (= restore-on-relaunch). Plus: `selectCategory(X)` then assert
-   `savedStateHandle["selectedCategory"] == X` (= save). Extends the existing fake-backed VM tests on the
-   plain JVM lane. Same for Stats/period.
-2. **Pack-reveal round-trip** — (a) pure mapping tests: `CardResult`→`PackRevealState`→UI model preserves
-   `type`/`isNew`/`copiesAwarded` (incl. a multi-card list + the `isNew=true` "NEW!" badge); (b)
+0. **getStateFlow smoke-test FIRST (plan step 1).** Although decompiling lifecycle 2.11.0 confirms
+   `SavedStateHandle(Map)` → `getStateFlow` is a pure in-memory-map + `MutableStateFlow` path (no
+   `android.os.Bundle`/`SavedStateRegistry`, so `isReturnDefaultValues=true` cannot stub it), this is a
+   new-to-repo API. The plan's first implementation step is a one-line throwaway smoke assertion on the
+   plain JVM lane: `SavedStateHandle(mapOf("k" to UpgradeCategory.DEFENSE)).getStateFlow("k",
+   UpgradeCategory.ATTACK).value == DEFENSE`, then `handle["k"] = ATTACK; assert .value == ATTACK`. If it
+   ever regressed, the #253 Robolectric runner is the named contingency lane.
+1. **Selection survival (Workshop/Stats)** — the process-death simulation: extend the existing
+   `createVm()` test helper to take `handle: SavedStateHandle = SavedStateHandle()`; construct the VM
+   with a handle pre-seeded with a non-default selection
+   (`SavedStateHandle(mapOf("selectedCategory" to UpgradeCategory.DEFENSE))`), drive the established
+   `backgroundScope.launch { vm.uiState.collect {} }; advanceUntilIdle()` pattern, and assert
+   `vm.uiState.value.selectedCategory` reflects the seeded value (= restore-on-relaunch; read AFTER
+   `advanceUntilIdle()` since `WhileSubscribed` emits nothing until subscription — the `getStateFlow`
+   seed resolves synchronously so the value is correct). Plus: `selectCategory(X)` then assert
+   `handle["selectedCategory"] == X` (= save). Same for Stats/period.
+2. **Pack-reveal round-trip** — (a) pure mapping tests: `List<CardResult>`→`PackRevealState`→`List<CardResult>`
+   preserves `type`/`isNew`/`copiesAwarded` (incl. a multi-card list + the `isNew=true` "NEW!" badge); (b)
    `CardsViewModel` test: open a pack (fake repo) → assert reveal in handle; construct a FRESH VM from the
-   same handle → assert the reveal re-appears in uiState (the "killed mid-reveal" scenario).
-3. **`permissionAsked`** — covered by the Robolectric Compose UI lane if a cheap assertion exists;
-   otherwise documented as on-device-verified (one-line `remember`→`rememberSaveable` swap).
+   **same handle instance** (SavedStateHandle does NOT auto-persist across instances — passing the
+   populated handle simulates the system bundle) → assert the reveal re-appears in uiState (the "killed
+   mid-reveal" scenario). **Deterministic `isNew`:** `FakeCardRepository.openCardPackAtomic` derives
+   `isNew` from `cards.value` novelty, so either seed the fake (pre-add a rolled type → at least one
+   `isNew=true` and one `isNew=false`) OR assert against the actual returned `CardResult` list rather
+   than a hard-coded badge vector the random roll can't guarantee.
+3. **`permissionAsked`** — the `remember`→`rememberSaveable` swap on a natively-saveable Boolean is
+   verified **on-device** (or by a deferred instrumented `BattleSurfaceLifecycleTest`-style recreation
+   test). Do NOT attempt a JVM/Robolectric restore test: no `StateRestorationTester`/
+   `createAndroidComposeRule` pattern exists in the repo, and screen-level `createComposeRule` cannot host
+   `MainActivity`'s `setContent` graph — such a test would assert nothing about real restore (test
+   theater). The branch-interaction (§4 surface 4) MAY be covered cheaply by constructing
+   `OnboardingScreen(permissionAsked = true, …)` on the existing #253 Robolectric lane and asserting the
+   :310 recovery branch renders (this tests the slide's branching, not the restore mechanism).
 4. **Guards stay green** — `DomainPurityTest` MUST pass (the enforcing assertion that `@Parcelize` stayed
    in presentation and domain `CardResult`/`CardType` are untouched). Full
    `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL; headline test count rises.
@@ -165,7 +206,12 @@ Confirm it composes with KSP/Hilt (additive Kotlin compiler plugin; the build ga
   setter test proves save).
 - Pack-reveal payload survives process death via the presentation `@Parcelize` DTO; faithful
   type/isNew/copies; `dismissPackResult` clears it.
-- `permissionAsked` uses `rememberSaveable`.
+- `permissionAsked` uses `rememberSaveable`; restore verified **on-device** (no JVM/Robolectric restore
+  test — see §5.3). The asked+denied post-restore onboarding branch (:310 recovery) is the intended
+  outcome (§4 surface 4).
 - `domain/CardResult` + `domain/CardType` unchanged; **`DomainPurityTest` green**.
 - Full `testDebugUnitTest lintDebug assembleDebug` green; headline count updated.
-- #234 closeable on this scope; battle live-round/overlay explicitly deferred (noted at close).
+- #234 closeable on this scope. **Two #234-named surfaces deliberately left unchanged (noted at close):**
+  (a) battle live-round/`RoundEndState` overlay — deferred (not survivable / Medium-High risk, §2);
+  (b) `MainActivity.onboardingComplete` — already durable via `OnboardingPreferences` (§2), so no change
+  needed.
