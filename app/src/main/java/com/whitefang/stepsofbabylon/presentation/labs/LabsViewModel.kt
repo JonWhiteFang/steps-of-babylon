@@ -6,6 +6,8 @@ import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
 import com.whitefang.stepsofbabylon.domain.model.ResearchType
 import com.whitefang.stepsofbabylon.domain.repository.LabRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
+import com.whitefang.stepsofbabylon.domain.time.TimeBaselineSource
+import com.whitefang.stepsofbabylon.domain.time.TimeIntegrity
 import com.whitefang.stepsofbabylon.domain.usecase.CalculateResearchCost
 import com.whitefang.stepsofbabylon.domain.usecase.CalculateResearchTime
 import com.whitefang.stepsofbabylon.domain.usecase.CheckResearchCompletion
@@ -36,6 +38,7 @@ class LabsViewModel @Inject constructor(
     private val labRepository: LabRepository,
     private val playerRepository: PlayerRepository,
     private val missionRepository: MissionRepository,
+    private val timeBaselineSource: TimeBaselineSource,
 ) : ViewModel() {
 
     private val calculateCost = CalculateResearchCost()
@@ -55,7 +58,12 @@ class LabsViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             labRepository.ensureResearchExists()
-            val completed = checkCompletion()
+            // #211 read-only: derive trusted-now from the CURRENT baseline; do NOT persist
+            // (DailyStepManager owns the baseline). trustedWallClock is the capped-accrual anchor.
+            val verdict = TimeIntegrity.evaluate(
+                timeBaselineSource.readTimeBaseline(), timeBaselineSource.currentTimeReading(),
+            )
+            val completed = checkCompletion(now = verdict.newBaseline.trustedWallClock)
             // R3-03: only tick the COMPLETE_RESEARCH daily mission when something
             // actually completed. The use case applies the count gating internally so
             // every call site (init / rushResearch / freeRush) gets the same semantics
