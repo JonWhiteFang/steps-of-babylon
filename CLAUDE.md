@@ -250,6 +250,11 @@ Key reference documents:
 - Anti-cheat: rate-limit at 200 steps/min, step velocity analysis (shaker/spoof detection), daily
   ceiling of 50,000 steps, graduated Health Connect cross-validation (4 offense levels), activity
   minute validation, per-minute overlap deduction.
+- **Time-axis anti-cheat (#211, ADR-0036):** time-gated mechanics consult the pure-domain
+  `domain/time/TimeIntegrity` over an `AntiCheatPreferences` baseline (the `TimeBaselineSource` seam) —
+  backward-rollback guard (reboot-durable `maxWallClockSeen` floor) + in-session forward-jump guard
+  (capped-accrual `trustedWallClock` anchor). `DailyStepManager` is the **single baseline owner**
+  (evaluates + persists under its #120 mutex); `HomeViewModel`/`LabsViewModel` are read-only consumers.
 - Domain models are pure Kotlin — no Android imports in `domain/`.
 - **Process-death survival (#234):** transient UI selections / reveal-once state that must outlive a
   process kill go through `SavedStateHandle` (ViewModels — `getStateFlow(key, default)` as a `combine`
@@ -335,7 +340,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1213 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1230 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Compose UI tests run on the JVM lane (#253):** `createComposeRule()` under Robolectric
   (`@RunWith(RobolectricTestRunner)` + `@GraphicsMode(NATIVE)`), backed by the `src/test/` fakes — no

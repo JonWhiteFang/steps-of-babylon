@@ -41,4 +41,11 @@ class CompleteResearchTest {
         val result = useCase(ResearchType.DAMAGE_RESEARCH, completesAt = 5000, now = 6000)
         assertTrue(result is CompleteResearch.Result.NotActive)
     }
+
+    @Test
+    fun `R211 forward jump with trusted-now below completesAt returns NotReady`() = runTest {
+        labRepo.active.value = listOf(ActiveResearch(ResearchType.DAMAGE_RESEARCH, 0, 0, 100_000))
+        val result = useCase(ResearchType.DAMAGE_RESEARCH, completesAt = 100_000, now = 50_000)
+        assertEquals(CompleteResearch.Result.NotReady, result)
+    }
 }

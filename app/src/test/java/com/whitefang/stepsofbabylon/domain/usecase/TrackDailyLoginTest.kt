@@ -3,6 +3,7 @@ package com.whitefang.stepsofbabylon.domain.usecase
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.fakes.FakeDailyLoginRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -59,5 +60,29 @@ class TrackDailyLoginTest {
         useCase.checkAndAward("2026-03-09", 100, seasonPassActive = true, seasonPassExpiry = Long.MAX_VALUE)
         // Streak 1 = 1 gem + 10 season pass = 11
         assertEquals(11, playerRepo.profile.value.gems)
+    }
+
+    @Test
+    fun `R211 rollback verdict writes nothing for the tampered date`() = runTest {
+        val gemsBefore = playerRepo.observeProfile().first().gems
+        useCase.checkAndAward("2026-03-09", todayCreditedSteps = 0, isRollback = true)
+        assertNull(loginRepo.getByDate("2026-03-09"))                       // no DailyLogin row
+        assertEquals(gemsBefore, playerRepo.observeProfile().first().gems)  // no gems credited
+    }
+
+    @Test
+    fun `R211 trusted verdict credits normally (regression)`() = runTest {
+        useCase.checkAndAward("2026-03-09", todayCreditedSteps = 0, isRollback = false)
+        assertNotNull(loginRepo.getByDate("2026-03-09"))                    // row written + streak/gems advance
+    }
+
+    @Test
+    fun `R211 latched future clock then legit date is still credited`() = runTest {
+        // a rolled-back pass for date D writes nothing (no stale gemsClaimed=true latched)...
+        useCase.checkAndAward("2026-03-09", todayCreditedSteps = 0, isRollback = true)
+        assertNull(loginRepo.getByDate("2026-03-09"))
+        // ...so when D legitimately arrives the credit is NOT pre-suppressed
+        useCase.checkAndAward("2026-03-09", todayCreditedSteps = 0, isRollback = false)
+        assertNotNull(loginRepo.getByDate("2026-03-09"))
     }
 }

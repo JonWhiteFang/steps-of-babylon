@@ -16,6 +16,8 @@ import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.StepRepository
 import com.whitefang.stepsofbabylon.domain.repository.WalkingEncounterRepository
 import com.whitefang.stepsofbabylon.domain.repository.WorkshopRepository
+import com.whitefang.stepsofbabylon.domain.time.TimeIntegrity
+import com.whitefang.stepsofbabylon.domain.time.TimeVerdict
 import com.whitefang.stepsofbabylon.domain.usecase.GenerateSupplyDrop
 import com.whitefang.stepsofbabylon.domain.usecase.TrackDailyLogin
 import com.whitefang.stepsofbabylon.domain.usecase.TrackWeeklyChallenge
@@ -326,11 +328,17 @@ class DailyStepManager @Inject constructor(
             // pipeline runs from a background ingestion path (widget, worker,
             // or service) rather than app foreground.
             val profile = playerRepository.observeProfile().first()
+            // #211: single baseline owner — evaluate the time axis and persist the advanced baseline
+            // (this is the ONLY site that persists; HomeViewModel is read-only). Under the #120 mutex.
+            val timeVerdict = TimeIntegrity.evaluate(antiCheatPrefs.readTimeBaseline(), antiCheatPrefs.currentTimeReading())
+            // writeTimeBaseline uses SharedPreferences.apply() (async, non-throwing) — it cannot abort the checkAndAward below.
+            antiCheatPrefs.writeTimeBaseline(timeVerdict.newBaseline)
             trackDailyLogin.checkAndAward(
                 currentDate,
                 dailyCreditedTotal,
                 profile.seasonPassActive,
                 profile.seasonPassExpiry,
+                isRollback = timeVerdict is TimeVerdict.Rollback,
             )
             trackWeeklyChallenge.checkAndAward()
         } catch (e: Exception) { onPipelineError("economy", e) }

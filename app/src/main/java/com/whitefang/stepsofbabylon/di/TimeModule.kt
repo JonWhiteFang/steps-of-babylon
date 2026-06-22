@@ -1,6 +1,8 @@
 package com.whitefang.stepsofbabylon.di
 
+import com.whitefang.stepsofbabylon.data.anticheat.AntiCheatPreferences
 import com.whitefang.stepsofbabylon.data.time.SystemTimeProvider
+import com.whitefang.stepsofbabylon.domain.time.TimeBaselineSource
 import com.whitefang.stepsofbabylon.domain.time.TimeProvider
 import dagger.Binds
 import dagger.Module
@@ -19,4 +21,7 @@ import javax.inject.Singleton
 abstract class TimeModule {
     @Binds @Singleton
     abstract fun bindTimeProvider(impl: SystemTimeProvider): TimeProvider
+
+    @Binds @Singleton
+    abstract fun bindTimeBaselineSource(impl: AntiCheatPreferences): TimeBaselineSource
 }

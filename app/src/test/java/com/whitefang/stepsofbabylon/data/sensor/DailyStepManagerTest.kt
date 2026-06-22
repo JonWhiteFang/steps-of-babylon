@@ -3,6 +3,8 @@ package com.whitefang.stepsofbabylon.data.sensor
 import com.whitefang.stepsofbabylon.data.anticheat.AntiCheatPreferences
 import com.whitefang.stepsofbabylon.data.local.DailyMissionEntity
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
+import com.whitefang.stepsofbabylon.domain.time.TimeBaseline
+import com.whitefang.stepsofbabylon.domain.time.TimeReading
 import com.whitefang.stepsofbabylon.fakes.FakeDailyLoginDao
 import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
 import com.whitefang.stepsofbabylon.fakes.FakeDailyStepDao
@@ -28,6 +30,7 @@ import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class DailyStepManagerTest {
 
@@ -44,6 +47,15 @@ class DailyStepManagerTest {
     // 61s apart ensures each call is in a fresh rate-limiter window
     private val minuteGap = 61_000L
 
+    // #211: an unstubbed mock returns null for the non-null currentTimeReading(), which NPEs inside
+    // TimeIntegrity.evaluate — that NPE is swallowed by the economy catch and would SKIP the streak/gem
+    // award, regressing the gem-delta assertions. Stub it so evaluate hits the Trusted/null branch
+    // (isRollback = false → existing economy behaviour unchanged).
+    private fun stubbedAntiCheatPrefs(): AntiCheatPreferences =
+        mock<AntiCheatPreferences>().also {
+            whenever(it.currentTimeReading()).thenReturn(TimeReading(elapsedRealtime = 0, wallClock = baseTime))
+        }
+
     @BeforeEach
     fun setup() {
         playerRepo = FakePlayerRepository()
@@ -52,7 +64,7 @@ class DailyStepManagerTest {
         widgetHelper = mock<WidgetUpdateHelper>()
         workshopRepo = FakeWorkshopRepository()
         labRepo = FakeLabRepository()
-        antiCheatPrefs = mock<AntiCheatPreferences>()
+        antiCheatPrefs = stubbedAntiCheatPrefs()
 
         manager = DailyStepManager(
             stepRepository = stepRepo,
@@ -204,7 +216,7 @@ class DailyStepManagerTest {
             playerRepository = playerRepo,
             rateLimiter = StepRateLimiter(),
             velocityAnalyzer = StepVelocityAnalyzer(),
-            antiCheatPrefs = mock<AntiCheatPreferences>(),
+            antiCheatPrefs = stubbedAntiCheatPrefs(),
             walkingEncounterRepository = FakeWalkingEncounterRepository(),
             supplyDropNotificationManager = mock<SupplyDropNotificationManager>(),
             dailyLoginRepository = FakeDailyLoginRepository(),
@@ -319,6 +331,54 @@ class DailyStepManagerTest {
         val gemsAfter = playerRepo.profile.value.gems
         assertEquals(1L, gemsAfter - gemsBefore,
             "Expired Season Pass should fall back to baseline streak Gem only")
+    }
+
+    // --- #211: clock-rollback suppresses the daily-login credit at the manager level ---
+
+    @Test
+    fun `R211 rollback baseline suppresses the gem award at the manager level`() = runTest {
+        // Prime a baseline whose floor (maxWallClockSeen) is AHEAD of the current reading → backward
+        // rollback → TimeIntegrity.evaluate returns Rollback → checkAndAward must skip ALL credit.
+        // Mirrors the trusted gem-crediting tests (e.g. `background pipeline grants baseline streak
+        // Gems without Season Pass`): the same 100-step walk + fresh profile would award the day-1
+        // streak Gem on a Trusted pass, so a zero-delta here proves the rollback guard fired.
+        val rollbackPlayerRepo = FakePlayerRepository()
+        val rolledBackPrefs = mock<AntiCheatPreferences>().also {
+            whenever(it.currentTimeReading())
+                .thenReturn(TimeReading(elapsedRealtime = 0, wallClock = baseTime))
+            whenever(it.readTimeBaseline()).thenReturn(
+                TimeBaseline(
+                    lastElapsedRealtime = 0,
+                    lastWallClock = baseTime + 1_000L,
+                    maxWallClockSeen = baseTime + 1_000L, // floor AHEAD of the reading's wallClock=baseTime
+                    trustedWallClock = baseTime,
+                ),
+            )
+        }
+        val rollbackManager = DailyStepManager(
+            stepRepository = FakeStepRepository(),
+            playerRepository = rollbackPlayerRepo,
+            rateLimiter = StepRateLimiter(),
+            velocityAnalyzer = StepVelocityAnalyzer(),
+            antiCheatPrefs = rolledBackPrefs,
+            walkingEncounterRepository = FakeWalkingEncounterRepository(),
+            supplyDropNotificationManager = mock<SupplyDropNotificationManager>(),
+            dailyLoginRepository = FakeDailyLoginRepository(),
+            weeklyChallengeRepository = FakeWeeklyChallengeRepository(),
+            dailyMissionDao = FakeDailyMissionDao(),
+            widgetUpdateHelper = mock<WidgetUpdateHelper>(),
+            workshopRepository = FakeWorkshopRepository(),
+            labRepository = FakeLabRepository(),
+        )
+
+        val gemsBefore = rollbackPlayerRepo.profile.value.gems
+        rollbackManager.recordSteps(100, baseTime)
+
+        assertEquals(
+            gemsBefore,
+            rollbackPlayerRepo.profile.value.gems,
+            "a Rollback verdict must suppress the day-1 streak Gem credit (no gem/streak award under tamper)",
+        )
     }
 
     // ---- RO-08 #1a: STEP_MULTIPLIER Workshop upgrade applies to walking step credit ----

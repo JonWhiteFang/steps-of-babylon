@@ -18,7 +18,21 @@ class TrackDailyLogin(
         private const val SEASON_PASS_DAILY_GEMS = 10L
     }
 
-    suspend fun checkAndAward(todayDate: String, todayCreditedSteps: Long, seasonPassActive: Boolean = false, seasonPassExpiry: Long = 0) {
+    suspend fun checkAndAward(
+        todayDate: String,
+        todayCreditedSteps: Long,
+        seasonPassActive: Boolean = false,
+        seasonPassExpiry: Long = 0,
+        isRollback: Boolean = false,
+    ) {
+        // #211: on a detected backward clock rollback, refuse ALL credit for the tampered date and
+        // write NOTHING — no streak/gem grant, no DailyLogin row, no gemsClaimed flag. Writing
+        // gemsClaimed=true here would silently deny credit when the date legitimately arrives later
+        // (the !login.gemsClaimed gate). The power-stone-for-1k-steps grant is step-gated (the step
+        // anti-cheat owns that axis), but on a rollback we still write nothing — the row isn't created,
+        // so the PS for this date is deferred to the next trusted pass (acceptable; steps persist).
+        if (isRollback) return
+
         val login = dailyLoginRepository.getByDate(todayDate) ?: DailyLogin(date = todayDate)
         var updated = login.copy(stepsWalked = todayCreditedSteps)
 

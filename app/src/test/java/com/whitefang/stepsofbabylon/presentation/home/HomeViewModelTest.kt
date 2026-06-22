@@ -6,7 +6,10 @@ import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.DailyStepSummary
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
+import com.whitefang.stepsofbabylon.domain.model.ActiveResearch
 import com.whitefang.stepsofbabylon.domain.model.ResearchType
+import com.whitefang.stepsofbabylon.domain.time.TimeBaseline
+import com.whitefang.stepsofbabylon.domain.time.TimeReading
 import com.whitefang.stepsofbabylon.fakes.*
 import com.whitefang.stepsofbabylon.service.MilestoneNotificationManager
 import kotlinx.coroutines.Dispatchers
@@ -62,10 +65,18 @@ class HomeViewModelTest {
     @AfterEach
     fun tearDown() { Dispatchers.resetMain() }
 
-    private fun createVm() = HomeViewModel(
+    // #211: HomeViewModel derives trusted-now from TimeBaselineSource and gates research completion on
+    // it. The default fake (null baseline) yields a Trusted verdict with trustedWallClock == reading's
+    // wall. We default the reading's wall to Long.MAX_VALUE so research with a past `completesAt` still
+    // completes (trustedNow >= completesAt) — the existing #55 tests seed real-clock-relative completions.
+    private fun createVm(
+        timeBaselineSource: FakeTimeBaselineSource =
+            FakeTimeBaselineSource(reading = TimeReading(0, Long.MAX_VALUE)),
+    ) = HomeViewModel(
         playerRepo, stepRepo, workshopRepo, labRepo, encounterRepo,
         missionRepo, milestoneRepo, dailyLoginRepo,
         milestoneNotificationManager, milestoneNotificationPrefs,
+        timeBaselineSource,
     )
 
     @Test
@@ -217,5 +228,46 @@ class HomeViewModelTest {
             .first { it.missionType == DailyMissionType.COMPLETE_RESEARCH.name }
         assertEquals(0, mission.progress, "Mission must stay at 0 when no research actually completed (R3-03 false-trigger regression guard)")
         assertFalse(mission.completed, "Mission must stay incomplete")
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // #211 — HomeViewModel gates background research completion on the TRUSTED now derived from
+    // TimeBaselineSource, not the raw wall clock. The other #55 tests use the default createVm()
+    // whose fake reading wall is Long.MAX_VALUE → trusted-now is effectively unbounded, so any
+    // research with a past `completesAt` always completes. That masks the trusted-now gate this
+    // read-only consumer exists to enforce. This test injects a ROLLBACK baseline so trusted-now
+    // is pinned BELOW the research `completesAt` and verifies the research is NOT completed.
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    fun `R211 rollback verdict gates trusted-now so background research does not complete`() = runTest(dispatcher) {
+        // Active research completes at 100_000 (absolute). A rollback baseline pins trusted-now at
+        // 50_000 (< completesAt) → CheckResearchCompletion(now = trustedNow) must NOT complete it.
+        labRepo.active.value = listOf(ActiveResearch(ResearchType.DAMAGE_RESEARCH, 0, 0, 100_000))
+        val rollbackSource = FakeTimeBaselineSource(
+            // maxWallClockSeen (1_000_000) > reading.wallClock (50_000) → Rollback;
+            // wallDelta=0, elapsedDelta=0 → cappedDelta=0 → trustedWallClock stays 50_000.
+            baseline = TimeBaseline(
+                lastElapsedRealtime = 0,
+                lastWallClock = 50_000,
+                maxWallClockSeen = 1_000_000,
+                trustedWallClock = 50_000,
+            ),
+            reading = TimeReading(elapsedRealtime = 0, wallClock = 50_000),
+        )
+        val vm = createVm(timeBaselineSource = rollbackSource)
+        backgroundScope.launch { vm.uiState.collect {} }
+        advanceUntilIdle()
+
+        // research still active — trusted-now (50_000) < completesAt (100_000). With the DEFAULT
+        // createVm() (trusted-now = Long.MAX_VALUE) the SAME research WOULD complete (size 0).
+        assertEquals(
+            1, labRepo.active.value.size,
+            "Research must stay active — trusted-now (50_000) is below completesAt (100_000)",
+        )
+        assertEquals(
+            0, labRepo.getResearchLevel(ResearchType.DAMAGE_RESEARCH),
+            "Research level must NOT increment — completion was gated by the rollback trusted-now",
+        )
     }
 }

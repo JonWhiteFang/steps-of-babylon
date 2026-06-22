@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.data.sensor
 
 import com.whitefang.stepsofbabylon.data.anticheat.AntiCheatPreferences
+import com.whitefang.stepsofbabylon.domain.time.TimeReading
 import com.whitefang.stepsofbabylon.fakes.FakeDailyLoginDao
 import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
 import com.whitefang.stepsofbabylon.fakes.FakeDailyStepDao
@@ -18,6 +19,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -45,6 +47,13 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class DailyStepManagerConcurrencyTest {
 
+    // #211: stub the non-null currentTimeReading() so TimeIntegrity.evaluate (in the economy stage)
+    // hits the Trusted/null branch instead of NPEing on a null reading. No baseTime here — literal.
+    private fun stubbedAntiCheatPrefs(): AntiCheatPreferences =
+        mock<AntiCheatPreferences>().also {
+            whenever(it.currentTimeReading()).thenReturn(TimeReading(0, 1_710_000_000_000L))
+        }
+
     private fun newManager(
         stepRepo: FakeStepRepository,
         playerRepo: FakePlayerRepository,
@@ -53,7 +62,7 @@ class DailyStepManagerConcurrencyTest {
         playerRepository = playerRepo,
         rateLimiter = StepRateLimiter(),
         velocityAnalyzer = StepVelocityAnalyzer(),
-        antiCheatPrefs = mock<AntiCheatPreferences>(),
+        antiCheatPrefs = stubbedAntiCheatPrefs(),
         walkingEncounterRepository = FakeWalkingEncounterRepository(),
         supplyDropNotificationManager = mock<SupplyDropNotificationManager>(),
         dailyLoginRepository = FakeDailyLoginRepository(),

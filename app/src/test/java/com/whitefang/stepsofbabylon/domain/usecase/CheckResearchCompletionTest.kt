@@ -48,4 +48,16 @@ class CheckResearchCompletionTest {
         val completed = useCase(now = 6000)
         assertTrue(completed.isEmpty())
     }
+
+    @Test
+    fun `R211 in-session forward jump does not complete research when trusted-now is below completesAt`() = runTest {
+        labRepo.active.value = listOf(
+            ActiveResearch(ResearchType.DAMAGE_RESEARCH, 0, 1000, 100_000),
+        )
+        // Raw wall-clock jumped to 200_000 (> completesAt) but the TRUSTED now (capped by monotonic
+        // elapsed) is only 50_000 — research must NOT complete.
+        val completed = useCase(now = 50_000)
+        assertTrue(completed.isEmpty())
+        assertEquals(1, labRepo.active.value.size)
+    }
 }

@@ -42,6 +42,34 @@ the data-flow diagram live in `docs/step-tracking.md`; the invariant list is in 
 - **Battle Steps cap** — 2,000/day (`AwardBattleSteps.DAILY_BATTLE_STEP_CAP`), separate from and never additive to the 50k ceiling; flat per-enemy-type, never multiplied by any in-round source. ADR-0003.
 - **`DailyStepManager` mutex (#120)** — credit read-check-write runs under a non-reentrant `Mutex`; don't add an un-locked counter mutation.
 
+## 3a. Time axis (#211)
+
+Time-gated mechanics (daily-login streak, Labs research auto-completion) no longer trust the unguarded
+device wall-clock. Authoritative record: **ADR-0036**; pure decision core: `domain/time/TimeIntegrity.kt`.
+Adversary in scope: a player using **OS Settings → Date & time** (the cheap, ubiquitous exploit).
+
+- **Pure decision core** — `TimeIntegrity.evaluate(baseline, reading)` reasons over a persisted 4-slot
+  `TimeBaseline` + a fresh `TimeReading` and returns `Trusted | Rollback` carrying the advanced baseline.
+  No Android imports (`DomainPurityTest`); the Android clock reads live in `AntiCheatPreferences`.
+- **Backward-rollback guard (reboot-durable)** — `maxWallClockSeen` is the highest wall-clock ever
+  observed; `reading.wallClock < maxWallClockSeen` ⇒ `Rollback`. Persisted, so it survives reboot.
+- **Forward-jump guard (in-session)** — the `trustedWallClock` capped-accrual anchor only advances by
+  `min(wallDelta, elapsedDelta)`, so an in-session forward jump's excess is never folded in (it's an
+  order-independent persisted anchor, not a re-derivation).
+- **What's closed** — (a) backward rollback: `TrackDailyLogin.checkAndAward(isRollback = true)` refuses
+  ALL credit for the tampered date and writes nothing (no streak/gem/season-bonus, no `DailyLogin` row,
+  no `gemsClaimed` latch); (b) in-session forward jump on research: `CheckResearchCompletion` gates on
+  the capped trusted-now.
+- **Single owner = `DailyStepManager`** — evaluates + persists the advanced baseline under its #120
+  mutex (`writeTimeBaseline` is `apply()`, async/non-throwing). `HomeViewModel` / `LabsViewModel` are
+  **read-only consumers** (derive trusted-now/verdict, never persist). Baseline lives in the existing
+  `anti_cheat_prefs` SharedPreferences (no Room schema/migration); wiped by `DataDeletionManager`.
+- **Explicitly accepted (out of scope this wave, per ADR-0036)** — rooted/file-editing adversary (can
+  edit the plaintext baseline directly — same trust tier as the whole plaintext anti-cheat stack);
+  reboot-spanning forward jump on research (`elapsedRealtime` resets, so the capped delta falls back to
+  the full wall delta — the `Rollback` floor guards only backward); `RushResearch` gem rush-cost (reads
+  raw `now`, floored at 50 gems); `BillingManagerImpl` season-pass-expiry authority (unchanged).
+
 ## 4. Economy integrity (atomic spend/claim)
 
 The in-app economy uses an **atomic guarded-deduct pattern** so currency can't be double-spent or a
@@ -71,4 +99,5 @@ Client-side Play purchase signature verification (#124, **ADR-0005 amendment**).
 ---
 
 **Related ADRs:** ADR-0003 (battle-step rewards), ADR-0005 (billing SDK + #124 verification amendment),
-ADR-0016 (no GPS/location), ADR-0018 (CI/CD + signing), ADR-0020 (economy atomicity).
+ADR-0016 (no GPS/location), ADR-0018 (CI/CD + signing), ADR-0020 (economy atomicity),
+ADR-0036 (time-axis anti-cheat / clock-tamper resistance).

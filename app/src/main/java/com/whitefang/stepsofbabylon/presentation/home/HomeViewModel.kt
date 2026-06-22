@@ -13,6 +13,9 @@ import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.StepRepository
 import com.whitefang.stepsofbabylon.domain.repository.WalkingEncounterRepository
 import com.whitefang.stepsofbabylon.domain.repository.WorkshopRepository
+import com.whitefang.stepsofbabylon.domain.time.TimeBaselineSource
+import com.whitefang.stepsofbabylon.domain.time.TimeIntegrity
+import com.whitefang.stepsofbabylon.domain.time.TimeVerdict
 import com.whitefang.stepsofbabylon.domain.usecase.CheckResearchCompletion
 import com.whitefang.stepsofbabylon.domain.usecase.GenerateDailyMissions
 import com.whitefang.stepsofbabylon.domain.usecase.CheckMilestones
@@ -46,6 +49,7 @@ class HomeViewModel @Inject constructor(
     private val dailyLoginRepository: DailyLoginRepository,
     private val milestoneNotificationManager: com.whitefang.stepsofbabylon.service.MilestoneNotificationManager,
     private val milestoneNotificationPrefs: MilestoneNotificationPreferences,
+    private val timeBaselineSource: TimeBaselineSource,
 ) : ViewModel() {
 
     private val _currentDate = MutableStateFlow(LocalDate.now().toString())
@@ -74,13 +78,22 @@ class HomeViewModel @Inject constructor(
             labRepository.ensureResearchExists()
             // #55: capture the completed list so we can credit the COMPLETE_RESEARCH daily
             // mission on background completions. Pre-fix the return value was discarded.
-            val completed = CheckResearchCompletion(labRepository)()
+            // #211 read-only: derive verdict + trusted-now from the CURRENT baseline; do NOT persist
+            // (DailyStepManager owns the baseline). trustedWallClock is the capped-accrual anchor — a
+            // forward jump's excess is never folded in, regardless of owner/consumer ordering.
+            val verdict = TimeIntegrity.evaluate(
+                timeBaselineSource.readTimeBaseline(), timeBaselineSource.currentTimeReading(),
+            )
+            val trustedNow = verdict.newBaseline.trustedWallClock
+            val completed = CheckResearchCompletion(labRepository)(now = trustedNow)
             updateMissionProgress(completedCount = completed.size)
 
             val today = _currentDate.value
             val todaySteps = stepRepository.getDailyRecord(today)?.creditedSteps ?: 0
             val profile0 = playerRepository.observeProfile().first()
-            TrackDailyLogin(dailyLoginRepository, playerRepository).checkAndAward(today, todaySteps, profile0.seasonPassActive, profile0.seasonPassExpiry)
+            TrackDailyLogin(dailyLoginRepository, playerRepository)
+                .checkAndAward(today, todaySteps, profile0.seasonPassActive, profile0.seasonPassExpiry,
+                    isRollback = verdict is TimeVerdict.Rollback)
             GenerateDailyMissions(missionRepository)(today)
 
             val profile = playerRepository.observeProfile().first()
