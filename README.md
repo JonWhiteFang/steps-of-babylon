@@ -58,6 +58,11 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 ./lint-kotlin.sh
 ./lint-kotlin.sh --format   # auto-fix formatting issues
 
+# Refresh dependency verification checksums (after adding/bumping a dep)
+./gradlew --write-verification-metadata sha256 assembleDebug testDebugUnitTest \
+  lintDebug :app:detekt :app:assembleDebugAndroidTest \
+  :baselineprofile:assemble :macrobenchmark:assemble
+
 # Clean
 ./gradlew clean
 
