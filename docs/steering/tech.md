@@ -68,6 +68,23 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 ./lint-kotlin.sh --format         # Auto-fix formatting (no baseline)
 ```
 
+## Dependency Verification (#256)
+
+`gradle/verification-metadata.xml` holds SHA-256 checksums for every resolved artifact. Enforcement is
+global (`dependency-verification=strict` in `gradle.properties`) — a missing or mismatched checksum fails
+the build immediately (local + CI). Platform-specific artifacts (aapt2 linux/osx/windows) are all included
+so builds pass on any OS.
+
+**Regenerate after adding or bumping a dependency:**
+```bash
+./gradlew --write-verification-metadata sha256 --refresh-dependencies \
+  assembleDebug testDebugUnitTest lintDebug :app:detekt \
+  :app:assembleDebugAndroidTest :baselineprofile:assemble :macrobenchmark:assemble
+```
+
+`--refresh-dependencies` forces all repository variants into the metadata (prevents cache-locality gaps
+where e.g. a POM resolves via Google's mirror locally but MavenCentral in CI).
+
 ## Architecture Layers
 
 - **presentation** — ViewModels (expose `StateFlow`), Compose screens, SurfaceView battle renderer

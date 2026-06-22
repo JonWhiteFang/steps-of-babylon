@@ -4,6 +4,19 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Build — Gradle dependency verification: SHA-256 supply-chain integrity (#256)
+
+**Build-infra only — no production Kotlin, no schema/economy/engine change, no test-count change**
+(1230 JVM + 9 instrumented unchanged). Commits `gradle/verification-metadata.xml` (~6000 lines of
+SHA-256 checksums covering every CI-used artifact configuration) and enforces strict verification
+globally via `dependency-verification=strict` in `gradle.properties`. Any artifact with a missing or
+mismatched checksum now fails the build immediately — local and CI. Platform-specific artifacts
+(aapt2 linux/osx/windows) are all included so builds pass cross-platform. The issue
+recommendation (#285's earlier #256 DEFERRED note) is now implemented; the bleeding-edge-dep friction
+concern is handled by the `--refresh-dependencies` regen workflow documented in `gradle.properties` +
+README. Mutation-tested: corrupting a single SHA-256 value produces BUILD FAILED with "dependency has
+been compromised" pointing to the exact artifact. **Closes #256.**
+
 ### Build — Kotlin lint enforcement: detekt + ktlint CI gate (#311; ADR-0037)
 
 **Build-infra + config + CI only — no production Kotlin, no schema/economy/engine change, no test-count
