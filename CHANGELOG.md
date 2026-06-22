@@ -4,6 +4,26 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — process-death state survival (#234)
+
+Transient UI state that Android silently drops on a process kill now survives via `SavedStateHandle`
+(ViewModels) / `rememberSaveable` (Compose): **Workshop selected tab**, **Stats selected period**, the
+**Cards pack-reveal payload** (the reveal-once card-flip confirmation — #234's sharpest case), and the
+onboarding **`permissionAsked`** flag. The pack-reveal rides a new presentation-layer `@Parcelize`
+`PackRevealState` DTO (`presentation/cards/PackRevealState.kt`) that mirrors `List<CardResult>` —
+domain `CardResult`/`CardType` stay pure (`DomainPurityTest` green; `@Parcelize` would import Android).
+Selections migrate as drop-in `getStateFlow(key, default)` `combine` sources (no behavior change;
+default unchanged); the pack-reveal DTO is mapped back to `List<CardResult>?` inside the combine so
+`CardsScreen` + `CardsUiState` are untouched. Added the `kotlin-parcelize` plugin. **No schema/economy/
+engine change; 1205 → 1213 JVM** (+8: Workshop ×2, Stats ×2, PackRevealState mapping ×2, Cards reveal
+round-trip + dismiss ×2); `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec + plan each
+through the Adversarial Review Gate (spec 25→15 surviving; **plan 21→14, caught 2 critical pre-code
+defects** — bare `runTest{}` vs the VM's `setMain(dispatcher)` scheduler, and two un-migrated VM ctor
+call sites). **Out of scope (noted at issue-close):** the battle live-round + `RoundEndState` overlay
+(not survivable without major work — engine holds no serializable snapshot); `onboardingComplete` is
+already durable via `OnboardingPreferences`. permissionAsked restore verified on-device. No ADR (uses
+established platform APIs).
+
 ### Architecture — GameEngine god-class decomposition (#230 · #231; ADR-0012 Phase 4)
 
 The 1233-line `presentation/battle/engine/GameEngine` — the highest-churn, hardest-to-reason-about file

@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.lifecycle.SavedStateHandle
 import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.domain.model.OwnedCard
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
@@ -60,7 +61,7 @@ class CardsScreenTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun vm() = CardsViewModel(cardRepo, playerRepo, adManager)
+    private fun vm() = CardsViewModel(cardRepo, playerRepo, adManager, SavedStateHandle())
 
     @Test
     fun `renders gem balance and owned-card count`() {

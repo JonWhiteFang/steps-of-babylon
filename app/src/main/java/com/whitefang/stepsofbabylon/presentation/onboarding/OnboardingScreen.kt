@@ -60,7 +60,7 @@ import kotlin.math.abs
  * MainActivity; the ViewModel supplies the slide list and persists completion.
  *
  * @param stepCountingGranted whether ACTIVITY_RECOGNITION is currently held.
- * @param permissionAsked whether the permission dialog has been shown this session.
+ * @param permissionAsked whether the permission dialog has been shown this process instance (survives process-death restore via rememberSaveable; #234).
  * @param reducedMotion honor the system reduce-animations setting.
  * @param onEnableStepCounting fire the system permission request (owned by MainActivity).
  * @param onOpenAppSettings open the app's system settings page (denial recovery).

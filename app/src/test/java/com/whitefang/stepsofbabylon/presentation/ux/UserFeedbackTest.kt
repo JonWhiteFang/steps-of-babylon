@@ -4,6 +4,7 @@ import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWorkshopRepository
+import androidx.lifecycle.SavedStateHandle
 import com.whitefang.stepsofbabylon.presentation.workshop.WorkshopViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,7 +40,7 @@ class UserFeedbackTest {
 
     @Test
     fun `workshop purchase with zero balance shows feedback message`() = runTest(dispatcher) {
-        val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo)
+        val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo, SavedStateHandle())
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -52,7 +53,7 @@ class UserFeedbackTest {
 
     @Test
     fun `clearMessage resets userMessage to null`() = runTest(dispatcher) {
-        val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo)
+        val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo, SavedStateHandle())
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
 
@@ -67,7 +68,7 @@ class UserFeedbackTest {
 
     @Test
     fun `quickInvest with zero balance shows feedback message`() = runTest(dispatcher) {
-        val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo)
+        val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo, SavedStateHandle())
         backgroundScope.launch { vm.uiState.collect {} }
         advanceUntilIdle()
 

@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.cards
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.domain.model.OwnedCard
@@ -33,13 +34,15 @@ class CardsViewModel @Inject constructor(
     private val cardRepository: CardRepository,
     private val playerRepository: PlayerRepository,
     private val rewardAdManager: RewardAdManager,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val openCardPack = OpenCardPack(cardRepository)
     private val upgradeCardUseCase = UpgradeCard(cardRepository)
     private val manageLoadout = ManageCardLoadout(cardRepository)
 
-    private val _lastPackResult = MutableStateFlow<List<CardResult>?>(null)
+    private val packRevealHandleFlow: StateFlow<PackRevealState?> =
+        savedStateHandle.getStateFlow(KEY_PACK_REVEAL, null)
     private val _processing = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<String?>(null)
     // #194: bump to re-subscribe the data flow after a load error (retry).
@@ -50,10 +53,10 @@ class CardsViewModel @Inject constructor(
     combine(
         cardRepository.observeAllCards(),
         playerRepository.observeProfile(),
-        _lastPackResult,
+        packRevealHandleFlow,
         _processing,
         _userMessage,
-    ) { cards, profile, packResult, processing, message ->
+    ) { cards, profile, packReveal, processing, message ->
         allCards = cards
         val equipped = cards.count { it.isEquipped }
         CardsUiState(
@@ -72,7 +75,7 @@ class CardsViewModel @Inject constructor(
             equippedCount = equipped,
             gems = profile.gems,
             packOptions = PackTier.entries.map { PackOption(it, profile.gems >= it.gemCost) },
-            lastPackResult = packResult,
+            lastPackResult = packReveal?.toCardResultsOrNull(),
             freePackAvailable = !profile.adRemoved && profile.freeCardPackAdUsedToday != LocalDate.now().toString(),
             adRemoved = profile.adRemoved,
             isLoading = false,
@@ -95,7 +98,7 @@ class CardsViewModel @Inject constructor(
             try {
                 val result = openCardPack(packTier, uiState.value.gems)
                 if (result is OpenCardPack.Result.Opened) {
-                    _lastPackResult.value = result.cards
+                    savedStateHandle[KEY_PACK_REVEAL] = result.cards.toPackRevealState()
                 } else {
                     _userMessage.value = "Not enough Gems"
                 }
@@ -133,7 +136,7 @@ class CardsViewModel @Inject constructor(
         viewModelScope.launch { manageLoadout.unequip(cardId) }
     }
 
-    fun dismissPackResult() { _lastPackResult.value = null }
+    fun dismissPackResult() { savedStateHandle[KEY_PACK_REVEAL] = null }
 
     fun watchFreePackAd() {
         if (_processing.value) return
@@ -144,7 +147,7 @@ class CardsViewModel @Inject constructor(
                 when (result) {
                     is AdResult.Rewarded -> {
                         val packResult = openCardPack(PackTier.COMMON, uiState.value.gems, isFree = true)
-                        if (packResult is OpenCardPack.Result.Opened) _lastPackResult.value = packResult.cards
+                        if (packResult is OpenCardPack.Result.Opened) savedStateHandle[KEY_PACK_REVEAL] = packResult.cards.toPackRevealState()
                         playerRepository.updateFreeCardPackAdUsed(LocalDate.now().toString())
                     }
                     is AdResult.Cancelled -> _userMessage.value = "Ad cancelled. Try again."
@@ -158,4 +161,6 @@ class CardsViewModel @Inject constructor(
     }
 
     fun clearMessage() { _userMessage.value = null }
+
+    private companion object { const val KEY_PACK_REVEAL = "packReveal" }
 }

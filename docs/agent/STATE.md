@@ -12,10 +12,10 @@ data-integrity #237/#238/#248) via release PR #278 (squash `ffa9973`). **ALL 4 n
 Latest content wave MERGED: data-integrity (PR #276, `0f32ac6`; #237/#238/#248 auto-closed; ADR-0030,
 single-agent review caught a critical pre-code defect). Earlier waves MERGED: #261/#233 (PR #274, `8b50b13`);
 #194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.9 (vc 25)** · **1205 JVM + 9 instrumented tests**
+Supersedes **v1.0.9 (vc 25)** · **1213 JVM + 9 instrumented tests**
 green (1110 shipped in v1.0.10; +8 reliability wave #251/#249 → 1118; +8 correctness/UX wave
 #225/#235/#224/#222 → 1126; +4 privacy/monetization #240/#239/#241 → 1130; +9 perf wave #242/#243 → 1139;
-+13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; +26 i18n correctness wave #259/#260 → 1195; +1 #220 domain-purity guard hardening → 1196; +9 GameEngine decomposition #230/#231 → 1205; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
++13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; +26 i18n correctness wave #259/#260 → 1195; +1 #220 domain-purity guard hardening → 1196; +9 GameEngine decomposition #230/#231 → 1205; +8 process-death state survival #234 → 1213; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -33,7 +33,29 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #304, squash `3d33240`; #231 auto-closed; #230 left OPEN by design; `[Unreleased]`).**
+- **CURRENT (DONE — branch `fix/234-process-death-state-survival`, ready to PR; `[Unreleased]`).**
+  **Process-death state survival (#234, `severity:major`).** Transient UI state Android drops on a
+  process kill now survives via `SavedStateHandle` (ViewModels) / `rememberSaveable` (Compose): Workshop
+  selected tab, Stats selected period, the Cards **pack-reveal payload** (the reveal-once card-flip
+  confirmation — #234's sharpest case), and the onboarding `permissionAsked` flag. The pack-reveal rides
+  a new presentation-layer `@Parcelize` **`PackRevealState`** DTO (`presentation/cards/PackRevealState.kt`)
+  mapped to/from `List<CardResult>` at the combine boundary — domain `CardResult`/`CardType` stay pure
+  (**`DomainPurityTest` green**; `@Parcelize` would import Android). Selections are drop-in
+  `getStateFlow(key, default)` combine sources (no behavior change; defaults unchanged); screen +
+  `CardsUiState` types untouched. Added the `kotlin-parcelize` plugin (applied via `kotlin("plugin.parcelize")`
+  + root `apply false` — AGP-9 bundles it). **No schema/economy/engine change; 1205 → 1213 JVM** (+8);
+  `testDebugUnitTest lintDebug assembleDebug` BUILD SUCCESSFUL. Spec + plan each through the **Adversarial
+  Review Gate** (spec 25→15 surviving; **plan 21→14, caught 2 critical pre-code defects** — bare
+  `runTest{}` vs the VM's `setMain(dispatcher)` scheduler, and two un-migrated VM ctor call sites
+  [`UserFeedbackTest`, `CardsScreenTest`]). Subagent-driven execution (9 tasks, spec+quality review on the
+  Cards-wiring cutover). **OUT of scope (noted at issue-close):** battle live-round + `RoundEndState`
+  overlay (engine holds no serializable snapshot — not survivable without major work); `onboardingComplete`
+  already durable via `OnboardingPreferences`; the "onboarding-finish bug" #234 alleged was investigated
+  and found NOT real (`OnboardingScreen` persists before `onFinished`). permissionAsked restore is an
+  on-device dev step. No ADR (established platform APIs). **Next:** open the PR; watch CI; merge;
+  checkpoint. Then remaining audit majors — #211 (clock-tamper), #258 (schema docs), #253 (Compose UI
+  tests); i18n #34; med/low #262/#128.
+- **Previous objective (DONE — MERGED PR #304, squash `3d33240`; #231 auto-closed; #230 left OPEN by design; `[Unreleased]`).**
   Both CI lanes green (build-and-test 5m17s, connected/instrumented 4m42s); squash-merged 2026-06-22;
   branch deleted. **#230 deliberately NOT auto-closed** — the PR omitted a `Closes #230` directive because
   full closure is a judgment call on the partial-domain-hoist basis (UW *effect-resolution* domain hoist

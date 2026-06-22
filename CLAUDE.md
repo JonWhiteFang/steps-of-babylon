@@ -251,6 +251,12 @@ Key reference documents:
   ceiling of 50,000 steps, graduated Health Connect cross-validation (4 offense levels), activity
   minute validation, per-minute overlap deduction.
 - Domain models are pure Kotlin — no Android imports in `domain/`.
+- **Process-death survival (#234):** transient UI selections / reveal-once state that must outlive a
+  process kill go through `SavedStateHandle` (ViewModels — `getStateFlow(key, default)` as a `combine`
+  source; setters write `savedStateHandle[key]`) or `rememberSaveable` (Compose flags). Parcelable DTOs
+  for such state live in `presentation/` (e.g. `presentation/cards/PackRevealState.kt`), **never**
+  `domain/` — `@Parcelize` imports Android, which `DomainPurityTest` forbids; map domain↔DTO at the
+  presentation boundary. Durable game state stays in Room; SavedStateHandle is NOT cross-launch storage.
 - Loadouts enforce max capacity: 3 UWs, 3 Cards.
 - Currency spends should go through the **atomic guarded-deduct pattern** (guarded DAO `UPDATE …
   WHERE balance >= cost` returning rows-affected; grant only on success, inside a `@Transaction`).
@@ -329,7 +335,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1205 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1213 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Compose UI tests run on the JVM lane (#253):** `createComposeRule()` under Robolectric
   (`@RunWith(RobolectricTestRunner)` + `@GraphicsMode(NATIVE)`), backed by the `src/test/` fakes — no
