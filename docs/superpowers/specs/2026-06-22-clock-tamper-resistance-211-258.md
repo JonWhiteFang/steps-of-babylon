@@ -74,6 +74,12 @@ OS-Settings clock adversary —
   `purchaseTime + 30d`) onto the guarded clock — that is the full-subsystem scope; this wave touches the
   engagement use cases only.
 - **Re-modelling research as monotonic accrual** (deeper change to the entity + RushResearch math).
+- **`RushResearch` gem-rush cost** (`RushResearch.calculateRushCost` reads raw `now`; a forward jump
+  lowers the remaining-time fraction → cheaper rush, floored at 50 gems). The auto-complete path
+  (`CheckResearchCompletion`, the headline exploit) IS guarded by trusted-now; the rush *cost* is a
+  secondary surface left raw this wave — documented-accepted in the ADR. (`CompleteResearch` is dead
+  production code — no caller — so its guard is contract-only; the real manual path is `RushResearch` +
+  the season-pass `freeRush` which calls `completeResearch` directly, both out of scope here.)
 - No new Room schema/migration (the baseline lives in SharedPreferences, not Room).
 
 ## 3. Invariants & constraints
@@ -99,11 +105,13 @@ OS-Settings clock adversary —
 
 ### A. `TimeIntegrity` — pure-domain decision core (`domain/time/TimeIntegrity.kt`)
 ```kotlin
-/** Persisted tamper baseline (three Long slots). */
+/** Persisted tamper baseline (FOUR Long slots). */
 data class TimeBaseline(
     val lastElapsedRealtime: Long,   // SystemClock.elapsedRealtime() at last checkpoint (since-boot)
-    val lastWallClock: Long,         // System.currentTimeMillis() at last checkpoint
+    val lastWallClock: Long,         // System.currentTimeMillis() at last checkpoint (raw — to compute the next wallDelta)
     val maxWallClockSeen: Long,      // highest wall-clock ever observed — the reboot-durable rollback floor
+    val trustedWallClock: Long,      // capped-accrual anchor: only ever advances by min(wallDelta, elapsedDelta).
+                                     // The trusted "now" — a forward jump's excess is NEVER folded in (see below).
 )
 
 /** Current clock readings, taken together at one instant. */
@@ -117,35 +125,36 @@ sealed interface TimeVerdict {
 
 object TimeIntegrity {
     /**
-     * Update the baseline from a fresh reading and classify the time axis.
-     * - baseline == null (first run): Trusted; seed maxWallClockSeen = reading.wallClock.
+     * Update the baseline from a fresh reading and classify the time axis. The returned
+     * `newBaseline.trustedWallClock` IS the trusted "now" callers use to gate research.
+     * - baseline == null (first run): Trusted; seed maxWallClockSeen = trustedWallClock = reading.wallClock.
      * - reading.wallClock < baseline.maxWallClockSeen: Rollback (backward jump — reboot-durable).
-     * - else: Trusted. maxWallClockSeen = max(prev, reading.wallClock) in every branch.
+     * - else: Trusted.
      *
-     * In ALL branches (Trusted AND Rollback) the returned newBaseline sets lastWallClock =
-     * reading.wallClock and lastElapsedRealtime = reading.elapsedRealtime (the checkpoint always
-     * advances to "now" so the next delta is measured from here); only maxWallClockSeen is the
-     * monotonic-max floor. This is benign for the forward-jump guard because trustedElapsedSince's
-     * min(wallDelta, elapsedDelta) caps the result regardless — but pin it so the persisted baseline is
-     * unambiguous.
+     * In ALL branches the new baseline advances lastWallClock/lastElapsedRealtime to "now",
+     * `maxWallClockSeen = max(prev, reading.wallClock)`, and **`trustedWallClock` advances by the CAPPED
+     * delta**: `newTrusted = prev.trustedWallClock + cappedDelta`, where
+     * `cappedDelta = if (elapsedDelta < 0) wallDelta.coerceAtLeast(0)   // reboot: no monotonic cap (accepted §2 gap)
+     *                else min(wallDelta, elapsedDelta).coerceAtLeast(0)` and
+     * `wallDelta = reading.wallClock - prev.lastWallClock`, `elapsedDelta = reading.elapsedRealtime - prev.lastElapsedRealtime`.
+     *
+     * **Why a persisted capped-accrual anchor (replaces the earlier `lastWallClock + trustedElapsedSince`
+     * derivation, which was race-defeatable):** `trustedWallClock` only ever moves by the capped delta, so
+     * an in-session forward jump's EXCESS is never absorbed — independent of ordering between the single
+     * owner (which persists) and a read-only consumer (which just reads `baseline.trustedWallClock`). The
+     * old derivation re-read `lastWallClock`; if the owner advanced it to the jumped value first, the
+     * consumer's `min(wallDelta≈0, …)` collapsed to 0 and `trustedNow ≈ jumped wall-clock` → research
+     * completed early (the critical bug the plan-review caught). With the anchor, consumers read the
+     * already-capped value and never see the excess.
+     *
+     * Reboot caveat (HONEST, accepted §2 gap): on `elapsedDelta < 0` the device rebooted, so cappedDelta
+     * falls back to the full wallDelta — a forward jump spanning a reboot advances trustedWallClock fully
+     * → research completes. The Rollback floor does NOT guard the forward direction (it catches only
+     * backward jumps). Defending this needs the rejected boot-reconciliation subsystem; out of scope.
      */
     fun evaluate(baseline: TimeBaseline?, reading: TimeReading): TimeVerdict
-
-    /**
-     * Trusted elapsed wall-time since the baseline, for the in-session forward-jump guard:
-     * `min(wallClock - baseline.lastWallClock, elapsedRealtime - baseline.lastElapsedRealtime)`
-     * clamped to >= 0. A forward wall jump can't claim more "real time" than the monotonic clock advanced
-     * this session.
-     *
-     * Reboot fallback (HONEST consequence): when `elapsedRealtime - lastElapsedRealtime < 0` the device
-     * rebooted (elapsedRealtime is since-boot), so there is no in-session monotonic delta to cap against
-     * and this returns the FULL wall delta. The Rollback floor does NOT guard this — it only catches
-     * *backward* jumps (`wallClock < maxWallClockSeen`). A forward jump that spans a reboot therefore
-     * passes through uncapped → research completes. This is exactly the **accepted non-goal in §2**
-     * (reboot-spanning forward jump on research); defending it needs the rejected boot-reconciliation
-     * subsystem. Do NOT describe the floor as a backstop for the forward direction.
-     */
-    fun trustedElapsedSince(baseline: TimeBaseline, reading: TimeReading): Long
+    // Consumers gate research on `evaluate(...).newBaseline.trustedWallClock` (read-only consumers do NOT
+    // persist; the single owner persists). No separate `trustedElapsedSince` function — the anchor is the API.
 }
 ```
 
@@ -157,8 +166,18 @@ object TimeIntegrity {
 - `writeTimeBaseline(b: TimeBaseline)` — persists the three slots (called with `verdict.newBaseline`).
 - Reads `SystemClock.elapsedRealtime()` + `System.currentTimeMillis()` to build a `TimeReading`
   (the one Android-coupled seam; thin, documented).
-- **DataDeletionManager** must clear these three keys (the file is already wiped on data deletion — verify
-  the three new keys are covered by the existing `anti_cheat_prefs` clear).
+- **DataDeletionManager** must clear these keys (the file is already wiped on data deletion — verify the
+  new keys are covered by the existing `anti_cheat_prefs` clear; they ride it, no `PREFS_NAMES` change).
+- **`TimeBaselineSource` test seam (committed, not optional — plan-review fix).** The Home/Labs VM tests
+  are plain-JVM JUnit Jupiter (no Robolectric) and CANNOT construct the real `Context`-backed
+  `AntiCheatPreferences`. So define a tiny pure-domain interface
+  `TimeBaselineSource { fun readTimeBaseline(): TimeBaseline?; fun currentTimeReading(): TimeReading }`
+  in `domain/time/` (Android-free — `DomainPurityTest` stays green); `AntiCheatPreferences` implements it;
+  the VMs inject `TimeBaselineSource` (Hilt binds it to `AntiCheatPreferences`), and a
+  `FakeTimeBaselineSource` backs the VM tests. `DailyStepManager` (which already holds the concrete
+  `AntiCheatPreferences` and also persists) can use the concrete type directly. NOTE the 4-slot
+  `TimeBaseline` (now incl. `trustedWallClock`) and `TimeReading` are the round-trip shapes the store
+  reads/writes.
 
 ### C. Wiring into the engagement paths
 
@@ -191,16 +210,20 @@ pins this owner and the read-only contract; one `evaluate`→`writeTimeBaseline`
   fake steps; the step anti-cheat owns that axis). Refuse-credit was chosen over a softer "cap at
   last-seen". A `TrackDailyLoginTest` rollback case asserts no `DailyLogin` row / no `gemsClaimed` is
   persisted for the tampered date.
-- **In-session forward-jump guard (research) — anchoring invariant (review-fix; the guard is sound ONLY
-  with the right anchor).** The completion gate uses *trusted now* =
-  `baseline.lastWallClock + trustedElapsedSince(baseline, reading)`. **Invariant:** the `baseline` here
-  MUST be the baseline captured at/before the current session's checkpoint and advanced only by the single
-  owner — NOT re-read from a baseline the same forward-jump pass just advanced (which would fold the jump
-  back into `lastWallClock` and re-accept it). Because the single owner advances the baseline under the
-  mutex and the research read uses the pre-advance baseline for its delta, a within-session forward jump
-  can't push `trustedNow` past `completesAt` faster than the monotonic clock moved. (Reboot-spanning
-  forward jump remains accepted — §2; `trustedElapsedSince` returns the full wall delta on a reboot, by
-  design.)
+- **In-session forward-jump guard (research) — order-independent capped-accrual anchor (review-fix for
+  the CRITICAL anchoring flaw).** The completion gate uses *trusted now* = the persisted
+  **`trustedWallClock`** anchor, obtained as `TimeIntegrity.evaluate(readBaseline(), currentReading()).newBaseline.trustedWallClock`.
+  Because `trustedWallClock` advances ONLY by the capped delta (§4.A), a forward jump's excess is never
+  folded in — **regardless of whether the single owner persisted first or a read-only consumer reads
+  first.** This replaces the earlier `lastWallClock + trustedElapsedSince` derivation, which the
+  plan-review found race-defeatable: if the owner advanced `lastWallClock` to the jumped value before a
+  consumer read it, the consumer's delta collapsed to ~0 and `trustedNow ≈ jumped clock` → research
+  completed early. With the anchor: the single owner (DailyStepManager) persists the advanced
+  `trustedWallClock`; read-only consumers (Home/Labs) call `evaluate` purely to DERIVE the trusted-now
+  from the current persisted anchor (they do NOT `writeTimeBaseline`), and the value they get is already
+  capped no matter the interleaving. (Reboot-spanning forward jump still accepted — §2; the capped delta
+  falls back to the full wall delta on a reboot, by design.) The research use cases are unchanged — they
+  already take `now`; the caller just passes the anchor as `now`.
 
 ## 5. Component design (#258)
 
@@ -208,10 +231,14 @@ pins this owner and the read-only contract; one `evaluate`→`writeTimeBaseline`
 `fallbackToDestructiveMigration`" alternative is **dropped**: that would be a behavioral DI change
 (`DatabaseModule.kt:27` uses only `…OnDowngrade`) and would re-introduce exactly the bare destructive
 fallback that `database-schema.md:281` correctly asserts is "not used anywhere." The floor-safety fact
-is **verifiable, not uncertain** — the app first shipped to the Play internal track at schema ≥ v7
-(CHANGELOG/release history; v1.0.0 was the first release), so no pre-v7 install exists in the wild to
-upgrade. The plan re-confirms this from release history before asserting it; if it somehow proved false,
-that would be a separate behavioral decision tracked apart from this doc gap-fill, NOT folded in here.
+is **verifiable, not uncertain** — confirmed against the dated CHANGELOG internal-track rollout history:
+schema reached v9 (Phase C.5 PR 1, 2026-05-11) BEFORE the first internal-track distribution (Plan 31
+walk-through, 2026-05-13/14; v2/v3 rolled out 2026-05-15; "AAB v9 verified on internal track" 2026-05-23).
+The pre-v9 dated entries are all pre-distribution development, so the first build ever distributed to a
+tester was at schema v9 (≥ v7) — no pre-v7 install exists to upgrade. The plan verifies against those
+specific dated entries (NOT a keyword grep). A STOP condition remains only for the genuine refutation
+(any CHANGELOG entry showing a build at schema < v7 distributed to a tester); if that somehow held, it's
+a separate behavioral decision tracked apart from this doc gap-fill, NOT folded in here.
 
 In `docs/database-schema.md`, **add** (no contradiction with the already-correct #237 content) an
 explicit pre-v7 upgrade note near the migration-floor line (~250) / the Security fallback line (~281):
