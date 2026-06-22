@@ -4,6 +4,14 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Test — HomeScreen Compose UI tests (#253)
+
+4 Robolectric-backed Compose tests for the Home screen — the highest-traffic screen flagged as
+unverified at the UI layer. Covers loaded-state content (today steps, best wave, BATTLE button),
+first-walk prompt visibility/absence. Same infrastructure as CardsScreenTest/OnboardingScreenTest.
+**1230 → 1234 JVM.** No production code change. Also closed #260 (its code defects were fixed in
+PR #302; only the #34 prose tail remained). **Ref #253.**
+
 ### Build — Gradle dependency verification: SHA-256 supply-chain integrity (#256)
 
 **Build-infra only — no production Kotlin, no schema/economy/engine change, no test-count change**
