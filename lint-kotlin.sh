@@ -10,7 +10,7 @@
 set -euo pipefail
 
 KTLINT_VERSION="1.8.0"
-KTLINT_SHA256="2efb55a26fab7784a073ceadc06e62d8a0342b21b212127bbafb0da9b26778f4"
+KTLINT_SHA256="a3fd620207d5c40da6ca789b95e7f823c54e854b7fade7f613e91096a3706d75"
 BASELINE="config/ktlint/baseline.xml"
 REPORT_DIR="app/build/reports/ktlint"
 
@@ -38,11 +38,12 @@ if [ -z "$KTLINT_BIN" ]; then
     exit 1
 fi
 
-# --- Verify SHA-256 (fail-closed) ---
-KTLINT_PATH=$(command -v "$KTLINT_BIN" 2>/dev/null || echo "$KTLINT_BIN")
-if [ -f "$KTLINT_PATH" ]; then
-    echo "$KTLINT_SHA256  $KTLINT_PATH" | shasum -a 256 -c - >/dev/null 2>&1 || {
-        echo "ERROR: SHA-256 mismatch for $KTLINT_PATH — expected $KTLINT_SHA256"
+# --- Verify SHA-256 (fail-closed, repo-cached binary only) ---
+# Only verify the .ktlint/ktlint download (CI path). PATH-installed binaries (e.g. Homebrew) are
+# repackaged and have a different hash — version-match is the guard there.
+if [ "$KTLINT_BIN" = ".ktlint/ktlint" ] && [ -f ".ktlint/ktlint" ]; then
+    echo "$KTLINT_SHA256  .ktlint/ktlint" | shasum -a 256 -c - >/dev/null 2>&1 || {
+        echo "ERROR: SHA-256 mismatch for .ktlint/ktlint — expected $KTLINT_SHA256"
         echo "  The binary may be tampered or a different build. Re-download from GitHub releases."
         exit 1
     }
