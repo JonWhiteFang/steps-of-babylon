@@ -349,11 +349,11 @@ class GameEngine : UWHost, BuffHost, CombatHost {
         if (roundOver) return
         val zig = ziggurat ?: return
         // #118: the entire tick reads and structurally mutates `entities` (addAll/removeAll
-        // here, plus iteration in updateUWs→getAliveEnemies, the projectile-trail loop,
+        // here, plus iteration in uwController.update→getAliveEnemies, the projectile-trail loop,
         // CollisionSystem, and the simulation entity tick). Hold [entitiesLock] for the whole
         // tick so a main-thread [applyStats] orb-reconcile or [init] rebuild can never mutate
         // the list mid-iteration. The lock is reentrant, so the loop-thread GOLDEN path
-        // (updateUWs→activateUW→applyStats) re-acquiring it is safe.
+        // (uwController.update→host.applyStats) re-acquiring it is safe.
         synchronized(entitiesLock) {
             simulation.tickElapsed(deltaTime)
             backgroundRenderer?.update(deltaTime)

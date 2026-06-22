@@ -132,6 +132,26 @@ class UWController(private val host: UWHost, private val simulation: Simulation)
 
     fun resetUWCooldowns() { uwStates.forEach { it.cooldownRemaining = 0f } }
 
+    /**
+     * R4-06: fires the UW at [index] if it's off cooldown and not already mid-effect.
+     * Pre-R4-06 this was the entry point for the player-tap activation path; post-R4-06
+     * the UW is auto-fired from [update] when its cooldown reaches 0 AND enemies are
+     * present (`UltimateWeaponBar` is now a passive cooldown indicator). The method
+     * stays public for direct invocation by tests.
+     *
+     * Per-path reads (replaces the pre-R4-06 single-`level` reads):
+     * - DEATH_WAVE: damage from DAMAGE path; SECONDARY (radius fraction) feeds visual but
+     *   damage applies to all aliveEnemies for v1 of R4-06 (radius UI deferred).
+     * - CHAIN_LIGHTNING: damage from DAMAGE path; chain length from SECONDARY path.
+     * - BLACK_HOLE: ongoing-effect handled in [update]; activation just primes the
+     *   timer + visual.
+     * - CHRONO_FIELD: slow factor from DAMAGE path written to [chronoSlowFactor];
+     *   duration from SECONDARY path overrides [UltimateWeaponType.effectDurationSeconds].
+     * - POISON_SWAMP: ongoing-effect handled in [update].
+     * - GOLDEN_ZIGGURAT: cash multiplier from DAMAGE path → [fortuneMultiplier]
+     *   (`coerceAtLeast` preserves any pre-existing higher buff, defensive for future
+     *   multi-source stacking); damage multiplier from SECONDARY path → stats copy.
+     */
     fun activateUW(index: Int) {
         val uw = uwStates.getOrNull(index) ?: return
         if (uw.cooldownRemaining > 0f) return
