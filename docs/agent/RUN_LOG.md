@@ -9347,3 +9347,47 @@ After the fix, tests pass on first try and assembleDebug is clean.
   issue owner if #230 demands the full UW-effect domain migration). Next: open PR; watch CI; merge;
   checkpoint. Then remaining audit majors — #234, #211, #258, #253; i18n #34; med/low #262/#128.
 - **DONE (merged):** PR **#304** opened; both CI checks green (build-and-test 5m17s, connected/instrumented 4m42s); squash-merged as **`3d33240`** 2026-06-22; branch deleted; **#231 auto-closed**. **#230 deliberately left OPEN** — the PR omitted `Closes #230` because full closure is a judgment call on the partial-domain-hoist basis (UW effect-resolution domain hoist deferred to a future ADR-0012 slice needing `EntityProtocol` surgery); close manually if accepted, else keep as the tracked follow-up. Post-merge reconciliation: STATE.md current-objective flipped ready-to-PR→MERGED. (Spec/plan docs were committed on local `main` pre-branch, so the squash swept them into `3d33240` too; local `main` reset to `origin/main`.) Remaining audit majors: #234, #211, #258, #253; i18n #34; med/low #262/#128.
+
+## 2026-06-22 — Process-death state survival (#234)
+
+- User: picked #234 (highest-value open `severity:major`) off the 2026-06-18 audit backlog after the
+  #230/#231 GameEngine decomposition merged. Android kills backgrounded processes; ViewModels survive
+  config change but NOT process death, so transient UI selections/overlays silently reset on relaunch.
+- Grounding: an `Explore` agent mapped all 5 surfaces the issue names. Findings refined scope:
+  (a) Workshop tab / Stats period / Cards pack-reveal / `permissionAsked` are genuinely lost +
+  reconstructible → IN; (b) the battle live-round + `RoundEndState` overlay are NOT survivable (the engine
+  holds no serializable snapshot) → DEFERRED; (c) the "onboarding-finish persistence bug" the issue
+  alleges is NOT real — `OnboardingScreen:107` calls `viewModel.completeOnboarding()` (→ `setCompleted()`)
+  BEFORE `onFinished()`, so completion already persists via `OnboardingPreferences`.
+- Key constraint resolved at brainstorm: `@Parcelize` on the domain `CardResult`/`CardType` would import
+  Android → `DomainPurityTest` fails. Chosen fix: a **presentation-layer `@Parcelize` DTO**
+  (`PackRevealState`) that mirrors the payload (`CardType` by `.name`); domain stays pure.
+- **Spec → Adversarial Review Gate → plan → Adversarial Review Gate → subagent-driven execution.**
+  Spec review: 25 findings → 15 surviving (both "majors" downgraded on verification — the seeded-handle
+  test approach was CONFIRMED sound by decompiling the lifecycle 2.11.0 AAR: pure in-memory path, no
+  `Bundle`). Plan review (fresh run after two signal-drop stalls — TaskStop + resume-from-cache, then a
+  clean restart): 21 findings → 14 surviving, **caught 2 CRITICAL pre-code defects** — (1) the new tests
+  used bare `runTest{}` but the VMs' `uiState` is `stateIn(viewModelScope, WhileSubscribed)` on
+  `setMain(dispatcher)`; a bare scheduler would never restore the seeded value / run
+  `viewModelScope.launch` → fixed all 6 to `runTest(dispatcher)`; (2) two test files construct the
+  migrated VMs positionally (`UserFeedbackTest:42/55/70`, `CardsScreenTest:63`) → the new required ctor
+  param breaks compilation → added Step-0 ctor-site fixes + grep guards. Plus a spec-alignment fix (map
+  the DTO INSIDE the combine, not via an extra `stateIn(Eagerly)` stage that risked a restore-path
+  transient null).
+- Execution (9 tasks, fresh implementer per task, sonnet for the mechanical ones): Task 1 parcelize
+  plugin (+ a throwaway smoke-test confirming `getStateFlow` runs on the plain JVM lane — the assumption
+  the whole test strategy rests on; implementer correctly used `kotlin("plugin.parcelize")` + root
+  `apply false` since AGP-9 bundles it). Tasks 2/3 Workshop/Stats drop-in `getStateFlow` migrations.
+  Task 4 the `PackRevealState` DTO + pure mapping tests (DomainPurityTest green). Task 5 (the integration
+  cutover, full spec+quality review ✅) wired the reveal through `savedStateHandle["packReveal"]`, mapped
+  back inside the combine; the round-trip "killed-mid-reveal" test (fresh VM from the same handle →
+  reveal reappears) passes; `_lastPackResult` fully removed; screen untouched. Task 6 `permissionAsked`
+  → `rememberSaveable` (+ KDoc tweak). Each task: red→green TDD, per-task build, commit.
+- Verification: `./run-gradle.sh testDebugUnitTest lintDebug assembleDebug` **BUILD SUCCESSFUL**;
+  **1205 → 1213 JVM** (+8), 0 failures. `DomainPurityTest` green (the @Parcelize-stayed-in-presentation
+  guard). No schema/economy/engine change.
+- Doc sync: CLAUDE.md (1205→1213 headline + process-death Conventions note), CHANGELOG `[Unreleased]`,
+  source-files.md (PackRevealState + 3 VM SavedStateHandle notes + CardsScreenTest ctor), tech.md
+  (kotlin.parcelize plugin), STATE.md (current objective), this RUN_LOG entry.
+- **#234 closeable on this scope.** Next: open PR; watch CI; merge; checkpoint. Then #211 (clock-tamper),
+  #258 (schema docs), #253 (Compose UI tests); i18n #34; med/low #262/#128.
