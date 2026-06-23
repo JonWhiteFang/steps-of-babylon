@@ -12,7 +12,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class OnboardingPreferencesTest {
-
     @Test
     fun `defaults to not completed`() {
         val prefs = OnboardingPreferences(RuntimeEnvironment.getApplication())

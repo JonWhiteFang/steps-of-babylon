@@ -21,7 +21,6 @@ import java.io.File
  * it only walks files and reads a `listOf` constant — no Android, no Robolectric.
  */
 class DataDeletionPrefsCoverageTest {
-
     @Test
     fun `every getSharedPreferences call site is covered by PREFS_NAMES`() {
         // Unit tests run with the :app module dir as the working directory (see DomainPurityTest).
@@ -42,21 +41,27 @@ class DataDeletionPrefsCoverageTest {
         // method param, …) is recorded here and FAILS the test — rather than being silently dropped,
         // which would let an unwiped prefs file slip past the guard (the exact #247 failure mode).
         val unresolved = mutableListOf<String>()
-        mainRoot.walkTopDown()
+        mainRoot
+            .walkTopDown()
             .filter { it.isFile && it.extension == "kt" }
             // DataDeletionManager itself calls getSharedPreferences(name) with a loop variable, not a
             // prefs-file name — skip it so `name` isn't mistaken for an (unresolved) constant.
             .filter { it.name != "DataDeletionManager.kt" }
             .forEach { file ->
                 val text = file.readText()
-                val consts = constDecl.findAll(text)
-                    .associate { it.groupValues[1] to it.groupValues[2] }
+                val consts =
+                    constDecl
+                        .findAll(text)
+                        .associate { it.groupValues[1] to it.groupValues[2] }
                 literalCall.findAll(text).forEach { referenced += it.groupValues[1] }
                 identCall.findAll(text).forEach { m ->
                     val ident = m.groupValues[1]
                     val resolved = consts[ident]
-                    if (resolved != null) referenced += resolved
-                    else unresolved += "${file.name}: getSharedPreferences($ident, …)"
+                    if (resolved != null) {
+                        referenced += resolved
+                    } else {
+                        unresolved += "${file.name}: getSharedPreferences($ident, …)"
+                    }
                 }
             }
 

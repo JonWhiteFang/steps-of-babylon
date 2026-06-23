@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test
  * FakeStepIngestionPreferences which mirrors the real implementation's behavior.
  */
 class StepIngestionPreferencesTest {
-
     private lateinit var prefs: FakeStepIngestionPreferences
 
     @BeforeEach
@@ -98,12 +97,20 @@ class FakeStepIngestionPreferences {
     private var dayStartCounter: Long = -1L
     private var sensorStepsAtDayStart: Long = 0L
 
-    fun updateServiceHeartbeat(timestampMs: Long) { heartbeat = timestampMs }
+    fun updateServiceHeartbeat(timestampMs: Long) {
+        heartbeat = timestampMs
+    }
+
     fun getServiceHeartbeat(): Long = heartbeat
+
     fun isServiceAlive(nowMs: Long): Boolean = nowMs - heartbeat < 2 * 60 * 1000L
 
     // #123: mirrors the real prefs — sensorStepsAtDayStart offset defaults to 0.
-    fun setCounterAtDayStart(date: String, counterValue: Long, sensorStepsAtDayStart: Long = 0L) {
+    fun setCounterAtDayStart(
+        date: String,
+        counterValue: Long,
+        sensorStepsAtDayStart: Long = 0L,
+    ) {
         dayStartDate = date
         dayStartCounter = counterValue
         this.sensorStepsAtDayStart = sensorStepsAtDayStart

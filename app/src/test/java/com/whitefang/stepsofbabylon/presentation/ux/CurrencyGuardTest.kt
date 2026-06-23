@@ -20,48 +20,53 @@ import org.junit.jupiter.api.Test
  * the affordability-gated alternative is `spendStepsIfSufficient`.
  */
 class CurrencyGuardTest {
+    @Test
+    fun `spending more gems than balance is rejected and leaves balance unchanged`() =
+        runTest {
+            val repo = FakePlayerRepository(PlayerProfile(gems = 10))
+            assertFalse(repo.spendGems(50), "guarded gem spend must report failure when insufficient")
+            assertEquals(10L, repo.profile.value.gems, "a rejected gem spend must not mutate the balance")
+        }
 
     @Test
-    fun `spending more gems than balance is rejected and leaves balance unchanged`() = runTest {
-        val repo = FakePlayerRepository(PlayerProfile(gems = 10))
-        assertFalse(repo.spendGems(50), "guarded gem spend must report failure when insufficient")
-        assertEquals(10L, repo.profile.value.gems, "a rejected gem spend must not mutate the balance")
-    }
+    fun `sufficient gem spend succeeds and deducts`() =
+        runTest {
+            val repo = FakePlayerRepository(PlayerProfile(gems = 100))
+            assertTrue(repo.spendGems(40))
+            assertEquals(60L, repo.profile.value.gems)
+        }
 
     @Test
-    fun `sufficient gem spend succeeds and deducts`() = runTest {
-        val repo = FakePlayerRepository(PlayerProfile(gems = 100))
-        assertTrue(repo.spendGems(40))
-        assertEquals(60L, repo.profile.value.gems)
-    }
+    fun `spending more power stones than balance is rejected and leaves balance unchanged`() =
+        runTest {
+            val repo = FakePlayerRepository(PlayerProfile(powerStones = 5))
+            assertFalse(repo.spendPowerStones(20))
+            assertEquals(5L, repo.profile.value.powerStones)
+        }
 
     @Test
-    fun `spending more power stones than balance is rejected and leaves balance unchanged`() = runTest {
-        val repo = FakePlayerRepository(PlayerProfile(powerStones = 5))
-        assertFalse(repo.spendPowerStones(20))
-        assertEquals(5L, repo.profile.value.powerStones)
-    }
+    fun `spendStepsIfSufficient is rejected and leaves balance unchanged when short`() =
+        runTest {
+            val repo = FakePlayerRepository(PlayerProfile(stepBalance = 100))
+            assertFalse(repo.spendStepsIfSufficient(500))
+            assertEquals(100L, repo.profile.value.stepBalance)
+        }
 
     @Test
-    fun `spendStepsIfSufficient is rejected and leaves balance unchanged when short`() = runTest {
-        val repo = FakePlayerRepository(PlayerProfile(stepBalance = 100))
-        assertFalse(repo.spendStepsIfSufficient(500))
-        assertEquals(100L, repo.profile.value.stepBalance)
-    }
+    fun `spending more card dust than balance clamps to zero`() =
+        runTest {
+            val repo = FakePlayerRepository(PlayerProfile(cardDust = 3))
+            repo.spendCardDust(100)
+            assertEquals(0L, repo.profile.value.cardDust)
+        }
 
     @Test
-    fun `spending more card dust than balance clamps to zero`() = runTest {
-        val repo = FakePlayerRepository(PlayerProfile(cardDust = 3))
-        repo.spendCardDust(100)
-        assertEquals(0L, repo.profile.value.cardDust)
-    }
-
-    @Test
-    fun `spendSteps keeps the clamp for the anti-cheat escrow clawback`() = runTest {
-        // spendSteps (NOT spendStepsIfSufficient) is the escrow path: it must clamp at 0 so a
-        // disputed-excess deduction larger than the balance still zeroes the wallet.
-        val repo = FakePlayerRepository(PlayerProfile(stepBalance = 100))
-        repo.spendSteps(500)
-        assertEquals(0L, repo.profile.value.stepBalance)
-    }
+    fun `spendSteps keeps the clamp for the anti-cheat escrow clawback`() =
+        runTest {
+            // spendSteps (NOT spendStepsIfSufficient) is the escrow path: it must clamp at 0 so a
+            // disputed-excess deduction larger than the balance still zeroes the wallet.
+            val repo = FakePlayerRepository(PlayerProfile(stepBalance = 100))
+            repo.spendSteps(500)
+            assertEquals(0L, repo.profile.value.stepBalance)
+        }
 }

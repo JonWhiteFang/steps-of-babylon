@@ -10,7 +10,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class ScreenSecondaryTitleTest {
-
     @Test
     fun `secondaryTitle returns the explicit title for each of the 8 push-children`() {
         assertEquals("Ultimate Weapons", Screen.secondaryTitle(Screen.Weapons.route))

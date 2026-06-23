@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class BattleConditionEffectsTest {
-
     private val eps = 0.001f
 
     @Test

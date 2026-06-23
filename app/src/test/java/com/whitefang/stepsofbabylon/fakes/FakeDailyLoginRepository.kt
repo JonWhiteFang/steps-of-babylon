@@ -9,5 +9,7 @@ class FakeDailyLoginRepository : DailyLoginRepository {
 
     override suspend fun getByDate(date: String): DailyLogin? = data[date]
 
-    override suspend fun upsert(login: DailyLogin) { data[login.date] = login }
+    override suspend fun upsert(login: DailyLogin) {
+        data[login.date] = login
+    }
 }

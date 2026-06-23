@@ -1,3 +1,69 @@
+## 2026-06-23 — ktlint repo-wide auto-format, stage 6/6 (FINAL): test sources — EFFORT COMPLETE (`[Unreleased]`)
+
+- **Goal:** stage 6 (the FINAL stage) of the staged, layer-by-layer ktlint auto-format (plan
+  `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`). Stages 1 (`domain/`), 2 (`data/`),
+  3 (`service/`+`di/`+top-level), 4 (`presentation/` excl battle), 5 (`presentation/battle/`) are merged.
+  Stage 6 = **the TEST sources: `app/src/test/` (JVM unit-test source set) + `app/src/androidTest/`
+  (instrumented source set)**. Pure-formatting, zero behaviour change. **196 files changed.** After this the
+  staged format effort is COMPLETE (all 6 stages); the ktlint baseline is at its minimum.
+- **Tooling:** glob-form sweep over both roots — `ktlint -F 'app/src/test/**/*.kt' 'app/src/androidTest/**/*.kt'`
+  (Stage-4 lesson — multi-positional absolute-path lists silently no-op). Verified applied (`git diff
+  --name-only | wc -l` = 196, all under `app/src/(test|androidTest)/` → `IN SCOPE`).
+- **Diff review (full `git diff -w`, 13760 content lines, end-to-end) — confirmed every hunk is a known-safe
+  transform.** Belt-and-braces multiset proofs across all 196 changed files (HEAD vs working tree):
+  - **Backtick test method names: IDENTICAL multiset** (1230 each, zero diff) — no test renamed (test
+    discovery preserved). This is what the 474-added / 474-removed `fun \`…\`` diff lines are: pure
+    signature reflow, not renames.
+  - **Numeric literals: IDENTICAL multiset** (8161 each, zero diff) — no assertion expected value or fixture
+    number changed anywhere.
+  - **String literals: identical except ONE benign delta** — `${tier-1}` → `${tier - 1}` (op-spacing INSIDE
+    a string-template expression) in `TierProgressionTest.kt:86`, in an `assertTrue` *failure-message* string
+    only; the `mult > prev` condition and the computed `tier - 1` are unchanged. Semantically inert.
+  - **Identifier-token multiset: identical except `Unit` +6** — fully accounted for by the
+    `function-expression-body` rule converting single-`throw` block bodies (`{ throw … }`) on `FakePlayerRepository`
+    overrides in `BattleViewModelTest.kt` to expression bodies (`: Unit = throw …`, the explicit `: Unit`
+    preserving the original `Unit`-returning override signature). Behaviour-preserving.
+- **Transforms (all on the allowlist):** blank-line-before-rbrace removal; import ordering (balanced 27/27);
+  function/class-signature reflow (one-param-per-line + trailing comma); `function-expression-body` (block→`=`,
+  incl. the `: Unit = throw …` variant above and the `= runTest { … }` body wraps); if-else bracing
+  (`} else null` → `} else { null }`); statement-on-same-line split (`a; b` → two lines, incl. multi-assert
+  lines like `assertTrue(c.consumed); assertEquals(555L, …)` — all assertions + expected values preserved);
+  chained-call / builder reflow (`Room.inMemoryDatabaseBuilder(…).allowMainThreadQueries().build()`); multiline-
+  expression wrapping; trailing-comma insertion. **No test-method-name change, no assertion expected-value
+  change, no fixture-literal change, no operator/identifier/logic change.**
+- **androidTest compile-check (NOT covered by `testDebugUnitTest`):** `./run-gradle.sh
+  compileDebugAndroidTestKotlin` **exit 0** — the 4 `src/androidTest/` reformats (`BattleSurfaceLifecycleTest`,
+  `DeepLinkIntentTest`, `HiltTestRunner`, `InfrastructureSmokeTest`) compile clean (no emulator needed).
+- **Idempotence:** a second `ktlint -F` pass on the first-sweep result produced a **byte-identical** cumulative
+  diff (same md5) — no Bucket-A leak; the format is at a fixpoint. (An initial "NOT IDEMPOTENT" reading was a
+  self-inflicted command-ordering artifact — an inline `git checkout` had wiped the first sweep before the
+  compare; re-tested cleanly = idempotent.)
+- **Baselines regenerated:**
+  - **ktlint** `config/ktlint/baseline.xml` over full `app/src` (delete-then-create): **3571 → 157** — the
+    MINIMUM. Remaining rules are Bucket-B (non-autocorrectable) only: `no-wildcard-imports` (61),
+    `function-naming` (54, backtick test names + Compose `@Composable` PascalCase), `backing-property-naming`
+    (22), `max-line-length` (12), `property-naming` (5), `no-consecutive-comments`/`kdoc`/`filename` (1 each).
+    No wrapping-family entries remain. `lint-kotlin.sh` check exit 0.
+  - **detekt** `config/detekt/baseline.xml`: **REGEN needed** — `:app:detekt` flagged 5 new findings, all
+    format-induced and all in test sources: **2 `LongMethod`** (`CosmeticRepositoryImplTest.ensureSeedData…`,
+    `GameEngineTest.A28 partition…` — pushed past the 60-line cap purely by arg-list/lambda expansion of
+    UNCHANGED bodies) + **3 `MaxLineLength`** (re-keyed: ktlint moved the long string literal onto its own line,
+    so detekt now keys the violation on the string text). Regen via `:app:detektBaseline` (overwrites):
+    **333 → 258** (NET drop: 5 added, 80 removed — the 80 are pre-existing test-source `MaxLineLength`
+    one-liners ktlint successfully WRAPPED so they fell out / re-keyed). Inspected the diff: every changed
+    entry is a `*Test.kt`/`Fake*.kt` file; NO new smell *type*, no main-source entry touched. `:app:detekt`
+    exit 0 after regen.
+- **Verification:** `./run-gradle.sh testDebugUnitTest --rerun-tasks` **BUILD SUCCESSFUL**; **1254 JVM tests,
+  0 failures, 0 errors** (unchanged count — pure format; counted from report XML). `compileDebugAndroidTestKotlin`
+  exit 0; `lint-kotlin.sh` (ktlint check) exit 0; `:app:detekt` exit 0 (after regen). Scope-checked: only the
+  196 test-source files + the two baseline XMLs + docs changed.
+- **No production logic, schema, economy, or engine behaviour changed.**
+- **STAGED REPO-WIDE KTLINT FORMAT COMPLETE (all 6 stages).** Cumulative ktlint baseline **9256 → 157**
+  across the effort; the residue is the intentional Bucket-B floor (non-autocorrectable). Future follow-up
+  (empty the baseline by manually addressing Bucket B — wildcard imports, Compose `@Composable` naming
+  exemptions, long lines) is OUT OF SCOPE here.
+- **Remains / next:** controller merges this PR (do-not-merge handed off). Effort done after merge + checkpoint.
+
 ## 2026-06-23 — ktlint repo-wide auto-format, stage 5/6: `presentation/battle/` (FRAGILE) (`[Unreleased]`)
 
 - **Goal:** stage 5 of the staged, layer-by-layer ktlint auto-format (plan

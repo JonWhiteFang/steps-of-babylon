@@ -12,9 +12,10 @@ import org.junit.jupiter.api.Test
  * Canvas-coupled entity.
  */
 class EnemyStateTest {
-
-    private fun melee(speed: Float = 50f, attackInterval: Float = 1f) =
-        EnemyState(targetX = 100f, targetY = 0f, speed = speed, isRanged = false, attackInterval = attackInterval)
+    private fun melee(
+        speed: Float = 50f,
+        attackInterval: Float = 1f,
+    ) = EnemyState(targetX = 100f, targetY = 0f, speed = speed, isRanged = false, attackInterval = attackInterval)
 
     @Test
     fun `moves proportionally toward target while beyond melee range`() {
@@ -39,9 +40,9 @@ class EnemyStateTest {
     fun `attack cooldown gates subsequent attacks by the interval`() {
         val s = melee(attackInterval = 1f)
         s.spawn(70f, 0f) // in range
-        assertTrue(s.update(deltaTime = 0.5f))  // first hit, cooldown reset to 1.0
+        assertTrue(s.update(deltaTime = 0.5f)) // first hit, cooldown reset to 1.0
         assertFalse(s.update(deltaTime = 0.5f)) // 0.5 elapsed → 0.5 remaining
-        assertTrue(s.update(deltaTime = 0.5f))  // interval elapsed → hits again
+        assertTrue(s.update(deltaTime = 0.5f)) // interval elapsed → hits again
     }
 
     @Test

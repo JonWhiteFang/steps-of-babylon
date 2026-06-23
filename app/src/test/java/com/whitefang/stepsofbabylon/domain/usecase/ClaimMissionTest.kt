@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test
  * (`AND claimed = 0` returning rows-affected) and credits only on rows == 1.
  */
 class ClaimMissionTest {
-
     private lateinit var missionRepo: FakeMissionRepository
     private lateinit var playerRepo: FakePlayerRepository
     private lateinit var useCase: ClaimMission
@@ -31,7 +30,10 @@ class ClaimMissionTest {
         useCase = ClaimMission(missionRepo, playerRepo)
     }
 
-    private suspend fun seedCompletedMission(gems: Int = 5, powerStones: Int = 0): Int {
+    private suspend fun seedCompletedMission(
+        gems: Int = 5,
+        powerStones: Int = 0,
+    ): Int {
         missionRepo.dao.insert(
             DailyMissionEntity(
                 date = today,
@@ -43,45 +45,60 @@ class ClaimMissionTest {
                 rewardPowerStones = powerStones,
             ),
         )
-        return missionRepo.dao.getByDateOnce(today).first().id
+        return missionRepo.dao
+            .getByDateOnce(today)
+            .first()
+            .id
     }
 
     @Test
-    fun `claim credits the reward and marks claimed`() = runTest {
-        val id = seedCompletedMission(gems = 5)
-        val result = useCase(id, today)
-        assertEquals(ClaimMissionResult.Success, result)
-        assertEquals(5L, playerRepo.profile.value.gems)
-        assertTrue(missionRepo.dao.getByDateOnce(today).first().claimed)
-    }
+    fun `claim credits the reward and marks claimed`() =
+        runTest {
+            val id = seedCompletedMission(gems = 5)
+            val result = useCase(id, today)
+            assertEquals(ClaimMissionResult.Success, result)
+            assertEquals(5L, playerRepo.profile.value.gems)
+            assertTrue(
+                missionRepo.dao
+                    .getByDateOnce(today)
+                    .first()
+                    .claimed,
+            )
+        }
 
     @Test
-    fun `R122 double-tap credits the reward exactly once`() = runTest {
-        val id = seedCompletedMission(gems = 5, powerStones = 2)
+    fun `R122 double-tap credits the reward exactly once`() =
+        runTest {
+            val id = seedCompletedMission(gems = 5, powerStones = 2)
 
-        val first = useCase(id, today)
-        val second = useCase(id, today)
+            val first = useCase(id, today)
+            val second = useCase(id, today)
 
-        assertEquals(ClaimMissionResult.Success, first)
-        assertEquals(ClaimMissionResult.NotClaimable, second, "the second tap must lose the guarded claim race")
-        assertEquals(5L, playerRepo.profile.value.gems, "gems credited exactly once")
-        assertEquals(2L, playerRepo.profile.value.powerStones, "power stones credited exactly once")
-    }
+            assertEquals(ClaimMissionResult.Success, first)
+            assertEquals(ClaimMissionResult.NotClaimable, second, "the second tap must lose the guarded claim race")
+            assertEquals(5L, playerRepo.profile.value.gems, "gems credited exactly once")
+            assertEquals(2L, playerRepo.profile.value.powerStones, "power stones credited exactly once")
+        }
 
     @Test
-    fun `incomplete mission is not claimable`() = runTest {
-        missionRepo.dao.insert(
-            DailyMissionEntity(
-                date = today,
-                missionType = DailyMissionType.WALK_5000.name,
-                target = 5000,
-                progress = 100,
-                completed = false,
-                rewardGems = 5,
-            ),
-        )
-        val id = missionRepo.dao.getByDateOnce(today).first().id
-        assertEquals(ClaimMissionResult.NotClaimable, useCase(id, today))
-        assertEquals(0L, playerRepo.profile.value.gems)
-    }
+    fun `incomplete mission is not claimable`() =
+        runTest {
+            missionRepo.dao.insert(
+                DailyMissionEntity(
+                    date = today,
+                    missionType = DailyMissionType.WALK_5000.name,
+                    target = 5000,
+                    progress = 100,
+                    completed = false,
+                    rewardGems = 5,
+                ),
+            )
+            val id =
+                missionRepo.dao
+                    .getByDateOnce(today)
+                    .first()
+                    .id
+            assertEquals(ClaimMissionResult.NotClaimable, useCase(id, today))
+            assertEquals(0L, playerRepo.profile.value.gems)
+        }
 }

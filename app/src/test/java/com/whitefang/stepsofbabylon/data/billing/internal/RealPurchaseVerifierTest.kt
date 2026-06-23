@@ -19,7 +19,6 @@ import java.util.Base64
  * binding (#124 finding 2) end to end.
  */
 class RealPurchaseVerifierTest {
-
     private val keyPair: KeyPair =
         KeyPairGenerator.getInstance("RSA").apply { initialize(2048) }.generateKeyPair()
 
@@ -27,7 +26,10 @@ class RealPurchaseVerifierTest {
         Base64.getEncoder().encodeToString(keyPair.public.encoded)
 
     /** Builds a Play-shaped signed payload for [productId] + [purchaseToken]. */
-    private fun payload(productId: String, purchaseToken: String): String =
+    private fun payload(
+        productId: String,
+        purchaseToken: String,
+    ): String =
         """{"orderId":"GPA.1","packageName":"com.whitefang.stepsofbabylon",""" +
             """"productId":"$productId","purchaseTime":1700000000000,"purchaseState":0,""" +
             """"purchaseToken":"$purchaseToken","acknowledged":false}"""

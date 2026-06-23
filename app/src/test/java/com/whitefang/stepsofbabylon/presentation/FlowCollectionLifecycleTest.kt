@@ -20,7 +20,6 @@ import java.io.File
  * it only walks files and reads text — no Android, no Robolectric.
  */
 class FlowCollectionLifecycleTest {
-
     /** Screens where plain `collectAsState()` on `uiState` is an accepted, documented choice. */
     private val allowed = setOf("BattleScreen.kt")
 
@@ -39,7 +38,8 @@ class FlowCollectionLifecycleTest {
 
         var fileCount = 0
         val offenders = mutableListOf<String>()
-        presentationRoot.walkTopDown()
+        presentationRoot
+            .walkTopDown()
             .filter { it.isFile && it.extension == "kt" }
             .filter { it.name !in allowed }
             .forEach { file ->

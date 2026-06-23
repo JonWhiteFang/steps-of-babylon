@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class CurrencyDisplayTest {
-
     @Test
     fun `label returns the plural-noun form for each currency`() {
         assertEquals("Steps", CurrencyType.STEPS.label())

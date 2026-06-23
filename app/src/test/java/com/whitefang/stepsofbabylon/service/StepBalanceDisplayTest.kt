@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test
  * only a failed read is protected.
  */
 class StepBalanceDisplayTest {
-
     @Test
     fun `R43 a failed read keeps the last known good balance instead of showing zero`() {
         assertEquals(

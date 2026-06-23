@@ -12,20 +12,24 @@ class FakeCosmeticRepository : CosmeticRepository {
     val items = MutableStateFlow<List<CosmeticItem>>(emptyList())
 
     override fun observeAll(): Flow<List<CosmeticItem>> = items
+
     override fun observeOwned(): Flow<List<CosmeticItem>> = items.map { it.filter { c -> c.isOwned } }
+
     override fun observeEquipped(): Flow<List<CosmeticItem>> = items.map { it.filter { c -> c.isEquipped } }
 
     override suspend fun purchase(cosmeticId: String) {
         items.update { list -> list.map { if (it.cosmeticId == cosmeticId) it.copy(isOwned = true) else it } }
     }
+
     override suspend fun equip(cosmeticId: String) {
         items.update { list -> list.map { if (it.cosmeticId == cosmeticId) it.copy(isEquipped = true) else it } }
     }
+
     override suspend fun unequip(cosmeticId: String) {
         items.update { list -> list.map { if (it.cosmeticId == cosmeticId) it.copy(isEquipped = false) else it } }
     }
+
     override suspend fun ensureSeedData() {}
 
-    override suspend fun idExists(cosmeticId: String): Boolean =
-        items.value.any { it.cosmeticId == cosmeticId }
+    override suspend fun idExists(cosmeticId: String): Boolean = items.value.any { it.cosmeticId == cosmeticId }
 }

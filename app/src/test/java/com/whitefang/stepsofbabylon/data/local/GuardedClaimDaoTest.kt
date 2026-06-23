@@ -21,7 +21,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class GuardedClaimDaoTest {
-
     private lateinit var db: AppDatabase
     private lateinit var encounterDao: WalkingEncounterDao
     private lateinit var missionDao: DailyMissionDao
@@ -29,10 +28,13 @@ class GuardedClaimDaoTest {
 
     @Before
     fun setup() {
-        db = Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(),
-            AppDatabase::class.java,
-        ).allowMainThreadQueries().build()
+        db =
+            Room
+                .inMemoryDatabaseBuilder(
+                    ApplicationProvider.getApplicationContext(),
+                    AppDatabase::class.java,
+                ).allowMainThreadQueries()
+                .build()
         encounterDao = db.walkingEncounterDao()
         missionDao = db.dailyMissionDao()
         playerDao = db.playerProfileDao()
@@ -42,43 +44,59 @@ class GuardedClaimDaoTest {
     fun tearDown() = db.close()
 
     @Test
-    fun `walking encounter markClaimed returns 1 then 0 on a repeat claim`() = runTest {
-        val id = encounterDao.insert(
-            WalkingEncounterEntity(triggerType = "RANDOM", rewardType = "GEMS", rewardAmount = 25, createdAt = 1000),
-        ).toInt()
+    fun `walking encounter markClaimed returns 1 then 0 on a repeat claim`() =
+        runTest {
+            val id =
+                encounterDao
+                    .insert(
+                        WalkingEncounterEntity(
+                            triggerType = "RANDOM",
+                            rewardType = "GEMS",
+                            rewardAmount = 25,
+                            createdAt = 1000,
+                        ),
+                    ).toInt()
 
-        assertEquals("first claim must affect the row", 1, encounterDao.markClaimed(id, claimedAt = 2000))
-        assertEquals("second claim must affect no row", 0, encounterDao.markClaimed(id, claimedAt = 3000))
-    }
-
-    @Test
-    fun `daily mission markClaimed returns 1 then 0 on a repeat claim`() = runTest {
-        missionDao.insert(
-            DailyMissionEntity(date = "2026-06-10", missionType = "WALK_5000", target = 5000, progress = 5000, completed = true),
-        )
-        val id = missionDao.getByDateOnce("2026-06-10").first().id
-
-        assertEquals("first claim must affect the row", 1, missionDao.markClaimed(id))
-        assertEquals("second claim must affect no row", 0, missionDao.markClaimed(id))
-    }
+            assertEquals("first claim must affect the row", 1, encounterDao.markClaimed(id, claimedAt = 2000))
+            assertEquals("second claim must affect no row", 0, encounterDao.markClaimed(id, claimedAt = 3000))
+        }
 
     @Test
-    fun `guarded currency deducts return rows-affected reflecting sufficiency`() = runTest {
-        playerDao.upsert(PlayerProfileEntity(currentStepBalance = 100, gems = 100, powerStones = 5))
+    fun `daily mission markClaimed returns 1 then 0 on a repeat claim`() =
+        runTest {
+            missionDao.insert(
+                DailyMissionEntity(
+                    date = "2026-06-10",
+                    missionType = "WALK_5000",
+                    target = 5000,
+                    progress = 5000,
+                    completed = true,
+                ),
+            )
+            val id = missionDao.getByDateOnce("2026-06-10").first().id
 
-        // Sufficient → 1 and the balance moves.
-        assertEquals(1, playerDao.adjustStepBalanceIfSufficient(100))
-        assertEquals(1, playerDao.spendGemsAtomic(40))
-        assertEquals(1, playerDao.spendPowerStonesAtomic(5))
+            assertEquals("first claim must affect the row", 1, missionDao.markClaimed(id))
+            assertEquals("second claim must affect no row", 0, missionDao.markClaimed(id))
+        }
 
-        // Insufficient → 0 and no mutation.
-        assertEquals(0, playerDao.adjustStepBalanceIfSufficient(1))
-        assertEquals(0, playerDao.spendGemsAtomic(61))
-        assertEquals(0, playerDao.spendPowerStonesAtomic(1))
+    @Test
+    fun `guarded currency deducts return rows-affected reflecting sufficiency`() =
+        runTest {
+            playerDao.upsert(PlayerProfileEntity(currentStepBalance = 100, gems = 100, powerStones = 5))
 
-        val profile = playerDao.get().first()
-        assertEquals(0L, profile!!.currentStepBalance)
-        assertEquals(60L, profile.gems)
-        assertEquals(0L, profile.powerStones)
-    }
+            // Sufficient → 1 and the balance moves.
+            assertEquals(1, playerDao.adjustStepBalanceIfSufficient(100))
+            assertEquals(1, playerDao.spendGemsAtomic(40))
+            assertEquals(1, playerDao.spendPowerStonesAtomic(5))
+
+            // Insufficient → 0 and no mutation.
+            assertEquals(0, playerDao.adjustStepBalanceIfSufficient(1))
+            assertEquals(0, playerDao.spendGemsAtomic(61))
+            assertEquals(0, playerDao.spendPowerStonesAtomic(1))
+
+            val profile = playerDao.get().first()
+            assertEquals(0L, profile!!.currentStepBalance)
+            assertEquals(60L, profile.gems)
+            assertEquals(0L, profile.powerStones)
+        }
 }

@@ -17,7 +17,6 @@ class FakeMilestoneRepository(
     linkedPlayer: FakePlayerRepository? = null,
     val dao: FakeMilestoneDao = FakeMilestoneDao(linkedPlayer),
 ) : MilestoneRepository {
-
     /** Exposes the wrapped DAO's atomic-path counter for the credit-exactly-once assertions. */
     val claimMilestoneAtomicCallCount: Int get() = dao.claimMilestoneAtomicCallCount
 

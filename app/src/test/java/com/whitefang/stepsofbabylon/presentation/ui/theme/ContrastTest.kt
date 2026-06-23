@@ -11,7 +11,6 @@ import kotlin.math.pow
  * mirroring `ColorLerpTest`/`RarityTest`. A future token tweak that drops below 4.5:1 fails the build.
  */
 class ContrastTest {
-
     // Read the REAL token ARGB consts (plain Ints, no Compose Color) so a regression to the production
     // token fails this guard — not a hardcoded copy that could silently drift from Color.kt.
     private val gold = GoldArgb
@@ -30,7 +29,10 @@ class ContrastTest {
         return 0.2126 * channelLuminance(r) + 0.7152 * channelLuminance(g) + 0.0722 * channelLuminance(b)
     }
 
-    private fun contrastRatio(a: Int, b: Int): Double {
+    private fun contrastRatio(
+        a: Int,
+        b: Int,
+    ): Double {
         val la = relativeLuminance(a)
         val lb = relativeLuminance(b)
         val lighter = maxOf(la, lb)

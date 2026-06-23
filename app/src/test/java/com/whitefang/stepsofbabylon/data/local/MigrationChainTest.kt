@@ -22,25 +22,33 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class MigrationChainTest {
-
     private var db: AppDatabase? = null
 
     @After
-    fun tearDown() { db?.close() }
+    fun tearDown() {
+        db?.close()
+    }
 
     /** A trivial no-op migration with the given version edge, for chain-shape tests. */
-    private fun mig(from: Int, to: Int): Migration = object : Migration(from, to) {
-        override fun migrate(db: SupportSQLiteDatabase) { /* no-op */ }
-    }
+    private fun mig(
+        from: Int,
+        to: Int,
+    ): Migration =
+        object : Migration(from, to) {
+            override fun migrate(db: SupportSQLiteDatabase) { /* no-op */ }
+        }
 
     // ---- The real, shipped chain ----
 
     @Test
     fun `live migration chain is contiguous and tops out at AppDatabase version`() {
-        db = Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(),
-            AppDatabase::class.java,
-        ).allowMainThreadQueries().build()
+        db =
+            Room
+                .inMemoryDatabaseBuilder(
+                    ApplicationProvider.getApplicationContext(),
+                    AppDatabase::class.java,
+                ).allowMainThreadQueries()
+                .build()
         // Force the DB open so user_version is initialized, then read the authoritative live version.
         val liveVersion = db!!.openHelper.readableDatabase.version
 

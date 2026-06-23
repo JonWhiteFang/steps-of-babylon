@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test
  * `formatName` copies in CardsScreen / LabsScreen / UnclaimedSuppliesScreen (review reuse finding).
  */
 class EnumDisplayNameTest {
-
     @Test
     fun `single token is title-cased`() {
         assertEquals("Common", "COMMON".toDisplayName())

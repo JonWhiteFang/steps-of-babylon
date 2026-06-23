@@ -4,6 +4,35 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Style — ktlint repo-wide format, stage 6/6 (test sources) — effort complete
+
+**Pure formatting — no production-logic, schema, economy, or engine change; no test-count change (1254 JVM,
+0 failures).** Stage 6 — the FINAL stage — of the staged, layer-by-layer ktlint auto-format: `ktlint -F`
+(glob form) scoped to the TEST sources — `app/src/test/` (JVM unit-test source set) + `app/src/androidTest/`
+(instrumented source set); 196 files changed. **The staged repo-wide ktlint format effort is now COMPLETE
+(all 6 stages); the baseline is at its Bucket-B floor.** All changes are mechanical Bucket-A transforms
+(blank-line-before-rbrace removal, import ordering, function-/class-signature reflow,
+`function-expression-body` incl. the `: Unit = throw …` and `= runTest { … }` variants, if-else bracing,
+statement-on-same-line split, chained-call/builder reflow, trailing-comma). The full whitespace-ignored diff
+(13760 content lines) was reviewed hunk-by-hunk against the safe-transform allowlist, plus belt-and-braces
+multiset proofs across all 196 files: **backtick test-method names identical** (no rename → test discovery
+preserved), **numeric literals identical** (no assertion expected-value or fixture-number change), string
+literals identical except one benign `${tier-1}`→`${tier - 1}` operator-spacing inside a failure-message
+string, identifier multiset identical except `Unit` +6 (the `: Unit = throw …` expression-body conversions).
+The 4 `src/androidTest/` files were **compile-checked locally** (`compileDebugAndroidTestKotlin` — not covered
+by `testDebugUnitTest`); a second `ktlint -F` pass produced a **byte-identical diff** (idempotent — no
+Bucket-A leak). **Baselines regenerated** (the staged mechanism): `config/ktlint/baseline.xml` over the full
+`app/src` scope **3571 → 157** — the minimum; the residue is the intentional **Bucket-B floor**
+(non-autocorrectable only: `no-wildcard-imports` 61, `function-naming` 54, `backing-property-naming` 22,
+`max-line-length` 12, `property-naming` 5, plus 3 singletons), no wrapping-family entries remain.
+`config/detekt/baseline.xml` **333 → 258** (regen needed — 5 format-induced findings added: 2 `LongMethod`
+pushed past 60 lines by arg/lambda expansion of unchanged test bodies + 3 re-keyed `MaxLineLength`; 80
+pre-existing test-source long one-liners ktlint wrapped/re-keyed fell out — no new smell type, only
+`*Test.kt`/`Fake*.kt` entries). `lint-kotlin.sh` (ktlint check) + `:app:detekt` both green; 1254 JVM tests
+pass unchanged. **Cumulative across the effort: ktlint baseline 9256 → 157 over 6 stages.** Future follow-up
+(emptying the baseline by addressing Bucket B — wildcard imports, Compose `@Composable` naming, long lines) is
+out of scope. Plan: `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`.
+
 ### Style — ktlint repo-wide format, stage 5/6 (`presentation/battle/`)
 
 **Pure formatting — no production-logic, schema, economy, or engine change; no thread-safety invariant

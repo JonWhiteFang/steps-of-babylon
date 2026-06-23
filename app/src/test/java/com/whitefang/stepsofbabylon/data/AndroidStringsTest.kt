@@ -17,7 +17,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class AndroidStringsTest {
-
     private val strings = AndroidStrings(ApplicationProvider.getApplicationContext<Context>())
 
     @Test fun `enemyTypeName is localized title-case, never raw name`() {

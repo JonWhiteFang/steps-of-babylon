@@ -10,7 +10,6 @@ import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import androidx.work.testing.SynchronousExecutor
-import java.util.concurrent.TimeUnit
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.whitefang.stepsofbabylon.data.local.AppDatabase
 import org.junit.After
@@ -23,11 +22,11 @@ import org.mockito.kotlin.verify
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import java.util.concurrent.TimeUnit
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class DataDeletionManagerTest {
-
     private lateinit var context: Context
     private lateinit var db: AppDatabase
     private lateinit var manager: DataDeletionManager
@@ -39,11 +38,14 @@ class DataDeletionManagerTest {
         // SynchronousExecutor so cancelAllWork().result resolves on the calling thread — makes the
         // #248 "await cancel before close" path deterministic in-test (the default executor is async).
         WorkManagerTestInitHelper.initializeTestWorkManager(
-            context, Configuration.Builder().setExecutor(SynchronousExecutor()).build()
+            context,
+            Configuration.Builder().setExecutor(SynchronousExecutor()).build(),
         )
-        db = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
-            .allowMainThreadQueries()
-            .build()
+        db =
+            Room
+                .inMemoryDatabaseBuilder(context, AppDatabase::class.java)
+                .allowMainThreadQueries()
+                .build()
         manager = DataDeletionManager(context, db)
         activity = mock()
     }
@@ -56,8 +58,11 @@ class DataDeletionManagerTest {
     @Test
     fun `deleteAllData clears all SharedPreferences`() {
         DataDeletionManager.PREFS_NAMES.forEach { name ->
-            context.getSharedPreferences(name, Context.MODE_PRIVATE)
-                .edit().putString("test_key", "test_value").commit()
+            context
+                .getSharedPreferences(name, Context.MODE_PRIVATE)
+                .edit()
+                .putString("test_key", "test_value")
+                .commit()
         }
 
         manager.deleteAllData(activity)
@@ -92,9 +97,10 @@ class DataDeletionManagerTest {
         val wm = WorkManager.getInstance(context)
         // Enqueue work with a long initial delay so it stays ENQUEUED (never starts running under the
         // SynchronousExecutor), modelling pending background work at wipe time.
-        val request = OneTimeWorkRequestBuilder<NoOpWorker>()
-            .setInitialDelay(1, TimeUnit.HOURS)
-            .build()
+        val request =
+            OneTimeWorkRequestBuilder<NoOpWorker>()
+                .setInitialDelay(1, TimeUnit.HOURS)
+                .build()
         wm.enqueue(request).result.get()
         assertEquals(WorkInfo.State.ENQUEUED, wm.getWorkInfoById(request.id).get()?.state)
 
@@ -110,8 +116,11 @@ class DataDeletionManagerTest {
     @Test
     fun `deleteAllData clears the crash breadcrumb prefs`() {
         // Seed a breadcrumb directly via the same file name CrashBreadcrumbStore uses.
-        context.getSharedPreferences("crash_breadcrumb_prefs", Context.MODE_PRIVATE)
-            .edit().putString("crash_class", "x").commit()
+        context
+            .getSharedPreferences("crash_breadcrumb_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .putString("crash_class", "x")
+            .commit()
 
         manager.deleteAllData(activity)
 
@@ -122,7 +131,10 @@ class DataDeletionManagerTest {
     }
 
     /** Minimal no-op worker used only to enqueue pending work for the cancel-before-close test. */
-    class NoOpWorker(context: Context, params: WorkerParameters) : Worker(context, params) {
+    class NoOpWorker(
+        context: Context,
+        params: WorkerParameters,
+    ) : Worker(context, params) {
         override fun doWork(): Result = Result.success()
     }
 }

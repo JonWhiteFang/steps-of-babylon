@@ -30,7 +30,6 @@ import java.io.File
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class DatabaseKeyManagerTest {
-
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val dbFile: File = context.getDatabasePath("steps_of_babylon.db")
     private val shmFile: File = File(dbFile.path + "-shm")

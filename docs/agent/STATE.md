@@ -33,25 +33,39 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (IN FLIGHT — PR open, awaiting controller merge; branch `chore/ktlint-format-5-battle`; `[Unreleased]`).**
+- **CURRENT (IN FLIGHT — PR open, awaiting controller merge; branch `chore/ktlint-format-6-tests`; `[Unreleased]`).**
+  **Staged repo-wide ktlint auto-format — stage 6 of 6 (FINAL): test sources. The staged format effort is now
+  COMPLETE (all 6 stages).** Mechanical `ktlint -F` (glob form) over the TEST sources only — `app/src/test/`
+  (JVM unit-test source set) + `app/src/androidTest/` (instrumented source set). **196 files changed.**
+  Pure-formatting / zero behaviour change; all hunks on the Bucket-A allowlist (blank-line-before-rbrace
+  removal, import ordering, function-/class-signature reflow, `function-expression-body` incl. the
+  `: Unit = throw …` and `= runTest { … }` variants, if-else bracing, statement-on-same-line split,
+  chained-call/builder reflow, trailing-comma). **Belt-and-braces multiset proofs (HEAD vs working tree across
+  all 196 files):** backtick test-method names IDENTICAL (no rename → test discovery preserved), numeric
+  literals IDENTICAL (no expected-value/fixture change), string literals identical except ONE benign
+  `${tier-1}`→`${tier - 1}` op-spacing in a failure-message string, identifier multiset identical except
+  `Unit` +6 (fully accounted for by the `: Unit = throw` expression-body conversions). **androidTest
+  compile-checked locally** (`compileDebugAndroidTestKotlin` exit 0 — not covered by `testDebugUnitTest`).
+  **Idempotence confirmed** (a second `-F` pass produced a byte-identical diff → no Bucket-A leak). **ktlint
+  baseline regenerated** (full `app/src`, delete-then-create): **3571 → 157** — the MINIMUM; the residue is
+  the intentional Bucket-B floor (non-autocorrectable only: `no-wildcard-imports` 61, `function-naming` 54,
+  `backing-property-naming` 22, `max-line-length` 12, `property-naming` 5, + 3 singletons), no wrapping-family
+  entries remain. **detekt baseline REGEN'd** (expected): **333 → 258** — 5 added (2 `LongMethod` over-length
+  from arg/lambda expansion + 3 re-keyed `MaxLineLength`), 80 removed (long test-source one-liners ktlint
+  wrapped/re-keyed); all format-induced, NO new smell type, only `*Test.kt`/`Fake*.kt` entries. **1254 JVM
+  tests green, 0 failures**; `lint-kotlin.sh` check + `:app:detekt` both exit 0. **Cumulative across the effort:
+  ktlint baseline 9256 → 157 over 6 stages.** **Out of scope (future follow-up):** emptying the baseline by
+  manually addressing Bucket B (wildcard imports, Compose `@Composable` naming, long lines). **Next:**
+  controller merges this final PR; effort done after merge + checkpoint. Plan:
+  `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`.
+- **Previous objective (DONE — branch `chore/ktlint-format-5-battle`, MERGED; `[Unreleased]`).**
   **Staged repo-wide ktlint auto-format — stage 5 of 6 (`presentation/battle/`, FRAGILE).** Mechanical
   `ktlint -F` over `presentation/battle/` ONLY — the fragile custom `SurfaceView` game-loop renderer/engine
-  zone (`GameEngine`/`GameLoopThread`/`EffectEngine`/`UWController`/`CombatResolver`/`BuffTickers` + entities/
-  effects/biome/ui). **37 files changed.** Pure-formatting / zero behaviour change; all hunks on the Bucket-A
-  allowlist (class-/function-signature reflow, expression-body wrapping incl. the EXPECTED
-  `UWController.relayerBaseStats` block→`=`, if-else/when-entry bracing, property-accessor braces, trailing-
-  comma, import ordering, same-line-statement split). **Extra fragile-zone review (full 3776-line `git diff -w`,
-  read end-to-end):** every `@Volatile` stayed attached to its field; NO statement moved into/out of any
-  `synchronized(entitiesLock)`/`synchronized(effectsLock)` block (only intra-block reflow); `GameLoopThread`
-  per-tick try/catch guard intact; no statement reordered across a lock boundary; no literal/operator/
-  identifier/string/logic change. **ktlint baseline regenerated:** `config/ktlint/baseline.xml` **4974 → 3571**
-  (full-`app/src` scope; −1403 battle Bucket-A entries). **detekt baseline REGEN'd** (expected): **387 → 333**
-  — 9 added (7 `LongMethod` over-length from brace-expansion + 2 `MaxLineLength` re-indented `BattleViewModel`
-  lines), 63 removed (long one-liners ktlint wrapped); all format-induced, NO new smell type, only
-  `presentation/battle/` entries. **1254 JVM tests green, 0 failures** (incl. `SimulationTest` + battle
-  engine/concurrency tests); `lint-kotlin.sh` check + `:app:detekt` both exit 0. **Next:** controller merges;
-  then stage 6 (test sources — final stage), repeating scoped `-F` + baseline regen (detekt only when the gate
-  flags) + full-suite gate. Plan: `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`.
+  zone. **37 files changed.** Pure-formatting / zero behaviour change; extra fragile-zone review (full
+  3776-line `git diff -w`): every `@Volatile` stayed attached; NO statement moved into/out of any
+  `synchronized(entitiesLock)`/`synchronized(effectsLock)` block; `GameLoopThread` per-tick try/catch guard
+  intact; no statement reordered across a lock boundary. ktlint baseline **4974 → 3571**; detekt **387 → 333**
+  (9 added format-induced, 63 wrapped-away). 1254 JVM tests green. See RUN_LOG.
 - **Previous objective (DONE — branch `chore/ktlint-format-4-presentation`, MERGED; `[Unreleased]`).**
   **Staged repo-wide ktlint auto-format — stage 4 of 6 (`presentation/` EXCL `battle/`).** Mechanical
   `ktlint -F` over `presentation/` excluding `presentation/battle/` (~50 of 64 in-scope files: Compose

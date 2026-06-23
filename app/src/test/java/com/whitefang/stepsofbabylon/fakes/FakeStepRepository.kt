@@ -24,7 +24,6 @@ import kotlin.math.min
 class FakeStepRepository(
     private val linkedPlayer: FakePlayerRepository? = null,
 ) : StepRepository {
-
     val records = MutableStateFlow<Map<String, DailyStepSummary>>(emptyMap())
 
     /** Per-day battle-step / boss-PS counters (test-visible — mirror the DAO columns). */
@@ -39,44 +38,81 @@ class FakeStepRepository(
 
     /** Test accessors / seeders mirroring the former FakeDailyStepDao surface. */
     fun getBattleStepsEarned(date: String): Long = battleStepsEarned[date] ?: 0L
+
     fun getBossPsEarnedToday(date: String): Long = bossPsEarnedToday[date] ?: 0L
-    fun seedBattleStepsEarned(date: String, value: Long) { battleStepsEarned[date] = value }
-    fun seedBossPsEarned(date: String, value: Long) { bossPsEarnedToday[date] = value }
 
-    override fun observeTodayRecord(date: String): Flow<DailyStepSummary?> =
-        records.map { it[date] }
+    fun seedBattleStepsEarned(
+        date: String,
+        value: Long,
+    ) {
+        battleStepsEarned[date] = value
+    }
 
-    override fun observeHistory(startDate: String, endDate: String): Flow<List<DailyStepSummary>> =
+    fun seedBossPsEarned(
+        date: String,
+        value: Long,
+    ) {
+        bossPsEarnedToday[date] = value
+    }
+
+    override fun observeTodayRecord(date: String): Flow<DailyStepSummary?> = records.map { it[date] }
+
+    override fun observeHistory(
+        startDate: String,
+        endDate: String,
+    ): Flow<List<DailyStepSummary>> =
         records.map { map -> map.values.filter { it.date in startDate..endDate }.sortedBy { it.date } }
 
     override suspend fun getDailyRecord(date: String): DailyStepSummary? = records.value[date]
 
-    override suspend fun updateDailySteps(date: String, sensorSteps: Long, creditedSteps: Long) {
+    override suspend fun updateDailySteps(
+        date: String,
+        sensorSteps: Long,
+        creditedSteps: Long,
+    ) {
         val existing = records.value[date] ?: DailyStepSummary(date)
-        records.value = records.value + (date to existing.copy(sensorSteps = sensorSteps, creditedSteps = creditedSteps))
+        records.value =
+            records.value + (date to existing.copy(sensorSteps = sensorSteps, creditedSteps = creditedSteps))
     }
 
-    override suspend fun updateHealthConnectSteps(date: String, healthConnectSteps: Long) {
+    override suspend fun updateHealthConnectSteps(
+        date: String,
+        healthConnectSteps: Long,
+    ) {
         val existing = records.value[date] ?: DailyStepSummary(date)
         records.value = records.value + (date to existing.copy(healthConnectSteps = healthConnectSteps))
     }
 
-    override suspend fun updateActivityMinutes(date: String, activityMinutes: Map<String, Int>, stepEquivalents: Long) {
+    override suspend fun updateActivityMinutes(
+        date: String,
+        activityMinutes: Map<String, Int>,
+        stepEquivalents: Long,
+    ) {
         val existing = records.value[date] ?: DailyStepSummary(date)
-        records.value = records.value + (date to existing.copy(activityMinutes = activityMinutes, stepEquivalents = stepEquivalents))
+        records.value =
+            records.value +
+            (date to existing.copy(activityMinutes = activityMinutes, stepEquivalents = stepEquivalents))
     }
 
-    override suspend fun updateEscrow(date: String, escrowSteps: Long, syncCount: Int) {
+    override suspend fun updateEscrow(
+        date: String,
+        escrowSteps: Long,
+        syncCount: Int,
+    ) {
         val existing = records.value[date] ?: DailyStepSummary(date)
         records.value = records.value + (date to existing.copy(escrowSteps = escrowSteps, escrowSyncCount = syncCount))
     }
 
     override suspend fun releaseEscrow(date: String) {
         val existing = records.value[date] ?: return
-        records.value = records.value + (date to existing.copy(
-            creditedSteps = existing.creditedSteps + existing.escrowSteps,
-            escrowSteps = 0, escrowSyncCount = 0
-        ))
+        records.value = records.value + (
+            date to
+                existing.copy(
+                    creditedSteps = existing.creditedSteps + existing.escrowSteps,
+                    escrowSteps = 0,
+                    escrowSyncCount = 0,
+                )
+        )
     }
 
     override suspend fun discardEscrow(date: String) {
@@ -84,10 +120,19 @@ class FakeStepRepository(
         records.value = records.value + (date to existing.copy(escrowSteps = 0, escrowSyncCount = 0))
     }
 
-    override suspend fun sumCreditedSteps(startDate: String, endDate: String): Long =
-        records.value.values.filter { it.date in startDate..endDate }.sumOf { it.creditedSteps }
+    override suspend fun sumCreditedSteps(
+        startDate: String,
+        endDate: String,
+    ): Long =
+        records.value.values
+            .filter { it.date in startDate..endDate }
+            .sumOf { it.creditedSteps }
 
-    override suspend fun creditBattleStepsAtomic(date: String, requested: Long, dailyCap: Long): Long =
+    override suspend fun creditBattleStepsAtomic(
+        date: String,
+        requested: Long,
+        dailyCap: Long,
+    ): Long =
         atomicMutex.withLock {
             creditBattleStepsAtomicCallCount++
             if (requested <= 0L) return@withLock 0L
@@ -99,7 +144,11 @@ class FakeStepRepository(
             credited
         }
 
-    override suspend fun creditBossPowerStonesAtomic(date: String, requested: Long, dailyCap: Long): Long =
+    override suspend fun creditBossPowerStonesAtomic(
+        date: String,
+        requested: Long,
+        dailyCap: Long,
+    ): Long =
         atomicMutex.withLock {
             creditBossPsAtomicCallCount++
             if (requested <= 0L) return@withLock 0L

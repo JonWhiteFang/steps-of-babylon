@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class CardLoadoutTest {
-
     @Test
     fun `empty loadout is valid`() {
         CardLoadout()
@@ -13,10 +12,11 @@ class CardLoadoutTest {
 
     @Test
     fun `add up to 3 cards succeeds`() {
-        val loadout = CardLoadout()
-            .add(CardType.IRON_SKIN)
-            .add(CardType.SHARP_SHOOTER)
-            .add(CardType.CASH_GRAB)
+        val loadout =
+            CardLoadout()
+                .add(CardType.IRON_SKIN)
+                .add(CardType.SHARP_SHOOTER)
+                .add(CardType.CASH_GRAB)
         assertEquals(3, loadout.cards.size)
     }
 

@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.update
 class FakeCardRepository(
     private val linkedPlayer: FakePlayerRepository? = null,
 ) : CardRepository {
-
     private var nextId = 1
     val cards = MutableStateFlow<List<OwnedCard>>(emptyList())
 
@@ -28,10 +27,10 @@ class FakeCardRepository(
         private set
 
     override fun observeAllCards(): Flow<List<OwnedCard>> = cards
+
     override fun observeEquippedCards(): Flow<List<OwnedCard>> = cards.map { it.filter { c -> c.isEquipped } }
 
-    override suspend fun hasCard(type: CardType): Boolean =
-        cards.value.any { it.type == type }
+    override suspend fun hasCard(type: CardType): Boolean = cards.value.any { it.type == type }
 
     override suspend fun addCard(type: CardType): Long {
         val id = nextId++
@@ -39,7 +38,10 @@ class FakeCardRepository(
         return id.toLong()
     }
 
-    override suspend fun openCardPackAtomic(gemCost: Long, cardTypeNames: List<String>): List<Boolean>? {
+    override suspend fun openCardPackAtomic(
+        gemCost: Long,
+        cardTypeNames: List<String>,
+    ): List<Boolean>? {
         openCardPackAtomicCallCount++
         // Guarded deduct first — emulates spendGemsAtomic gating the grant inside the transaction.
         if (gemCost > 0L && linkedPlayer != null && !linkedPlayer.spendGems(gemCost)) return null
@@ -73,7 +75,10 @@ class FakeCardRepository(
         }
     }
 
-    override suspend fun decrementCopiesAndLevelUp(id: Int, amount: Int): Boolean {
+    override suspend fun decrementCopiesAndLevelUp(
+        id: Int,
+        amount: Int,
+    ): Boolean {
         val card = cards.value.find { it.id == id } ?: return false
         if (card.copyCount < amount) return false
         cards.update { list ->
@@ -82,7 +87,10 @@ class FakeCardRepository(
         return true
     }
 
-    override suspend fun upgradeCard(id: Int, newLevel: Int) {
+    override suspend fun upgradeCard(
+        id: Int,
+        newLevel: Int,
+    ) {
         cards.update { list -> list.map { if (it.id == id) it.copy(level = newLevel) else it } }
     }
 

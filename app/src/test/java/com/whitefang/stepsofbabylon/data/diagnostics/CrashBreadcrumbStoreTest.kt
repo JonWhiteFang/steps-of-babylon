@@ -13,9 +13,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class CrashBreadcrumbStoreTest {
-
-    private fun newStore(): CrashBreadcrumbStore =
-        CrashBreadcrumbStore(RuntimeEnvironment.getApplication() as Context)
+    private fun newStore(): CrashBreadcrumbStore = CrashBreadcrumbStore(RuntimeEnvironment.getApplication() as Context)
 
     @Test
     fun `peek is null when nothing recorded`() {

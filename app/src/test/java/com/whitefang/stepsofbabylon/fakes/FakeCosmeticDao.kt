@@ -26,11 +26,9 @@ class FakeCosmeticDao : CosmeticDao {
 
     override fun observeAll(): Flow<List<CosmeticEntity>> = rows
 
-    override fun observeOwned(): Flow<List<CosmeticEntity>> =
-        rows.map { list -> list.filter { it.isOwned } }
+    override fun observeOwned(): Flow<List<CosmeticEntity>> = rows.map { list -> list.filter { it.isOwned } }
 
-    override fun observeEquipped(): Flow<List<CosmeticEntity>> =
-        rows.map { list -> list.filter { it.isEquipped } }
+    override fun observeEquipped(): Flow<List<CosmeticEntity>> = rows.map { list -> list.filter { it.isEquipped } }
 
     override suspend fun count(): Int = rows.value.size
 

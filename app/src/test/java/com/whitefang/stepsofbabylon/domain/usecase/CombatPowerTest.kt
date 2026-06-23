@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test
  * Deliberately ignores multishot/bounce/orbs/range/sustain.
  */
 class CombatPowerTest {
-
     private val sut = CombatPower()
 
     @Test
@@ -51,21 +50,35 @@ class CombatPowerTest {
     @Test
     fun `multishot bounce orbs and range do NOT affect the index`() {
         val plain = sut(ResolvedStats(damage = 10.0, attackSpeed = 1.0, critChance = 0.0))
-        val decorated = sut(
-            ResolvedStats(
-                damage = 10.0, attackSpeed = 1.0, critChance = 0.0,
-                multishotTargets = 5, bounceCount = 4, orbCount = 6, range = 900f,
-            ),
-        )
+        val decorated =
+            sut(
+                ResolvedStats(
+                    damage = 10.0,
+                    attackSpeed = 1.0,
+                    critChance = 0.0,
+                    multishotTargets = 5,
+                    bounceCount = 4,
+                    orbCount = 6,
+                    range = 900f,
+                ),
+            )
         assertEquals(plain, decorated, 1e-9)
     }
 
     @Test
     fun `more of any contributing stat strictly increases power`() {
         val baseline = sut(ResolvedStats(damage = 10.0, attackSpeed = 1.0, critChance = 0.1, critMultiplier = 2.0))
-        assertTrue(sut(ResolvedStats(damage = 11.0, attackSpeed = 1.0, critChance = 0.1, critMultiplier = 2.0)) > baseline)
-        assertTrue(sut(ResolvedStats(damage = 10.0, attackSpeed = 1.1, critChance = 0.1, critMultiplier = 2.0)) > baseline)
-        assertTrue(sut(ResolvedStats(damage = 10.0, attackSpeed = 1.0, critChance = 0.2, critMultiplier = 2.0)) > baseline)
-        assertTrue(sut(ResolvedStats(damage = 10.0, attackSpeed = 1.0, critChance = 0.1, critMultiplier = 3.0)) > baseline)
+        assertTrue(
+            sut(ResolvedStats(damage = 11.0, attackSpeed = 1.0, critChance = 0.1, critMultiplier = 2.0)) > baseline,
+        )
+        assertTrue(
+            sut(ResolvedStats(damage = 10.0, attackSpeed = 1.1, critChance = 0.1, critMultiplier = 2.0)) > baseline,
+        )
+        assertTrue(
+            sut(ResolvedStats(damage = 10.0, attackSpeed = 1.0, critChance = 0.2, critMultiplier = 2.0)) > baseline,
+        )
+        assertTrue(
+            sut(ResolvedStats(damage = 10.0, attackSpeed = 1.0, critChance = 0.1, critMultiplier = 3.0)) > baseline,
+        )
     }
 }

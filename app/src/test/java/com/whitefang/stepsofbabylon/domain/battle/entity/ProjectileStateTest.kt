@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test
  * the homing-motion math that previously lived only in the Canvas-coupled entity.
  */
 class ProjectileStateTest {
-
     @Test
     fun `moves proportionally toward target in one step`() {
         // From (0,0) toward (100,0) at speed 50 px/s over dt 1.0s → x advances by 50.

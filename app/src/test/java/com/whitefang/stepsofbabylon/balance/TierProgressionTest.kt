@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test
  * in-round upgrades, multishot, orbs, and cards.
  */
 class TierProgressionTest {
-
     private val calcCost = CalculateUpgradeCost()
     private val resolveStats = ResolveStats()
     private val COMBAT_MULTIPLIER = 5.0 // Crits + in-round upgrades + multishot + orbs + cards
@@ -25,9 +24,10 @@ class TierProgressionTest {
         var remaining = budget
         val levels = mutableMapOf<UpgradeType, Int>()
         while (true) {
-            val best = UpgradeType.entries
-                .filter { type -> type.config.maxLevel?.let { (levels[type] ?: 0) < it } ?: true }
-                .minByOrNull { calcCost(it, levels[it] ?: 0) } ?: break
+            val best =
+                UpgradeType.entries
+                    .filter { type -> type.config.maxLevel?.let { (levels[type] ?: 0) < it } ?: true }
+                    .minByOrNull { calcCost(it, levels[it] ?: 0) } ?: break
             val cost = calcCost(best, levels[best] ?: 0)
             if (cost > remaining) break
             remaining -= cost
@@ -83,7 +83,7 @@ class TierProgressionTest {
         var prev = 0.0
         for (tier in 1..10) {
             val mult = TierConfig.forTier(tier).cashMultiplier
-            assertTrue(mult > prev, "Tier $tier multiplier ($mult) should exceed Tier ${tier-1} ($prev)")
+            assertTrue(mult > prev, "Tier $tier multiplier ($mult) should exceed Tier ${tier - 1} ($prev)")
             prev = mult
         }
     }

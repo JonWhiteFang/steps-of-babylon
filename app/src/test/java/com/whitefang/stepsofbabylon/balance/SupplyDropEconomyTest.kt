@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test
  * Validates supply drop rates and premium currency income.
  */
 class SupplyDropEconomyTest {
-
     @Test
     fun `at 10k steps per day expected supply drops 2 to 4`() {
         // Threshold drops: 10k / 2000 = 5 boundary crossings, each ~5% chance = ~0.25 drops
@@ -69,7 +68,9 @@ class SupplyDropEconomyTest {
         val cheapestUW = UltimateWeaponType.entries.minOf { it.unlockCost }
         // 3 weeks of PS income: ~60 PS (20/week × 3)
         val threeWeekPS = 60L
-        assertTrue(threeWeekPS >= cheapestUW,
-            "3-week PS ($threeWeekPS) should cover cheapest UW ($cheapestUW PS)")
+        assertTrue(
+            threeWeekPS >= cheapestUW,
+            "3-week PS ($threeWeekPS) should cover cheapest UW ($cheapestUW PS)",
+        )
     }
 }

@@ -11,7 +11,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class StepWidgetProviderTest {
-
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Test

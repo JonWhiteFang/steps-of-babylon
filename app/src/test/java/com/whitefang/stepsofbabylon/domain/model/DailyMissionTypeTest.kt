@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class DailyMissionTypeTest {
-
     @Test
     fun `all 6 mission types exist`() {
         assertEquals(6, DailyMissionType.entries.size)

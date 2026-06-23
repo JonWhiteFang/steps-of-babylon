@@ -10,10 +10,11 @@ import org.junit.jupiter.api.Test
 class PackRevealStateTest {
     @Test
     fun `round-trips a multi-card list preserving type, isNew, and copies`() {
-        val original = listOf(
-            CardResult(CardType.entries.first(), isNew = true, copiesAwarded = 1),
-            CardResult(CardType.entries.last(), isNew = false, copiesAwarded = 3),
-        )
+        val original =
+            listOf(
+                CardResult(CardType.entries.first(), isNew = true, copiesAwarded = 1),
+                CardResult(CardType.entries.last(), isNew = false, copiesAwarded = 3),
+            )
         val restored = original.toPackRevealState().toCardResults()
         assertEquals(original, restored, "DTO round-trip must preserve type/isNew/copiesAwarded")
         assertTrue(restored[0].isNew, "the NEW! badge flag must survive")

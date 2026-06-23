@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test
  * run identically on locales that use `,` as the decimal separator (e.g. de-DE).
  */
 class DescribeUpgradeEffectTest {
-
     private val describe = DescribeUpgradeEffect()
 
     // ---- Multiplicative stats ----
@@ -243,16 +242,22 @@ class DescribeUpgradeEffectTest {
         // V1X-18 motivation: at high levels, adjacent levels should be visibly distinct in
         // the readout. Pre-V1X-18 L99 = L100 (both clamped to "+100% steps"); post-V1X-18
         // they differ by 0.03 percentage points (visible at 2-decimal format).
-        val r99 = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 99), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)
-        val r100 = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 100), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)
-        assertNotEquals(r99.current, r100.current,
-            "V1X-18 fixes the dead-content L99=L100 problem; readouts must differ")
+        val r99 =
+            describe(mapOf(UpgradeType.STEP_MULTIPLIER to 99), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)
+        val r100 =
+            describe(mapOf(UpgradeType.STEP_MULTIPLIER to 100), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)
+        assertNotEquals(
+            r99.current,
+            r100.current,
+            "V1X-18 fixes the dead-content L99=L100 problem; readouts must differ",
+        )
     }
 
     @Test
     fun `RECOVERY_PACKAGES clamps to 50 percent cap`() {
         // L75 -> 75 * 1 = +75 % uncapped, clamped to +50 %.
-        val r = describe(mapOf(UpgradeType.RECOVERY_PACKAGES to 75), emptyMap(), emptyMap(), UpgradeType.RECOVERY_PACKAGES)
+        val r =
+            describe(mapOf(UpgradeType.RECOVERY_PACKAGES to 75), emptyMap(), emptyMap(), UpgradeType.RECOVERY_PACKAGES)
         assertEquals("+50% heal", r.current)
     }
 
@@ -261,12 +266,13 @@ class DescribeUpgradeEffectTest {
     @Test
     fun `DAMAGE_RESEARCH outer multiplier stacks with DAMAGE`() {
         // ws=10 -> 12.0 baseline. With DAMAGE_RESEARCH L5 -> 12.0 * (1 + 5*0.05) = 15.0.
-        val r = describe(
-            workshopLevels = mapOf(UpgradeType.DAMAGE to 10),
-            inRoundLevels = emptyMap(),
-            labLevels = mapOf(ResearchType.DAMAGE_RESEARCH to 5),
-            type = UpgradeType.DAMAGE,
-        )
+        val r =
+            describe(
+                workshopLevels = mapOf(UpgradeType.DAMAGE to 10),
+                inRoundLevels = emptyMap(),
+                labLevels = mapOf(ResearchType.DAMAGE_RESEARCH to 5),
+                type = UpgradeType.DAMAGE,
+            )
         assertEquals("15.0 dmg", r.current)
         // Next ir=1 -> 10 * 1.20 * 1.02 * 1.25 = 15.30 -> "15.3 dmg".
         assertEquals("15.3 dmg", r.next)
@@ -281,13 +287,14 @@ class DescribeUpgradeEffectTest {
         // Pre-RO-12 the readout returned the pre-card value (1150 HP) while the live engine
         // ziggurat showed the post-card value (1725 HP) -- a 575 HP drift visible to the player.
         val cards = listOf(OwnedCard(1, CardType.WALKING_FORTRESS, 1, true))
-        val r = describe(
-            workshopLevels = mapOf(UpgradeType.HEALTH to 5),
-            inRoundLevels = emptyMap(),
-            labLevels = emptyMap(),
-            type = UpgradeType.HEALTH,
-            equippedCards = cards,
-        )
+        val r =
+            describe(
+                workshopLevels = mapOf(UpgradeType.HEALTH to 5),
+                inRoundLevels = emptyMap(),
+                labLevels = emptyMap(),
+                type = UpgradeType.HEALTH,
+                equippedCards = cards,
+            )
         assertEquals(
             "1725 HP",
             r.current,
@@ -302,12 +309,13 @@ class DescribeUpgradeEffectTest {
     fun `RO12 HEALTH readout with no cards equipped is unchanged from pre-RO12 baseline`() {
         // Default equippedCards = emptyList() must preserve pre-RO-12 behaviour for the 25
         // existing tests below + every Workshop-screen call site that doesn't pass cards.
-        val r = describe(
-            workshopLevels = mapOf(UpgradeType.HEALTH to 5),
-            inRoundLevels = emptyMap(),
-            labLevels = emptyMap(),
-            type = UpgradeType.HEALTH,
-        )
+        val r =
+            describe(
+                workshopLevels = mapOf(UpgradeType.HEALTH to 5),
+                inRoundLevels = emptyMap(),
+                labLevels = emptyMap(),
+                type = UpgradeType.HEALTH,
+            )
         assertEquals("1150 HP", r.current)
     }
 
@@ -327,12 +335,13 @@ class DescribeUpgradeEffectTest {
 
     @Test
     fun `R403 RAPID_FIRE L1 shows full triple readout`() {
-        val r = describe(
-            workshopLevels = mapOf(UpgradeType.RAPID_FIRE to 1),
-            inRoundLevels = emptyMap(),
-            labLevels = emptyMap(),
-            type = UpgradeType.RAPID_FIRE,
-        )
+        val r =
+            describe(
+                workshopLevels = mapOf(UpgradeType.RAPID_FIRE to 1),
+                inRoundLevels = emptyMap(),
+                labLevels = emptyMap(),
+                type = UpgradeType.RAPID_FIRE,
+            )
         assertEquals("60s/5s/2.0\u00d7", r.current)
         // L2 interval = 60 - 30/9 \u2248 56.67 \u2192 "57s" rounded; duration = 5 + 25/9 \u2248 7.78 \u2192 "8s";
         // multiplier = 2 + 1/9 \u2248 2.11 \u2192 "2.1\u00d7".
@@ -341,12 +350,13 @@ class DescribeUpgradeEffectTest {
 
     @Test
     fun `R403 RAPID_FIRE L9 still shows finite triple readout`() {
-        val r = describe(
-            workshopLevels = mapOf(UpgradeType.RAPID_FIRE to 9),
-            inRoundLevels = emptyMap(),
-            labLevels = emptyMap(),
-            type = UpgradeType.RAPID_FIRE,
-        )
+        val r =
+            describe(
+                workshopLevels = mapOf(UpgradeType.RAPID_FIRE to 9),
+                inRoundLevels = emptyMap(),
+                labLevels = emptyMap(),
+                type = UpgradeType.RAPID_FIRE,
+            )
         // L9 interval = 60 - 30 * 8/9 \u2248 33.33 \u2192 "33s"; duration = 5 + 25 * 8/9 \u2248 27.22 \u2192 "27s";
         // multiplier = 2 + 8/9 \u2248 2.89 \u2192 "2.9\u00d7". Below the convergence point, so non-permanent.
         assertEquals("33s/27s/2.9\u00d7", r.current)
@@ -356,12 +366,13 @@ class DescribeUpgradeEffectTest {
 
     @Test
     fun `R403 RAPID_FIRE L10 collapses to permanent readout with next null`() {
-        val r = describe(
-            workshopLevels = mapOf(UpgradeType.RAPID_FIRE to 10),
-            inRoundLevels = emptyMap(),
-            labLevels = emptyMap(),
-            type = UpgradeType.RAPID_FIRE,
-        )
+        val r =
+            describe(
+                workshopLevels = mapOf(UpgradeType.RAPID_FIRE to 10),
+                inRoundLevels = emptyMap(),
+                labLevels = emptyMap(),
+                type = UpgradeType.RAPID_FIRE,
+            )
         assertEquals("permanent/3.0\u00d7", r.current)
         assertNull(r.next, "At maxLevel = 10, next-purchase readout must be null (renders as MAX)")
     }
@@ -393,7 +404,8 @@ class DescribeUpgradeEffectTest {
         assertEquals("20.2 dmg", workshopPath.next)
         assertEquals("20.4 dmg", inRoundPath.next)
         assertNotEquals(
-            inRoundPath.next, workshopPath.next,
+            inRoundPath.next,
+            workshopPath.next,
             "Workshop preview must bump the permanent (workshop) level, not the in-round level (spec §5.1)",
         )
     }
@@ -401,7 +413,11 @@ class DescribeUpgradeEffectTest {
     @Test
     fun `workshopPreview returns null next at the workshop cap`() {
         // CRITICAL_CHANCE maxLevel = 160; at the cap there is no next purchase.
-        val atMax = describe.workshopPreview(mapOf(UpgradeType.CRITICAL_CHANCE to 160), type = UpgradeType.CRITICAL_CHANCE)
+        val atMax =
+            describe.workshopPreview(
+                mapOf(UpgradeType.CRITICAL_CHANCE to 160),
+                type = UpgradeType.CRITICAL_CHANCE,
+            )
         assertEquals("80.0%", atMax.current) // 160 * 0.005 = 0.80 (capped)
         assertNull(atMax.next)
     }
@@ -409,7 +425,11 @@ class DescribeUpgradeEffectTest {
     @Test
     fun `workshopPreview near the cap still previews the next workshop level`() {
         // ws=159 -> 79.5%; next ws=160 -> 80.0% (capped).
-        val nearMax = describe.workshopPreview(mapOf(UpgradeType.CRITICAL_CHANCE to 159), type = UpgradeType.CRITICAL_CHANCE)
+        val nearMax =
+            describe.workshopPreview(
+                mapOf(UpgradeType.CRITICAL_CHANCE to 159),
+                type = UpgradeType.CRITICAL_CHANCE,
+            )
         assertEquals("79.5%", nearMax.current)
         assertEquals("80.0%", nearMax.next)
     }
@@ -419,11 +439,12 @@ class DescribeUpgradeEffectTest {
         // Mirrors the in-round path's RO-12 behaviour: WALKING_FORTRESS +50% maxHealth.
         // ws=5 HEALTH -> 1000*1.15 = 1150; with WF +50% -> 1725 -> "1725 HP".
         val cards = listOf(OwnedCard(1, CardType.WALKING_FORTRESS, 1, true))
-        val r = describe.workshopPreview(
-            workshopLevels = mapOf(UpgradeType.HEALTH to 5),
-            type = UpgradeType.HEALTH,
-            equippedCards = cards,
-        )
+        val r =
+            describe.workshopPreview(
+                workshopLevels = mapOf(UpgradeType.HEALTH to 5),
+                type = UpgradeType.HEALTH,
+                equippedCards = cards,
+            )
         assertEquals("1725 HP", r.current)
     }
 }

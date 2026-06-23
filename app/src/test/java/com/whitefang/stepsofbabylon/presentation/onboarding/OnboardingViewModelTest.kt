@@ -12,12 +12,13 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class OnboardingViewModelTest {
-
     private val prefs = mock<OnboardingPreferences>()
+
     // mockito-core 5.x's inline maker mocks final Kotlin classes directly (same as the
     // mock<Activity>() usage in BillingManagerImplTest) — no interface extraction needed.
     private val sensor = mock<StepSensorDataSource>()
     private val battery = mock<BatteryOptimizationStatus>()
+
     private fun vm() = OnboardingViewModel(prefs, sensor, battery)
 
     @Test

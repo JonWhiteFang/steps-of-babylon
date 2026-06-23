@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test
  * Uses in-memory fakes to verify no double-crediting under all scenarios.
  */
 class StepIngestionTest {
-
     private lateinit var prefs: FakeStepIngestionPreferences
     private var roomSensorSteps: Long = 0L
     private var totalCredited: Long = 0L
@@ -41,29 +40,43 @@ class StepIngestionTest {
         val dayStart = prefs.getCounterAtDayStart(today)
         val sensorStepsAtDayStart = prefs.getSensorStepsAtDayStart(today)
         return when (
-            val decision = StepSyncWorker.computeCatchUp(dayStart, currentCounter, roomSensorSteps, sensorStepsAtDayStart)
+            val decision =
+                StepSyncWorker.computeCatchUp(
+                    dayStart,
+                    currentCounter,
+                    roomSensorSteps,
+                    sensorStepsAtDayStart,
+                )
         ) {
             is StepSyncWorker.CatchUpDecision.Establish -> {
                 prefs.setCounterAtDayStart(today, decision.counter, roomSensorSteps)
                 0
             }
+
             is StepSyncWorker.CatchUpDecision.Rebaseline -> {
                 prefs.setCounterAtDayStart(today, decision.counter, roomSensorSteps)
                 0
             }
+
             is StepSyncWorker.CatchUpDecision.Credit -> {
                 roomSensorSteps += decision.gap
                 totalCredited += decision.gap
                 decision.gap
             }
-            StepSyncWorker.CatchUpDecision.Skip -> 0
+
+            StepSyncWorker.CatchUpDecision.Skip -> {
+                0
+            }
         }
     }
 
     /**
      * Simulates the service crediting steps (updates Room sensorSteps + heartbeat).
      */
-    private fun serviceCredit(steps: Long, nowMs: Long) {
+    private fun serviceCredit(
+        steps: Long,
+        nowMs: Long,
+    ) {
         roomSensorSteps += steps
         totalCredited += steps
         prefs.updateServiceHeartbeat(nowMs)

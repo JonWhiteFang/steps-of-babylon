@@ -13,16 +13,16 @@ import org.junit.jupiter.api.Test
  * lab-research level to a higher initial wave.
  */
 class WaveSpawnerTest {
-
-    private fun newSpawner(startWave: Int = 1): WaveSpawner = WaveSpawner(
-        onSpawnEnemy = { _: EnemyEntity -> },
-        zigguratX = 0f,
-        zigguratY = 0f,
-        onEnemyDeath = { _: EnemyEntity -> },
-        onMeleeHit = { _: EnemyEntity, _: Double -> },
-        onEnemyFireProjectile = { _: EnemyEntity, _: Float, _: Float, _: Float, _: Float, _: Double -> },
-        startWave = startWave,
-    )
+    private fun newSpawner(startWave: Int = 1): WaveSpawner =
+        WaveSpawner(
+            onSpawnEnemy = { _: EnemyEntity -> },
+            zigguratX = 0f,
+            zigguratY = 0f,
+            onEnemyDeath = { _: EnemyEntity -> },
+            onMeleeHit = { _: EnemyEntity, _: Double -> },
+            onEnemyFireProjectile = { _: EnemyEntity, _: Float, _: Float, _: Float, _: Float, _: Double -> },
+            startWave = startWave,
+        )
 
     @Test
     fun `currentWave reads from startWave constructor argument`() {

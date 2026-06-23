@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class UltimateWeaponLoadoutTest {
-
     @Test
     fun `empty loadout is valid`() {
         UltimateWeaponLoadout()
@@ -13,10 +12,11 @@ class UltimateWeaponLoadoutTest {
 
     @Test
     fun `add up to 3 weapons succeeds`() {
-        val loadout = UltimateWeaponLoadout()
-            .add(UltimateWeaponType.entries[0])
-            .add(UltimateWeaponType.entries[1])
-            .add(UltimateWeaponType.entries[2])
+        val loadout =
+            UltimateWeaponLoadout()
+                .add(UltimateWeaponType.entries[0])
+                .add(UltimateWeaponType.entries[1])
+                .add(UltimateWeaponType.entries[2])
         assertEquals(3, loadout.weapons.size)
     }
 

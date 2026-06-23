@@ -32,22 +32,32 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class DataTransformMigrationsTest {
-
     private lateinit var helper: SupportSQLiteOpenHelper
 
     @After
     fun tearDown() = helper.close()
 
-    private fun open(version: Int, onCreate: (SupportSQLiteDatabase) -> Unit): SupportSQLiteDatabase {
-        val callback = object : SupportSQLiteOpenHelper.Callback(version) {
-            override fun onCreate(db: SupportSQLiteDatabase) = onCreate(db)
-            override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
-        }
-        val config = SupportSQLiteOpenHelper.Configuration.builder(
-            ApplicationProvider.getApplicationContext(),
-        ).name(null) // in-memory
-            .callback(callback)
-            .build()
+    private fun open(
+        version: Int,
+        onCreate: (SupportSQLiteDatabase) -> Unit,
+    ): SupportSQLiteDatabase {
+        val callback =
+            object : SupportSQLiteOpenHelper.Callback(version) {
+                override fun onCreate(db: SupportSQLiteDatabase) = onCreate(db)
+
+                override fun onUpgrade(
+                    db: SupportSQLiteDatabase,
+                    oldVersion: Int,
+                    newVersion: Int,
+                ) {}
+            }
+        val config =
+            SupportSQLiteOpenHelper.Configuration
+                .builder(
+                    ApplicationProvider.getApplicationContext(),
+                ).name(null) // in-memory
+                .callback(callback)
+                .build()
         helper = FrameworkSQLiteOpenHelperFactory().create(config)
         return helper.writableDatabase
     }
@@ -79,7 +89,12 @@ class DataTransformMigrationsTest {
         )
     }
 
-    private fun insertV9Uw(db: SupportSQLiteDatabase, type: String, level: Int, equipped: Int = 0) {
+    private fun insertV9Uw(
+        db: SupportSQLiteDatabase,
+        type: String,
+        level: Int,
+        equipped: Int = 0,
+    ) {
         db.execSQL(
             "INSERT INTO ultimate_weapon_state (weaponType, level, isEquipped) VALUES (?, ?, ?)",
             arrayOf<Any>(type, level, equipped),
@@ -90,20 +105,29 @@ class DataTransformMigrationsTest {
     fun `migration 9 to 10 splits UW level across the three paths by integer division`() {
         val db = open(9, ::createV9)
         insertV9Uw(db, "METEOR_STRIKE", level = 5, equipped = 1) // → 2 / 2 / 1
-        insertV9Uw(db, "TIME_WARP", level = 10)                  // → 4 / 3 / 3
-        insertV9Uw(db, "DIVINE_SHIELD", level = 1)               // → 1 / 0 / 0
+        insertV9Uw(db, "TIME_WARP", level = 10) // → 4 / 3 / 3
+        insertV9Uw(db, "DIVINE_SHIELD", level = 1) // → 1 / 0 / 0
 
         AppMigrations.MIGRATION_9_10.migrate(db)
 
-        data class Row(val dmg: Int, val sec: Int, val cd: Int, val unlocked: Int, val equipped: Int)
-        fun read(type: String): Row = db.query(
-            "SELECT damageLevel, secondaryLevel, cooldownLevel, isUnlocked, isEquipped " +
-                "FROM ultimate_weapon_state WHERE weaponType = ?",
-            arrayOf(type),
-        ).use {
-            it.moveToFirst()
-            Row(it.getInt(0), it.getInt(1), it.getInt(2), it.getInt(3), it.getInt(4))
-        }
+        data class Row(
+            val dmg: Int,
+            val sec: Int,
+            val cd: Int,
+            val unlocked: Int,
+            val equipped: Int,
+        )
+
+        fun read(type: String): Row =
+            db
+                .query(
+                    "SELECT damageLevel, secondaryLevel, cooldownLevel, isUnlocked, isEquipped " +
+                        "FROM ultimate_weapon_state WHERE weaponType = ?",
+                    arrayOf(type),
+                ).use {
+                    it.moveToFirst()
+                    Row(it.getInt(0), it.getInt(1), it.getInt(2), it.getInt(3), it.getInt(4))
+                }
 
         assertEquals(Row(2, 2, 1, 1, 1), read("METEOR_STRIKE"))
         assertEquals(Row(4, 3, 3, 1, 0), read("TIME_WARP"))
@@ -143,7 +167,12 @@ class DataTransformMigrationsTest {
         db.execSQL("INSERT INTO player_profile (id, cardDust) VALUES (1, 250)")
     }
 
-    private fun insertV10Card(db: SupportSQLiteDatabase, type: String, level: Int, equipped: Int = 0) {
+    private fun insertV10Card(
+        db: SupportSQLiteDatabase,
+        type: String,
+        level: Int,
+        equipped: Int = 0,
+    ) {
         db.execSQL(
             "INSERT INTO card_inventory (cardType, level, isEquipped) VALUES (?, ?, ?)",
             arrayOf<Any>(type, level, equipped),
@@ -161,16 +190,17 @@ class DataTransformMigrationsTest {
 
         AppMigrations.MIGRATION_10_11.migrate(db)
 
-        db.query(
-            "SELECT level, isEquipped, copyCount FROM card_inventory WHERE cardType = ?",
-            arrayOf("CASH_GRAB"),
-        ).use {
-            assertEquals("duplicates must collapse to one row", 1, it.count)
-            it.moveToFirst()
-            assertEquals("MAX(level) survives", 3, it.getInt(0))
-            assertEquals("MAX(isEquipped) survives", 1, it.getInt(1))
-            assertEquals("copyCount == number of duplicates", 3, it.getInt(2))
-        }
+        db
+            .query(
+                "SELECT level, isEquipped, copyCount FROM card_inventory WHERE cardType = ?",
+                arrayOf("CASH_GRAB"),
+            ).use {
+                assertEquals("duplicates must collapse to one row", 1, it.count)
+                it.moveToFirst()
+                assertEquals("MAX(level) survives", 3, it.getInt(0))
+                assertEquals("MAX(isEquipped) survives", 1, it.getInt(1))
+                assertEquals("copyCount == number of duplicates", 3, it.getInt(2))
+            }
         db.query("SELECT copyCount FROM card_inventory WHERE cardType = ?", arrayOf("STEP_SURGE")).use {
             assertEquals(1, it.count)
             it.moveToFirst()
@@ -178,13 +208,14 @@ class DataTransformMigrationsTest {
         }
 
         // The unique index Room expects now exists and enforces uniqueness.
-        db.query(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = ?",
-            arrayOf("index_card_inventory_cardType"),
-        ).use {
-            it.moveToFirst()
-            assertEquals("the cardType unique index must exist post-migration", 1, it.getInt(0))
-        }
+        db
+            .query(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = ?",
+                arrayOf("index_card_inventory_cardType"),
+            ).use {
+                it.moveToFirst()
+                assertEquals("the cardType unique index must exist post-migration", 1, it.getInt(0))
+            }
         var rejected = false
         try {
             insertV10Card(db, "CASH_GRAB", level = 1)

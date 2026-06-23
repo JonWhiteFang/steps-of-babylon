@@ -19,5 +19,6 @@ class FakeTimeProvider(
     var fixedInstant: Instant = Instant.parse("2026-05-07T00:00:00Z"),
 ) : TimeProvider {
     override fun now(): Instant = fixedInstant
+
     override fun today(): LocalDate = fixedDate
 }

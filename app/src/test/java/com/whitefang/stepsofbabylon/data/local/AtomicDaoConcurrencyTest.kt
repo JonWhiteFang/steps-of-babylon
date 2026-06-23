@@ -40,7 +40,6 @@ import java.util.concurrent.TimeUnit
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class AtomicDaoConcurrencyTest {
-
     private lateinit var db: AppDatabase
     private lateinit var dbFile: File
     private lateinit var playerDao: PlayerProfileDao
@@ -54,11 +53,13 @@ class AtomicDaoConcurrencyTest {
     @Before
     fun setup() {
         dbFile = File.createTempFile("sob-concurrency", ".db")
-        db = Room.databaseBuilder(
-            ApplicationProvider.getApplicationContext(),
-            AppDatabase::class.java,
-            dbFile.absolutePath,
-        ).build()
+        db =
+            Room
+                .databaseBuilder(
+                    ApplicationProvider.getApplicationContext(),
+                    AppDatabase::class.java,
+                    dbFile.absolutePath,
+                ).build()
         playerDao = db.playerProfileDao()
         encounterDao = db.walkingEncounterDao()
         missionDao = db.dailyMissionDao()
@@ -81,12 +82,13 @@ class AtomicDaoConcurrencyTest {
     private fun <T> runContended(block: suspend () -> T): List<T> {
         val startGate = CountDownLatch(1)
         val results = ConcurrentLinkedQueue<T>()
-        val threads = (0 until workerCount).map {
-            Thread {
-                startGate.await()
-                results += runBlocking { block() }
-            }.also { it.start() }
-        }
+        val threads =
+            (0 until workerCount).map {
+                Thread {
+                    startGate.await()
+                    results += runBlocking { block() }
+                }.also { it.start() }
+            }
         startGate.countDown()
         threads.forEach { it.join(TimeUnit.SECONDS.toMillis(10)) }
         return results.toList()
@@ -136,13 +138,18 @@ class AtomicDaoConcurrencyTest {
 
     @Test
     fun `WalkingEncounter markClaimed credits exactly one concurrent claimer`() {
-        val id = runBlocking {
-            encounterDao.insert(
-                WalkingEncounterEntity(
-                    triggerType = "WALK", rewardType = "GEMS", rewardAmount = 10, createdAt = 1_000L,
-                ),
-            ).toInt()
-        }
+        val id =
+            runBlocking {
+                encounterDao
+                    .insert(
+                        WalkingEncounterEntity(
+                            triggerType = "WALK",
+                            rewardType = "GEMS",
+                            rewardAmount = 10,
+                            createdAt = 1_000L,
+                        ),
+                    ).toInt()
+            }
 
         val rows = runContended { encounterDao.markClaimed(id, claimedAt = 2_000L) }
 
@@ -170,15 +177,22 @@ class AtomicDaoConcurrencyTest {
         runBlocking { playerDao.upsert(PlayerProfileEntity(id = 1)) }
         val gemsReward = 100L
 
-        val results = runContended {
-            milestoneDao.claimMilestoneAtomic(
-                milestoneId = "FIRST_BLOOD", gems = gemsReward, powerStones = 0L,
-                claimedAt = 3_000L, playerDao = playerDao,
-            )
-        }
+        val results =
+            runContended {
+                milestoneDao.claimMilestoneAtomic(
+                    milestoneId = "FIRST_BLOOD",
+                    gems = gemsReward,
+                    powerStones = 0L,
+                    claimedAt = 3_000L,
+                    playerDao = playerDao,
+                )
+            }
 
-        assertEquals("@Transaction composite: exactly one claim transitions unclaimed→claimed",
-            1, results.count { it })
+        assertEquals(
+            "@Transaction composite: exactly one claim transitions unclaimed→claimed",
+            1,
+            results.count { it },
+        )
         val profile = runBlocking { playerDao.get().first()!! }
         assertEquals("wallet credited exactly once (no double-credit race)", gemsReward, profile.gems)
         assertEquals(gemsReward, profile.totalGemsEarned)
@@ -189,11 +203,15 @@ class AtomicDaoConcurrencyTest {
         val cost = 250L
         runBlocking { playerDao.upsert(PlayerProfileEntity(id = 1, currentStepBalance = cost)) }
 
-        val results = runContended {
-            workshopDao.purchaseUpgradeAtomic(
-                type = "ATTACK_DAMAGE", newLevel = 1, cost = cost, playerDao = playerDao,
-            )
-        }
+        val results =
+            runContended {
+                workshopDao.purchaseUpgradeAtomic(
+                    type = "ATTACK_DAMAGE",
+                    newLevel = 1,
+                    cost = cost,
+                    playerDao = playerDao,
+                )
+            }
 
         assertEquals("exactly one purchase may afford the single-cost balance", 1, results.count { it })
         val balance = runBlocking { playerDao.get().first()!!.currentStepBalance }

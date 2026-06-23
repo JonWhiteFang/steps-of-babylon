@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class StepVelocityAnalyzerTest {
-
     @Test
     fun `insufficient data returns 1_0`() {
         val analyzer = StepVelocityAnalyzer()

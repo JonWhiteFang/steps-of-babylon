@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test
  * in-round upgrades, multishot, orbs, and cards that the base DPS ignores.
  */
 class EnemyScalingTest {
-
     private val resolveStats = ResolveStats()
     private val COMBAT_MULTIPLIER = 3.0 // Crits + in-round upgrades + multishot + orbs
 
@@ -24,7 +23,10 @@ class EnemyScalingTest {
         return stats.damage * stats.attackSpeed * COMBAT_MULTIPLIER
     }
 
-    private fun timeToKill(dps: Double, enemyHp: Double): Double = enemyHp / dps
+    private fun timeToKill(
+        dps: Double,
+        enemyHp: Double,
+    ): Double = enemyHp / dps
 
     @Test
     fun `wave 10 basic enemies killable in under 5 seconds at workshop level 0`() {
@@ -65,8 +67,10 @@ class EnemyScalingTest {
         val levels = mapOf(UpgradeType.HEALTH to 25)
         val stats = resolveStats(levels)
         val enemyDmg = EnemyScaler.scaleDamage(EnemyType.BASIC, 50)
-        assertTrue(enemyDmg < stats.maxHealth * 0.5,
-            "Wave 50 Basic deals $enemyDmg vs ${stats.maxHealth} HP (should be <50% of HP)")
+        assertTrue(
+            enemyDmg < stats.maxHealth * 0.5,
+            "Wave 50 Basic deals $enemyDmg vs ${stats.maxHealth} HP (should be <50% of HP)",
+        )
     }
 
     @Test

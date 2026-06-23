@@ -1,27 +1,27 @@
 package com.whitefang.stepsofbabylon.presentation.battle.engine
 
 import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationEvent
-import com.whitefang.stepsofbabylon.fakes.FakeStrings
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
+import com.whitefang.stepsofbabylon.fakes.FakeStrings
 import com.whitefang.stepsofbabylon.presentation.battle.effects.Effect
 import com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine
 import com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText
 import com.whitefang.stepsofbabylon.presentation.battle.effects.WaveAnnouncement
 import com.whitefang.stepsofbabylon.presentation.battle.entities.EnemyEntity
 import com.whitefang.stepsofbabylon.presentation.battle.entities.ProjectileEntity
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 
 /**
  * RO-08 + RO-09 + R4-01 regression guards for the engine-side stats / cash / recovery /
@@ -43,7 +43,6 @@ import kotlinx.coroutines.test.runTest
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class GameEngineTest {
-
     private fun freshEngine(): GameEngine {
         val eng = GameEngine()
         eng.init(width = 1080f, height = 1920f, resolvedStats = ResolvedStats(), playerTier = 1)
@@ -164,13 +163,31 @@ class GameEngineTest {
         // (max-research-level simulation: 1 - 15 × 0.03 = 0.55) and read again. Should be
         // ~55 % of baseline.
         val eng1 = freshEngine()
-        eng1.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, cooldownLevel = 1, isUnlocked = true, isEquipped = true)))
+        eng1.initUWs(
+            listOf(
+                OwnedWeapon(
+                    UltimateWeaponType.CHAIN_LIGHTNING,
+                    cooldownLevel = 1,
+                    isUnlocked = true,
+                    isEquipped = true,
+                ),
+            ),
+        )
         eng1.activateUW(0)
         val cooldownBaseline = eng1.uwControllerForTest.uwStates[0].cooldownRemaining
 
         val eng2 = freshEngine()
         eng2.uwCooldownMultiplier = 0.55f
-        eng2.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, cooldownLevel = 1, isUnlocked = true, isEquipped = true)))
+        eng2.initUWs(
+            listOf(
+                OwnedWeapon(
+                    UltimateWeaponType.CHAIN_LIGHTNING,
+                    cooldownLevel = 1,
+                    isUnlocked = true,
+                    isEquipped = true,
+                ),
+            ),
+        )
         eng2.activateUW(0)
         val cooldownBoosted = eng2.uwControllerForTest.uwStates[0].cooldownRemaining
 
@@ -306,11 +323,14 @@ class GameEngineTest {
         // Projectile travels straight down at 200 px/sec toward a target 900 px away —
         // far enough that the self-destruct (`dist < speed * deltaTime`) won't trigger
         // even at full speed, so movement on this tick is exactly `speed * deltaTime`.
-        val proj = ProjectileEntity(
-            startX = 100f, startY = 100f,
-            targetX = 100f, targetY = 1000f,
-            speed = 200f,
-        )
+        val proj =
+            ProjectileEntity(
+                startX = 100f,
+                startY = 100f,
+                targetX = 100f,
+                targetY = 1000f,
+                speed = 200f,
+            )
         eng.addEntity(proj)
         setChronoActive(eng, true)
 
@@ -609,8 +629,22 @@ class GameEngineTest {
         val zig = eng.ziggurat!!
         eng.initUWs(
             listOf(
-                OwnedWeapon(UltimateWeaponType.BLACK_HOLE, damageLevel = 10, secondaryLevel = 10, cooldownLevel = 1, isUnlocked = true, isEquipped = true),
-                OwnedWeapon(UltimateWeaponType.POISON_SWAMP, damageLevel = 10, secondaryLevel = 10, cooldownLevel = 1, isUnlocked = true, isEquipped = true),
+                OwnedWeapon(
+                    UltimateWeaponType.BLACK_HOLE,
+                    damageLevel = 10,
+                    secondaryLevel = 10,
+                    cooldownLevel = 1,
+                    isUnlocked = true,
+                    isEquipped = true,
+                ),
+                OwnedWeapon(
+                    UltimateWeaponType.POISON_SWAMP,
+                    damageLevel = 10,
+                    secondaryLevel = 10,
+                    cooldownLevel = 1,
+                    isUnlocked = true,
+                    isEquipped = true,
+                ),
             ),
         )
         // Fragile enemies that both UWs would one-shot this tick, each counting its own deaths.
@@ -650,12 +684,21 @@ class GameEngineTest {
         val zig = eng.ziggurat!!
         // A SCATTER whose death routes through the engine's real handleEnemyDeath (which spawns
         // 2-3 BASIC children into pendingAdd, each wired onDeath = ::handleEnemyDeath).
-        val scatter = EnemyEntity(
-            enemyType = EnemyType.SCATTER,
-            currentHp = 100.0, maxHp = 100.0, speed = 0f, damage = 0.0,
-            targetX = zig.originX, targetY = zig.originY,
-            onDeath = engineDeathHandler(eng),
-        ).apply { x = zig.originX; y = zig.originY + 300f; initDistance() }
+        val scatter =
+            EnemyEntity(
+                enemyType = EnemyType.SCATTER,
+                currentHp = 100.0,
+                maxHp = 100.0,
+                speed = 0f,
+                damage = 0.0,
+                targetX = zig.originX,
+                targetY = zig.originY,
+                onDeath = engineDeathHandler(eng),
+            ).apply {
+                x = zig.originX
+                y = zig.originY + 300f
+                initDistance()
+            }
         eng.addEntity(scatter)
         flushPendingAdd(eng)
         assertEquals(1, eng.aliveEnemyCount(), "one enemy on screen must read as a count of 1")
@@ -709,12 +752,21 @@ class GameEngineTest {
     fun `R146 a second projectile on a corpse does not re-credit the kill reward`() {
         val eng = freshEngine()
         val zig = eng.ziggurat!!
-        val enemy = EnemyEntity(
-            enemyType = EnemyType.BASIC,
-            currentHp = 0.01, maxHp = 0.01, speed = 0f, damage = 0.0,
-            targetX = zig.originX, targetY = zig.originY,
-            onDeath = engineDeathHandler(eng), // route death through the real reward block
-        ).apply { x = zig.originX; y = zig.originY + 300f; initDistance() }
+        val enemy =
+            EnemyEntity(
+                enemyType = EnemyType.BASIC,
+                currentHp = 0.01,
+                maxHp = 0.01,
+                speed = 0f,
+                damage = 0.0,
+                targetX = zig.originX,
+                targetY = zig.originY,
+                onDeath = engineDeathHandler(eng), // route death through the real reward block
+            ).apply {
+                x = zig.originX
+                y = zig.originY + 300f
+                initDistance()
+            }
         eng.addEntity(enemy)
         flushPendingAdd(eng)
 
@@ -743,12 +795,21 @@ class GameEngineTest {
         // assertion rides the REAL reward path (eng.cash via handleEnemyDeath), not a counter.
         val eng = freshEngine()
         val zig = eng.ziggurat!!
-        val enemy = EnemyEntity(
-            enemyType = EnemyType.BASIC,
-            currentHp = 0.01, maxHp = 0.01, speed = 0f, damage = 0.0,
-            targetX = zig.originX, targetY = zig.originY,
-            onDeath = engineDeathHandler(eng), // route death through the real reward block
-        ).apply { x = zig.originX; y = zig.originY + 300f; initDistance() }
+        val enemy =
+            EnemyEntity(
+                enemyType = EnemyType.BASIC,
+                currentHp = 0.01,
+                maxHp = 0.01,
+                speed = 0f,
+                damage = 0.0,
+                targetX = zig.originX,
+                targetY = zig.originY,
+                onDeath = engineDeathHandler(eng), // route death through the real reward block
+            ).apply {
+                x = zig.originX
+                y = zig.originY + 300f
+                initDistance()
+            }
         eng.addEntity(enemy)
         flushPendingAdd(eng)
 
@@ -798,36 +859,62 @@ class GameEngineTest {
         val oneKillCash = simulateBasicKillCash(freshEngine())
         assertTrue(oneKillCash > 0L, "a single BASIC kill must credit positive cash (test premise)")
 
-        val liveEnemy = EnemyEntity(
-            enemyType = EnemyType.BASIC,
-            currentHp = 0.01, maxHp = 0.01, speed = 0f, damage = 0.0,
-            targetX = zig.originX, targetY = zig.originY,
-            onDeath = engineDeathHandler(eng), // route the kill through the real reward block
-        ).apply { x = zig.originX; y = zig.originY + 300f; initDistance() }
+        val liveEnemy =
+            EnemyEntity(
+                enemyType = EnemyType.BASIC,
+                currentHp = 0.01,
+                maxHp = 0.01,
+                speed = 0f,
+                damage = 0.0,
+                targetX = zig.originX,
+                targetY = zig.originY,
+                onDeath = engineDeathHandler(eng), // route the kill through the real reward block
+            ).apply {
+                x = zig.originX
+                y = zig.originY + 300f
+                initDistance()
+            }
         // Co-located with the enemy, but aimed at a FAR target so ProjectileState.update (run by
         // tickEntities BEFORE the partition) does not self-destruct on arrival this tick. At
         // speed 100 × dt 0.016 it advances only ~1.6 px — well inside the (8 + 20) / 2 = 14 px
         // overlap radius of the stationary BASIC enemy — so the sweep still registers the hit.
-        val liveProjectile = ProjectileEntity(
-            startX = liveEnemy.x, startY = liveEnemy.y,
-            targetX = liveEnemy.x + 10_000f, targetY = liveEnemy.y,
-            speed = 100f, damage = 1.0,
-        )
+        val liveProjectile =
+            ProjectileEntity(
+                startX = liveEnemy.x,
+                startY = liveEnemy.y,
+                targetX = liveEnemy.x + 10_000f,
+                targetY = liveEnemy.y,
+                speed = 100f,
+                damage = 1.0,
+            )
 
         // A pre-killed enemy that, if wrongly admitted to enemyScratch, could be re-hit/credited.
-        val deadEnemy = EnemyEntity(
-            enemyType = EnemyType.BASIC,
-            currentHp = 0.01, maxHp = 0.01, speed = 0f, damage = 0.0,
-            targetX = zig.originX, targetY = zig.originY,
-            onDeath = engineDeathHandler(eng),
-        ).apply { x = zig.originX; y = zig.originY + 1000f; initDistance(); isAlive = false }
+        val deadEnemy =
+            EnemyEntity(
+                enemyType = EnemyType.BASIC,
+                currentHp = 0.01,
+                maxHp = 0.01,
+                speed = 0f,
+                damage = 0.0,
+                targetX = zig.originX,
+                targetY = zig.originY,
+                onDeath = engineDeathHandler(eng),
+            ).apply {
+                x = zig.originX
+                y = zig.originY + 1000f
+                initDistance()
+                isAlive = false
+            }
 
-        val orb = com.whitefang.stepsofbabylon.presentation.battle.entities.OrbEntity(
-            zigX = zig.originX, zigY = zig.originY, angle = 0f,
-            damage = 1.0,
-            getEnemies = { emptyList() }, // sees nothing → cannot itself credit a kill
-            onHitEnemy = { _, _ -> },
-        )
+        val orb =
+            com.whitefang.stepsofbabylon.presentation.battle.entities.OrbEntity(
+                zigX = zig.originX,
+                zigY = zig.originY,
+                angle = 0f,
+                damage = 1.0,
+                getEnemies = { emptyList() }, // sees nothing → cannot itself credit a kill
+                onHitEnemy = { _, _ -> },
+            )
 
         eng.addEntity(liveEnemy)
         eng.addEntity(liveProjectile)
@@ -926,20 +1013,30 @@ class GameEngineTest {
         val hpBefore = zig.currentHp
 
         // armorHits = 1 → the first hit is fully absorbed (0 HP damage dealt).
-        val armored = EnemyEntity(
-            enemyType = EnemyType.TANK,
-            currentHp = 100.0, maxHp = 100.0,
-            speed = 0f, damage = 0.0,
-            targetX = zig.originX, targetY = zig.originY,
-            onDeath = { },
-            armorHits = 1,
-        ).apply { x = zig.originX; y = zig.originY + 50f }
+        val armored =
+            EnemyEntity(
+                enemyType = EnemyType.TANK,
+                currentHp = 100.0,
+                maxHp = 100.0,
+                speed = 0f,
+                damage = 0.0,
+                targetX = zig.originX,
+                targetY = zig.originY,
+                onDeath = { },
+                armorHits = 1,
+            ).apply {
+                x = zig.originX
+                y = zig.originY + 50f
+            }
 
-        val proj = ProjectileEntity(
-            startX = zig.originX, startY = zig.originY,
-            targetX = armored.x, targetY = armored.y,
-            speed = 100f,
-        )
+        val proj =
+            ProjectileEntity(
+                startX = zig.originX,
+                startY = zig.originY,
+                targetX = armored.x,
+                targetY = armored.y,
+                speed = 100f,
+            )
 
         invokeOnProjectileHitEnemy(eng, proj, armored)
 
@@ -965,14 +1062,21 @@ class GameEngineTest {
         zig.currentHp = zig.maxHp * 0.5
         val hpBefore = zig.currentHp
 
-        val armored = EnemyEntity(
-            enemyType = EnemyType.TANK,
-            currentHp = 100.0, maxHp = 100.0,
-            speed = 0f, damage = 0.0,
-            targetX = zig.originX, targetY = zig.originY,
-            onDeath = { },
-            armorHits = 1,
-        ).apply { x = zig.originX; y = zig.originY + 50f }
+        val armored =
+            EnemyEntity(
+                enemyType = EnemyType.TANK,
+                currentHp = 100.0,
+                maxHp = 100.0,
+                speed = 0f,
+                damage = 0.0,
+                targetX = zig.originX,
+                targetY = zig.originY,
+                onDeath = { },
+                armorHits = 1,
+            ).apply {
+                x = zig.originX
+                y = zig.originY + 50f
+            }
 
         // First hit: absorbed (consumes the armor). Second hit: lands and heals.
         invokeOnProjectileHitEnemy(
@@ -1004,6 +1108,7 @@ class GameEngineTest {
         var count = 0
         for (fieldName in listOf("pendingEffects", "effects")) {
             val field = EffectEngine::class.java.getDeclaredField(fieldName).apply { isAccessible = true }
+
             @Suppress("UNCHECKED_CAST")
             val list = field.get(fx) as List<Effect>
             count += list.count { it is WaveAnnouncement }
@@ -1016,23 +1121,34 @@ class GameEngineTest {
         zig: com.whitefang.stepsofbabylon.presentation.battle.entities.ZigguratEntity,
         hp: Double,
         onDeath: (EnemyEntity) -> Unit = { },
-    ): EnemyEntity = EnemyEntity(
-        enemyType = EnemyType.BASIC,
-        currentHp = hp, maxHp = hp,
-        speed = 0f, damage = 0.0,
-        targetX = zig.originX, targetY = zig.originY,
-        onDeath = onDeath,
-    ).apply { x = zig.originX; y = zig.originY + 300f; initDistance() }
+    ): EnemyEntity =
+        EnemyEntity(
+            enemyType = EnemyType.BASIC,
+            currentHp = hp,
+            maxHp = hp,
+            speed = 0f,
+            damage = 0.0,
+            targetX = zig.originX,
+            targetY = zig.originY,
+            onDeath = onDeath,
+        ).apply {
+            x = zig.originX
+            y = zig.originY + 300f
+            initDistance()
+        }
 
     /** Reflectively flushes `pendingAdd` into the live `entities` list (no full tick). */
     private fun flushPendingAdd(eng: GameEngine) {
         val entitiesField = GameEngine::class.java.getDeclaredField("entities").apply { isAccessible = true }
         val pendingField = GameEngine::class.java.getDeclaredField("pendingAdd").apply { isAccessible = true }
+
         @Suppress("UNCHECKED_CAST")
         val entities = entitiesField.get(eng) as MutableList<Any>
+
         @Suppress("UNCHECKED_CAST")
         val pending = pendingField.get(eng) as MutableList<Any>
-        entities.addAll(pending); pending.clear()
+        entities.addAll(pending)
+        pending.clear()
     }
 
     /**
@@ -1043,9 +1159,10 @@ class GameEngineTest {
      */
     private fun engineDeathHandler(eng: GameEngine): (EnemyEntity) -> Unit {
         val resolver = eng.combatResolverForTest
-        val method = CombatResolver::class.java
-            .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
-            .apply { isAccessible = true }
+        val method =
+            CombatResolver::class.java
+                .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
+                .apply { isAccessible = true }
         return { enemy -> method.invoke(resolver, enemy) }
     }
 
@@ -1057,9 +1174,15 @@ class GameEngineTest {
     }
 
     /** Reflectively reads the engine's private `effectiveLevels` map for the given type. */
-    private fun readEffectiveLevel(eng: GameEngine, type: UpgradeType): Int {
-        val field = GameEngine::class.java.getDeclaredField("effectiveLevels")
-            .apply { isAccessible = true }
+    private fun readEffectiveLevel(
+        eng: GameEngine,
+        type: UpgradeType,
+    ): Int {
+        val field =
+            GameEngine::class.java
+                .getDeclaredField("effectiveLevels")
+                .apply { isAccessible = true }
+
         @Suppress("UNCHECKED_CAST")
         val map = field.get(eng) as Map<UpgradeType, Int>
         return map[type] ?: 0
@@ -1070,11 +1193,15 @@ class GameEngineTest {
      * Bypasses the full game-loop side effects (enemy spawn, melee hits, projectile
      * collisions) so the heal-only assertions stay deterministic.
      */
-    private fun invokeTickRecovery(eng: GameEngine, deltaTime: Float) {
+    private fun invokeTickRecovery(
+        eng: GameEngine,
+        deltaTime: Float,
+    ) {
         val tickers = eng.buffTickersForTest
-        val method = BuffTickers::class.java
-            .getDeclaredMethod("tickRecovery", Float::class.javaPrimitiveType)
-            .apply { isAccessible = true }
+        val method =
+            BuffTickers::class.java
+                .getDeclaredMethod("tickRecovery", Float::class.javaPrimitiveType)
+                .apply { isAccessible = true }
         method.invoke(tickers, deltaTime)
     }
 
@@ -1084,11 +1211,15 @@ class GameEngineTest {
      * the burst-state assertions don't see drift from incidental enemy spawns or projectile
      * collisions.
      */
-    private fun invokeTickRapidFire(eng: GameEngine, deltaTime: Float) {
+    private fun invokeTickRapidFire(
+        eng: GameEngine,
+        deltaTime: Float,
+    ) {
         val tickers = eng.buffTickersForTest
-        val method = BuffTickers::class.java
-            .getDeclaredMethod("tickRapidFire", Float::class.javaPrimitiveType)
-            .apply { isAccessible = true }
+        val method =
+            BuffTickers::class.java
+                .getDeclaredMethod("tickRapidFire", Float::class.javaPrimitiveType)
+                .apply { isAccessible = true }
         method.invoke(tickers, deltaTime)
     }
 
@@ -1097,10 +1228,15 @@ class GameEngineTest {
      * (private set) without ticking through the full 26 + 9 s wave cycle. Used by the R4-03
      * cooldown-phase-reset test.
      */
-    private fun setWavePhase(eng: GameEngine, phase: WavePhase) {
+    private fun setWavePhase(
+        eng: GameEngine,
+        phase: WavePhase,
+    ) {
         val spawner = eng.waveSpawner ?: return
-        val field = WaveSpawner::class.java.getDeclaredField("phase")
-            .apply { isAccessible = true }
+        val field =
+            WaveSpawner::class.java
+                .getDeclaredField("phase")
+                .apply { isAccessible = true }
         field.set(spawner, phase)
     }
 
@@ -1108,14 +1244,21 @@ class GameEngineTest {
      *  the full UW activation path (which would queue cooldowns + visual effects + sounds).
      *  R4-06: also sets `chronoSlowFactor` to 0.10f (the pre-R4-06 constant) so the
      *  entity-update loop applies the expected slow. */
-    private fun setChronoActive(eng: GameEngine, active: Boolean) {
+    private fun setChronoActive(
+        eng: GameEngine,
+        active: Boolean,
+    ) {
         val controller = eng.uwControllerForTest
-        val field = UWController::class.java.getDeclaredField("chronoActive")
-            .apply { isAccessible = true }
+        val field =
+            UWController::class.java
+                .getDeclaredField("chronoActive")
+                .apply { isAccessible = true }
         field.setBoolean(controller, active)
         if (active) {
-            val sfField = UWController::class.java.getDeclaredField("chronoSlowFactor")
-                .apply { isAccessible = true }
+            val sfField =
+                UWController::class.java
+                    .getDeclaredField("chronoSlowFactor")
+                    .apply { isAccessible = true }
             sfField.setFloat(controller, 0.10f)
         }
     }
@@ -1132,20 +1275,21 @@ class GameEngineTest {
     private fun simulateEnemyMovement(activateChrono: Boolean): Float {
         val eng = freshEngine()
         val zig = eng.ziggurat!!
-        val enemy = EnemyEntity(
-            enemyType = EnemyType.BASIC,
-            currentHp = 1_000_000.0,
-            maxHp = 1_000_000.0,
-            speed = 100f,
-            damage = 0.0,
-            targetX = zig.originX,
-            targetY = zig.originY,
-            onDeath = { },
-        ).apply {
-            x = zig.originX
-            y = zig.originY + 1000f
-            initDistance()
-        }
+        val enemy =
+            EnemyEntity(
+                enemyType = EnemyType.BASIC,
+                currentHp = 1_000_000.0,
+                maxHp = 1_000_000.0,
+                speed = 100f,
+                damage = 0.0,
+                targetX = zig.originX,
+                targetY = zig.originY,
+                onDeath = { },
+            ).apply {
+                x = zig.originX
+                y = zig.originY + 1000f
+                initDistance()
+            }
         eng.addEntity(enemy)
         if (activateChrono) setChronoActive(eng, true)
         val yBefore = enemy.y
@@ -1157,8 +1301,10 @@ class GameEngineTest {
     /** Reflectively reads the engine's private `fortuneMultiplier` field. */
     private fun readFortuneMultiplier(eng: GameEngine): Double {
         val controller = eng.uwControllerForTest
-        val field = UWController::class.java.getDeclaredField("fortuneMultiplier")
-            .apply { isAccessible = true }
+        val field =
+            UWController::class.java
+                .getDeclaredField("fortuneMultiplier")
+                .apply { isAccessible = true }
         return field.getDouble(controller)
     }
 
@@ -1168,8 +1314,22 @@ class GameEngineTest {
      * After this call: `goldenZigActive == true`, `fortuneMultiplier == 2.0` at L1 (the DAMAGE-path
      * cash multiplier; or higher if a prior buff already set a higher value), `preGoldenStats` captured.
      */
-    private fun activateGoldenZigForTest(eng: GameEngine, level: Int = 1) {
-        eng.initUWs(listOf(OwnedWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT, damageLevel = level, secondaryLevel = level, cooldownLevel = level, isUnlocked = true, isEquipped = true)))
+    private fun activateGoldenZigForTest(
+        eng: GameEngine,
+        level: Int = 1,
+    ) {
+        eng.initUWs(
+            listOf(
+                OwnedWeapon(
+                    UltimateWeaponType.GOLDEN_ZIGGURAT,
+                    damageLevel = level,
+                    secondaryLevel = level,
+                    cooldownLevel = level,
+                    isUnlocked = true,
+                    isEquipped = true,
+                ),
+            ),
+        )
         eng.activateUW(0)
     }
 
@@ -1179,11 +1339,15 @@ class GameEngineTest {
      * `effectDurationSeconds`) without running the full game-loop update path, which
      * would also spawn enemies / run collisions / drive other engine subsystems.
      */
-    private fun invokeUpdateUWs(eng: GameEngine, deltaTime: Float) {
+    private fun invokeUpdateUWs(
+        eng: GameEngine,
+        deltaTime: Float,
+    ) {
         val controller = eng.uwControllerForTest
-        val method = UWController::class.java
-            .getDeclaredMethod("update", Float::class.javaPrimitiveType)
-            .apply { isAccessible = true }
+        val method =
+            UWController::class.java
+                .getDeclaredMethod("update", Float::class.javaPrimitiveType)
+                .apply { isAccessible = true }
         method.invoke(controller, deltaTime)
     }
 
@@ -1197,20 +1361,25 @@ class GameEngineTest {
      */
     private fun simulateBasicKillCash(eng: GameEngine): Long {
         val zig = eng.ziggurat!!
-        val enemy = EnemyEntity(
-            enemyType = EnemyType.BASIC,
-            currentHp = 1.0,
-            maxHp = 1.0,
-            speed = 0f,
-            damage = 0.0,
-            targetX = zig.originX,
-            targetY = zig.originY,
-            onDeath = { },
-        ).apply { x = zig.originX; y = zig.originY + 200f }
+        val enemy =
+            EnemyEntity(
+                enemyType = EnemyType.BASIC,
+                currentHp = 1.0,
+                maxHp = 1.0,
+                speed = 0f,
+                damage = 0.0,
+                targetX = zig.originX,
+                targetY = zig.originY,
+                onDeath = { },
+            ).apply {
+                x = zig.originX
+                y = zig.originY + 200f
+            }
         val cashBefore = eng.cash
-        val method = CombatResolver::class.java
-            .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
-            .apply { isAccessible = true }
+        val method =
+            CombatResolver::class.java
+                .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
+                .apply { isAccessible = true }
         method.invoke(eng.combatResolverForTest, enemy)
         return eng.cash - cashBefore
     }
@@ -1245,7 +1414,7 @@ class GameEngineTest {
         // as `{ atk, dmg -> applyDamageToZiggurat(dmg, atk) }` so `applyThorn` actually fires.
         invokeOnMeleeHit(eng, attacker, rawDamage = 20.0)
 
-        val expectedReflect = 20.0 * 0.5  // damage × thornPercent
+        val expectedReflect = 20.0 * 0.5 // damage × thornPercent
         assertEquals(
             1000.0 - expectedReflect,
             attacker.currentHp,
@@ -1286,19 +1455,29 @@ class GameEngineTest {
         // Drop ziggurat to half HP so the heal isn't capped at maxHp.
         zig.currentHp = zig.maxHp * 0.5
 
-        val target = EnemyEntity(
-            enemyType = EnemyType.BASIC,
-            currentHp = 100.0, maxHp = 100.0,
-            speed = 0f, damage = 0.0,
-            targetX = zig.originX, targetY = zig.originY,
-            onDeath = { },
-        ).apply { x = zig.originX; y = zig.originY + 50f }
+        val target =
+            EnemyEntity(
+                enemyType = EnemyType.BASIC,
+                currentHp = 100.0,
+                maxHp = 100.0,
+                speed = 0f,
+                damage = 0.0,
+                targetX = zig.originX,
+                targetY = zig.originY,
+                onDeath = { },
+            ).apply {
+                x = zig.originX
+                y = zig.originY + 50f
+            }
 
-        val proj = ProjectileEntity(
-            startX = zig.originX, startY = zig.originY,
-            targetX = target.x, targetY = target.y,
-            speed = 100f,
-        )
+        val proj =
+            ProjectileEntity(
+                startX = zig.originX,
+                startY = zig.originY,
+                targetX = target.x,
+                targetY = target.y,
+                speed = 100f,
+            )
 
         invokeOnProjectileHitEnemy(eng, proj, target)
 
@@ -1328,25 +1507,36 @@ class GameEngineTest {
      * (which would also tick the spawner, accumulate enemies, and otherwise contaminate
      * the assertion).
      */
-    private fun invokeOnMeleeHit(eng: GameEngine, attacker: EnemyEntity, rawDamage: Double) {
+    private fun invokeOnMeleeHit(
+        eng: GameEngine,
+        attacker: EnemyEntity,
+        rawDamage: Double,
+    ) {
         val spawner = eng.waveSpawner!!
-        val field = WaveSpawner::class.java.getDeclaredField("onMeleeHit")
-            .apply { isAccessible = true }
+        val field =
+            WaveSpawner::class.java
+                .getDeclaredField("onMeleeHit")
+                .apply { isAccessible = true }
+
         @Suppress("UNCHECKED_CAST")
         val callback = field.get(spawner) as (EnemyEntity, Double) -> Unit
         callback(attacker, rawDamage)
     }
 
-    private fun createDummyAttacker(eng: GameEngine, hp: Double): EnemyEntity = EnemyEntity(
-        enemyType = EnemyType.BASIC,
-        currentHp = hp,
-        maxHp = hp,
-        speed = 0f,
-        damage = 0.0,
-        targetX = eng.ziggurat!!.originX,
-        targetY = eng.ziggurat!!.originY,
-        onDeath = { },
-    )
+    private fun createDummyAttacker(
+        eng: GameEngine,
+        hp: Double,
+    ): EnemyEntity =
+        EnemyEntity(
+            enemyType = EnemyType.BASIC,
+            currentHp = hp,
+            maxHp = hp,
+            speed = 0f,
+            damage = 0.0,
+            targetX = eng.ziggurat!!.originX,
+            targetY = eng.ziggurat!!.originY,
+            onDeath = { },
+        )
 
     /** Reflectively invokes the private `onProjectileHitEnemy(ProjectileEntity, EnemyEntity)`
      *  helper so tests can exercise the lifesteal heal path without driving a full
@@ -1357,11 +1547,13 @@ class GameEngineTest {
         enemy: EnemyEntity,
     ) {
         val resolver = eng.combatResolverForTest
-        val method = CombatResolver::class.java.getDeclaredMethod(
-            "onProjectileHitEnemy",
-            ProjectileEntity::class.java,
-            EnemyEntity::class.java,
-        ).apply { isAccessible = true }
+        val method =
+            CombatResolver::class.java
+                .getDeclaredMethod(
+                    "onProjectileHitEnemy",
+                    ProjectileEntity::class.java,
+                    EnemyEntity::class.java,
+                ).apply { isAccessible = true }
         method.invoke(resolver, proj, enemy)
     }
 
@@ -1370,89 +1562,118 @@ class GameEngineTest {
      *  by prefix/suffix as needed). Used to assert visual feedback was queued. */
     private fun readPendingFloatingTextSnippets(eng: GameEngine): List<String> {
         val fx = eng.effectEngine ?: return emptyList()
-        val pendingField = EffectEngine::class.java.getDeclaredField("pendingEffects")
-            .apply { isAccessible = true }
+        val pendingField =
+            EffectEngine::class.java
+                .getDeclaredField("pendingEffects")
+                .apply { isAccessible = true }
+
         @Suppress("UNCHECKED_CAST")
         val pending = pendingField.get(fx) as MutableList<Effect>
-        val textField = FloatingText::class.java.getDeclaredField("text")
-            .apply { isAccessible = true }
+        val textField =
+            FloatingText::class.java
+                .getDeclaredField("text")
+                .apply { isAccessible = true }
         return pending.filterIsInstance<FloatingText>().map { textField.get(it) as String }
     }
 
     // ---- R4-07: handleEnemyDeath emits SimulationEvent.BossKilled for BOSS enemy type ----
 
     @Test
-    fun `R407 emits BossKilled when a BOSS enemy dies`() = runTest(UnconfinedTestDispatcher()) {
-        val eng = freshEngine()
-        val events = mutableListOf<SimulationEvent>()
-        // UnconfinedTestDispatcher: the collector subscribes eagerly at launch, before the
-        // synchronous handleEnemyDeath emit below, so the replay=0 stream still delivers it.
-        val collector = launch { eng.events.collect { events.add(it) } }
-        val zig = eng.ziggurat!!
-        val boss = EnemyEntity(
-            enemyType = EnemyType.BOSS,
-            currentHp = 1.0, maxHp = 1.0, speed = 0f, damage = 0.0,
-            targetX = zig.originX, targetY = zig.originY, onDeath = {},
-        )
-        val method = CombatResolver::class.java
-            .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
-            .apply { isAccessible = true }
-        method.invoke(eng.combatResolverForTest, boss)
-        advanceUntilIdle()
-        collector.cancel()
-        val bossEvents = events.filterIsInstance<SimulationEvent.BossKilled>()
-        assertEquals(1, bossEvents.size, "exactly one BossKilled must be emitted for a BOSS kill")
-        assertEquals(1, bossEvents.first().tier, "BossKilled must carry the engine's tier for BOSS kills")
-    }
-
-    @Test
-    fun `R407 does NOT emit BossKilled for non-BOSS enemy types`() = runTest(UnconfinedTestDispatcher()) {
-        val eng = freshEngine()
-        val events = mutableListOf<SimulationEvent>()
-        val collector = launch { eng.events.collect { events.add(it) } }
-        val zig = eng.ziggurat!!
-        for (type in listOf(EnemyType.BASIC, EnemyType.FAST, EnemyType.TANK, EnemyType.RANGED)) {
-            val enemy = EnemyEntity(
-                enemyType = type,
-                currentHp = 1.0, maxHp = 1.0, speed = 0f, damage = 0.0,
-                targetX = zig.originX, targetY = zig.originY, onDeath = {},
-            )
-            val method = CombatResolver::class.java
-                .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
-                .apply { isAccessible = true }
-            method.invoke(eng.combatResolverForTest, enemy)
+    fun `R407 emits BossKilled when a BOSS enemy dies`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val eng = freshEngine()
+            val events = mutableListOf<SimulationEvent>()
+            // UnconfinedTestDispatcher: the collector subscribes eagerly at launch, before the
+            // synchronous handleEnemyDeath emit below, so the replay=0 stream still delivers it.
+            val collector = launch { eng.events.collect { events.add(it) } }
+            val zig = eng.ziggurat!!
+            val boss =
+                EnemyEntity(
+                    enemyType = EnemyType.BOSS,
+                    currentHp = 1.0,
+                    maxHp = 1.0,
+                    speed = 0f,
+                    damage = 0.0,
+                    targetX = zig.originX,
+                    targetY = zig.originY,
+                    onDeath = {},
+                )
+            val method =
+                CombatResolver::class.java
+                    .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
+                    .apply { isAccessible = true }
+            method.invoke(eng.combatResolverForTest, boss)
+            advanceUntilIdle()
+            collector.cancel()
+            val bossEvents = events.filterIsInstance<SimulationEvent.BossKilled>()
+            assertEquals(1, bossEvents.size, "exactly one BossKilled must be emitted for a BOSS kill")
+            assertEquals(1, bossEvents.first().tier, "BossKilled must carry the engine's tier for BOSS kills")
         }
-        advanceUntilIdle()
-        collector.cancel()
-        assertFalse(
-            events.any { it is SimulationEvent.BossKilled },
-            "BossKilled must NOT be emitted for non-BOSS enemy types",
-        )
-    }
 
     @Test
-    fun `R407 emitted BossKilled carries the engine tier`() = runTest(UnconfinedTestDispatcher()) {
-        // Init engine at tier 7
-        val eng = GameEngine()
-        eng.init(width = 1080f, height = 1920f, resolvedStats = ResolvedStats(), playerTier = 7)
-        val events = mutableListOf<SimulationEvent>()
-        val collector = launch { eng.events.collect { events.add(it) } }
-        val zig = eng.ziggurat!!
-        val boss = EnemyEntity(
-            enemyType = EnemyType.BOSS,
-            currentHp = 1.0, maxHp = 1.0, speed = 0f, damage = 0.0,
-            targetX = zig.originX, targetY = zig.originY, onDeath = {},
-        )
-        val method = CombatResolver::class.java
-            .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
-            .apply { isAccessible = true }
-        method.invoke(eng.combatResolverForTest, boss)
-        advanceUntilIdle()
-        collector.cancel()
-        assertEquals(
-            7,
-            events.filterIsInstance<SimulationEvent.BossKilled>().single().tier,
-            "BossKilled must carry the engine's playerTier",
-        )
-    }
+    fun `R407 does NOT emit BossKilled for non-BOSS enemy types`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val eng = freshEngine()
+            val events = mutableListOf<SimulationEvent>()
+            val collector = launch { eng.events.collect { events.add(it) } }
+            val zig = eng.ziggurat!!
+            for (type in listOf(EnemyType.BASIC, EnemyType.FAST, EnemyType.TANK, EnemyType.RANGED)) {
+                val enemy =
+                    EnemyEntity(
+                        enemyType = type,
+                        currentHp = 1.0,
+                        maxHp = 1.0,
+                        speed = 0f,
+                        damage = 0.0,
+                        targetX = zig.originX,
+                        targetY = zig.originY,
+                        onDeath = {},
+                    )
+                val method =
+                    CombatResolver::class.java
+                        .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
+                        .apply { isAccessible = true }
+                method.invoke(eng.combatResolverForTest, enemy)
+            }
+            advanceUntilIdle()
+            collector.cancel()
+            assertFalse(
+                events.any { it is SimulationEvent.BossKilled },
+                "BossKilled must NOT be emitted for non-BOSS enemy types",
+            )
+        }
+
+    @Test
+    fun `R407 emitted BossKilled carries the engine tier`() =
+        runTest(UnconfinedTestDispatcher()) {
+            // Init engine at tier 7
+            val eng = GameEngine()
+            eng.init(width = 1080f, height = 1920f, resolvedStats = ResolvedStats(), playerTier = 7)
+            val events = mutableListOf<SimulationEvent>()
+            val collector = launch { eng.events.collect { events.add(it) } }
+            val zig = eng.ziggurat!!
+            val boss =
+                EnemyEntity(
+                    enemyType = EnemyType.BOSS,
+                    currentHp = 1.0,
+                    maxHp = 1.0,
+                    speed = 0f,
+                    damage = 0.0,
+                    targetX = zig.originX,
+                    targetY = zig.originY,
+                    onDeath = {},
+                )
+            val method =
+                CombatResolver::class.java
+                    .getDeclaredMethod("handleEnemyDeath", EnemyEntity::class.java)
+                    .apply { isAccessible = true }
+            method.invoke(eng.combatResolverForTest, boss)
+            advanceUntilIdle()
+            collector.cancel()
+            assertEquals(
+                7,
+                events.filterIsInstance<SimulationEvent.BossKilled>().single().tier,
+                "BossKilled must carry the engine's playerTier",
+            )
+        }
 }

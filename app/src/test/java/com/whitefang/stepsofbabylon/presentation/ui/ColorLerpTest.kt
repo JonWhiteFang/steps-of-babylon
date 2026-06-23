@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test
  * the pager scroll offset (spec E8). No Compose runtime needed — plain Int bit math.
  */
 class ColorLerpTest {
-
     private val opaqueBlack = 0xFF000000.toInt()
     private val opaqueWhite = 0xFFFFFFFF.toInt()
 

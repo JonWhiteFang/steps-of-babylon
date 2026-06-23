@@ -37,7 +37,6 @@ import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MissionsViewModelTest {
-
     // MissionsViewModel has a while(true) ticker — test use cases directly
     private val dispatcher = UnconfinedTestDispatcher()
     private lateinit var missionDao: FakeDailyMissionDao
@@ -59,52 +58,67 @@ class MissionsViewModelTest {
     }
 
     @AfterEach
-    fun tearDown() { Dispatchers.resetMain() }
-
-    @Test
-    fun `generate daily missions creates 3 missions`() = runTest {
-        val generate = GenerateDailyMissions(missionRepo)
-        generate(today)
-        val missions = missionDao.getByDateOnce(today)
-        assertEquals(3, missions.size)
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test
-    fun `claim mission credits gems`() = runTest {
-        // #122: claim now goes through the atomic ClaimMission use case (mark-first guarded claim),
-        // exercising the same path MissionsViewModel.claimMission delegates to.
-        missionDao.insert(DailyMissionEntity(date = today, missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 5000, completed = true, rewardGems = 5))
-        val m = missionDao.getByDateOnce(today).first()
-        val claimMission = ClaimMission(missionRepo, playerRepo)
-
-        val result = claimMission(m.id, today)
-
-        assertEquals(ClaimMissionResult.Success, result)
-        assertEquals(55, playerRepo.profile.value.gems)
-        assertTrue(missionDao.getByDateOnce(today).first().claimed)
-    }
+    fun `generate daily missions creates 3 missions`() =
+        runTest {
+            val generate = GenerateDailyMissions(missionRepo)
+            generate(today)
+            val missions = missionDao.getByDateOnce(today)
+            assertEquals(3, missions.size)
+        }
 
     @Test
-    fun `claim milestone credits reward`() = runTest {
-        // FIRST_STEPS has no Cosmetic reward, so the empty FakeCosmeticRepository is
-        // sufficient (cosmetic-id pre-flight check in C.4 is vacuously true for zero
-        // Cosmetic rewards).
-        val claim = ClaimMilestone(milestoneRepo, playerRepo, FakeCosmeticRepository(), FakeTimeProvider())
-        val result = claim(Milestone.FIRST_STEPS)
-        assertEquals(ClaimMilestoneResult.Success, result)
-        // FIRST_STEPS rewards 60 Gems
-        assertEquals(110, playerRepo.profile.value.gems)
-        val entity = milestoneDao.getByIdOnce(Milestone.FIRST_STEPS.name)
-        assertNotNull(entity)
-        assertTrue(entity!!.claimed)
-    }
+    fun `claim mission credits gems`() =
+        runTest {
+            // #122: claim now goes through the atomic ClaimMission use case (mark-first guarded claim),
+            // exercising the same path MissionsViewModel.claimMission delegates to.
+            missionDao.insert(
+                DailyMissionEntity(
+                    date = today,
+                    missionType = DailyMissionType.WALK_5000.name,
+                    target = 5000,
+                    progress = 5000,
+                    completed = true,
+                    rewardGems = 5,
+                ),
+            )
+            val m = missionDao.getByDateOnce(today).first()
+            val claimMission = ClaimMission(missionRepo, playerRepo)
+
+            val result = claimMission(m.id, today)
+
+            assertEquals(ClaimMissionResult.Success, result)
+            assertEquals(55, playerRepo.profile.value.gems)
+            assertTrue(missionDao.getByDateOnce(today).first().claimed)
+        }
 
     @Test
-    fun `milestone detection with steps`() = runTest {
-        // Player has 5000 steps — FIRST_STEPS requires 1000
-        val achievable = Milestone.entries.filter { it.requiredSteps <= 5000 }
-        assertTrue(achievable.contains(Milestone.FIRST_STEPS))
-    }
+    fun `claim milestone credits reward`() =
+        runTest {
+            // FIRST_STEPS has no Cosmetic reward, so the empty FakeCosmeticRepository is
+            // sufficient (cosmetic-id pre-flight check in C.4 is vacuously true for zero
+            // Cosmetic rewards).
+            val claim = ClaimMilestone(milestoneRepo, playerRepo, FakeCosmeticRepository(), FakeTimeProvider())
+            val result = claim(Milestone.FIRST_STEPS)
+            assertEquals(ClaimMilestoneResult.Success, result)
+            // FIRST_STEPS rewards 60 Gems
+            assertEquals(110, playerRepo.profile.value.gems)
+            val entity = milestoneDao.getByIdOnce(Milestone.FIRST_STEPS.name)
+            assertNotNull(entity)
+            assertTrue(entity!!.claimed)
+        }
+
+    @Test
+    fun `milestone detection with steps`() =
+        runTest {
+            // Player has 5000 steps — FIRST_STEPS requires 1000
+            val achievable = Milestone.entries.filter { it.requiredSteps <= 5000 }
+            assertTrue(achievable.contains(Milestone.FIRST_STEPS))
+        }
 
     // --- Bundle C Task 8: claim celebration event (Success-gated) ---------------------------------
     // The VM's init launches a viewModelScope while(true) ticker on Main (the test dispatcher); a
@@ -124,82 +138,117 @@ class MissionsViewModelTest {
         )
 
     @Test
-    fun `claiming a completed mission emits one celebration`() = runTest {
-        missionDao.insert(DailyMissionEntity(date = today, missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 5000, completed = true, rewardGems = 5))
-        val vm = createVm()
-        val events = mutableListOf<ClaimCelebrationEvent>()
-        backgroundScope.launch { vm.celebration.toList(events) }
-        // claimMission reads the reward off uiState.value.missions; uiState is WhileSubscribed, so a
-        // collector must be active (as the real screen always is) for the seeded mission to be present.
-        backgroundScope.launch { vm.uiState.collect {} }
-        runCurrent()
-        val id = missionDao.getByDateOnce(today).first().id
-        vm.claimMission(id)
-        runCurrent()
-        assertEquals(1, events.size)
-        // Seeded mission: 5 gems, 0 power stones.
-        assertEquals(ClaimReward.Bundle(gems = 5, powerStones = 0), events.single().reward)
-        vm.cancelForTest()   // stop the while(true) ticker or runTest cleanup hangs
-    }
+    fun `claiming a completed mission emits one celebration`() =
+        runTest {
+            missionDao.insert(
+                DailyMissionEntity(
+                    date = today,
+                    missionType = DailyMissionType.WALK_5000.name,
+                    target = 5000,
+                    progress = 5000,
+                    completed = true,
+                    rewardGems = 5,
+                ),
+            )
+            val vm = createVm()
+            val events = mutableListOf<ClaimCelebrationEvent>()
+            backgroundScope.launch { vm.celebration.toList(events) }
+            // claimMission reads the reward off uiState.value.missions; uiState is WhileSubscribed, so a
+            // collector must be active (as the real screen always is) for the seeded mission to be present.
+            backgroundScope.launch { vm.uiState.collect {} }
+            runCurrent()
+            val id = missionDao.getByDateOnce(today).first().id
+            vm.claimMission(id)
+            runCurrent()
+            assertEquals(1, events.size)
+            // Seeded mission: 5 gems, 0 power stones.
+            assertEquals(ClaimReward.Bundle(gems = 5, powerStones = 0), events.single().reward)
+            vm.cancelForTest() // stop the while(true) ticker or runTest cleanup hangs
+        }
 
     @Test
-    fun `claiming an achieved milestone emits one celebration`() = runTest {
-        val vm = createVm()
-        val events = mutableListOf<ClaimCelebrationEvent>()
-        backgroundScope.launch { vm.celebration.toList(events) }
-        vm.claimMilestone(Milestone.FIRST_STEPS)   // player has >= FIRST_STEPS requirement (5000 >= 1000)
-        runCurrent()
-        assertEquals(1, events.size)
-        // FIRST_STEPS rewards 60 Gems (no power stones, no cosmetics).
-        assertEquals(
-            ClaimReward.Bundle(gems = 60, powerStones = 0, cosmeticNames = emptyList()),
-            events.single().reward,
-        )
-        vm.cancelForTest()
-    }
+    fun `claiming an achieved milestone emits one celebration`() =
+        runTest {
+            val vm = createVm()
+            val events = mutableListOf<ClaimCelebrationEvent>()
+            backgroundScope.launch { vm.celebration.toList(events) }
+            vm.claimMilestone(Milestone.FIRST_STEPS) // player has >= FIRST_STEPS requirement (5000 >= 1000)
+            runCurrent()
+            assertEquals(1, events.size)
+            // FIRST_STEPS rewards 60 Gems (no power stones, no cosmetics).
+            assertEquals(
+                ClaimReward.Bundle(gems = 60, powerStones = 0, cosmeticNames = emptyList()),
+                events.single().reward,
+            )
+            vm.cancelForTest()
+        }
 
     @Test
-    fun `claiming an unachievable milestone emits no celebration`() = runTest {
-        val vm = createVm()
-        val events = mutableListOf<ClaimCelebrationEvent>()
-        backgroundScope.launch { vm.celebration.toList(events) }
-        vm.claimMilestone(Milestone.entries.maxBy { it.requiredSteps })   // 5_000_000 ≫ 5000 → InsufficientSteps
-        runCurrent()
-        assertTrue(events.isEmpty())
-        vm.cancelForTest()
-    }
+    fun `claiming an unachievable milestone emits no celebration`() =
+        runTest {
+            val vm = createVm()
+            val events = mutableListOf<ClaimCelebrationEvent>()
+            backgroundScope.launch { vm.celebration.toList(events) }
+            vm.claimMilestone(Milestone.entries.maxBy { it.requiredSteps }) // 5_000_000 ≫ 5000 → InsufficientSteps
+            runCurrent()
+            assertTrue(events.isEmpty())
+            vm.cancelForTest()
+        }
 
     // #195: across midnight the uiState must switch to the NEW day's missions. Pre-fix the combined
     // StateFlow captured `today` once, so getByDate(today) never re-subscribed and the screen kept
     // showing yesterday's rows. refreshDate() flips _today → flatMapLatest re-subscribes getByDate.
     @Test
-    fun `R195 uiState re-subscribes missions on day rollover`() = runTest {
-        val day1 = LocalDate.of(2026, 6, 18)
-        val day2 = day1.plusDays(1)
-        val time = FakeTimeProvider(fixedDate = day1)
-        // Seed a distinct, recognisable mission row for each day.
-        missionDao.insert(DailyMissionEntity(date = day1.toString(), missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 10, completed = false, rewardGems = 1))
-        missionDao.insert(DailyMissionEntity(date = day2.toString(), missionType = DailyMissionType.WALK_12000.name, target = 12000, progress = 20, completed = false, rewardGems = 2))
+    fun `R195 uiState re-subscribes missions on day rollover`() =
+        runTest {
+            val day1 = LocalDate.of(2026, 6, 18)
+            val day2 = day1.plusDays(1)
+            val time = FakeTimeProvider(fixedDate = day1)
+            // Seed a distinct, recognisable mission row for each day.
+            missionDao.insert(
+                DailyMissionEntity(
+                    date = day1.toString(),
+                    missionType = DailyMissionType.WALK_5000.name,
+                    target = 5000,
+                    progress = 10,
+                    completed = false,
+                    rewardGems = 1,
+                ),
+            )
+            missionDao.insert(
+                DailyMissionEntity(
+                    date = day2.toString(),
+                    missionType = DailyMissionType.WALK_12000.name,
+                    target = 12000,
+                    progress = 20,
+                    completed = false,
+                    rewardGems = 2,
+                ),
+            )
 
-        val vm = createVm(timeProvider = time)
-        val states = mutableListOf<MissionsUiState>()
-        backgroundScope.launch { vm.uiState.toList(states) }
-        runCurrent()
+            val vm = createVm(timeProvider = time)
+            val states = mutableListOf<MissionsUiState>()
+            backgroundScope.launch { vm.uiState.toList(states) }
+            runCurrent()
 
-        // Day 1: the WALK_5000 row is present, the WALK_12000 (day-2) row is not.
-        val day1Missions = vm.uiState.value.missions.map { it.target }
-        assertTrue(day1Missions.contains(5000), "day 1 should show the WALK_5000 mission, got $day1Missions")
-        assertFalse(day1Missions.contains(12000), "day 1 must NOT show day 2's mission, got $day1Missions")
+            // Day 1: the WALK_5000 row is present, the WALK_12000 (day-2) row is not.
+            val day1Missions =
+                vm.uiState.value.missions
+                    .map { it.target }
+            assertTrue(day1Missions.contains(5000), "day 1 should show the WALK_5000 mission, got $day1Missions")
+            assertFalse(day1Missions.contains(12000), "day 1 must NOT show day 2's mission, got $day1Missions")
 
-        // Roll over to day 2 and refresh — the query must re-subscribe to day 2's rows.
-        time.fixedDate = day2
-        vm.refreshDate()
-        runCurrent()
+            // Roll over to day 2 and refresh — the query must re-subscribe to day 2's rows.
+            time.fixedDate = day2
+            vm.refreshDate()
+            runCurrent()
 
-        val day2Missions = vm.uiState.value.missions.map { it.target }
-        assertTrue(day2Missions.contains(12000), "day 2 should show the WALK_12000 mission, got $day2Missions")
-        assertFalse(day2Missions.contains(5000), "day 2 must NOT still show day 1's mission, got $day2Missions")
+            val day2Missions =
+                vm.uiState.value.missions
+                    .map { it.target }
+            assertTrue(day2Missions.contains(12000), "day 2 should show the WALK_12000 mission, got $day2Missions")
+            assertFalse(day2Missions.contains(5000), "day 2 must NOT still show day 1's mission, got $day2Missions")
 
-        vm.cancelForTest()
-    }
+            vm.cancelForTest()
+        }
 }

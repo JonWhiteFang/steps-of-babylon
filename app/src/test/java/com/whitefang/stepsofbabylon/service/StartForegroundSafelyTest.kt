@@ -24,16 +24,16 @@ import org.junit.jupiter.api.Test
  * without a Hilt service / Robolectric: the wiring in onCreate is a thin application of it.
  */
 class StartForegroundSafelyTest {
-
     @Test
     fun `a successful start returns true and does not invoke the failure handler`() {
         var failed: Throwable? = null
         var startCalls = 0
 
-        val ok = startForegroundSafely(
-            start = { startCalls++ },
-            onFailure = { failed = it },
-        )
+        val ok =
+            startForegroundSafely(
+                start = { startCalls++ },
+                onFailure = { failed = it },
+            )
 
         assertTrue(ok, "a clean start must return true")
         assertEquals(1, startCalls)
@@ -47,10 +47,11 @@ class StartForegroundSafelyTest {
         val boom = IllegalStateException("ForegroundServiceStartNotAllowed")
         var reported: Throwable? = null
 
-        val ok = startForegroundSafely(
-            start = { throw boom },
-            onFailure = { reported = it },
-        )
+        val ok =
+            startForegroundSafely(
+                start = { throw boom },
+                onFailure = { reported = it },
+            )
 
         assertFalse(ok, "a failed FGS start must return false so the caller can stopSelf()")
         assertSame(boom, reported, "the originating exception must be passed to onFailure")

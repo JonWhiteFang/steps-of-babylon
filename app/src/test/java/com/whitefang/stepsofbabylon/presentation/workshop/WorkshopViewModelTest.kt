@@ -1,10 +1,10 @@
 package com.whitefang.stepsofbabylon.presentation.workshop
 
+import androidx.lifecycle.SavedStateHandle
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
-import androidx.lifecycle.SavedStateHandle
 import com.whitefang.stepsofbabylon.fakes.FakeWorkshopRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,225 +21,275 @@ import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WorkshopViewModelTest {
-
     private val dispatcher = StandardTestDispatcher()
     private lateinit var workshopRepo: FakeWorkshopRepository
     private lateinit var playerRepo: FakePlayerRepository
-    private val missionRepo = com.whitefang.stepsofbabylon.fakes.FakeMissionRepository()
+    private val missionRepo =
+        com.whitefang.stepsofbabylon.fakes
+            .FakeMissionRepository()
 
     @BeforeEach
-    fun setup() = runTest(dispatcher) {
-        Dispatchers.setMain(dispatcher)
-        playerRepo = FakePlayerRepository(PlayerProfile(stepBalance = 10_000))
-        workshopRepo = FakeWorkshopRepository(linkedPlayer = playerRepo)
-        workshopRepo.upgrades.value = UpgradeType.entries.associateWith { 0 }
-    }
+    fun setup() =
+        runTest(dispatcher) {
+            Dispatchers.setMain(dispatcher)
+            playerRepo = FakePlayerRepository(PlayerProfile(stepBalance = 10_000))
+            workshopRepo = FakeWorkshopRepository(linkedPlayer = playerRepo)
+            workshopRepo.upgrades.value = UpgradeType.entries.associateWith { 0 }
+        }
 
     @AfterEach
-    fun tearDown() { Dispatchers.resetMain() }
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     private fun createVm(handle: SavedStateHandle = SavedStateHandle()) =
         WorkshopViewModel(workshopRepo, playerRepo, missionRepo, handle)
 
     @Test
-    fun `initial state shows ATTACK upgrades`() = runTest(dispatcher) {
-        val vm = createVm()
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
-        val state = vm.uiState.value
-        assertEquals(UpgradeCategory.ATTACK, state.selectedCategory)
-        assertTrue(state.upgrades.all { it.type.category == UpgradeCategory.ATTACK })
-        assertTrue(state.upgrades.isNotEmpty())
-    }
+    fun `initial state shows ATTACK upgrades`() =
+        runTest(dispatcher) {
+            val vm = createVm()
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
+            val state = vm.uiState.value
+            assertEquals(UpgradeCategory.ATTACK, state.selectedCategory)
+            assertTrue(state.upgrades.all { it.type.category == UpgradeCategory.ATTACK })
+            assertTrue(state.upgrades.isNotEmpty())
+        }
 
     @Test
-    fun `R402b MULTISHOT and BOUNCE_SHOT are filtered out of Workshop UI`() = runTest(dispatcher) {
-        // Post-R4-02b: MULTISHOT and BOUNCE_SHOT are `isWorkshopVisible = false`. They remain
-        // in the in-round upgrade menu (Cash) and in Labs (Steps research) but must not appear
-        // on the permanent-Steps Workshop screen. WorkshopViewModel filters by the flag in
-        // addition to the legacy `hiddenUpgrades` set.
-        val vm = createVm()
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
-        val attackTypes = vm.uiState.value.upgrades.map { it.type }.toSet()
-        assertTrue(
-            UpgradeType.MULTISHOT !in attackTypes,
-            "MULTISHOT must not appear in Workshop ATTACK list (R4-02b: in-round Cash + Labs research only)",
-        )
-        assertTrue(
-            UpgradeType.BOUNCE_SHOT !in attackTypes,
-            "BOUNCE_SHOT must not appear in Workshop ATTACK list (R4-02b: in-round Cash + Labs research only)",
-        )
-        // Sanity: the other 7 ATTACK upgrades still appear (DAMAGE / ATTACK_SPEED /
-        // CRITICAL_CHANCE / CRITICAL_FACTOR / RANGE / DAMAGE_PER_METER / RAPID_FIRE).
-        assertEquals(
-            7,
-            attackTypes.size,
-            "Workshop ATTACK list should contain 7 upgrades post-R4-03 (was 6 in R4-02b, 8 in R4-02)",
-        )
-    }
+    fun `R402b MULTISHOT and BOUNCE_SHOT are filtered out of Workshop UI`() =
+        runTest(dispatcher) {
+            // Post-R4-02b: MULTISHOT and BOUNCE_SHOT are `isWorkshopVisible = false`. They remain
+            // in the in-round upgrade menu (Cash) and in Labs (Steps research) but must not appear
+            // on the permanent-Steps Workshop screen. WorkshopViewModel filters by the flag in
+            // addition to the legacy `hiddenUpgrades` set.
+            val vm = createVm()
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
+            val attackTypes =
+                vm.uiState.value.upgrades
+                    .map { it.type }
+                    .toSet()
+            assertTrue(
+                UpgradeType.MULTISHOT !in attackTypes,
+                "MULTISHOT must not appear in Workshop ATTACK list (R4-02b: in-round Cash + Labs research only)",
+            )
+            assertTrue(
+                UpgradeType.BOUNCE_SHOT !in attackTypes,
+                "BOUNCE_SHOT must not appear in Workshop ATTACK list (R4-02b: in-round Cash + Labs research only)",
+            )
+            // Sanity: the other 7 ATTACK upgrades still appear (DAMAGE / ATTACK_SPEED /
+            // CRITICAL_CHANCE / CRITICAL_FACTOR / RANGE / DAMAGE_PER_METER / RAPID_FIRE).
+            assertEquals(
+                7,
+                attackTypes.size,
+                "Workshop ATTACK list should contain 7 upgrades post-R4-03 (was 6 in R4-02b, 8 in R4-02)",
+            )
+        }
 
     @Test
-    fun `category switching filters correctly`() = runTest(dispatcher) {
-        val vm = createVm()
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
-        vm.selectCategory(UpgradeCategory.DEFENSE)
-        advanceUntilIdle()
-        val state = vm.uiState.value
-        assertEquals(UpgradeCategory.DEFENSE, state.selectedCategory)
-        assertTrue(state.upgrades.all { it.type.category == UpgradeCategory.DEFENSE })
-    }
+    fun `category switching filters correctly`() =
+        runTest(dispatcher) {
+            val vm = createVm()
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
+            vm.selectCategory(UpgradeCategory.DEFENSE)
+            advanceUntilIdle()
+            val state = vm.uiState.value
+            assertEquals(UpgradeCategory.DEFENSE, state.selectedCategory)
+            assertTrue(state.upgrades.all { it.type.category == UpgradeCategory.DEFENSE })
+        }
 
     @Test
-    fun `purchase deducts steps and increments level`() = runTest(dispatcher) {
-        val vm = createVm()
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
-        val upgrade = vm.uiState.value.upgrades.first()
-        val costBefore = upgrade.cost
-        vm.purchase(upgrade.type)
-        advanceUntilIdle()
-        val state = vm.uiState.value
-        val after = state.upgrades.find { it.type == upgrade.type }!!
-        assertEquals(1, after.level)
-        assertEquals(10_000 - costBefore, state.stepBalance)
-    }
+    fun `purchase deducts steps and increments level`() =
+        runTest(dispatcher) {
+            val vm = createVm()
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
+            val upgrade =
+                vm.uiState.value.upgrades
+                    .first()
+            val costBefore = upgrade.cost
+            vm.purchase(upgrade.type)
+            advanceUntilIdle()
+            val state = vm.uiState.value
+            val after = state.upgrades.find { it.type == upgrade.type }!!
+            assertEquals(1, after.level)
+            assertEquals(10_000 - costBefore, state.stepBalance)
+        }
 
     @Test
-    fun `purchase when unaffordable is no-op`() = runTest(dispatcher) {
-        playerRepo.profile.value = PlayerProfile(stepBalance = 0)
-        val vm = createVm()
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
-        val upgrade = vm.uiState.value.upgrades.first()
-        vm.purchase(upgrade.type)
-        advanceUntilIdle()
-        val after = vm.uiState.value.upgrades.find { it.type == upgrade.type }!!
-        assertEquals(0, after.level)
-    }
+    fun `purchase when unaffordable is no-op`() =
+        runTest(dispatcher) {
+            playerRepo.profile.value = PlayerProfile(stepBalance = 0)
+            val vm = createVm()
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
+            val upgrade =
+                vm.uiState.value.upgrades
+                    .first()
+            vm.purchase(upgrade.type)
+            advanceUntilIdle()
+            val after =
+                vm.uiState.value.upgrades
+                    .find { it.type == upgrade.type }!!
+            assertEquals(0, after.level)
+        }
 
     @Test
-    fun `step balance shown`() = runTest(dispatcher) {
-        val vm = createVm()
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
-        assertEquals(10_000, vm.uiState.value.stepBalance)
-    }
+    fun `step balance shown`() =
+        runTest(dispatcher) {
+            val vm = createVm()
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
+            assertEquals(10_000, vm.uiState.value.stepBalance)
+        }
 
     @Test
-    fun `maxed upgrade shows isMaxed`() = runTest(dispatcher) {
-        val typeWithMax = UpgradeType.entries.first { it.config.maxLevel != null }
-        workshopRepo.upgrades.value = workshopRepo.upgrades.value + (typeWithMax to typeWithMax.config.maxLevel!!)
-        val vm = createVm()
-        backgroundScope.launch { vm.uiState.collect {} }
-        vm.selectCategory(typeWithMax.category)
-        advanceUntilIdle()
-        val item = vm.uiState.value.upgrades.find { it.type == typeWithMax }!!
-        assertTrue(item.isMaxed)
-    }
+    fun `maxed upgrade shows isMaxed`() =
+        runTest(dispatcher) {
+            val typeWithMax = UpgradeType.entries.first { it.config.maxLevel != null }
+            workshopRepo.upgrades.value = workshopRepo.upgrades.value + (typeWithMax to typeWithMax.config.maxLevel!!)
+            val vm = createVm()
+            backgroundScope.launch { vm.uiState.collect {} }
+            vm.selectCategory(typeWithMax.category)
+            advanceUntilIdle()
+            val item =
+                vm.uiState.value.upgrades
+                    .find { it.type == typeWithMax }!!
+            assertTrue(item.isMaxed)
+        }
 
     // #154: at cap, the buy control must be disabled (canAfford == false) regardless of how much
     // currency the player has — the UI uses canAfford to drive `enabled`, so an unaffordable-at-cap
     // flag is what makes the button both un-clickable AND visually disabled. Visible-on-Workshop
     // capped types (ORBS is the issue's headline example) must all satisfy this.
     @Test
-    fun `R154 maxed upgrade is not affordable even with a huge balance`() = runTest(dispatcher) {
-        playerRepo.profile.value = PlayerProfile(stepBalance = Long.MAX_VALUE)
-        // ORBS (cap 6) is the issue's headline example; assert it specifically plus every
-        // Workshop-visible capped type for the "future capped item inherits it" guarantee.
-        val cappedVisible = UpgradeType.entries.filter {
-            it.config.maxLevel != null && it.isWorkshopVisible &&
-                it != UpgradeType.STEP_MULTIPLIER && it != UpgradeType.RECOVERY_PACKAGES
-        }
-        // max out every capped visible upgrade
-        workshopRepo.upgrades.value = workshopRepo.upgrades.value +
-            cappedVisible.associateWith { it.config.maxLevel!! }
-        val vm = createVm()
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
-        assertTrue(cappedVisible.any { it == UpgradeType.ORBS }, "ORBS must be a Workshop-visible capped type")
-        for (type in cappedVisible) {
-            vm.selectCategory(type.category)
+    fun `R154 maxed upgrade is not affordable even with a huge balance`() =
+        runTest(dispatcher) {
+            playerRepo.profile.value = PlayerProfile(stepBalance = Long.MAX_VALUE)
+            // ORBS (cap 6) is the issue's headline example; assert it specifically plus every
+            // Workshop-visible capped type for the "future capped item inherits it" guarantee.
+            val cappedVisible =
+                UpgradeType.entries.filter {
+                    it.config.maxLevel != null && it.isWorkshopVisible &&
+                        it != UpgradeType.STEP_MULTIPLIER && it != UpgradeType.RECOVERY_PACKAGES
+                }
+            // max out every capped visible upgrade
+            workshopRepo.upgrades.value = workshopRepo.upgrades.value +
+                cappedVisible.associateWith { it.config.maxLevel!! }
+            val vm = createVm()
+            backgroundScope.launch { vm.uiState.collect {} }
             advanceUntilIdle()
-            val item = vm.uiState.value.upgrades.find { it.type == type }!!
-            assertTrue(item.isMaxed, "${type.name} should be maxed")
-            assertFalse(item.canAfford, "${type.name} at cap must NOT be affordable (drives disabled buy control) even with MAX_VALUE balance")
+            assertTrue(cappedVisible.any { it == UpgradeType.ORBS }, "ORBS must be a Workshop-visible capped type")
+            for (type in cappedVisible) {
+                vm.selectCategory(type.category)
+                advanceUntilIdle()
+                val item =
+                    vm.uiState.value.upgrades
+                        .find { it.type == type }!!
+                assertTrue(item.isMaxed, "${type.name} should be maxed")
+                assertFalse(
+                    item.canAfford,
+                    "${type.name} at cap must NOT be affordable (drives disabled buy control) even with MAX_VALUE balance",
+                )
+            }
         }
-    }
 
     // #154: purchasing a maxed upgrade must be a true no-op (no spend, level unchanged) — the
     // state contract above stops the click, this guards the spend path behind it.
     @Test
-    fun `R154 purchasing a maxed upgrade does not spend or change level`() = runTest(dispatcher) {
-        playerRepo.profile.value = PlayerProfile(stepBalance = Long.MAX_VALUE)
-        val orbs = UpgradeType.ORBS
-        workshopRepo.upgrades.value = workshopRepo.upgrades.value + (orbs to orbs.config.maxLevel!!)
-        val vm = createVm()
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
-        val balanceBefore = playerRepo.profile.value.stepBalance
-        vm.purchase(orbs)
-        advanceUntilIdle()
-        assertEquals(orbs.config.maxLevel, workshopRepo.upgrades.value[orbs], "maxed level must be unchanged")
-        assertEquals(balanceBefore, playerRepo.profile.value.stepBalance, "no Steps spent at cap")
-    }
+    fun `R154 purchasing a maxed upgrade does not spend or change level`() =
+        runTest(dispatcher) {
+            playerRepo.profile.value = PlayerProfile(stepBalance = Long.MAX_VALUE)
+            val orbs = UpgradeType.ORBS
+            workshopRepo.upgrades.value = workshopRepo.upgrades.value + (orbs to orbs.config.maxLevel!!)
+            val vm = createVm()
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
+            val balanceBefore = playerRepo.profile.value.stepBalance
+            vm.purchase(orbs)
+            advanceUntilIdle()
+            assertEquals(orbs.config.maxLevel, workshopRepo.upgrades.value[orbs], "maxed level must be unchanged")
+            assertEquals(balanceBefore, playerRepo.profile.value.stepBalance, "no Steps spent at cap")
+        }
 
     @Test
-    fun `R29 combat upgrades carry value and exactly one is best buy`() = runTest(dispatcher) {
-        val vm = createVm()
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
-        val attack = vm.uiState.value.upgrades
-        // DAMAGE/ATTACK_SPEED/CRITICAL_CHANCE get a value; the best buy from an all-zero tab is DAMAGE.
-        val damage = attack.single { it.type == UpgradeType.DAMAGE }
-        assertNotNull(damage.value, "DAMAGE must carry combat-power value data")
-        assertNotNull(damage.nowNext, "DAMAGE must carry a Now→Next preview")
-        assertEquals(1, attack.count { it.value?.isBestBuy == true }, "exactly one Best Buy")
-        assertTrue(attack.single { it.value?.isBestBuy == true }.type == UpgradeType.DAMAGE)
-    }
+    fun `R29 combat upgrades carry value and exactly one is best buy`() =
+        runTest(dispatcher) {
+            val vm = createVm()
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
+            val attack = vm.uiState.value.upgrades
+            // DAMAGE/ATTACK_SPEED/CRITICAL_CHANCE get a value; the best buy from an all-zero tab is DAMAGE.
+            val damage = attack.single { it.type == UpgradeType.DAMAGE }
+            assertNotNull(damage.value, "DAMAGE must carry combat-power value data")
+            assertNotNull(damage.nowNext, "DAMAGE must carry a Now→Next preview")
+            assertEquals(1, attack.count { it.value?.isBestBuy == true }, "exactly one Best Buy")
+            assertTrue(attack.single { it.value?.isBestBuy == true }.type == UpgradeType.DAMAGE)
+        }
 
     @Test
-    fun `R29 non-combat upgrades have null value but still a Now-Next preview`() = runTest(dispatcher) {
-        val vm = createVm()
-        backgroundScope.launch { vm.uiState.collect {} }
-        vm.selectCategory(UpgradeCategory.DEFENSE)
-        advanceUntilIdle()
-        val health = vm.uiState.value.upgrades.single { it.type == UpgradeType.HEALTH }
-        assertNull(health.value, "Defense upgrades get no value bar/badge (spec §3.3)")
-        assertNotNull(health.nowNext, "Defense upgrades still get the Now→Next preview")
-        assertEquals(0, vm.uiState.value.upgrades.count { it.value?.isBestBuy == true }, "no Best Buy on the Defense tab")
-    }
+    fun `R29 non-combat upgrades have null value but still a Now-Next preview`() =
+        runTest(dispatcher) {
+            val vm = createVm()
+            backgroundScope.launch { vm.uiState.collect {} }
+            vm.selectCategory(UpgradeCategory.DEFENSE)
+            advanceUntilIdle()
+            val health =
+                vm.uiState.value.upgrades
+                    .single { it.type == UpgradeType.HEALTH }
+            assertNull(health.value, "Defense upgrades get no value bar/badge (spec §3.3)")
+            assertNotNull(health.nowNext, "Defense upgrades still get the Now→Next preview")
+            assertEquals(
+                0,
+                vm.uiState.value.upgrades
+                    .count { it.value?.isBestBuy == true },
+                "no Best Buy on the Defense tab",
+            )
+        }
 
     @Test
-    fun `R29 best buy is greyed when nothing on the tab is affordable`() = runTest(dispatcher) {
-        playerRepo.profile.value = PlayerProfile(stepBalance = 0)
-        val vm = createVm()
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
-        val best = vm.uiState.value.upgrades.single { it.value?.isBestBuy == true }
-        assertFalse(best.value!!.bestBuyAffordable, "with 0 Steps the Best Buy falls back to greyed")
-    }
+    fun `R29 best buy is greyed when nothing on the tab is affordable`() =
+        runTest(dispatcher) {
+            playerRepo.profile.value = PlayerProfile(stepBalance = 0)
+            val vm = createVm()
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
+            val best =
+                vm.uiState.value.upgrades
+                    .single { it.value?.isBestBuy == true }
+            assertFalse(best.value!!.bestBuyAffordable, "with 0 Steps the Best Buy falls back to greyed")
+        }
 
     @Test
-    fun `R234 selected category restores from a seeded SavedStateHandle`() = runTest(dispatcher) {
-        val handle = SavedStateHandle(mapOf("selectedCategory" to UpgradeCategory.DEFENSE))
-        val vm = createVm(handle)
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
-        assertEquals(UpgradeCategory.DEFENSE, vm.uiState.value.selectedCategory,
-            "selected tab must restore from SavedStateHandle (process-death survival)")
-    }
+    fun `R234 selected category restores from a seeded SavedStateHandle`() =
+        runTest(dispatcher) {
+            val handle = SavedStateHandle(mapOf("selectedCategory" to UpgradeCategory.DEFENSE))
+            val vm = createVm(handle)
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
+            assertEquals(
+                UpgradeCategory.DEFENSE,
+                vm.uiState.value.selectedCategory,
+                "selected tab must restore from SavedStateHandle (process-death survival)",
+            )
+        }
 
     @Test
-    fun `R234 selectCategory writes through to the SavedStateHandle`() = runTest(dispatcher) {
-        val handle = SavedStateHandle()
-        val vm = createVm(handle)
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
-        vm.selectCategory(UpgradeCategory.UTILITY)
-        advanceUntilIdle()
-        assertEquals(UpgradeCategory.UTILITY, handle["selectedCategory"],
-            "selectCategory must persist to SavedStateHandle")
-    }
+    fun `R234 selectCategory writes through to the SavedStateHandle`() =
+        runTest(dispatcher) {
+            val handle = SavedStateHandle()
+            val vm = createVm(handle)
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
+            vm.selectCategory(UpgradeCategory.UTILITY)
+            advanceUntilIdle()
+            assertEquals(
+                UpgradeCategory.UTILITY,
+                handle["selectedCategory"],
+                "selectCategory must persist to SavedStateHandle",
+            )
+        }
 }

@@ -12,17 +12,20 @@ import org.junit.jupiter.api.Test
  * and the GOLDEN cash multiplier bounding across the new 3-path × 10-level UW system.
  */
 class UWBalanceTest {
-
     @Test
     fun `all UWs can activate 2 to 3 times in a 20 minute round at cooldown L1`() {
         val roundSeconds = 20 * 60f
         for (uw in UltimateWeaponType.entries) {
             val cooldown = uw.cooldownAtLevel(1)
             val activations = (roundSeconds / cooldown).toInt()
-            assertTrue(activations >= 2,
-                "${uw.name} at cooldown L1: cooldown ${cooldown}s, only $activations activations in 20min")
-            assertTrue(activations <= 60,
-                "${uw.name} at cooldown L1: $activations activations seems too many")
+            assertTrue(
+                activations >= 2,
+                "${uw.name} at cooldown L1: cooldown ${cooldown}s, only $activations activations in 20min",
+            )
+            assertTrue(
+                activations <= 60,
+                "${uw.name} at cooldown L1: $activations activations seems too many",
+            )
         }
     }
 
@@ -40,8 +43,10 @@ class UWBalanceTest {
         val cashMult = UltimateWeaponType.GOLDEN_ZIGGURAT.damageAtLevel(UltimateWeaponType.MAX_PATH_LEVEL)
         // 10 seconds of 8x cash vs a full 35-second wave
         val effectiveMultiplier = (10.0 / 35.0) * cashMult + (25.0 / 35.0) * 1.0
-        assertTrue(effectiveMultiplier < 5.0,
-            "Golden Ziggurat effective wave multiplier: $effectiveMultiplier (should be <5x)")
+        assertTrue(
+            effectiveMultiplier < 5.0,
+            "Golden Ziggurat effective wave multiplier: $effectiveMultiplier (should be <5x)",
+        )
     }
 
     @Test
@@ -49,8 +54,10 @@ class UWBalanceTest {
         for (uw in UltimateWeaponType.entries) {
             val cdL1 = uw.cooldownAtLevel(1)
             val cdL10 = uw.cooldownAtLevel(UltimateWeaponType.MAX_PATH_LEVEL)
-            assertTrue(cdL10 < cdL1 * 0.5f,
-                "${uw.name}: L10 cooldown ($cdL10) should be <50% of L1 ($cdL1)")
+            assertTrue(
+                cdL10 < cdL1 * 0.5f,
+                "${uw.name}: L10 cooldown ($cdL10) should be <50% of L1 ($cdL1)",
+            )
         }
     }
 

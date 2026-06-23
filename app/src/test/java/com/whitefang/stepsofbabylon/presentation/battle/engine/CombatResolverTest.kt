@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test
  * (`testOptions.unitTests.isReturnDefaultValues = true`); combat LOGIC never reads it.
  */
 class CombatResolverTest {
-
     private class FakeCombatHost(
         override val ziggurat: ZigguratEntity?,
         override val simulation: Simulation = Simulation(),
@@ -40,6 +39,7 @@ class CombatResolverTest {
         override val secondWindHpPercent: Double = 0.0
 
         private var secondWindUsed = false
+
         override fun consumeSecondWind(): Boolean {
             if (secondWindUsed) return false
             secondWindUsed = true
@@ -47,32 +47,46 @@ class CombatResolverTest {
         }
 
         val pending = mutableListOf<Entity>()
-        override fun addPending(entity: Entity) { pending.add(entity) }
+
+        override fun addPending(entity: Entity) {
+            pending.add(entity)
+        }
 
         override fun aliveEnemies(): List<EnemyEntity> = emptyList()
+
         override fun nearestEnemies(n: Int): List<EnemyEntity> = emptyList()
+
         override fun wsLevel(type: UpgradeType): Int = 0
+
         override fun applyLifesteal(healAmount: Double) {}
     }
 
-    private fun makeZiggurat(): ZigguratEntity = ZigguratEntity(
-        screenWidth = 1080f,
-        screenHeight = 1920f,
-        initialStats = ResolvedStats(),
-        findNearestEnemies = { emptyList<EnemyEntity>() },
-        onFireProjectile = { _, _, _, _ -> },
-    )
+    private fun makeZiggurat(): ZigguratEntity =
+        ZigguratEntity(
+            screenWidth = 1080f,
+            screenHeight = 1920f,
+            initialStats = ResolvedStats(),
+            findNearestEnemies = { emptyList<EnemyEntity>() },
+            onFireProjectile = { _, _, _, _ -> },
+        )
 
-    private fun makeEnemy(zig: ZigguratEntity, type: EnemyType): EnemyEntity = EnemyEntity(
-        enemyType = type,
-        currentHp = 1.0,
-        maxHp = 1.0,
-        speed = 0f,
-        damage = 0.0,
-        targetX = zig.originX,
-        targetY = zig.originY,
-        onDeath = { },
-    ).apply { x = zig.originX; y = zig.originY + 200f }
+    private fun makeEnemy(
+        zig: ZigguratEntity,
+        type: EnemyType,
+    ): EnemyEntity =
+        EnemyEntity(
+            enemyType = type,
+            currentHp = 1.0,
+            maxHp = 1.0,
+            speed = 0f,
+            damage = 0.0,
+            targetX = zig.originX,
+            targetY = zig.originY,
+            onDeath = { },
+        ).apply {
+            x = zig.originX
+            y = zig.originY + 200f
+        }
 
     @Test
     fun `handleEnemyDeath credits positive cash and increments the kill counter`() {

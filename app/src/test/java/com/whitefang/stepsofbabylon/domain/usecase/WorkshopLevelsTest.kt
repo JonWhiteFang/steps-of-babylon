@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class WorkshopLevelsTest {
-
     @Test
     fun `levelOf returns the map value or zero when absent`() {
         assertEquals(7, WorkshopLevels.levelOf(mapOf(UpgradeType.DAMAGE to 7), UpgradeType.DAMAGE))

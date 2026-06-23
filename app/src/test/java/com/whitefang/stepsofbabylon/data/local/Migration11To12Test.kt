@@ -28,39 +28,45 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class Migration11To12Test {
-
     private lateinit var helper: SupportSQLiteOpenHelper
 
     /** Creates the v11-shape `daily_mission` table (the pre-#127 schema — no unique index). */
-    private val v11Callback = object : SupportSQLiteOpenHelper.Callback(11) {
-        override fun onCreate(db: SupportSQLiteDatabase) {
-            db.execSQL(
-                """
-                CREATE TABLE IF NOT EXISTS `daily_mission` (
-                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    `date` TEXT NOT NULL,
-                    `missionType` TEXT NOT NULL,
-                    `target` INTEGER NOT NULL,
-                    `progress` INTEGER NOT NULL,
-                    `rewardGems` INTEGER NOT NULL,
-                    `rewardPowerStones` INTEGER NOT NULL,
-                    `completed` INTEGER NOT NULL,
-                    `claimed` INTEGER NOT NULL
+    private val v11Callback =
+        object : SupportSQLiteOpenHelper.Callback(11) {
+            override fun onCreate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `daily_mission` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `date` TEXT NOT NULL,
+                        `missionType` TEXT NOT NULL,
+                        `target` INTEGER NOT NULL,
+                        `progress` INTEGER NOT NULL,
+                        `rewardGems` INTEGER NOT NULL,
+                        `rewardPowerStones` INTEGER NOT NULL,
+                        `completed` INTEGER NOT NULL,
+                        `claimed` INTEGER NOT NULL
+                    )
+                    """.trimIndent(),
                 )
-                """.trimIndent(),
-            )
-        }
+            }
 
-        override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {}
-    }
+            override fun onUpgrade(
+                db: SupportSQLiteDatabase,
+                oldVersion: Int,
+                newVersion: Int,
+            ) {}
+        }
 
     @Before
     fun setup() {
-        val config = SupportSQLiteOpenHelper.Configuration.builder(
-            ApplicationProvider.getApplicationContext(),
-        ).name(null) // in-memory
-            .callback(v11Callback)
-            .build()
+        val config =
+            SupportSQLiteOpenHelper.Configuration
+                .builder(
+                    ApplicationProvider.getApplicationContext(),
+                ).name(null) // in-memory
+                .callback(v11Callback)
+                .build()
         helper = FrameworkSQLiteOpenHelperFactory().create(config)
     }
 
@@ -92,8 +98,8 @@ class Migration11To12Test {
         insertV11(db, date, "WALK_5000")
         insertV11(db, date, "REACH_WAVE_30")
         insertV11(db, date, "SPEND_5000_WORKSHOP")
-        insertV11(db, date, "WALK_5000")           // duplicate
-        insertV11(db, date, "REACH_WAVE_30")       // duplicate
+        insertV11(db, date, "WALK_5000") // duplicate
+        insertV11(db, date, "REACH_WAVE_30") // duplicate
         insertV11(db, date, "SPEND_5000_WORKSHOP") // duplicate
 
         // A different date must be untouched by the dedup.
@@ -112,13 +118,14 @@ class Migration11To12Test {
         }
 
         // The unique index Room expects now exists.
-        db.query(
-            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = ?",
-            arrayOf("index_daily_mission_date_missionType"),
-        ).use {
-            it.moveToFirst()
-            assertEquals("the (date, missionType) unique index must exist post-migration", 1, it.getInt(0))
-        }
+        db
+            .query(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = ?",
+                arrayOf("index_daily_mission_date_missionType"),
+            ).use {
+                it.moveToFirst()
+                assertEquals("the (date, missionType) unique index must exist post-migration", 1, it.getInt(0))
+            }
 
         // And it actually enforces uniqueness — a post-migration duplicate insert is rejected.
         var rejected = false
@@ -142,14 +149,15 @@ class Migration11To12Test {
 
         AppMigrations.MIGRATION_11_12.migrate(db)
 
-        db.query(
-            "SELECT progress FROM daily_mission WHERE date = ? AND missionType = ?",
-            arrayOf(date, "WALK_5000"),
-        ).use {
-            assertEquals(1, it.count)
-            it.moveToFirst()
-            assertEquals("the surviving row must retain the furthest progress", 4200, it.getInt(0))
-        }
+        db
+            .query(
+                "SELECT progress FROM daily_mission WHERE date = ? AND missionType = ?",
+                arrayOf(date, "WALK_5000"),
+            ).use {
+                assertEquals(1, it.count)
+                it.moveToFirst()
+                assertEquals("the surviving row must retain the furthest progress", 4200, it.getInt(0))
+            }
     }
 
     @Test
@@ -162,20 +170,25 @@ class Migration11To12Test {
         // #127 defect). A naive "keep MIN(id)'s columns" dedup would carry claimed=0 forward and let
         // the mission be claimed AGAIN post-migration (an extra Gem/PS credit surviving the very fix
         // meant to neutralize it). The MAX(claimed) group-aggregate must keep the survivor claimed.
-        insertV11(db, date, "WALK_5000", progress = 0, completed = 0, claimed = 0)        // MIN id, fresh
-        insertV11(db, date, "WALK_5000", progress = 5000, completed = 1, claimed = 1)     // higher id, claimed
+        insertV11(db, date, "WALK_5000", progress = 0, completed = 0, claimed = 0) // MIN id, fresh
+        insertV11(db, date, "WALK_5000", progress = 5000, completed = 1, claimed = 1) // higher id, claimed
 
         AppMigrations.MIGRATION_11_12.migrate(db)
 
-        db.query(
-            "SELECT claimed, completed, progress FROM daily_mission WHERE date = ? AND missionType = ?",
-            arrayOf(date, "WALK_5000"),
-        ).use {
-            assertEquals("duplicates must collapse to one row", 1, it.count)
-            it.moveToFirst()
-            assertEquals("an already-claimed duplicate must keep the survivor claimed (no re-credit)", 1, it.getInt(0))
-            assertEquals("completed state must carry forward", 1, it.getInt(1))
-            assertEquals("the furthest progress must carry forward", 5000, it.getInt(2))
-        }
+        db
+            .query(
+                "SELECT claimed, completed, progress FROM daily_mission WHERE date = ? AND missionType = ?",
+                arrayOf(date, "WALK_5000"),
+            ).use {
+                assertEquals("duplicates must collapse to one row", 1, it.count)
+                it.moveToFirst()
+                assertEquals(
+                    "an already-claimed duplicate must keep the survivor claimed (no re-credit)",
+                    1,
+                    it.getInt(0),
+                )
+                assertEquals("completed state must carry forward", 1, it.getInt(1))
+                assertEquals("the furthest progress must carry forward", 5000, it.getInt(2))
+            }
     }
 }

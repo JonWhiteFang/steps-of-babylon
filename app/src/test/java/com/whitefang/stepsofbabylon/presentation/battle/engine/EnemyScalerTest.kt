@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test
 import kotlin.math.pow
 
 class EnemyScalerTest {
-
     private val eps = 0.001
 
     @Test

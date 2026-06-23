@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class TierConfigTest {
-
     @Test
     fun `all 10 tiers are retrievable`() {
         (1..10).forEach { TierConfig.forTier(it) }

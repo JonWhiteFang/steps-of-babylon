@@ -9,7 +9,9 @@ class FakeWeeklyChallengeRepository : WeeklyChallengeRepository {
 
     override suspend fun getByWeek(weekStart: String): WeeklyChallenge? = data[weekStart]
 
-    override suspend fun upsert(challenge: WeeklyChallenge) { data[challenge.weekStartDate] = challenge }
+    override suspend fun upsert(challenge: WeeklyChallenge) {
+        data[challenge.weekStartDate] = challenge
+    }
 
     override suspend fun getLastNWeeks(limit: Int): List<WeeklyChallenge> =
         data.values.sortedByDescending { it.weekStartDate }.take(limit)

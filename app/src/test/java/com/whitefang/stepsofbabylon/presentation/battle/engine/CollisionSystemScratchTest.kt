@@ -25,18 +25,30 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class CollisionSystemScratchTest {
-
-    private fun enemyAt(x: Float, y: Float, hp: Double = 1.0): EnemyEntity = EnemyEntity(
-        enemyType = EnemyType.BASIC,
-        currentHp = hp, maxHp = hp,
-        speed = 0f, damage = 0.0,
-        targetX = x, targetY = y,
-        onDeath = { },
-    ).apply { this.x = x; this.y = y; initDistance() }
+    private fun enemyAt(
+        x: Float,
+        y: Float,
+        hp: Double = 1.0,
+    ): EnemyEntity =
+        EnemyEntity(
+            enemyType = EnemyType.BASIC,
+            currentHp = hp,
+            maxHp = hp,
+            speed = 0f,
+            damage = 0.0,
+            targetX = x,
+            targetY = y,
+            onDeath = { },
+        ).apply {
+            this.x = x
+            this.y = y
+            initDistance()
+        }
 
     @Test
     fun `checkCollisions fires projectile-enemy hit for an overlapping pair from the typed lists`() {
-        val proj = ProjectileEntity(startX = 10f, startY = 10f, targetX = 10f, targetY = 10f, speed = 100f, damage = 1.0)
+        val proj =
+            ProjectileEntity(startX = 10f, startY = 10f, targetX = 10f, targetY = 10f, speed = 100f, damage = 1.0)
         val enemy = enemyAt(10f, 10f)
         val hits = mutableListOf<Pair<ProjectileEntity, EnemyEntity>>()
         CollisionSystem.checkCollisions(
@@ -44,7 +56,9 @@ class CollisionSystemScratchTest {
             projectiles = listOf(proj),
             enemies = listOf(enemy),
             enemyProjectiles = emptyList(),
-            zigX = 0f, zigY = 0f, zigWidth = 20f,
+            zigX = 0f,
+            zigY = 0f,
+            zigWidth = 20f,
             onProjectileHitEnemy = { p, e -> hits.add(p to e) },
             onEnemyProjectileHitZiggurat = { },
         )
@@ -53,14 +67,17 @@ class CollisionSystemScratchTest {
 
     @Test
     fun `checkCollisions does not fire when the enemy list is empty`() {
-        val proj = ProjectileEntity(startX = 10f, startY = 10f, targetX = 10f, targetY = 10f, speed = 100f, damage = 1.0)
+        val proj =
+            ProjectileEntity(startX = 10f, startY = 10f, targetX = 10f, targetY = 10f, speed = 100f, damage = 1.0)
         var fired = false
         CollisionSystem.checkCollisions(
             Simulation(),
             projectiles = listOf(proj),
             enemies = emptyList(),
             enemyProjectiles = emptyList(),
-            zigX = 0f, zigY = 0f, zigWidth = 20f,
+            zigX = 0f,
+            zigY = 0f,
+            zigWidth = 20f,
             onProjectileHitEnemy = { _, _ -> fired = true },
             onEnemyProjectileHitZiggurat = { },
         )
@@ -76,7 +93,9 @@ class CollisionSystemScratchTest {
             projectiles = emptyList(),
             enemies = emptyList(),
             enemyProjectiles = listOf(eproj),
-            zigX = 0f, zigY = 0f, zigWidth = 20f,
+            zigX = 0f,
+            zigY = 0f,
+            zigWidth = 20f,
             onProjectileHitEnemy = { _, _ -> },
             onEnemyProjectileHitZiggurat = { hit++ },
         )

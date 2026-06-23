@@ -1,10 +1,10 @@
 package com.whitefang.stepsofbabylon.presentation.ux
 
+import androidx.lifecycle.SavedStateHandle
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWorkshopRepository
-import androidx.lifecycle.SavedStateHandle
 import com.whitefang.stepsofbabylon.presentation.workshop.WorkshopViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,60 +21,70 @@ import org.junit.jupiter.api.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserFeedbackTest {
-
     private val dispatcher = StandardTestDispatcher()
     private lateinit var workshopRepo: FakeWorkshopRepository
     private lateinit var playerRepo: FakePlayerRepository
-    private val missionRepo = com.whitefang.stepsofbabylon.fakes.FakeMissionRepository()
+    private val missionRepo =
+        com.whitefang.stepsofbabylon.fakes
+            .FakeMissionRepository()
 
     @BeforeEach
-    fun setup() = runTest(dispatcher) {
-        Dispatchers.setMain(dispatcher)
-        workshopRepo = FakeWorkshopRepository()
-        playerRepo = FakePlayerRepository(PlayerProfile(stepBalance = 0))
-        workshopRepo.upgrades.value = UpgradeType.entries.associateWith { 0 }
-    }
+    fun setup() =
+        runTest(dispatcher) {
+            Dispatchers.setMain(dispatcher)
+            workshopRepo = FakeWorkshopRepository()
+            playerRepo = FakePlayerRepository(PlayerProfile(stepBalance = 0))
+            workshopRepo.upgrades.value = UpgradeType.entries.associateWith { 0 }
+        }
 
     @AfterEach
-    fun tearDown() { Dispatchers.resetMain() }
-
-    @Test
-    fun `workshop purchase with zero balance shows feedback message`() = runTest(dispatcher) {
-        val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo, SavedStateHandle())
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
-
-        vm.purchase(UpgradeType.DAMAGE)
-        advanceUntilIdle()
-
-        assertNotNull(vm.uiState.value.userMessage)
-        assertTrue(vm.uiState.value.userMessage!!.contains("Steps"))
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test
-    fun `clearMessage resets userMessage to null`() = runTest(dispatcher) {
-        val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo, SavedStateHandle())
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
+    fun `workshop purchase with zero balance shows feedback message`() =
+        runTest(dispatcher) {
+            val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo, SavedStateHandle())
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
 
-        vm.purchase(UpgradeType.DAMAGE)
-        advanceUntilIdle()
-        assertNotNull(vm.uiState.value.userMessage)
+            vm.purchase(UpgradeType.DAMAGE)
+            advanceUntilIdle()
 
-        vm.clearMessage()
-        advanceUntilIdle()
-        assertNull(vm.uiState.value.userMessage)
-    }
+            assertNotNull(vm.uiState.value.userMessage)
+            assertTrue(
+                vm.uiState.value.userMessage!!
+                    .contains("Steps"),
+            )
+        }
 
     @Test
-    fun `quickInvest with zero balance shows feedback message`() = runTest(dispatcher) {
-        val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo, SavedStateHandle())
-        backgroundScope.launch { vm.uiState.collect {} }
-        advanceUntilIdle()
+    fun `clearMessage resets userMessage to null`() =
+        runTest(dispatcher) {
+            val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo, SavedStateHandle())
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
 
-        vm.quickInvest()
-        advanceUntilIdle()
+            vm.purchase(UpgradeType.DAMAGE)
+            advanceUntilIdle()
+            assertNotNull(vm.uiState.value.userMessage)
 
-        assertNotNull(vm.uiState.value.userMessage)
-    }
+            vm.clearMessage()
+            advanceUntilIdle()
+            assertNull(vm.uiState.value.userMessage)
+        }
+
+    @Test
+    fun `quickInvest with zero balance shows feedback message`() =
+        runTest(dispatcher) {
+            val vm = WorkshopViewModel(workshopRepo, playerRepo, missionRepo, SavedStateHandle())
+            backgroundScope.launch { vm.uiState.collect {} }
+            advanceUntilIdle()
+
+            vm.quickInvest()
+            advanceUntilIdle()
+
+            assertNotNull(vm.uiState.value.userMessage)
+        }
 }

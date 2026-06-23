@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test
  * (`testOptions.unitTests.isReturnDefaultValues = true`) and the LOGIC paths never read it.
  */
 class BuffTickersTest {
-
     /** Mutable fake of [BuffHost]; flip [wavePhase] to drive SPAWNING vs COOLDOWN behaviour. */
     private class FakeBuffHost(
         override val ziggurat: ZigguratEntity?,
@@ -28,26 +27,29 @@ class BuffTickersTest {
         override val strings: Strings? = FakeStrings(),
     ) : BuffHost {
         val levels = mutableMapOf<UpgradeType, Int>()
+
         override fun wsLevel(type: UpgradeType): Int = levels[type] ?: 0
     }
 
     /** A standalone ziggurat at full HP (no nearest-enemy targeting / fire side effects needed). */
-    private fun makeZiggurat(): ZigguratEntity = ZigguratEntity(
-        screenWidth = 1080f,
-        screenHeight = 1920f,
-        initialStats = ResolvedStats(),
-        findNearestEnemies = { emptyList<EnemyEntity>() },
-        onFireProjectile = { _, _, _, _ -> },
-    )
+    private fun makeZiggurat(): ZigguratEntity =
+        ZigguratEntity(
+            screenWidth = 1080f,
+            screenHeight = 1920f,
+            initialStats = ResolvedStats(),
+            findNearestEnemies = { emptyList<EnemyEntity>() },
+            onFireProjectile = { _, _, _, _ -> },
+        )
 
     @Test
     fun `recovery heals during SPAWNING after one full interval when level greater than 0`() {
         val zig = makeZiggurat()
         zig.currentHp = zig.maxHp * 0.10 // leave room to heal
         val hpBefore = zig.currentHp
-        val host = FakeBuffHost(zig, wavePhase = WavePhase.SPAWNING).apply {
-            levels[UpgradeType.RECOVERY_PACKAGES] = 5
-        }
+        val host =
+            FakeBuffHost(zig, wavePhase = WavePhase.SPAWNING).apply {
+                levels[UpgradeType.RECOVERY_PACKAGES] = 5
+            }
         val tickers = BuffTickers(host)
 
         // A single tick longer than RECOVERY_INTERVAL_SECONDS crosses the heal threshold.
@@ -65,9 +67,10 @@ class BuffTickersTest {
         val zig = makeZiggurat()
         zig.currentHp = zig.maxHp * 0.10
         val hpBefore = zig.currentHp
-        val host = FakeBuffHost(zig, wavePhase = WavePhase.COOLDOWN).apply {
-            levels[UpgradeType.RECOVERY_PACKAGES] = 5
-        }
+        val host =
+            FakeBuffHost(zig, wavePhase = WavePhase.COOLDOWN).apply {
+                levels[UpgradeType.RECOVERY_PACKAGES] = 5
+            }
         val tickers = BuffTickers(host)
 
         tickers.tickRecovery(SimulationMath.RECOVERY_INTERVAL_SECONDS + 1f)
@@ -83,9 +86,10 @@ class BuffTickersTest {
     @Test
     fun `rapid fire raises the multiplier above 1x after crossing the interval during SPAWNING`() {
         val zig = makeZiggurat()
-        val host = FakeBuffHost(zig, wavePhase = WavePhase.SPAWNING).apply {
-            levels[UpgradeType.RAPID_FIRE] = 1
-        }
+        val host =
+            FakeBuffHost(zig, wavePhase = WavePhase.SPAWNING).apply {
+                levels[UpgradeType.RAPID_FIRE] = 1
+            }
         val tickers = BuffTickers(host)
 
         // L1 interval is 60 s; a single tick past it arms the burst.

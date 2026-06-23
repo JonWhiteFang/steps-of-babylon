@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test
  * Robolectric `OrbEntityTest` but without the Paint-construction dependency.
  */
 class OrbStateTest {
-
     private val mid = (OrbState.ORBIT_RADIUS_MIN + OrbState.ORBIT_RADIUS_MAX) / 2f // 47.5
 
     @Test
@@ -42,7 +41,8 @@ class OrbStateTest {
     @Test
     fun `angularSpeed advances the orbit angle around the ziggurat`() {
         // angularSpeed PI/2 rad/s over dt 1s → angle PI/2 → x ~ zigX, y ~ zigY + R (radius MID at phase 0... phase also advances)
-        val s = OrbState(zigX = 0f, zigY = 0f, angle = 0f, angularSpeed = (Math.PI / 2).toFloat(), initialRadialPhase = 0f)
+        val s =
+            OrbState(zigX = 0f, zigY = 0f, angle = 0f, angularSpeed = (Math.PI / 2).toFloat(), initialRadialPhase = 0f)
         s.update(1f)
         val r = s.currentOrbitRadius
         // angle is now PI/2 → cos≈0, sin≈1 → x≈0, y≈r

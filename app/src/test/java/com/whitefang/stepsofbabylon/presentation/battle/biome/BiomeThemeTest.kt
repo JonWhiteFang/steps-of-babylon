@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class BiomeThemeTest {
-
     @Test
     fun `all 5 biomes produce a theme`() {
         Biome.entries.forEach { BiomeTheme.forBiome(it) }

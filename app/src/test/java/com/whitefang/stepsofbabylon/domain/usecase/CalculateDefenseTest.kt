@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class CalculateDefenseTest {
-
     private val sut = CalculateDefense()
     private val eps = 0.001
 

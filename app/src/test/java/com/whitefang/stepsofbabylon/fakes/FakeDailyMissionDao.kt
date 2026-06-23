@@ -13,8 +13,7 @@ class FakeDailyMissionDao : DailyMissionDao {
     override fun getByDate(date: String): Flow<List<DailyMissionEntity>> =
         data.map { list -> list.filter { it.date == date } }
 
-    override suspend fun getByDateOnce(date: String): List<DailyMissionEntity> =
-        data.value.filter { it.date == date }
+    override suspend fun getByDateOnce(date: String): List<DailyMissionEntity> = data.value.filter { it.date == date }
 
     override suspend fun insert(entity: DailyMissionEntity) {
         // #127: model the real DAO's `onConflict = IGNORE` on the (date, missionType) unique index
@@ -28,10 +27,15 @@ class FakeDailyMissionDao : DailyMissionDao {
         data.value = data.value.filter { it.id != entity.id } + entity
     }
 
-    override suspend fun updateProgress(id: Int, progress: Int, completed: Boolean) {
-        data.value = data.value.map {
-            if (it.id == id) it.copy(progress = progress, completed = completed) else it
-        }
+    override suspend fun updateProgress(
+        id: Int,
+        progress: Int,
+        completed: Boolean,
+    ) {
+        data.value =
+            data.value.map {
+                if (it.id == id) it.copy(progress = progress, completed = completed) else it
+            }
     }
 
     // #122: mirrors the guarded DAO (AND claimed = 0). Returns 1 only when this call transitions
@@ -39,9 +43,10 @@ class FakeDailyMissionDao : DailyMissionDao {
     override suspend fun markClaimed(id: Int): Int {
         val target = data.value.find { it.id == id } ?: return 0
         if (target.claimed) return 0
-        data.value = data.value.map {
-            if (it.id == id) it.copy(claimed = true) else it
-        }
+        data.value =
+            data.value.map {
+                if (it.id == id) it.copy(claimed = true) else it
+            }
         return 1
     }
 

@@ -11,9 +11,11 @@ import org.junit.jupiter.api.Test
  * fixed-`deltaTime` ticks, not larger ones). These are pure JVM tests — no Android, no Canvas.
  */
 class ProjectileTrailThrottleTest {
-
     /** Drive `advanceTrail` over many fixed-dt steps and count emissions. */
-    private fun countEmissions(totalSeconds: Float, dt: Float): Int {
+    private fun countEmissions(
+        totalSeconds: Float,
+        dt: Float,
+    ): Int {
         var timer = 0f
         var emissions = 0
         var elapsed = 0f

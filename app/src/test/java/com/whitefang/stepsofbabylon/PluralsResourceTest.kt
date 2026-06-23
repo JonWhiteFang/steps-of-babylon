@@ -16,7 +16,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class PluralsResourceTest {
-
     private val res = ApplicationProvider.getApplicationContext<Context>().resources
 
     @Test fun `fx_step_reward one vs other`() {

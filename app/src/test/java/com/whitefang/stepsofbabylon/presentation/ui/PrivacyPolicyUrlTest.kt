@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test
  * without the others, this fails the build.
  */
 class PrivacyPolicyUrlTest {
-
     @Test
     fun `privacy policy URL matches the Data-Safety form declared URL`() {
         assertEquals("https://jonwhitefang.github.io/steps-of-babylon/", PRIVACY_POLICY_URL)

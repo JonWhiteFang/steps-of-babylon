@@ -44,7 +44,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class GameSurfaceViewTest {
-
     private fun newView(): GameSurfaceView {
         val ctx = ApplicationProvider.getApplicationContext<Context>()
         return GameSurfaceView(ctx)
@@ -64,11 +63,11 @@ class GameSurfaceViewTest {
         val progressBefore = view.engine.elapsedTimeSeconds
         assertTrue(
             "Sanity: engine.update() should have advanced elapsedTimeSeconds past zero",
-            progressBefore > 0f
+            progressBefore > 0f,
         )
         assertTrue(
             "Sanity: hasWaveProgress() must be true after a tick",
-            view.engine.hasWaveProgress()
+            view.engine.hasWaveProgress(),
         )
 
         // Simulate the second surfaceCreated (background + resume) by going through the
@@ -84,7 +83,7 @@ class GameSurfaceViewTest {
                 "unconditionally calls engine.init)",
             progressBefore,
             view.engine.elapsedTimeSeconds,
-            0.001f
+            0.001f,
         )
     }
 
@@ -102,7 +101,7 @@ class GameSurfaceViewTest {
                 "inherits the correct speed (R3-01 / issue #2 sub-bug 2b)",
             4f,
             view.pendingSpeed,
-            0.001f
+            0.001f,
         )
     }
 
@@ -116,7 +115,7 @@ class GameSurfaceViewTest {
         assertTrue(
             "setPaused(true) must update pendingPaused so a freshly-created game thread " +
                 "inherits the correct pause state (R3-01 / issue #2 sub-bug 2b)",
-            view.pendingPaused
+            view.pendingPaused,
         )
     }
 
@@ -130,7 +129,7 @@ class GameSurfaceViewTest {
         val view = newView()
         assertFalse(
             "Sanity: a fresh GameSurfaceView's engine has no wave progress",
-            view.engine.hasWaveProgress()
+            view.engine.hasWaveProgress(),
         )
 
         view.initEngineIfNeeded()
@@ -140,7 +139,7 @@ class GameSurfaceViewTest {
             "After initEngineIfNeeded() on a fresh engine, the engine must be tickable and " +
                 "begin accumulating progress (no-regression guard against the fix " +
                 "accidentally suppressing fresh-battle initialisation)",
-            view.engine.hasWaveProgress()
+            view.engine.hasWaveProgress(),
         )
     }
 
@@ -191,8 +190,11 @@ class GameSurfaceViewTest {
         // so the player's mute choice survives a background→resume — an observable-state check that
         // the rebuild actually re-seeds, beyond mere instance identity.
         val ctx = ApplicationProvider.getApplicationContext<Context>()
-        ctx.getSharedPreferences("sound_prefs", Context.MODE_PRIVATE)
-            .edit().putBoolean("muted", true).commit()
+        ctx
+            .getSharedPreferences("sound_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean("muted", true)
+            .commit()
 
         val view = GameSurfaceView(ctx)
         view.releaseSoundManager()

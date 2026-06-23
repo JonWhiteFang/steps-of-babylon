@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test
  * tested via GameEngineTest's reflection-heavy approach.
  */
 class SimulationMathTest {
-
     // ---- Recovery Pulse Amount ----
 
     @Test
@@ -87,9 +86,14 @@ class SimulationMathTest {
     @Test
     fun `thornReflectionDamage applies condition multiplier`() {
         // 100 dmg * 0.20 thorn * 1.5 condition = 30 reflected
-        assertEquals(30.0, SimulationMath.thornReflectionDamage(
-            rawDamage = 100.0, thornPercent = 0.20, conditionMultiplier = 1.5
-        ))
+        assertEquals(
+            30.0,
+            SimulationMath.thornReflectionDamage(
+                rawDamage = 100.0,
+                thornPercent = 0.20,
+                conditionMultiplier = 1.5,
+            ),
+        )
     }
 
     // ---- Lifesteal Heal Amount ----

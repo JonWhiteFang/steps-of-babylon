@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class DeathEffectTest {
-
     @Test
     fun `basic enemy spawns 8 particles`() {
         val pool = ParticlePool(50)

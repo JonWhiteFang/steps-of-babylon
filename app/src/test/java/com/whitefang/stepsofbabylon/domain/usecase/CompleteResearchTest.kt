@@ -10,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class CompleteResearchTest {
-
     private lateinit var labRepo: FakeLabRepository
     private lateinit var useCase: CompleteResearch
 
@@ -21,31 +20,35 @@ class CompleteResearchTest {
     }
 
     @Test
-    fun `completes when timer elapsed`() = runTest {
-        labRepo.active.value = listOf(ActiveResearch(ResearchType.DAMAGE_RESEARCH, 0, 1000, 5000))
-        val result = useCase(ResearchType.DAMAGE_RESEARCH, completesAt = 5000, now = 6000)
-        assertTrue(result is CompleteResearch.Result.Completed)
-        assertEquals(1, (result as CompleteResearch.Result.Completed).newLevel)
-        assertTrue(labRepo.active.value.isEmpty())
-    }
+    fun `completes when timer elapsed`() =
+        runTest {
+            labRepo.active.value = listOf(ActiveResearch(ResearchType.DAMAGE_RESEARCH, 0, 1000, 5000))
+            val result = useCase(ResearchType.DAMAGE_RESEARCH, completesAt = 5000, now = 6000)
+            assertTrue(result is CompleteResearch.Result.Completed)
+            assertEquals(1, (result as CompleteResearch.Result.Completed).newLevel)
+            assertTrue(labRepo.active.value.isEmpty())
+        }
 
     @Test
-    fun `not ready when timer not elapsed`() = runTest {
-        labRepo.active.value = listOf(ActiveResearch(ResearchType.DAMAGE_RESEARCH, 0, 1000, 5000))
-        val result = useCase(ResearchType.DAMAGE_RESEARCH, completesAt = 5000, now = 3000)
-        assertTrue(result is CompleteResearch.Result.NotReady)
-    }
+    fun `not ready when timer not elapsed`() =
+        runTest {
+            labRepo.active.value = listOf(ActiveResearch(ResearchType.DAMAGE_RESEARCH, 0, 1000, 5000))
+            val result = useCase(ResearchType.DAMAGE_RESEARCH, completesAt = 5000, now = 3000)
+            assertTrue(result is CompleteResearch.Result.NotReady)
+        }
 
     @Test
-    fun `not active returns error`() = runTest {
-        val result = useCase(ResearchType.DAMAGE_RESEARCH, completesAt = 5000, now = 6000)
-        assertTrue(result is CompleteResearch.Result.NotActive)
-    }
+    fun `not active returns error`() =
+        runTest {
+            val result = useCase(ResearchType.DAMAGE_RESEARCH, completesAt = 5000, now = 6000)
+            assertTrue(result is CompleteResearch.Result.NotActive)
+        }
 
     @Test
-    fun `R211 forward jump with trusted-now below completesAt returns NotReady`() = runTest {
-        labRepo.active.value = listOf(ActiveResearch(ResearchType.DAMAGE_RESEARCH, 0, 0, 100_000))
-        val result = useCase(ResearchType.DAMAGE_RESEARCH, completesAt = 100_000, now = 50_000)
-        assertEquals(CompleteResearch.Result.NotReady, result)
-    }
+    fun `R211 forward jump with trusted-now below completesAt returns NotReady`() =
+        runTest {
+            labRepo.active.value = listOf(ActiveResearch(ResearchType.DAMAGE_RESEARCH, 0, 0, 100_000))
+            val result = useCase(ResearchType.DAMAGE_RESEARCH, completesAt = 100_000, now = 50_000)
+            assertEquals(CompleteResearch.Result.NotReady, result)
+        }
 }

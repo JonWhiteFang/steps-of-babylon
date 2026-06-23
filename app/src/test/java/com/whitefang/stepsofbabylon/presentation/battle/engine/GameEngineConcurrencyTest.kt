@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference
  * structural mutation behind a lock, the loop completes cleanly.
  */
 class GameEngineConcurrencyTest {
-
     private fun engineWithOrbs(orbCount: Int): GameEngine {
         val eng = GameEngine()
         eng.init(
@@ -44,15 +43,16 @@ class GameEngineConcurrencyTest {
 
         // Loop thread: drive update() in a tight loop, mirroring GameLoopThread.run().
         val keepLooping = AtomicBoolean(true)
-        val loopThread = Thread {
-            try {
-                while (keepLooping.get()) {
-                    eng.update(1f / 60f)
+        val loopThread =
+            Thread {
+                try {
+                    while (keepLooping.get()) {
+                        eng.update(1f / 60f)
+                    }
+                } catch (t: Throwable) {
+                    caught.compareAndSet(null, t)
                 }
-            } catch (t: Throwable) {
-                caught.compareAndSet(null, t)
             }
-        }
         loopThread.start()
 
         // Main/UI thread: simulate repeated in-round ORBS upgrade purchases, each of which
@@ -61,7 +61,12 @@ class GameEngineConcurrencyTest {
         try {
             for (i in 0 until 200_000) {
                 if (caught.get() != null) break
-                val orbCount = when (i % 3) { 0 -> 0; 1 -> 3; else -> 6 }
+                val orbCount =
+                    when (i % 3) {
+                        0 -> 0
+                        1 -> 3
+                        else -> 6
+                    }
                 eng.updateZigguratStats(ResolvedStats(orbCount = orbCount))
             }
         } catch (t: Throwable) {
@@ -84,15 +89,16 @@ class GameEngineConcurrencyTest {
         val caught = AtomicReference<Throwable?>(null)
 
         val keepLooping = AtomicBoolean(true)
-        val loopThread = Thread {
-            try {
-                while (keepLooping.get()) {
-                    eng.update(1f / 60f)
+        val loopThread =
+            Thread {
+                try {
+                    while (keepLooping.get()) {
+                        eng.update(1f / 60f)
+                    }
+                } catch (t: Throwable) {
+                    caught.compareAndSet(null, t)
                 }
-            } catch (t: Throwable) {
-                caught.compareAndSet(null, t)
             }
-        }
         loopThread.start()
 
         // Main thread: repeatedly re-init the engine (the playAgain path), which clears and
@@ -125,23 +131,28 @@ class GameEngineConcurrencyTest {
     fun `concurrent replay initUWs during update loop does not throw`() {
         val eng = engineWithOrbs(orbCount = 2)
         // Equip ≥1 UW so updateUWs iterates a non-empty uwStates each tick.
-        val equipped = listOf(
-            com.whitefang.stepsofbabylon.domain.model.OwnedWeapon(
-                type = com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType.DEATH_WAVE,
-                isUnlocked = true, isEquipped = true,
-            ),
-        )
+        val equipped =
+            listOf(
+                com.whitefang.stepsofbabylon.domain.model.OwnedWeapon(
+                    type = com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType.DEATH_WAVE,
+                    isUnlocked = true,
+                    isEquipped = true,
+                ),
+            )
         eng.initUWs(equipped)
         val caught = AtomicReference<Throwable?>(null)
 
         val keepLooping = AtomicBoolean(true)
-        val loopThread = Thread {
-            try {
-                while (keepLooping.get()) { eng.update(1f / 60f) }
-            } catch (t: Throwable) {
-                caught.compareAndSet(null, t)
+        val loopThread =
+            Thread {
+                try {
+                    while (keepLooping.get()) {
+                        eng.update(1f / 60f)
+                    }
+                } catch (t: Throwable) {
+                    caught.compareAndSet(null, t)
+                }
             }
-        }
         loopThread.start()
 
         // Main thread: repeatedly re-init the UW list (the playAgain path), structurally mutating

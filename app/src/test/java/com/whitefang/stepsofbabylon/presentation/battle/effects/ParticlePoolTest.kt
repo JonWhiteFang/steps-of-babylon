@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class ParticlePoolTest {
-
     @Test
     fun `acquire returns active particle`() {
         val pool = ParticlePool(10)
@@ -23,9 +22,12 @@ class ParticlePoolTest {
     @Test
     fun `exhausted pool recycles oldest`() {
         val pool = ParticlePool(3)
-        val p1 = pool.acquire(); p1.x = 1f
-        val p2 = pool.acquire(); p2.x = 2f
-        val p3 = pool.acquire(); p3.x = 3f
+        val p1 = pool.acquire()
+        p1.x = 1f
+        val p2 = pool.acquire()
+        p2.x = 2f
+        val p3 = pool.acquire()
+        p3.x = 3f
         // Pool full — next acquire recycles
         val p4 = pool.acquire()
         assertTrue(p4.active)
@@ -65,16 +67,25 @@ class ParticlePoolTest {
     @Test
     fun `particle reset clears state`() {
         val p = Particle()
-        p.x = 100f; p.y = 200f; p.vx = 50f; p.active = true; p.age = 0.5f
+        p.x = 100f
+        p.y = 200f
+        p.vx = 50f
+        p.active = true
+        p.age = 0.5f
         p.reset()
-        assertEquals(0f, p.x); assertEquals(0f, p.y); assertEquals(0f, p.vx)
-        assertFalse(p.active); assertEquals(0f, p.age)
+        assertEquals(0f, p.x)
+        assertEquals(0f, p.y)
+        assertEquals(0f, p.vx)
+        assertFalse(p.active)
+        assertEquals(0f, p.age)
     }
 
     @Test
     fun `particle update fades alpha`() {
         val p = Particle()
-        p.active = true; p.lifetime = 1f; p.alpha = 1f
+        p.active = true
+        p.lifetime = 1f
+        p.alpha = 1f
         p.update(0.5f)
         assertTrue(p.alpha < 1f)
         assertTrue(p.active)
@@ -83,7 +94,8 @@ class ParticlePoolTest {
     @Test
     fun `particle expires after lifetime`() {
         val p = Particle()
-        p.active = true; p.lifetime = 0.5f
+        p.active = true
+        p.lifetime = 0.5f
         p.update(0.6f)
         assertFalse(p.active)
     }

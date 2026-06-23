@@ -28,7 +28,6 @@ import kotlinx.coroutines.sync.withLock
 class FakeWorkshopRepository(
     private val linkedPlayer: FakePlayerRepository? = null,
 ) : WorkshopRepository {
-
     val upgrades = MutableStateFlow<Map<UpgradeType, Int>>(emptyMap())
 
     /** Serialises concurrent [purchaseUpgradeAtomic] calls \u2014 mirrors the SQL-level atomicity. */
@@ -39,15 +38,24 @@ class FakeWorkshopRepository(
         private set
 
     override fun observeAllUpgrades(): Flow<Map<UpgradeType, Int>> = upgrades
+
     override fun observeUpgradeLevel(type: UpgradeType): Flow<Int> = upgrades.map { it[type] ?: 0 }
+
     override fun observeUpgradesByCategory(category: UpgradeCategory): Flow<Map<UpgradeType, Int>> =
         upgrades.map { map -> map.filter { it.key.category == category } }
 
-    override suspend fun setUpgradeLevel(type: UpgradeType, level: Int) {
+    override suspend fun setUpgradeLevel(
+        type: UpgradeType,
+        level: Int,
+    ) {
         upgrades.update { it + (type to level) }
     }
 
-    override suspend fun purchaseUpgradeAtomic(type: UpgradeType, newLevel: Int, cost: Long): Boolean =
+    override suspend fun purchaseUpgradeAtomic(
+        type: UpgradeType,
+        newLevel: Int,
+        cost: Long,
+    ): Boolean =
         atomicMutex.withLock {
             purchaseUpgradeAtomicCallCount++
             val player = linkedPlayer

@@ -37,7 +37,6 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], application = android.app.Application::class)
 class OnboardingScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -54,9 +53,14 @@ class OnboardingScreenTest {
 
         composeRule.setContent {
             OnboardingScreen(
-                stepCountingGranted = false, permissionAsked = false, reducedMotion = true,
-                onEnableStepCounting = {}, onOpenAppSettings = {}, onRequestBatteryExemption = {},
-                onFinished = {}, viewModel = vm(),
+                stepCountingGranted = false,
+                permissionAsked = false,
+                reducedMotion = true,
+                onEnableStepCounting = {},
+                onOpenAppSettings = {},
+                onRequestBatteryExemption = {},
+                onFinished = {},
+                viewModel = vm(),
             )
         }
         composeRule.waitForIdle()
@@ -74,9 +78,14 @@ class OnboardingScreenTest {
 
         composeRule.setContent {
             OnboardingScreen(
-                stepCountingGranted = false, permissionAsked = false, reducedMotion = true,
-                onEnableStepCounting = {}, onOpenAppSettings = {}, onRequestBatteryExemption = {},
-                onFinished = { finished = true }, viewModel = vm(),
+                stepCountingGranted = false,
+                permissionAsked = false,
+                reducedMotion = true,
+                onEnableStepCounting = {},
+                onOpenAppSettings = {},
+                onRequestBatteryExemption = {},
+                onFinished = { finished = true },
+                viewModel = vm(),
             )
         }
         composeRule.waitForIdle()
@@ -95,9 +104,14 @@ class OnboardingScreenTest {
 
         composeRule.setContent {
             OnboardingScreen(
-                stepCountingGranted = false, permissionAsked = false, reducedMotion = true,
-                onEnableStepCounting = {}, onOpenAppSettings = {}, onRequestBatteryExemption = {},
-                onFinished = {}, viewModel = vm(),
+                stepCountingGranted = false,
+                permissionAsked = false,
+                reducedMotion = true,
+                onEnableStepCounting = {},
+                onOpenAppSettings = {},
+                onRequestBatteryExemption = {},
+                onFinished = {},
+                viewModel = vm(),
             )
         }
         composeRule.waitForIdle()
@@ -116,9 +130,14 @@ class OnboardingScreenTest {
 
         composeRule.setContent {
             OnboardingScreen(
-                stepCountingGranted = true, permissionAsked = true, reducedMotion = true,
-                onEnableStepCounting = {}, onOpenAppSettings = {}, onRequestBatteryExemption = {},
-                onFinished = {}, viewModel = vm(),
+                stepCountingGranted = true,
+                permissionAsked = true,
+                reducedMotion = true,
+                onEnableStepCounting = {},
+                onOpenAppSettings = {},
+                onRequestBatteryExemption = {},
+                onFinished = {},
+                viewModel = vm(),
             )
         }
         composeRule.waitForIdle()

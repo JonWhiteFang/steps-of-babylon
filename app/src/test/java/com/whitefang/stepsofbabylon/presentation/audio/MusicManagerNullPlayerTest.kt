@@ -27,7 +27,6 @@ import java.util.concurrent.Executor
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class MusicManagerNullPlayerTest {
-
     private fun context(): Context = ApplicationProvider.getApplicationContext()
 
     /** Runs submitted runnables immediately on the calling thread. */
@@ -36,8 +35,14 @@ class MusicManagerNullPlayerTest {
     /** Queues runnables; [drain] runs them on demand — models an in-flight decode. */
     private class DeferredExecutor : Executor {
         private val queue = ArrayDeque<Runnable>()
-        override fun execute(command: Runnable) { queue.add(command) }
-        fun drain() { while (queue.isNotEmpty()) queue.removeFirst().run() }
+
+        override fun execute(command: Runnable) {
+            queue.add(command)
+        }
+
+        fun drain() {
+            while (queue.isNotEmpty()) queue.removeFirst().run()
+        }
     }
 
     /** Settle the off-thread decode (sync) + the marshal-to-main post. */
@@ -89,17 +94,25 @@ class MusicManagerNullPlayerTest {
     @Test
     fun `each track is built at most once across repeated navigations`() {
         val factoryCalls = HashMap<Int, Int>()
-        val manager = MusicManager(
-            context(),
-            playerFactory = { _, resId -> factoryCalls.merge(resId, 1, Int::plus); mock() },
-            injectedExecutor = syncExecutor,
-        )
+        val manager =
+            MusicManager(
+                context(),
+                playerFactory = { _, resId ->
+                    factoryCalls.merge(resId, 1, Int::plus)
+                    mock()
+                },
+                injectedExecutor = syncExecutor,
+            )
 
         // The frequent Battle↔menu churn: each transition used to release + re-decode.
-        manager.playWalking(); settle()
-        manager.playBattle(); settle()
-        manager.playWalking(); settle()
-        manager.playBattle(); settle()
+        manager.playWalking()
+        settle()
+        manager.playBattle()
+        settle()
+        manager.playWalking()
+        settle()
+        manager.playBattle()
+        settle()
 
         // Two distinct raw ids, each built once → two factory calls total, not four.
         assertEquals("two tracks seen (walking + battle)", 2, factoryCalls.size)
@@ -112,18 +125,29 @@ class MusicManagerNullPlayerTest {
     fun `switching pauses the outgoing player and starts the incoming one`() {
         val walking = mock<MediaPlayer>()
         val battle = mock<MediaPlayer>()
-        val manager = MusicManager(
-            context(),
-            playerFactory = { _, resId -> if (resId == com.whitefang.stepsofbabylon.R.raw.bgm_walking) walking else battle },
-            injectedExecutor = syncExecutor,
-        )
+        val manager =
+            MusicManager(
+                context(),
+                playerFactory = { _, resId ->
+                    if (resId ==
+                        com.whitefang.stepsofbabylon.R.raw.bgm_walking
+                    ) {
+                        walking
+                    } else {
+                        battle
+                    }
+                },
+                injectedExecutor = syncExecutor,
+            )
 
-        manager.playWalking(); settle()
+        manager.playWalking()
+        settle()
         verify(walking).start()
 
-        manager.playBattle(); settle()
-        verify(walking).pause()         // outgoing paused, not released
-        verify(battle).seekTo(0)        // incoming restarts at the top
+        manager.playBattle()
+        settle()
+        verify(walking).pause() // outgoing paused, not released
+        verify(battle).seekTo(0) // incoming restarts at the top
         verify(battle).start()
     }
 
@@ -131,17 +155,22 @@ class MusicManagerNullPlayerTest {
     fun `re-decode does not happen while a decode is already in flight (build-once-or-in-flight)`() {
         val deferred = DeferredExecutor()
         val factoryCalls = HashMap<Int, Int>()
-        val manager = MusicManager(
-            context(),
-            playerFactory = { _, resId -> factoryCalls.merge(resId, 1, Int::plus); mock() },
-            injectedExecutor = deferred,
-        )
+        val manager =
+            MusicManager(
+                context(),
+                playerFactory = { _, resId ->
+                    factoryCalls.merge(resId, 1, Int::plus)
+                    mock()
+                },
+                injectedExecutor = deferred,
+            )
 
         // Interleave: request BATTLE, then WALKING, then BATTLE again — all BEFORE any decode runs.
         manager.playBattle()
         manager.playWalking()
-        manager.playBattle()   // battle decode is still pending → must NOT dispatch a 2nd battle decode
-        deferred.drain(); settle()
+        manager.playBattle() // battle decode is still pending → must NOT dispatch a 2nd battle decode
+        deferred.drain()
+        settle()
 
         assertEquals(
             "battle must be decoded at most once even when re-requested mid-flight",
@@ -154,18 +183,20 @@ class MusicManagerNullPlayerTest {
     fun `a muted manager does not start a deferred-decoded player`() {
         val battle = mock<MediaPlayer>()
         val deferred = DeferredExecutor()
-        val manager = MusicManager(
-            context(),
-            playerFactory = { _, _ -> battle },
-            injectedExecutor = deferred,
-        )
+        val manager =
+            MusicManager(
+                context(),
+                playerFactory = { _, _ -> battle },
+                injectedExecutor = deferred,
+            )
         manager.setMuted(true)
 
         manager.playBattle()
-        deferred.drain(); settle()
+        deferred.drain()
+        settle()
 
-        verify(battle, never()).start()  // muted → cached + configured but not started
-        verify(battle).isLooping = true  // still configured for later unmute
+        verify(battle, never()).start() // muted → cached + configured but not started
+        verify(battle).isLooping = true // still configured for later unmute
     }
 
     @Test
@@ -173,21 +204,33 @@ class MusicManagerNullPlayerTest {
         val walking = mock<MediaPlayer>()
         val battle = mock<MediaPlayer>()
         val deferred = DeferredExecutor()
-        val manager = MusicManager(
-            context(),
-            playerFactory = { _, resId -> if (resId == com.whitefang.stepsofbabylon.R.raw.bgm_walking) walking else battle },
-            injectedExecutor = deferred,
-        )
+        val manager =
+            MusicManager(
+                context(),
+                playerFactory = { _, resId ->
+                    if (resId ==
+                        com.whitefang.stepsofbabylon.R.raw.bgm_walking
+                    ) {
+                        walking
+                    } else {
+                        battle
+                    }
+                },
+                injectedExecutor = deferred,
+            )
 
-        manager.playWalking(); deferred.drain(); settle()
+        manager.playWalking()
+        deferred.drain()
+        settle()
         verify(walking).start()
 
-        manager.playBattle()       // battle decode queued but not yet run
-        manager.release()          // tear down before the decode completes
-        deferred.drain(); settle() // late decode resolves AFTER release
+        manager.playBattle() // battle decode queued but not yet run
+        manager.release() // tear down before the decode completes
+        deferred.drain()
+        settle() // late decode resolves AFTER release
 
         verify(walking).release()
         verify(battle, never()).start() // a decode completing post-release must not start
-        verify(battle).release()        // and must free the just-built player
+        verify(battle).release() // and must free the just-built player
     }
 }

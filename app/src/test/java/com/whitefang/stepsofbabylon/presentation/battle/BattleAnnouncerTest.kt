@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test
  * priority, and the pre-round guard. No Compose; the composable owns localization.
  */
 class BattleAnnouncerTest {
-
     private fun snap(
         wave: Int = 1,
         phase: String = "SPAWNING",

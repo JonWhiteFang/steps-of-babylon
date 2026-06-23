@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class ApplyCardEffectsTest {
-
     private val apply = ApplyCardEffects()
     private val baseStats = ResolvedStats()
 

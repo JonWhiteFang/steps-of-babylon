@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test
  * is the natural fit.
  */
 class ResearchTypeTest {
-
     @Test
     fun `only AUTO_UPGRADE_AI is flagged isComingSoon`() {
         // Set-equality contract: catches both directions of regression —

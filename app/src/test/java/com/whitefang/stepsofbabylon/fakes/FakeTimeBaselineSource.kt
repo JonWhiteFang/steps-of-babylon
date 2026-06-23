@@ -12,5 +12,6 @@ class FakeTimeBaselineSource(
     var reading: TimeReading = TimeReading(elapsedRealtime = 0, wallClock = 0),
 ) : TimeBaselineSource {
     override fun readTimeBaseline(): TimeBaseline? = baseline
+
     override fun currentTimeReading(): TimeReading = reading
 }

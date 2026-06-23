@@ -9,10 +9,8 @@ import org.junit.jupiter.api.Test
  * a real SoundPool — we test the coerceIn math directly.
  */
 class SoundManagerThrottleTest {
-
     /** Throttle formula extracted for testability: (interval / 3).coerceIn(30, 100) */
-    private fun computeThrottle(expectedIntervalMs: Long): Long =
-        (expectedIntervalMs / 3L).coerceIn(30L, 100L)
+    private fun computeThrottle(expectedIntervalMs: Long): Long = (expectedIntervalMs / 3L).coerceIn(30L, 100L)
 
     @Test
     fun `default 100ms interval produces 33ms throttle`() {
