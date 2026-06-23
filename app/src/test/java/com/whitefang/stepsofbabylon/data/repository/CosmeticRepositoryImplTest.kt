@@ -238,7 +238,7 @@ class CosmeticRepositoryImplTest {
             assertEquals(
                 7,
                 countAfterFirst,
-                "7 ziggurat seed rows (zig_jade + lapis_lazuli_skin + garden_ziggurat_skin + sandals_of_gilgamesh + zig_obsidian + zig_crystal + zig_golden)",
+                "7 ziggurat seed rows after #221 removed the projectile/enemy cosmetics",
             )
         }
 
@@ -288,7 +288,7 @@ class CosmeticRepositoryImplTest {
             assertEquals(
                 7,
                 dao.count(),
-                "after ensureSeedData: zig_jade + lapis_lazuli_skin + garden_ziggurat_skin + sandals_of_gilgamesh added, legacy 3 ziggurat preserved",
+                "after ensureSeedData: 4 milestone ziggurats added, legacy 3 ziggurat preserved",
             )
             val items = repo.observeAll().first()
             val jade = items.single { it.cosmeticId == "zig_jade" }
