@@ -10,7 +10,7 @@ An Android idle tower defense game where real-world walking drives all progressi
 
 ## Status
 
-Version 1.0.10 (versionCode 26) · 1126 JVM + 9 instrumented tests green · live on the Play Console internal track. The CI pipeline (Plan 32) and `v*`-tag release lane are live; promotion to the closed track is judgment-gated on the Closed-Test Readiness Gate (see [plan-FORWARD.md](docs/plans/plan-FORWARD.md)) — the tester soak is a Phase 2 concern that begins after promotion.
+Version 1.0.11 (versionCode 27) · 1254 JVM + 9 instrumented tests green · live on the Play Console internal track. The CI pipeline (Plan 32) and `v*`-tag release lane are live; promotion to the closed track is judgment-gated on the Closed-Test Readiness Gate (see [plan-FORWARD.md](docs/plans/plan-FORWARD.md)) — the tester soak is a Phase 2 concern that begins after promotion.
 
 For the live current state (objective, priorities, fragile zones) see [docs/agent/STATE.md](docs/agent/STATE.md). For the dated change history see [CHANGELOG.md](CHANGELOG.md). These move every session; this section stays deliberately brief to avoid drift.
 

@@ -3,16 +3,19 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.10 (versionCode 26) SHIPPED → Play internal** (tag `v1.0.10` fired green end-to-end —
-release run `27821174663` `success`: signed AAB, `jarsigner -verify`, Play-internal upload `status:completed`,
-GitHub Release `v1.0.10` w/ `app-release.aab` 15.9 MB). v1.0.10 promotes the **4 fix waves since v1.0.9**
-(reliability #236/#195/#193 · graceful-degradation #194/#250 · background-reliability #261/#233 ·
-data-integrity #237/#238/#248) via release PR #278 (squash `ffa9973`). **ALL 4 net-new audit HIGHs
-(#233/#236/#250/#261) + the last Gate-H `severity:major` soak items (#193/#194/#195) are now SHIPPED.**
-Latest content wave MERGED: data-integrity (PR #276, `0f32ac6`; #237/#238/#248 auto-closed; ADR-0030,
-single-agent review caught a critical pre-code defect). Earlier waves MERGED: #261/#233 (PR #274, `8b50b13`);
-#194/#250 (PR #272, `1811617`); #236/#195/#193 (PR #270, `ebf588a`).
-Supersedes **v1.0.9 (vc 25)** · **1254 JVM + 9 instrumented tests**
+**Headline:** **v1.0.11 (versionCode 27) — release collateral prepared, branch `release/v1.0.11`** (version
+bump 26→27 / 1.0.10→1.0.11; CHANGELOG `[Unreleased]`→`[1.0.11]`; `docs/release/release-notes-v1.0.11.md`;
+pointer sync). On PR-merge to `main`, the annotated tag `v1.0.11` (message = the "What's new" block) fires
+`release.yml` → signed AAB → Play **internal** track. v1.0.11 promotes the **large polish/hardening body
+accumulated since v1.0.10** — no new features, **no schema change** (`app/schemas` byte-identical to v1.0.10).
+Player-facing: accessibility (#213/#214), i18n correctness (#225/#259/#260), Home zero-state (#224),
+perf-smoothness (#242/#243), offline step/purchase reliability (#251/#249), process-death survival (#234).
+Internal: detekt+ktlint gate + 6-stage format (#312/#311), Compose UI + DAO-contention tests (#253/#252),
+dependency-verification (#256), clock-tamper (#211), GameEngine decomposition (#230/#231), architecture
+dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependabot wave, CI/supply-chain
+(#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
+(CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
+#311→#312; #310/#311/#287 given a CI/tooling note). **Supersedes v1.0.10 (vc 26)** · **1254 JVM + 9 instrumented tests**
 green (1110 shipped in v1.0.10; +8 reliability wave #251/#249 → 1118; +8 correctness/UX wave
 #225/#235/#224/#222 → 1126; +4 privacy/monetization #240/#239/#241 → 1130; +9 perf wave #242/#243 → 1139;
 +13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; +26 i18n correctness wave #259/#260 → 1195; +1 #220 domain-purity guard hardening → 1196; +9 GameEngine decomposition #230/#231 → 1205; +8 process-death state survival #234 → 1213; +17 time-axis anti-cheat #211/#258 → 1230; +4 HomeScreen Compose UI #253 → 1234; +20 critical-screen Compose UI #253 → 1254; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
@@ -22,7 +25,7 @@ Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` 
 repo); (b) the `severity:major` soak-hardening items are now ALL addressed — **#195 + #193 MERGED via
 #270; #194 (error states, UX-1) MERGED (PR #272, `1811617`)** — #194 had been
 prematurely closed 2026-06-17 with no implementing commit, verified unfixed at HEAD + re-opened 2026-06-19;
-(c) a `v*` release tag to ship the `[Unreleased]` work (#190/#191/#192 + #236/#195/#193 + #194/#250) to internal.
+(c) the v1.0.11 release tag (this objective) ships the post-v1.0.10 `[Unreleased]` body to internal.
 Latest audit
 (`docs/reviews/2026-06-18-complete-app-review.md`, supersedes 2026-06-17) verdict: **7/10 — continue
 building** (keep shipping internal, NOT public-ready); it filed **38 net-new Med+ issues #224–#261 + Low
@@ -33,7 +36,25 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #328, squash `d8b8c5b`; `[Unreleased]`).**
+- **CURRENT (IN PROGRESS — cutting release v1.0.11 / versionCode 27 → Play internal track).** First release
+  since v1.0.10; promotes the large polish/hardening `[Unreleased]` body (no new features, **no schema
+  change** — `app/schemas` byte-identical to v1.0.10). Collateral-only PR on branch `release/v1.0.11` (no
+  production-code change in the PR itself): bump `versionCode` 26→27 / `versionName` 1.0.10→1.0.11 in
+  `app/build.gradle.kts`; promote CHANGELOG `[Unreleased]`→`[1.0.11]` (2026-06-23, vc 27) + fresh empty
+  `[Unreleased]`; add `docs/release/release-notes-v1.0.11.md` (Play "What's new" 454 chars, developer-approved
+  — the "Drafted" option); sync current-state version pointers (README incl. 1126→1254 test count, GDD,
+  master-plan ×2 [current clause only], plan-31, STATE headline). **Two CHANGELOG corrections folded in from
+  the release-grounding verification fan-out** (all findings adversarially confirmed): the lint entry header
+  PR# `#311`→`#312` (#311 is the unrelated CLI-tooling chore), and a new **CI/tooling note** accounting for the
+  three functional commits that had no dedicated entry (#310 CI docs-only fast path, #311 CLI-tooling hook, #287
+  all-actions bump). Fresh `testDebugUnitTest` green (**1254 JVM, 0 failures**). **On merge, annotated tag
+  `v1.0.11` (tag message = the "What's new" block) → `release.yml` builds the signed AAB → Play internal.**
+  Player-facing in this release: accessibility (#213/#214), i18n correctness (#225/#259/#260), Home zero-state
+  (#224), perf-smoothness (#242/#243), offline step/purchase reliability (#251/#249), process-death survival
+  (#234). **Manual Play Console Data-Safety action (#192) is still NOT done by this tag** — separate human step
+  (`docs/release/data-safety-form.md`). **Next:** open PR → both CI lanes green → merge → tag; then back to the
+  med/low backlog (#262/#128; i18n #34; the larger #233 Simulation-hoist, ADR-0012).
+- **Previous objective (DONE — MERGED PR #328, squash `d8b8c5b`; `[Unreleased]`).**
   **Staged repo-wide ktlint auto-format — stage 6 of 6 (FINAL): test sources. The staged format effort is now
   COMPLETE — all 6 stages merged (PRs #322/#324/#325/#326/#327/#328).** Mechanical `ktlint -F` (glob form) over the TEST sources only — `app/src/test/`
   (JVM unit-test source set) + `app/src/androidTest/` (instrumented source set). **196 files changed.**

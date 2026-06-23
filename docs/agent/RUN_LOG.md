@@ -9889,3 +9889,33 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - **#234 closeable on this scope.** Next: open PR; watch CI; merge; checkpoint. Then #211 (clock-tamper),
   #258 (schema docs), #253 (Compose UI tests); i18n #34; med/low #262/#128.
 - **DONE (merged):** PR **#307** opened; both CI checks green (build-and-test 7m41s, connected/instrumented 6m35s); squash-merged as **`051c1cf`** 2026-06-22; branch deleted; **#234 auto-closed** (`Closes #234`). Post-merge reconciliation: STATE.md current-objective flipped ready-to-PR→MERGED. (Signal-drop note: only the plan-review *workflow* stalled earlier — stopped + restarted clean, no work lost; implementation + CI ran smoothly.) Remaining audit majors: #211 (clock-tamper), #258 (schema docs), #253 (Compose UI tests); i18n #34; med/low #262/#128.
+
+## 2026-06-23 — Release v1.0.11 (versionCode 27) → Play internal track
+
+- **Objective:** cut the first release since v1.0.10, promoting the large post-v1.0.10 `[Unreleased]` body to the
+  Play **internal** track. A **quality / accessibility / reliability polish** release with heavy internal
+  hardening — **no new features, no schema change** (`app/schemas` byte-identical to v1.0.10, verified).
+- **Pre-flight verification (ultracode):** a background `Workflow` (6 agents, verify→refute) grounded the
+  collateral before any edit — three lanes, **all adversarially confirmed**:
+  1. **CHANGELOG↔commit reconcile** — `git log v1.0.10..HEAD` = **48 commits**; **26 `### ` `[Unreleased]`
+     entries**, all backed by real commits, zero orphans; **test-count delta chain internally consistent,
+     lands exactly at 1254 JVM**; `app/schemas` byte-identical (no 13.json) → "no schema change" verified.
+     Two gaps surfaced + fixed: (a) the **lint entry header cited `(#311)` but the lint PR is `#312`** —
+     #311 is the unrelated CLI-tooling chore (confirmed via `gh pr view`); corrected to `#312`. (b) **three
+     functional commits had no dedicated entry** (#310 CI docs-only fast path, #311 CLI-tooling hook, #287
+     all-actions Actions bump) → added a brief **CI/tooling CHANGELOG note**.
+  2. **Version-pointer sweep** — 8 must-bump current-state pointers identified + the must-NOT-touch
+     historical set (CHANGELOG `[1.0.10]`, all prior `release-notes-*`, RUN_LOG prior entries, plan-FORWARD
+     past-fact narrative). Bumped: `app/build.gradle.kts` (vc 26→27 / 1.0.10→1.0.11), README Status (+ test
+     count 1126→1254), GDD Game Version, master-plan ×2 (Plan 31 descriptor + Plan 32 trailing current clause
+     ONLY — historical `v1.0.1`/vc 17 fact preserved), plan-31 Status line, STATE headline.
+  3. **Play "What's new"** — drafted player-benefit-framed copy, classified player-facing vs internal;
+     developer approved the **"Drafted" (454 chars ≤ 500)** option via AskUserQuestion.
+- **Collateral (this PR — no production-code change):** version bump; CHANGELOG `[Unreleased]`→`[1.0.11]`
+  (2026-06-23, vc 27) + new CI/tooling entry + lint-PR# fix + fresh empty `[Unreleased]`;
+  `docs/release/release-notes-v1.0.11.md`; pointer sync; STATE current-objective + this RUN_LOG entry.
+- **Verification:** fresh `testDebugUnitTest` (`--rerun-tasks`) BUILD SUCCESSFUL — **1254 JVM tests, 0
+  failures, 0 errors** (XML-aggregate confirmed). `assembleDebug` to follow on the branch.
+- **Next:** open the release PR → both CI lanes green → squash-merge → annotated tag `v1.0.11` (message = the
+  "What's new" block) → `release.yml` builds/signs the AAB → Play internal. **Manual Play Console Data-Safety
+  action (#192) remains a separate human step**, not done by this tag. Then back to the med/low backlog.

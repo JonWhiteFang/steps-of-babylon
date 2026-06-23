@@ -4,6 +4,35 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+## [1.0.11] — 2026-06-23 (versionCode 27)
+
+Release collateral promotes everything accumulated since v1.0.10 to the Play **internal** track.
+`versionCode` 26 → 27, `versionName` 1.0.10 → 1.0.11 (the bump rides in with this release PR — Play
+rejects reused codes). This is a **quality / accessibility / reliability polish** release with heavy
+**internal hardening** — **no new features, no schema change** (the `app/schemas` tree is byte-identical
+to v1.0.10). Player-facing highlights: battle TalkBack + WCAG-AA button contrast (#213/#214), correct
+plural/grammar and proper display names everywhere (#225/#259/#260), a first-walk zero-state prompt
+(#224), smoother battles/menu-music with fewer hitches (#242/#243), offline-walked steps no longer
+clamped away (#251), and offline purchase errors surfaced instead of silently swallowed (#249). The
+bulk of the work is not player-visible: a detekt + ktlint CI gate and a completed 6-stage repo-wide
+format (#311/#312 + stages 1–6), the first Compose UI tests (#253) and a concurrent-contention DAO test
+(#252), Gradle dependency-verification (#256), clock-tamper resistance (#211), process-death state
+survival (#234), the GameEngine god-class decomposition (#230/#231), the Clean-Architecture
+dependency-rule restoration + machine guards (#220/#227/#228/#219/#229), compileSdk 36 → 37 + a
+Dependabot wave, and the CI/supply-chain wave (#257/#254/#212/#255). See
+`docs/release/release-notes-v1.0.11.md` for the Play "What's new" + full developer detail; the per-change
+entries below carry the technical record. **1110 → 1254 JVM tests** across the accumulated waves.
+
+### Build — CI docs-only fast path (#310) · CLI-tooling guidance hook (#311) · GitHub Actions bump (#287)
+
+**Build-infra / tooling only — no production Kotlin, no schema/economy/engine change, no test-count
+change.** Three changes that landed on `main` since v1.0.10 and round out the record: **#310** adds a
+docs-only fast path to `ci.yml` + `instrumented.yml` so a Markdown-only change skips the heavy build/
+emulator gate; **#311** wires the repo's preferred-CLI guidance (`ast-grep`/`fd`/`delta`) into a
+`.claude/` nudge hook + `CLAUDE.md` (developer-tooling only, never shipped); **#287** bumps the grouped
+`all-actions` GitHub Actions across the five workflows (checkout v7 + gh-release). (Note: the
+"Kotlin lint enforcement" entry below is PR **#312**, not #311 — #311 is this CLI-tooling chore.)
+
 ### Style — ktlint repo-wide format, stage 6/6 (test sources) — effort complete
 
 **Pure formatting — no production-logic, schema, economy, or engine change; no test-count change (1254 JVM,
@@ -166,7 +195,7 @@ concern is handled by the `--refresh-dependencies` regen workflow documented in 
 README. Mutation-tested: corrupting a single SHA-256 value produces BUILD FAILED with "dependency has
 been compromised" pointing to the exact artifact. **Closes #256.**
 
-### Build — Kotlin lint enforcement: detekt + ktlint CI gate (#311; ADR-0037)
+### Build — Kotlin lint enforcement: detekt + ktlint CI gate (#312; ADR-0037)
 
 **Build-infra + config + CI only — no production Kotlin, no schema/economy/engine change, no test-count
 change** (1230 JVM + 9 instrumented unchanged). Wires two Kotlin lint tools into the PR gate
