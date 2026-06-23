@@ -10093,3 +10093,37 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - **Next:** open the D1 PR (branch `ci/batch-d1-release-hardening`); check off L39/L68/L71/L73/L74/L75/L50 in
   #262. Then **D2** (Kover #218 + SCA L77 — reviewed plan `2026-06-23-batch-d2-additive-tooling.md` ready,
   rebases on D1's merged ci.yml) + the non-batchable items (battle perf, A24, L12, billing-by-design).
+- **SHIPPED:** PR **#336** all 3 lanes green (build-and-test 6m21s incl. lintRelease, connected 5m11s,
+  ktlint **17s** — the split working); squash-merged **`6c487f4`**; branch deleted; tracker #262 annotated.
+
+## 2026-06-23 — Audit triage Batch D2 (additive CI tooling, #262 L77 + #218/TEST-3)
+
+- **Goal:** second half of the D1/D2 split — two NON-GATING informational capabilities. **No app/Kotlin/
+  schema change; 1256 JVM unchanged.** Branched off D1's merged main (both edit ci.yml → serial).
+- **Kover (#218):** the lowest-value/highest-risk item (explicitly informational), so I ran a **local spike
+  FIRST** rather than commit blind — its Kotlin-2.3.0/AGP-9.2.1 compat was unconfirmable from docs (Kover
+  release notes cover AGP 9.0.0 but not Kotlin 2.3.0). Spike: (1) confirmed strict dependency-verification
+  (#256) rejects the new plugin at resolution (the review's predicted major); (2) regenerated
+  `verification-metadata.xml` with the Kover tasks appended (+25 component lines, all Kover machinery —
+  intellij-coverage / freemarker / apache parent; diffed to confirm no unrelated churn); (3) `koverXmlReport`
+  ran clean → **Kover 0.9.8 IS compatible**, ~59% line coverage (8117/13728). So full D2 shipped (not the
+  SCA-only fallback). Wired catalog + root `apply false` + `:app` alias; non-gating `:app:`-prefixed CI step;
+  **updated the documented regen command in gradle.properties** to include the Kover tasks (the review's 2nd
+  major — so future regens stay complete).
+- **OSV-Scanner (L77):** the spike surfaced that the OSV reusable workflow *in the google/osv-scanner repo is
+  DEPRECATED* (a no-op that exits failure) — used the **live one in `google/osv-scanner-action`** instead
+  (`osv-scanner-reusable.yml@9a49870` = v2.3.8, SHA-pinned per ADR-0018). New `osv-scan.yml`: full-dependency
+  scan → Code Scanning tab, **non-gating** (`fail-on-vuln:false`), scheduled weekly + on `main` (NOT per-PR,
+  to avoid noise). It uploads SARIF itself (no separate codeql step). Developer chose "best-effort SCA now"
+  knowing the SARIF upload only exercises in real CI.
+- **Adversarial review** (D1+D2 reviewed concurrently earlier): both D2 majors addressed — regen-as-hard-step
+  + the documented command extended with Kover tasks; CI Kover tasks `:app:`-prefixed; D2-after-D1 sequencing.
+- **Verify (local):** `testDebugUnitTest :app:koverXmlReport` BUILD SUCCESSFUL under regenerated strict
+  metadata — **1256 JVM unchanged**; Kover HTML+XML report produced; `:app:detekt` + `./lint-kotlin.sh` clean;
+  `actionlint` clean on `osv-scan.yml` + `ci.yml`. `app/schemas` unchanged. **OSV SARIF upload + the scheduled
+  scan can't be PR-validated** (need GitHub Code-Scanning context).
+- **No ADR** (additive non-gating tooling on the established ADR-0018 CI lane). Plan:
+  `docs/superpowers/plans/2026-06-23-batch-d2-additive-tooling.md`.
+- **Next:** open the D2 PR; check off L77 + #218 in #262/#218. Then the audit backlog's non-batchable items
+  (battle game-loop perf L46-L51, A24 rate-limit clock-tamper, L12 BattleViewModel decomposition,
+  billing-anti-fraud-by-design) + remaining med/low. Batches A–D now shipped.

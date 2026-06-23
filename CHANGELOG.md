@@ -4,6 +4,29 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### CI — Batch D2: additive tooling — Kover coverage + OSV supply-chain scan (no app change)
+
+**Two NON-GATING informational CI capabilities — no app/Kotlin/schema change, test count unchanged
+(1256 JVM).** Fifth batch off the audit-tracker triage (the D1/D2 split's second half); closes #262 **L77**
++ **#218 / TEST-3**.
+
+- **#218 — Kover coverage.** Added the Kover Gradle plugin (`org.jetbrains.kotlinx.kover` 0.9.8, scoped to
+  `:app`) and a non-gating `:app:koverXmlReport :app:koverHtmlReport` CI step; the report uploads with the
+  existing `**/build/reports/**` artifact. No threshold — purely a coverage signal (baseline measured ~59%
+  line coverage of the JVM suite). **Kover 0.9.8 ↔ Kotlin 2.3.0 / AGP 9.2.1 compatibility was verified by a
+  local spike** before adoption (the report tasks run clean). Because `dependency-verification=strict`
+  (#256), `gradle/verification-metadata.xml` was regenerated to add Kover's coverage-engine deps
+  (intellij-coverage, freemarker) — and the documented regen command in `gradle.properties` now includes the
+  Kover tasks so future regens stay complete.
+- **L77 — OSV supply-chain scan.** New `osv-scan.yml` runs `google/osv-scanner-action`'s reusable workflow
+  (SHA-pinned, ADR-0018) over the FULL dependency set (build- + test-time, which `dependency-submission.yml`'s
+  release-only graph doesn't cover), reporting to the "Security → Code scanning" tab. **Non-gating**
+  (`fail-on-vuln: false`) and scheduled weekly + on pushes to `main` (not per-PR) to avoid friction/noise.
+
+Plan + adversarial review (D1+D2 reviewed concurrently): the review's two D2 majors — strict-verification
+regen as a hard step + the documented regen command missing the Kover tasks — are both addressed.
+Plan: `docs/superpowers/plans/2026-06-23-batch-d2-additive-tooling.md`.
+
 ### CI — Batch D1: release/CI config hardening (no app change)
 
 **CI/release workflow + gradle-config hardening — no app/Kotlin/schema change, test count unchanged

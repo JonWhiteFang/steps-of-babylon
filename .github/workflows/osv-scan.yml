@@ -1,0 +1,40 @@
+# #262 L77 — supply-chain scanning. The dependency-submission lane (dependency-submission.yml) only
+# surfaces the SHIPPED graph (releaseRuntimeClasspath); this lane scans the FULL dependency set
+# (build- + test-time too) against the OSV.dev vulnerability database and reports to the repo's
+# "Security → Code scanning" tab. NON-GATING by design (fail-on-vuln: false) — a solo v1.0 must not be
+# blocked by a transitive-dep advisory; this is visibility, not a wall. Runs weekly + on pushes to main
+# (NOT on every PR — avoids per-PR noise). SHA-pinned per ADR-0018 decision #5 (Dependabot maintains pins).
+name: OSV Scan
+
+on:
+  schedule:
+    # Weekly, Monday 06:00 UTC. (Cron has no access to repo secrets — fine; OSV scanning needs none.)
+    - cron: '0 6 * * 1'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  # Mirror the reusable workflow's required scopes (it uploads SARIF to Code Scanning itself).
+  actions: read
+  contents: read
+  security-events: write
+
+concurrency:
+  group: osv-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    # google/osv-scanner-action's live reusable workflow (the older one in the osv-scanner repo is
+    # deprecated). v2.3.8 → commit 9a49870 (lightweight tag). It runs OSV-Scanner over the repo and,
+    # with upload-sarif:true (default), publishes results to Code Scanning.
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@9a498708959aeaef5ef730655706c5a1df1edbc2 # v2.3.8
+    with:
+      # Recursive scan from the repo root; OSV-Scanner reads Gradle's verification-metadata.xml /
+      # lockfile-style inputs to enumerate dependencies. Default `-r ./` is correct for this repo.
+      scan-args: |-
+        -r
+        ./
+      # NON-GATING: report, never fail the lane. This is the whole point — visibility without friction.
+      fail-on-vuln: false
