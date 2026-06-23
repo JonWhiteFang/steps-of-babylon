@@ -25,23 +25,27 @@ import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
-import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import com.whitefang.stepsofbabylon.presentation.ui.theme.BronzeSurface
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Ivory
 import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess
+import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 
 @Composable
-fun UpgradeCard(info: UpgradeDisplayInfo, onClick: () -> Unit) {
+fun UpgradeCard(
+    info: UpgradeDisplayInfo,
+    onClick: () -> Unit,
+) {
     // Whole-card dim is reserved for the MAXED state (paired with the Gold tint below). An
     // *unaffordable* card stays fully opaque so its title/description remain readable — only the
     // cost/stat readout dims (see `valueAlpha`).
     val cardAlpha = if (info.isMaxed) 0.85f else 1f
-    val valueAlpha = when {
-        info.isMaxed -> 1f
-        info.canAfford -> 1f
-        else -> 0.55f
-    }
+    val valueAlpha =
+        when {
+            info.isMaxed -> 1f
+            info.canAfford -> 1f
+            else -> 0.55f
+        }
 
     val pulse = rememberPulse()
     val haptics = rememberHaptics()
@@ -57,18 +61,19 @@ fun UpgradeCard(info: UpgradeDisplayInfo, onClick: () -> Unit) {
         },
         enabled = info.canAfford && !info.isMaxed,
         modifier = Modifier.fillMaxWidth().alpha(cardAlpha).pulseScale(pulse),
-        colors = if (info.isMaxed) {
-            CardDefaults.cardColors(
-                containerColor = Gold.copy(alpha = 0.15f),
-                disabledContainerColor = Gold.copy(alpha = 0.15f),
-            )
-        } else {
-            CardDefaults.cardColors(
-                // #154: pin disabledContainerColor == containerColor so a disabled (unaffordable) card
-                // keeps the normal surface instead of swapping to Material's default disabled background.
-                disabledContainerColor = CardDefaults.cardColors().containerColor,
-            )
-        },
+        colors =
+            if (info.isMaxed) {
+                CardDefaults.cardColors(
+                    containerColor = Gold.copy(alpha = 0.15f),
+                    disabledContainerColor = Gold.copy(alpha = 0.15f),
+                )
+            } else {
+                CardDefaults.cardColors(
+                    // #154: pin disabledContainerColor == containerColor so a disabled (unaffordable) card
+                    // keeps the normal surface instead of swapping to Material's default disabled background.
+                    disabledContainerColor = CardDefaults.cardColors().containerColor,
+                )
+            },
     ) {
         Column(Modifier.padding(16.dp).fillMaxWidth()) {
             // #29: "★ BEST BUY" chip on the single highest-value upgrade. Desaturated (opaque fill,
@@ -109,7 +114,14 @@ fun UpgradeCard(info: UpgradeDisplayInfo, onClick: () -> Unit) {
                 }
                 Column(horizontalAlignment = Alignment.End, modifier = Modifier.alpha(valueAlpha)) {
                     Text(
-                        text = if (info.isMaxed) stringResource(R.string.upgrade_max) else stringResource(R.string.upgrade_level, info.level),
+                        text =
+                            if (info.isMaxed) {
+                                stringResource(
+                                    R.string.upgrade_max,
+                                )
+                            } else {
+                                stringResource(R.string.upgrade_level, info.level)
+                            },
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = if (info.isMaxed) Gold else MaterialTheme.colorScheme.onSurface,
@@ -121,8 +133,12 @@ fun UpgradeCard(info: UpgradeDisplayInfo, onClick: () -> Unit) {
                         Text(
                             text = stringResource(R.string.upgrade_cost_steps, info.cost),
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (info.canAfford) MaterialTheme.colorScheme.primary
-                                   else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color =
+                                if (info.canAfford) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
                         )
                     }
                 }
@@ -152,14 +168,22 @@ private fun BestBuyChip(affordable: Boolean) {
     val bg = if (affordable) Gold else BronzeSurface
     val fg = if (affordable) MaterialTheme.colorScheme.surface else Ivory
     Box(
-        modifier = Modifier
-            .padding(bottom = 6.dp)
-            .clip(RoundedCornerShape(6.dp))
-            .background(bg)
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+        modifier =
+            Modifier
+                .padding(bottom = 6.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(bg)
+                .padding(horizontal = 8.dp, vertical = 2.dp),
     ) {
         Text(
-            text = if (affordable) stringResource(R.string.upgrade_best_buy) else stringResource(R.string.upgrade_best_buy_save_up),
+            text =
+                if (affordable) {
+                    stringResource(
+                        R.string.upgrade_best_buy,
+                    )
+                } else {
+                    stringResource(R.string.upgrade_best_buy_save_up)
+                },
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color = fg,
@@ -171,19 +195,21 @@ private fun BestBuyChip(affordable: Boolean) {
 private fun ValueBar(fraction: Float) {
     val clamped = fraction.coerceIn(0f, 1f)
     Box(
-        modifier = Modifier
-            .padding(top = 8.dp)
-            .fillMaxWidth()
-            .height(6.dp)
-            .clip(RoundedCornerShape(3.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(clamped)
+        modifier =
+            Modifier
+                .padding(top = 8.dp)
+                .fillMaxWidth()
                 .height(6.dp)
                 .clip(RoundedCornerShape(3.dp))
-                .background(StatusSuccess),
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth(clamped)
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(StatusSuccess),
         )
     }
 }

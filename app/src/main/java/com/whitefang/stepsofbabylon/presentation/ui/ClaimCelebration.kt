@@ -33,11 +33,18 @@ sealed interface ClaimReward {
         val cosmeticNames: List<String> = emptyList(),
         val cards: Int = 0,
     ) : ClaimReward
+
     /** Pre-localized fixed message (e.g. "All supplies claimed!"). */
-    data class Message(@StringRes val res: Int) : ClaimReward
+    data class Message(
+        @StringRes val res: Int,
+    ) : ClaimReward
+
     data object Generic : ClaimReward
 }
-data class ClaimCelebrationEvent(val reward: ClaimReward)
+
+data class ClaimCelebrationEvent(
+    val reward: ClaimReward,
+)
 
 /**
  * The joined reward parts WITHOUT the "claimed!" verb, e.g. "+5 Gems +2 Power Stones" — used by BOTH
@@ -45,28 +52,46 @@ data class ClaimCelebrationEvent(val reward: ClaimReward)
  */
 @Composable
 fun formatRewardParts(bundle: ClaimReward.Bundle): String {
-    val parts = buildList {
-        if (bundle.gems > 0) add(pluralStringResource(R.plurals.reward_gems, bundle.gems, bundle.gems))
-        if (bundle.powerStones > 0) add(pluralStringResource(R.plurals.reward_power_stones, bundle.powerStones, bundle.powerStones))
-        if (bundle.steps > 0) add(pluralStringResource(R.plurals.reward_steps, bundle.steps, bundle.steps))
-        if (bundle.cards > 0) add(pluralStringResource(R.plurals.card_copies, bundle.cards, bundle.cards))
-        addAll(bundle.cosmeticNames)
-    }
+    val parts =
+        buildList {
+            if (bundle.gems > 0) add(pluralStringResource(R.plurals.reward_gems, bundle.gems, bundle.gems))
+            if (bundle.powerStones >
+                0
+            ) {
+                add(pluralStringResource(R.plurals.reward_power_stones, bundle.powerStones, bundle.powerStones))
+            }
+            if (bundle.steps > 0) add(pluralStringResource(R.plurals.reward_steps, bundle.steps, bundle.steps))
+            if (bundle.cards > 0) add(pluralStringResource(R.plurals.card_copies, bundle.cards, bundle.cards))
+            addAll(bundle.cosmeticNames)
+        }
     return parts.joinToString(stringResource(R.string.reward_join))
 }
 
 /** Full celebration text. Returns "" for null/empty (exit-safe). */
 @Composable
-fun formatClaimReward(reward: ClaimReward?): String = when (reward) {
-    null -> ""
-    is ClaimReward.Generic -> stringResource(R.string.reward_generic)
-    is ClaimReward.Message -> stringResource(reward.res)
-    is ClaimReward.Bundle -> {
-        val parts = formatRewardParts(reward)
-        if (parts.isEmpty()) stringResource(R.string.reward_generic)
-        else stringResource(R.string.reward_claimed, parts)
+fun formatClaimReward(reward: ClaimReward?): String =
+    when (reward) {
+        null -> {
+            ""
+        }
+
+        is ClaimReward.Generic -> {
+            stringResource(R.string.reward_generic)
+        }
+
+        is ClaimReward.Message -> {
+            stringResource(reward.res)
+        }
+
+        is ClaimReward.Bundle -> {
+            val parts = formatRewardParts(reward)
+            if (parts.isEmpty()) {
+                stringResource(R.string.reward_generic)
+            } else {
+                stringResource(R.string.reward_claimed, parts)
+            }
+        }
     }
-}
 
 /**
  * Brief one-shot reward chip shown when a claim succeeds. Scales+fades in, fires a success haptic
@@ -74,7 +99,10 @@ fun formatClaimReward(reward: ClaimReward?): String = when (reward) {
  * Under reduced-motion it appears/disappears instantly (no scale/fade) but the haptic still fires.
  */
 @Composable
-fun ClaimCelebration(event: ClaimCelebrationEvent?, onConsumed: () -> Unit) {
+fun ClaimCelebration(
+    event: ClaimCelebrationEvent?,
+    onConsumed: () -> Unit,
+) {
     val context = LocalContext.current
     val reducedMotion = remember { ReducedMotionCheck.isReducedMotionEnabled(context) }
     val haptics = rememberHaptics()
@@ -107,4 +135,6 @@ fun ClaimCelebration(event: ClaimCelebrationEvent?, onConsumed: () -> Unit) {
     }
 }
 
-private fun snapSpec() = androidx.compose.animation.core.snap<Float>()
+private fun snapSpec() =
+    androidx.compose.animation.core
+        .snap<Float>()

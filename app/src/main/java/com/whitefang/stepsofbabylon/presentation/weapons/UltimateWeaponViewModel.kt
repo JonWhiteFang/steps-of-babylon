@@ -55,82 +55,98 @@ data class UltimateWeaponUiState(
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class UltimateWeaponViewModel @Inject constructor(
-    private val uwRepository: UltimateWeaponRepository,
-    private val playerRepository: PlayerRepository,
-) : ViewModel() {
+class UltimateWeaponViewModel
+    @Inject
+    constructor(
+        private val uwRepository: UltimateWeaponRepository,
+        private val playerRepository: PlayerRepository,
+    ) : ViewModel() {
+        private val unlockUW = UnlockUltimateWeapon(uwRepository)
+        private val upgradeUW = UpgradeUltimateWeapon(uwRepository, playerRepository)
+        private var ownedList: List<OwnedWeapon> = emptyList()
 
-    private val unlockUW = UnlockUltimateWeapon(uwRepository)
-    private val upgradeUW = UpgradeUltimateWeapon(uwRepository, playerRepository)
-    private var ownedList: List<OwnedWeapon> = emptyList()
-    // #194: bump to re-subscribe the data flow after a load error (retry).
-    private val _retry = MutableStateFlow(0)
+        // #194: bump to re-subscribe the data flow after a load error (retry).
+        private val _retry = MutableStateFlow(0)
 
-    val uiState: StateFlow<UltimateWeaponUiState> = _retry.flatMapLatest {
-    combine(
-        uwRepository.observeUnlockedWeapons(),
-        playerRepository.observeWallet(),
-    ) { owned, wallet ->
-        ownedList = owned
-        val ownedMap = owned.associateBy { it.type }
-        UltimateWeaponUiState(
-            weapons = UltimateWeaponType.entries.map { type ->
-                val ow = ownedMap[type]
-                val isUnlocked = ow?.isUnlocked == true
-                val paths = if (isUnlocked) {
-                    UWPath.ALL.associateWith { path ->
-                        val level = ow!!.levelOf(path)
-                        val cost = type.costForPath(level)
-                        UWPathDisplay(
-                            path = path,
-                            level = level,
-                            cost = cost,
-                            canAfford = level < UltimateWeaponType.MAX_PATH_LEVEL && wallet.powerStones >= cost,
-                            isMaxed = level >= UltimateWeaponType.MAX_PATH_LEVEL,
+        val uiState: StateFlow<UltimateWeaponUiState> =
+            _retry
+                .flatMapLatest {
+                    combine(
+                        uwRepository.observeUnlockedWeapons(),
+                        playerRepository.observeWallet(),
+                    ) { owned, wallet ->
+                        ownedList = owned
+                        val ownedMap = owned.associateBy { it.type }
+                        UltimateWeaponUiState(
+                            weapons =
+                                UltimateWeaponType.entries.map { type ->
+                                    val ow = ownedMap[type]
+                                    val isUnlocked = ow?.isUnlocked == true
+                                    val paths =
+                                        if (isUnlocked) {
+                                            UWPath.ALL.associateWith { path ->
+                                                val level = ow!!.levelOf(path)
+                                                val cost = type.costForPath(level)
+                                                UWPathDisplay(
+                                                    path = path,
+                                                    level = level,
+                                                    cost = cost,
+                                                    canAfford =
+                                                        level < UltimateWeaponType.MAX_PATH_LEVEL &&
+                                                            wallet.powerStones >= cost,
+                                                    isMaxed = level >= UltimateWeaponType.MAX_PATH_LEVEL,
+                                                )
+                                            }
+                                        } else {
+                                            emptyMap()
+                                        }
+                                    UWDisplayInfo(
+                                        type = type,
+                                        isUnlocked = isUnlocked,
+                                        isEquipped = ow?.isEquipped == true,
+                                        canAffordUnlock = !isUnlocked && wallet.powerStones >= type.unlockCost,
+                                        paths = paths,
+                                    )
+                                },
+                            powerStones = wallet.powerStones,
+                            equippedCount = owned.count { it.isEquipped && it.isUnlocked },
+                            isLoading = false,
                         )
                     }
-                } else {
-                    emptyMap()
+                        // #194: surface a source-flow throw as an error state, not a silent spinner. .catch INSIDE
+                        // flatMapLatest so retry() re-subscribes.
+                        .catch { emit(UltimateWeaponUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UltimateWeaponUiState())
+
+        /** #194: re-subscribe the data flow after a load error. */
+        fun retry() {
+            _retry.value++
+        }
+
+        fun unlock(type: UltimateWeaponType) {
+            viewModelScope.launch { unlockUW(type, uiState.value.powerStones, ownedList) }
+        }
+
+        fun upgrade(
+            type: UltimateWeaponType,
+            path: UWPath,
+        ) {
+            val info = uiState.value.weapons.find { it.type == type } ?: return
+            val pathInfo = info.paths[path] ?: return
+            viewModelScope.launch {
+                upgradeUW(type, path, pathInfo.level, uiState.value.powerStones)
+            }
+        }
+
+        fun toggleEquip(type: UltimateWeaponType) {
+            val info = uiState.value.weapons.find { it.type == type } ?: return
+            if (!info.isUnlocked) return
+            viewModelScope.launch {
+                if (info.isEquipped) {
+                    uwRepository.unequipWeapon(type)
+                } else if (uiState.value.equippedCount < 3) {
+                    uwRepository.equipWeapon(type)
                 }
-                UWDisplayInfo(
-                    type = type,
-                    isUnlocked = isUnlocked,
-                    isEquipped = ow?.isEquipped == true,
-                    canAffordUnlock = !isUnlocked && wallet.powerStones >= type.unlockCost,
-                    paths = paths,
-                )
-            },
-            powerStones = wallet.powerStones,
-            equippedCount = owned.count { it.isEquipped && it.isUnlocked },
-            isLoading = false,
-        )
-    }
-        // #194: surface a source-flow throw as an error state, not a silent spinner. .catch INSIDE
-        // flatMapLatest so retry() re-subscribes.
-        .catch { emit(UltimateWeaponUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UltimateWeaponUiState())
-
-    /** #194: re-subscribe the data flow after a load error. */
-    fun retry() { _retry.value++ }
-
-    fun unlock(type: UltimateWeaponType) {
-        viewModelScope.launch { unlockUW(type, uiState.value.powerStones, ownedList) }
-    }
-
-    fun upgrade(type: UltimateWeaponType, path: UWPath) {
-        val info = uiState.value.weapons.find { it.type == type } ?: return
-        val pathInfo = info.paths[path] ?: return
-        viewModelScope.launch {
-            upgradeUW(type, path, pathInfo.level, uiState.value.powerStones)
+            }
         }
     }
-
-    fun toggleEquip(type: UltimateWeaponType) {
-        val info = uiState.value.weapons.find { it.type == type } ?: return
-        if (!info.isUnlocked) return
-        viewModelScope.launch {
-            if (info.isEquipped) uwRepository.unequipWeapon(type)
-            else if (uiState.value.equippedCount < 3) uwRepository.equipWeapon(type)
-        }
-    }
-}

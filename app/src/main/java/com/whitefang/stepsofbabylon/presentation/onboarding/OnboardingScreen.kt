@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.onboarding
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.background
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -102,32 +102,37 @@ fun OnboardingScreen(
     // the frame, so this restores that once-only guarantee for the now-longer interactive window).
     val finishPulse = rememberPulse()
     var finishing by remember { mutableStateOf(false) }
+
     fun finish() {
-        if (finishing) return           // latch: ignore re-taps during the beat
-        viewModel.completeOnboarding()  // (1) persist — first, unconditional
-        finishPulse.trigger()           // (2) fire the one-shot pulse (no-op visual under reduced-motion)
-        finishing = true                // (3) arm navigation
+        if (finishing) return // latch: ignore re-taps during the beat
+        viewModel.completeOnboarding() // (1) persist — first, unconditional
+        finishPulse.trigger() // (2) fire the one-shot pulse (no-op visual under reduced-motion)
+        finishing = true // (3) arm navigation
     }
     LaunchedEffect(finishing) {
         if (finishing) {
             if (!reducedMotion) kotlinx.coroutines.delay(FINISH_PULSE_MS)
-            onFinished()                // (4) guaranteed exactly once; immediate under reduced-motion
+            onFinished() // (4) guaranteed exactly once; immediate under reduced-motion
         }
     }
 
-    val sky = if (reducedMotion) {
-        slideSky(slides[pagerState.currentPage].biome)?.let { Color(it.first) to Color(it.second) }
-    } else {
-        crossfadedSky(slides, pagerState.currentPage, pagerState.currentPageOffsetFraction)
-    }
-    Box(Modifier.fillMaxSize().then(
-        if (sky != null) {
-            Modifier.background(Brush.verticalGradient(listOf(sky.first, sky.second)))
-        } else Modifier
-    )) {
+    val sky =
+        if (reducedMotion) {
+            slideSky(slides[pagerState.currentPage].biome)?.let { Color(it.first) to Color(it.second) }
+        } else {
+            crossfadedSky(slides, pagerState.currentPage, pagerState.currentPageOffsetFraction)
+        }
+    Box(
+        Modifier.fillMaxSize().then(
+            if (sky != null) {
+                Modifier.background(Brush.verticalGradient(listOf(sky.first, sky.second)))
+            } else {
+                Modifier
+            },
+        ),
+    ) {
         Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
             Column(Modifier.fillMaxSize().padding(24.dp)) {
-
                 // Top bar: Skip (non-final slides only) jumps to the permission primer.
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     if (pagerState.currentPage < lastIndex) {
@@ -151,17 +156,19 @@ fun OnboardingScreen(
                             Image(
                                 painter = painterResource(artDrawable(slide.art)),
                                 contentDescription = null,
-                                modifier = Modifier
-                                    .size(96.dp)
-                                    .pulseScale(finishPulse),
+                                modifier =
+                                    Modifier
+                                        .size(96.dp)
+                                        .pulseScale(finishPulse),
                             )
                         } else {
                             Text(
                                 slide.icon,
                                 style = MaterialTheme.typography.displayMedium,
-                                modifier = Modifier
-                                    .pulseScale(finishPulse)
-                                    .clearAndSetSemantics {},
+                                modifier =
+                                    Modifier
+                                        .pulseScale(finishPulse)
+                                        .clearAndSetSemantics {},
                             )
                         }
                         Spacer(Modifier.height(24.dp))
@@ -172,7 +179,11 @@ fun OnboardingScreen(
                                 .padding(horizontal = 16.dp, vertical = 12.dp),
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(slide.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+                                Text(
+                                    slide.title,
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    textAlign = TextAlign.Center,
+                                )
                                 Spacer(Modifier.height(16.dp))
                                 Text(
                                     slide.body,
@@ -189,9 +200,13 @@ fun OnboardingScreen(
                 // (HorizontalPager does not auto-announce "page X of N"), so the ROW carries a single
                 // semantic label and the individual dots stay decorative. The label is resolved here in
                 // @Composable scope (the semantics{} lambda is not composable) via pluralStringResource.
-                val pageLabel = pluralStringResource(
-                    R.plurals.page_x_of_n, slides.size, pagerState.currentPage + 1, slides.size,
-                )
+                val pageLabel =
+                    pluralStringResource(
+                        R.plurals.page_x_of_n,
+                        slides.size,
+                        pagerState.currentPage + 1,
+                        slides.size,
+                    )
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -207,8 +222,11 @@ fun OnboardingScreen(
                                 .size(if (active) 10.dp else 8.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (active) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                    if (active) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                    },
                                 ),
                         )
                     }
@@ -249,13 +267,19 @@ fun OnboardingScreen(
                                 Text("Continue anyway")
                             }
                         }
+
                         stepCountingGranted -> {
                             Row(
                                 Modifier.fillMaxWidth().padding(bottom = 8.dp),
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Filled.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp),
+                                )
                                 Spacer(Modifier.width(4.dp))
                                 Text(
                                     "Step counting enabled",
@@ -302,11 +326,13 @@ fun OnboardingScreen(
                                 }
                             }
                         }
+
                         !permissionAsked -> {
                             Button(onClick = onEnableStepCounting, modifier = Modifier.fillMaxWidth()) {
                                 Text("Enable step counting")
                             }
                         }
+
                         else -> {
                             // Asked but denied — give an explicit recovery path, never strand the player.
                             Text(
@@ -363,6 +389,7 @@ private fun crossfadedSky(
 /** Maps an [OnboardingArt] marker to its drawable resource (kept screen-local so the model stays
  *  Android-free). */
 @androidx.annotation.DrawableRes
-private fun artDrawable(art: OnboardingArt): Int = when (art) {
-    OnboardingArt.ZIGGURAT -> R.drawable.ic_ziggurat_emblem
-}
+private fun artDrawable(art: OnboardingArt): Int =
+    when (art) {
+        OnboardingArt.ZIGGURAT -> R.drawable.ic_ziggurat_emblem
+    }

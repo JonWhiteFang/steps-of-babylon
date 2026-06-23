@@ -10,22 +10,28 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.filled.Slideshow
-import androidx.compose.material3.Icon
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,143 +54,172 @@ import com.whitefang.stepsofbabylon.presentation.ui.cardRarityLabelRes
 import com.whitefang.stepsofbabylon.presentation.ui.cardRarityTier
 import com.whitefang.stepsofbabylon.presentation.ui.color
 import com.whitefang.stepsofbabylon.presentation.ui.labelRes
+import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rarityBorder
-import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
-import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.key
-import androidx.compose.runtime.remember
 import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusWarning
+import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 
 @Composable
 fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    if (state.error != null) { ErrorState(state.error!!, onRetry = viewModel::retry); return }
-    if (state.isLoading) { LoadingBox(); return }
+    if (state.error != null) {
+        ErrorState(state.error!!, onRetry = viewModel::retry)
+        return
+    }
+    if (state.isLoading) {
+        LoadingBox()
+        return
+    }
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state.userMessage) {
-        state.userMessage?.let { snackbarHostState.showSnackbar(it); viewModel.clearMessage() }
+        state.userMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessage()
+        }
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
-    Column(Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            // Left: how many cards the player owns. Right: the gem balance they spend on packs.
-            // (Previously both slots printed the gem balance — "💎 1 / 💎 1 Gems" — a copy bug.)
-            Text("${state.ownedCards.size} cards", style = MaterialTheme.typography.titleMedium)
-            CurrencyValue(CurrencyType.GEMS, state.gems)
-        }
-        Spacer(Modifier.height(8.dp))
-        if (state.equippedCount >= 3) {
-            Text(
-                "Equipped: 3/3 — unequip one to swap",
-                style = MaterialTheme.typography.titleSmall,
-                color = StatusWarning,
-                fontWeight = FontWeight.Bold,
-            )
-        } else {
-            Text("Equipped: ${state.equippedCount}/3", style = MaterialTheme.typography.titleSmall)
-        }
-        Spacer(Modifier.height(8.dp))
-
-        // Free pack ad button
-        if (state.freePackAvailable) {
-            OutlinedButton(onClick = { viewModel.watchFreePackAd() }, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Filled.Slideshow, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(4.dp))
-                Text("Free Pack (Ad)")
+        Column(Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                // Left: how many cards the player owns. Right: the gem balance they spend on packs.
+                // (Previously both slots printed the gem balance — "💎 1 / 💎 1 Gems" — a copy bug.)
+                Text("${state.ownedCards.size} cards", style = MaterialTheme.typography.titleMedium)
+                CurrencyValue(CurrencyType.GEMS, state.gems)
             }
-            Spacer(Modifier.height(4.dp))
-        } else if (!state.adRemoved) {
-            Text("Free pack used today", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-            Spacer(Modifier.height(4.dp))
-        }
+            Spacer(Modifier.height(8.dp))
+            if (state.equippedCount >= 3) {
+                Text(
+                    "Equipped: 3/3 — unequip one to swap",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = StatusWarning,
+                    fontWeight = FontWeight.Bold,
+                )
+            } else {
+                Text("Equipped: ${state.equippedCount}/3", style = MaterialTheme.typography.titleSmall)
+            }
+            Spacer(Modifier.height(8.dp))
 
-        // Pack buttons
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            state.packOptions.forEach { pack ->
-                key(pack.tier) {
-                    val packPulse = rememberPulse()
-                    val packHaptics = rememberHaptics()
-                    Button(
-                        onClick = { packPulse.trigger(); packHaptics.tap(); viewModel.openPack(pack.tier) },
-                        enabled = pack.canAfford,
-                        modifier = Modifier.weight(1f).pulseScale(packPulse),
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(stringResource(pack.tier.labelRes()))
-                            CurrencyCost(CurrencyType.GEMS, pack.tier.gemCost)
-                        }
-                    }
+            // Free pack ad button
+            if (state.freePackAvailable) {
+                OutlinedButton(onClick = { viewModel.watchFreePackAd() }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Filled.Slideshow, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Free Pack (Ad)")
                 }
+                Spacer(Modifier.height(4.dp))
+            } else if (!state.adRemoved) {
+                Text("Free pack used today", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Spacer(Modifier.height(4.dp))
             }
-        }
-        Spacer(Modifier.height(12.dp))
 
-        // Card collection
-        if (state.ownedCards.isEmpty() && !state.isLoading) {
-            EmptyState(
-                title = "No cards yet",
-                message = "Open a pack above to start your collection. Equip up to 3 cards for per-round bonuses in battle.",
-            )
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(state.ownedCards) { card ->
-                    CardItem(card, state.equippedCount,
-                        onEquip = { viewModel.equipCard(card.id) },
-                        onUnequip = { viewModel.unequipCard(card.id) },
-                        onUpgrade = { viewModel.upgradeCard(card.id) },
-                    )
-                }
-            }
-        }
-    }
-
-    // Pack result dialog
-    state.lastPackResult?.let { results ->
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissPackResult() },
-            title = { Text("Pack Opened!") },
-            text = {
-                Column {
-                    results.forEach { r ->
-                        val rowColor = cardRarityTier(r.type.rarity).color()
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (r.isNew) {
-                                Icon(Icons.Filled.FiberNew, contentDescription = "New", tint = rowColor, modifier = Modifier.size(18.dp))
-                            } else {
-                                Icon(Icons.Filled.Autorenew, contentDescription = "Duplicate", tint = rowColor, modifier = Modifier.size(18.dp))
+            // Pack buttons
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                state.packOptions.forEach { pack ->
+                    key(pack.tier) {
+                        val packPulse = rememberPulse()
+                        val packHaptics = rememberHaptics()
+                        Button(
+                            onClick = {
+                                packPulse.trigger()
+                                packHaptics.tap()
+                                viewModel.openPack(pack.tier)
+                            },
+                            enabled = pack.canAfford,
+                            modifier = Modifier.weight(1f).pulseScale(packPulse),
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(stringResource(pack.tier.labelRes()))
+                                CurrencyCost(CurrencyType.GEMS, pack.tier.gemCost)
                             }
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                if (r.isNew) formatName(r.type.name)
-                                else stringResource(
-                                    R.string.card_pull_result,
-                                    formatName(r.type.name),
-                                    pluralStringResource(R.plurals.card_copies, r.copiesAwarded, r.copiesAwarded),
-                                ),
-                                color = rowColor,
-                            )
                         }
                     }
                 }
-            },
-            confirmButton = { TextButton(onClick = { viewModel.dismissPackResult() }) { Text("OK") } },
-        )
-    }
+            }
+            Spacer(Modifier.height(12.dp))
+
+            // Card collection
+            if (state.ownedCards.isEmpty() && !state.isLoading) {
+                EmptyState(
+                    title = "No cards yet",
+                    message = "Open a pack above to start your collection. Equip up to 3 cards for per-round bonuses in battle.",
+                )
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(state.ownedCards) { card ->
+                        CardItem(
+                            card,
+                            state.equippedCount,
+                            onEquip = { viewModel.equipCard(card.id) },
+                            onUnequip = { viewModel.unequipCard(card.id) },
+                            onUpgrade = { viewModel.upgradeCard(card.id) },
+                        )
+                    }
+                }
+            }
+        }
+
+        // Pack result dialog
+        state.lastPackResult?.let { results ->
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissPackResult() },
+                title = { Text("Pack Opened!") },
+                text = {
+                    Column {
+                        results.forEach { r ->
+                            val rowColor = cardRarityTier(r.type.rarity).color()
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (r.isNew) {
+                                    Icon(
+                                        Icons.Filled.FiberNew,
+                                        contentDescription = "New",
+                                        tint = rowColor,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                } else {
+                                    Icon(
+                                        Icons.Filled.Autorenew,
+                                        contentDescription = "Duplicate",
+                                        tint = rowColor,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    if (r.isNew) {
+                                        formatName(r.type.name)
+                                    } else {
+                                        stringResource(
+                                            R.string.card_pull_result,
+                                            formatName(r.type.name),
+                                            pluralStringResource(
+                                                R.plurals.card_copies,
+                                                r.copiesAwarded,
+                                                r.copiesAwarded,
+                                            ),
+                                        )
+                                    },
+                                    color = rowColor,
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = { TextButton(onClick = { viewModel.dismissPackResult() }) { Text("OK") } },
+            )
+        }
     } // Scaffold
 }
 
 @Composable
 private fun CardItem(
-    card: CardDisplayInfo, equippedCount: Int,
-    onEquip: () -> Unit, onUnequip: () -> Unit, onUpgrade: () -> Unit,
+    card: CardDisplayInfo,
+    equippedCount: Int,
+    onEquip: () -> Unit,
+    onUnequip: () -> Unit,
+    onUpgrade: () -> Unit,
 ) {
     val haptics = rememberHaptics()
     val upgradePulse = rememberPulse()
@@ -193,8 +228,15 @@ private fun CardItem(
         Modifier.fillMaxWidth().rarityBorder(tier),
     ) {
         Column(Modifier.padding(12.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     RarityBadge(tier, stringResource(cardRarityLabelRes(card.type.rarity)))
                     Text(formatName(card.type.name), style = MaterialTheme.typography.titleSmall)
                 }
@@ -206,17 +248,35 @@ private fun CardItem(
                     Text("Lv ${card.level}/${card.type.maxLevel}", style = MaterialTheme.typography.labelMedium)
                 }
             }
-            Text(card.effectDescription, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                card.effectDescription,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 if (card.isEquipped) {
-                    OutlinedButton(onClick = { haptics.tap(); onUnequip() }, modifier = Modifier.weight(1f)) { Text("Unequip") }
+                    OutlinedButton(onClick = {
+                        haptics.tap()
+                        onUnequip()
+                    }, modifier = Modifier.weight(1f)) { Text("Unequip") }
                 } else {
-                    Button(onClick = { haptics.tap(); onEquip() }, enabled = equippedCount < 3, modifier = Modifier.weight(1f)) { Text("Equip") }
+                    Button(onClick = {
+                        haptics.tap()
+                        onEquip()
+                    }, enabled = equippedCount < 3, modifier = Modifier.weight(1f)) { Text("Equip") }
                 }
                 if (!card.isMaxLevel) {
                     Button(
-                        onClick = { upgradePulse.trigger(); haptics.tap(); onUpgrade() },
+                        onClick = {
+                            upgradePulse.trigger()
+                            haptics.tap()
+                            onUpgrade()
+                        },
                         enabled = card.canAffordUpgrade,
                         modifier = Modifier.weight(1f).pulseScale(upgradePulse),
                     ) {

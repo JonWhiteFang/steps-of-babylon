@@ -54,17 +54,21 @@ fun TierSelector(
                     onClick = { if (unlocked) onSelectTier(t) },
                     enabled = unlocked,
                     label = {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 2.dp)) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(vertical = 2.dp),
+                        ) {
                             Text("$t", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             Text("${tier.cashMultiplier}x", fontSize = 9.sp)
                         }
                     },
                     modifier = Modifier.size(width = 48.dp, height = 44.dp),
                     shape = RoundedCornerShape(8.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFFD4A843),
-                        selectedLabelColor = Color.Black,
-                    ),
+                    colors =
+                        FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFD4A843),
+                            selectedLabelColor = Color.Black,
+                        ),
                 )
             }
         }

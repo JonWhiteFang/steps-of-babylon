@@ -32,20 +32,26 @@ import com.whitefang.stepsofbabylon.presentation.ui.EquippedChip
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.RarityBadge
+import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rarityBorder
-import com.whitefang.stepsofbabylon.presentation.ui.uwRarityLabelRes
-import com.whitefang.stepsofbabylon.presentation.ui.uwRarityTier
-import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
-import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusWarning
+import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
+import com.whitefang.stepsofbabylon.presentation.ui.uwRarityLabelRes
+import com.whitefang.stepsofbabylon.presentation.ui.uwRarityTier
 
 @Composable
 fun UltimateWeaponScreen(viewModel: UltimateWeaponViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    if (state.error != null) { ErrorState(state.error!!, onRetry = viewModel::retry); return }
-    if (state.isLoading) { LoadingBox(); return }
+    if (state.error != null) {
+        ErrorState(state.error!!, onRetry = viewModel::retry)
+        return
+    }
+    if (state.isLoading) {
+        LoadingBox()
+        return
+    }
 
     Column(Modifier.fillMaxSize()) {
         Text(
@@ -103,14 +109,18 @@ private fun UWCard(
     val rarityAlpha = if (info.isUnlocked) 1f else 0.5f
     Card(
         modifier = Modifier.fillMaxWidth().rarityBorder(tier, alpha = rarityAlpha),
-        colors = CardDefaults.cardColors(
-            containerColor = if (info.isUnlocked) Color(0xFF2A2A3E) else Color(0xFF1A1A2E),
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = if (info.isUnlocked) Color(0xFF2A2A3E) else Color(0xFF1A1A2E),
+            ),
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
                         RarityBadge(tier, stringResource(uwRarityLabelRes(tier)), alpha = rarityAlpha)
                         Text(
                             info.type.name.toDisplayName(),
@@ -135,7 +145,11 @@ private fun UWCard(
                     modifier = Modifier.padding(top = 8.dp),
                 ) {
                     Button(
-                        onClick = { unlockPulse.trigger(); haptics.tap(); onUnlock() },
+                        onClick = {
+                            unlockPulse.trigger()
+                            haptics.tap()
+                            onUnlock()
+                        },
                         enabled = info.canAffordUnlock,
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A5ACD)),
                         modifier = Modifier.pulseScale(unlockPulse),
@@ -159,7 +173,10 @@ private fun UWCard(
                     modifier = Modifier.padding(top = 8.dp),
                 ) {
                     OutlinedButton(
-                        onClick = { haptics.tap(); onToggleEquip() },
+                        onClick = {
+                            haptics.tap()
+                            onToggleEquip()
+                        },
                         enabled = info.isEquipped || canEquipMore,
                     ) {
                         Text(if (info.isEquipped) "Unequip" else "Equip")
@@ -204,7 +221,11 @@ private fun UWPathRow(
             )
         } else {
             Button(
-                onClick = { pulse.trigger(); haptics.tap(); onUpgrade() },
+                onClick = {
+                    pulse.trigger()
+                    haptics.tap()
+                    onUpgrade()
+                },
                 enabled = pathInfo.canAfford,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A5ACD)),
                 modifier = Modifier.pulseScale(pulse),
@@ -219,49 +240,73 @@ private fun UWPathRow(
  * UI-side label for a UW's path (e.g. "Damage" / "Chain length" / "Cooldown"). Display
  * names are intentionally short so the row layout stays single-line on narrow screens.
  */
-private fun pathLabel(type: UltimateWeaponType, path: UWPath): String = when (path) {
-    UWPath.DAMAGE -> when (type) {
-        UltimateWeaponType.CHRONO_FIELD -> "Slow factor"
-        UltimateWeaponType.GOLDEN_ZIGGURAT -> "Cash multiplier"
-        UltimateWeaponType.POISON_SWAMP -> "DoT % MaxHP/sec"
-        UltimateWeaponType.BLACK_HOLE -> "Damage DPS"
-        else -> "Damage"
+private fun pathLabel(
+    type: UltimateWeaponType,
+    path: UWPath,
+): String =
+    when (path) {
+        UWPath.DAMAGE -> {
+            when (type) {
+                UltimateWeaponType.CHRONO_FIELD -> "Slow factor"
+                UltimateWeaponType.GOLDEN_ZIGGURAT -> "Cash multiplier"
+                UltimateWeaponType.POISON_SWAMP -> "DoT % MaxHP/sec"
+                UltimateWeaponType.BLACK_HOLE -> "Damage DPS"
+                else -> "Damage"
+            }
+        }
+
+        UWPath.SECONDARY -> {
+            when (type) {
+                UltimateWeaponType.CHAIN_LIGHTNING -> "Chain length"
+                UltimateWeaponType.DEATH_WAVE -> "Radius"
+                UltimateWeaponType.BLACK_HOLE -> "Pull strength"
+                UltimateWeaponType.CHRONO_FIELD -> "Duration"
+                UltimateWeaponType.POISON_SWAMP -> "Area"
+                UltimateWeaponType.GOLDEN_ZIGGURAT -> "Damage multiplier"
+            }
+        }
+
+        UWPath.COOLDOWN -> {
+            "Cooldown"
+        }
     }
-    UWPath.SECONDARY -> when (type) {
-        UltimateWeaponType.CHAIN_LIGHTNING -> "Chain length"
-        UltimateWeaponType.DEATH_WAVE -> "Radius"
-        UltimateWeaponType.BLACK_HOLE -> "Pull strength"
-        UltimateWeaponType.CHRONO_FIELD -> "Duration"
-        UltimateWeaponType.POISON_SWAMP -> "Area"
-        UltimateWeaponType.GOLDEN_ZIGGURAT -> "Damage multiplier"
-    }
-    UWPath.COOLDOWN -> "Cooldown"
-}
 
 /**
  * Format the path's value at the next level (after a hypothetical purchase). Returns a
  * UI-friendly string with the appropriate unit suffix per UW × path. Used by the
  * per-path row's "L0 → 666 dmg" preview line.
  */
-private fun pathValueAtNext(type: UltimateWeaponType, path: UWPath, currentLevel: Int): String {
+private fun pathValueAtNext(
+    type: UltimateWeaponType,
+    path: UWPath,
+    currentLevel: Int,
+): String {
     val next = (currentLevel + 1).coerceAtMost(UltimateWeaponType.MAX_PATH_LEVEL)
     val v = type.valueAtLevel(path, next)
     return when (path) {
-        UWPath.COOLDOWN -> "${v.toInt()}s"
-        UWPath.DAMAGE -> when (type) {
-            UltimateWeaponType.CHRONO_FIELD -> String.format(java.util.Locale.ROOT, "%.0f%%", v * 100)
-            UltimateWeaponType.GOLDEN_ZIGGURAT -> String.format(java.util.Locale.ROOT, "%.1f×", v)
-            UltimateWeaponType.POISON_SWAMP -> String.format(java.util.Locale.ROOT, "%.1f%%", v * 100)
-            UltimateWeaponType.BLACK_HOLE -> "${v.toInt()} DPS"
-            else -> "${v.toInt()} dmg"
+        UWPath.COOLDOWN -> {
+            "${v.toInt()}s"
         }
-        UWPath.SECONDARY -> when (type) {
-            UltimateWeaponType.CHAIN_LIGHTNING -> "${v.toInt()} enemies"
-            UltimateWeaponType.DEATH_WAVE -> String.format(java.util.Locale.ROOT, "%.0f%% screen", v * 100)
-            UltimateWeaponType.BLACK_HOLE -> "${v.toInt()} px/s"
-            UltimateWeaponType.CHRONO_FIELD -> String.format(java.util.Locale.ROOT, "%.0fs", v)
-            UltimateWeaponType.POISON_SWAMP -> String.format(java.util.Locale.ROOT, "%.0f%% area", v * 100)
-            UltimateWeaponType.GOLDEN_ZIGGURAT -> String.format(java.util.Locale.ROOT, "%.1f× dmg", v)
+
+        UWPath.DAMAGE -> {
+            when (type) {
+                UltimateWeaponType.CHRONO_FIELD -> String.format(java.util.Locale.ROOT, "%.0f%%", v * 100)
+                UltimateWeaponType.GOLDEN_ZIGGURAT -> String.format(java.util.Locale.ROOT, "%.1f×", v)
+                UltimateWeaponType.POISON_SWAMP -> String.format(java.util.Locale.ROOT, "%.1f%%", v * 100)
+                UltimateWeaponType.BLACK_HOLE -> "${v.toInt()} DPS"
+                else -> "${v.toInt()} dmg"
+            }
+        }
+
+        UWPath.SECONDARY -> {
+            when (type) {
+                UltimateWeaponType.CHAIN_LIGHTNING -> "${v.toInt()} enemies"
+                UltimateWeaponType.DEATH_WAVE -> String.format(java.util.Locale.ROOT, "%.0f%% screen", v * 100)
+                UltimateWeaponType.BLACK_HOLE -> "${v.toInt()} px/s"
+                UltimateWeaponType.CHRONO_FIELD -> String.format(java.util.Locale.ROOT, "%.0fs", v)
+                UltimateWeaponType.POISON_SWAMP -> String.format(java.util.Locale.ROOT, "%.0f%% area", v * 100)
+                UltimateWeaponType.GOLDEN_ZIGGURAT -> String.format(java.util.Locale.ROOT, "%.1f× dmg", v)
+            }
         }
     }
 }

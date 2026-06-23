@@ -13,6 +13,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -23,13 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material.icons.filled.Inbox
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -69,15 +69,22 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    if (state.error != null) { ErrorState(state.error!!, onRetry = viewModel::retry); return }
-    if (state.isLoading) { LoadingBox(); return }
+    if (state.error != null) {
+        ErrorState(state.error!!, onRetry = viewModel::retry)
+        return
+    }
+    if (state.isLoading) {
+        LoadingBox()
+        return
+    }
     val theme = BiomeTheme.forBiome(state.currentBiome)
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshDate()
-        }
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshDate()
+            }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
@@ -86,8 +93,10 @@ fun HomeScreen(
         Modifier.fillMaxSize().background(
             // Raised alpha (was 0.30/0.15) so Home actually wears its biome colours instead of
             // looking flat-brown. Still translucent over the bronze window background.
-            Brush.verticalGradient(listOf(Color(theme.skyColorTop).copy(alpha = 0.55f), Color(theme.skyColorBottom).copy(alpha = 0.30f)))
-        )
+            Brush.verticalGradient(
+                listOf(Color(theme.skyColorTop).copy(alpha = 0.55f), Color(theme.skyColorBottom).copy(alpha = 0.30f)),
+            ),
+        ),
     ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -119,7 +128,10 @@ fun HomeScreen(
                 }
             }
 
-            Row(Modifier.fillMaxWidth().clickable { onEconomyClick() }, horizontalArrangement = Arrangement.SpaceEvenly) {
+            Row(
+                Modifier.fillMaxWidth().clickable { onEconomyClick() },
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
                 CurrencyItem("Steps", state.stepBalance)
                 CurrencyItem("Gems", state.gems)
                 CurrencyItem("Power Stones", state.powerStones)
@@ -135,10 +147,21 @@ fun HomeScreen(
                 )
             }
 
-            Text("Best Wave: ${state.bestWave}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+            Text(
+                "Best Wave: ${state.bestWave}",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
 
             if (state.unclaimedDropCount > 0) {
-                OutlinedButton(onClick = onSuppliesClick, modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Unclaimed supplies, ${state.unclaimedDropCount} available" }) {
+                OutlinedButton(
+                    onClick = onSuppliesClick,
+                    modifier =
+                        Modifier.fillMaxWidth().semantics {
+                            contentDescription =
+                                "Unclaimed supplies, ${state.unclaimedDropCount} available"
+                        },
+                ) {
                     BadgedBox(badge = { Badge { Text("${state.unclaimedDropCount}") } }) {
                         Icon(Icons.Default.Inbox, contentDescription = null)
                     }
@@ -158,8 +181,16 @@ fun HomeScreen(
             MenuButton(icon = Icons.Default.ShoppingCart, label = "Store", onClick = onStoreClick)
 
             if (state.seasonPassActive) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = StatusWarning, modifier = Modifier.size(16.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Icon(
+                        Icons.Default.Star,
+                        contentDescription = null,
+                        tint = StatusWarning,
+                        modifier = Modifier.size(16.dp),
+                    )
                     Text("Season Pass Active", style = MaterialTheme.typography.labelMedium, color = StatusWarning)
                 }
             }
@@ -167,7 +198,17 @@ fun HomeScreen(
             Spacer(Modifier.weight(1f))
 
             val haptics = rememberHaptics()
-            Button(onClick = { haptics.tap(); onBattleClick() }, modifier = Modifier.fillMaxWidth().height(56.dp), colors = ButtonDefaults.buttonColors(containerColor = Gold)) {
+            Button(
+                onClick = {
+                    haptics.tap()
+                    onBattleClick()
+                },
+                modifier =
+                    Modifier.fillMaxWidth().height(
+                        56.dp,
+                    ),
+                colors = ButtonDefaults.buttonColors(containerColor = Gold),
+            ) {
                 Text("BATTLE", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             }
         }
@@ -201,7 +242,10 @@ private fun MenuButton(
 }
 
 @Composable
-private fun CurrencyItem(label: String, amount: Long) {
+private fun CurrencyItem(
+    label: String,
+    amount: Long,
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = formatCount(amount), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Text(text = label, style = MaterialTheme.typography.labelSmall)

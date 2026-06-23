@@ -32,11 +32,17 @@ data class WeeklyResult(
 ) {
     companion object {
         /** PS reward per claimed tier (matches existing CurrencyDashboardScreen ThresholdRow values). */
-        fun powerStonesForTier(tier: Int): Int = when (tier) {
-            1 -> 10
-            2 -> 30  // 10 + 20
-            3 -> 65  // 10 + 20 + 35
-            else -> 0
-        }
+        fun powerStonesForTier(tier: Int): Int =
+            when (tier) {
+                1 -> 10
+
+                2 -> 30
+
+                // 10 + 20
+                3 -> 65
+
+                // 10 + 20 + 35
+                else -> 0
+            }
     }
 }

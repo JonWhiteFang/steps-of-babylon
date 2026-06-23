@@ -33,19 +33,29 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (IN FLIGHT — PR open, awaiting controller merge; `[Unreleased]`).**
+- **CURRENT (IN FLIGHT — PR open, awaiting controller merge; branch `chore/ktlint-format-4-presentation`; `[Unreleased]`).**
+  **Staged repo-wide ktlint auto-format — stage 4 of 6 (`presentation/` EXCL `battle/`).** Mechanical
+  `ktlint -F` over `presentation/` excluding the fragile `presentation/battle/` zone (~50 of 64 in-scope
+  files changed: Compose screens, ViewModels, UiState/DTOs, navigation, onboarding, audio, theme, ui-helpers
+  + the 2 top-level activities). Pure-formatting / zero behaviour change; all hunks on the Bucket-A allowlist
+  (the dominant pattern = `@HiltViewModel … @Inject constructor` class-signature reflow; plus
+  function-signature reflow, expression-body wrapping, if-else/when-entry bracing, multiline/property
+  wrapping, trailing-comma, import ordering + no-wildcard-imports, same-line-statement split). Largest
+  stage — kept a SINGLE PR. **Battle EXCLUDED + UNTOUCHED** (asserted before AND after via `fd -E battle`
+  + `git diff`). Diff reviewed in full (5163-line `git diff -w`) by two parallel reviewer subagents + main
+  agent — CLEAN; **zero `@Composable` name changes** (Bucket B, untouched); no literal/logic change.
+  **ktlint baseline regenerated:** `config/ktlint/baseline.xml` **7423 → 4974** (full-`app/src` scope,
+  biggest single-stage drop). **detekt baseline REGEN'd** (expected this stage): **474 → 387** — 11 added
+  (5 `LongMethod` Composables over-length from brace-expansion + 6 `MaxLineLength` re-keyed long lines), 98
+  removed (pre-existing long one-liners ktlint wrapped); all format-induced, no new smell type, only
+  presentation entries. **1254 JVM tests green, 0 failures** (incl. #253 Compose UI tests); `lint-kotlin.sh`
+  check + `:app:detekt` both exit 0. **Next:** controller merges; then stages 5–6 (`presentation/battle/`
+  [FRAGILE] → test sources), each repeating scoped `-F` + baseline regen (detekt only when the gate flags)
+  + full-suite gate. Plan: `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`.
+- **Previous objective (DONE — branch `chore/ktlint-format-3-service-di`, MERGED; `[Unreleased]`).**
   **Staged repo-wide ktlint auto-format — stage 3 of 6 (`service/`+`di/`+top-level).** Mechanical
   `ktlint -F` over `service/`, `di/`, and `StepsOfBabylonApp.kt` only (17 files), pure-formatting / zero
-  behaviour change; all hunks on the Bucket-A allowlist (class-signature reflow `@Inject`/`@AssistedInject
-  constructor`, supertype-list split, function-signature reflow, expression-body wrapping, if/when bracing
-  incl. the `StepSyncWorker` `CatchUpDecision` arms, trailing-comma, import ordering, chained-call
-  wrapping). **ktlint baseline regenerated:** `config/ktlint/baseline.xml` **7632 → 7423** (full-`app/src`
-  scope, shrinking per stage); **detekt needed NO regen** — `:app:detekt` exit 0 against the existing
-  baseline after the sweep. **1254 JVM tests green, 0 failures**; `lint-kotlin.sh` check + `:app:detekt`
-  both exit 0. **Next:** controller merges; then stages 4–6 (`presentation/` excl battle →
-  `presentation/battle/` [FRAGILE] → test sources), each repeating scoped `-F` + baseline regen (detekt
-  only when the gate flags) + full-suite gate. Plan:
-  `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`.
+  behaviour change. ktlint baseline **7632 → 7423**; detekt needed NO regen. 1254 JVM tests green. See RUN_LOG.
 - **Previous objective (DONE — branch `chore/ktlint-format-2-data`, MERGED; `[Unreleased]`).**
   **Staged repo-wide ktlint auto-format — stage 2 of 6 (`data/`).** Mechanical `ktlint -F` over
   `data/` only (64 files), pure-formatting / zero behaviour change. ktlint baseline **8534 → 7632**;

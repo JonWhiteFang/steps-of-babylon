@@ -40,39 +40,47 @@ enum class RarityTier { TIER_0, TIER_1, TIER_2 }
  * top-level `val Color` tokens, so it is JVM-unit-testable and callable from [rarityBorder].
  * `Color(0xFF…)` is a value class (ULong bit-math) — no Android runtime needed.
  */
-fun RarityTier.color(): Color = when (this) {
-    RarityTier.TIER_0 -> RaritySand   // #C2B280
-    RarityTier.TIER_1 -> LapisLight   // #A7C7E7
-    RarityTier.TIER_2 -> Gold         // #D4A843
-}
+fun RarityTier.color(): Color =
+    when (this) {
+        RarityTier.TIER_0 -> RaritySand
+
+        // #C2B280
+        RarityTier.TIER_1 -> LapisLight
+
+        // #A7C7E7
+        RarityTier.TIER_2 -> Gold // #D4A843
+    }
 
 /** Card rarity → tier. Exhaustive over [CardRarity] (compiler-enforced). */
-fun cardRarityTier(rarity: CardRarity): RarityTier = when (rarity) {
-    CardRarity.COMMON -> RarityTier.TIER_0
-    CardRarity.RARE -> RarityTier.TIER_1
-    CardRarity.EPIC -> RarityTier.TIER_2
-}
+fun cardRarityTier(rarity: CardRarity): RarityTier =
+    when (rarity) {
+        CardRarity.COMMON -> RarityTier.TIER_0
+        CardRarity.RARE -> RarityTier.TIER_1
+        CardRarity.EPIC -> RarityTier.TIER_2
+    }
 
 /**
  * UW unlock cost → tier. Range-based (not exact-value) so a re-priced or future UW landing off
  * today's costs (50/60/75/80/100) still tiers sanely (spec D8). [RarityTest] pins today's six.
  */
-fun uwRarityTier(unlockCost: Int): RarityTier = when {
-    unlockCost <= 60 -> RarityTier.TIER_0
-    unlockCost <= 89 -> RarityTier.TIER_1
-    else -> RarityTier.TIER_2
-}
+fun uwRarityTier(unlockCost: Int): RarityTier =
+    when {
+        unlockCost <= 60 -> RarityTier.TIER_0
+        unlockCost <= 89 -> RarityTier.TIER_1
+        else -> RarityTier.TIER_2
+    }
 
 /** Card label = the rarity name (COMMON / RARE / EPIC). Delegates to [CardRarity.labelRes] so the
  *  rarity→string mapping lives in exactly one place (EnumLabels.kt); this keeps the badge call-site name. */
 @StringRes fun cardRarityLabelRes(rarity: CardRarity): Int = rarity.labelRes()
 
 /** UW label shifts up so no UW reads as "common" (RARE / EPIC / LEGENDARY). */
-@StringRes fun uwRarityLabelRes(tier: RarityTier): Int = when (tier) {
-    RarityTier.TIER_0 -> R.string.uw_rarity_rare
-    RarityTier.TIER_1 -> R.string.uw_rarity_epic
-    RarityTier.TIER_2 -> R.string.uw_rarity_legendary
-}
+@StringRes fun uwRarityLabelRes(tier: RarityTier): Int =
+    when (tier) {
+        RarityTier.TIER_0 -> R.string.uw_rarity_rare
+        RarityTier.TIER_1 -> R.string.uw_rarity_epic
+        RarityTier.TIER_2 -> R.string.uw_rarity_legendary
+    }
 
 /**
  * Filled pill badge in the tier colour, dark text for contrast on the light tier colours.
@@ -81,16 +89,21 @@ fun uwRarityTier(unlockCost: Int): RarityTier = when {
  * locked UW (spec D6); default 1f = full opacity.
  */
 @Composable
-fun RarityBadge(tier: RarityTier, label: String, alpha: Float = 1f) {
+fun RarityBadge(
+    tier: RarityTier,
+    label: String,
+    alpha: Float = 1f,
+) {
     Text(
         text = label,
         color = Color(0xFF1A1A2E).copy(alpha = alpha),
         fontWeight = FontWeight.Bold,
         fontSize = PILL_FONT_SIZE,
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(tier.color().copy(alpha = alpha))
-            .padding(horizontal = 9.dp, vertical = 3.dp),
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(50))
+                .background(tier.color().copy(alpha = alpha))
+                .padding(horizontal = 9.dp, vertical = 3.dp),
     )
 }
 
@@ -102,10 +115,11 @@ fun EquippedChip() {
         color = Color(0xFF10300A),
         fontWeight = FontWeight.Bold,
         fontSize = PILL_FONT_SIZE,
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(StatusSuccess)
-            .padding(horizontal = 9.dp, vertical = 3.dp),
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(50))
+                .background(StatusSuccess)
+                .padding(horizontal = 9.dp, vertical = 3.dp),
     )
 }
 
@@ -119,7 +133,10 @@ fun EquippedChip() {
  * The shape is clipped first so the accent bar's corners follow the card's rounded corners (and don't
  * bleed past them).
  */
-fun Modifier.rarityBorder(tier: RarityTier, alpha: Float = 1f): Modifier {
+fun Modifier.rarityBorder(
+    tier: RarityTier,
+    alpha: Float = 1f,
+): Modifier {
     val c = tier.color().copy(alpha = alpha)
     return this
         .clip(RoundedCornerShape(12.dp))

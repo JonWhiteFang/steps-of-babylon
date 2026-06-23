@@ -30,6 +30,7 @@ class PulseState internal constructor(
     private val setActive: (Boolean) -> Unit,
 ) {
     internal val scale: Float get() = scaleState.value
+
     fun trigger() = setActive(true)
 }
 
@@ -40,16 +41,19 @@ fun rememberPulse(): PulseState {
     val context = LocalContext.current
     val reducedMotion = remember { ReducedMotionCheck.isReducedMotionEnabled(context) }
     var active by remember { mutableStateOf(false) }
-    val scale = animateFloatAsState(
-        targetValue = if (active) PULSE_TARGET else 1f,
-        animationSpec = if (reducedMotion) snap() else tween(100),
-        label = "purchasePulse",
-    )
+    val scale =
+        animateFloatAsState(
+            targetValue = if (active) PULSE_TARGET else 1f,
+            animationSpec = if (reducedMotion) snap() else tween(100),
+            label = "purchasePulse",
+        )
     LaunchedEffect(active) {
-        if (active) { kotlinx.coroutines.delay(100); active = false }
+        if (active) {
+            kotlinx.coroutines.delay(100)
+            active = false
+        }
     }
     return remember { PulseState(scale) { active = it } }
 }
 
-fun Modifier.pulseScale(pulse: PulseState): Modifier =
-    this.graphicsLayer(scaleX = pulse.scale, scaleY = pulse.scale)
+fun Modifier.pulseScale(pulse: PulseState): Modifier = this.graphicsLayer(scaleX = pulse.scale, scaleY = pulse.scale)

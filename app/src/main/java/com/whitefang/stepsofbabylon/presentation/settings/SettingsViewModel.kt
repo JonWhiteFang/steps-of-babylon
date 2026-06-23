@@ -26,36 +26,71 @@ data class SettingsState(
 )
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(
-    private val prefs: NotificationPreferences,
-    private val soundPrefs: SoundPreferences,
-    private val musicPrefs: MusicPreferences,
-    private val hapticsPrefs: HapticsPreferences,
-    private val dataDeletionManager: DataDeletionManager,
-) : ViewModel() {
+class SettingsViewModel
+    @Inject
+    constructor(
+        private val prefs: NotificationPreferences,
+        private val soundPrefs: SoundPreferences,
+        private val musicPrefs: MusicPreferences,
+        private val hapticsPrefs: HapticsPreferences,
+        private val dataDeletionManager: DataDeletionManager,
+    ) : ViewModel() {
+        private val _state =
+            MutableStateFlow(
+                SettingsState(
+                    persistentSteps = prefs.isPersistentEnabled(),
+                    supplyDrops = prefs.isSupplyDropsEnabled(),
+                    smartReminders = prefs.isSmartRemindersEnabled(),
+                    milestoneAlerts = prefs.isMilestoneAlertsEnabled(),
+                    soundMuted = soundPrefs.isMuted(),
+                    musicMuted = musicPrefs.isMuted(),
+                    musicVolume = musicPrefs.getVolume(),
+                    hapticsEnabled = hapticsPrefs.isEnabled(),
+                ),
+            )
+        val state: StateFlow<SettingsState> = _state.asStateFlow()
 
-    private val _state = MutableStateFlow(SettingsState(
-        persistentSteps = prefs.isPersistentEnabled(),
-        supplyDrops = prefs.isSupplyDropsEnabled(),
-        smartReminders = prefs.isSmartRemindersEnabled(),
-        milestoneAlerts = prefs.isMilestoneAlertsEnabled(),
-        soundMuted = soundPrefs.isMuted(),
-        musicMuted = musicPrefs.isMuted(),
-        musicVolume = musicPrefs.getVolume(),
-        hapticsEnabled = hapticsPrefs.isEnabled(),
-    ))
-    val state: StateFlow<SettingsState> = _state.asStateFlow()
+        fun setPersistent(enabled: Boolean) {
+            prefs.setPersistentEnabled(enabled)
+            _state.update { it.copy(persistentSteps = enabled) }
+        }
 
-    fun setPersistent(enabled: Boolean) { prefs.setPersistentEnabled(enabled); _state.update { it.copy(persistentSteps = enabled) } }
-    fun setSupplyDrops(enabled: Boolean) { prefs.setSupplyDropsEnabled(enabled); _state.update { it.copy(supplyDrops = enabled) } }
-    fun setSmartReminders(enabled: Boolean) { prefs.setSmartRemindersEnabled(enabled); _state.update { it.copy(smartReminders = enabled) } }
-    fun setMilestoneAlerts(enabled: Boolean) { prefs.setMilestoneAlertsEnabled(enabled); _state.update { it.copy(milestoneAlerts = enabled) } }
-    fun setSoundMuted(muted: Boolean) { soundPrefs.setMuted(muted); _state.update { it.copy(soundMuted = muted) } }
-    fun setMusicMuted(muted: Boolean) { musicPrefs.setMuted(muted); _state.update { it.copy(musicMuted = muted) } }
-    fun setMusicVolume(volume: Float) { musicPrefs.setVolume(volume); _state.update { it.copy(musicVolume = volume) } }
-    fun setHapticsEnabled(enabled: Boolean) { hapticsPrefs.setEnabled(enabled); _state.update { it.copy(hapticsEnabled = enabled) } }
+        fun setSupplyDrops(enabled: Boolean) {
+            prefs.setSupplyDropsEnabled(enabled)
+            _state.update { it.copy(supplyDrops = enabled) }
+        }
 
-    fun deleteAllData(activity: Activity) {
-        dataDeletionManager.deleteAllData(activity)
+        fun setSmartReminders(enabled: Boolean) {
+            prefs.setSmartRemindersEnabled(enabled)
+            _state.update { it.copy(smartReminders = enabled) }
+        }
+
+        fun setMilestoneAlerts(enabled: Boolean) {
+            prefs.setMilestoneAlertsEnabled(enabled)
+            _state.update { it.copy(milestoneAlerts = enabled) }
+        }
+
+        fun setSoundMuted(muted: Boolean) {
+            soundPrefs.setMuted(muted)
+            _state.update { it.copy(soundMuted = muted) }
+        }
+
+        fun setMusicMuted(muted: Boolean) {
+            musicPrefs.setMuted(muted)
+            _state.update { it.copy(musicMuted = muted) }
+        }
+
+        fun setMusicVolume(volume: Float) {
+            musicPrefs.setVolume(volume)
+            _state.update { it.copy(musicVolume = volume) }
+        }
+
+        fun setHapticsEnabled(enabled: Boolean) {
+            hapticsPrefs.setEnabled(enabled)
+            _state.update { it.copy(hapticsEnabled = enabled) }
+        }
+
+        fun deleteAllData(activity: Activity) {
+            dataDeletionManager.deleteAllData(activity)
+        }
     }
-}

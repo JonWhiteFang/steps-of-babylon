@@ -35,29 +35,32 @@ import java.util.Locale
 enum class CurrencyType { STEPS, CASH, GEMS, POWER_STONES }
 
 /** Approximate Material vector per currency until themed glyph art ships (#160 follow-up). */
-fun CurrencyType.icon(): ImageVector = when (this) {
-    CurrencyType.STEPS -> Icons.Filled.DirectionsWalk
-    CurrencyType.CASH -> Icons.Filled.Paid
-    CurrencyType.GEMS -> Icons.Filled.Diamond
-    CurrencyType.POWER_STONES -> Icons.Filled.OfflineBolt
-}
+fun CurrencyType.icon(): ImageVector =
+    when (this) {
+        CurrencyType.STEPS -> Icons.Filled.DirectionsWalk
+        CurrencyType.CASH -> Icons.Filled.Paid
+        CurrencyType.GEMS -> Icons.Filled.Diamond
+        CurrencyType.POWER_STONES -> Icons.Filled.OfflineBolt
+    }
 
 /** Palette-aligned tint per currency (tokens from Color.kt). CASH has no token → reuse [Gold]. */
 @Composable
-fun CurrencyType.tint(): Color = when (this) {
-    CurrencyType.STEPS -> StepColor
-    CurrencyType.CASH -> Gold
-    CurrencyType.GEMS -> GemColor
-    CurrencyType.POWER_STONES -> PowerStoneColor
-}
+fun CurrencyType.tint(): Color =
+    when (this) {
+        CurrencyType.STEPS -> StepColor
+        CurrencyType.CASH -> Gold
+        CurrencyType.GEMS -> GemColor
+        CurrencyType.POWER_STONES -> PowerStoneColor
+    }
 
 /** Plural-noun form for standalone a11y `contentDescription`. No quantity inflection. */
-fun CurrencyType.label(): String = when (this) {
-    CurrencyType.STEPS -> "Steps"
-    CurrencyType.CASH -> "Cash"
-    CurrencyType.GEMS -> "Gems"
-    CurrencyType.POWER_STONES -> "Power Stones"
-}
+fun CurrencyType.label(): String =
+    when (this) {
+        CurrencyType.STEPS -> "Steps"
+        CurrencyType.CASH -> "Cash"
+        CurrencyType.GEMS -> "Gems"
+        CurrencyType.POWER_STONES -> "Power Stones"
+    }
 
 /** Thousands-grouped amount (US grouping for determinism). Centralizes the review's separator fix. */
 fun formatCurrency(amount: Long): String = NumberFormat.getNumberInstance(Locale.US).format(amount)

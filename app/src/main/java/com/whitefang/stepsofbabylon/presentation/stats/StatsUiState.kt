@@ -1,7 +1,11 @@
 package com.whitefang.stepsofbabylon.presentation.stats
 
-enum class StatsPeriod(val label: String) {
-    WEEK("7 Days"), MONTH("30 Days"), QUARTER("12 Weeks")
+enum class StatsPeriod(
+    val label: String,
+) {
+    WEEK("7 Days"),
+    MONTH("30 Days"),
+    QUARTER("12 Weeks"),
 }
 
 data class DailyBarData(

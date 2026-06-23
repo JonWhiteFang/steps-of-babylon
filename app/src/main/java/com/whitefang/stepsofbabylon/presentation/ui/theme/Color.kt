@@ -46,20 +46,26 @@ val TextPrimary = Ivory
 val TextSecondary = Color(0xFFD8C7A8)
 
 // --- Semantic status tokens (palette-aligned, not raw Material) ---------------------------------
+
 /** Positive / success / "claimed" — a warm-leaning green so it sits with the bronze palette. */
 val StatusSuccess = Color(0xFF6FD85D)
+
 /** Caution / streak / season highlight. */
 val StatusWarning = Color(0xFFFFD54A)
+
 /** Destructive / error / "off" — warm coral that reads against bronze. */
 val StatusDanger = Color(0xFFFF7043)
 
 // --- Currency colours ---------------------------------------------------------------------------
 // Premium currencies need distinct, *palette-aligned* identities. Previously these were raw
 // Material green/purple/blue (#4CAF50 / #9C27B0 / #2196F3), which clashed with the brand.
+
 /** Gems — lapis-lit cyan that ties to the brand blue while staying legible on dark. */
 val GemColor = Color(0xFF6FC3E0)
+
 /** Power Stones — mystic amethyst (kept purple for instant recognisability, but warmer/richer). */
 val PowerStoneColor = Color(0xFFB57EDC)
+
 /** Steps — gold, the lifeblood currency, matches the primary brand accent. */
 val StepColor = Gold
 
@@ -67,5 +73,6 @@ val StepColor = Gold
 // Shared 3-tier collectibles rarity palette (Bundle D, #163). Tier-1 reuses LapisLight, tier-2 reuses
 // Gold; only tier-0 needs a new token. Named for the rarity ramp (not reusing SandStone) so the
 // ladder can be re-tuned independently of the brand fill colour (spec D10).
+
 /** Rarity tier-0 (lowest): COMMON cards / RARE UWs. Warm sandstone, light-on-bronze legible. */
 val RaritySand = Color(0xFFC2B280)
