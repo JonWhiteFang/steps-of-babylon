@@ -10154,3 +10154,34 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - **No ADR for this checkpoint** (reconciliation only). **Next session:** the non-batchable items
   (A24 / L12 are the most substantive) or the #34 i18n-externalization push; triage verdicts were cached at
   `/tmp/audit-triage/verdicts.json` THIS session only (ephemeral — re-run the triage workflow if needed).
+
+## 2026-06-23 — #216 NOTIF-1: notification quiet-hours + supply-drop daily cap
+
+- **Goal:** close audit issue **#216 (NOTIF-1)** — reminder & supply-drop notifications had no quiet-hours
+  window and no daily cap (Play "disruptive notifications" policy + retention/uninstall risk). Branch
+  `feat/216-notification-quiet-hours-daily-cap`; `[Unreleased]`.
+- **Also closed #164** at session start (verify-and-close): Look-&-Feel Bundle E was shipped in v1.0.8
+  (PR #178, ADR-0024) but never closed — verified all three scope items in code (Cinzel fonts + OFL
+  license, onboarding biome theming, `ic_ziggurat_emblem`) and closed with a grounded comment. No code change.
+- **Process:** full spec→plan loop, each through the **Adversarial Review Gate** (ultracode ON, multi-agent).
+  *Spec review* — 5 dimensions → per-finding refute: **7 findings → 3 confirmed (all minor) / 4 refuted**;
+  all 3 folded in (field-cache prefs since `notify()` runs under the #120 mutex; route reminder wiring
+  through the tested `canSendReminder` wrapper; add a Robolectric manager test for the cap/counter so it's
+  feature-tested not just policy-tested). *Plan review* — 3 dimensions → **0 findings** (edits code-grounded,
+  Robolectric test compiles, spec fidelity complete).
+- **Implementation (TDD, inline):** (1) new pure-domain `domain/notification/NotificationPolicy` — quiet-hours
+  `[22:00,08:00)` midnight-crossing window + `SUPPLY_DROP_NOTIFICATION_DAILY_CAP=3` + 3 decision fns; 14
+  pure-JVM tests; `DomainPurityTest` green (java.time allowed). (2) `SmartReminderManager` quiet-hours
+  early-return via `canSendReminder` before the `last_sent` write. (3) `SupplyDropNotificationManager` —
+  injected `TimeProvider`, field-cached `supply_drop_notifications` prefs, quiet-hours + per-day-cap gate,
+  counter advanced only after a real send; 5 Robolectric tests (post/suppress/cap/day-rollover/disabled).
+- **Caught by the test suite (real gap the plan missed):** `DataDeletionPrefsCoverageTest` failed — the new
+  prefs file wasn't in `DataDeletionManager.PREFS_NAMES`, so "Delete All Data" wouldn't wipe it (#247
+  privacy invariant). Added it; the spec-review skeptic had flagged this exact concern as orthogonal.
+- **Verify:** full JVM suite **1275 tests, 0 failures** (1256 +19); detekt + ktlint clean. `assembleDebug`
+  green (Hilt auto-resolves the new `TimeProvider` ctor param — no manual construction site). No
+  schema/economy change. Commits: NotificationPolicy `565cbce`, reminder `d73a9df`, supply-drop `35798ca`,
+  DataDeletion fix (this session), + spec/plan/docs.
+- **No ADR** — built on established patterns (pure decision core like `TimeIntegrity`/`SimulationMath`; the
+  `TimeProvider` seam; the SharedPreferences-counter idiom; the #247 wipe-coverage guard). **Remaining:**
+  open the PR / merge; then the non-batchable audit items (A24, L12) or the #34 i18n push.
