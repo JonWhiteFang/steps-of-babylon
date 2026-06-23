@@ -61,7 +61,7 @@ permanently).
 | `domain/model/CosmeticCategory.kt` | `enum class CosmeticCategory { ZIGGURAT_SKIN }` (was 3 values). |
 | `data/local/CosmeticDao.kt` | Add `@Query("DELETE FROM cosmetics WHERE cosmeticId IN (:ids)") suspend fun deleteByIds(ids: List<String>)`. |
 | `data/repository/CosmeticRepositoryImpl.kt` | (a) Remove the 4 dead rows from `SEED_COSMETICS`. (b) `ensureSeedData()` purges `DEAD_COSMETIC_IDS` (a private `listOf(...)`) once via `dao.deleteByIds`. (c) Map `observeAll/observeOwned/observeEquipped` through a resilient `toDomainOrNull()` that returns `null` for an unparseable category; callers `mapNotNull`. |
-| `data/local/FakeCosmeticDao.kt` (test fake) | Implement `deleteByIds`. |
+| `app/src/test/.../fakes/FakeCosmeticDao.kt` (test fake, package `com.whitefang.stepsofbabylon.fakes`) | Implement `deleteByIds`. |
 | `presentation/ui/EnumLabels.kt` | Remove the `PROJECTILE_EFFECT`/`ENEMY_SKIN` `labelRes()` branches. |
 | `res/values/strings.xml` | Remove `cosmetic_cat_projectile_effect` + `cosmetic_cat_enemy_skin`. |
 | `data/repository/CosmeticRepositoryImplTest.kt` | Seed-count 11→7; drop the 4 ids from the `otherIds`/legacy-upgrade fixtures; add a purge+resilience test. |
@@ -122,19 +122,48 @@ Updated device: observeAll() may emit dead rows pre-purge → toDomainOrNull() f
 
 ## Testing
 
-Pure-JVM via `FakeCosmeticDao` (JUnit Jupiter, no emulator):
+Pure-JVM via `FakeCosmeticDao` (JUnit Jupiter, no emulator). **Existing ziggurat-palette tests stay
+green** (zig_jade/lapis/garden/sandals/obsidian `overrideColors`). Net seed count is **7** (the 7
+ziggurat rows); the 4 dead ids never appear in `observeAll()`.
 
-- **Seed count is 7** (the 7 ziggurat rows); the 4 dead ids never appear in `observeAll()`.
-- **Existing ziggurat-palette tests stay green** (zig_jade/lapis/garden/sandals/obsidian `overrideColors`).
-- **Update existing fixtures:** the `otherIds` regression list (drop the 4 dead ids → `{zig_crystal,
-  zig_golden}`), the legacy-upgrade test's pre-seed (it currently pre-seeds the 4 dead rows + asserts
-  count 7→11; becomes a pre-seed of legacy *ziggurat* rows, and additionally asserts the dead rows it
-  pre-seeds are purged), and the "11 rows" / idempotency count assertions → 7.
+The review surfaced that `CosmeticRepositoryImplTest` has **three** distinct `assertEquals(11, …)`
+seed-count sites and a fixture loop that must each change. Enumerated precisely so the plan can't miss
+one:
+
+- **`otherIds` regression list** (`CosmeticRepositoryImplTest.kt:185`) — drop the 4 dead ids → just
+  `{zig_crystal, zig_golden}`. (Load-bearing: each id is fetched via `allItems.single { … }`, which
+  throws `NoSuchElementException` once the id is purged + filtered — not just an assertion failure.)
+  Also update the now-stale comment at `:176-178` (it mentions `PROJECTILE_EFFECT, ENEMY_SKIN`).
+- **Idempotency test** (`…is idempotent on repeat call`) — the `assertEquals(11, countAfterFirst)` at
+  `:242` → **7**, and its message string at `:244` ("ships 11 seed rows … 2 projectile, 2 enemy") →
+  rewrite to "7 ziggurat seed rows".
+- **Legacy-upgrade test** (`…inserts newly-added rows on partial catalogue upgrade`, `:248-350`) — the
+  `legacySeed` list (`:261-312`) currently has 3 ziggurat + the 4 dead rows. **Drop the 4 dead rows
+  from `legacySeed`** so it pre-seeds only the 3 legacy ziggurat rows; the `assertEquals(7, …)` baseline
+  at `:314` stays 3 → update to 3; the post-`ensureSeedData` `assertEquals(11, …)` at `:319-323` → **7**
+  (3 legacy ziggurat + 4 newly-seeded milestone ziggurats). **Critically, the survivor loop at
+  `:344-349`** (`for (legacyId in legacySeed.map { it.cosmeticId }) { assertNotNull(… must survive …) }`)
+  is driven off `legacySeed`, so once the dead rows are dropped from `legacySeed` it automatically
+  covers only ziggurat ids — no separate edit, but it MUST NOT be left asserting the dead ids survive
+  (that would contradict the purge). The purge-vs-pre-seed math is covered by the dedicated new test
+  below instead, keeping this test focused on the additive-upgrade behavior it was written for.
+- **Player-state-preservation test** (`…preserves player state on existing rows (isOwned, isEquipped)`)
+  — the `assertEquals(11, dao.count())` at `:379` → **7**, and the comment at `:378` ("All 11 seed rows
+  now present (10 new + …)") → "All 7 seed rows now present (6 new + the pre-existing zig_jade …)".
 - **New test — purge + resilience:** pre-seed a `CosmeticEntity(category = "PROJECTILE_EFFECT", …)` (a
   legacy/dead row) directly via the fake DAO, run `ensureSeedData()`, assert (a) `observeAll()` never
-  exposes it (resilient mapping) and (b) `dao.count()` no longer includes it (purged).
+  exposes it (resilient `toDomainOrNull` mapping — proves no `valueOf` crash even before purge) and
+  (b) `dao.count()` no longer includes it (purged by `deleteByIds`).
 
-Estimated **net ~+1 JVM test** (some assertions updated, ~1–2 added) → headline `1275 → ~1276`.
+**No edit needed (note for reviewers):** `EnumLabelResTest.kt:38-41` iterates `CosmeticCategory.entries`
+asserting each has a non-blank label ≠ raw name. It **auto-shrinks** to the single `ZIGGURAT_SKIN` entry
+and stays green (the `cosmetic_cat_ziggurat_skin` string is retained) — removing the other two strings
+does not break it. `StoreViewModelTest`/`BattleViewModelTest` only use `CosmeticCategory.ZIGGURAT_SKIN`
+(verified) — unaffected by the enum reduction. The Room schema JSON under `app/schemas` does not
+enumerate category values (`category` is a plain `TEXT` column) — confirms no migration needed.
+
+Estimated **net ~+1 JVM test** (count/comment assertions updated in place, 1 added) → headline
+`1275 → ~1276`.
 
 ## Risks & mitigations
 
@@ -153,3 +182,25 @@ Estimated **net ~+1 JVM test** (some assertions updated, ~1–2 added) → headl
 
 None — removal scope (rows + enum + labels) and cleanup mechanism (runtime purge + resilient mapping, no
 migration) confirmed with the developer.
+
+## Adversarial review (2026-06-23)
+
+Spec passed the mandatory Adversarial Review Gate (multi-agent `Workflow`: 4 code-grounded dimensions →
+per-finding skeptic refute). **13 findings → 6 confirmed (all `minor`/`partial`, no surviving
+critical/major) / 7 refuted.** The two findings the reviewers tagged `major` were both downgraded by the
+skeptic pass (test-only artifacts that fail loudly at build time, substance already present). All
+survivors were a single theme — the spec's test-update section under-enumerated exact assertion sites —
+and are folded into the rewritten **Testing** section + the **Files** table:
+
+1. *(code-grounding)* `FakeCosmeticDao` path was mislocated (`data/local/` → `app/src/test/.../fakes/`).
+2. *(consistency-tests)* the legacy-upgrade test's **survivor loop** (`:344-349`) asserts every
+   pre-seeded id survives — would contradict the purge unless the 4 dead rows are dropped from
+   `legacySeed`. Now spelled out.
+3. *(consistency-tests / scope)* there are **three** `assertEquals(11,…)` count sites (idempotency `:242`,
+   legacy-upgrade `:319`, player-state `:379`) + two comments — all now enumerated to land at 7.
+4. *(data-safety)* `EnumLabelResTest` auto-shrinks (no edit) — noted so a reviewer doesn't flag it.
+
+Refuted (spec already correct): 1275 test baseline matches CLAUDE.md; the race line-cites are accurate;
+the equipped-dead-row case is already documented benign; the labelRes crash is unreachable (filtered at
+the repo boundary, and `StoreViewModel` is typed on `CosmeticCategory` so it can't carry a raw string);
+purge ordering is correctness-irrelevant (idempotent `DELETE … IN`).
