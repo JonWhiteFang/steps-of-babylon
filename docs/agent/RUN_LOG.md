@@ -10185,3 +10185,42 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - **No ADR** — built on established patterns (pure decision core like `TimeIntegrity`/`SimulationMath`; the
   `TimeProvider` seam; the SharedPreferences-counter idiom; the #247 wipe-coverage guard). **Remaining:**
   open the PR / merge; then the non-batchable audit items (A24, L12) or the #34 i18n push.
+
+## 2026-06-23 — #221 FEAT-1: remove dead projectile/enemy-skin cosmetics
+
+- **Goal:** close audit issue **#221 (FEAT-1)** — 4 seeded cosmetics (`proj_fire`/`proj_lightning`/
+  `enemy_shadow`/`enemy_neon`) + the `PROJECTILE_EFFECT`/`ENEMY_SKIN` `CosmeticCategory` values had no render
+  path (only `ZIGGURAT_SKIN` does). Un-buyable today but a "live trap": widening the Store enable-list
+  without render wiring would let a player buy a cosmetic that does nothing. Chose removal over wiring a
+  renderer. Branch `feat/221-remove-dead-cosmetics`; `[Unreleased]`.
+- **Crux (data safety):** `CosmeticEntity.category` is a persisted **String** mapped via
+  `CosmeticCategory.valueOf` — so dropping the enum values would crash `toDomain` on already-installed
+  devices that still have the dead rows. And `StoreViewModel.init` races `ensureSeedData` (purge) against
+  `observeAll` (Room Flow) in separate coroutines. Fix is belt-and-suspenders: (1) runtime
+  `CosmeticDao.deleteByIds` purge in `ensureSeedData`; (2) resilient `toDomainOrNull` (`entries.find { it.name
+  == category } ?: null` + `mapNotNull`) that filters unparseable-category rows so `valueOf` can never crash.
+  **No Room schema migration** (table unchanged; data-only delete).
+- **Process — both gates run (ultracode).** *Spec review:* 4 dimensions → 13 findings → **6 confirmed (all
+  minor) / 7 refuted**; survivors were test-enumeration precision (the legacy-upgrade **survivor loop** would
+  have asserted the dead ids survive, contradicting the purge; **three** `assertEquals(11)` sites not two;
+  `FakeCosmeticDao` path mislocated; `EnumLabelResTest` auto-shrinks). *Plan review:* 3 dimensions → **5
+  findings, all confirmed** — my first plan's task ordering broke the green-at-every-commit invariant (the
+  runtime purge changes the seeded count immediately; the new test's resilience assertion needs the enum
+  reduced). **Restructured** to Task 1 = behavior-preserving resilient-mapping refactor (TDD with a
+  genuinely-unparseable token) + Task 2 = atomic removal (purge + drop rows + reduce enum + labels/strings +
+  all test updates) in ONE commit. Both gates' fixes folded into spec/plan before implementing.
+- **Implementation (TDD, inline):** T1 — `toDomain`→resilient `toDomainOrNull`; new resilience test (red→green;
+  all 11 existing tests stayed green, proving behavior-preserving). T2 — `deleteByIds` (DAO + fake),
+  `DEAD_COSMETIC_IDS` + purge call, dropped 4 seed rows, reduced enum to `{ ZIGGURAT_SKIN }`, removed 2
+  `labelRes` branches + 2 strings, updated 3 count assertions (11→7) + the legacy-upgrade `legacySeed`/baseline
+  + new purge test. `assembleDebug` green (compiler confirms no other site referenced the removed values).
+- **Lint:** my edits shifted line numbers + changed strings, surfacing 3 long-line violations (line-keyed
+  ktlint baseline + content-keyed detekt baseline). Kept baselines honest: shortened 2 test messages under
+  120, relocated the pre-existing `CosmeticRepositoryImpl` sandals-description ktlint entry (195→208), dropped
+  2 now-orphaned detekt entries. Avoided changing shipped store copy. detekt + ktlint green.
+- **Verify:** full JVM suite **1277 tests, 0 failures** (1275 +2, confirmed from result XMLs). No
+  schema/economy change. Commits: resilient-map `434…`-era T1, atomic-removal T2, lint cleanup, spec/plan/docs.
+- **Also this session:** closed **#164** (verify-and-close — Bundle E shipped v1.0.8, never closed) and
+  shipped **#216** NOTIF-1 (PR #339 merged). **No ADR** for #221 — built on established patterns (the
+  `TimeProvider`/pure-decision idioms; data-layer DAO purge; the `valueOf`-resilience is a local refactor).
+  **Remaining:** open PR / merge; then non-batchable audit items (A24, L12) or the #34 i18n push.
