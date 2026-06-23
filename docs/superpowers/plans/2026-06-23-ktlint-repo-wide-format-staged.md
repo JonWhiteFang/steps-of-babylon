@@ -50,7 +50,11 @@ A stage's PR is mergeable when ALL of these hold:
   (currently 1254). See "Verifying the test result" below — do NOT scrape the
   count from stdout (Gradle prints none).
 - `config/ktlint/baseline.xml` regenerated; `./lint-kotlin.sh` (check mode) → exit 0.
-- `./run-gradle.sh :app:detekt` → exit 0.
+- **`config/detekt/baseline.xml` regenerated if `:app:detekt` reports new
+  findings** (the ktlint reflow can shift detekt's line-keyed signatures and even
+  push a method past `LongMethod`/`LongParameterList` thresholds via
+  brace-expansion — see "Regenerating the detekt baseline" below), then
+  `./run-gradle.sh :app:detekt` → exit 0. **Confirmed needed in Stage 1.**
 - `RUN_LOG.md` stage entry appended, `docs/agent/STATE.md` updated (CURRENT
   section: which stage of 6 + baseline error count), and a `## [Unreleased]`
   `CHANGELOG.md` entry added — **every stage** (per CLAUDE.md PR Task-List
@@ -112,6 +116,31 @@ PY
 
 Expected: `failures=0 errors=0` and `total` == the headline JVM count (currently
 1254). A pure-format change must not move the total.
+
+## Regenerating the detekt baseline (read once, applies to every stage)
+
+**Discovered in Stage 1 (confirmed needed):** `:app:detekt` is a baseline-gated PR
+check too (`config/detekt/baseline.xml`), and the ktlint reflow can make it fail —
+detekt findings are **line-keyed**, so reflow shifts their signatures, and
+`when`-entry/`if`-else **brace-expansion inflates a method's line count**, which
+can push it past `LongMethod` (60) even though the logic is unchanged. So whenever
+`:app:detekt` reports new findings after a sweep, regenerate its baseline too.
+
+Unlike ktlint, the detekt task **overwrites** the baseline from the current
+findings (no `rm` needed — verified Stage 1: 496 → 489, entries both dropped and
+re-keyed):
+
+```bash
+./run-gradle.sh :app:detektBaseline > /tmp/detekt-base.log 2>&1; echo "exit=$?"
+./run-gradle.sh :app:detekt --rerun-tasks > /tmp/detekt-check.log 2>&1; echo "detekt exit=$?"; tail -10 /tmp/detekt-check.log
+```
+
+**Before accepting the regenerated detekt baseline, diff it** (`git diff
+config/detekt/baseline.xml`) and confirm EVERY added/changed entry is
+format-induced (a re-keyed pre-existing smell, or a `LongMethod`/`LongParameterList`
+crossed purely by brace-expansion on unchanged logic) — **never a genuine new
+smell**. Confirm only the swept layer's entries changed; no other-layer entries
+lost. Record the before→after count and the classification in the RUN_LOG entry.
 
 ---
 
@@ -850,6 +879,13 @@ reformat noise. Done.
   caused a semantic issue. Stop, identify the file from the failure, inspect its
   `git diff -w` hunk, and revert that file's sweep (`git checkout -- <file>`) — do
   NOT push a stage with a failing test.
+- **`:app:detekt` will likely need a baseline regen each stage** (discovered in
+  Stage 1): the ktlint reflow shifts detekt's line-keyed signatures and can cross
+  `LongMethod` via brace-expansion. Regenerate with `:app:detektBaseline` (it
+  overwrites — no `rm`), then **diff the baseline** to confirm every change is
+  format-induced, never a real new smell. See "Regenerating the detekt baseline".
+  Both `config/ktlint/baseline.xml` and `config/detekt/baseline.xml` are committed
+  per stage.
 - **Concurrent feature work:** sequence Stage 4 before #34 (i18n) and Stage 5
   before the deferred #233 clean Simulation-hoist (ADR-0012) — the larger battle
   refactor still open — to avoid conflicts in those subtrees.
