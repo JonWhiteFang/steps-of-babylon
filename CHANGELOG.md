@@ -4,6 +4,14 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Test — Compose UI tests: critical screens (#253)
+
+20 Robolectric-backed Compose UI tests across 7 critical screens: WorkshopScreen (3), StoreScreen (3),
+LabsScreen (3), MissionsScreen (3), UltimateWeaponScreen (3), UnclaimedSuppliesScreen (3),
+BattleControlRail (2). Covers purchase/claim/equip affordance gating, balance rendering, empty states,
+and loadout cap messages. Same infrastructure as the earlier CardsScreenTest/OnboardingScreenTest/
+HomeScreenTest beachhead. **1234 → 1254 JVM.** No production code change. **Ref #253.**
+
 ### Test — HomeScreen Compose UI tests (#253)
 
 4 Robolectric-backed Compose tests for the Home screen — the highest-traffic screen flagged as
