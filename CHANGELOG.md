@@ -4,6 +4,24 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Style — ktlint repo-wide format, stage 3/6 (`service/`+`di/`)
+
+**Pure formatting — no production-logic, schema, economy, or engine change; no test-count change (1254
+JVM, 0 failures).** Stage 3 of the staged, layer-by-layer ktlint auto-format: `ktlint -F` scoped to the
+`service/` layer (foreground step service, WorkManager workers, boot receiver, notification managers,
+widget), the `di/` Hilt modules, and the top-level `StepsOfBabylonApp.kt` only (17 files). All changes are
+mechanical Bucket-A transforms (class-signature reflow of `@Inject`/`@AssistedInject constructor(...)` +
+supertype-list split, function-/parameter-signature reflow, block-body→expression-body wrapping, if-else &
+when-entry bracing — incl. the `StepSyncWorker` `CatchUpDecision` `when`-arms, trailing-comma on call/
+declaration sites, import ordering, chained-call wrapping) — the full whitespace-ignored diff (875 lines)
+was reviewed hunk-by-hunk against the safe-transform allowlist; no literal/operator/identifier/string or
+logic changed. **ktlint baseline regenerated** (the staged mechanism): `config/ktlint/baseline.xml` over
+the full `app/src` scope **7632 → 7423** (`service/`+`di/`+top-level Bucket-A entries cleared; later layers
+stay covered); **detekt needed no regen** — `:app:detekt` stayed green against the existing baseline.
+`lint-kotlin.sh` (ktlint check) + `:app:detekt` both green. Plan:
+`docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`. Stages 4–6 (`presentation/` excl
+battle, `presentation/battle/`, test sources) follow in sequence.
+
 ### Style — ktlint repo-wide format, stage 2/6 (`data/`)
 
 **Pure formatting — no production-logic, schema, economy, or engine change; no test-count change (1254

@@ -34,17 +34,23 @@ the med/low backlog (#262) remain.
 ## Current objective
 
 - **CURRENT (IN FLIGHT — PR open, awaiting controller merge; `[Unreleased]`).**
+  **Staged repo-wide ktlint auto-format — stage 3 of 6 (`service/`+`di/`+top-level).** Mechanical
+  `ktlint -F` over `service/`, `di/`, and `StepsOfBabylonApp.kt` only (17 files), pure-formatting / zero
+  behaviour change; all hunks on the Bucket-A allowlist (class-signature reflow `@Inject`/`@AssistedInject
+  constructor`, supertype-list split, function-signature reflow, expression-body wrapping, if/when bracing
+  incl. the `StepSyncWorker` `CatchUpDecision` arms, trailing-comma, import ordering, chained-call
+  wrapping). **ktlint baseline regenerated:** `config/ktlint/baseline.xml` **7632 → 7423** (full-`app/src`
+  scope, shrinking per stage); **detekt needed NO regen** — `:app:detekt` exit 0 against the existing
+  baseline after the sweep. **1254 JVM tests green, 0 failures**; `lint-kotlin.sh` check + `:app:detekt`
+  both exit 0. **Next:** controller merges; then stages 4–6 (`presentation/` excl battle →
+  `presentation/battle/` [FRAGILE] → test sources), each repeating scoped `-F` + baseline regen (detekt
+  only when the gate flags) + full-suite gate. Plan:
+  `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`.
+- **Previous objective (DONE — branch `chore/ktlint-format-2-data`, MERGED; `[Unreleased]`).**
   **Staged repo-wide ktlint auto-format — stage 2 of 6 (`data/`).** Mechanical `ktlint -F` over
-  `data/` only (64 files), pure-formatting / zero behaviour change; all hunks on the Bucket-A allowlist
-  (class-signature reflow `@Inject constructor`, function-signature reflow, expression-body, if/when
-  bracing, trailing-comma, import ordering, chained-call wrapping). **Both baselines regenerated:** ktlint
-  `config/ktlint/baseline.xml` **8534 → 7632** (full-`app/src` scope, shrinking per stage); detekt
-  `config/detekt/baseline.xml` **489 → 474** (the reflow drifted line-keyed signatures of pre-existing
-  baselined smells — all 10 reported issues were format-induced `MaxLineLength` in `data/`; no
-  genuinely-new smell). **1254 JVM tests green, 0 failures**; `lint-kotlin.sh` check + `:app:detekt` both
-  exit 0. **Next:** controller merges; then stages 3–6 (`service/`+`di/`+top-level → `presentation/` excl
-  battle → `presentation/battle/` [FRAGILE] → test sources), each repeating scoped `-F` + dual-baseline
-  regen + full-suite gate. Plan: `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`.
+  `data/` only (64 files), pure-formatting / zero behaviour change. ktlint baseline **8534 → 7632**;
+  detekt baseline **489 → 474** (format-induced `MaxLineLength` signature shifts only). 1254 JVM tests
+  green. See RUN_LOG.
 - **Previous objective (DONE — branch `chore/ktlint-format-1-domain`, MERGED; `[Unreleased]`).**
   **Staged repo-wide ktlint auto-format — stage 1 of 6 (`domain/`).** Mechanical `ktlint -F` over
   `domain/` only (72 files), pure-formatting / zero behaviour change. ktlint baseline **9256 → 8534**;

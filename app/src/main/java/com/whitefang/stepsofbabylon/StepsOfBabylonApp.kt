@@ -10,9 +10,11 @@ import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
 @HiltAndroidApp
-class StepsOfBabylonApp : Application(), Configuration.Provider {
-
+class StepsOfBabylonApp :
+    Application(),
+    Configuration.Provider {
     @Inject lateinit var workerFactory: HiltWorkerFactory
+
     @Inject lateinit var crashBreadcrumbStore: CrashBreadcrumbStore
 
     override fun onCreate() {
@@ -25,14 +27,16 @@ class StepsOfBabylonApp : Application(), Configuration.Provider {
             buildCrashHandler(
                 previous = Thread.getDefaultUncaughtExceptionHandler(),
                 record = { thread, ex, ts -> crashBreadcrumbStore.record(thread, ex, ts) },
-            )
+            ),
         )
     }
 
     override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
-            .build()
+        get() =
+            Configuration
+                .Builder()
+                .setWorkerFactory(workerFactory)
+                .build()
 }
 
 /**
@@ -44,8 +48,9 @@ class StepsOfBabylonApp : Application(), Configuration.Provider {
 internal fun buildCrashHandler(
     previous: Thread.UncaughtExceptionHandler?,
     record: (threadName: String, throwable: Throwable, timestampMillis: Long) -> Unit,
-): Thread.UncaughtExceptionHandler = Thread.UncaughtExceptionHandler { thread, ex ->
-    runCatching { record(thread.name, ex, System.currentTimeMillis()) }
-    runCatching { Log.e("StepsOfBabylonApp", "Uncaught exception on ${thread.name}", ex) }
-    previous?.uncaughtException(thread, ex)
-}
+): Thread.UncaughtExceptionHandler =
+    Thread.UncaughtExceptionHandler { thread, ex ->
+        runCatching { record(thread.name, ex, System.currentTimeMillis()) }
+        runCatching { Log.e("StepsOfBabylonApp", "Uncaught exception on ${thread.name}", ex) }
+        previous?.uncaughtException(thread, ex)
+    }

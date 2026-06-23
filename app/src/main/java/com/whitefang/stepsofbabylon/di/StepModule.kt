@@ -12,9 +12,9 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object StepModule {
-
     @Provides
     @Singleton
-    fun provideSensorManager(@ApplicationContext context: Context): SensorManager =
-        context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
+    fun provideSensorManager(
+        @ApplicationContext context: Context,
+    ): SensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
 }
