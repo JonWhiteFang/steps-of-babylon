@@ -20,6 +20,26 @@
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/prefer-structural-tools.sh"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/guard-sensitive-edits.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/ktlint-format-edited.sh"
+          }
+        ]
       }
     ]
   }
