@@ -21,8 +21,10 @@
     over-long lines/ctors now fit ≤120 after the reflow), 3 re-added under post-format signatures
     (`UpgradeType` MULTISHOT string literal still >120; `TimeIntegrity` long inline comment still >120;
     `DescribeUpgradeEffect.format` crossed the LongMethod-60 threshold because `when`-entry-bracing
-    expanded its single-line arms). No genuinely-new smell — all three pre-existed, just under different
-    signatures. Diff verified to touch only domain entries; no test/other-layer entries lost.
+    expanded its single-line arms). No genuinely-new smell: the two `MaxLineLength` entries pre-existed
+    (re-keyed under post-format signatures), and the one `LongMethod` entry is purely format-induced —
+    brace-expansion inflated the line count of an unchanged method (identical logic, no arm added or
+    removed). Diff verified to touch only domain entries; no test/other-layer entries lost.
 - **Verification:** `./run-gradle.sh testDebugUnitTest --rerun-tasks` **BUILD SUCCESSFUL**; **1254 JVM
   tests, 0 failures, 0 errors** (unchanged count — pure format). `./lint-kotlin.sh` (ktlint check) exit 0;
   `:app:detekt` exit 0 after the baseline regen. Scope-checked: only the 72 domain files + the two
