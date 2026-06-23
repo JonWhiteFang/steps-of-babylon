@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WorkshopDao {
-
     @Query("SELECT * FROM workshop_upgrade")
     fun getAll(): Flow<List<WorkshopUpgradeEntity>>
 

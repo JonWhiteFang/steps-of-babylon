@@ -27,7 +27,6 @@ import android.app.Activity
  * Introduced by C.5 PR 1 / ADR-0005.
  */
 internal interface BillingClientAdapter {
-
     /**
      * Connects to Play Services. Implementations are expected to apply their own retry /
      * exponential-backoff policy internally and only return [SdkBillingResult.Ok] when the
@@ -102,8 +101,13 @@ internal enum class SdkProductType { INAPP, SUBS }
  * requested IDs to detect SKU drift.
  */
 internal sealed class QueryProductDetailsResult {
-    data class Success(val products: List<SdkProductDetails>) : QueryProductDetailsResult()
-    data class Error(val result: SdkBillingResult) : QueryProductDetailsResult()
+    data class Success(
+        val products: List<SdkProductDetails>,
+    ) : QueryProductDetailsResult()
+
+    data class Error(
+        val result: SdkBillingResult,
+    ) : QueryProductDetailsResult()
 }
 
 /**
@@ -113,14 +117,24 @@ internal sealed class QueryProductDetailsResult {
  * service-disconnected, and every other non-purchase outcome.
  */
 internal sealed class StartPurchaseResult {
-    data class Completed(val purchase: SdkPurchase) : StartPurchaseResult()
-    data class NotCompleted(val result: SdkBillingResult) : StartPurchaseResult()
+    data class Completed(
+        val purchase: SdkPurchase,
+    ) : StartPurchaseResult()
+
+    data class NotCompleted(
+        val result: SdkBillingResult,
+    ) : StartPurchaseResult()
 }
 
 /** Response shape from [BillingClientAdapter.queryPurchases]. */
 internal sealed class QueryPurchasesResult {
-    data class Success(val purchases: List<SdkPurchase>) : QueryPurchasesResult()
-    data class Error(val result: SdkBillingResult) : QueryPurchasesResult()
+    data class Success(
+        val purchases: List<SdkPurchase>,
+    ) : QueryPurchasesResult()
+
+    data class Error(
+        val result: SdkBillingResult,
+    ) : QueryPurchasesResult()
 }
 
 /**
@@ -189,13 +203,41 @@ internal data class SdkProductDetails(
 internal sealed class SdkBillingResult {
     /** Actionable success. */
     data object Ok : SdkBillingResult()
-    data class UserCanceled(val debugMessage: String?) : SdkBillingResult()
-    data class ServiceDisconnected(val debugMessage: String?) : SdkBillingResult()
-    data class ServiceUnavailable(val debugMessage: String?) : SdkBillingResult()
-    data class BillingUnavailable(val debugMessage: String?) : SdkBillingResult()
-    data class ItemUnavailable(val debugMessage: String?) : SdkBillingResult()
-    data class ItemAlreadyOwned(val debugMessage: String?) : SdkBillingResult()
-    data class DeveloperError(val debugMessage: String?) : SdkBillingResult()
-    data class NetworkError(val debugMessage: String?) : SdkBillingResult()
-    data class Other(val responseCode: Int, val debugMessage: String?) : SdkBillingResult()
+
+    data class UserCanceled(
+        val debugMessage: String?,
+    ) : SdkBillingResult()
+
+    data class ServiceDisconnected(
+        val debugMessage: String?,
+    ) : SdkBillingResult()
+
+    data class ServiceUnavailable(
+        val debugMessage: String?,
+    ) : SdkBillingResult()
+
+    data class BillingUnavailable(
+        val debugMessage: String?,
+    ) : SdkBillingResult()
+
+    data class ItemUnavailable(
+        val debugMessage: String?,
+    ) : SdkBillingResult()
+
+    data class ItemAlreadyOwned(
+        val debugMessage: String?,
+    ) : SdkBillingResult()
+
+    data class DeveloperError(
+        val debugMessage: String?,
+    ) : SdkBillingResult()
+
+    data class NetworkError(
+        val debugMessage: String?,
+    ) : SdkBillingResult()
+
+    data class Other(
+        val responseCode: Int,
+        val debugMessage: String?,
+    ) : SdkBillingResult()
 }

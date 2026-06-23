@@ -6,7 +6,6 @@ import androidx.room.Upsert
 
 @Dao
 interface DailyLoginDao {
-
     @Query("SELECT * FROM daily_login WHERE date = :date")
     suspend fun getByDate(date: String): DailyLoginEntity?
 

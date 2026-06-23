@@ -9,12 +9,14 @@ import kotlin.math.min
 
 @Dao
 interface DailyStepDao {
-
     @Query("SELECT * FROM daily_step_record WHERE date = :date")
     fun getByDate(date: String): Flow<DailyStepRecordEntity?>
 
     @Query("SELECT * FROM daily_step_record WHERE date BETWEEN :startDate AND :endDate ORDER BY date ASC")
-    fun getRange(startDate: String, endDate: String): Flow<List<DailyStepRecordEntity>>
+    fun getRange(
+        startDate: String,
+        endDate: String,
+    ): Flow<List<DailyStepRecordEntity>>
 
     @Upsert
     suspend fun upsert(entity: DailyStepRecordEntity)
@@ -26,7 +28,10 @@ interface DailyStepDao {
     suspend fun clearEscrow(date: String)
 
     @Query("SELECT COALESCE(SUM(creditedSteps), 0) FROM daily_step_record WHERE date BETWEEN :startDate AND :endDate")
-    suspend fun sumCreditedSteps(startDate: String, endDate: String): Long
+    suspend fun sumCreditedSteps(
+        startDate: String,
+        endDate: String,
+    ): Long
 
     // ---- #121: column-targeted daily-step upserts (lost-update fix) ----
     //
@@ -55,7 +60,11 @@ interface DailyStepDao {
             "VALUES (:date, :sensorSteps, 0, :creditedSteps, 0, 0, '{}', 0, 0, 0) " +
             "ON CONFLICT(date) DO UPDATE SET sensorSteps = :sensorSteps, creditedSteps = :creditedSteps",
     )
-    suspend fun setSensorAndCreditedSteps(date: String, sensorSteps: Long, creditedSteps: Long)
+    suspend fun setSensorAndCreditedSteps(
+        date: String,
+        sensorSteps: Long,
+        creditedSteps: Long,
+    )
 
     @Query(
         "INSERT INTO daily_step_record " +
@@ -64,7 +73,10 @@ interface DailyStepDao {
             "VALUES (:date, 0, :healthConnectSteps, 0, 0, 0, '{}', 0, 0, 0) " +
             "ON CONFLICT(date) DO UPDATE SET healthConnectSteps = :healthConnectSteps",
     )
-    suspend fun setHealthConnectSteps(date: String, healthConnectSteps: Long)
+    suspend fun setHealthConnectSteps(
+        date: String,
+        healthConnectSteps: Long,
+    )
 
     @Query(
         "INSERT INTO daily_step_record " +
@@ -73,7 +85,11 @@ interface DailyStepDao {
             "VALUES (:date, 0, 0, 0, 0, 0, :activityMinutes, :stepEquivalents, 0, 0) " +
             "ON CONFLICT(date) DO UPDATE SET activityMinutes = :activityMinutes, stepEquivalents = :stepEquivalents",
     )
-    suspend fun setActivityMinutes(date: String, activityMinutes: Map<String, Int>, stepEquivalents: Long)
+    suspend fun setActivityMinutes(
+        date: String,
+        activityMinutes: Map<String, Int>,
+        stepEquivalents: Long,
+    )
 
     @Query(
         "INSERT INTO daily_step_record " +
@@ -82,7 +98,11 @@ interface DailyStepDao {
             "VALUES (:date, 0, 0, 0, :escrowSteps, :escrowSyncCount, '{}', 0, 0, 0) " +
             "ON CONFLICT(date) DO UPDATE SET escrowSteps = :escrowSteps, escrowSyncCount = :escrowSyncCount",
     )
-    suspend fun setEscrow(date: String, escrowSteps: Long, escrowSyncCount: Int)
+    suspend fun setEscrow(
+        date: String,
+        escrowSteps: Long,
+        escrowSyncCount: Int,
+    )
 
     /**
      * Returns today's [DailyStepRecordEntity.battleStepsEarned], or 0 if no
@@ -119,7 +139,10 @@ interface DailyStepDao {
             "VALUES (:date, 0, 0, 0, 0, 0, '{}', 0, :delta, 0) " +
             "ON CONFLICT(date) DO UPDATE SET battleStepsEarned = battleStepsEarned + :delta",
     )
-    suspend fun incrementBattleSteps(date: String, delta: Long)
+    suspend fun incrementBattleSteps(
+        date: String,
+        delta: Long,
+    )
 
     /**
      * Atomically credits a per-enemy battle-step reward to the player's wallet while respecting
@@ -183,7 +206,10 @@ interface DailyStepDao {
             "VALUES (:date, 0, 0, 0, 0, 0, '{}', 0, 0, :delta) " +
             "ON CONFLICT(date) DO UPDATE SET bossPsEarnedToday = bossPsEarnedToday + :delta",
     )
-    suspend fun incrementBossPs(date: String, delta: Long)
+    suspend fun incrementBossPs(
+        date: String,
+        delta: Long,
+    )
 
     /**
      * Atomically credits boss-kill Power Stones to the player's wallet while respecting

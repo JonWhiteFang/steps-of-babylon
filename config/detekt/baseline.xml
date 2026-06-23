@@ -120,6 +120,7 @@
     <ID>MatchingDeclarationName:CurrencyDisplay.kt:CurrencyType</ID>
     <ID>MatchingDeclarationName:Migrations.kt:AppMigrations</ID>
     <ID>MatchingDeclarationName:PurchasePulse.kt:PulseState</ID>
+    <ID>MaxLineLength:ActivityMinuteConverter.kt:ActivityMinuteConverter$*</ID>
     <ID>MaxLineLength:AntiCheatPreferencesTimeBaselineTest.kt:AntiCheatPreferencesTimeBaselineTest$TimeBaseline(lastElapsedRealtime = 1234, lastWallClock = 5678, maxWallClockSeen = 9999, trustedWallClock = 7777)</ID>
     <ID>MaxLineLength:BackgroundRenderer.kt:BackgroundRenderer$Particle(Random.nextFloat() * width, Random.nextFloat() * height, 0.4f + Random.nextFloat() * 0.6f, 2f + Random.nextFloat() * 3f)</ID>
     <ID>MaxLineLength:BackgroundRenderer.kt:BackgroundRenderer$shader = LinearGradient(0f, 0f, 0f, height * 0.70f, theme.skyColorTop, theme.skyColorBottom, Shader.TileMode.CLAMP)</ID>
@@ -152,7 +153,7 @@
     <ID>MaxLineLength:BiomeTransitionOverlay.kt:Text(stringResource(R.string.biome_steps_walked, info.totalSteps), style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.6f))</ID>
     <ID>MaxLineLength:BiomeTransitionOverlay.kt:Text(stringResource(R.string.biome_welcome), style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.7f))</ID>
     <ID>MaxLineLength:BiomeTransitionOverlay.kt:style = MaterialTheme.typography.headlineLarge</ID>
-    <ID>MaxLineLength:CardDao.kt:CardDao$@Query("UPDATE card_inventory SET copyCount = copyCount - :amount, level = level + 1 WHERE id = :id AND copyCount &gt;= :amount")</ID>
+    <ID>MaxLineLength:CardDao.kt:CardDao$"UPDATE card_inventory SET copyCount = copyCount - :amount, level = level + 1 WHERE id = :id AND copyCount &gt;= :amount"</ID>
     <ID>MaxLineLength:CardTypeTest.kt:CardTypeTest$assertNotEquals(type.effectDescriptionAtLevel(type.maxLevel), mid, "$type Lv4 must differ from Lv${type.maxLevel}")</ID>
     <ID>MaxLineLength:CardsScreen.kt:Button(onClick = { haptics.tap(); onEquip() }, enabled = equippedCount &lt; 3, modifier = Modifier.weight(1f)) { Text("Equip") }</ID>
     <ID>MaxLineLength:CardsScreen.kt:Icon(Icons.Filled.Autorenew, contentDescription = "Duplicate", tint = rowColor, modifier = Modifier.size(18.dp))</ID>
@@ -172,17 +173,7 @@
     <ID>MaxLineLength:CombatPowerTest.kt:CombatPowerTest$assertTrue(sut(ResolvedStats(damage = 10.0, attackSpeed = 1.0, critChance = 0.2, critMultiplier = 2.0)) &gt; baseline)</ID>
     <ID>MaxLineLength:CombatPowerTest.kt:CombatPowerTest$assertTrue(sut(ResolvedStats(damage = 10.0, attackSpeed = 1.1, critChance = 0.1, critMultiplier = 2.0)) &gt; baseline)</ID>
     <ID>MaxLineLength:CombatPowerTest.kt:CombatPowerTest$assertTrue(sut(ResolvedStats(damage = 11.0, attackSpeed = 1.0, critChance = 0.1, critMultiplier = 2.0)) &gt; baseline)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "enemy_neon", category = "ENEMY_SKIN", name = "Neon Enemies", description = "Glowing neon outlines", priceGems = 100)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "enemy_shadow", category = "ENEMY_SKIN", name = "Shadow Enemies", description = "Dark silhouette enemies", priceGems = 100)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "garden_ziggurat_skin", category = "ZIGGURAT_SKIN", name = "Garden Ziggurat Skin", description = "Cascading hanging gardens draped over terracotta stone", priceGems = 600)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "lapis_lazuli_skin", category = "ZIGGURAT_SKIN", name = "Lapis Lazuli Ziggurat Skin", description = "Deep lapis lazuli stone with pyrite-gold flecks", priceGems = 500)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "proj_fire", category = "PROJECTILE_EFFECT", name = "Fire Trails", description = "Blazing projectile trails", priceGems = 150)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "proj_lightning", category = "PROJECTILE_EFFECT", name = "Lightning Arcs", description = "Electric projectile arcs", priceGems = 150)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "sandals_of_gilgamesh", category = "ZIGGURAT_SKIN", name = "Sandals of Gilgamesh", description = "Bronze ziggurat in honour of Gilgamesh, whose sandals walked the edges of the world", priceGems = 500)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "zig_crystal", category = "ZIGGURAT_SKIN", name = "Crystal Ziggurat", description = "Translucent crystal layers", priceGems = 200)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "zig_golden", category = "ZIGGURAT_SKIN", name = "Golden Ziggurat", description = "Pure gold plating", priceGems = 300)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "zig_jade", category = "ZIGGURAT_SKIN", name = "Jade Ziggurat", description = "Deep jade stone with pale highlights", priceGems = 150)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$CosmeticEntity(cosmeticId = "zig_obsidian", category = "ZIGGURAT_SKIN", name = "Obsidian Ziggurat", description = "Dark volcanic stone", priceGems = 100)</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$description = "Bronze ziggurat in honour of Gilgamesh, whose sandals walked the edges of the world"</ID>
     <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$"ZIGGURAT_COLOR_LOOKUP contract: exactly 5 colors, one per ziggurat layer (matches ZigguratEntity.DEFAULT_COLORS)"</ID>
     <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "enemy_neon", category = "ENEMY_SKIN", name = "Neon Enemies", description = "Glowing neon outlines", priceGems = 100)</ID>
     <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "enemy_shadow", category = "ENEMY_SKIN", name = "Shadow Enemies", description = "Dark silhouette enemies", priceGems = 100)</ID>
@@ -210,14 +201,9 @@
     <ID>MaxLineLength:CurrencyDashboardScreen.kt:Text(state.weeklyTimeRemaining, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
     <ID>MaxLineLength:CurrencyDashboardScreen.kt:Text(week.weekStartDate, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)</ID>
     <ID>MaxLineLength:DailyStepManager.kt:DailyStepManager$// writeTimeBaseline uses SharedPreferences.apply() (async, non-throwing) — it cannot abort the checkAndAward below.</ID>
-    <ID>MaxLineLength:DailyStepManager.kt:DailyStepManager$milestoneTriggered = dropState.milestoneTriggered || (drop?.trigger == SupplyDropTrigger.DAILY_MILESTONE)</ID>
-    <ID>MaxLineLength:DailyStepManager.kt:DailyStepManager$private val trackWeeklyChallenge by lazy { TrackWeeklyChallenge(weeklyChallengeRepository, stepRepository, playerRepository) }</ID>
-    <ID>MaxLineLength:DailyStepManager.kt:DailyStepManager$val timeVerdict = TimeIntegrity.evaluate(antiCheatPrefs.readTimeBaseline(), antiCheatPrefs.currentTimeReading())</ID>
-    <ID>MaxLineLength:DailyStepManager.kt:DailyStepManager$val workshopBonus = com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath.stepMultiplierBonus(wsLevel)</ID>
     <ID>MaxLineLength:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository$override fun observeHistory: Flow&lt;List&lt;com.whitefang.stepsofbabylon.domain.model.SupplyDrop&gt;&gt;</ID>
     <ID>MaxLineLength:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository$override fun observeUnclaimed: Flow&lt;List&lt;com.whitefang.stepsofbabylon.domain.model.SupplyDrop&gt;&gt;</ID>
     <ID>MaxLineLength:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository$override suspend fun createDrop: Long</ID>
-    <ID>MaxLineLength:DatabaseKeyManager.kt:DatabaseKeyManager$val</ID>
     <ID>MaxLineLength:DeathEffect.kt:DeathEffect$EnemyType.FAST -&gt; { p.vx = (if (i % 2 == 0) 1f else -1f) * speedBase * (0.5f + Random.nextFloat()); p.vy = Random.nextFloat() * 30f - 15f }</ID>
     <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val atMax = describe.workshopPreview(mapOf(UpgradeType.CRITICAL_CHANCE to 160), type = UpgradeType.CRITICAL_CHANCE)</ID>
     <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val nearMax = describe.workshopPreview(mapOf(UpgradeType.CRITICAL_CHANCE to 159), type = UpgradeType.CRITICAL_CHANCE)</ID>
@@ -288,6 +274,7 @@
     <ID>MaxLineLength:MainActivity.kt:MainActivity$popExitTransition = { if (reducedMotion) fadeOut(snap()) else fadeOut(tween(200)) + slideOutHorizontally(tween(200)) { it / 4 } }</ID>
     <ID>MaxLineLength:MainActivity.kt:MainActivity$val enterAnim = if (reducedMotion) fadeIn(snap()) else fadeIn(tween(200)) + slideInHorizontally(tween(200)) { it / 4 }</ID>
     <ID>MaxLineLength:MainActivity.kt:MainActivity$val exitAnim = if (reducedMotion) fadeOut(snap()) else fadeOut(tween(200)) + slideOutHorizontally(tween(200)) { -it / 4 }</ID>
+    <ID>MaxLineLength:Migrations.kt:AppMigrations.&lt;no name provided&gt;$"CREATE UNIQUE INDEX IF NOT EXISTS `index_card_inventory_cardType` ON `card_inventory` (`cardType`)"</ID>
     <ID>MaxLineLength:MissionsScreen.kt:CurrencyValue(CurrencyType.GEMS, mission.rewardGems.toLong(), style = MaterialTheme.typography.bodySmall)</ID>
     <ID>MaxLineLength:MissionsScreen.kt:CurrencyValue(CurrencyType.POWER_STONES, mission.rewardPowerStones.toLong(), style = MaterialTheme.typography.bodySmall)</ID>
     <ID>MaxLineLength:MissionsScreen.kt:Icon(Icons.Filled.CheckCircle, contentDescription = "Claimed", tint = MaterialTheme.colorScheme.primary)</ID>
@@ -312,12 +299,11 @@
     <ID>MaxLineLength:PauseOverlay.kt:Button(onClick = { haptics.tap(); onResume() }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_resume)) }</ID>
     <ID>MaxLineLength:PauseOverlay.kt:OutlinedButton(onClick = onQuitRound, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.pause_quit_round)) }</ID>
     <ID>MaxLineLength:PauseOverlay.kt:Text(stringResource(R.string.pause_title), style = MaterialTheme.typography.headlineLarge, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)</ID>
-    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$@Query("UPDATE player_profile SET currentStepBalance = MAX(0, currentStepBalance + :delta), totalStepsEarned = CASE WHEN :delta &gt; 0 THEN totalStepsEarned + :delta ELSE totalStepsEarned END WHERE id = 1")</ID>
-    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$@Query("UPDATE player_profile SET currentStepBalance = currentStepBalance - :cost WHERE id = 1 AND currentStepBalance &gt;= :cost")</ID>
-    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$@Query("UPDATE player_profile SET gems = gems - :amount, totalGemsSpent = totalGemsSpent + :amount WHERE id = 1 AND gems &gt;= :amount")</ID>
-    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$@Query("UPDATE player_profile SET powerStones = powerStones - :amount, totalPowerStonesSpent = totalPowerStonesSpent + :amount WHERE id = 1 AND powerStones &gt;= :amount")</ID>
-    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$@Query("UPDATE player_profile SET totalRoundsPlayed = totalRoundsPlayed + :rounds, totalEnemiesKilled = totalEnemiesKilled + :kills, totalCashEarned = totalCashEarned + :cash WHERE id = 1")</ID>
-    <ID>MaxLineLength:PlayerRepositoryImpl.kt:PlayerRepositoryImpl$override suspend fun incrementBattleStats</ID>
+    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET currentStepBalance = MAX(0, currentStepBalance + :delta), totalStepsEarned = CASE WHEN :delta &gt; 0 THEN totalStepsEarned + :delta ELSE totalStepsEarned END WHERE id = 1"</ID>
+    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET currentStepBalance = currentStepBalance - :cost WHERE id = 1 AND currentStepBalance &gt;= :cost"</ID>
+    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET gems = gems - :amount, totalGemsSpent = totalGemsSpent + :amount WHERE id = 1 AND gems &gt;= :amount"</ID>
+    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET powerStones = powerStones - :amount, totalPowerStonesSpent = totalPowerStonesSpent + :amount WHERE id = 1 AND powerStones &gt;= :amount"</ID>
+    <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET totalRoundsPlayed = totalRoundsPlayed + :rounds, totalEnemiesKilled = totalEnemiesKilled + :kills, totalCashEarned = totalCashEarned + :cash WHERE id = 1"</ID>
     <ID>MaxLineLength:PostRoundOverlay.kt:StatRow(stringResource(R.string.postround_stat_cash), stringResource(R.string.cash_amount, state.totalCashEarned))</ID>
     <ID>MaxLineLength:PostRoundOverlay.kt:StatRow(stringResource(R.string.postround_stat_steps), stringResource(R.string.postround_stat_steps_value, state.stepsEarned))</ID>
     <ID>MaxLineLength:PostRoundOverlay.kt:StatRow(stringResource(R.string.postround_stat_time), stringResource(R.string.postround_time_value, minutes, seconds))</ID>
@@ -331,7 +317,6 @@
     <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_title), style = MaterialTheme.typography.headlineMedium, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)</ID>
     <ID>MaxLineLength:PostRoundOverlay.kt:val shareText = stringResource(R.string.postround_share_text, state.waveReached, BuildConfig.PLAY_STORE_URL)</ID>
     <ID>MaxLineLength:PremiumSpendDaoTest.kt:PremiumSpendDaoTest$val result = cardDao.openCardPackAtomic(gemCost = 50, cardTypeNames = listOf("IRON_SKIN"), playerDao = playerDao)</ID>
-    <ID>MaxLineLength:RewardAdManagerImpl.kt:RewardAdManagerImpl$.</ID>
     <ID>MaxLineLength:Screen.kt:Screen.Companion$listOf(Home, Workshop, Battle, Labs, Stats, Weapons, Cards, Supplies, Economy, Missions, Settings, Store, Help)</ID>
     <ID>MaxLineLength:SettingsScreen.kt:Text("Background activity", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)</ID>
     <ID>MaxLineLength:SettingsScreen.kt:Text("Delete All Data", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)</ID>
@@ -390,7 +375,7 @@
     <ID>MaxLineLength:UpgradeCard.kt:text = if (affordable) stringResource(R.string.upgrade_best_buy) else stringResource(R.string.upgrade_best_buy_save_up)</ID>
     <ID>MaxLineLength:UpgradeCard.kt:text = if (info.isMaxed) stringResource(R.string.upgrade_max) else stringResource(R.string.upgrade_level, info.level)</ID>
     <ID>MaxLineLength:UpgradeType.kt:UpgradeType.Companion$"+1 additional target per level (in-round Cash purchase or Labs research; cap 11 incl. baseline)"</ID>
-    <ID>MaxLineLength:WalkingEncounterDao.kt:WalkingEncounterDao$@Query("DELETE FROM walking_encounter WHERE claimed = 0 AND id = (SELECT id FROM walking_encounter WHERE claimed = 0 ORDER BY createdAt ASC LIMIT 1)")</ID>
+    <ID>MaxLineLength:WalkingEncounterDao.kt:WalkingEncounterDao$"DELETE FROM walking_encounter WHERE claimed = 0 AND id = (SELECT id FROM walking_encounter WHERE claimed = 0 ORDER BY createdAt ASC LIMIT 1)"</ID>
     <ID>MaxLineLength:WaveAnnouncement.kt:WaveAnnouncement$val alpha = if (age &lt; holdDuration) 255 else ((1f - (age - holdDuration) / fadeDuration) * 255).toInt().coerceIn(0, 255)</ID>
     <ID>MaxLineLength:WaveSpawner.kt:WaveSpawner$else -&gt; mapOf(EnemyType.SCATTER to 0.10, EnemyType.TANK to 0.10, EnemyType.RANGED to 0.15, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.45)</ID>
     <ID>MaxLineLength:WaveSpawner.kt:WaveSpawner$wave &lt;= 30 -&gt; mapOf(EnemyType.TANK to 0.10, EnemyType.RANGED to 0.15, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.55)</ID>

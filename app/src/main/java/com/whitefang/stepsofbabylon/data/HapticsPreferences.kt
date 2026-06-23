@@ -13,9 +13,14 @@ import javax.inject.Singleton
  * "haptics_prefs" instance, so a toggle takes effect on the next tap with no restart).
  */
 @Singleton
-class HapticsPreferences @Inject constructor(@ApplicationContext context: Context) {
-    private val prefs = context.getSharedPreferences("haptics_prefs", Context.MODE_PRIVATE)
+class HapticsPreferences
+    @Inject
+    constructor(
+        @ApplicationContext context: Context,
+    ) {
+        private val prefs = context.getSharedPreferences("haptics_prefs", Context.MODE_PRIVATE)
 
-    fun isEnabled(): Boolean = prefs.getBoolean("enabled", true)
-    fun setEnabled(enabled: Boolean) = prefs.edit().putBoolean("enabled", enabled).apply()
-}
+        fun isEnabled(): Boolean = prefs.getBoolean("enabled", true)
+
+        fun setEnabled(enabled: Boolean) = prefs.edit().putBoolean("enabled", enabled).apply()
+    }

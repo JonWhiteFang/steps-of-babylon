@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CardDao {
-
     @Query("SELECT * FROM card_inventory")
     fun getAll(): Flow<List<CardInventoryEntity>>
 
@@ -37,10 +36,18 @@ interface CardDao {
     suspend fun getByType(cardType: String): CardInventoryEntity?
 
     @Query("UPDATE card_inventory SET copyCount = copyCount + :delta WHERE cardType = :cardType")
-    suspend fun incrementCopyCount(cardType: String, delta: Int = 1)
+    suspend fun incrementCopyCount(
+        cardType: String,
+        delta: Int = 1,
+    )
 
-    @Query("UPDATE card_inventory SET copyCount = copyCount - :amount, level = level + 1 WHERE id = :id AND copyCount >= :amount")
-    suspend fun decrementCopiesAndLevelUp(id: Int, amount: Int): Int
+    @Query(
+        "UPDATE card_inventory SET copyCount = copyCount - :amount, level = level + 1 WHERE id = :id AND copyCount >= :amount",
+    )
+    suspend fun decrementCopiesAndLevelUp(
+        id: Int,
+        amount: Int,
+    ): Int
 
     /**
      * #236: opens a card pack — the guarded Gem deduct and all card-row writes commit or roll back

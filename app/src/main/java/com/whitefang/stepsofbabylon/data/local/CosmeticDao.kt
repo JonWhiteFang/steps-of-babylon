@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CosmeticDao {
-
     @Query("SELECT * FROM cosmetics")
     fun observeAll(): Flow<List<CosmeticEntity>>
 

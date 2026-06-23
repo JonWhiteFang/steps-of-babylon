@@ -18,42 +18,52 @@ import javax.inject.Singleton
  * "Delete All Data" action wipes it (Task 2 / #192-adjacent).
  */
 @Singleton
-class CrashBreadcrumbStore @Inject constructor(@ApplicationContext context: Context) {
-    private val prefs = context.getSharedPreferences("crash_breadcrumb_prefs", Context.MODE_PRIVATE)
+class CrashBreadcrumbStore
+    @Inject
+    constructor(
+        @ApplicationContext context: Context,
+    ) {
+        private val prefs = context.getSharedPreferences("crash_breadcrumb_prefs", Context.MODE_PRIVATE)
 
-    fun record(threadName: String, throwable: Throwable, timestampMillis: Long) {
-        runCatching {
-            prefs.edit()
-                .putLong(KEY_TS, timestampMillis)
-                .putString(KEY_THREAD, threadName)
-                .putString(KEY_CLASS, throwable.javaClass.name)
-                .putString(KEY_MESSAGE, throwable.message)
-                .putString(KEY_STACK, throwable.stackTraceToString().take(MAX_STACK_CHARS))
-                .commit() // synchronous — the process may be exiting
+        fun record(
+            threadName: String,
+            throwable: Throwable,
+            timestampMillis: Long,
+        ) {
+            runCatching {
+                prefs
+                    .edit()
+                    .putLong(KEY_TS, timestampMillis)
+                    .putString(KEY_THREAD, threadName)
+                    .putString(KEY_CLASS, throwable.javaClass.name)
+                    .putString(KEY_MESSAGE, throwable.message)
+                    .putString(KEY_STACK, throwable.stackTraceToString().take(MAX_STACK_CHARS))
+                    .commit() // synchronous — the process may be exiting
+            }
+        }
+
+        fun peek(): CrashBreadcrumb? =
+            runCatching {
+                if (!prefs.contains(KEY_TS)) return@runCatching null
+                CrashBreadcrumb(
+                    timestampMillis = prefs.getLong(KEY_TS, 0L),
+                    threadName = prefs.getString(KEY_THREAD, "") ?: "",
+                    exceptionClass = prefs.getString(KEY_CLASS, "") ?: "",
+                    message = prefs.getString(KEY_MESSAGE, null),
+                    stackPreview = prefs.getString(KEY_STACK, "") ?: "",
+                )
+            }.getOrNull()
+
+        fun clear() {
+            runCatching { prefs.edit().clear().commit() }
+        }
+
+        companion object {
+            const val MAX_STACK_CHARS = 4096
+            private const val KEY_TS = "crash_ts"
+            private const val KEY_THREAD = "crash_thread"
+            private const val KEY_CLASS = "crash_class"
+            private const val KEY_MESSAGE = "crash_message"
+            private const val KEY_STACK = "crash_stack"
         }
     }
-
-    fun peek(): CrashBreadcrumb? = runCatching {
-        if (!prefs.contains(KEY_TS)) return@runCatching null
-        CrashBreadcrumb(
-            timestampMillis = prefs.getLong(KEY_TS, 0L),
-            threadName = prefs.getString(KEY_THREAD, "") ?: "",
-            exceptionClass = prefs.getString(KEY_CLASS, "") ?: "",
-            message = prefs.getString(KEY_MESSAGE, null),
-            stackPreview = prefs.getString(KEY_STACK, "") ?: "",
-        )
-    }.getOrNull()
-
-    fun clear() {
-        runCatching { prefs.edit().clear().commit() }
-    }
-
-    companion object {
-        const val MAX_STACK_CHARS = 4096
-        private const val KEY_TS = "crash_ts"
-        private const val KEY_THREAD = "crash_thread"
-        private const val KEY_CLASS = "crash_class"
-        private const val KEY_MESSAGE = "crash_message"
-        private const val KEY_STACK = "crash_stack"
-    }
-}

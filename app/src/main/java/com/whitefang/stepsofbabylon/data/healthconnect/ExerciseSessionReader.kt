@@ -18,35 +18,38 @@ data class ExerciseSessionInfo(
 )
 
 @Singleton
-class ExerciseSessionReader @Inject constructor(
-    private val wrapper: HealthConnectClientWrapper,
-) {
-    suspend fun getSessionsForDate(date: String): List<ExerciseSessionInfo> {
-        val client = wrapper.getClient() ?: return emptyList()
-        if (!wrapper.hasPermissions()) return emptyList()
+class ExerciseSessionReader
+    @Inject
+    constructor(
+        private val wrapper: HealthConnectClientWrapper,
+    ) {
+        suspend fun getSessionsForDate(date: String): List<ExerciseSessionInfo> {
+            val client = wrapper.getClient() ?: return emptyList()
+            if (!wrapper.hasPermissions()) return emptyList()
 
-        val localDate = LocalDate.parse(date)
-        val zone = ZoneId.systemDefault()
-        val start = localDate.atStartOfDay(zone).toInstant()
-        val end = localDate.plusDays(1).atStartOfDay(zone).toInstant()
+            val localDate = LocalDate.parse(date)
+            val zone = ZoneId.systemDefault()
+            val start = localDate.atStartOfDay(zone).toInstant()
+            val end = localDate.plusDays(1).atStartOfDay(zone).toInstant()
 
-        return try {
-            val response = client.readRecords(
-                ReadRecordsRequest(
-                    ExerciseSessionRecord::class,
-                    timeRangeFilter = TimeRangeFilter.between(start, end),
-                )
-            )
-            response.records.map { record ->
-                ExerciseSessionInfo(
-                    exerciseType = record.exerciseType,
-                    startTime = record.startTime,
-                    endTime = record.endTime,
-                    durationMinutes = Duration.between(record.startTime, record.endTime).toMinutes().toInt(),
-                )
+            return try {
+                val response =
+                    client.readRecords(
+                        ReadRecordsRequest(
+                            ExerciseSessionRecord::class,
+                            timeRangeFilter = TimeRangeFilter.between(start, end),
+                        ),
+                    )
+                response.records.map { record ->
+                    ExerciseSessionInfo(
+                        exerciseType = record.exerciseType,
+                        startTime = record.startTime,
+                        endTime = record.endTime,
+                        durationMinutes = Duration.between(record.startTime, record.endTime).toMinutes().toInt(),
+                    )
+                }
+            } catch (_: Exception) {
+                emptyList()
             }
-        } catch (_: Exception) {
-            emptyList()
         }
     }
-}

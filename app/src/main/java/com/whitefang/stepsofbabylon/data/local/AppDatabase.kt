@@ -26,16 +26,28 @@ import androidx.room.TypeConverters
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun playerProfileDao(): PlayerProfileDao
+
     abstract fun workshopDao(): WorkshopDao
+
     abstract fun labDao(): LabDao
+
     abstract fun cardDao(): CardDao
+
     abstract fun ultimateWeaponDao(): UltimateWeaponDao
+
     abstract fun dailyStepDao(): DailyStepDao
+
     abstract fun walkingEncounterDao(): WalkingEncounterDao
+
     abstract fun weeklyChallengeDao(): WeeklyChallengeDao
+
     abstract fun dailyLoginDao(): DailyLoginDao
+
     abstract fun milestoneDao(): MilestoneDao
+
     abstract fun dailyMissionDao(): DailyMissionDao
+
     abstract fun cosmeticDao(): CosmeticDao
+
     abstract fun billingReceiptDao(): BillingReceiptDao
 }

@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MilestoneDao {
-
     @Query("SELECT * FROM milestone")
     fun getAll(): Flow<List<MilestoneEntity>>
 

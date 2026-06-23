@@ -6,7 +6,6 @@ import androidx.room.Upsert
 
 @Dao
 interface WeeklyChallengeDao {
-
     @Query("SELECT * FROM weekly_challenge WHERE weekStartDate = :weekStart")
     suspend fun getByWeek(weekStart: String): WeeklyChallengeEntity?
 

@@ -18,7 +18,6 @@ import androidx.room.Upsert
  */
 @Dao
 interface BillingReceiptDao {
-
     @Query("SELECT * FROM billing_receipt WHERE purchaseToken = :purchaseToken")
     suspend fun getByToken(purchaseToken: String): BillingReceiptEntity?
 
@@ -47,13 +46,19 @@ interface BillingReceiptDao {
         "UPDATE billing_receipt SET acknowledged = 1, acknowledgedAt = :acknowledgedAt " +
             "WHERE purchaseToken = :purchaseToken",
     )
-    suspend fun markAcknowledged(purchaseToken: String, acknowledgedAt: Long)
+    suspend fun markAcknowledged(
+        purchaseToken: String,
+        acknowledgedAt: Long,
+    )
 
     @Query(
         "UPDATE billing_receipt SET consumed = 1, consumedAt = :consumedAt " +
             "WHERE purchaseToken = :purchaseToken",
     )
-    suspend fun markConsumed(purchaseToken: String, consumedAt: Long)
+    suspend fun markConsumed(
+        purchaseToken: String,
+        consumedAt: Long,
+    )
 
     /**
      * Atomically inserts (or updates) the receipt, flips `granted = true`, and credits the

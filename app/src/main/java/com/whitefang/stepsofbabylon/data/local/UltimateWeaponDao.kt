@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface UltimateWeaponDao {
-
     @Query("SELECT * FROM ultimate_weapon_state")
     fun getAll(): Flow<List<UltimateWeaponStateEntity>>
 
@@ -33,13 +32,22 @@ interface UltimateWeaponDao {
     suspend fun markUnlocked(weaponType: String)
 
     @Query("UPDATE ultimate_weapon_state SET damageLevel = :level WHERE weaponType = :weaponType")
-    suspend fun updateDamageLevel(weaponType: String, level: Int)
+    suspend fun updateDamageLevel(
+        weaponType: String,
+        level: Int,
+    )
 
     @Query("UPDATE ultimate_weapon_state SET secondaryLevel = :level WHERE weaponType = :weaponType")
-    suspend fun updateSecondaryLevel(weaponType: String, level: Int)
+    suspend fun updateSecondaryLevel(
+        weaponType: String,
+        level: Int,
+    )
 
     @Query("UPDATE ultimate_weapon_state SET cooldownLevel = :level WHERE weaponType = :weaponType")
-    suspend fun updateCooldownLevel(weaponType: String, level: Int)
+    suspend fun updateCooldownLevel(
+        weaponType: String,
+        level: Int,
+    )
 
     /**
      * #236: unlocks an Ultimate Weapon — the guarded Power-Stone deduct and the unlock write

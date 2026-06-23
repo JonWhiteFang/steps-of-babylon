@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface DailyMissionDao {
-
     @Query("SELECT * FROM daily_mission WHERE date = :date")
     fun getByDate(date: String): Flow<List<DailyMissionEntity>>
 
@@ -41,7 +40,10 @@ interface DailyMissionDao {
      * common already-generated path. It is correctness-belt-and-suspenders, not the guarantee.
      */
     @Transaction
-    suspend fun generateForDate(date: String, missions: List<DailyMissionEntity>) {
+    suspend fun generateForDate(
+        date: String,
+        missions: List<DailyMissionEntity>,
+    ) {
         if (getByDateOnce(date).isNotEmpty()) return
         missions.forEach { insert(it) }
     }
@@ -50,7 +52,11 @@ interface DailyMissionDao {
     suspend fun upsert(entity: DailyMissionEntity)
 
     @Query("UPDATE daily_mission SET progress = :progress, completed = :completed WHERE id = :id")
-    suspend fun updateProgress(id: Int, progress: Int, completed: Boolean)
+    suspend fun updateProgress(
+        id: Int,
+        progress: Int,
+        completed: Boolean,
+    )
 
     /**
      * Atomic guarded claim (#122). The `AND claimed = 0` clause + rows-affected return make the

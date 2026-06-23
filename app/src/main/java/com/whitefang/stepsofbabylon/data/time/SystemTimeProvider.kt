@@ -12,7 +12,10 @@ import javax.inject.Singleton
  * Tests use `test/fakes/FakeTimeProvider.kt` (introduced in B.1 PR 3) instead.
  */
 @Singleton
-class SystemTimeProvider @Inject constructor() : TimeProvider {
-    override fun now(): Instant = Instant.now()
-    override fun today(): LocalDate = LocalDate.now()
-}
+class SystemTimeProvider
+    @Inject
+    constructor() : TimeProvider {
+        override fun now(): Instant = Instant.now()
+
+        override fun today(): LocalDate = LocalDate.now()
+    }
