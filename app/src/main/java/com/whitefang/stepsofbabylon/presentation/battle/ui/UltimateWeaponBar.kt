@@ -41,15 +41,19 @@ fun UltimateWeaponBar(slots: List<UWSlotInfo>) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         slots.forEach { slot ->
             Box(
-                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp))
-                    .background(if (slot.isReady) Color(0xFF6A5ACD) else Color(0xFF2A2A3E))
-                    .semantics {
-                        contentDescription = if (slot.isReady) {
-                            "${slot.typeName} ready"
-                        } else {
-                            "${slot.typeName} on cooldown, ${slot.cooldownRemaining.toInt()} seconds remaining"
-                        }
-                    },
+                modifier =
+                    Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (slot.isReady) Color(0xFF6A5ACD) else Color(0xFF2A2A3E))
+                        .semantics {
+                            contentDescription =
+                                if (slot.isReady) {
+                                    "${slot.typeName} ready"
+                                } else {
+                                    "${slot.typeName} on cooldown, ${slot.cooldownRemaining.toInt()} seconds remaining"
+                                }
+                        },
                 contentAlignment = Alignment.Center,
             ) {
                 if (slot.isReady) {
@@ -59,17 +63,19 @@ fun UltimateWeaponBar(slots: List<UWSlotInfo>) {
                 }
                 // Bottom-anchored cooldown progress fill. `cooldownTotal` is `0f` only
                 // for fresh-engine sentinel state; guard against div-by-zero.
-                val progress = if (slot.cooldownTotal > 0f) {
-                    1f - (slot.cooldownRemaining / slot.cooldownTotal).coerceIn(0f, 1f)
-                } else {
-                    1f
-                }
+                val progress =
+                    if (slot.cooldownTotal > 0f) {
+                        1f - (slot.cooldownRemaining / slot.cooldownTotal).coerceIn(0f, 1f)
+                    } else {
+                        1f
+                    }
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight(progress * 0.06f) // tiny strip at the bottom
-                        .align(Alignment.BottomCenter)
-                        .background(Color(0xFFD4A843).copy(alpha = if (slot.isReady) 0.0f else 0.6f)),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(progress * 0.06f) // tiny strip at the bottom
+                            .align(Alignment.BottomCenter)
+                            .background(Color(0xFFD4A843).copy(alpha = if (slot.isReady) 0.0f else 0.6f)),
                 )
             }
         }

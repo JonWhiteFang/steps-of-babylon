@@ -19,9 +19,9 @@ import com.whitefang.stepsofbabylon.presentation.battle.biome.BackgroundRenderer
 import com.whitefang.stepsofbabylon.presentation.battle.biome.BiomeTheme
 import com.whitefang.stepsofbabylon.presentation.battle.effects.EffectEngine
 import com.whitefang.stepsofbabylon.presentation.battle.effects.ProjectileTrailEffect
-import com.whitefang.stepsofbabylon.presentation.battle.effects.advanceTrail
 import com.whitefang.stepsofbabylon.presentation.battle.effects.WaveAnnouncement
 import com.whitefang.stepsofbabylon.presentation.battle.effects.WaveCooldownText
+import com.whitefang.stepsofbabylon.presentation.battle.effects.advanceTrail
 import com.whitefang.stepsofbabylon.presentation.battle.entities.EnemyEntity
 import com.whitefang.stepsofbabylon.presentation.battle.entities.EnemyProjectileEntity
 import com.whitefang.stepsofbabylon.presentation.battle.entities.OrbEntity
@@ -31,8 +31,10 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlin.math.PI
 import kotlin.math.hypot
 
-class GameEngine : UWHost, BuffHost, CombatHost {
-
+class GameEngine :
+    UWHost,
+    BuffHost,
+    CombatHost {
     private val entities = mutableListOf<Entity>()
     private val pendingAdd = mutableListOf<Entity>()
 
@@ -58,15 +60,21 @@ class GameEngine : UWHost, BuffHost, CombatHost {
     private val enemyScratch = ArrayList<EnemyEntity>()
     private val enemyProjScratch = ArrayList<EnemyProjectileEntity>()
 
-    override var screenWidth: Float = 0f; private set
-    override var screenHeight: Float = 0f; private set
-    override var ziggurat: ZigguratEntity? = null; private set
-    var waveSpawner: WaveSpawner? = null; private set
+    override var screenWidth: Float = 0f
+        private set
+    override var screenHeight: Float = 0f
+        private set
+    override var ziggurat: ZigguratEntity? = null
+        private set
+    var waveSpawner: WaveSpawner? = null
+        private set
+
     // @Volatile: written by [applyStats] from the main thread (in-round purchase) and read by
     // the loop thread every tick (#118).
     @Volatile private var stats: ResolvedStats = ResolvedStats()
     private var currentTier: Int = 1
     private var battleConditions: BattleConditionEffects = BattleConditionEffects()
+
     /**
      * Effective level lookup for cash-utility computations (`CASH_BONUS`, `CASH_PER_WAVE`,
      * `INTEREST`, `FREE_UPGRADES`). Initially seeded from the player's Workshop levels at
@@ -83,11 +91,14 @@ class GameEngine : UWHost, BuffHost, CombatHost {
     private var biomeTheme: BiomeTheme = BiomeTheme.forBiome(Biome.HANGING_GARDENS)
 
     // Effects
-    override var effectEngine: EffectEngine? = null; private set
+    override var effectEngine: EffectEngine? = null
+        private set
     override var soundManager: SoundManager? = null
+
     /** Engine-internal display strings (V1X-13, ADR-0014). Set by [GameSurfaceView]; null in pure-JVM tests, which fall back to literals. */
     override var strings: Strings? = null
-    override var reducedMotion: Boolean = false; private set
+    override var reducedMotion: Boolean = false
+        private set
     private var cooldownText: WaveCooldownText? = null
     private var lastWave: Int = 0
 
@@ -109,12 +120,16 @@ class GameEngine : UWHost, BuffHost, CombatHost {
     private val battleRenderer = BattleRenderer()
     val cash: Long get() = simulation.cash
     val totalCashEarned: Long get() = simulation.totalCashEarned
+
     @Volatile var roundOver: Boolean = false
     val totalEnemiesKilled: Int get() = simulation.totalEnemiesKilled
     val totalStepsEarned: Long get() = simulation.totalStepsEarned
     val elapsedTimeSeconds: Float get() = simulation.elapsedSeconds
+
     @Volatile override var secondWindHpPercent: Double = 0.0
+
     @Volatile var secondWindUsed: Boolean = false
+
     @Volatile override var cashBonusPercent: Double = 0.0
 
     /**
@@ -202,14 +217,22 @@ class GameEngine : UWHost, BuffHost, CombatHost {
         secondWindUsed = true
         return true
     }
-    override fun addPending(entity: Entity) { pendingAdd.add(entity) }
+
+    override fun addPending(entity: Entity) {
+        pendingAdd.add(entity)
+    }
+
     override fun aliveEnemies(): List<EnemyEntity> = getAliveEnemies()
+
     override fun nearestEnemies(n: Int): List<EnemyEntity> = findNearestEnemies(n)
+
     override fun applyLifesteal(healAmount: Double) = buffTickers.applyLifesteal(healAmount)
+
     override fun wsLevel(type: UpgradeType): Int = effectiveLevels[type] ?: 0
 
     fun init(
-        width: Float, height: Float,
+        width: Float,
+        height: Float,
         resolvedStats: ResolvedStats = ResolvedStats(),
         playerTier: Int = 1,
         wsLevels: Map<UpgradeType, Int> = emptyMap(),
@@ -231,13 +254,18 @@ class GameEngine : UWHost, BuffHost, CombatHost {
         // — it can never iterate a half-cleared list. [update]'s `if (roundOver) return` guard
         // reads happen before its own lock acquisition, so a ticker simply waits here.
         synchronized(entitiesLock) {
-            screenWidth = width; screenHeight = height
-            entities.clear(); pendingAdd.clear()
-            simulation.reset(); roundOver = false
+            screenWidth = width
+            screenHeight = height
+            entities.clear()
+            pendingAdd.clear()
+            simulation.reset()
+            roundOver = false
             secondWindUsed = false
             uwController.resetRoundState()
             buffTickers.reset()
-            stats = resolvedStats; currentTier = playerTier; effectiveLevels = wsLevels
+            stats = resolvedStats
+            currentTier = playerTier
+            effectiveLevels = wsLevels
             reducedMotion = isReducedMotion
             battleConditions = BattleConditionEffects.fromTier(currentTier)
             biomeTheme = BiomeTheme.forBiome(Biome.forTier(currentTier))
@@ -247,13 +275,24 @@ class GameEngine : UWHost, BuffHost, CombatHost {
             val fx = EffectEngine(reducedMotion)
             effectEngine = fx
 
-            val zigColors = cosmeticOverrides[CosmeticCategory.ZIGGURAT_SKIN]?.overrideColors
-                ?: biomeTheme.zigguratColors
-            val zig = ZigguratEntity(width, height, stats, ::findNearestEnemies, layerColors = zigColors) { sx, sy, tx, ty ->
-                pendingAdd.add(ProjectileEntity(sx, sy, tx, ty, ZigguratBaseStats.PROJECTILE_SPEED, bouncesRemaining = stats.bounceCount))
-                val intervalMs = ((1.0 / (ziggurat?.stats?.attackSpeed ?: 1.0)) * 1000).toLong()
-                soundManager?.play(SoundEffect.SHOOT, intervalMs)
-            }
+            val zigColors =
+                cosmeticOverrides[CosmeticCategory.ZIGGURAT_SKIN]?.overrideColors
+                    ?: biomeTheme.zigguratColors
+            val zig =
+                ZigguratEntity(width, height, stats, ::findNearestEnemies, layerColors = zigColors) { sx, sy, tx, ty ->
+                    pendingAdd.add(
+                        ProjectileEntity(
+                            sx,
+                            sy,
+                            tx,
+                            ty,
+                            ZigguratBaseStats.PROJECTILE_SPEED,
+                            bouncesRemaining = stats.bounceCount,
+                        ),
+                    )
+                    val intervalMs = ((1.0 / (ziggurat?.stats?.attackSpeed ?: 1.0)) * 1000).toLong()
+                    soundManager?.play(SoundEffect.SHOOT, intervalMs)
+                }
             ziggurat = zig
             entities.add(zig)
 
@@ -261,23 +300,25 @@ class GameEngine : UWHost, BuffHost, CombatHost {
 
             val safeStartWave = startWave.coerceAtLeast(1)
 
-            waveSpawner = WaveSpawner(
-                onSpawnEnemy = { pendingAdd.add(it) },
-                zigguratX = zig.originX, zigguratY = zig.originY,
-                onEnemyDeath = combatResolver::handleEnemyDeath,
-                // R3-02: forward the attacker reference so applyThorn can reflect damage back
-                // to the melee enemy. Pre-R3-02 this was `{ dmg -> ... null }` and THORN_DAMAGE
-                // never fired on melee hits despite being plumbed through ResolvedStats.
-                onMeleeHit = { atk, dmg -> combatResolver.applyDamageToZiggurat(dmg, atk) },
-                onEnemyFireProjectile = { shooter, sx, sy, tx, ty, dmg ->
-                    pendingAdd.add(EnemyProjectileEntity(sx, sy, tx, ty, damage = dmg, shooter = shooter))
-                },
-                onWaveComplete = combatResolver::handleWaveComplete,
-                conditions = battleConditions,
-                enemyTint = biomeTheme.enemyTint,
-                startWave = safeStartWave,
-                tierMultiplier = TierConfig.forTier(currentTier).cashMultiplier,
-            )
+            waveSpawner =
+                WaveSpawner(
+                    onSpawnEnemy = { pendingAdd.add(it) },
+                    zigguratX = zig.originX,
+                    zigguratY = zig.originY,
+                    onEnemyDeath = combatResolver::handleEnemyDeath,
+                    // R3-02: forward the attacker reference so applyThorn can reflect damage back
+                    // to the melee enemy. Pre-R3-02 this was `{ dmg -> ... null }` and THORN_DAMAGE
+                    // never fired on melee hits despite being plumbed through ResolvedStats.
+                    onMeleeHit = { atk, dmg -> combatResolver.applyDamageToZiggurat(dmg, atk) },
+                    onEnemyFireProjectile = { shooter, sx, sy, tx, ty, dmg ->
+                        pendingAdd.add(EnemyProjectileEntity(sx, sy, tx, ty, damage = dmg, shooter = shooter))
+                    },
+                    onWaveComplete = combatResolver::handleWaveComplete,
+                    conditions = battleConditions,
+                    enemyTint = biomeTheme.enemyTint,
+                    startWave = safeStartWave,
+                    tierMultiplier = TierConfig.forTier(currentTier).cashMultiplier,
+                )
 
             // Initial wave announcement. #16: seed lastWave to the opening wave so the first
             // update() tick does not re-detect a wave change (currentWave == lastWave) and
@@ -288,7 +329,9 @@ class GameEngine : UWHost, BuffHost, CombatHost {
         }
     }
 
-    fun setStats(resolvedStats: ResolvedStats) { applyStats(resolvedStats) }
+    fun setStats(resolvedStats: ResolvedStats) {
+        applyStats(resolvedStats)
+    }
 
     /**
      * In-round-purchase stats channel (called by `BattleViewModel.purchaseInRoundUpgrade`).
@@ -371,13 +414,18 @@ class GameEngine : UWHost, BuffHost, CombatHost {
             }
 
             waveSpawner?.update(deltaTime, screenWidth, screenHeight)
-            entities.addAll(pendingAdd); pendingAdd.clear()
+            entities.addAll(pendingAdd)
+            pendingAdd.clear()
             // RO-09 #1 / R4-06 / V1X-09 Phase 3: tick every entity, slowing chrono-slowable
             // entities (enemies) to [chronoSlowFactor] while CHRONO_FIELD is active. The loop
             // now lives in the pure-domain [Simulation]; the engine just supplies the active
             // slow factor (1f when inactive). Projectiles, orbs, and the ziggurat tick at full
             // `deltaTime` because they report `isChronoSlowable = false`.
-            simulation.tickEntities(entities, deltaTime, if (uwController.chronoActive) uwController.chronoSlowFactor else 1f)
+            simulation.tickEntities(
+                entities,
+                deltaTime,
+                if (uwController.chronoActive) uwController.chronoSlowFactor else 1f,
+            )
 
             // Spawn projectile trails
             if (!reducedMotion) {
@@ -403,7 +451,9 @@ class GameEngine : UWHost, BuffHost, CombatHost {
             // `enemyScratch` instance serves the whole sweep — matching the old single `enemies`
             // snapshot — so mid-sweep deaths behave identically (a corpse stays in the list; the
             // #146 `takeDamage` guard prevents a double onDeath).
-            projScratch.clear(); enemyScratch.clear(); enemyProjScratch.clear()
+            projScratch.clear()
+            enemyScratch.clear()
+            enemyProjScratch.clear()
             for (e in entities) {
                 when {
                     e is ProjectileEntity && e.isAlive -> projScratch.add(e)
@@ -413,8 +463,12 @@ class GameEngine : UWHost, BuffHost, CombatHost {
             }
             CollisionSystem.checkCollisions(
                 simulation,
-                projScratch, enemyScratch, enemyProjScratch,
-                zig.x, zig.y, zig.width,
+                projScratch,
+                enemyScratch,
+                enemyProjScratch,
+                zig.x,
+                zig.y,
+                zig.width,
                 onProjectileHitEnemy = combatResolver::onProjectileHitEnemy,
                 onEnemyProjectileHitZiggurat = { proj ->
                     combatResolver.applyDamageToZiggurat(proj.damage, proj.shooter)
@@ -449,9 +503,13 @@ class GameEngine : UWHost, BuffHost, CombatHost {
 
     /** A31 test seam: toggle the CHRONO_FIELD overlay so the render-path Paint reuse is JVM-testable. */
     @androidx.annotation.VisibleForTesting
-    internal fun setChronoActiveForTest(active: Boolean) { uwController.setChronoActiveForTest(active) }
+    internal fun setChronoActiveForTest(active: Boolean) {
+        uwController.setChronoActiveForTest(active)
+    }
 
-    fun addEntity(entity: Entity) { pendingAdd.add(entity) }
+    fun addEntity(entity: Entity) {
+        pendingAdd.add(entity)
+    }
 
     /**
      * Authoritative live count of on-screen enemies for the HUD wave header (#146). Derived
@@ -461,9 +519,10 @@ class GameEngine : UWHost, BuffHost, CombatHost {
      * live list (post-`pendingAdd` flush), matching what the player sees on screen. Held under
      * [entitiesLock] (#118) because the loop thread structurally mutates `entities` concurrently.
      */
-    fun aliveEnemyCount(): Int = synchronized(entitiesLock) {
-        entities.count { it is EnemyEntity && it.isAlive }
-    }
+    fun aliveEnemyCount(): Int =
+        synchronized(entitiesLock) {
+            entities.count { it is EnemyEntity && it.isAlive }
+        }
 
     /**
      * R4-06: populates the UW lifecycle states from the player's equipped UWs (delegated to
@@ -501,10 +560,14 @@ class GameEngine : UWHost, BuffHost, CombatHost {
         val spawner = waveSpawner
         if (spawner != null) {
             // V1X-15b: ENEMY_INTEL L1+ reveals the next wave's composition during cooldown.
-            val ct = WaveCooldownText(screenWidth, nextWaveCompositionLabel()) {
-                if (spawner.phase == WavePhase.COOLDOWN) WaveSpawner.COOLDOWN_DURATION - (spawner.phaseTimer)
-                else 0f
-            }
+            val ct =
+                WaveCooldownText(screenWidth, nextWaveCompositionLabel()) {
+                    if (spawner.phase == WavePhase.COOLDOWN) {
+                        WaveSpawner.COOLDOWN_DURATION - (spawner.phaseTimer)
+                    } else {
+                        0f
+                    }
+                }
             cooldownText = ct
             fx.addEffect(ct)
         }
@@ -550,12 +613,16 @@ class GameEngine : UWHost, BuffHost, CombatHost {
         val damage = stats.damage * 0.5 * conditions.orbDamageMultiplier
         for (i in 0 until count) {
             val angle = (2.0 * PI / count * i).toFloat()
-            entities.add(OrbEntity(
-                zigX = zig.originX, zigY = zig.originY,
-                angle = angle, damage = damage,
-                getEnemies = ::getAliveEnemies,
-                onHitEnemy = combatResolver::onOrbHit,
-            ))
+            entities.add(
+                OrbEntity(
+                    zigX = zig.originX,
+                    zigY = zig.originY,
+                    angle = angle,
+                    damage = damage,
+                    getEnemies = ::getAliveEnemies,
+                    onHitEnemy = combatResolver::onOrbHit,
+                ),
+            )
         }
     }
 
@@ -602,7 +669,8 @@ class GameEngine : UWHost, BuffHost, CombatHost {
 
     private fun findNearestEnemies(n: Int): List<EnemyEntity> {
         val zig = ziggurat ?: return emptyList()
-        return entities.asSequence()
+        return entities
+            .asSequence()
             .filterIsInstance<EnemyEntity>()
             .filter { it.isAlive && hypot(it.x - zig.originX, it.y - zig.originY) <= zig.attackRange }
             .sortedBy { hypot(it.x - zig.originX, it.y - zig.originY) }
@@ -613,6 +681,8 @@ class GameEngine : UWHost, BuffHost, CombatHost {
     // --- @VisibleForTesting collaborator accessors (#230/#231) ---
 
     @get:androidx.annotation.VisibleForTesting internal val uwControllerForTest get() = uwController
+
     @get:androidx.annotation.VisibleForTesting internal val combatResolverForTest get() = combatResolver
+
     @get:androidx.annotation.VisibleForTesting internal val buffTickersForTest get() = buffTickers
 }

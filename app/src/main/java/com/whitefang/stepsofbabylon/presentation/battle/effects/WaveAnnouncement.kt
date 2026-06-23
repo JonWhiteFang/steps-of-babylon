@@ -14,19 +14,36 @@ class WaveAnnouncement(
     private val holdDuration = 1f
     private val fadeDuration = 0.5f
     private val totalDuration = holdDuration + fadeDuration
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFFFFFFF.toInt(); textSize = 64f; textAlign = Paint.Align.CENTER; isFakeBoldText = true
-    }
-    private val bossTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFF44336.toInt(); textSize = 48f; textAlign = Paint.Align.CENTER; isFakeBoldText = true
-    }
+    private val textPaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFFFFFFFF.toInt()
+            textSize = 64f
+            textAlign = Paint.Align.CENTER
+            isFakeBoldText = true
+        }
+    private val bossTextPaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFFF44336.toInt()
+            textSize = 48f
+            textAlign = Paint.Align.CENTER
+            isFakeBoldText = true
+        }
 
     override val isFinished: Boolean get() = age >= totalDuration
 
-    override fun update(dt: Float) { age += dt }
+    override fun update(dt: Float) {
+        age += dt
+    }
 
     override fun render(canvas: Canvas) {
-        val alpha = if (age < holdDuration) 255 else ((1f - (age - holdDuration) / fadeDuration) * 255).toInt().coerceIn(0, 255)
+        val alpha =
+            if (age <
+                holdDuration
+            ) {
+                255
+            } else {
+                ((1f - (age - holdDuration) / fadeDuration) * 255).toInt().coerceIn(0, 255)
+            }
         val yOffset = if (reducedMotion || age > 0.15f) 0f else (1f - age / 0.15f) * -40f // Slide in from top
 
         textPaint.alpha = alpha
@@ -44,12 +61,18 @@ class WaveCooldownText(
     private val nextWaveComposition: String? = null,
     private val getTimeRemaining: () -> Float,
 ) : Effect {
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xAAFFFFFF.toInt(); textSize = 28f; textAlign = Paint.Align.CENTER
-    }
-    private val compositionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xAAB3E5FC.toInt(); textSize = 22f; textAlign = Paint.Align.CENTER
-    }
+    private val paint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xAAFFFFFF.toInt()
+            textSize = 28f
+            textAlign = Paint.Align.CENTER
+        }
+    private val compositionPaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xAAB3E5FC.toInt()
+            textSize = 22f
+            textAlign = Paint.Align.CENTER
+        }
 
     override val isFinished: Boolean get() = getTimeRemaining() <= 0f
 

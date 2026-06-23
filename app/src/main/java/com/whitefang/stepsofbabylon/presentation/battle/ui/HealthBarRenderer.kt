@@ -5,15 +5,20 @@ import android.graphics.Paint
 import android.graphics.RectF
 
 class HealthBarRenderer {
-
     private val bgPaint = Paint().apply { color = 0xFF2A1A10.toInt() }
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFFFF8E7.toInt() // Ivory
-        textSize = 28f
-        textAlign = Paint.Align.CENTER
-    }
+    private val textPaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFFFFF8E7.toInt() // Ivory
+            textSize = 28f
+            textAlign = Paint.Align.CENTER
+        }
 
-    fun render(canvas: Canvas, currentHp: Double, maxHp: Double, screenWidth: Float) {
+    fun render(
+        canvas: Canvas,
+        currentHp: Double,
+        maxHp: Double,
+        screenWidth: Float,
+    ) {
         val barMargin = screenWidth * 0.05f
         val barTop = 40f
         val barHeight = 32f
@@ -24,13 +29,23 @@ class HealthBarRenderer {
 
         // Fill
         val ratio = (currentHp / maxHp).coerceIn(0.0, 1.0).toFloat()
-        val fillColor = when {
-            ratio > 0.6f -> 0xFF4CAF50.toInt() // green
-            ratio > 0.3f -> 0xFFFFEB3B.toInt() // yellow
-            else -> 0xFFF44336.toInt()          // red
-        }
+        val fillColor =
+            when {
+                ratio > 0.6f -> 0xFF4CAF50.toInt()
+
+                // green
+                ratio > 0.3f -> 0xFFFFEB3B.toInt()
+
+                // yellow
+                else -> 0xFFF44336.toInt() // red
+            }
         val fillPaint = Paint().apply { color = fillColor }
-        canvas.drawRoundRect(RectF(barMargin, barTop, barMargin + barWidth * ratio, barTop + barHeight), 8f, 8f, fillPaint)
+        canvas.drawRoundRect(
+            RectF(barMargin, barTop, barMargin + barWidth * ratio, barTop + barHeight),
+            8f,
+            8f,
+            fillPaint,
+        )
 
         // Text
         val hpText = "${currentHp.toLong()} / ${maxHp.toLong()}"

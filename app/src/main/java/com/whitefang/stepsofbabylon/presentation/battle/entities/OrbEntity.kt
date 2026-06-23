@@ -26,7 +26,6 @@ class OrbEntity(
     private val onHitEnemy: (EnemyEntity, Double) -> Unit,
     initialRadialPhase: Float = 0f,
 ) : Entity(width = 10f, height = 10f) {
-
     private val state = OrbState(zigX, zigY, angle, angularSpeed, initialRadialPhase)
     private val hitCooldowns = mutableMapOf<EnemyEntity, Float>()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF00BCD4.toInt() }
@@ -41,7 +40,9 @@ class OrbEntity(
         private const val HIT_RANGE = 25f
 
         @VisibleForTesting internal const val ORBIT_RADIUS_MIN = OrbState.ORBIT_RADIUS_MIN
+
         @VisibleForTesting internal const val ORBIT_RADIUS_MAX = OrbState.ORBIT_RADIUS_MAX
+
         @VisibleForTesting internal const val ORBIT_PERIOD_SEC = OrbState.ORBIT_PERIOD_SEC
     }
 
@@ -54,7 +55,10 @@ class OrbEntity(
         val iter = hitCooldowns.iterator()
         while (iter.hasNext()) {
             val entry = iter.next()
-            if (!entry.key.isAlive) { iter.remove(); continue }
+            if (!entry.key.isAlive) {
+                iter.remove()
+                continue
+            }
             entry.setValue(entry.value - deltaTime)
             if (entry.value <= 0f) iter.remove()
         }

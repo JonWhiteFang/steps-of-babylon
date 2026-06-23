@@ -15,22 +15,33 @@ import com.whitefang.stepsofbabylon.presentation.battle.ui.HealthBarRenderer
  *
  * The three Paint fields are cached (allocated once) — A31 audit fix preserved exactly.
  */
-class BattleRenderer(private val healthBarRenderer: HealthBarRenderer = HealthBarRenderer()) {
-
+class BattleRenderer(
+    private val healthBarRenderer: HealthBarRenderer = HealthBarRenderer(),
+) {
     // A31 (audit): cached CHRONO_FIELD overlay paint — was allocated per frame in render(). Colour
     // 0x222196F3 preserved exactly (semi-transparent blue). The literal intentionally keeps the
     // existing value; the alpha nuance the audit flagged is left unchanged (no observable colour
     // change in this PR).
-    private val chronoOverlayPaint = android.graphics.Paint().apply {
-        color = 0x222196F3; style = android.graphics.Paint.Style.FILL
-    }
+    private val chronoOverlayPaint =
+        android.graphics.Paint().apply {
+            color = 0x222196F3
+            style = android.graphics.Paint.Style.FILL
+        }
 
-    private val hpPercentPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFFFF8E7.toInt(); textSize = 22f; textAlign = android.graphics.Paint.Align.CENTER
-    }
-    private val bossCountdownPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFF44336.toInt(); textSize = 26f; textAlign = android.graphics.Paint.Align.RIGHT; isFakeBoldText = true
-    }
+    private val hpPercentPaint =
+        android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFFFFF8E7.toInt()
+            textSize = 22f
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+    private val bossCountdownPaint =
+        android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFFF44336.toInt()
+            textSize = 26f
+            textAlign = android.graphics.Paint.Align.RIGHT
+            isFakeBoldText =
+                true
+        }
 
     /**
      * Renders one frame. [renderSnapshot] is the engine's under-lock copy of the live entity list;

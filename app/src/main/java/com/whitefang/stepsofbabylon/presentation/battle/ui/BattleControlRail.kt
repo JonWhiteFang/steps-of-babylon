@@ -68,11 +68,12 @@ fun BattleControlRail(
 ) {
     val haptics = rememberHaptics()
     Column(
-        modifier = modifier
-            .width(BattleControlRailDefaults.WIDTH)
-            .verticalScroll(rememberScrollState())
-            .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
-            .padding(horizontal = 8.dp, vertical = 12.dp),
+        modifier =
+            modifier
+                .width(BattleControlRailDefaults.WIDTH)
+                .verticalScroll(rememberScrollState())
+                .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                .padding(horizontal = 8.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -91,17 +92,44 @@ fun BattleControlRail(
         }
         val pauseDesc = stringResource(if (isPaused) R.string.action_resume else R.string.battle_cd_pause)
         FilledTonalButton(
-            onClick = { haptics.tap(); onTogglePause() },
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = if (isPaused) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)),
+            onClick = {
+                haptics.tap()
+                onTogglePause()
+            },
+            colors =
+                ButtonDefaults.filledTonalButtonColors(
+                    containerColor =
+                        if (isPaused) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            Color.White.copy(
+                                alpha = 0.2f,
+                            )
+                        },
+                ),
             modifier = Modifier.semantics { contentDescription = pauseDesc },
-        ) { Icon(if (isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause, contentDescription = null, tint = Color.White) }
+        ) {
+            Icon(
+                if (isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
+                contentDescription = null,
+                tint = Color.White,
+            )
+        }
 
         val upgradesDesc = stringResource(R.string.battle_cd_upgrades)
         FilledTonalButton(
             onClick = { onToggleUpgradeMenu() },
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = if (showUpgradeMenu) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)),
+            colors =
+                ButtonDefaults.filledTonalButtonColors(
+                    containerColor =
+                        if (showUpgradeMenu) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            Color.White.copy(
+                                alpha = 0.2f,
+                            )
+                        },
+                ),
             modifier = Modifier.semantics { contentDescription = upgradesDesc },
         ) { Icon(Icons.Filled.Upgrade, contentDescription = null, tint = Color.White) }
     }

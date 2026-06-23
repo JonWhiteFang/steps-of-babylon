@@ -14,7 +14,6 @@ class ZigguratEntity(
     layerColors: List<Int> = DEFAULT_COLORS,
     private val onFireProjectile: (startX: Float, startY: Float, targetX: Float, targetY: Float) -> Unit,
 ) : Entity() {
-
     /**
      * V1X-09 Phase 2 (ADR-0012): the live combat stats, HP, RAPID_FIRE multiplier, attack
      * cooldown, and the regen / attack-readiness logic now live in the pure-domain
@@ -30,11 +29,15 @@ class ZigguratEntity(
 
     var currentHp: Double
         get() = state.currentHp
-        set(value) { state.currentHp = value }
+        set(value) {
+            state.currentHp = value
+        }
 
     var maxHp: Double
         get() = state.maxHp
-        set(value) { state.maxHp = value }
+        set(value) {
+            state.maxHp = value
+        }
 
     /** Reads the live `stats.range`; delegates to [state]. */
     val attackRange: Float get() = state.attackRange
@@ -42,7 +45,9 @@ class ZigguratEntity(
     /** Transient RAPID_FIRE attack-speed multiplier (R4-03); delegates to [state]. */
     var rapidFireMultiplier: Float
         get() = state.rapidFireMultiplier
-        set(value) { state.rapidFireMultiplier = value }
+        set(value) {
+            state.rapidFireMultiplier = value
+        }
 
     private val layerCount = 5
     private val totalHeight: Float = screenHeight * 0.25f
@@ -51,12 +56,24 @@ class ZigguratEntity(
 
     private val layerPaints = layerColors.map { Paint(Paint.ANTI_ALIAS_FLAG).apply { color = it } }.toTypedArray()
     private val originPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFFD700.toInt() }
-    private val rangePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x22FFFFFF; style = Paint.Style.FILL }
-    private val rangeStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x44FFFFFF; style = Paint.Style.STROKE; strokeWidth = 1.5f }
+    private val rangePaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0x22FFFFFF
+            style = Paint.Style.FILL
+        }
+    private val rangeStrokePaint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0x44FFFFFF
+            style = Paint.Style.STROKE
+            strokeWidth =
+                1.5f
+        }
 
     init {
-        width = baseWidth; height = totalHeight
-        x = screenWidth / 2f; y = screenHeight * 0.45f + totalHeight
+        width = baseWidth
+        height = totalHeight
+        x = screenWidth / 2f
+        y = screenHeight * 0.45f + totalHeight
     }
 
     val originX: Float get() = x
@@ -73,7 +90,9 @@ class ZigguratEntity(
             if (targets.isNotEmpty()) {
                 state.onFired()
                 for (target in targets) onFireProjectile(originX, originY, target.x, target.y)
-            } else state.holdReady()
+            } else {
+                state.holdReady()
+            }
         }
     }
 
@@ -84,13 +103,15 @@ class ZigguratEntity(
         // Ziggurat layers (aura now handled by EffectEngine)
         for (i in 0 until layerCount) {
             val wf = 1f - (i.toFloat() / layerCount) * 0.6f
-            val lw = baseWidth * wf; val ly = y - (i + 1) * layerHeight
+            val lw = baseWidth * wf
+            val ly = y - (i + 1) * layerHeight
             canvas.drawRect(x - lw / 2f, ly, x + lw / 2f, ly + layerHeight, layerPaints[i])
         }
         canvas.drawCircle(originX, originY, 6f, originPaint)
     }
 
     companion object {
-        val DEFAULT_COLORS = listOf(0xFF8B7355.toInt(), 0xFF9C8565.toInt(), 0xFFC2B280.toInt(), 0xFFCDBFA0.toInt(), 0xFFD4A843.toInt())
+        val DEFAULT_COLORS =
+            listOf(0xFF8B7355.toInt(), 0xFF9C8565.toInt(), 0xFFC2B280.toInt(), 0xFFCDBFA0.toInt(), 0xFFD4A843.toInt())
     }
 }

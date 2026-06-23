@@ -4,6 +4,30 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Style — ktlint repo-wide format, stage 5/6 (`presentation/battle/`)
+
+**Pure formatting — no production-logic, schema, economy, or engine change; no thread-safety invariant
+touched; no test-count change (1254 JVM, 0 failures).** Stage 5 of the staged, layer-by-layer ktlint
+auto-format: `ktlint -F` scoped to **`presentation/battle/` ONLY** — the FRAGILE ZONE (the custom
+`SurfaceView` game-loop renderer + engine: `GameEngine`, `GameLoopThread`, `EffectEngine`, `UWController`,
+`CombatResolver`, `BuffTickers`, plus entities/effects/biome/ui); 37 files changed. All changes are
+mechanical Bucket-A transforms (class-/function-signature reflow, block-body→expression-body wrapping incl.
+the expected `UWController.relayerBaseStats` `return`-drop, if-else & when-entry bracing, property-accessor
+braces, trailing-comma, import ordering, same-line-statement split). The full whitespace-ignored diff (3776
+lines / 1957 +/- content lines) was reviewed hunk-by-hunk against the safe-transform allowlist **plus the
+extra fragile-zone checks**: every `@Volatile` stayed attached to its field; no statement moved into/out of
+any `synchronized(entitiesLock)`/`synchronized(effectsLock)` block (intra-block reflow only); the
+`GameLoopThread` per-tick try/catch guard structure is intact; no statement reordered across a lock
+acquire/release; no literal/operator/identifier/string or logic changed. **Baselines regenerated** (the
+staged mechanism): `config/ktlint/baseline.xml` over the full `app/src` scope **4974 → 3571** (−1403 battle
+Bucket-A entries cleared; test layer stays covered); `config/detekt/baseline.xml` **387 → 333** (regen
+needed this stage — 9 format-induced findings added: 7 `LongMethod` pushed past 60 lines by brace-expansion
+of unchanged bodies + 2 `MaxLineLength` `BattleViewModel` lines re-indented past the limit; 63 pre-existing
+long one-liners ktlint wrapped fell out — no new smell type, only `presentation/battle/` entries).
+`lint-kotlin.sh` (ktlint check) + `:app:detekt` both green; `SimulationTest` + the battle engine/concurrency
+tests pass unchanged. Plan: `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`. Stage 6
+(test sources — final stage) follows.
+
 ### Style — ktlint repo-wide format, stage 4/6 (`presentation/` excl battle)
 
 **Pure formatting — no production-logic, schema, economy, or engine change; no test-count change (1254

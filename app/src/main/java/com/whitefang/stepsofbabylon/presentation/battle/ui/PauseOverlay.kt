@@ -43,11 +43,21 @@ fun PauseOverlay(
                 Modifier.padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(stringResource(R.string.pause_title), style = MaterialTheme.typography.headlineLarge, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.pause_title),
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = Color(0xFFD4A843),
+                    fontWeight = FontWeight.Bold,
+                )
                 Spacer(Modifier.height(24.dp))
-                Button(onClick = { haptics.tap(); onResume() }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_resume)) }
+                Button(onClick = {
+                    haptics.tap()
+                    onResume()
+                }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_resume)) }
                 Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = onQuitRound, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.pause_quit_round)) }
+                OutlinedButton(onClick = onQuitRound, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.pause_quit_round))
+                }
             }
         }
     }

@@ -19,13 +19,14 @@ import com.whitefang.stepsofbabylon.presentation.battle.entities.ProjectileEntit
  * keeps it under the lock that already guards every structural iteration of `entities`.
  */
 object CollisionSystem {
-
     fun checkCollisions(
         simulation: Simulation,
         projectiles: List<ProjectileEntity>,
         enemies: List<EnemyEntity>,
         enemyProjectiles: List<EnemyProjectileEntity>,
-        zigX: Float, zigY: Float, zigWidth: Float,
+        zigX: Float,
+        zigY: Float,
+        zigWidth: Float,
         onProjectileHitEnemy: (ProjectileEntity, EnemyEntity) -> Unit,
         onEnemyProjectileHitZiggurat: (EnemyProjectileEntity) -> Unit,
     ) {

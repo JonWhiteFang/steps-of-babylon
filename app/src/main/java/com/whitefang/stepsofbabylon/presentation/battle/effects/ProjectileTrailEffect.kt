@@ -17,19 +17,29 @@ const val TRAIL_INTERVAL = 0.03f
  * Subtract-interval (not reset-to-zero) so it doesn't drift under variable dt. Pure — no Android,
  * JVM-tested by [ProjectileTrailThrottleTest].
  */
-fun advanceTrail(timer: Float, dt: Float): Pair<Boolean, Float> {
+fun advanceTrail(
+    timer: Float,
+    dt: Float,
+): Pair<Boolean, Float> {
     val t = timer + dt
     return if (t >= TRAIL_INTERVAL) true to (t - TRAIL_INTERVAL) else false to t
 }
 
 object ProjectileTrailEffect {
-    fun spawn(pool: ParticlePool, x: Float, y: Float, color: Int) {
+    fun spawn(
+        pool: ParticlePool,
+        x: Float,
+        y: Float,
+        color: Int,
+    ) {
         val p = pool.acquire()
         p.x = x + Random.nextFloat() * 4f - 2f
         p.y = y + Random.nextFloat() * 4f - 2f
         p.vx = Random.nextFloat() * 10f - 5f
         p.vy = Random.nextFloat() * 10f - 5f
-        p.color = color; p.size = 2f + Random.nextFloat() * 2f
-        p.lifetime = 0.3f; p.alpha = 0.8f
+        p.color = color
+        p.size = 2f + Random.nextFloat() * 2f
+        p.lifetime = 0.3f
+        p.alpha = 0.8f
     }
 }

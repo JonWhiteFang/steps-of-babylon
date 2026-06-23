@@ -23,12 +23,24 @@ data class BattleSnapshot(
 )
 
 sealed interface BattleAnnouncement {
-    data class Wave(val wave: Int) : BattleAnnouncement
+    data class Wave(
+        val wave: Int,
+    ) : BattleAnnouncement
+
     /** Raw engine phase name (e.g. "SPAWNING"); the composable localizes it. */
-    data class Phase(val rawPhase: String) : BattleAnnouncement
+    data class Phase(
+        val rawPhase: String,
+    ) : BattleAnnouncement
+
     /** Quarter bracket 0..4 (4 = full); the composable renders the percentage. */
-    data class Health(val bucket: Int) : BattleAnnouncement
-    data class RoundOver(val wave: Int) : BattleAnnouncement
+    data class Health(
+        val bucket: Int,
+    ) : BattleAnnouncement
+
+    data class RoundOver(
+        val wave: Int,
+    ) : BattleAnnouncement
+
     data object Error : BattleAnnouncement
 }
 
@@ -36,7 +48,10 @@ sealed interface BattleAnnouncement {
  * Health quarter bracket [0,4]; returns -1 when [maxHp] is non-positive (pre-round) so the caller can
  * treat it as "no health info yet" (guards divide-by-zero / NaN).
  */
-fun healthBucket(currentHp: Double, maxHp: Double): Int {
+fun healthBucket(
+    currentHp: Double,
+    maxHp: Double,
+): Int {
     if (maxHp <= 0.0) return -1
     val frac = (currentHp / maxHp).coerceIn(0.0, 1.0)
     return floor(frac * 4).toInt().coerceIn(0, 4)
@@ -48,7 +63,10 @@ fun healthBucket(currentHp: Double, maxHp: Double): Int {
  * during the pre-round window ([next].wavePhase blank OR [next].maxHp <= 0) so no spurious "Wave 1 /
  * Spawning" fires before the round is live.
  */
-fun battleAnnouncement(prev: BattleSnapshot?, next: BattleSnapshot): BattleAnnouncement? {
+fun battleAnnouncement(
+    prev: BattleSnapshot?,
+    next: BattleSnapshot,
+): BattleAnnouncement? {
     // Pre-round: nothing to announce until the spawner exists and HP is known.
     if (next.wavePhase.isBlank() || next.maxHp <= 0.0) return null
 

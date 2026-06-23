@@ -11,13 +11,20 @@ class FloatingText(
     color: Int = DEFAULT_COLOR,
 ) : Effect {
     private var age = 0f
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        this.color = color; textSize = 28f; textAlign = Paint.Align.CENTER; isFakeBoldText = true
-    }
+    private val paint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = color
+            textSize = 28f
+            textAlign = Paint.Align.CENTER
+            isFakeBoldText = true
+        }
 
     override val isFinished: Boolean get() = age >= duration
 
-    override fun update(dt: Float) { age += dt; y -= 50f * dt }
+    override fun update(dt: Float) {
+        age += dt
+        y -= 50f * dt
+    }
 
     override fun render(canvas: Canvas) {
         val alpha = ((1f - age / duration) * 255).toInt().coerceIn(0, 255)
@@ -28,8 +35,10 @@ class FloatingText(
     companion object {
         /** Yellow-gold, used by cash-drop floats. */
         const val DEFAULT_COLOR: Int = 0xFFD4A843.toInt()
+
         /** Green, used by battle-Step reward floats. */
         const val STEP_COLOR: Int = 0xFF4CAF50.toInt()
+
         /** Purple, used by boss-drop Power Stone floats. */
         const val PS_COLOR: Int = 0xFF9C27B0.toInt()
     }
