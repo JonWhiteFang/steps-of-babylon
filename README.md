@@ -45,7 +45,7 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 # Debug APK
 ./gradlew assembleDebug
 
-# Unit tests (1126 JVM tests)
+# Unit tests (1254 JVM tests)
 ./gradlew test
 
 # Lint
@@ -70,7 +70,7 @@ A debug build needs no extra config. **Release builds (`assembleRelease` / `bund
 ./gradlew bundleRelease
 ```
 
-Instrumented tests live under `app/src/androidTest/`. The harness was stood up in V1X-08 Phase 1A with one infrastructure smoke test (`InfrastructureSmokeTest.harnessBoots`); `BattleSurfaceLifecycleTest` (4 R3-01 lifecycle regression guards) + `DeepLinkIntentTest` (4 `navigate_to` deep-link contract guards incl. a real Parcel round-trip) layered on 2026-05-29; the third planned suite — `StoreIapFlowTest` — is formally deferred (no real-framework-only gap; see CLAUDE.md). Run via `./gradlew connectedDebugAndroidTest` on a connected emulator (API 34+). All other coverage is JVM unit tests under `app/src/test/`. See [CLAUDE.md](CLAUDE.md) for the full coverage breakdown.
+Instrumented tests live under `app/src/androidTest/`. The harness was stood up in V1X-08 Phase 1A with one infrastructure smoke test (`InfrastructureSmokeTest.harnessBoots`); `BattleSurfaceLifecycleTest` (4 R3-01 lifecycle regression guards) + `DeepLinkIntentTest` (4 `navigate_to` deep-link contract guards incl. a real Parcel round-trip) layered on 2026-05-29; the third planned suite — `StoreIapFlowTest` — is formally deferred (no real-framework-only gap: the IAP flow is fully covered by JVM tests with fakes, so an instrumented suite would add maintenance cost without closing a real-device-only coverage gap). Run via `./gradlew connectedDebugAndroidTest` on a connected emulator (API 34+). All other coverage is JVM unit tests under `app/src/test/`. See [CLAUDE.md](CLAUDE.md) for the full coverage breakdown.
 
 ### Non-TTY Environments (CI, etc.)
 
@@ -103,7 +103,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── repository/    # Repository implementations
 │   ├── sensor/        # Step sensor data source, rate limiter, daily step manager
 │   ├── healthconnect/ # Health Connect client, cross-validator, activity-minute parity
-│   ├── billing/       # Real Play Billing v8 (sole binding post-C.5 PR 3)
+│   ├── billing/       # Real Play Billing v9 (sole binding post-C.5 PR 3)
 │   └── ads/           # Real AdMob v25 + UMP v4 consent (sole binding post-C.6 PR 3)
 ├── domain/            # Pure Kotlin: models, use cases, repository interfaces (no Android imports)
 ├── presentation/      # ViewModels, Compose screens, SurfaceView battle renderer
@@ -135,7 +135,7 @@ If you're picking this up cold, read [docs/agent/START_HERE.md](docs/agent/START
 
 ## Tech Stack
 
-Kotlin · Jetpack Compose · Hilt · Room · SQLCipher (database encryption) · WorkManager · Android Sensor API + Health Connect · Custom SurfaceView battle renderer · Google Play Billing v8 · Google Mobile Ads SDK v25 · UMP v4 (consent)
+Kotlin · Jetpack Compose · Hilt · Room · SQLCipher (database encryption) · WorkManager · Android Sensor API + Health Connect · Custom SurfaceView battle renderer · Google Play Billing v9 · Google Mobile Ads SDK v25 · UMP v4 (consent)
 
 See [CLAUDE.md](CLAUDE.md) for the full tech stack with versions and conventions, and [docs/steering/tech.md](docs/steering/tech.md) for the canonical version table.
 

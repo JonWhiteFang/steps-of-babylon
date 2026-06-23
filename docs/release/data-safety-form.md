@@ -18,7 +18,7 @@ a human must apply this in **Play Console → App content → Data safety** and 
 | UMP consent prompt governs personalisation | `user-messaging-platform` dep; `MainActivity` prefetches consent (release-gated) |
 | Advertising ID + ad-service IDs collected | merged `nonMinifiedRelease` manifest: `AD_ID`, `ACCESS_ADSERVICES_AD_ID/ATTRIBUTION/TOPICS` |
 | Ads are opt-in, reward-only (3 placements) | `AdPlacement = {POST_ROUND_GEM, POST_ROUND_DOUBLE_PS, DAILY_FREE_CARD_PACK}` |
-| In-app purchases via Google Play Billing v8 | `billing.ktx` dep; `data/billing/BillingManagerImpl` |
+| In-app purchases via Google Play Billing v9 | `billing.ktx` dep; `data/billing/BillingManagerImpl` |
 | Game/step/Health Connect data stays on-device | SQLCipher DB, no server backend; `PlayerRepository`/Room |
 | No account / no sign-in | no auth code anywhere |
 

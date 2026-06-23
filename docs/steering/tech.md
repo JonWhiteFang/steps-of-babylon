@@ -118,7 +118,7 @@ Data flow: `presentation → domain ← data`. Domain has no Android dependencie
 ./gradlew assembleDebug       # Debug APK
 ./gradlew assembleRelease     # Release APK
 ./gradlew test                # Unit tests
-./gradlew connectedAndroidTest # Instrumented tests (device/emulator)
+./gradlew connectedDebugAndroidTest # Instrumented tests (device/emulator)
 ./gradlew lint                # Lint check
 ./gradlew clean               # Clean build
 ```

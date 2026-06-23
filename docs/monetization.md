@@ -91,7 +91,7 @@ Billing and ad functionality use interface-based abstractions in the domain laye
 
 | Interface | Implementation | Location |
 |---|---|---|
-| `BillingManager` | `BillingManagerImpl` (Google Play Billing v8) | `data/billing/` |
+| `BillingManager` | `BillingManagerImpl` (Google Play Billing v9) | `data/billing/` |
 | `RewardAdManager` | `RewardAdManagerImpl` (Google Mobile Ads v25 + UMP v4) | `data/ads/` |
 
 DI bindings in `di/BillingModule.kt` and `di/AdModule.kt` are plain `@Binds` (post-C.5 PR 3 / C.6 PR 3 — the `StubBillingManager` and `StubRewardAdManager` were deleted after on-device verification on the internal track).
@@ -100,9 +100,9 @@ Adapter seams (`data/billing/internal/BillingClientAdapter` + `data/ads/internal
 
 ### What's Implemented (Real SDK)
 
-- Gem Pack purchases (3 tiers) — real Play Billing v8 consumable purchases; wallet credit + receipt grant happen atomically inside `BillingReceiptDao.grantOnceAtomic`; `consumeAsync` runs after the transaction commits with retry on the next reconciliation sweep
-- Ad Removal — real Play Billing v8 non-consumable; `acknowledgePurchaseAsync` finalizes the purchase
-- Season Pass — real Play Billing v8 monthly subscription; `purchaseTime + 30 days` expiry rule; reconciliation sweep refreshes expiry on Play Store re-delivery; awards 10 bonus Gems/day via TrackDailyLogin, 1 free Lab rush/day
+- Gem Pack purchases (3 tiers) — real Play Billing v9 consumable purchases; wallet credit + receipt grant happen atomically inside `BillingReceiptDao.grantOnceAtomic`; `consumeAsync` runs after the transaction commits with retry on the next reconciliation sweep
+- Ad Removal — real Play Billing v9 non-consumable; `acknowledgePurchaseAsync` finalizes the purchase
+- Season Pass — real Play Billing v9 monthly subscription; `purchaseTime + 30 days` expiry rule; reconciliation sweep refreshes expiry on Play Store re-delivery; awards 10 bonus Gems/day via TrackDailyLogin, 1 free Lab rush/day
 - Idempotency — `BillingReceiptDao` table keyed by `purchaseToken`; `granted = true` row guarantees the wallet is credited at most once even across crashes / `PENDING → PURCHASED` transitions / repeat reconciliation sweeps
 - Client-side purchase signature verification (#124, ADR-0005 amendment) — every wallet grant first calls `PurchaseVerifier.isValidPurchase(originalJson, signature, expectedProductId, expectedPurchaseToken)` before `grantOnceAtomic`, on both the purchase and reconciliation paths. The product+token binding blocks replaying a signed cheap receipt for an expensive product. A blank `PLAY_LICENSE_KEY` fail-opens in debug/CI only; a release build with a blank key is hard-failed by the `app/build.gradle.kts` taskGraph guard + the `release.yml` secret step
 - Post-round reward ads — real AdMob rewarded ads with UMP consent gating; placement-aware ad-unit routing (`POST_ROUND_GEM` / `POST_ROUND_DOUBLE_PS` / `DAILY_FREE_CARD_PACK`)

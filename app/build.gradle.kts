@@ -307,7 +307,7 @@ dependencies {
     // follow-up, 2026-06-10.)
     constraints {
         implementation(libs.guava) {
-            because("Force transitive guava >=32-android to clear CVE-2023-2976 / CVE-2020-8908 (default is 31.1-android)")
+            because("Force transitive guava >=33.6.0-android to clear CVE-2023-2976 / CVE-2020-8908 (default is 31.1-android)")
         }
     }
 
