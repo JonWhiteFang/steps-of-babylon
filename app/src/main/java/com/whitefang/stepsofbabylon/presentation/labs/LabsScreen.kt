@@ -45,6 +45,7 @@ import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
 import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
+import java.util.Locale
 
 @Composable
 fun LabsScreen(viewModel: LabsViewModel = hiltViewModel()) {
@@ -221,7 +222,7 @@ private fun ResearchCard(
                             Icon(Icons.Filled.Schedule, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                String.format("%.1fh", info.timeToCompleteHours),
+                                String.format(Locale.ROOT, "%.1fh", info.timeToCompleteHours),
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }

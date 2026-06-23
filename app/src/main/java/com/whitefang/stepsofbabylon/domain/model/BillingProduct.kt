@@ -1,5 +1,7 @@
 package com.whitefang.stepsofbabylon.domain.model
 
+import java.util.Locale
+
 enum class BillingProduct(
     val gemAmount: Long,
     val priceDisplay: String,
@@ -20,7 +22,7 @@ enum class BillingProduct(
      * is the canonical way to compute the wire id end-to-end. Reverse lookup via
      * [com.whitefang.stepsofbabylon.data.billing.fromSkuIdOrNull] in the data layer.
      */
-    fun skuId(): String = name.lowercase()
+    fun skuId(): String = name.lowercase(Locale.ROOT)
 
     /**
      * Opt-in Companion so extension functions can attach reverse-lookup helpers (e.g.

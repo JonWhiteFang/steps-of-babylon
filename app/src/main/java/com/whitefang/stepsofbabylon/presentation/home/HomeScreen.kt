@@ -51,6 +51,7 @@ import com.whitefang.stepsofbabylon.presentation.battle.biome.BiomeTheme
 import com.whitefang.stepsofbabylon.presentation.ui.EmptyState
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.formatCount
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
 import com.whitefang.stepsofbabylon.presentation.ui.theme.LapisLazuli
@@ -251,6 +252,3 @@ private fun CurrencyItem(
         Text(text = label, style = MaterialTheme.typography.labelSmall)
     }
 }
-
-/** Group digits with thousands separators ("12,345") for legibility on the larger currency values. */
-private fun formatCount(value: Long): String = "%,d".format(value)

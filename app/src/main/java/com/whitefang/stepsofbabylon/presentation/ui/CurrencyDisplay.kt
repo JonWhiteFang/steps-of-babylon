@@ -23,8 +23,6 @@ import com.whitefang.stepsofbabylon.presentation.ui.theme.GemColor
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
 import com.whitefang.stepsofbabylon.presentation.ui.theme.PowerStoneColor
 import com.whitefang.stepsofbabylon.presentation.ui.theme.StepColor
-import java.text.NumberFormat
-import java.util.Locale
 
 /**
  * The four player currencies, as a *presentation* concept. Members mirror the (now-deleted) domain
@@ -63,7 +61,7 @@ fun CurrencyType.label(): String =
     }
 
 /** Thousands-grouped amount (US grouping for determinism). Centralizes the review's separator fix. */
-fun formatCurrency(amount: Long): String = NumberFormat.getNumberInstance(Locale.US).format(amount)
+fun formatCurrency(amount: Long): String = formatCount(amount)
 
 /**
  * Icon + thousands-formatted value, e.g. a balance readout. The icon's text label is adjacent, so

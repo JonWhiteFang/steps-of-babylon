@@ -35,6 +35,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.formatCount
 import com.whitefang.stepsofbabylon.presentation.ui.theme.GemColor
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
 import com.whitefang.stepsofbabylon.presentation.ui.theme.PowerStoneColor
@@ -111,7 +112,7 @@ fun CurrencyDashboardScreen(
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                Text("%,d / 100,000 steps".format(state.weeklySteps), style = MaterialTheme.typography.bodyMedium)
+                Text("${formatCount(state.weeklySteps)} / 100,000 steps", style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(4.dp))
                 LinearProgressIndicator(
                     progress = { (state.weeklySteps / 100_000f).coerceAtMost(1f) },
@@ -229,7 +230,7 @@ private fun BalanceCard(
     Card(colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.15f))) {
         Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                "%,d".format(amount),
+                formatCount(amount),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = color,

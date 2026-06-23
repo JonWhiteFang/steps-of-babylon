@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.util.Locale
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -193,25 +194,33 @@ class WorkshopViewModel
         private fun statValueFor(
             type: UpgradeType,
             s: ResolvedStats,
-        ): String =
-            when (type) {
-                UpgradeType.DAMAGE -> "%.1f dmg".format(s.damage)
-                UpgradeType.ATTACK_SPEED -> "%.2f/s".format(s.attackSpeed)
-                UpgradeType.CRITICAL_CHANCE -> "%.1f%%".format(s.critChance * 100)
-                UpgradeType.CRITICAL_FACTOR -> "%.1fx".format(s.critMultiplier)
-                UpgradeType.RANGE -> "%.0f range".format(s.range)
-                UpgradeType.HEALTH -> "%.0f HP".format(s.maxHealth)
-                UpgradeType.HEALTH_REGEN -> "%.1f/s".format(s.healthRegen)
-                UpgradeType.DEFENSE_PERCENT -> "%.1f%%".format(s.defensePercent * 100)
-                UpgradeType.DEFENSE_ABSOLUTE -> "%.0f block".format(s.defenseAbsolute)
-                UpgradeType.KNOCKBACK -> "%.1f force".format(s.knockbackForce)
-                UpgradeType.THORN_DAMAGE -> "%.0f%%".format(s.thornPercent * 100)
-                UpgradeType.LIFESTEAL -> "%.1f%%".format(s.lifestealPercent * 100)
-                UpgradeType.DAMAGE_PER_METER -> "%.0f%%/m".format(s.damagePerMeterBonus * 100)
-                UpgradeType.DEATH_DEFY -> "%.0f%%".format(s.deathDefyChance * 100)
+        ): String {
+            // #262 L87b: pin Locale.ROOT so decimal separators stay '.' regardless of device locale
+            // (a comma-decimal locale would otherwise render "1,5 dmg"). Matches the Locale.ROOT pattern
+            // already used by UltimateWeaponScreen / DescribeUpgradeEffect / CardType.
+            fun fmt(
+                pattern: String,
+                value: Number,
+            ): String = String.format(Locale.ROOT, pattern, value)
+            return when (type) {
+                UpgradeType.DAMAGE -> fmt("%.1f dmg", s.damage)
+                UpgradeType.ATTACK_SPEED -> fmt("%.2f/s", s.attackSpeed)
+                UpgradeType.CRITICAL_CHANCE -> fmt("%.1f%%", s.critChance * 100)
+                UpgradeType.CRITICAL_FACTOR -> fmt("%.1fx", s.critMultiplier)
+                UpgradeType.RANGE -> fmt("%.0f range", s.range)
+                UpgradeType.HEALTH -> fmt("%.0f HP", s.maxHealth)
+                UpgradeType.HEALTH_REGEN -> fmt("%.1f/s", s.healthRegen)
+                UpgradeType.DEFENSE_PERCENT -> fmt("%.1f%%", s.defensePercent * 100)
+                UpgradeType.DEFENSE_ABSOLUTE -> fmt("%.0f block", s.defenseAbsolute)
+                UpgradeType.KNOCKBACK -> fmt("%.1f force", s.knockbackForce)
+                UpgradeType.THORN_DAMAGE -> fmt("%.0f%%", s.thornPercent * 100)
+                UpgradeType.LIFESTEAL -> fmt("%.1f%%", s.lifestealPercent * 100)
+                UpgradeType.DAMAGE_PER_METER -> fmt("%.0f%%/m", s.damagePerMeterBonus * 100)
+                UpgradeType.DEATH_DEFY -> fmt("%.0f%%", s.deathDefyChance * 100)
                 UpgradeType.MULTISHOT -> "${s.multishotTargets} targets"
                 UpgradeType.BOUNCE_SHOT -> "${s.bounceCount} bounces"
                 UpgradeType.ORBS -> "${s.orbCount} orbs"
                 else -> ""
             }
+        }
     }

@@ -9,7 +9,7 @@ import android.content.Intent
 import android.widget.RemoteViews
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.MainActivity
-import java.text.NumberFormat
+import com.whitefang.stepsofbabylon.presentation.ui.formatCount
 
 class StepWidgetProvider : AppWidgetProvider() {
     companion object {
@@ -37,7 +37,6 @@ class StepWidgetProvider : AppWidgetProvider() {
             val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             val steps = prefs.getLong(KEY_STEPS, 0)
             val balance = prefs.getLong(KEY_BALANCE, 0)
-            val fmt = NumberFormat.getNumberInstance()
             val views =
                 RemoteViews(context.packageName, R.layout.widget_step_counter).apply {
                     setTextViewText(
@@ -45,12 +44,12 @@ class StepWidgetProvider : AppWidgetProvider() {
                         context.resources.getQuantityString(
                             R.plurals.widget_steps,
                             steps.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt(),
-                            fmt.format(steps),
+                            formatCount(steps),
                         ),
                     )
                     setTextViewText(
                         R.id.widget_balance,
-                        context.getString(R.string.widget_balance, fmt.format(balance)),
+                        context.getString(R.string.widget_balance, formatCount(balance)),
                     )
                     setOnClickPendingIntent(
                         R.id.widget_root,

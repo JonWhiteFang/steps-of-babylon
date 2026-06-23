@@ -35,7 +35,7 @@
         <error line="33" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/ui/BiomeTransitionOverlay.kt">
-        <error line="33" column="5" source="standard:function-naming" />
+        <error line="34" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/ui/InRoundUpgradeMenu.kt">
         <error line="54" column="5" source="standard:function-naming" />
@@ -61,10 +61,10 @@
         <error line="51" column="21" source="standard:backing-property-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/economy/CurrencyDashboardScreen.kt">
-        <error line="45" column="5" source="standard:function-naming" />
-        <error line="224" column="13" source="standard:function-naming" />
-        <error line="243" column="13" source="standard:function-naming" />
-        <error line="274" column="13" source="standard:function-naming" />
+        <error line="46" column="5" source="standard:function-naming" />
+        <error line="225" column="13" source="standard:function-naming" />
+        <error line="244" column="13" source="standard:function-naming" />
+        <error line="275" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/economy/CurrencyDashboardViewModel.kt">
         <error line="49" column="21" source="standard:backing-property-naming" />
@@ -79,9 +79,9 @@
         <error line="105" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/home/HomeScreen.kt">
-        <error line="61" column="5" source="standard:function-naming" />
-        <error line="225" column="13" source="standard:function-naming" />
-        <error line="245" column="13" source="standard:function-naming" />
+        <error line="62" column="5" source="standard:function-naming" />
+        <error line="226" column="13" source="standard:function-naming" />
+        <error line="246" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/home/HomeViewModel.kt">
         <error line="56" column="21" source="standard:backing-property-naming" />
@@ -91,8 +91,8 @@
         <error line="30" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/labs/LabsScreen.kt">
-        <error line="50" column="5" source="standard:function-naming" />
-        <error line="121" column="13" source="standard:function-naming" />
+        <error line="51" column="5" source="standard:function-naming" />
+        <error line="122" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/labs/LabsViewModel.kt">
         <error line="54" column="21" source="standard:backing-property-naming" />
@@ -103,8 +103,8 @@
         <error line="3" column="1" source="standard:no-wildcard-imports" />
         <error line="8" column="1" source="standard:no-wildcard-imports" />
         <error line="39" column="5" source="standard:function-naming" />
-        <error line="117" column="13" source="standard:function-naming" />
-        <error line="186" column="13" source="standard:function-naming" />
+        <error line="116" column="13" source="standard:function-naming" />
+        <error line="184" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/missions/MissionsViewModel.kt">
         <error line="67" column="21" source="standard:backing-property-naming" />
@@ -125,7 +125,7 @@
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/stats/StatsScreen.kt">
         <error line="3" column="1" source="standard:no-wildcard-imports" />
         <error line="5" column="1" source="standard:no-wildcard-imports" />
-        <error line="22" column="5" source="standard:function-naming" />
+        <error line="23" column="5" source="standard:function-naming" />
         <error line="129" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/stats/StatsViewModel.kt">
@@ -158,8 +158,8 @@
         <error line="102" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/CurrencyDisplay.kt">
-        <error line="74" column="5" source="standard:function-naming" />
-        <error line="89" column="5" source="standard:function-naming" />
+        <error line="72" column="5" source="standard:function-naming" />
+        <error line="87" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/EmptyState.kt">
         <error line="21" column="5" source="standard:function-naming" />
@@ -201,9 +201,9 @@
         <error line="39" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop/WorkshopViewModel.kt">
-        <error line="53" column="21" source="standard:backing-property-naming" />
         <error line="54" column="21" source="standard:backing-property-naming" />
-        <error line="57" column="21" source="standard:backing-property-naming" />
+        <error line="55" column="21" source="standard:backing-property-naming" />
+        <error line="58" column="21" source="standard:backing-property-naming" />
     </file>
     <file name="app/src/test/java/com/whitefang/stepsofbabylon/balance/CardBalanceTest.kt">
         <error line="8" column="1" source="standard:no-wildcard-imports" />
