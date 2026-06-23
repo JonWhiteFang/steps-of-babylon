@@ -106,6 +106,7 @@ class DataDeletionManager
                     "crash_breadcrumb_prefs",
                     "onboarding_prefs", // #247: a wipe must re-show the first-run tutorial/permission primer
                     "haptics_prefs", // #247
+                    "supply_drop_notifications", // #216: per-day supply-drop notification counter
                 )
         }
     }

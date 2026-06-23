@@ -18,7 +18,7 @@ dependency-verification (#256), clock-tamper (#211), GameEngine decomposition (#
 dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependabot wave, CI/supply-chain
 (#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
 (CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
-#311→#312; #310/#311/#287 given a CI/tooling note). **Supersedes v1.0.10 (vc 26)** · **1256 JVM + 9 instrumented tests**
+#311→#312; #310/#311/#287 given a CI/tooling note). **Supersedes v1.0.10 (vc 26)** · **1275 JVM + 9 instrumented tests**
 green (the per-wave running tally 1110→1254 since v1.0.10 lives in `CHANGELOG.md` + `RUN_LOG.md`; post-v1.0.11
 audit-triage arc: B −1 → 1253, C +3 → 1256, A/D no-app-change) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
@@ -38,22 +38,29 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — audit-triage batches A–D all SHIPPED to `main`; nothing in flight).** A verification
+- **CURRENT (DONE — #216 NOTIF-1 implemented on branch `feat/216-notification-quiet-hours-daily-cap`; PR open).**
+  Quiet-hours (22:00–08:00 local) + supply-drop daily-cap (3/day) on the reminder & supply-drop notification
+  paths. New pure-domain `domain/notification/NotificationPolicy` (decision logic, JVM-tested);
+  `SmartReminderManager` quiet-hours early-return via `canSendReminder`; `SupplyDropNotificationManager`
+  injects `TimeProvider` + field-caches its prefs (it runs under the #120 credit mutex) + gates push on
+  quiet-hours/cap with a per-day counter; the drop is still generated + claimable (only the push is
+  suppressed). `DataDeletionManager` also wipes the new `supply_drop_notifications` prefs (#247 completeness,
+  caught by the coverage guard). Spec→adversarial-review (3 minor survivors folded) → plan→adversarial-review
+  (0 findings) → TDD implement. **No schema/economy change. +19 JVM → 1275** (`NotificationPolicyTest` 14 +
+  Robolectric `SupplyDropNotificationManagerTest` 5). `[Unreleased]`. **Next (no work in flight):** the audit
+  backlog's **non-batchable items** — A24 anti-cheat rate-limit clock-tamper (large/fragile), battle
+  game-loop perf L46-L51 (fragile), L12 BattleViewModel decomposition (large, #306/ADR-0012),
+  billing-anti-fraud L35/A25/A26/L41 (by-design, no fix); the #34 i18n-externalization push; remaining
+  audit med/low. Also still open: the v1.0.11 **internal→closed** promotion judgment call (gated on the
+  **manual Play Console Data-Safety action #192** — `docs/release/data-safety-form.md`, a human step).
+- **Previous objective (DONE — audit-triage batches A–D all SHIPPED to `main`).** A verification
   `Workflow` code-grounded ~125 unverified #262/#128 tracker findings vs HEAD `617babd` → **83 LIVE / 23
-  FIXED / 6 STALE / 4 DUP / 1 POSITIVE**; LIVE survivors clustered into batches A–G. **A–D merged this
-  session** (each spec→plan→adversarial-review→implement→PR→merge): **A** docs/content-drift (PR #333,
+  FIXED / 6 STALE / 4 DUP / 1 POSITIVE**; LIVE survivors clustered into batches A–G. **A–D merged**
+  (each spec→plan→adversarial-review→implement→PR→merge): **A** docs/content-drift (PR #333,
   `9e186bc`); **B** dead-code removal (#334, `367fe6f`); **C** i18n locale-safety incl. a REAL Turkish-locale
   billing bug L88 (#335, `13d19c2`); **D1** release/CI config hardening + ktlint-job split (#336, `6c487f4`);
-  **D2** Kover coverage + OSV supply-chain scan (#337, `9cef4c8`). **1256 JVM tests** (A/B docs+removal, C
-  +3, D no app change); **no schema change** across the arc. #218 closed; #262 annotated per batch. **Next
-  (no work in flight):** the audit backlog's **non-batchable items**, each its own focused effort — A24
-  anti-cheat rate-limit clock-tamper (large/fragile), battle game-loop perf L46-L51 (fragile), L12
-  BattleViewModel decomposition (large, #306/ADR-0012), billing-anti-fraud L35/A25/A26/L41 (by-design, no
-  fix). Plus the #34 i18n-externalization push (L2/L8/L27, L23, L90), release-log-hardening (L37/L43/L38,
-  security/Batch-G), A33 (dev-only pre-release deps), and remaining med findings. Also still open: the
-  v1.0.11 **internal→closed** promotion judgment call (gated on the **manual Play Console Data-Safety action
-  #192** — `docs/release/data-safety-form.md`, a human step). Triage verdicts cached at
-  `/tmp/audit-triage/verdicts.json` (ephemeral — re-run the triage workflow if a fresh session needs them).
+  **D2** Kover coverage + OSV supply-chain scan (#337, `9cef4c8`). 1256 JVM at arc end; **no schema change**.
+  #218 closed; #262 annotated per batch.
 - **Previous objective (DONE — MERGED PR #337, squash `9cef4c8`; `[Unreleased]`).** **Batch D2 (additive CI
   tooling).** Two NON-GATING capabilities, no app/schema change, 1256 JVM. **Kover** (`:app`, 0.9.8)
   informational coverage CI step (baseline ~59% line cov; Kotlin-2.3.0 compat verified by a local spike;

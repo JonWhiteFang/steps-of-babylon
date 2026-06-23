@@ -4,6 +4,28 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Added — Notification quiet-hours + supply-drop daily cap (#216 / NOTIF-1)
+
+Reminder and supply-drop notifications now respect a fixed local-time **quiet-hours window (22:00–08:00)**,
+and supply-drop **pushes are capped at 3/day** — the drop is still generated and claimable in the in-app
+inbox; only the notification is suppressed. Addresses the 2026-06-17 complete-app review's NOTIF-1 (Play
+"disruptive notifications" policy + off-hours retention/uninstall harm).
+
+- New pure-domain `domain/notification/NotificationPolicy` holds the decision logic (quiet-hours window +
+  cap constants + `isWithinQuietHours`/`canSendReminder`/`canSendSupplyDropNotification`) — Android-free,
+  JVM-tested, midnight-crossing window handled as `[START, END)`.
+- `SmartReminderManager` gains a quiet-hours early-return via `canSendReminder` (before its existing
+  `last_sent` 1/day write). `SupplyDropNotificationManager` gains an injected `TimeProvider` seam, a
+  field-cached `SharedPreferences` counter (field-cached because `notify()` runs under `DailyStepManager`'s
+  #120 credit mutex — no disk load under the lock), and the quiet-hours + per-day-cap gate.
+- `DataDeletionManager` now also wipes the new `supply_drop_notifications` prefs (#247 "Delete All Data"
+  completeness — caught by `DataDeletionPrefsCoverageTest`).
+- Out of scope (unchanged): persistent FGS step notification, milestone alerts, configurable Settings UI,
+  capping drop *generation*. No economy / schema change.
+- Spec/plan both passed the Adversarial Review Gate (spec: 7 findings → 3 minor confirmed/folded, 4
+  refuted; plan: 0 findings). **+19 JVM tests → 1275** (`NotificationPolicyTest` 14 pure-JVM +
+  `SupplyDropNotificationManagerTest` 5 Robolectric).
+
 ### CI — Batch D2: additive tooling — Kover coverage + OSV supply-chain scan (no app change)
 
 **Two NON-GATING informational CI capabilities — no app/Kotlin/schema change, test count unchanged
