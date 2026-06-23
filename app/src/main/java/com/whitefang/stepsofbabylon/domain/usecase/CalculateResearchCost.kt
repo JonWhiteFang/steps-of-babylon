@@ -5,6 +5,8 @@ import kotlin.math.ceil
 import kotlin.math.pow
 
 class CalculateResearchCost {
-    operator fun invoke(type: ResearchType, currentLevel: Int): Long =
-        ceil(type.baseCostSteps * type.costScaling.pow(currentLevel)).toLong()
+    operator fun invoke(
+        type: ResearchType,
+        currentLevel: Int,
+    ): Long = ceil(type.baseCostSteps * type.costScaling.pow(currentLevel)).toLong()
 }

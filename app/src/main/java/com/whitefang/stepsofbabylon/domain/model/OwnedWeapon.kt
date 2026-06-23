@@ -22,9 +22,10 @@ data class OwnedWeapon(
     val isEquipped: Boolean = false,
 ) {
     /** Returns the level for the given path. */
-    fun levelOf(path: UWPath): Int = when (path) {
-        UWPath.DAMAGE -> damageLevel
-        UWPath.SECONDARY -> secondaryLevel
-        UWPath.COOLDOWN -> cooldownLevel
-    }
+    fun levelOf(path: UWPath): Int =
+        when (path) {
+            UWPath.DAMAGE -> damageLevel
+            UWPath.SECONDARY -> secondaryLevel
+            UWPath.COOLDOWN -> cooldownLevel
+        }
 }

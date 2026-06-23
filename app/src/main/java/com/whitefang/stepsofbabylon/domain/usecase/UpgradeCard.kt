@@ -7,8 +7,12 @@ class UpgradeCard(
     private val cardRepository: CardRepository,
 ) {
     sealed class Result {
-        data class Upgraded(val newLevel: Int) : Result()
+        data class Upgraded(
+            val newLevel: Int,
+        ) : Result()
+
         data object MaxLevel : Result()
+
         data object InsufficientCopies : Result()
     }
 

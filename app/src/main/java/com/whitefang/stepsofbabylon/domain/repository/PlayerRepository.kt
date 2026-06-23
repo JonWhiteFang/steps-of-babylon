@@ -6,8 +6,11 @@ import kotlinx.coroutines.flow.Flow
 
 interface PlayerRepository {
     fun observeProfile(): Flow<PlayerProfile>
+
     fun observeWallet(): Flow<PlayerWallet>
+
     fun observeTier(): Flow<Int>
+
     suspend fun addSteps(amount: Long)
 
     /**
@@ -40,19 +43,47 @@ interface PlayerRepository {
 
     /** Atomic guarded Power Stone deduction (#122). Same contract as [spendGems]. */
     suspend fun spendPowerStones(amount: Long): Boolean
+
     suspend fun addCardDust(amount: Long)
+
     suspend fun spendCardDust(amount: Long)
+
     suspend fun updateTier(tier: Int)
+
     suspend fun updateHighestUnlockedTier(tier: Int)
+
     suspend fun updateLabSlotCount(count: Int)
-    suspend fun updateBestWave(tier: Int, wave: Int)
-    suspend fun updateStreak(streak: Int, date: String)
-    suspend fun incrementBattleStats(rounds: Long, kills: Long, cash: Long)
+
+    suspend fun updateBestWave(
+        tier: Int,
+        wave: Int,
+    )
+
+    suspend fun updateStreak(
+        streak: Int,
+        date: String,
+    )
+
+    suspend fun incrementBattleStats(
+        rounds: Long,
+        kills: Long,
+        cash: Long,
+    )
+
     suspend fun updateAdRemoved(removed: Boolean)
-    suspend fun updateSeasonPass(active: Boolean, expiry: Long)
+
+    suspend fun updateSeasonPass(
+        active: Boolean,
+        expiry: Long,
+    )
+
     suspend fun updateFreeLabRushUsed(date: String)
+
     suspend fun updateFreeCardPackAdUsed(date: String)
+
     suspend fun getStepBalance(): Long
+
     suspend fun updateLastActiveAt(timestamp: Long)
+
     suspend fun ensureProfileExists()
 }

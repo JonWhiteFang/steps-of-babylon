@@ -33,7 +33,18 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — MERGED PR #318, squash `a218c09`; `[Unreleased]`).**
+- **CURRENT (IN FLIGHT — PR open, awaiting controller merge; `[Unreleased]`).**
+  **Staged repo-wide ktlint auto-format — stage 1 of 6 (`domain/`).** Mechanical `ktlint -F` over
+  `domain/` only (72 files), pure-formatting / zero behaviour change; all hunks on the Bucket-A
+  allowlist (trailing-comma, signature reflow, expression-body, if/when bracing). **Both baselines
+  regenerated:** ktlint `config/ktlint/baseline.xml` **9256 → 8534** (full-`app/src` scope, shrinking
+  per stage); detekt `config/detekt/baseline.xml` **496 → 489** (the reflow drifted line-keyed
+  signatures of pre-existing baselined smells — no genuinely-new smell). **1254 JVM tests green, 0
+  failures**; `lint-kotlin.sh` check + `:app:detekt` both exit 0. **Next:** controller merges; then
+  stages 2–6 (`data/` → `service/`+`di/`+top-level → `presentation/` excl battle → `presentation/battle/`
+  [FRAGILE] → test sources), each repeating scoped `-F` + dual-baseline regen + full-suite gate. Plan:
+  `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`.
+- **Previous objective (DONE — MERGED PR #318, squash `a218c09`; `[Unreleased]`).**
   **Compose UI tests: critical screens (#253).** 20 Robolectric-backed tests for 7 critical screens
   (Workshop, Store, Labs, Missions, UltimateWeapons, Supplies, BattleControlRail). Covers
   purchase/claim/equip affordance gating, balance rendering, empty states, loadout caps. **1234 → 1254

@@ -13,7 +13,11 @@ class RushResearch(
     private val playerRepository: PlayerRepository,
 ) {
     sealed class Result {
-        data class Rushed(val gemCost: Long, val newLevel: Int) : Result()
+        data class Rushed(
+            val gemCost: Long,
+            val newLevel: Int,
+        ) : Result()
+
         data object InsufficientGems : Result()
     }
 
@@ -34,7 +38,11 @@ class RushResearch(
     }
 
     companion object {
-        fun calculateRushCost(startedAt: Long, completesAt: Long, now: Long): Long {
+        fun calculateRushCost(
+            startedAt: Long,
+            completesAt: Long,
+            now: Long,
+        ): Long {
             val totalDuration = completesAt - startedAt
             if (totalDuration <= 0) return 50L
             val remaining = max(0L, completesAt - now)

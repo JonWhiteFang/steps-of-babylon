@@ -16,17 +16,21 @@ package com.whitefang.stepsofbabylon.domain.model
  * helper lives in `domain/model/` and is JVM-test-friendly.
  */
 object RapidFireSchedule {
-
     /** Interval at L1 — 60 seconds between bursts. */
     const val INTERVAL_L1 = 60f
+
     /** Interval at L10 — converges with [DURATION_L10] for a permanent burst. */
     const val INTERVAL_L10 = 30f
+
     /** Burst duration at L1 — 5 seconds of active 2.0× attack speed. */
     const val DURATION_L1 = 5f
+
     /** Burst duration at L10 — converges with [INTERVAL_L10] for a permanent buff. */
     const val DURATION_L10 = 30f
+
     /** Attack-speed multiplier at L1 during the active window. */
     const val MULTIPLIER_L1 = 2f
+
     /** Attack-speed multiplier at L10 during the active window. */
     const val MULTIPLIER_L10 = 3f
 
@@ -53,7 +57,11 @@ object RapidFireSchedule {
      * is 10, but defensive clamping protects against any future schema migration that
      * leaves a higher level value on disk.
      */
-    private fun lerp(level: Int, l1: Float, l10: Float): Float {
+    private fun lerp(
+        level: Int,
+        l1: Float,
+        l10: Float,
+    ): Float {
         val clamped = level.coerceIn(1, 10)
         return l1 + (l10 - l1) * (clamped - 1) / 9f
     }

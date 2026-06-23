@@ -36,10 +36,15 @@ class ClaimMission(
     private val missionRepository: MissionRepository,
     private val playerRepository: PlayerRepository,
 ) {
-    suspend operator fun invoke(id: Int, date: String): ClaimMissionResult {
-        val mission = missionRepository.getMissionsForDate(date)
-            .find { it.id == id && it.completed && !it.claimed }
-            ?: return ClaimMissionResult.NotClaimable
+    suspend operator fun invoke(
+        id: Int,
+        date: String,
+    ): ClaimMissionResult {
+        val mission =
+            missionRepository
+                .getMissionsForDate(date)
+                .find { it.id == id && it.completed && !it.claimed }
+                ?: return ClaimMissionResult.NotClaimable
 
         // Mark-first: only the call that actually flips claimed (rows == 1) credits the reward.
         if (missionRepository.markClaimed(id) != 1) return ClaimMissionResult.NotClaimable

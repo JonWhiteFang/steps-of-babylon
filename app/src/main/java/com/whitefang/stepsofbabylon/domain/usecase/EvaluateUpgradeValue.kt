@@ -44,8 +44,11 @@ class EvaluateUpgradeValue(
     private val combatPower: CombatPower = CombatPower(),
     private val calculateCost: CalculateUpgradeCost = CalculateUpgradeCost(),
 ) {
-
-    private data class Scored(val type: UpgradeType, val value: Double, val pct: Double)
+    private data class Scored(
+        val type: UpgradeType,
+        val value: Double,
+        val pct: Double,
+    )
 
     operator fun invoke(
         workshopLevels: Map<UpgradeType, Int>,
@@ -54,17 +57,18 @@ class EvaluateUpgradeValue(
     ): List<UpgradeValue> {
         val currentPower = combatPower(resolveStats(workshopLevels))
 
-        val scored = candidates.mapNotNull { type ->
-            if (WorkshopLevels.isAtMax(workshopLevels, type)) return@mapNotNull null
-            val cost = calculateCost(type, WorkshopLevels.levelOf(workshopLevels, type))
-            if (cost <= 0L) return@mapNotNull null
-            val nextPower = combatPower(resolveStats(WorkshopLevels.withIncremented(workshopLevels, type)))
-            val delta = nextPower - currentPower
-            if (delta <= 0.0) return@mapNotNull null
-            val value = delta / cost
-            val pct = if (currentPower > 0.0) value / currentPower * 1000.0 * 100.0 else 0.0
-            Scored(type, value, pct)
-        }
+        val scored =
+            candidates.mapNotNull { type ->
+                if (WorkshopLevels.isAtMax(workshopLevels, type)) return@mapNotNull null
+                val cost = calculateCost(type, WorkshopLevels.levelOf(workshopLevels, type))
+                if (cost <= 0L) return@mapNotNull null
+                val nextPower = combatPower(resolveStats(WorkshopLevels.withIncremented(workshopLevels, type)))
+                val delta = nextPower - currentPower
+                if (delta <= 0.0) return@mapNotNull null
+                val value = delta / cost
+                val pct = if (currentPower > 0.0) value / currentPower * 1000.0 * 100.0 else 0.0
+                Scored(type, value, pct)
+            }
         if (scored.isEmpty()) return emptyList()
 
         // Best Buy: highest value affordable; else highest value overall (greyed). Ties -> lowest ordinal.
@@ -72,8 +76,10 @@ class EvaluateUpgradeValue(
         val costOf = { s: Scored -> calculateCost(s.type, WorkshopLevels.levelOf(workshopLevels, s.type)) }
         val affordable = scored.filter { costOf(it) <= stepBalance }
         val bestBuyIsAffordable = affordable.isNotEmpty()
-        val bestBuyType = (if (bestBuyIsAffordable) affordable else scored)
-            .minWithOrNull(byValueThenOrdinal)!!.type
+        val bestBuyType =
+            (if (bestBuyIsAffordable) affordable else scored)
+                .minWithOrNull(byValueThenOrdinal)!!
+                .type
 
         val maxPct = scored.maxOf { it.pct }
         return scored.map { s ->

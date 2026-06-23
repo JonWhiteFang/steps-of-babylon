@@ -5,8 +5,9 @@ import com.whitefang.stepsofbabylon.domain.model.SupplyDropReward
 import com.whitefang.stepsofbabylon.domain.model.SupplyDropTrigger
 import kotlin.random.Random
 
-class GenerateSupplyDrop(private val random: Random = Random) {
-
+class GenerateSupplyDrop(
+    private val random: Random = Random,
+) {
     companion object {
         const val MAX_INBOX = 10
         private const val MILESTONE_THRESHOLD = 10_000L
@@ -44,9 +45,19 @@ class GenerateSupplyDrop(private val random: Random = Random) {
             for (i in 0 until checks) {
                 if (random.nextDouble() < THRESHOLD_CHANCE_PER_100) {
                     return if (random.nextBoolean()) {
-                        makeDrop(SupplyDropTrigger.STEP_THRESHOLD, SupplyDropReward.STEPS, random.nextInt(50, 201), timestampMs)
+                        makeDrop(
+                            SupplyDropTrigger.STEP_THRESHOLD,
+                            SupplyDropReward.STEPS,
+                            random.nextInt(50, 201),
+                            timestampMs,
+                        )
                     } else {
-                        makeDrop(SupplyDropTrigger.STEP_THRESHOLD, SupplyDropReward.GEMS, random.nextInt(1, 4), timestampMs)
+                        makeDrop(
+                            SupplyDropTrigger.STEP_THRESHOLD,
+                            SupplyDropReward.GEMS,
+                            random.nextInt(1, 4),
+                            timestampMs,
+                        )
                     }
                 }
             }
@@ -63,15 +74,25 @@ class GenerateSupplyDrop(private val random: Random = Random) {
         return null
     }
 
-    private fun rollRandomReward(timestampMs: Long): SupplyDrop {
-        return when (random.nextInt(4)) {
+    private fun rollRandomReward(timestampMs: Long): SupplyDrop =
+        when (random.nextInt(4)) {
             0 -> makeDrop(SupplyDropTrigger.RANDOM, SupplyDropReward.STEPS, random.nextInt(100, 301), timestampMs)
             1 -> makeDrop(SupplyDropTrigger.RANDOM, SupplyDropReward.GEMS, random.nextInt(1, 3), timestampMs)
             2 -> makeDrop(SupplyDropTrigger.RANDOM, SupplyDropReward.POWER_STONES, 1, timestampMs)
             else -> makeDrop(SupplyDropTrigger.RANDOM, SupplyDropReward.CARD_COPY, random.nextInt(0, 9), timestampMs)
         }
-    }
 
-    private fun makeDrop(trigger: SupplyDropTrigger, reward: SupplyDropReward, amount: Int, timestampMs: Long) =
-        SupplyDrop(id = 0, trigger = trigger, reward = reward, rewardAmount = amount, claimed = false, createdAt = timestampMs)
+    private fun makeDrop(
+        trigger: SupplyDropTrigger,
+        reward: SupplyDropReward,
+        amount: Int,
+        timestampMs: Long,
+    ) = SupplyDrop(
+        id = 0,
+        trigger = trigger,
+        reward = reward,
+        rewardAmount = amount,
+        claimed = false,
+        createdAt = timestampMs,
+    )
 }

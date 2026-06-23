@@ -13,10 +13,16 @@ class StartResearch(
     private val calculateTime: CalculateResearchTime = CalculateResearchTime(),
 ) {
     sealed class Result {
-        data class Success(val completesAt: Long) : Result()
+        data class Success(
+            val completesAt: Long,
+        ) : Result()
+
         data object AlreadyResearching : Result()
+
         data object NoSlotAvailable : Result()
+
         data object MaxLevelReached : Result()
+
         data object InsufficientSteps : Result()
     }
 

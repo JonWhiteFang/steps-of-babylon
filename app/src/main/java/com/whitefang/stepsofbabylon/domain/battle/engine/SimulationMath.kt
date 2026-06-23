@@ -18,7 +18,6 @@ import kotlin.math.floor
  * Canvas/SurfaceView in the first place.
  */
 object SimulationMath {
-
     // ---- Recovery Packages (RO-08) ----
 
     /** Each interval of active SPAWNING phase grants one heal pulse. */
@@ -37,7 +36,10 @@ object SimulationMath {
      * @param maxHp Ziggurat max HP at time of pulse.
      * @return HP amount to heal (≥1 if level > 0 and maxHp > 0; 0 if level == 0).
      */
-    fun recoveryPulseAmount(level: Int, maxHp: Double): Double {
+    fun recoveryPulseAmount(
+        level: Int,
+        maxHp: Double,
+    ): Double {
         if (level <= 0 || maxHp <= 0) return 0.0
         val percent = (level * RECOVERY_PERCENT_PER_LEVEL).coerceAtMost(RECOVERY_PERCENT_PER_PULSE_CAP)
         return (maxHp * percent).coerceAtLeast(1.0)
@@ -69,8 +71,10 @@ object SimulationMath {
         cashResearchMultiplier: Double,
     ): Long {
         val cashBonus = 1.0 + cashBonusLevel * CASH_BONUS_PER_LEVEL
-        return (baseCash * tierMultiplier * cashBonus * fortuneMultiplier *
-            (1.0 + cashBonusPercent / 100.0) * cashResearchMultiplier).toLong()
+        return (
+            baseCash * tierMultiplier * cashBonus * fortuneMultiplier *
+                (1.0 + cashBonusPercent / 100.0) * cashResearchMultiplier
+        ).toLong()
     }
 
     /**
@@ -83,8 +87,10 @@ object SimulationMath {
         fortuneMultiplier: Double,
         cashResearchMultiplier: Double,
     ): Long =
-        ((BASE_CASH_PER_WAVE + cashPerWaveLevel * FLAT_BONUS_PER_WAVE_LEVEL) *
-            fortuneMultiplier * cashResearchMultiplier).toLong()
+        (
+            (BASE_CASH_PER_WAVE + cashPerWaveLevel * FLAT_BONUS_PER_WAVE_LEVEL) *
+                fortuneMultiplier * cashResearchMultiplier
+        ).toLong()
 
     // ---- Chrono Field UW (RO-09 #1) ----
 
@@ -101,8 +107,10 @@ object SimulationMath {
      * configurability (vs the pre-R4-06 fixed constant) supports per-cooldown-level
      * variation in Chrono Field's secondary path.
      */
-    fun chronoMultiplier(active: Boolean, slowFactor: Float = CHRONO_SLOW_FACTOR_DEFAULT): Float =
-        if (active) slowFactor else 1f
+    fun chronoMultiplier(
+        active: Boolean,
+        slowFactor: Float = CHRONO_SLOW_FACTOR_DEFAULT,
+    ): Float = if (active) slowFactor else 1f
 
     // ---- Thorn Damage (R3-02) ----
 
@@ -140,7 +148,10 @@ object SimulationMath {
      * @param lifestealPercent Player's LIFESTEAL upgrade level translated to a fraction.
      * @return HP amount to heal (Double, conserves sub-1 fractions across hits).
      */
-    fun lifestealHealAmount(damageDealt: Double, lifestealPercent: Double): Double {
+    fun lifestealHealAmount(
+        damageDealt: Double,
+        lifestealPercent: Double,
+    ): Double {
         if (damageDealt <= 0 || lifestealPercent <= 0) return 0.0
         return damageDealt * lifestealPercent.coerceAtMost(LIFESTEAL_CAP)
     }
@@ -150,7 +161,10 @@ object SimulationMath {
      * @property newAccumulator The accumulator value after consuming the visible HP.
      * @property visibleHp The integer HP amount that crossed the threshold (0 if none).
      */
-    data class LifestealAccumulatorTick(val newAccumulator: Double, val visibleHp: Int)
+    data class LifestealAccumulatorTick(
+        val newAccumulator: Double,
+        val visibleHp: Int,
+    )
 
     /**
      * Updates the lifesteal accumulator with a new heal amount and returns the new state
@@ -165,7 +179,10 @@ object SimulationMath {
      * @return [LifestealAccumulatorTick] with the new accumulator and the integer HP
      *         that crossed the threshold (used to spawn `+X HP` feedback).
      */
-    fun tickLifestealAccumulator(accumulator: Double, healAmount: Double): LifestealAccumulatorTick {
+    fun tickLifestealAccumulator(
+        accumulator: Double,
+        healAmount: Double,
+    ): LifestealAccumulatorTick {
         val newTotal = accumulator + healAmount
         if (newTotal < 1.0) return LifestealAccumulatorTick(newTotal, 0)
         val visibleHp = floor(newTotal).toInt()
@@ -179,8 +196,10 @@ object SimulationMath {
      * pulses (recovery, lifesteal) and damage-application paths to prevent
      * over-healing past the cap or going negative on a one-shot kill.
      */
-    fun clampHp(candidateHp: Double, maxHp: Double): Double =
-        candidateHp.coerceIn(0.0, maxHp.coerceAtLeast(0.0))
+    fun clampHp(
+        candidateHp: Double,
+        maxHp: Double,
+    ): Double = candidateHp.coerceIn(0.0, maxHp.coerceAtLeast(0.0))
 
     // ---- STEP_MULTIPLIER asymptotic curve (V1X-18, ADR-0015) ----
 
@@ -264,7 +283,10 @@ object SimulationMath {
      * @param tickNs Length of one fixed timestep in nanoseconds (> 0).
      * @return The accumulator capped at `MAX_CATCHUP_TICKS × tickNs` plus any sub-tick remainder.
      */
-    fun clampAccumulator(accumulatorNs: Long, tickNs: Long): Long {
+    fun clampAccumulator(
+        accumulatorNs: Long,
+        tickNs: Long,
+    ): Long {
         if (tickNs <= 0L) return accumulatorNs
         val ceiling = tickNs * MAX_CATCHUP_TICKS
         if (accumulatorNs <= ceiling) return accumulatorNs

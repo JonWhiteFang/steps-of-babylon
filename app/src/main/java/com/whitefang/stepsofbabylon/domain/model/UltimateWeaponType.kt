@@ -43,33 +43,42 @@ enum class UltimateWeaponType(
         description = "Massive damage pulse radiating outward, damages enemies in radius",
         effectDurationSeconds = 0f,
         // Damage: 500 → 3,000 raw damage
-        damageL1 = 500.0, damageL10 = 3_000.0,
+        damageL1 = 500.0,
+        damageL10 = 3_000.0,
         // Secondary: 0.50 → 1.00 of screen radius
-        secondaryL1 = 0.50, secondaryL10 = 1.00,
+        secondaryL1 = 0.50,
+        secondaryL10 = 1.00,
         // Cooldown: 60s → 20s
-        cooldownL1 = 60f, cooldownL10 = 20f,
+        cooldownL1 = 60f,
+        cooldownL10 = 20f,
     ),
     CHAIN_LIGHTNING(
         unlockCost = 75,
         description = "Arcing electrical damage chaining between enemies",
         effectDurationSeconds = 0f,
         // Damage: 500 → 2,000 per-target
-        damageL1 = 500.0, damageL10 = 2_000.0,
+        damageL1 = 500.0,
+        damageL10 = 2_000.0,
         // Secondary: 3 → 12 chain targets
-        secondaryL1 = 3.0, secondaryL10 = 12.0,
+        secondaryL1 = 3.0,
+        secondaryL10 = 12.0,
         // Cooldown: 30s → 6s
-        cooldownL1 = 30f, cooldownL10 = 6f,
+        cooldownL1 = 30f,
+        cooldownL10 = 6f,
     ),
     BLACK_HOLE(
         unlockCost = 100,
         description = "Gravity well pulling enemies inward with sustained damage",
         effectDurationSeconds = 5f,
         // Damage: 50 → 250 DPS
-        damageL1 = 50.0, damageL10 = 250.0,
+        damageL1 = 50.0,
+        damageL10 = 250.0,
         // Secondary: 30 → 200 px/sec pull
-        secondaryL1 = 30.0, secondaryL10 = 200.0,
+        secondaryL1 = 30.0,
+        secondaryL10 = 200.0,
         // Cooldown: 90s → 30s
-        cooldownL1 = 90f, cooldownL10 = 30f,
+        cooldownL1 = 90f,
+        cooldownL10 = 30f,
     ),
     CHRONO_FIELD(
         unlockCost = 75,
@@ -77,33 +86,42 @@ enum class UltimateWeaponType(
         effectDurationSeconds = 5f, // L1 baseline; actual is secondaryAtLevel
         // Damage path = slow factor: 0.50 → 0.05 (smaller is stronger). Replaces the
         // pre-R4-06 CHRONO_SLOW_FACTOR = 0.10f companion constant.
-        damageL1 = 0.50, damageL10 = 0.05,
+        damageL1 = 0.50,
+        damageL10 = 0.05,
         // Secondary = duration: 5s → 14s
-        secondaryL1 = 5.0, secondaryL10 = 14.0,
+        secondaryL1 = 5.0,
+        secondaryL10 = 14.0,
         // Cooldown: 75s → 25s
-        cooldownL1 = 75f, cooldownL10 = 25f,
+        cooldownL1 = 75f,
+        cooldownL10 = 25f,
     ),
     POISON_SWAMP(
         unlockCost = 60,
         description = "Toxic area dealing % max-health damage per second",
         effectDurationSeconds = 6f,
         // Damage path = DoT % MaxHP/sec: 0.01 → 0.08
-        damageL1 = 0.01, damageL10 = 0.08,
+        damageL1 = 0.01,
+        damageL10 = 0.08,
         // Secondary = area fraction: 0.50 → 1.00
-        secondaryL1 = 0.50, secondaryL10 = 1.00,
+        secondaryL1 = 0.50,
+        secondaryL10 = 1.00,
         // Cooldown: 60s → 20s
-        cooldownL1 = 60f, cooldownL10 = 20f,
+        cooldownL1 = 60f,
+        cooldownL10 = 20f,
     ),
     GOLDEN_ZIGGURAT(
         unlockCost = 80,
         description = "Cash bonus + damage boost for duration",
         effectDurationSeconds = 10f,
         // Damage path = cash multiplier: 2× → 8×
-        damageL1 = 2.0, damageL10 = 8.0,
+        damageL1 = 2.0,
+        damageL10 = 8.0,
         // Secondary = damage multiplier: 1.2× → 3.0×
-        secondaryL1 = 1.2, secondaryL10 = 3.0,
+        secondaryL1 = 1.2,
+        secondaryL10 = 3.0,
         // Cooldown: 90s → 30s
-        cooldownL1 = 90f, cooldownL10 = 30f,
+        cooldownL1 = 90f,
+        cooldownL10 = 30f,
     ),
     ;
 
@@ -114,12 +132,16 @@ enum class UltimateWeaponType(
      * L1 so investment is always rewarded. Levels above L10 also extrapolate but are
      * never reached in production because of [MAX_PATH_LEVEL].
      */
-    fun valueAtLevel(path: UWPath, level: Int): Double {
-        val (l1, l10) = when (path) {
-            UWPath.DAMAGE -> damageL1 to damageL10
-            UWPath.SECONDARY -> secondaryL1 to secondaryL10
-            UWPath.COOLDOWN -> cooldownL1.toDouble() to cooldownL10.toDouble()
-        }
+    fun valueAtLevel(
+        path: UWPath,
+        level: Int,
+    ): Double {
+        val (l1, l10) =
+            when (path) {
+                UWPath.DAMAGE -> damageL1 to damageL10
+                UWPath.SECONDARY -> secondaryL1 to secondaryL10
+                UWPath.COOLDOWN -> cooldownL1.toDouble() to cooldownL10.toDouble()
+            }
         val perLevel = (l10 - l1) / 9.0
         return l1 + perLevel * (level - 1)
     }

@@ -23,7 +23,11 @@ class PurchaseUpgrade(
     private val workshopRepository: WorkshopRepository,
     private val calculateCost: CalculateUpgradeCost = CalculateUpgradeCost(),
 ) {
-    suspend operator fun invoke(type: UpgradeType, currentLevel: Int, wallet: PlayerWallet): Boolean {
+    suspend operator fun invoke(
+        type: UpgradeType,
+        currentLevel: Int,
+        wallet: PlayerWallet,
+    ): Boolean {
         val maxLevel = type.config.maxLevel
         if (maxLevel != null && currentLevel >= maxLevel) return false
 

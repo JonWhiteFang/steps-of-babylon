@@ -34,7 +34,10 @@ class EnemyState(
         get() = if (isRanged) initialDist * RANGED_STOP_FACTOR else MELEE_RANGE
 
     /** Sets the spawn position and captures the initial distance for the RANGED stop rule. */
-    fun spawn(spawnX: Float, spawnY: Float) {
+    fun spawn(
+        spawnX: Float,
+        spawnY: Float,
+    ) {
         x = spawnX
         y = spawnY
         initialDist = hypot(targetX - x, targetY - y)
@@ -63,7 +66,10 @@ class EnemyState(
     }
 
     /** Shifts the position by a knockback impulse (HP/armor stay on the entity). */
-    fun applyKnockback(forceX: Float, forceY: Float) {
+    fun applyKnockback(
+        forceX: Float,
+        forceY: Float,
+    ) {
         x += forceX
         y += forceY
     }

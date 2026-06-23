@@ -8,8 +8,12 @@ class CompleteResearch(
     private val labRepository: LabRepository,
 ) {
     sealed class Result {
-        data class Completed(val newLevel: Int) : Result()
+        data class Completed(
+            val newLevel: Int,
+        ) : Result()
+
         data object NotReady : Result()
+
         data object NotActive : Result()
     }
 

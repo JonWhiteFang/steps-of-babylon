@@ -8,10 +8,14 @@ class ManageCardLoadout(
 ) {
     sealed class Result {
         data object Success : Result()
+
         data object LoadoutFull : Result()
     }
 
-    suspend fun equip(cardId: Int, equippedCount: Int): Result {
+    suspend fun equip(
+        cardId: Int,
+        equippedCount: Int,
+    ): Result {
         if (equippedCount >= CardLoadout.MAX_SIZE) return Result.LoadoutFull
         cardRepository.equipCard(cardId)
         return Result.Success

@@ -9,7 +9,10 @@ data class RoundState(
     val tier: Int,
 ) {
     companion object {
-        fun initial(tier: Int, towerMaxHp: Double) = RoundState(
+        fun initial(
+            tier: Int,
+            towerMaxHp: Double,
+        ) = RoundState(
             currentWave = 1,
             cash = 0,
             tempUpgrades = emptyMap(),
