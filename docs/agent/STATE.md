@@ -38,58 +38,36 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — #221 FEAT-1 implemented on branch `feat/221-remove-dead-cosmetics`; PR open).** Removed
-  the 4 seeded projectile/enemy-skin cosmetics (`proj_fire`/`proj_lightning`/`enemy_shadow`/`enemy_neon`) +
-  the 2 unused `CosmeticCategory` values (`PROJECTILE_EFFECT`/`ENEMY_SKIN`) that had no render path — closing
-  the audit "live trap". Only `ZIGGURAT_SKIN` remains. Existing-device safety (belt-and-suspenders): new
-  `CosmeticDao.deleteByIds` purge in `ensureSeedData` + resilient `CosmeticRepositoryImpl.toDomainOrNull`
-  that filters rows whose stored String category no longer parses (so `CosmeticCategory.valueOf` can't crash;
-  also covers the `StoreViewModel.init` purge-vs-`observeAll` race). **No schema migration** (data-only
-  delete). Spec→adversarial-review (13→6 minor folded) → plan→adversarial-review (5 findings → plan
-  restructured to a behavior-preserving refactor + one atomic removal commit) → TDD. **No economy change.
-  +2 JVM → 1277.** `[Unreleased]`. **Next (no work in flight):** the audit backlog's **non-batchable
-  items** — A24 anti-cheat rate-limit clock-tamper (large/fragile), battle game-loop perf L46-L51 (fragile),
-  L12 BattleViewModel decomposition (large, #306/ADR-0012), billing-anti-fraud L35/A25/A26/L41 (by-design,
-  no fix); the #34 i18n-externalization push; remaining audit med/low.
-- **Previous objective (DONE — MERGED PR #339, `2f1c090`; `[Unreleased]`).** **#216 NOTIF-1** — quiet-hours
-  (22:00–08:00 local) + supply-drop daily-cap (3/day) on the reminder & supply-drop notification paths. New
-  pure-domain `domain/notification/NotificationPolicy` (JVM-tested); `SmartReminderManager` quiet-hours
-  early-return via `canSendReminder`; `SupplyDropNotificationManager` injects `TimeProvider` + field-caches
-  its prefs (runs under the #120 credit mutex) + gates push on quiet-hours/cap with a per-day counter; the
-  drop is still generated + claimable. `DataDeletionManager` also wipes the new `supply_drop_notifications`
-  prefs (#247). +19 JVM. Also this session: **#164 Bundle E** closed (verify-and-close — shipped v1.0.8,
-  never closed). Also still open: the v1.0.11 **internal→closed** promotion judgment call (gated on the
-  **manual Play Console Data-Safety action #192** — `docs/release/data-safety-form.md`, a human step).
+- **CURRENT (DONE — audit single-issue fixes #216 + #221 MERGED to `main`; nothing in flight).** Two
+  focused audit issues shipped this session, each through the full spec→adversarial-review→plan→
+  adversarial-review→TDD→PR→merge loop. **#221 FEAT-1** (PR #340, `705865f`) — removed the 4 seeded
+  projectile/enemy-skin cosmetics + the 2 unused `CosmeticCategory` values (`PROJECTILE_EFFECT`/`ENEMY_SKIN`)
+  that had no render path, closing the audit "live trap"; only `ZIGGURAT_SKIN` remains. Existing-device
+  safety (belt-and-suspenders): `CosmeticDao.deleteByIds` purge in `ensureSeedData` + resilient
+  `CosmeticRepositoryImpl.toDomainOrNull` filtering rows whose stored String category no longer parses (so
+  `CosmeticCategory.valueOf` can't crash; also covers the `StoreViewModel.init` purge-vs-`observeAll` race);
+  **no schema migration** (data-only delete); +2 JVM. **#216 NOTIF-1** (PR #339, `2f1c090`) — quiet-hours
+  (22:00–08:00 local) + supply-drop daily-cap (3/day) on the reminder & supply-drop notification paths via a
+  new pure-domain `domain/notification/NotificationPolicy`; `SupplyDropNotificationManager` injects
+  `TimeProvider` + field-caches its prefs (runs under the #120 credit mutex); `DataDeletionManager` also
+  wipes the new `supply_drop_notifications` prefs (#247); +19 JVM. Also closed **#164 Bundle E** (verify-and-
+  close — shipped v1.0.8, never closed). **No schema/economy change across the arc; 1256 → 1277 JVM.**
+  `[Unreleased]`. **Next (no work in flight):** the audit backlog's **non-batchable items** — #217 service
+  tests (test-only), A24 anti-cheat rate-limit clock-tamper (large/fragile), battle game-loop perf L46-L51
+  (fragile), L12 BattleViewModel decomposition (large, #306/ADR-0012), billing-anti-fraud L35/A25/A26/L41
+  (by-design, no fix); the #34 i18n-externalization push; remaining audit med/low. Also still open: the
+  v1.0.11 **internal→closed** promotion judgment call (gated on the **manual Play Console Data-Safety action
+  #192** — `docs/release/data-safety-form.md`, a human step).
 - **Previous objective (DONE — audit-triage batches A–D all SHIPPED to `main`).** A verification
   `Workflow` code-grounded ~125 unverified #262/#128 tracker findings vs HEAD `617babd` → **83 LIVE / 23
-  FIXED / 6 STALE / 4 DUP / 1 POSITIVE**; LIVE survivors clustered into batches A–G. **A–D merged**
-  (each spec→plan→adversarial-review→implement→PR→merge): **A** docs/content-drift (PR #333,
-  `9e186bc`); **B** dead-code removal (#334, `367fe6f`); **C** i18n locale-safety incl. a REAL Turkish-locale
-  billing bug L88 (#335, `13d19c2`); **D1** release/CI config hardening + ktlint-job split (#336, `6c487f4`);
-  **D2** Kover coverage + OSV supply-chain scan (#337, `9cef4c8`). 1256 JVM at arc end; **no schema change**.
-  #218 closed; #262 annotated per batch.
-- **Previous objective (DONE — MERGED PR #337, squash `9cef4c8`; `[Unreleased]`).** **Batch D2 (additive CI
-  tooling).** Two NON-GATING capabilities, no app/schema change, 1256 JVM. **Kover** (`:app`, 0.9.8)
-  informational coverage CI step (baseline ~59% line cov; Kotlin-2.3.0 compat verified by a local spike;
-  forced a `verification-metadata.xml` regen under strict verify #256). **OSV-Scanner** (`osv-scan.yml`,
-  SHA-pinned) full-dep supply-chain scan → Code Scanning, non-gating, weekly+main (spike found the
-  osv-scanner-repo reusable workflow is deprecated → used the live osv-scanner-action one). Real-CI green at
-  11m37s. Closed #262 L77 + #218.
-- **Previous objective (DONE — MERGED PR #336, squash `6c487f4`; `[Unreleased]`).** **Batch D1 (release/CI
-  config hardening).** Closed #262 L39/L68/L71/L73/L74/L75/L50 + a ktlint-job CI-speed split (passed in 17s
-  vs the ~6-min build). release.yml: concurrency/tag-guard/cert-identity/secret-cleanup; ci.yml: `lintRelease`
-  gate; gradle parallel+caching. L69 NDK pin DEFERRED (needs a runner-image-confirmed version). Review: 9
-  confirmed + 4 partial, 5 refuted. No app/schema change; 1256 JVM.
-- **Previous objective (DONE — MERGED PR #335, squash `13d19c2`; `[Unreleased]`).** **Batch C (i18n
-  locale-safety).** Closed #262 L88/L89/L87/L91. **L88 was a REAL bug** — `BillingProduct.skuId()`
-  default-locale `lowercase()` corrupted `GEM_PACK_MEDIUM`'s `I`→dotless ı under Turkish → broke that
-  purchase + reconciliation; fixed `Locale.ROOT` + Turkish regression test. Review gate: 6 confirmed, 0
-  refuted (2 MAJORs caught: L89 `Char.uppercase()` non-compile + missed `%.Nf` sites). 1253 → 1256 JVM.
-- *Prior objectives — **Batch B** dead-code removal (PR #334, `367fe6f`; #262 L15/L16/L17/L13/L18), **Batch
-  A** docs/content-drift (PR #333, `9e186bc`; #262 L79/L81/L82/L83/L84/L85/L86/L93/L94/L95 + STATE trim
-  846→385), and the **v1.0.11 release** (vc 27 → Play internal, tag `v1.0.11`, PR #330 `3915fd1`) — are
-  recorded per-PR in `docs/agent/RUN_LOG.md` + `CHANGELOG.md` and under "Recently shipped" below.
-- *Prior objectives (all DONE, `[Unreleased]` unless noted) are recorded per-PR in `docs/agent/RUN_LOG.md` and summarized under "Recently shipped" below — not duplicated here.*
+  FIXED / 6 STALE / 4 DUP / 1 POSITIVE**; LIVE survivors clustered into batches A–G. **A–D merged** (each
+  spec→plan→adversarial-review→implement→PR→merge): **A** docs/content-drift (#333), **B** dead-code removal
+  (#334), **C** i18n locale-safety incl. a REAL Turkish-locale billing bug L88 (#335), **D1** release/CI
+  config hardening + ktlint-job split (#336), **D2** Kover coverage + OSV supply-chain scan (#337). 1256 JVM
+  at arc end; **no schema change**. #218 closed; #262 annotated per batch. (Per-PR detail in RUN_LOG/CHANGELOG.)
+- *Prior objectives (all DONE, `[Unreleased]` unless noted) — the **v1.0.11 release** (vc 27 → Play internal,
+  tag `v1.0.11`, PR #330) and everything before it — are recorded per-PR in `docs/agent/RUN_LOG.md` +
+  `CHANGELOG.md` and summarized under "Recently shipped" below; not duplicated here.*
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 

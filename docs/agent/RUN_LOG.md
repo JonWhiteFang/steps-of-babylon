@@ -10224,3 +10224,27 @@ After the fix, tests pass on first try and assembleDebug is clean.
   shipped **#216** NOTIF-1 (PR #339 merged). **No ADR** for #221 — built on established patterns (the
   `TimeProvider`/pure-decision idioms; data-layer DAO purge; the `valueOf`-resilience is a local refactor).
   **Remaining:** open PR / merge; then non-batchable audit items (A24, L12) or the #34 i18n push.
+
+## 2026-06-23 — Checkpoint: #216 + #221 + #164 session reconciliation
+
+- **Session arc:** three audit issues closed off the 2026-06-18 backlog — **#164** Bundle E (verify-and-
+  close, no code), **#216** NOTIF-1 (PR #339, `2f1c090`), **#221** FEAT-1 (PR #340, `705865f`). Both code
+  PRs ran the full spec→adversarial-review→plan→adversarial-review→TDD→PR→merge loop with CI green
+  (build-and-test + instrumented `connected` + ktlint + changes). `[Unreleased]`; **no schema/economy change**.
+- **Verification at merge:** full JVM suite **1277 tests, 0 failures** (1256 → 1275 @#216 → 1277 @#221,
+  confirmed from result XMLs). detekt + ktlint clean on both branches.
+- **Doc-drift sweep (this checkpoint):** both PRs already synced their current-state docs in-branch
+  (CLAUDE.md headline 1256→1277; CHANGELOG `[Unreleased]` has both entries; source-files.md cosmetic +
+  notification entries updated). **The one drift fixed here:** STATE.md's CURRENT bullet still framed #221
+  as "PR open" (it merged as `705865f`) and carried a 5-deep batch-D objective stack. Reconciled to a
+  single CURRENT (both single-issue fixes MERGED, nothing in flight) + collapsed the A–D batch detail into
+  one bullet (per-PR detail lives in RUN_LOG/CHANGELOG). No other current-state doc needed a touch.
+- **Process note worth keeping:** the adversarial gates earned their cost on #221 — the spec gate caught a
+  test-fixture contradiction (a survivor loop that would have asserted the dead ids survive, against the
+  purge), and the plan gate caught a task-ordering bug that broke the green-at-every-commit invariant
+  (restructured to a behavior-preserving refactor + one atomic removal commit before any code was written).
+- **No ADR** this checkpoint (reconciliation only; neither #216 nor #221 introduced a new architectural
+  decision — both built on established patterns). **Next session (nothing in flight):** the non-batchable
+  audit items — #217 (service tests, test-only), A24/L12 (large/fragile), the #34 i18n-externalization push,
+  or the remaining #128/#262 lows. Open issues: 16 (the V1X roadmap epics #21–#36 + #217/#306 + the #128/#262
+  trackers).
