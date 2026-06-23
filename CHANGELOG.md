@@ -4,6 +4,18 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Removed — Dead projectile/enemy-skin cosmetics (#221 / FEAT-1)
+
+Removed the 4 seeded cosmetics that had no render path (`proj_fire`, `proj_lightning`, `enemy_shadow`,
+`enemy_neon`) and the 2 unused `CosmeticCategory` values (`PROJECTILE_EFFECT`, `ENEMY_SKIN`) — closing the
+"live trap" flagged by the 2026-06-17 audit (FEAT-1): a cosmetic that could be enabled for sale yet
+render nothing. Only `ZIGGURAT_SKIN` (the one category with working `overrideColors` wiring) remains.
+Already-installed devices are cleaned up safely at next launch: a new `CosmeticDao.deleteByIds` purge in
+`ensureSeedData` removes the dead rows, and `CosmeticRepositoryImpl` now maps via a resilient
+`toDomainOrNull` that filters any row whose stored category no longer parses (so `CosmeticCategory.valueOf`
+can never crash the catalogue — also covers the `StoreViewModel.init` purge-vs-`observeAll` race). No Room
+schema change (data-only delete). +2 JVM tests (→ 1277).
+
 ### Added — Notification quiet-hours + supply-drop daily cap (#216 / NOTIF-1)
 
 Reminder and supply-drop notifications now respect a fixed local-time **quiet-hours window (22:00–08:00)**,

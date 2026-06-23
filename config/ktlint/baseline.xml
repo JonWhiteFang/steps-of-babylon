@@ -4,7 +4,7 @@
         <error line="1" column="1" source="standard:filename" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImpl.kt">
-        <error line="195" column="121" source="standard:max-line-length" />
+        <error line="208" column="121" source="standard:max-line-length" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/di/DatabaseModule.kt">
         <error line="5" column="1" source="standard:no-wildcard-imports" />

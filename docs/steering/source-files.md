@@ -46,7 +46,7 @@ data/local/MilestoneDao.kt         # Milestone DAO + @Transaction claimMilestone
 data/local/DailyMissionEntity.kt   # Daily mission entity. #127: unique index on (date, missionType) — the authoritative guard against duplicate daily missions (the generator's read-then-insert check is racy on a WAL pool).
 data/local/DailyMissionDao.kt      # Daily mission DAO. #127: insert is @Insert(onConflict=IGNORE) on the (date,missionType) unique index; new @Transaction generateForDate(date, missions) batches the emptiness-check + inserts (the index, not the transaction, closes the TOCTOU window). markClaimed guarded claim (#122). Note: @Upsert is dead/unused (incompatible with the unique index — don't wire it).
 data/local/CosmeticEntity.kt       # Cosmetic store entity
-data/local/CosmeticDao.kt          # Cosmetic store DAO
+data/local/CosmeticDao.kt          # Cosmetic store DAO (#221: + deleteByIds(ids) for the dead-cosmetic purge)
 data/local/BillingReceiptEntity.kt # Play Billing receipt entity — idempotency store keyed by purchaseToken (C.5 PR 1 / ADR-0005)
 data/local/BillingReceiptDao.kt    # Billing receipt DAO + @Transaction grantOnceAtomic default method (C.5 PR 1)
 ```
@@ -65,7 +65,7 @@ data/repository/MissionRepositoryImpl.kt         # (#227) wraps DailyMissionDao;
 data/repository/MilestoneRepositoryImpl.kt       # (#227) wraps MilestoneDao + PlayerProfileDao; getClaimedMilestoneIds + claimMilestoneAtomic (hands the real PlayerProfileDao into the DAO @Transaction — guarded-deduct preserved, ADR-0027)
 data/repository/DailyLoginRepositoryImpl.kt      # (#227) wraps DailyLoginDao; maps DailyLogin↔DailyLoginEntity
 data/repository/WeeklyChallengeRepositoryImpl.kt # (#227) wraps WeeklyChallengeDao; maps WeeklyChallenge↔WeeklyChallengeEntity
-data/repository/CosmeticRepositoryImpl.kt        # Cosmetic store items + private ZIGGURAT_COLOR_LOOKUP table (5 palettes: zig_jade @ C.2 PR 2, lapis_lazuli_skin @ PR 3 / IRON_SOLES reward, garden_ziggurat_skin @ PR 3b / MARATHON_WALKER reward, sandals_of_gilgamesh @ PR 3c / GLOBE_TROTTER reward, zig_obsidian @ V1X-14 / store-purchasable dark skin); toDomain populates CosmeticItem.overrideColors from the lookup; SEED_COSMETICS: 11 rows (7 ZIGGURAT_SKIN including the 3 milestone-reward cosmetics + 2 PROJECTILE_EFFECT + 2 ENEMY_SKIN); ensureSeedData uses per-cosmeticId filter so content PRs land on already-seeded installs without a data clear and player `isOwned`/`isEquipped` state survives upgrades
+data/repository/CosmeticRepositoryImpl.kt        # Cosmetic store items + private ZIGGURAT_COLOR_LOOKUP table (5 palettes: zig_jade @ C.2 PR 2, lapis_lazuli_skin @ PR 3 / IRON_SOLES reward, garden_ziggurat_skin @ PR 3b / MARATHON_WALKER reward, sandals_of_gilgamesh @ PR 3c / GLOBE_TROTTER reward, zig_obsidian @ V1X-14 / store-purchasable dark skin); resilient toDomainOrNull maps CosmeticItem.overrideColors from the lookup and drops rows whose stored category no longer parses (#221 — never crashes on a legacy/dead row); SEED_COSMETICS: 7 ZIGGURAT_SKIN rows (incl. the 3 milestone-reward cosmetics — #221 removed the 2 PROJECTILE_EFFECT + 2 ENEMY_SKIN dead rows); ensureSeedData uses a per-cosmeticId filter (content PRs land on already-seeded installs without a data clear, player `isOwned`/`isEquipped` survives upgrades) + a deleteByIds(DEAD_COSMETIC_IDS) purge that cleans the 4 dead rows off already-installed devices
 ```
 
 ## Data Layer — Sensor
@@ -168,7 +168,7 @@ domain/model/MilestoneReward.kt          # Sealed class: Gems, PowerStones, Cosm
 domain/model/DailyMissionType.kt         # 6 daily mission types (walking/battle/upgrade); also declares the inline `enum class MissionCategory { WALKING, BATTLE, UPGRADE }`
 domain/model/BillingProduct.kt           # 5 billing products + PurchaseResult sealed class + public `skuId()` returning `name.lowercase(Locale.ROOT)` (#262 L88: Locale.ROOT pins the wire id locale-independent — default-locale lowercase() corrupted GEM_PACK_MEDIUM's `I`→dotless ı under Turkish; Plan 31 Phase F unblocker, refines ADR-0005 decision #6 to the lowercase wire format Play Console requires) + opt-in Companion for data-layer `BillingProduct.fromSkuIdOrNull(skuId)` reverse lookup (C.5 PR 1)
 domain/model/AdPlacement.kt              # 3 ad placements + AdResult sealed class
-domain/model/CosmeticCategory.kt         # 3 cosmetic categories (ziggurat, projectile, enemy)
+domain/model/CosmeticCategory.kt         # Cosmetic categories — ZIGGURAT_SKIN only (#221 removed the unused PROJECTILE_EFFECT/ENEMY_SKIN values that had no render path)
 domain/model/CosmeticItem.kt             # Cosmetic item domain model (+ optional overrideColors: List<Int>? for renderer override, C.2 PR 1)
 domain/model/UpgradeType.kt           # 24 Workshop upgrade types with configs (R4-03 added RAPID_FIRE in ATTACK)
 domain/model/RapidFireSchedule.kt     # R4-03 helper: per-level (interval, duration, multiplier) interpolation table for the RAPID_FIRE upgrade. L1 60s/5s/2.0× → L10 30s/30s/3.0× (duration matches interval = permanent buff). Centralises math so GameEngine.tickRapidFire and DescribeUpgradeEffect.formatRapidFire read identical numbers.

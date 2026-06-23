@@ -36,4 +36,7 @@ interface CosmeticDao {
 
     @Query("UPDATE cosmetics SET isEquipped = 0 WHERE category = :category")
     suspend fun unequipCategory(category: String)
+
+    @Query("DELETE FROM cosmetics WHERE cosmeticId IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>)
 }

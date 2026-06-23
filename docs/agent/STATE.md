@@ -18,7 +18,7 @@ dependency-verification (#256), clock-tamper (#211), GameEngine decomposition (#
 dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependabot wave, CI/supply-chain
 (#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
 (CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
-#311→#312; #310/#311/#287 given a CI/tooling note). **Supersedes v1.0.10 (vc 26)** · **1275 JVM + 9 instrumented tests**
+#311→#312; #310/#311/#287 given a CI/tooling note). **Supersedes v1.0.10 (vc 26)** · **1277 JVM + 9 instrumented tests**
 green (the per-wave running tally 1110→1254 since v1.0.10 lives in `CHANGELOG.md` + `RUN_LOG.md`; post-v1.0.11
 audit-triage arc: B −1 → 1253, C +3 → 1256, A/D no-app-change) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
@@ -38,20 +38,27 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — #216 NOTIF-1 implemented on branch `feat/216-notification-quiet-hours-daily-cap`; PR open).**
-  Quiet-hours (22:00–08:00 local) + supply-drop daily-cap (3/day) on the reminder & supply-drop notification
-  paths. New pure-domain `domain/notification/NotificationPolicy` (decision logic, JVM-tested);
-  `SmartReminderManager` quiet-hours early-return via `canSendReminder`; `SupplyDropNotificationManager`
-  injects `TimeProvider` + field-caches its prefs (it runs under the #120 credit mutex) + gates push on
-  quiet-hours/cap with a per-day counter; the drop is still generated + claimable (only the push is
-  suppressed). `DataDeletionManager` also wipes the new `supply_drop_notifications` prefs (#247 completeness,
-  caught by the coverage guard). Spec→adversarial-review (3 minor survivors folded) → plan→adversarial-review
-  (0 findings) → TDD implement. **No schema/economy change. +19 JVM → 1275** (`NotificationPolicyTest` 14 +
-  Robolectric `SupplyDropNotificationManagerTest` 5). `[Unreleased]`. **Next (no work in flight):** the audit
-  backlog's **non-batchable items** — A24 anti-cheat rate-limit clock-tamper (large/fragile), battle
-  game-loop perf L46-L51 (fragile), L12 BattleViewModel decomposition (large, #306/ADR-0012),
-  billing-anti-fraud L35/A25/A26/L41 (by-design, no fix); the #34 i18n-externalization push; remaining
-  audit med/low. Also still open: the v1.0.11 **internal→closed** promotion judgment call (gated on the
+- **CURRENT (DONE — #221 FEAT-1 implemented on branch `feat/221-remove-dead-cosmetics`; PR open).** Removed
+  the 4 seeded projectile/enemy-skin cosmetics (`proj_fire`/`proj_lightning`/`enemy_shadow`/`enemy_neon`) +
+  the 2 unused `CosmeticCategory` values (`PROJECTILE_EFFECT`/`ENEMY_SKIN`) that had no render path — closing
+  the audit "live trap". Only `ZIGGURAT_SKIN` remains. Existing-device safety (belt-and-suspenders): new
+  `CosmeticDao.deleteByIds` purge in `ensureSeedData` + resilient `CosmeticRepositoryImpl.toDomainOrNull`
+  that filters rows whose stored String category no longer parses (so `CosmeticCategory.valueOf` can't crash;
+  also covers the `StoreViewModel.init` purge-vs-`observeAll` race). **No schema migration** (data-only
+  delete). Spec→adversarial-review (13→6 minor folded) → plan→adversarial-review (5 findings → plan
+  restructured to a behavior-preserving refactor + one atomic removal commit) → TDD. **No economy change.
+  +2 JVM → 1277.** `[Unreleased]`. **Next (no work in flight):** the audit backlog's **non-batchable
+  items** — A24 anti-cheat rate-limit clock-tamper (large/fragile), battle game-loop perf L46-L51 (fragile),
+  L12 BattleViewModel decomposition (large, #306/ADR-0012), billing-anti-fraud L35/A25/A26/L41 (by-design,
+  no fix); the #34 i18n-externalization push; remaining audit med/low.
+- **Previous objective (DONE — MERGED PR #339, `2f1c090`; `[Unreleased]`).** **#216 NOTIF-1** — quiet-hours
+  (22:00–08:00 local) + supply-drop daily-cap (3/day) on the reminder & supply-drop notification paths. New
+  pure-domain `domain/notification/NotificationPolicy` (JVM-tested); `SmartReminderManager` quiet-hours
+  early-return via `canSendReminder`; `SupplyDropNotificationManager` injects `TimeProvider` + field-caches
+  its prefs (runs under the #120 credit mutex) + gates push on quiet-hours/cap with a per-day counter; the
+  drop is still generated + claimable. `DataDeletionManager` also wipes the new `supply_drop_notifications`
+  prefs (#247). +19 JVM. Also this session: **#164 Bundle E** closed (verify-and-close — shipped v1.0.8,
+  never closed). Also still open: the v1.0.11 **internal→closed** promotion judgment call (gated on the
   **manual Play Console Data-Safety action #192** — `docs/release/data-safety-form.md`, a human step).
 - **Previous objective (DONE — audit-triage batches A–D all SHIPPED to `main`).** A verification
   `Workflow` code-grounded ~125 unverified #262/#128 tracker findings vs HEAD `617babd` → **83 LIVE / 23

@@ -141,9 +141,7 @@
     <ID>MaxLineLength:CardDao.kt:CardDao$"UPDATE card_inventory SET copyCount = copyCount - :amount, level = level + 1 WHERE id = :id AND copyCount &gt;= :amount"</ID>
     <ID>MaxLineLength:CardsScreen.kt:message = "Open a pack above to start your collection. Equip up to 3 cards for per-round bonuses in battle."</ID>
     <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$description = "Bronze ziggurat in honour of Gilgamesh, whose sandals walked the edges of the world"</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$"C.2 PR 3b/3c ships 11 seed rows (7 ziggurat incl. zig_jade + lapis_lazuli_skin + garden_ziggurat_skin + sandals_of_gilgamesh, 2 projectile, 2 enemy)"</ID>
     <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$"ZIGGURAT_COLOR_LOOKUP contract: exactly 5 colors, one per ziggurat layer (matches ZigguratEntity.DEFAULT_COLORS)"</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$"after ensureSeedData: zig_jade + lapis_lazuli_skin + garden_ziggurat_skin + sandals_of_gilgamesh added, legacy 7 preserved"</ID>
     <ID>MaxLineLength:DailyStepManager.kt:DailyStepManager$// writeTimeBaseline uses SharedPreferences.apply() (async, non-throwing) — it cannot abort the checkAndAward below.</ID>
     <ID>MaxLineLength:GameEngine.kt:GameEngine$/** Engine-internal display strings (V1X-13, ADR-0014). Set by [GameSurfaceView]; null in pure-JVM tests, which fall back to literals. */</ID>
     <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$fun</ID>

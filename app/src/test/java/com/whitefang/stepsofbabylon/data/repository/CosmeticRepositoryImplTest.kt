@@ -169,20 +169,17 @@ class CosmeticRepositoryImplTest {
     @Test
     fun `C2PR2 - other seeded ziggurat cosmetics have null overrideColors pending content PRs`() =
         runTest {
-            // Regression guard: only the 4 palette-shipping cosmetics (C.2 PR 2 zig_jade,
-            // PR 3 lapis_lazuli_skin, PR 3b garden_ziggurat_skin, PR 3c sandals_of_gilgamesh)
-            // ship palettes. Remaining seeded ZIGGURAT_SKIN rows (zig_obsidian, zig_crystal,
-            // zig_golden) must continue to return null overrideColors so the renderer falls
-            // through to the biome default (and the StoreScreen keeps them under the R2-11
-            // "Coming Soon" guard). The other category seeds (PROJECTILE_EFFECT, ENEMY_SKIN)
-            // are off the ZIGGURAT_COLOR_LOOKUP entirely \u2014 also null.
+            // Regression guard: zig_jade, lapis_lazuli_skin, garden_ziggurat_skin, sandals_of_gilgamesh
+            // and zig_obsidian (V1X-14) ship palettes via ZIGGURAT_COLOR_LOOKUP. The remaining seeded
+            // ZIGGURAT_SKIN rows (zig_crystal, zig_golden) must continue to return null overrideColors
+            // so the renderer falls through to the biome default (and the StoreScreen keeps them under
+            // the "Coming Soon" guard). (#221 removed the dead PROJECTILE_EFFECT/ENEMY_SKIN rows.)
             val dao = FakeCosmeticDao()
             val repo = CosmeticRepositoryImpl(dao)
             repo.ensureSeedData()
 
             val allItems = repo.observeAll().first()
-            val otherIds =
-                listOf("zig_crystal", "zig_golden", "proj_fire", "proj_lightning", "enemy_shadow", "enemy_neon")
+            val otherIds = listOf("zig_crystal", "zig_golden")
 
             otherIds.forEach { id ->
                 val item = allItems.single { it.cosmeticId == id }
@@ -239,9 +236,9 @@ class CosmeticRepositoryImplTest {
 
             assertEquals(countAfterFirst, countAfterSecond, "repeat ensureSeedData must not duplicate rows")
             assertEquals(
-                11,
+                7,
                 countAfterFirst,
-                "C.2 PR 3b/3c ships 11 seed rows (7 ziggurat incl. zig_jade + lapis_lazuli_skin + garden_ziggurat_skin + sandals_of_gilgamesh, 2 projectile, 2 enemy)",
+                "7 ziggurat seed rows after #221 removed the projectile/enemy cosmetics",
             )
         }
 
@@ -281,45 +278,17 @@ class CosmeticRepositoryImplTest {
                         description = "Pure gold plating",
                         priceGems = 300,
                     ),
-                    CosmeticEntity(
-                        cosmeticId = "proj_fire",
-                        category = "PROJECTILE_EFFECT",
-                        name = "Fire Trails",
-                        description = "Blazing projectile trails",
-                        priceGems = 150,
-                    ),
-                    CosmeticEntity(
-                        cosmeticId = "proj_lightning",
-                        category = "PROJECTILE_EFFECT",
-                        name = "Lightning Arcs",
-                        description = "Electric projectile arcs",
-                        priceGems = 150,
-                    ),
-                    CosmeticEntity(
-                        cosmeticId = "enemy_shadow",
-                        category = "ENEMY_SKIN",
-                        name = "Shadow Enemies",
-                        description = "Dark silhouette enemies",
-                        priceGems = 100,
-                    ),
-                    CosmeticEntity(
-                        cosmeticId = "enemy_neon",
-                        category = "ENEMY_SKIN",
-                        name = "Neon Enemies",
-                        description = "Glowing neon outlines",
-                        priceGems = 100,
-                    ),
                 )
             dao.upsertAll(legacySeed)
-            assertEquals(7, dao.count(), "baseline: legacy catalogue has 7 rows")
+            assertEquals(3, dao.count(), "baseline: legacy catalogue has 3 ziggurat rows")
 
             val repo = CosmeticRepositoryImpl(dao)
             repo.ensureSeedData()
 
             assertEquals(
-                11,
+                7,
                 dao.count(),
-                "after ensureSeedData: zig_jade + lapis_lazuli_skin + garden_ziggurat_skin + sandals_of_gilgamesh added, legacy 7 preserved",
+                "after ensureSeedData: 4 milestone ziggurats added, legacy 3 ziggurat preserved",
             )
             val items = repo.observeAll().first()
             val jade = items.single { it.cosmeticId == "zig_jade" }
@@ -375,8 +344,8 @@ class CosmeticRepositoryImplTest {
             val repo = CosmeticRepositoryImpl(dao)
             repo.ensureSeedData()
 
-            // All 11 seed rows now present (10 new + the pre-existing zig_jade preserved).
-            assertEquals(11, dao.count())
+            // All 7 seed rows now present (6 new + the pre-existing zig_jade preserved).
+            assertEquals(7, dao.count())
             val jade = repo.observeAll().first().single { it.cosmeticId == "zig_jade" }
             assertTrue(jade.isOwned, "pre-existing player ownership must survive ensureSeedData")
             assertTrue(jade.isEquipped, "pre-existing equipped state must survive ensureSeedData")
@@ -405,6 +374,55 @@ class CosmeticRepositoryImplTest {
                     0xFF7A6F4D.toInt(),
                 ),
                 obsidian.overrideColors,
+            )
+        }
+
+    @Test
+    fun `R221 - a row whose category does not parse is filtered from observeAll, not crashed`() =
+        runTest {
+            val dao = FakeCosmeticDao()
+            // A row persisted with a category string that is NOT a CosmeticCategory value (simulates a
+            // legacy/dead row on an upgraded device). The resilient mapping must drop it rather than
+            // throw IllegalArgumentException from CosmeticCategory.valueOf.
+            dao.upsert(
+                CosmeticEntity(
+                    cosmeticId = "legacy_dead",
+                    category = "LEGACY_UNKNOWN_CATEGORY",
+                    name = "Legacy",
+                    description = "A row from before #221",
+                    priceGems = 100,
+                ),
+            )
+            val repo = CosmeticRepositoryImpl(dao)
+
+            val items = repo.observeAll().first()
+            assertTrue(
+                items.none { it.cosmeticId == "legacy_dead" },
+                "a row whose category no longer parses must be filtered out of the domain list, not crash",
+            )
+        }
+
+    @Test
+    fun `R221 - ensureSeedData purges known dead cosmetic ids from the DB`() =
+        runTest {
+            val dao = FakeCosmeticDao()
+            // Simulate an already-installed device that still has a dead projectile cosmetic row.
+            dao.upsert(
+                CosmeticEntity(
+                    cosmeticId = "proj_fire",
+                    category = "PROJECTILE_EFFECT",
+                    name = "Fire Trails",
+                    description = "Blazing projectile trails",
+                    priceGems = 150,
+                ),
+            )
+            val repo = CosmeticRepositoryImpl(dao)
+
+            repo.ensureSeedData()
+
+            assertTrue(
+                dao.observeAll().first().none { it.cosmeticId == "proj_fire" },
+                "ensureSeedData must purge known dead cosmetic ids from the DB",
             )
         }
 }
