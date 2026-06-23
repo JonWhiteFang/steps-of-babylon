@@ -127,7 +127,19 @@ Configure under **Settings → Secrets and variables → Actions** (and the `rel
 | `ADMOB_APP_ID` + `ADMOB_AD_UNIT_*` | release | optional; absent ⇒ test-ID fallback |
 | `PLAY_LICENSE_KEY` | release | **required** — Base64 Play "Licensing" RSA public key for #124 purchase-signature verification. Written to `local.properties` as `play.licenseKey`. **NOT optional**: unlike AdMob (test-ID fallback), a blank key makes verification fail-open, so the release lane hard-fails (the `Write Play license key` step exits 1) and a Gradle guard fails `bundleRelease`/`assembleRelease`. Source: Play Console → Monetise → Monetisation setup → "Licensing" → base64-encoded RSA public key. **Paste the WHOLE key** — the blank-only guard does not validate key shape, so a truncated/placeholder value (e.g. `TODO`) builds fine but fails *every* purchase closed (a monetisation outage caught in internal testing, not a fraud hole). |
 
-CI/instrumented lanes need **no** secrets (the `play.licenseKey` guard is scoped to `bundleRelease`/`assembleRelease`, so the PR gate's `assembleDebug` is unaffected).
+CI/instrumented lanes need **no** secrets. The `play.licenseKey` guard matches any release-artifact task —
+the regex `^(bundle|assemble|package).*Release$` (excluding the `Benchmark`/`NonMinified` baseline-profile
+variants), not just `bundleRelease`/`assembleRelease` — so the PR gate's `assembleDebug` is unaffected. **#262
+L71:** the PR gate also runs `lintRelease` (release-variant lint), which does NOT match that regex (it is a
+`lint` task, not an artifact task), so it stays secret-free and does not trip the guard.
+
+**#262 release-lane hardening (D1):** the release lane (`v*` tag) now also: serializes overlapping tags
+(`concurrency: release-*`, no cancel) [L74]; fails fast if the tag ≠ committed `versionName` [L68]; asserts
+the AAB's signer-cert SHA-256 matches the upload keystore, not just `jarsigner -verify` integrity [L73]; and
+removes the materialized keystore/keystore.properties/local.properties at job end (`if: always()`) [L39]. The
+ktlint gate moved to its own parallel CI job (no Gradle/SDK → fails fast); `dependency-submission.yml`'s
+`contents: write` is the action's required scope, documented in-file [L75]. NDK pin [L69] deferred (needs a
+runner-image-confirmed version). Build-perf: `org.gradle.parallel`/`caching` enabled [L50].
 
 ### Task 6: Branch protection & required checks
 

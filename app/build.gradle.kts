@@ -124,6 +124,12 @@ android {
             // stripped from the on-device APK, so end-user install size is unchanged.
             // FULL includes function names + line numbers; SYMBOL_TABLE drops line numbers
             // for a smaller upload. FULL is fine for v1 — the upload-side bloat is small.
+            // #262 L69 (DEFERRED): no explicit `ndkVersion` is pinned — symbol generation uses
+            // whatever NDK the release runner image (android-actions/setup-android) ships, so the
+            // build is not fully reproducible across runner-image updates. Pinning needs a version
+            // confirmed BOTH present on the runner image AND AGP-9.2.1-compatible; pinning a wrong
+            // one would break the (tag-only) release build. Pin in a follow-up after a CI run prints
+            // the runner's available NDK(s). Tracked: #262 L69.
             ndk {
                 debugSymbolLevel = "FULL"
             }
