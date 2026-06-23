@@ -31,8 +31,8 @@ import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.formatCount
 import com.whitefang.stepsofbabylon.presentation.ui.formatRewardParts
-import java.text.NumberFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +59,6 @@ fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
         LoadingBox()
         return
     }
-    val fmt = NumberFormat.getNumberInstance()
     val snackbarHostState = remember { SnackbarHostState() }
     var celebration by remember { mutableStateOf<ClaimCelebrationEvent?>(null) }
 
@@ -94,7 +93,7 @@ fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
 
                 // Daily missions
                 items(state.missions, key = { it.id }) { mission ->
-                    MissionCard(mission, onClaim = { viewModel.claimMission(mission.id) }, fmt = fmt)
+                    MissionCard(mission, onClaim = { viewModel.claimMission(mission.id) })
                 }
 
                 // Milestones header
@@ -105,7 +104,7 @@ fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
 
                 // Milestones
                 items(state.milestones, key = { it.milestone.name }) { ms ->
-                    MilestoneCard(ms, onClaim = { viewModel.claimMilestone(ms.milestone) }, fmt = fmt)
+                    MilestoneCard(ms, onClaim = { viewModel.claimMilestone(ms.milestone) })
                 }
             }
         }
@@ -117,7 +116,6 @@ fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
 private fun MissionCard(
     mission: MissionDisplayInfo,
     onClaim: () -> Unit,
-    fmt: NumberFormat,
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
@@ -147,7 +145,7 @@ private fun MissionCard(
             Spacer(Modifier.height(4.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
-                    "${fmt.format(mission.progress)} / ${fmt.format(mission.target)}",
+                    "${formatCount(mission.progress.toLong())} / ${formatCount(mission.target.toLong())}",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -186,7 +184,6 @@ private fun MissionCard(
 private fun MilestoneCard(
     ms: MilestoneDisplayInfo,
     onClaim: () -> Unit,
-    fmt: NumberFormat,
 ) {
     val milestone = ms.milestone
     val progress = (ms.totalStepsEarned.toFloat() / milestone.requiredSteps).coerceIn(0f, 1f)
@@ -215,7 +212,7 @@ private fun MilestoneCard(
                 }
             }
             Text(
-                "${fmt.format(milestone.requiredSteps)} steps",
+                "${formatCount(milestone.requiredSteps)} steps",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -247,7 +244,7 @@ private fun MilestoneCard(
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(
-                "${fmt.format(ms.totalStepsEarned)} / ${fmt.format(milestone.requiredSteps)}",
+                "${formatCount(ms.totalStepsEarned)} / ${formatCount(milestone.requiredSteps)}",
                 style = MaterialTheme.typography.bodySmall,
             )
             if (ms.isAchieved && !ms.isClaimed) {

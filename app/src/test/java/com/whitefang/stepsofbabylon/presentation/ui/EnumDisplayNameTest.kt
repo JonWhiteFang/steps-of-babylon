@@ -2,6 +2,7 @@ package com.whitefang.stepsofbabylon.presentation.ui
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.util.Locale
 
 /**
  * Shared UPPER_SNAKE_CASE → "Title Case" formatter extracted from the three identical private
@@ -24,7 +25,7 @@ class EnumDisplayNameTest {
     fun `matches the legacy formatName behaviour verbatim`() {
         // The exact transform the three private copies used: split('_'), lowercase each, capitalise.
         val legacy = { name: String ->
-            name.split("_").joinToString(" ") { it.lowercase().replaceFirstChar { c -> c.uppercase() } }
+            name.split("_").joinToString(" ") { it.lowercase(Locale.ROOT).replaceFirstChar { c -> c.uppercase() } }
         }
         for (sample in listOf("IRON_SKIN", "CASH_GRAB", "STEP_SURGE", "COMMON", "AUTO_UPGRADE_AI")) {
             assertEquals(legacy(sample), sample.toDisplayName(), "drift from legacy formatName for $sample")

@@ -16,7 +16,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
-import java.text.NumberFormat
+import com.whitefang.stepsofbabylon.presentation.ui.formatCount
+import java.util.Locale
 
 @Composable
 fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
@@ -29,7 +30,6 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
         LoadingBox()
         return
     }
-    val fmt = NumberFormat.getNumberInstance()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -66,15 +66,15 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
                 Column(Modifier.padding(16.dp)) {
                     Text("Today", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
-                    StatRow("Steps", fmt.format(state.todaySteps))
+                    StatRow("Steps", formatCount(state.todaySteps))
                     if (state.todayStepEquivalents > 0) {
-                        StatRow("Activity Step-Equivalents", fmt.format(state.todayStepEquivalents))
+                        StatRow("Activity Step-Equivalents", formatCount(state.todayStepEquivalents))
                     }
                     state.todayActivityMinutes.forEach { (activity, minutes) ->
                         StatRow(
                             activity
                                 .replace("_", " ")
-                                .lowercase()
+                                .lowercase(Locale.ROOT)
                                 .replaceFirstChar { it.uppercase() },
                             "$minutes min",
                         )
@@ -92,9 +92,9 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
                     state.bestWavePerTier.toSortedMap().forEach { (tier, wave) ->
                         StatRow("Tier $tier Best Wave", "$wave")
                     }
-                    StatRow("Rounds Played", fmt.format(state.totalRoundsPlayed))
-                    StatRow("Enemies Killed", fmt.format(state.totalEnemiesKilled))
-                    StatRow("Total Cash Earned", fmt.format(state.totalCashEarned))
+                    StatRow("Rounds Played", formatCount(state.totalRoundsPlayed))
+                    StatRow("Enemies Killed", formatCount(state.totalEnemiesKilled))
+                    StatRow("Total Cash Earned", formatCount(state.totalCashEarned))
                 }
             }
         }
@@ -105,20 +105,20 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
                 Column(Modifier.padding(16.dp)) {
                     Text("All-Time Stats", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
-                    StatRow("Lifetime Steps", fmt.format(state.allTimeSteps))
+                    StatRow("Lifetime Steps", formatCount(state.allTimeSteps))
                     StatRow("Days Active", "${state.daysActive}")
-                    StatRow("Avg Daily Steps", fmt.format(state.averageDailySteps))
+                    StatRow("Avg Daily Steps", formatCount(state.averageDailySteps))
                     StatRow("Workshop Levels", "${state.totalWorkshopLevels}")
                     Spacer(Modifier.height(8.dp))
                     Text("Gems", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium)
-                    StatRow("Current", fmt.format(state.currentGems))
-                    StatRow("Earned", fmt.format(state.totalGemsEarned))
-                    StatRow("Spent", fmt.format(state.totalGemsSpent))
+                    StatRow("Current", formatCount(state.currentGems))
+                    StatRow("Earned", formatCount(state.totalGemsEarned))
+                    StatRow("Spent", formatCount(state.totalGemsSpent))
                     Spacer(Modifier.height(8.dp))
                     Text("Power Stones", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium)
-                    StatRow("Current", fmt.format(state.currentPowerStones))
-                    StatRow("Earned", fmt.format(state.totalPowerStonesEarned))
-                    StatRow("Spent", fmt.format(state.totalPowerStonesSpent))
+                    StatRow("Current", formatCount(state.currentPowerStones))
+                    StatRow("Earned", formatCount(state.totalPowerStonesEarned))
+                    StatRow("Spent", formatCount(state.totalPowerStonesSpent))
                 }
             }
         }

@@ -10007,3 +10007,47 @@ After the fix, tests pass on first try and assembleDebug is clean.
   ADR-0010). Plan: `docs/superpowers/plans/2026-06-23-batch-b-dead-code-removal.md`.
 - **Next:** open the Batch B PR (branch `chore/batch-b-dead-code`); check off L15/L16/L17/L13/L18 in #262.
   Then batches C (i18n) / D (CI) + the non-batchable items.
+- **SHIPPED:** PR **#334** both CI lanes green (build-and-test 7m24s, connected 5m5s); squash-merged
+  **`367fe6f`**; branch deleted; tracker #262 annotated.
+
+## 2026-06-23 — Audit triage Batch C (i18n locale-safety, #262 L88/L89/L87/L91)
+
+- **Goal:** third batch off the triage. Scoped (developer, via AskUserQuestion) to **locale-safety only**
+  (L88/L89/L87/L91); deferred L23/L2-8-27 (string externalization) + L90 (RTL) + L24 (TimeProvider) to a
+  dedicated #34 effort.
+- **Re-grounded at HEAD `367fe6f`.** **L88 turned out to be a REAL reachable bug**, not the
+  cosmetic/latent risk the triage's parenthetical implied: `BillingProduct.GEM_PACK_MEDIUM` contains `I`, so
+  default-locale `name.lowercase()` under Turkish → `gem_pack_medıum` (dotless ı), a wire `productId` that
+  mismatches Play Console's `gem_pack_medium` → breaks that purchase + receipt reconciliation. (Caught by
+  checking the actual enum values, not trusting the finding text.)
+- **L87 direction (developer):** one shared helper pinned to `Locale.US` (matches the existing
+  `formatCurrency`), deterministic grouping, no per-locale variance.
+- **Adversarial review gate** (3-dim `Workflow`: grounding-completeness / behavior-equivalence /
+  risk-discipline, each verify→skeptic): **6 findings, all CONFIRMED, 0 refuted.** behavior-equivalence
+  dimension EMPTY (en/US byte-identical confirmed). Two MAJORs materially fixed the plan: (1) the L89
+  `.uppercase()` calls are `Char.uppercase()` (NO Locale overload) — the original "pin both" instruction
+  would NOT compile; corrected to pin only `String.lowercase()`. (2) the L87 sweep missed default-locale
+  `%.Nf` `String.format` sites — `LabsScreen:224` (review) + `WorkshopViewModel:198-211` ×14 (my own
+  `String.format` sweep, found before the review independently flagged Labs) → added as edit 4b (L87b).
+  Plus: L91 reversed to leave-as-is (lowercase correct in the verb phrase); `EnumDisplayNameTest` legacy
+  lambda mirrored to `Locale.ROOT`; source-files.md substring + grep-proof nits.
+- **TDD:** wrote `BillingProductTest` (Turkish-locale guard + Latin invariant, 2 tests) + `NumberFormattingTest`
+  (German-default grouping guard, 1 test) FIRST, then applied fixes.
+- **Edits:** `BillingProduct.skuId()` → `lowercase(Locale.ROOT)`; 3 display-case sites → `lowercase(Locale.ROOT)`;
+  new `presentation/ui/NumberFormatting.kt` `formatCount(Long)` (Compose-free, `Locale.US`) + migrated
+  HomeScreen/CurrencyDashboardScreen/StatsScreen/MissionsScreen/StepWidgetProvider/CurrencyDisplay;
+  `WorkshopViewModel` (local `fmt(pattern, Number)` helper) + `LabsScreen:224` → `String.format(Locale.ROOT, …)`.
+- **Build hiccup fixed:** first build failed on 2 type mismatches my narrower signatures introduced —
+  `formatCount(Long)` got `Int` (MissionsScreen `mission.progress/target`) → `.toLong()`; the Workshop local
+  `fmt(value: Double)` got `Float` (`range`/`knockbackForce` are Float) → widened to `Number` (matches the
+  old `String.format`/`.format` which took any `Number`). Rebuilt green.
+- **Verify:** `testDebugUnitTest assembleDebug` BUILD SUCCESSFUL — **1253 → 1256 JVM** (+3: the plan said +2,
+  but `BillingProductTest` has 2 methods), 0 failures; new test classes pass. `:app:detekt` exit 0;
+  `./lint-kotlin.sh` exit 0 **after regenerating `config/ktlint/baseline.xml`** (delete-then-create — my
+  line removals drifted pre-existing Bucket-B `@Composable` function-naming entries off their baselined
+  `file:line`; regen kept the rule-type counts identical at 157, no new violation class). `app/schemas/`
+  unchanged. en/US output byte-identical.
+- **No ADR** (locale hardening on an established `Locale.ROOT` pattern the codebase already used). Plan:
+  `docs/superpowers/plans/2026-06-23-batch-c-locale-safety.md`.
+- **Next:** open the Batch C PR (branch `fix/batch-c-locale-safety`); check off L88/L89/L87/L91 in #262.
+  Then batch D (CI) + the non-batchable items.

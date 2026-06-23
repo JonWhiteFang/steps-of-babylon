@@ -4,6 +4,34 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Fix — Batch C: i18n locale-safety (one real bug + consistency)
+
+**Locale-correctness — near-zero behavior change on en/US devices; fixes one real reachable bug. 1253 →
+1256 JVM tests** (+3). Third batch off the audit-tracker triage; closes #262 **L88, L89, L87, L91**.
+
+- **L88 (real bug):** `BillingProduct.skuId()` used default-locale `name.lowercase()`. `GEM_PACK_MEDIUM`
+  contains `I`, so under a Turkish/Azeri locale it lowercased to `gem_pack_medıum` (dotless ı) — a wire
+  `productId` that does NOT match the Play Console product `gem_pack_medium`, **breaking that gem-pack
+  purchase and its receipt reconciliation on Turkish-locale devices.** Fixed with `lowercase(Locale.ROOT)`
+  + a Turkish-locale regression test (`BillingProductTest`).
+- **L89:** three display-side `String.lowercase()` case conversions (`EnumDisplayName`,
+  `BiomeTransitionOverlay`, `StatsScreen`) pinned to `Locale.ROOT`. (The adjacent `Char.uppercase()` calls
+  are locale-independent — no Locale overload exists — and were left unchanged.)
+- **L87:** consolidated the three number-formatting mechanisms onto a single Compose-free
+  `presentation/ui/NumberFormatting.kt` `formatCount(Long)` helper pinned to `Locale.US` (deterministic
+  grouping); migrated `HomeScreen`, `CurrencyDashboardScreen`, `StatsScreen`, `MissionsScreen`,
+  `StepWidgetProvider`, and `CurrencyDisplay.formatCurrency` (now delegates). **L87b** (found during review):
+  also pinned `Locale.ROOT` on the default-locale `%.Nf` decimal formats in `WorkshopViewModel`
+  (upgrade-stat labels) + `LabsScreen` (`%.1fh`), matching the pattern the codebase's other `String.format`
+  sites already used.
+- **L91:** no change — the lowercase "steps" in `biome_steps_walked` ("%1$d steps walked") is grammatically
+  correct in that verb phrase (review confirmed the cited "Steps" precedents are noun/label contexts).
+
+No schema change; no economy/engine-formula change. en/US output is byte-identical (the fixes only affect
+non-English-locale correctness + consolidate formatting). Plan + adversarial review (6 findings, all
+CONFIRMED, 0 refuted; 2 majors caught: the L89 `Char.uppercase()` non-compile + the missed `%.Nf` sites):
+`docs/superpowers/plans/2026-06-23-batch-c-locale-safety.md`.
+
 ### Chore — Batch B: dead-code removal (no behavior change)
 
 **Removal of confirmed dead code — no behavior change, no schema change (`app/schemas` byte-identical).

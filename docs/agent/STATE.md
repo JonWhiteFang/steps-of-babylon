@@ -15,7 +15,7 @@ dependency-verification (#256), clock-tamper (#211), GameEngine decomposition (#
 dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependabot wave, CI/supply-chain
 (#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
 (CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
-#311→#312; #310/#311/#287 given a CI/tooling note). **Supersedes v1.0.10 (vc 26)** · **1253 JVM + 9 instrumented tests**
+#311→#312; #310/#311/#287 given a CI/tooling note). **Supersedes v1.0.10 (vc 26)** · **1256 JVM + 9 instrumented tests**
 green (the per-wave running tally 1110→1254 since v1.0.10 lives in `CHANGELOG.md` + `RUN_LOG.md`; −1 from Batch B dead-code removal → 1253) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
@@ -54,20 +54,26 @@ the med/low backlog (#262) remain.
   (#234). **Manual Play Console Data-Safety action (#192) is still NOT done by this tag** — separate human step
   (`docs/release/data-safety-form.md`). **Next:** med/low backlog (#262/#128; i18n #34; the larger #233
   Simulation-hoist, ADR-0012) + the internal→closed promotion judgment call (Data-Safety #192 prerequisite).
-- **CURRENT (in flight — branch `chore/batch-b-dead-code`; `[Unreleased]`).** **Audit-finding triage —
-  Batch B (dead-code removal).** Second batch off the triage (the triage `Workflow` code-grounded ~125
-  unverified tracker findings #262/#128 + standalone vs HEAD `617babd` → **83 LIVE / 23 FIXED / 6 STALE /
-  4 DUP / 1 POSITIVE**; LIVE survivors clustered into ~7 batches A–G). Batch B = pure dead-code REMOVAL,
-  **zero behavior change, no schema change**; closes #262 **L15/L16/L17/L13/L18**. Removed:
-  `GameEngine`/`UWController.resetUWCooldowns` (zero callers), the write-only `GameEngine.cooldownText`
-  field, `GameLoopThread.fps` + bookkeeping, and the dead Card Dust **API** (repo methods + orphaned DAOs +
-  fake override + 1 test) — the `cardDust` **column/domain field kept** (schema-bound). **L26
-  `fortuneMultiplier` rename DEFERRED** (cosmetic, fragile-zone + domain-math + reflection test).
-  Spec→plan→**adversarial review gate** (3-dim, **0 confirmed findings** — grounding+completeness empty,
-  2 risk nits refuted). **1254 → 1253 JVM, 0 failures** (−1: the one removed-method test); `assembleDebug` +
-  detekt + ktlint clean; `app/schemas` unchanged. **Next:** open the Batch B PR; then batches C (i18n) / D
-  (CI) + the non-batchable fragile/large items (battle perf, A24 rate-limit clock, L12 BattleViewModel
-  decomposition, billing-anti-fraud-by-design). Triage verdicts cached in this session.
+- **CURRENT (in flight — branch `fix/batch-c-locale-safety`; `[Unreleased]`).** **Audit-finding triage —
+  Batch C (i18n locale-safety).** Third batch off the triage (which code-grounded ~125 unverified #262/#128
+  findings vs HEAD `617babd` → **83 LIVE**; clustered into ~7 batches A–G). Batch C = locale-correctness;
+  closes #262 **L88/L89/L87/L91**. **L88 is a REAL bug** (not the cosmetic risk the triage implied):
+  `BillingProduct.skuId()` default-locale `lowercase()` corrupted `GEM_PACK_MEDIUM`'s `I`→dotless ı under
+  Turkish → wrong wire SKU → broke that purchase + reconciliation. Fixed `lowercase(Locale.ROOT)` + Turkish
+  regression test. Also: 3 display-case sites `Locale.ROOT` (L89); a single Compose-free `formatCount`
+  `Locale.US` helper consolidating the 3 number-format mechanisms (L87) + `%.Nf` `Locale.ROOT` pins on
+  `WorkshopViewModel`/`LabsScreen` (L87b, review-found); L91 = no-op (lowercase correct in the verb phrase).
+  Spec→plan→**adversarial review gate** (3-dim, **6 findings all CONFIRMED, 0 refuted**; 2 MAJORs caught —
+  the L89 `Char.uppercase()` non-compile + the missed `%.Nf` sites). **1253 → 1256 JVM, 0 failures**;
+  `assembleDebug` + detekt + ktlint clean (ktlint baseline regen'd for line-drift); `app/schemas` unchanged;
+  en/US output byte-identical. **Next:** open the Batch C PR; then batch D (CI) + the non-batchable
+  fragile/large items (battle perf, A24 rate-limit clock, L12 BattleViewModel decomposition,
+  billing-anti-fraud-by-design). Triage verdicts cached in this session.
+- **Previous objective (DONE — MERGED PR #334, squash `367fe6f`; `[Unreleased]`).** **Batch B
+  (dead-code removal).** Pure removal, **zero behavior change, no schema change**; closed #262
+  L15/L16/L17/L13/L18 (`resetUWCooldowns`, `cooldownText`, `GameLoopThread.fps`, dead Card-Dust API —
+  column kept). L26 `fortuneMultiplier` rename DEFERRED. Review gate: 0 confirmed findings. 1254 → 1253 JVM.
+  Both CI lanes green.
 - **Previous objective (DONE — MERGED PR #333, squash `9e186bc`; `[Unreleased]`).** **Batch A
   (docs/content-drift).** Docs-only + two build-file justification strings, **zero production-code change**;
   closed #262 L79/L81/L82/L83/L84/L85/L86/L93/L94/L95 (+ L70-residue + L78 code-side). Adversarial review
