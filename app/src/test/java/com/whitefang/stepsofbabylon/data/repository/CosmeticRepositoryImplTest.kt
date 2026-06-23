@@ -407,4 +407,29 @@ class CosmeticRepositoryImplTest {
                 obsidian.overrideColors,
             )
         }
+
+    @Test
+    fun `R221 - a row whose category does not parse is filtered from observeAll, not crashed`() =
+        runTest {
+            val dao = FakeCosmeticDao()
+            // A row persisted with a category string that is NOT a CosmeticCategory value (simulates a
+            // legacy/dead row on an upgraded device). The resilient mapping must drop it rather than
+            // throw IllegalArgumentException from CosmeticCategory.valueOf.
+            dao.upsert(
+                CosmeticEntity(
+                    cosmeticId = "legacy_dead",
+                    category = "LEGACY_UNKNOWN_CATEGORY",
+                    name = "Legacy",
+                    description = "A row from before #221",
+                    priceGems = 100,
+                ),
+            )
+            val repo = CosmeticRepositoryImpl(dao)
+
+            val items = repo.observeAll().first()
+            assertTrue(
+                items.none { it.cosmeticId == "legacy_dead" },
+                "a row whose category no longer parses must be filtered out of the domain list, not crash",
+            )
+        }
 }

@@ -16,15 +16,13 @@ class CosmeticRepositoryImpl
         private val dao: CosmeticDao,
     ) : CosmeticRepository {
         override fun observeAll(): Flow<List<CosmeticItem>> =
-            dao.observeAll().map { list ->
-                list.map { it.toDomain() }
-            }
+            dao.observeAll().map { list -> list.mapNotNull { it.toDomainOrNull() } }
 
         override fun observeOwned(): Flow<List<CosmeticItem>> =
-            dao.observeOwned().map { list -> list.map { it.toDomain() } }
+            dao.observeOwned().map { list -> list.mapNotNull { it.toDomainOrNull() } }
 
         override fun observeEquipped(): Flow<List<CosmeticItem>> =
-            dao.observeEquipped().map { list -> list.map { it.toDomain() } }
+            dao.observeEquipped().map { list -> list.mapNotNull { it.toDomainOrNull() } }
 
         override suspend fun purchase(cosmeticId: String) = dao.markOwned(cosmeticId)
 
@@ -69,10 +67,16 @@ class CosmeticRepositoryImpl
             return dao.observeAll().first().any { it.cosmeticId == cosmeticId }
         }
 
-        private fun CosmeticEntity.toDomain() =
-            CosmeticItem(
+        // Resilient mapping (#221): a row whose stored `category` is not a CosmeticCategory value
+        // (a legacy/dead row persisted before #221) maps to null and is filtered out, rather than
+        // throwing IllegalArgumentException from valueOf. Belt-and-suspenders with the ensureSeedData
+        // purge: this also covers the window where observeAll() emits before the purge commits
+        // (StoreViewModel.init runs ensureSeedData and observeAll in separate coroutines).
+        private fun CosmeticEntity.toDomainOrNull(): CosmeticItem? {
+            val cat = CosmeticCategory.entries.find { it.name == category } ?: return null
+            return CosmeticItem(
                 cosmeticId = cosmeticId,
-                category = CosmeticCategory.valueOf(category),
+                category = cat,
                 name = name,
                 description = description,
                 priceGems = priceGems,
@@ -80,6 +84,7 @@ class CosmeticRepositoryImpl
                 isEquipped = isEquipped,
                 overrideColors = ZIGGURAT_COLOR_LOOKUP[cosmeticId],
             )
+        }
 
         companion object {
             /**
