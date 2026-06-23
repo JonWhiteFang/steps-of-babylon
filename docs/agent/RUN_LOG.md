@@ -10248,3 +10248,29 @@ After the fix, tests pass on first try and assembleDebug is clean.
   audit items — #217 (service tests, test-only), A24/L12 (large/fragile), the #34 i18n-externalization push,
   or the remaining #128/#262 lows. Open issues: 16 (the V1X roadmap epics #21–#36 + #217/#306 + the #128/#262
   trackers).
+
+## 2026-06-23 — Release v1.0.12 (versionCode 28) — collateral PR (release in flight)
+
+- **Goal:** cut the **v1.0.12 / versionCode 28** release to Play **internal** via the `/release` skill —
+  promote the post-v1.0.11 body already on `main` (audit-triage batches A–D + #216 + #221 + #164 closed).
+  Predecessor: v1.0.11 / vc 27.
+- **Collateral-only PR (no production code), off `release/v1.0.12`:** version bump in
+  `app/build.gradle.kts` (27→28 / 1.0.11→1.0.12); CHANGELOG `[Unreleased]`→`[1.0.12] — 2026-06-23 (vc 28)`
+  + a fresh empty `[Unreleased]` + a release-summary lead paragraph; new
+  `docs/release/release-notes-v1.0.12.md` (player-facing vs not-player-visible split, provenance, lane
+  verification); version-pointer sweep (README headline + "Unit tests (N)" → 1277, GDD, master-plan Plan
+  31/32 current clauses, plan-31 status). STATE.md headline + CURRENT rotated to "v1.0.12 release in flight";
+  this RUN_LOG entry.
+- **"What's new" (developer-approved, 345 chars):** "Another polish update — … Notifications now stay quiet
+  overnight (10pm–8am), and supply-drop pings are capped … Fixed a purchase bug that could affect some
+  device languages (e.g. Turkish) … Behind-the-scenes cleanup and stability work. Keep walking!" This
+  verbatim text becomes the annotated tag message (→ Play "What's new" via `release.yml`).
+- **Verification:** unit suite green (`testDebugUnitTest` BUILD SUCCESSFUL, **1277 tests**); **schema
+  byte-identical to v1.0.11** (`git diff --stat v1.0.11..HEAD -- app/schemas/` empty — no migration);
+  "What's new" 345 chars (< Play's 500 cap). Player-facing classification: #216 (notifications) + Batch C
+  L88 (Turkish billing) are player-facing; #221/A/B/D are internal/not-player-visible.
+- **Next (developer gate):** developer reviews + merges the release PR (runs the normal CI gate +
+  instrumented lane). **Then** push the annotated tag `git tag -a v1.0.12 -m "<the What's-new text>"` +
+  `git push origin v1.0.12` → triggers `release.yml` (builds the committed vc 28, R8+sign, `jarsigner
+  -verify`, Play-internal upload). I stop at the PR per the skill — **do not self-merge a release**.
+  Internal→closed promotion remains judgment-gated on #192 (manual Play Console Data-Safety action).

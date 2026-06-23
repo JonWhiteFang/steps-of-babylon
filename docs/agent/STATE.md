@@ -3,31 +3,32 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.11 (versionCode 27) SHIPPED → Play internal** (tag `v1.0.11` fired green end-to-end —
-release run `28018033566` `success`: every step green incl. `bundleRelease` [R8+sign], `jarsigner -verify`,
-Play-internal upload, GitHub Release `v1.0.11` w/ `app-release.aab` 16.04 MB; release PR #330 squash `3915fd1`).
-v1.0.11 promotes the **large polish/hardening body
-accumulated since v1.0.10** — no new features, **no schema change** (`app/schemas` byte-identical to v1.0.10).
-**Post-v1.0.11 (unreleased, on `main`):** the audit-triage **batches A–D shipped** (PRs #333–#337) —
-docs-drift, dead-code, i18n locale-safety (incl. a real Turkish-locale billing fix), CI/release hardening,
-and Kover+OSV tooling. No new release tag yet; this is the next release's `[Unreleased]` body.
-Player-facing: accessibility (#213/#214), i18n correctness (#225/#259/#260), Home zero-state (#224),
+**Headline:** **v1.0.12 (versionCode 28) release IN FLIGHT** — collateral-only release PR open (version bump
+27→28 / 1.0.11→1.0.12, CHANGELOG promote, release notes, pointer sync); on merge, the annotated `v1.0.12`
+tag triggers `release.yml` → signed AAB → Play internal. v1.0.12 promotes the body accumulated since
+v1.0.11 — the audit-triage **batches A–D** (docs-drift, dead-code, i18n locale-safety incl. a real
+Turkish-locale billing fix, CI/release hardening, Kover+OSV tooling) + two focused audit fixes (**#216**
+notification quiet-hours/cap, **#221** dead-cosmetic removal) + **#164** Bundle E closed. **No new mechanics,
+no schema change** (`app/schemas` byte-identical to v1.0.11). **Predecessor: v1.0.11 (vc 27) SHIPPED → Play
+internal** (tag `v1.0.11` release run `28018033566` `success`; PR #330 `3915fd1`), which promoted the large
+post-v1.0.10 polish/hardening body —
+player-facing: accessibility (#213/#214), i18n correctness (#225/#259/#260), Home zero-state (#224),
 perf-smoothness (#242/#243), offline step/purchase reliability (#251/#249), process-death survival (#234).
 Internal: detekt+ktlint gate + 6-stage format (#312/#311), Compose UI + DAO-contention tests (#253/#252),
 dependency-verification (#256), clock-tamper (#211), GameEngine decomposition (#230/#231), architecture
 dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependabot wave, CI/supply-chain
 (#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
 (CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
-#311→#312; #310/#311/#287 given a CI/tooling note). **Supersedes v1.0.10 (vc 26)** · **1277 JVM + 9 instrumented tests**
-green (the per-wave running tally 1110→1254 since v1.0.10 lives in `CHANGELOG.md` + `RUN_LOG.md`; post-v1.0.11
-audit-triage arc: B −1 → 1253, C +3 → 1256, A/D no-app-change) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
+#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1277 JVM + 9 instrumented tests**
+green (the post-v1.0.11 body lands at 1277: audit-triage A–D → 1256, then #216 +19 → 1275, #221 +2 → 1277;
+per-wave detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
 repo); (b) the `severity:major` soak-hardening items are now ALL addressed — **#195 + #193 MERGED via
 #270; #194 (error states, UX-1) MERGED (PR #272, `1811617`)** — #194 had been
 prematurely closed 2026-06-17 with no implementing commit, verified unfixed at HEAD + re-opened 2026-06-19;
-(c) the v1.0.11 release tag (this objective) ships the post-v1.0.10 `[Unreleased]` body to internal.
+(c) the v1.0.12 release tag (current objective) ships the post-v1.0.11 `[Unreleased]` body to internal.
 Latest audit
 (`docs/reviews/2026-06-18-complete-app-review.md`, supersedes 2026-06-17) verdict: **7/10 — continue
 building** (keep shipping internal, NOT public-ready); it filed **38 net-new Med+ issues #224–#261 + Low
@@ -38,7 +39,15 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — audit single-issue fixes #216 + #221 MERGED to `main`; nothing in flight).** Two
+- **CURRENT (IN FLIGHT — v1.0.12 / versionCode 28 release).** Collateral-only release PR open (off
+  `release/v1.0.12`): version bump 27→28 / 1.0.11→1.0.12, CHANGELOG `[Unreleased]`→`[1.0.12]`, release
+  notes `docs/release/release-notes-v1.0.12.md`, version-pointer sweep (README/GDD/master-plan/plan-31).
+  **No production code** in the PR — promotes the post-v1.0.11 body already on `main` (audit-triage A–D +
+  #216 + #221, **no schema change**). Developer-approved "What's new" (quiet hours + supply-drop cap;
+  locale purchase fix; cleanup; 345 chars). Unit suite green (1277). **Next:** developer reviews/merges the
+  PR → then push the annotated `v1.0.12` tag (message = the "What's new") → `release.yml` builds vc 28 →
+  signed AAB → Play **internal**. Internal→closed promotion stays judgment-gated (#192 manual Data-Safety).
+- **Previous objective (DONE — audit single-issue fixes #216 + #221 MERGED to `main`).** Two
   focused audit issues shipped this session, each through the full spec→adversarial-review→plan→
   adversarial-review→TDD→PR→merge loop. **#221 FEAT-1** (PR #340, `705865f`) — removed the 4 seeded
   projectile/enemy-skin cosmetics + the 2 unused `CosmeticCategory` values (`PROJECTILE_EFFECT`/`ENEMY_SKIN`)
