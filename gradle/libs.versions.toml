@@ -64,6 +64,10 @@ uiautomator = "2.4.0-rc01"
 # Plugin id is `dev.detekt` (2.0 line); legacy `io.gitlab.arturbosch.detekt` is the dead 1.x id.
 # Revisit when a stable 2.0.0 supporting Kotlin 2.3+ ships.
 detekt = "2.0.0-alpha.5"
+# #218 / L87 wave: Kover JVM coverage (informational, non-gating). 0.9.8 is the current stable line;
+# it supports AGP 9.0.0 build variants (0.9.5) — Kotlin 2.3.0 compat verified empirically by a local
+# koverXmlReport spike before adoption (see RUN_LOG). Bump cautiously (toolchain held at Kotlin 2.3.0).
+kover = "0.9.8"
 
 [libraries]
 # Compose
@@ -154,3 +158,4 @@ room = { id = "androidx.room", version.ref = "room" }
 android-test = { id = "com.android.test", version.ref = "agp" }
 androidx-baselineprofile = { id = "androidx.baselineprofile", version.ref = "benchmark" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }

@@ -97,6 +97,14 @@ jobs:
         if: needs.changes.outputs.code == 'true'
         run: ./gradlew testDebugUnitTest lintDebug lintRelease assembleDebug --stacktrace
 
+      # #218: informational coverage of the JVM unit suite. NON-GATING — no threshold; the report is
+      # uploaded as an artifact so future work can see which surfaces (Compose/service/worker) are
+      # uncovered. :app:-prefixed to stay scoped to the shipping module (the com.android.test benchmark
+      # modules carry no product code + don't apply Kover). Reuses the just-run test results.
+      - name: Kover coverage report (informational)
+        if: needs.changes.outputs.code == 'true'
+        run: ./gradlew :app:koverXmlReport :app:koverHtmlReport --stacktrace
+
       - name: Compile benchmark modules (type-check only; benchmarks run locally, never CI-gated)
         if: needs.changes.outputs.code == 'true'
         run: ./gradlew :baselineprofile:assemble :macrobenchmark:assemble --stacktrace

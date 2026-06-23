@@ -54,23 +54,26 @@ the med/low backlog (#262) remain.
   (#234). **Manual Play Console Data-Safety action (#192) is still NOT done by this tag** — separate human step
   (`docs/release/data-safety-form.md`). **Next:** med/low backlog (#262/#128; i18n #34; the larger #233
   Simulation-hoist, ADR-0012) + the internal→closed promotion judgment call (Data-Safety #192 prerequisite).
-- **CURRENT (in flight — branch `ci/batch-d1-release-hardening`; `[Unreleased]`).** **Audit-finding triage
-  — Batch D1 (release/CI config hardening).** Fourth batch off the triage; the CI/build/release cluster was
-  split **D1/D2 by risk** (D1 = config hardening; D2 = additive Kover+SCA tooling, ships after). D1 closes
-  #262 **L39/L68/L71/L73/L74/L75/L50** + a ktlint-job CI-speed split. **No app/Kotlin/schema change; 1256 JVM
-  unchanged.** release.yml: concurrency guard (L74), tag↔versionName guard (L68), AAB signer-cert identity
-  assertion (L73), `if:always()` secret-file cleanup (L39). ci.yml: `lintRelease` added to the PR gate (L71 —
-  verified it does NOT trip the #124 license guard, no secrets) + ktlint hoisted to its own parallel job
-  (fails fast, no Gradle/SDK). gradle.properties: parallel+caching (L50, NOT config-cache). L75 = documented
-  as the dependency-submission action's required scope. **L69 NDK pin DEFERRED** (needs a runner-image-
-  confirmed version — pinning wrong would break the tag-only release build). Spec→plan→**adversarial review
-  gate** (D1+D2 reviewed concurrently; **9 confirmed + 4 partial, 5 refuted**; folded in: L73 `-alias` pin +
-  `keytool -printcert`, L71 wording, plan-32-ci.md guard-scope correction). Verified locally:
-  `testDebugUnitTest lintRelease` BUILD SUCCESSFUL (lintRelease clean, guard not tripped), actionlint clean,
-  ktlint pass. **The release-lane steps (L68/L73/L39/L74) can only be exercised on the next `v*` tag** — the
-  PR validates ci.yml/gradle/lintRelease only. **Next:** open the D1 PR; then **D2** (Kover #218 + SCA L77 —
-  reviewed plan ready, sequenced after D1 since both edit ci.yml) + the non-batchable items. Triage verdicts
-  cached in this session.
+- **CURRENT (in flight — branch `ci/batch-d2-tooling`; `[Unreleased]`).** **Audit-finding triage — Batch D2
+  (additive CI tooling).** Second half of the D1/D2 split; **two NON-GATING informational capabilities, no
+  app/Kotlin/schema change, 1256 JVM unchanged.** Closes #262 **L77** + **#218/TEST-3**. **Kover** (`:app`,
+  `org.jetbrains.kotlinx.kover` 0.9.8) — non-gating `:app:koverXmlReport`/`koverHtmlReport` CI step
+  (informational; baseline ~59% line cov). **Kover↔Kotlin 2.3.0/AGP 9.2.1 compat verified by a local spike**
+  (the riskiest unknown — answered empirically before commit). Strict dependency-verification (#256) forced a
+  `verification-metadata.xml` regen (+ extended the documented regen command with the Kover tasks). **OSV-Scanner**
+  (`osv-scan.yml`, SHA-pinned reusable workflow) — full-dependency-set supply-chain scan → Code Scanning tab,
+  non-gating (`fail-on-vuln:false`), weekly + on `main`. Spec→plan→**adversarial review gate** (D1+D2
+  concurrent; both D2 majors — regen-as-hard-step + the regen command missing Kover — addressed). Spike found
+  the OSV *reusable workflow in the osv-scanner repo is DEPRECATED*; used the live `osv-scanner-action` one.
+  Verified locally: full build + Kover under strict verify BUILD SUCCESSFUL, actionlint clean, detekt+ktlint
+  pass. **OSV SARIF upload only exercises in real CI** (needs GitHub Code-Scanning context). **Next:** open
+  the D2 PR (after D1 merges — both edit ci.yml); then the non-batchable items (battle perf, A24, L12,
+  billing-by-design). Triage verdicts cached in this session.
+- **Previous objective (DONE — MERGED PR #336, squash `6c487f4`; `[Unreleased]`).** **Batch D1 (release/CI
+  config hardening).** CI/release cluster split D1/D2 by risk. Closed #262 L39/L68/L71/L73/L74/L75/L50 + a
+  ktlint-job CI-speed split (passed in 17s vs the ~6-min build). release.yml: concurrency/tag-guard/cert-identity/
+  secret-cleanup; ci.yml: `lintRelease` gate; gradle parallel+caching. L69 NDK pin DEFERRED. Review: 9
+  confirmed + 4 partial, 5 refuted. No app/schema change; 1256 JVM. Both CI lanes green.
 - **Previous objective (DONE — MERGED PR #335, squash `13d19c2`; `[Unreleased]`).** **Batch C
   (i18n locale-safety).** Closed #262 L88/L89/L87/L91. **L88 was a REAL bug** — `BillingProduct.skuId()`
   default-locale `lowercase()` corrupted `GEM_PACK_MEDIUM`'s `I`→dotless ı under Turkish → broke that

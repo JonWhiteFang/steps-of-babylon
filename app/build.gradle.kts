@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.room)
     alias(libs.plugins.androidx.baselineprofile)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.kover)
 }
 
 detekt {
