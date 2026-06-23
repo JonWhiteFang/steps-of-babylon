@@ -45,14 +45,21 @@ class TrackDailyLogin(
         // Gem streak on first check of the day
         if (!login.gemsClaimed) {
             val profile = playerRepository.observeProfile().first()
-            val yesterday = LocalDate.parse(todayDate, DateTimeFormatter.ISO_LOCAL_DATE).minusDays(1)
-                .format(DateTimeFormatter.ISO_LOCAL_DATE)
+            val yesterday =
+                LocalDate
+                    .parse(todayDate, DateTimeFormatter.ISO_LOCAL_DATE)
+                    .minusDays(1)
+                    .format(DateTimeFormatter.ISO_LOCAL_DATE)
 
-            val newStreak = when (profile.lastLoginDate) {
-                todayDate -> profile.currentStreak // Already logged in today
-                yesterday -> (profile.currentStreak % MAX_STREAK) + 1
-                else -> 1 // Streak broken
-            }
+            val newStreak =
+                when (profile.lastLoginDate) {
+                    todayDate -> profile.currentStreak
+
+                    // Already logged in today
+                    yesterday -> (profile.currentStreak % MAX_STREAK) + 1
+
+                    else -> 1 // Streak broken
+                }
 
             if (profile.lastLoginDate != todayDate) {
                 var gemReward = newStreak.coerceAtMost(MAX_GEM_REWARD).toLong()

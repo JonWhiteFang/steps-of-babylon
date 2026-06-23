@@ -6,9 +6,16 @@ import kotlinx.coroutines.flow.Flow
 
 interface WorkshopRepository {
     fun observeAllUpgrades(): Flow<Map<UpgradeType, Int>>
+
     fun observeUpgradeLevel(type: UpgradeType): Flow<Int>
+
     fun observeUpgradesByCategory(category: UpgradeCategory): Flow<Map<UpgradeType, Int>>
-    suspend fun setUpgradeLevel(type: UpgradeType, level: Int)
+
+    suspend fun setUpgradeLevel(
+        type: UpgradeType,
+        level: Int,
+    )
+
     suspend fun ensureUpgradesExist()
 
     /**
@@ -19,5 +26,9 @@ interface WorkshopRepository {
      * two-step `PlayerRepository.spendSteps` + `WorkshopRepository.setUpgradeLevel` pair and the
      * double-tap race where two concurrent purchases could both see the same balance.
      */
-    suspend fun purchaseUpgradeAtomic(type: UpgradeType, newLevel: Int, cost: Long): Boolean
+    suspend fun purchaseUpgradeAtomic(
+        type: UpgradeType,
+        newLevel: Int,
+        cost: Long,
+    ): Boolean
 }

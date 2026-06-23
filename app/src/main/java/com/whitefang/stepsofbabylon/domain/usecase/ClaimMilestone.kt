@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.first
  * user-visible message rather than treating the claim as silently no-op.
  */
 sealed class ClaimMilestoneResult {
-
     /** Milestone claimed; rewards credited atomically via [MilestoneDao.claimMilestoneAtomic]. */
     data object Success : ClaimMilestoneResult()
 
@@ -41,7 +40,9 @@ sealed class ClaimMilestoneResult {
      * so the mismatch surfaces loudly instead of silently dropping the cosmetic while
      * crediting the other rewards. Resolution is content work (C.2 PR 3+).
      */
-    data class UnknownCosmetic(val cosmeticId: String) : ClaimMilestoneResult()
+    data class UnknownCosmetic(
+        val cosmeticId: String,
+    ) : ClaimMilestoneResult()
 }
 
 /**
@@ -91,12 +92,13 @@ class ClaimMilestone(
             }
         }
 
-        val claimed = milestoneRepository.claimMilestoneAtomic(
-            milestoneId = milestone.name,
-            gems = milestone.totalGems,
-            powerStones = milestone.totalPowerStones,
-            claimedAt = timeProvider.now().toEpochMilli(),
-        )
+        val claimed =
+            milestoneRepository.claimMilestoneAtomic(
+                milestoneId = milestone.name,
+                gems = milestone.totalGems,
+                powerStones = milestone.totalPowerStones,
+                claimedAt = timeProvider.now().toEpochMilli(),
+            )
         return if (claimed) ClaimMilestoneResult.Success else ClaimMilestoneResult.AlreadyClaimed
     }
 }

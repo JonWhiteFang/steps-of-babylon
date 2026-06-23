@@ -6,12 +6,19 @@ class UnlockLabSlot(
     private val playerRepository: PlayerRepository,
 ) {
     sealed class Result {
-        data class Unlocked(val newSlotCount: Int) : Result()
+        data class Unlocked(
+            val newSlotCount: Int,
+        ) : Result()
+
         data object MaxSlotsReached : Result()
+
         data object InsufficientGems : Result()
     }
 
-    suspend operator fun invoke(currentSlotCount: Int, gems: Long): Result {
+    suspend operator fun invoke(
+        currentSlotCount: Int,
+        gems: Long,
+    ): Result {
         if (currentSlotCount >= MAX_SLOTS) return Result.MaxSlotsReached
         if (gems < SLOT_COST_GEMS) return Result.InsufficientGems
 

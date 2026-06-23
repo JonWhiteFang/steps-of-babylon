@@ -1,3 +1,39 @@
+## 2026-06-23 — ktlint repo-wide auto-format, stage 1/6: `domain/` (`[Unreleased]`)
+
+- **Goal:** pilot stage of the staged, layer-by-layer ktlint auto-format (plan
+  `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`). Mechanically fix the
+  auto-fixable ("Bucket A") ktlint violations one layer at a time across 6 sequential PRs, regenerating a
+  shrinking baseline each stage. Stage 1 = `domain/` (pure Kotlin, best-tested, zero Android) — the safest
+  beachhead.
+- **What shipped:** `ktlint -F` scoped to `app/src/main/java/.../domain` only — 72 domain files reformatted.
+  Pure-formatting, zero behaviour change. Transforms were all on the review allowlist: trailing-comma
+  (call/declaration site), function-/class-signature reflow, function-expression-body (incl. the expected
+  `GenerateSupplyDrop` `rollRandomReward`/`makeDrop` block→expression-body `return`-removal), if-else &
+  when-entry bracing, blank-line-after-brace removal, import ordering. The full `git diff -w`
+  (whitespace-ignored, 2643 lines) was read end-to-end; no hunk changed a literal/operator/identifier/
+  string or altered logic.
+- **Baselines regenerated (the staged-format mechanism):**
+  - **ktlint** `config/ktlint/baseline.xml` over the full `app/src` scope (delete-then-create): **9256 →
+    8534** errors (722 domain Bucket-A entries gone). Not-yet-swept layers stay covered.
+  - **detekt** `config/detekt/baseline.xml` via `:app:detektBaseline`: **496 → 489** entries. The
+    pure-format reflow shifted the line-keyed signatures of pre-existing, already-baselined smells, so the
+    detekt PR gate (also baseline-gated) needed a matching regen — 10 domain entries removed (several
+    over-long lines/ctors now fit ≤120 after the reflow), 3 re-added under post-format signatures
+    (`UpgradeType` MULTISHOT string literal still >120; `TimeIntegrity` long inline comment still >120;
+    `DescribeUpgradeEffect.format` crossed the LongMethod-60 threshold because `when`-entry-bracing
+    expanded its single-line arms). No genuinely-new smell: the two `MaxLineLength` entries pre-existed
+    (re-keyed under post-format signatures), and the one `LongMethod` entry is purely format-induced —
+    brace-expansion inflated the line count of an unchanged method (identical logic, no arm added or
+    removed). Diff verified to touch only domain entries; no test/other-layer entries lost.
+- **Verification:** `./run-gradle.sh testDebugUnitTest --rerun-tasks` **BUILD SUCCESSFUL**; **1254 JVM
+  tests, 0 failures, 0 errors** (unchanged count — pure format). `./lint-kotlin.sh` (ktlint check) exit 0;
+  `:app:detekt` exit 0 after the baseline regen. Scope-checked: only the 72 domain files + the two
+  baseline XMLs changed (`git diff --name-only` confirms no out-of-domain code touched).
+- **No production logic, schema, economy, or engine behaviour changed.**
+- **Remains / next:** controller merges this PR (do-not-merge handed off). Then stages 2–6: `data/` →
+  `service/`+`di/`+top-level → `presentation/` (excl battle) → `presentation/battle/` (FRAGILE) → test
+  sources. Each stage repeats the scoped `-F` + dual-baseline regen + full-suite green gate.
+
 ## 2026-06-23 — Compose UI tests: critical screens (#253) (`[Unreleased]`)
 
 - **Goal:** close issue #253 by covering all critical screens with Compose UI tests — every screen with

@@ -57,7 +57,6 @@ class DescribeUpgradeEffect(
     private val resolveStats: ResolveStats = ResolveStats(),
     private val applyCardEffects: ApplyCardEffects = ApplyCardEffects(),
 ) {
-
     operator fun invoke(
         workshopLevels: Map<UpgradeType, Int>,
         inRoundLevels: Map<UpgradeType, Int>,
@@ -95,11 +94,12 @@ class DescribeUpgradeEffect(
         equippedCards: List<OwnedCard> = emptyList(),
     ): UpgradeEffectReadout {
         val currentReadout = format(workshopLevels, emptyMap(), labLevels, equippedCards, type)
-        val nextReadout = if (WorkshopLevels.isAtMax(workshopLevels, type)) {
-            null
-        } else {
-            format(WorkshopLevels.withIncremented(workshopLevels, type), emptyMap(), labLevels, equippedCards, type)
-        }
+        val nextReadout =
+            if (WorkshopLevels.isAtMax(workshopLevels, type)) {
+                null
+            } else {
+                format(WorkshopLevels.withIncremented(workshopLevels, type), emptyMap(), labLevels, equippedCards, type)
+            }
         return UpgradeEffectReadout(currentReadout, nextReadout)
     }
 
@@ -129,30 +129,78 @@ class DescribeUpgradeEffect(
         val stats = applyCardEffects(raw, equippedCards).stats
         return when (type) {
             // Multiplicative stats (workshop × in-round × lab outer multipliers).
-            UpgradeType.DAMAGE -> fmt("%.1f dmg", stats.damage)
-            UpgradeType.ATTACK_SPEED -> fmt("%.2f/s", stats.attackSpeed)
-            UpgradeType.RANGE -> fmt("%.0f px", stats.range.toDouble())
-            UpgradeType.HEALTH -> fmt("%.0f HP", stats.maxHealth)
+            UpgradeType.DAMAGE -> {
+                fmt("%.1f dmg", stats.damage)
+            }
+
+            UpgradeType.ATTACK_SPEED -> {
+                fmt("%.2f/s", stats.attackSpeed)
+            }
+
+            UpgradeType.RANGE -> {
+                fmt("%.0f px", stats.range.toDouble())
+            }
+
+            UpgradeType.HEALTH -> {
+                fmt("%.0f HP", stats.maxHealth)
+            }
+
             // 2-decimal precision needed at HEALTH_REGEN's small magnitude (RO-12). +2 %/lvl
             // on a base ~1.3/s is +0.026/s, which rounds away under %.1f and produces a
             // misleading "Now: 1.3/s → 1.3/s" readout for a real upgrade.
-            UpgradeType.HEALTH_REGEN -> fmt("%.2f/s", stats.healthRegen)
-            UpgradeType.KNOCKBACK -> fmt("%.1f px", stats.knockbackForce.toDouble())
+            UpgradeType.HEALTH_REGEN -> {
+                fmt("%.2f/s", stats.healthRegen)
+            }
+
+            UpgradeType.KNOCKBACK -> {
+                fmt("%.1f px", stats.knockbackForce.toDouble())
+            }
 
             // Additive percentage caps (capped within ResolveStats already).
-            UpgradeType.CRITICAL_CHANCE -> fmt("%.1f%%", stats.critChance * 100.0)
-            UpgradeType.CRITICAL_FACTOR -> fmt("\u00d7%.2f", stats.critMultiplier)
-            UpgradeType.DEFENSE_PERCENT -> fmt("%.1f%%", stats.defensePercent * 100.0)
-            UpgradeType.DEFENSE_ABSOLUTE -> fmt("+%.0f blocked", stats.defenseAbsolute)
-            UpgradeType.THORN_DAMAGE -> fmt("%.1f%% reflect", stats.thornPercent * 100.0)
-            UpgradeType.LIFESTEAL -> fmt("%.1f%%", stats.lifestealPercent * 100.0)
-            UpgradeType.DAMAGE_PER_METER -> fmt("+%.1f%%/m", stats.damagePerMeterBonus * 100.0)
-            UpgradeType.DEATH_DEFY -> fmt("%.0f%%", stats.deathDefyChance * 100.0)
+            UpgradeType.CRITICAL_CHANCE -> {
+                fmt("%.1f%%", stats.critChance * 100.0)
+            }
+
+            UpgradeType.CRITICAL_FACTOR -> {
+                fmt("\u00d7%.2f", stats.critMultiplier)
+            }
+
+            UpgradeType.DEFENSE_PERCENT -> {
+                fmt("%.1f%%", stats.defensePercent * 100.0)
+            }
+
+            UpgradeType.DEFENSE_ABSOLUTE -> {
+                fmt("+%.0f blocked", stats.defenseAbsolute)
+            }
+
+            UpgradeType.THORN_DAMAGE -> {
+                fmt("%.1f%% reflect", stats.thornPercent * 100.0)
+            }
+
+            UpgradeType.LIFESTEAL -> {
+                fmt("%.1f%%", stats.lifestealPercent * 100.0)
+            }
+
+            UpgradeType.DAMAGE_PER_METER -> {
+                fmt("+%.1f%%/m", stats.damagePerMeterBonus * 100.0)
+            }
+
+            UpgradeType.DEATH_DEFY -> {
+                fmt("%.0f%%", stats.deathDefyChance * 100.0)
+            }
 
             // Discrete-step upgrades (every 20 / 15 / 1 level crosses a threshold).
-            UpgradeType.MULTISHOT -> formatTargets(stats.multishotTargets)
-            UpgradeType.BOUNCE_SHOT -> formatBounces(stats.bounceCount)
-            UpgradeType.ORBS -> formatOrbs(stats.orbCount)
+            UpgradeType.MULTISHOT -> {
+                formatTargets(stats.multishotTargets)
+            }
+
+            UpgradeType.BOUNCE_SHOT -> {
+                formatBounces(stats.bounceCount)
+            }
+
+            UpgradeType.ORBS -> {
+                formatOrbs(stats.orbCount)
+            }
 
             // Cash-utility upgrades — no ResolvedStats representation, computed directly
             // from `effectPerLevel`. Combined level = workshop + in-round (matches the
@@ -161,15 +209,18 @@ class DescribeUpgradeEffect(
                 val total = (workshopLevels[type] ?: 0) + (inRoundLevels[type] ?: 0)
                 fmt("+%.0f%% cash", total * type.config.effectPerLevel)
             }
+
             UpgradeType.CASH_PER_WAVE -> {
                 val total = (workshopLevels[type] ?: 0) + (inRoundLevels[type] ?: 0)
                 fmt("+%.0f cash/wave", total * type.config.effectPerLevel)
             }
+
             UpgradeType.INTEREST -> {
                 val total = (workshopLevels[type] ?: 0) + (inRoundLevels[type] ?: 0)
                 val pct = min(total * type.config.effectPerLevel, 10.0)
                 fmt("%.1f%% interest", pct)
             }
+
             UpgradeType.FREE_UPGRADES -> {
                 val total = (workshopLevels[type] ?: 0) + (inRoundLevels[type] ?: 0)
                 val pct = min(total * type.config.effectPerLevel, 25.0)
@@ -184,10 +235,13 @@ class DescribeUpgradeEffect(
             // remain visibly distinct — the dead-content problem V1X-18 fixes.
             UpgradeType.STEP_MULTIPLIER -> {
                 val total = (workshopLevels[type] ?: 0) + (inRoundLevels[type] ?: 0)
-                val bonus = com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath.stepMultiplierBonus(total)
+                val bonus =
+                    com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath
+                        .stepMultiplierBonus(total)
                 val pct = bonus * 100.0
                 fmt("+%.2f%% steps", pct)
             }
+
             UpgradeType.RECOVERY_PACKAGES -> {
                 val total = (workshopLevels[type] ?: 0) + (inRoundLevels[type] ?: 0)
                 val pct = min(total * type.config.effectPerLevel, 50.0)
@@ -206,7 +260,9 @@ class DescribeUpgradeEffect(
     }
 
     private fun formatTargets(n: Int): String = if (n == 1) "1 target" else "$n targets"
+
     private fun formatBounces(n: Int): String = if (n == 1) "1 bounce" else "$n bounces"
+
     private fun formatOrbs(n: Int): String = if (n == 1) "1 orb" else "$n orbs"
 
     /**
@@ -226,7 +282,10 @@ class DescribeUpgradeEffect(
         return if (RapidFireSchedule.isPermanent(level)) {
             fmt("permanent/%.1f\u00d7", multiplier.toDouble())
         } else {
-            "${fmt("%.0fs", interval.toDouble())}/${fmt("%.0fs", duration.toDouble())}/${fmt("%.1f\u00d7", multiplier.toDouble())}"
+            "${fmt(
+                "%.0fs",
+                interval.toDouble(),
+            )}/${fmt("%.0fs", duration.toDouble())}/${fmt("%.1f\u00d7", multiplier.toDouble())}"
         }
     }
 
@@ -237,6 +296,8 @@ class DescribeUpgradeEffect(
      * strings). Localization of the readout itself is a v2.0 effort — see plan-RO-11 § 9
      * open question #5.
      */
-    private fun fmt(pattern: String, value: Double): String =
-        String.format(Locale.ROOT, pattern, value)
+    private fun fmt(
+        pattern: String,
+        value: Double,
+    ): String = String.format(Locale.ROOT, pattern, value)
 }

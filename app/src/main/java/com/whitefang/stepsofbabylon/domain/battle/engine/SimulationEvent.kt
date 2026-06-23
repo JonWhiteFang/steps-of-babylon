@@ -12,18 +12,25 @@ package com.whitefang.stepsofbabylon.domain.battle.engine
  * observed — exactly the lifecycle the callbacks had.
  */
 sealed interface SimulationEvent {
-
     /**
      * A kill granted [amount] Battle Steps — the flat per-enemy reward, BEFORE the daily-cap
      * enforcement that lives in the collector (`AwardBattleSteps`). [x]/[y] are the enemy's
      * screen position so the collector can place a floating "+N Step" indicator (suppressed
      * when the cap leaves the kill uncredited).
      */
-    data class StepReward(val amount: Long, val x: Float, val y: Float) : SimulationEvent
+    data class StepReward(
+        val amount: Long,
+        val x: Float,
+        val y: Float,
+    ) : SimulationEvent
 
     /**
      * A BOSS enemy died at screen position [x]/[y]. [tier] scales the Power Stone reward the
      * collector awards via `AwardBossPowerStones`.
      */
-    data class BossKilled(val tier: Int, val x: Float, val y: Float) : SimulationEvent
+    data class BossKilled(
+        val tier: Int,
+        val x: Float,
+        val y: Float,
+    ) : SimulationEvent
 }

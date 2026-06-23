@@ -30,15 +30,15 @@ class AwardBattleSteps(
     private val stepRepository: StepRepository,
     private val timeProvider: TimeProvider,
 ) {
-
     suspend operator fun invoke(
         amount: Long,
         today: String = timeProvider.today().toString(),
-    ): Long = stepRepository.creditBattleStepsAtomic(
-        date = today,
-        requested = amount,
-        dailyCap = DAILY_BATTLE_STEP_CAP,
-    )
+    ): Long =
+        stepRepository.creditBattleStepsAtomic(
+            date = today,
+            requested = amount,
+            dailyCap = DAILY_BATTLE_STEP_CAP,
+        )
 
     companion object {
         /** Maximum battle-earned Steps the player may collect per calendar day. */

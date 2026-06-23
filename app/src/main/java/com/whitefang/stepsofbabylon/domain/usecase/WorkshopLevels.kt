@@ -15,12 +15,17 @@ import com.whitefang.stepsofbabylon.domain.model.UpgradeType
  * Pure Kotlin — guarded by `architecture/DomainPurityTest`.
  */
 object WorkshopLevels {
-
     /** The workshop level of [type] (0 when absent). */
-    fun levelOf(levels: Map<UpgradeType, Int>, type: UpgradeType): Int = levels[type] ?: 0
+    fun levelOf(
+        levels: Map<UpgradeType, Int>,
+        type: UpgradeType,
+    ): Int = levels[type] ?: 0
 
     /** True when [type] is at (or beyond) its workshop-level cap; always false for uncapped upgrades. */
-    fun isAtMax(levels: Map<UpgradeType, Int>, type: UpgradeType): Boolean {
+    fun isAtMax(
+        levels: Map<UpgradeType, Int>,
+        type: UpgradeType,
+    ): Boolean {
         val maxLevel = type.config.maxLevel ?: return false
         return levelOf(levels, type) >= maxLevel
     }
@@ -30,6 +35,8 @@ object WorkshopLevels {
      * applies the per-stat caps, so a level past the cap simply yields the same resolved value
      * (Δpower = 0), which the caller then excludes.
      */
-    fun withIncremented(levels: Map<UpgradeType, Int>, type: UpgradeType): Map<UpgradeType, Int> =
-        levels + (type to levelOf(levels, type) + 1)
+    fun withIncremented(
+        levels: Map<UpgradeType, Int>,
+        type: UpgradeType,
+    ): Map<UpgradeType, Int> = levels + (type to levelOf(levels, type) + 1)
 }

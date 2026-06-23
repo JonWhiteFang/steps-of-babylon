@@ -8,11 +8,9 @@ data class UltimateWeaponLoadout(
         require(weapons.distinct().size == weapons.size) { "Loadout cannot contain duplicates" }
     }
 
-    fun add(weapon: UltimateWeaponType): UltimateWeaponLoadout =
-        copy(weapons = weapons + weapon)
+    fun add(weapon: UltimateWeaponType): UltimateWeaponLoadout = copy(weapons = weapons + weapon)
 
-    fun remove(weapon: UltimateWeaponType): UltimateWeaponLoadout =
-        copy(weapons = weapons - weapon)
+    fun remove(weapon: UltimateWeaponType): UltimateWeaponLoadout = copy(weapons = weapons - weapon)
 
     companion object {
         const val MAX_SIZE = 3

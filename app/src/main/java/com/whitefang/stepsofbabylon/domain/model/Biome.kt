@@ -1,6 +1,9 @@
 package com.whitefang.stepsofbabylon.domain.model
 
-enum class Biome(val tierRange: IntRange, val isComingSoon: Boolean = false) {
+enum class Biome(
+    val tierRange: IntRange,
+    val isComingSoon: Boolean = false,
+) {
     HANGING_GARDENS(1..3),
     BURNING_SANDS(4..6),
     FROZEN_ZIGGURATS(7..8),
@@ -9,7 +12,6 @@ enum class Biome(val tierRange: IntRange, val isComingSoon: Boolean = false) {
     ;
 
     companion object {
-        fun forTier(tier: Int): Biome =
-            entries.first { tier in it.tierRange }
+        fun forTier(tier: Int): Biome = entries.first { tier in it.tierRange }
     }
 }

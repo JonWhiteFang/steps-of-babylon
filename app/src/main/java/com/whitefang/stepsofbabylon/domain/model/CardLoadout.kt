@@ -8,11 +8,9 @@ data class CardLoadout(
         require(cards.distinct().size == cards.size) { "Loadout cannot contain duplicates" }
     }
 
-    fun add(card: CardType): CardLoadout =
-        copy(cards = cards + card)
+    fun add(card: CardType): CardLoadout = copy(cards = cards + card)
 
-    fun remove(card: CardType): CardLoadout =
-        copy(cards = cards - card)
+    fun remove(card: CardType): CardLoadout = copy(cards = cards - card)
 
     companion object {
         const val MAX_SIZE = 3

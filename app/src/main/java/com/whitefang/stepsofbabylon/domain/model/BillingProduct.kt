@@ -1,6 +1,9 @@
 package com.whitefang.stepsofbabylon.domain.model
 
-enum class BillingProduct(val gemAmount: Long, val priceDisplay: String) {
+enum class BillingProduct(
+    val gemAmount: Long,
+    val priceDisplay: String,
+) {
     GEM_PACK_SMALL(50, "$0.99"),
     GEM_PACK_MEDIUM(300, "$4.99"),
     GEM_PACK_LARGE(700, "$9.99"),
@@ -30,5 +33,8 @@ enum class BillingProduct(val gemAmount: Long, val priceDisplay: String) {
 
 sealed class PurchaseResult {
     data object Success : PurchaseResult()
-    data class Error(val message: String) : PurchaseResult()
+
+    data class Error(
+        val message: String,
+    ) : PurchaseResult()
 }

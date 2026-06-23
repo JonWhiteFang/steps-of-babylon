@@ -16,7 +16,9 @@ import kotlin.math.min
  * the nearest-enemy targeting / fire callback (which need presentation `EnemyEntity` refs),
  * and the Canvas `render()`. Math is identical to the pre-extraction entity.
  */
-class ZigguratState(initialStats: ResolvedStats) {
+class ZigguratState(
+    initialStats: ResolvedStats,
+) {
     /** Live combat stats; redirected by [updateStats] when an in-round upgrade / UW mutates them. */
     var stats: ResolvedStats = initialStats
         private set
@@ -37,7 +39,9 @@ class ZigguratState(initialStats: ResolvedStats) {
     val attackInterval: Float get() = (1.0 / (stats.attackSpeed * rapidFireMultiplier)).toFloat()
 
     /** Redirects every subsequent derived stat read at the new instance (RO-08). */
-    fun updateStats(newStats: ResolvedStats) { stats = newStats }
+    fun updateStats(newStats: ResolvedStats) {
+        stats = newStats
+    }
 
     /** Applies one tick of health regeneration, clamped at [maxHp]. */
     fun regenHp(deltaTime: Float) {
@@ -51,8 +55,12 @@ class ZigguratState(initialStats: ResolvedStats) {
     }
 
     /** Resets the cooldown to one full [attackInterval] after a shot fires at ≥1 target. */
-    fun onFired() { attackCooldown = attackInterval }
+    fun onFired() {
+        attackCooldown = attackInterval
+    }
 
     /** Clamps a negative cooldown overshoot back to 0 when ready-but-no-targets (fire ASAP next tick). */
-    fun holdReady() { attackCooldown = 0f }
+    fun holdReady() {
+        attackCooldown = 0f
+    }
 }

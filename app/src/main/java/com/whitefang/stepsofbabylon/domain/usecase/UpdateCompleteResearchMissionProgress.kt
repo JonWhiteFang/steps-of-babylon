@@ -37,11 +37,12 @@ class UpdateCompleteResearchMissionProgress(
         if (completedCount <= 0) return
         try {
             val missions = missionRepository.getMissionsForDate(today)
-            val m = missions.find {
-                it.type == DailyMissionType.COMPLETE_RESEARCH &&
-                    !it.claimed &&
-                    !it.completed
-            } ?: return
+            val m =
+                missions.find {
+                    it.type == DailyMissionType.COMPLETE_RESEARCH &&
+                        !it.claimed &&
+                        !it.completed
+                } ?: return
             // Additive progress with cap: a single auto-complete batch can finish more
             // than one research project at once, so we sum the count into the existing
             // progress and clamp to the mission target. For COMPLETE_RESEARCH the target

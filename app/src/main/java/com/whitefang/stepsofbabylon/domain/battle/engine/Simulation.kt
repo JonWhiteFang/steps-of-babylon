@@ -29,7 +29,6 @@ import kotlin.math.min
  * on a different thread, mirroring the volatility the engine fields had pre-extraction.
  */
 class Simulation {
-
     @Volatile
     var cash: Long = 0L
         private set
@@ -62,10 +61,11 @@ class Simulation {
      * [BufferOverflow.DROP_OLDEST] let [emit] hand off without ever suspending the game-loop
      * thread.
      */
-    private val _events = MutableSharedFlow<SimulationEvent>(
-        extraBufferCapacity = 64,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-    )
+    private val _events =
+        MutableSharedFlow<SimulationEvent>(
+            extraBufferCapacity = 64,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
     val events: SharedFlow<SimulationEvent> = _events.asSharedFlow()
 
     /** Emits [event] to [events] without suspending — safe to call from the game-loop thread. */
@@ -148,7 +148,11 @@ class Simulation {
      * the `e is EnemyEntity` type check inline, which kept the loop trapped in the
      * Canvas-coupled presentation layer.
      */
-    fun tickEntities(entities: List<EntityProtocol>, deltaTime: Float, chronoSlowFactor: Float) {
+    fun tickEntities(
+        entities: List<EntityProtocol>,
+        deltaTime: Float,
+        chronoSlowFactor: Float,
+    ) {
         entities.forEach { e ->
             val dt = if (e.isChronoSlowable) deltaTime * chronoSlowFactor else deltaTime
             e.update(dt)
@@ -191,7 +195,9 @@ class Simulation {
      */
     fun <P : EntityProtocol> detectZigguratHits(
         enemyProjectiles: List<P>,
-        zigX: Float, zigY: Float, zigWidth: Float,
+        zigX: Float,
+        zigY: Float,
+        zigWidth: Float,
         onHit: (P) -> Unit,
     ) {
         for (proj in enemyProjectiles) {
@@ -230,8 +236,19 @@ class Simulation {
      * the side-effects (which touch enemies, stats, and visual flags) and just applies this
      * result.
      */
-    fun advanceUWTimers(cooldownRemaining: Float, effectTimeRemaining: Float, deltaTime: Float): UWTimerAdvance {
-        val newCooldown = if (cooldownRemaining > 0f) (cooldownRemaining - deltaTime).coerceAtLeast(0f) else cooldownRemaining
+    fun advanceUWTimers(
+        cooldownRemaining: Float,
+        effectTimeRemaining: Float,
+        deltaTime: Float,
+    ): UWTimerAdvance {
+        val newCooldown =
+            if (cooldownRemaining >
+                0f
+            ) {
+                (cooldownRemaining - deltaTime).coerceAtLeast(0f)
+            } else {
+                cooldownRemaining
+            }
         val effectWasActive = effectTimeRemaining > 0f
         var newEffect = effectTimeRemaining
         var justExpired = false
@@ -249,6 +266,8 @@ class Simulation {
      * Auto-trigger readiness predicate: a UW fires when it is off cooldown AND not mid-effect.
      * Matches the gate the engine's auto-trigger loop used inline pre-extraction.
      */
-    fun isUWReadyToFire(cooldownRemaining: Float, effectTimeRemaining: Float): Boolean =
-        cooldownRemaining <= 0f && effectTimeRemaining <= 0f
+    fun isUWReadyToFire(
+        cooldownRemaining: Float,
+        effectTimeRemaining: Float,
+    ): Boolean = cooldownRemaining <= 0f && effectTimeRemaining <= 0f
 }

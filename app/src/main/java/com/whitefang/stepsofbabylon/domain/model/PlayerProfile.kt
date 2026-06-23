@@ -28,9 +28,10 @@ data class PlayerProfile(
     val createdAt: Long = 0,
     val lastActiveAt: Long = 0,
 ) {
-    fun toWallet(): PlayerWallet = PlayerWallet(
-        stepBalance = stepBalance,
-        gems = gems,
-        powerStones = powerStones,
-    )
+    fun toWallet(): PlayerWallet =
+        PlayerWallet(
+            stepBalance = stepBalance,
+            gems = gems,
+            powerStones = powerStones,
+        )
 }

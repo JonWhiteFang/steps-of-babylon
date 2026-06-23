@@ -14,6 +14,7 @@ class ClaimSupplyDrop(
 ) {
     sealed class Result {
         data object Success : Result()
+
         data object AlreadyClaimed : Result()
     }
 
@@ -28,9 +29,18 @@ class ClaimSupplyDrop(
         if (!encounterRepository.claimDrop(drop.id)) return Result.AlreadyClaimed
 
         when (drop.reward) {
-            SupplyDropReward.STEPS -> playerRepository.addSteps(drop.rewardAmount.toLong())
-            SupplyDropReward.GEMS -> playerRepository.addGems(drop.rewardAmount.toLong())
-            SupplyDropReward.POWER_STONES -> playerRepository.addPowerStones(drop.rewardAmount.toLong())
+            SupplyDropReward.STEPS -> {
+                playerRepository.addSteps(drop.rewardAmount.toLong())
+            }
+
+            SupplyDropReward.GEMS -> {
+                playerRepository.addGems(drop.rewardAmount.toLong())
+            }
+
+            SupplyDropReward.POWER_STONES -> {
+                playerRepository.addPowerStones(drop.rewardAmount.toLong())
+            }
+
             SupplyDropReward.CARD_COPY -> {
                 // Award 1 copy of a random card type (seeded by rewardAmount as index)
                 val cardType = CardType.entries[drop.rewardAmount % CardType.entries.size]

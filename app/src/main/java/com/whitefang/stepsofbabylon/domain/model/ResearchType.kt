@@ -38,7 +38,10 @@ enum class ResearchType(
     STEP_EFFICIENCY(5_000, 8.0, 10, 2.0, "+2% bonus steps from walking"),
     WAVE_SKIP(10_000, 24.0, 10, 1.0, "Start rounds at wave X instead of wave 1"),
     AUTO_UPGRADE_AI(
-        8_000, 12.0, 5, 1.0,
+        8_000,
+        12.0,
+        5,
+        1.0,
         "Reserved for v1.x — research progress preserved",
         isComingSoon = true,
     ),
@@ -46,10 +49,14 @@ enum class ResearchType(
     CRITICAL_RESEARCH(3_000, 5.0, 15, 3.0, "+3% critical damage multiplier"),
     REGEN_RESEARCH(2_500, 4.5, 15, 4.0, "+4% health regen multiplier"),
     ENEMY_INTEL(
-        8_000, 4.0, 10, 2.0,
+        8_000,
+        4.0,
+        10,
+        2.0,
         "Tactical awareness. +2% damage per level. Reveals next wave at L1, enemy HP at L5, boss timing at L10.",
         costScaling = 1.5,
     ),
+
     /**
      * Permanent +1 multishot target per level. Stacks with the in-round Cash purchase of
      * [UpgradeType.MULTISHOT] and the baseline 1 target; the final stat is capped at 11
@@ -60,6 +67,7 @@ enum class ResearchType(
      * cumulative to max from L0 → L10. (R4-02b, 2026-05-23.)
      */
     MULTISHOT_RESEARCH(5_000, 6.0, 10, 1.0, "+1 multishot target", costScaling = 1.5),
+
     /**
      * Permanent +1 projectile bounce per level. Stacks with the in-round Cash purchase of
      * [UpgradeType.BOUNCE_SHOT]; the final stat is capped at 10 bounces in
@@ -69,7 +77,8 @@ enum class ResearchType(
      * still stacks additively post-cap, so a fully-maxed combination produces the documented
      * extended bounces. (R4-02b, 2026-05-23.)
      */
-    BOUNCE_RESEARCH(8_000, 6.0, 10, 1.0, "+1 projectile bounce", costScaling = 1.5);
+    BOUNCE_RESEARCH(8_000, 6.0, 10, 1.0, "+1 projectile bounce", costScaling = 1.5),
+    ;
 
     companion object {
         /**

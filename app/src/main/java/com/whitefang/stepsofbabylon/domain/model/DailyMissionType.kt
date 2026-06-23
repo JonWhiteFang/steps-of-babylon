@@ -14,10 +14,10 @@ enum class DailyMissionType(
     REACH_WAVE_30(MissionCategory.BATTLE, "Reach Wave 30", 30, 3, 0),
     KILL_500_ENEMIES(MissionCategory.BATTLE, "Kill 500 enemies", 500, 5, 0),
     SPEND_5000_WORKSHOP(MissionCategory.UPGRADE, "Spend 5,000 Steps on Workshop", 5_000, 2, 0),
-    COMPLETE_RESEARCH(MissionCategory.UPGRADE, "Complete a Lab research", 1, 5, 0);
+    COMPLETE_RESEARCH(MissionCategory.UPGRADE, "Complete a Lab research", 1, 5, 0),
+    ;
 
     companion object {
-        fun byCategory(category: MissionCategory): List<DailyMissionType> =
-            entries.filter { it.category == category }
+        fun byCategory(category: MissionCategory): List<DailyMissionType> = entries.filter { it.category == category }
     }
 }

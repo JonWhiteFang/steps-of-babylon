@@ -92,6 +92,7 @@
     <ID>LongMethod:BattleViewModel.kt:BattleViewModel$private suspend fun runEndRoundPersistence</ID>
     <ID>LongMethod:CardsScreen.kt:@Composable fun CardsScreen</ID>
     <ID>LongMethod:CurrencyDashboardScreen.kt:@Composable fun CurrencyDashboardScreen</ID>
+    <ID>LongMethod:DescribeUpgradeEffect.kt:DescribeUpgradeEffect$private fun format: String</ID>
     <ID>LongMethod:HelpScreen.kt:@Composable fun HelpScreen</ID>
     <ID>LongMethod:HomeScreen.kt:@Composable fun HomeScreen</ID>
     <ID>LongMethod:InRoundUpgradeMenu.kt:@Composable fun InRoundUpgradeMenu</ID>
@@ -152,7 +153,6 @@
     <ID>MaxLineLength:BiomeTransitionOverlay.kt:Text(stringResource(R.string.biome_welcome), style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.7f))</ID>
     <ID>MaxLineLength:BiomeTransitionOverlay.kt:style = MaterialTheme.typography.headlineLarge</ID>
     <ID>MaxLineLength:CardDao.kt:CardDao$@Query("UPDATE card_inventory SET copyCount = copyCount - :amount, level = level + 1 WHERE id = :id AND copyCount &gt;= :amount")</ID>
-    <ID>MaxLineLength:CardType.kt:CardType$WALKING_FORTRESS : CardType</ID>
     <ID>MaxLineLength:CardTypeTest.kt:CardTypeTest$assertNotEquals(type.effectDescriptionAtLevel(type.maxLevel), mid, "$type Lv4 must differ from Lv${type.maxLevel}")</ID>
     <ID>MaxLineLength:CardsScreen.kt:Button(onClick = { haptics.tap(); onEquip() }, enabled = equippedCount &lt; 3, modifier = Modifier.weight(1f)) { Text("Equip") }</ID>
     <ID>MaxLineLength:CardsScreen.kt:Icon(Icons.Filled.Autorenew, contentDescription = "Duplicate", tint = rowColor, modifier = Modifier.size(18.dp))</ID>
@@ -255,9 +255,6 @@
     <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$fun</ID>
     <ID>MaxLineLength:GameSurfaceView.kt:GameSurfaceView$engine.init(width.toFloat(), height.toFloat(), currentStats, currentTier, currentWsLevels, isReducedMotion, currentStartWave)</ID>
     <ID>MaxLineLength:GameSurfaceView.kt:GameSurfaceView$if (surfaceReady) engine.init(width.toFloat(), height.toFloat(), stats, tier, wsLevels, isReducedMotion, startWave)</ID>
-    <ID>MaxLineLength:GenerateSupplyDrop.kt:GenerateSupplyDrop$SupplyDrop(id = 0, trigger = trigger, reward = reward, rewardAmount = amount, claimed = false, createdAt = timestampMs)</ID>
-    <ID>MaxLineLength:GenerateSupplyDrop.kt:GenerateSupplyDrop$makeDrop(SupplyDropTrigger.STEP_THRESHOLD, SupplyDropReward.GEMS, random.nextInt(1, 4), timestampMs)</ID>
-    <ID>MaxLineLength:GenerateSupplyDrop.kt:GenerateSupplyDrop$makeDrop(SupplyDropTrigger.STEP_THRESHOLD, SupplyDropReward.STEPS, random.nextInt(50, 201), timestampMs)</ID>
     <ID>MaxLineLength:GuardedClaimDaoTest.kt:GuardedClaimDaoTest$DailyMissionEntity(date = "2026-06-10", missionType = "WALK_5000", target = 5000, progress = 5000, completed = true)</ID>
     <ID>MaxLineLength:HealthBarRenderer.kt:HealthBarRenderer$canvas.drawRoundRect(RectF(barMargin, barTop, barMargin + barWidth * ratio, barTop + barHeight), 8f, 8f, fillPaint)</ID>
     <ID>MaxLineLength:HelpScreen.kt:"• Duplicate cards add copies. Collect enough copies to level up (3 Common / 4 Rare / 5 Epic per level).\n"</ID>
@@ -352,7 +349,6 @@
     <ID>MaxLineLength:SettingsViewModel.kt:SettingsViewModel$fun setPersistent</ID>
     <ID>MaxLineLength:SettingsViewModel.kt:SettingsViewModel$fun setSmartReminders</ID>
     <ID>MaxLineLength:SettingsViewModel.kt:SettingsViewModel$fun setSupplyDrops</ID>
-    <ID>MaxLineLength:Simulation.kt:Simulation$val newCooldown = if (cooldownRemaining &gt; 0f) (cooldownRemaining - deltaTime).coerceAtLeast(0f) else cooldownRemaining</ID>
     <ID>MaxLineLength:SmartReminderManager.kt:SmartReminderManager$val</ID>
     <ID>MaxLineLength:SoundManager.kt:SoundManager$.</ID>
     <ID>MaxLineLength:StatsViewModelTest.kt:StatsViewModelTest$assertEquals(5000L, bars.last().let { it.sensorSteps + it.stepEquivalents }, "this week's record lands in the final bucket")</ID>
@@ -380,7 +376,7 @@
     <ID>MaxLineLength:SupplyRewardFormatTest.kt:SupplyRewardFormatTest$SupplyDrop(id = 1, trigger = SupplyDropTrigger.RANDOM, reward = reward, rewardAmount = amount, claimed = false, createdAt = 0L)</ID>
     <ID>MaxLineLength:SupplyRewardFormatTest.kt:SupplyRewardFormatTest$assertFalse("CARD_COPY must show the resolved card name, not the raw label: \"$label\"", label.contains("Card Copy"))</ID>
     <ID>MaxLineLength:TierSelector.kt:Column</ID>
-    <ID>MaxLineLength:TimeIntegrity.kt:TimeIntegrity$if</ID>
+    <ID>MaxLineLength:TimeIntegrity.kt:TimeIntegrity$wallDelta.coerceAtLeast(0)</ID>
     <ID>MaxLineLength:UWController.kt:UWController$fx.addEffect(UWVisualEffect(uw.type, fx.pool, cx, cy, host.screenWidth, host.screenHeight, effectDuration, host.reducedMotion))</ID>
     <ID>MaxLineLength:UWVisualEffect.kt:UWVisualEffect$fallbackPaint.color = 0xFFE53935.toInt()</ID>
     <ID>MaxLineLength:UltimateWeaponDao.kt:UltimateWeaponDao$*</ID>
@@ -393,10 +389,7 @@
     <ID>MaxLineLength:UnclaimedSuppliesViewModelTest.kt:UnclaimedSuppliesViewModelTest$fun drop</ID>
     <ID>MaxLineLength:UpgradeCard.kt:text = if (affordable) stringResource(R.string.upgrade_best_buy) else stringResource(R.string.upgrade_best_buy_save_up)</ID>
     <ID>MaxLineLength:UpgradeCard.kt:text = if (info.isMaxed) stringResource(R.string.upgrade_max) else stringResource(R.string.upgrade_level, info.level)</ID>
-    <ID>MaxLineLength:UpgradeType.kt:UpgradeType.Companion$BOUNCE_SHOT to UpgradeConfig(8_000, 1.5, 10, 1.0, "+1 bounce per level (in-round Cash purchase or Labs research; cap 10)")</ID>
-    <ID>MaxLineLength:UpgradeType.kt:UpgradeType.Companion$MULTISHOT to UpgradeConfig(5_000, 1.5, 10, 1.0, "+1 additional target per level (in-round Cash purchase or Labs research; cap 11 incl. baseline)")</ID>
-    <ID>MaxLineLength:UpgradeType.kt:UpgradeType.Companion$RAPID_FIRE to UpgradeConfig(2_000, 1.18, 10, 1.0, "Periodic attack-speed burst (60s/5s/2.0\u00d7 \u2192 permanent/3.0\u00d7 at max)")</ID>
-    <ID>MaxLineLength:UpgradeType.kt:UpgradeType.Companion$STEP_MULTIPLIER to UpgradeConfig(1_000, 1.35, 100, 1.0, "Bonus steps from walking — asymptotic curve approaches +100%")</ID>
+    <ID>MaxLineLength:UpgradeType.kt:UpgradeType.Companion$"+1 additional target per level (in-round Cash purchase or Labs research; cap 11 incl. baseline)"</ID>
     <ID>MaxLineLength:WalkingEncounterDao.kt:WalkingEncounterDao$@Query("DELETE FROM walking_encounter WHERE claimed = 0 AND id = (SELECT id FROM walking_encounter WHERE claimed = 0 ORDER BY createdAt ASC LIMIT 1)")</ID>
     <ID>MaxLineLength:WaveAnnouncement.kt:WaveAnnouncement$val alpha = if (age &lt; holdDuration) 255 else ((1f - (age - holdDuration) / fadeDuration) * 255).toInt().coerceIn(0, 255)</ID>
     <ID>MaxLineLength:WaveSpawner.kt:WaveSpawner$else -&gt; mapOf(EnemyType.SCATTER to 0.10, EnemyType.TANK to 0.10, EnemyType.RANGED to 0.15, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.45)</ID>

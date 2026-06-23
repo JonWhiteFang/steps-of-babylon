@@ -21,11 +21,18 @@ interface MissionRepository {
 
     /** Generate [date]'s mission set. Idempotent — the `(date, missionType)` unique index +
      *  `onConflict = IGNORE` is the authoritative guard (preserved in the impl). */
-    suspend fun generateForDate(date: String, missions: List<DailyMission>)
+    suspend fun generateForDate(
+        date: String,
+        missions: List<DailyMission>,
+    )
 
     /** Guarded one-shot claim; returns rows affected (`1` first claim, `0` if already claimed). */
     suspend fun markClaimed(id: Int): Int
 
     /** Update a mission's progress + completion flag. */
-    suspend fun updateProgress(id: Int, progress: Int, completed: Boolean)
+    suspend fun updateProgress(
+        id: Int,
+        progress: Int,
+        completed: Boolean,
+    )
 }

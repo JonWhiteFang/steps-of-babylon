@@ -4,6 +4,22 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Style — ktlint repo-wide format, stage 1/6 (`domain/`)
+
+**Pure formatting — no production-logic, schema, economy, or engine change; no test-count change (1254
+JVM, 0 failures).** Stage 1 (pilot) of a staged, layer-by-layer ktlint auto-format: `ktlint -F` scoped to
+`domain/` only (72 files). All changes are mechanical Bucket-A transforms (trailing-comma on call/
+declaration sites, function-/class-signature reflow, block-body→expression-body, if-else & when-entry
+bracing, blank-line and import normalization) — the full whitespace-ignored diff was reviewed hunk-by-hunk
+against the safe-transform allowlist; no literal/operator/identifier/string or logic changed. **Baselines
+regenerated** (the staged mechanism): ktlint `config/ktlint/baseline.xml` over the full `app/src` scope
+**9256 → 8534** (domain Bucket-A entries cleared; later layers stay covered); detekt
+`config/detekt/baseline.xml` **496 → 489** — the reflow shifted the line-keyed signatures of pre-existing,
+already-baselined smells (so the also-baseline-gated detekt PR gate needed a matching regen), with no
+genuinely-new smell introduced. `lint-kotlin.sh` (ktlint check) + `:app:detekt` both green. Plan:
+`docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`. Stages 2–6 (`data/`, `service/`+
+`di/`+top-level, `presentation/` excl battle, `presentation/battle/`, test sources) follow in sequence.
+
 ### Test — Compose UI tests: critical screens (#253)
 
 20 Robolectric-backed Compose UI tests across 7 critical screens: WorkshopScreen (3), StoreScreen (3),

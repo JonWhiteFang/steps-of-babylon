@@ -17,15 +17,15 @@ class AwardBossPowerStones(
     private val stepRepository: StepRepository,
     private val timeProvider: TimeProvider,
 ) {
-
     suspend operator fun invoke(
         tier: Int,
         today: String = timeProvider.today().toString(),
-    ): Long = stepRepository.creditBossPowerStonesAtomic(
-        date = today,
-        requested = tier.toLong().coerceAtLeast(1L),
-        dailyCap = DAILY_BOSS_PS_CAP,
-    )
+    ): Long =
+        stepRepository.creditBossPowerStonesAtomic(
+            date = today,
+            requested = tier.toLong().coerceAtLeast(1L),
+            dailyCap = DAILY_BOSS_PS_CAP,
+        )
 
     companion object {
         /** Maximum boss-earned Power Stones the player may collect per calendar day. */
