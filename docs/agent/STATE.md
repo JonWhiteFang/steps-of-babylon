@@ -3,10 +3,10 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.11 (versionCode 27) — release collateral prepared, branch `release/v1.0.11`** (version
-bump 26→27 / 1.0.10→1.0.11; CHANGELOG `[Unreleased]`→`[1.0.11]`; `docs/release/release-notes-v1.0.11.md`;
-pointer sync). On PR-merge to `main`, the annotated tag `v1.0.11` (message = the "What's new" block) fires
-`release.yml` → signed AAB → Play **internal** track. v1.0.11 promotes the **large polish/hardening body
+**Headline:** **v1.0.11 (versionCode 27) SHIPPED → Play internal** (tag `v1.0.11` fired green end-to-end —
+release run `28018033566` `success`: every step green incl. `bundleRelease` [R8+sign], `jarsigner -verify`,
+Play-internal upload, GitHub Release `v1.0.11` w/ `app-release.aab` 16.04 MB; release PR #330 squash `3915fd1`).
+v1.0.11 promotes the **large polish/hardening body
 accumulated since v1.0.10** — no new features, **no schema change** (`app/schemas` byte-identical to v1.0.10).
 Player-facing: accessibility (#213/#214), i18n correctness (#225/#259/#260), Home zero-state (#224),
 perf-smoothness (#242/#243), offline step/purchase reliability (#251/#249), process-death survival (#234).
@@ -36,7 +36,7 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (IN PROGRESS — cutting release v1.0.11 / versionCode 27 → Play internal track).** First release
+- **CURRENT (DONE — SHIPPED v1.0.11 / versionCode 27 → Play internal track).** First release
   since v1.0.10; promotes the large polish/hardening `[Unreleased]` body (no new features, **no schema
   change** — `app/schemas` byte-identical to v1.0.10). Collateral-only PR on branch `release/v1.0.11` (no
   production-code change in the PR itself): bump `versionCode` 26→27 / `versionName` 1.0.10→1.0.11 in
@@ -47,13 +47,15 @@ the med/low backlog (#262) remain.
   the release-grounding verification fan-out** (all findings adversarially confirmed): the lint entry header
   PR# `#311`→`#312` (#311 is the unrelated CLI-tooling chore), and a new **CI/tooling note** accounting for the
   three functional commits that had no dedicated entry (#310 CI docs-only fast path, #311 CLI-tooling hook, #287
-  all-actions bump). Fresh `testDebugUnitTest` green (**1254 JVM, 0 failures**). **On merge, annotated tag
-  `v1.0.11` (tag message = the "What's new" block) → `release.yml` builds the signed AAB → Play internal.**
+  all-actions bump). Fresh `testDebugUnitTest` green (**1254 JVM, 0 failures**). PR #330 both CI lanes green
+  (build-and-test 6m35s, connected/instrumented 5m2s); squash-merged `3915fd1`; branch deleted. Annotated tag
+  `v1.0.11` (message = the "What's new" block) fired `release.yml` → run `28018033566` `success` (signed AAB,
+  `jarsigner -verify`, Play-internal upload, GitHub Release `v1.0.11` + `app-release.aab` 16.04 MB).
   Player-facing in this release: accessibility (#213/#214), i18n correctness (#225/#259/#260), Home zero-state
   (#224), perf-smoothness (#242/#243), offline step/purchase reliability (#251/#249), process-death survival
   (#234). **Manual Play Console Data-Safety action (#192) is still NOT done by this tag** — separate human step
-  (`docs/release/data-safety-form.md`). **Next:** open PR → both CI lanes green → merge → tag; then back to the
-  med/low backlog (#262/#128; i18n #34; the larger #233 Simulation-hoist, ADR-0012).
+  (`docs/release/data-safety-form.md`). **Next:** med/low backlog (#262/#128; i18n #34; the larger #233
+  Simulation-hoist, ADR-0012) + the internal→closed promotion judgment call (Data-Safety #192 prerequisite).
 - **Previous objective (DONE — MERGED PR #328, squash `d8b8c5b`; `[Unreleased]`).**
   **Staged repo-wide ktlint auto-format — stage 6 of 6 (FINAL): test sources. The staged format effort is now
   COMPLETE — all 6 stages merged (PRs #322/#324/#325/#326/#327/#328).** Mechanical `ktlint -F` (glob form) over the TEST sources only — `app/src/test/`
