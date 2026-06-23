@@ -15,7 +15,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class DeepLinkRoutingTest {
-
     // --- Intent extra extraction (preserves existing contract) ---
 
     @Test
@@ -125,18 +124,31 @@ class DeepLinkRoutingTest {
 
     @Test
     fun `argumentFreeRoutes contains all 13 current screens`() {
-        val expected = setOf(
-            "home", "workshop", "battle", "labs", "stats",
-            "weapons", "cards", "supplies", "economy", "missions",
-            "settings", "store", "help",
-        )
+        val expected =
+            setOf(
+                "home",
+                "workshop",
+                "battle",
+                "labs",
+                "stats",
+                "weapons",
+                "cards",
+                "supplies",
+                "economy",
+                "missions",
+                "settings",
+                "store",
+                "help",
+            )
         assertEquals(expected, Screen.argumentFreeRoutes)
     }
 
     @Test
     fun `argumentFreeRoutes excludes unknown routes`() {
-        assertFalse("sentinel guard - unknown routes must not silently pass",
-            "fake_route" in Screen.argumentFreeRoutes)
+        assertFalse(
+            "sentinel guard - unknown routes must not silently pass",
+            "fake_route" in Screen.argumentFreeRoutes,
+        )
     }
 
     @Test
@@ -144,11 +156,21 @@ class DeepLinkRoutingTest {
         // Round-trip: every Screen reachable via fromRoute must also satisfy
         // the whitelist check, otherwise the MainActivity deep-link handler
         // would drop navigations it should accept.
-        val allRouteStrings = listOf(
-            "home", "workshop", "battle", "labs", "stats",
-            "weapons", "cards", "supplies", "economy", "missions",
-            "settings", "store",
-        )
+        val allRouteStrings =
+            listOf(
+                "home",
+                "workshop",
+                "battle",
+                "labs",
+                "stats",
+                "weapons",
+                "cards",
+                "supplies",
+                "economy",
+                "missions",
+                "settings",
+                "store",
+            )
         for (route in allRouteStrings) {
             val screen = Screen.fromRoute(route)
             assertTrue("fromRoute($route) should resolve", screen != null)

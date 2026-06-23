@@ -30,6 +30,5 @@ class FakeRewardAdManager : RewardAdManager {
         return if (resultQueue.isNotEmpty()) resultQueue.removeFirst() else nextResult
     }
 
-    override fun isAdAvailable(placement: AdPlacement): Boolean =
-        availabilityOverrides[placement] ?: defaultAvailable
+    override fun isAdAvailable(placement: AdPlacement): Boolean = availabilityOverrides[placement] ?: defaultAvailable
 }

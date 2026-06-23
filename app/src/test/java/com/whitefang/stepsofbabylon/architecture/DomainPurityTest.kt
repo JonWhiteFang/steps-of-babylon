@@ -33,11 +33,14 @@ import java.io.File
  * (`com.whitefang.stepsofbabylon.data`).
  */
 class DomainPurityTest {
-
-    private val forbiddenPrefixes = listOf(
-        "android.", "androidx.", "com.android.", "com.google.android.",
-        "com.whitefang.stepsofbabylon.data",
-    )
+    private val forbiddenPrefixes =
+        listOf(
+            "android.",
+            "androidx.",
+            "com.android.",
+            "com.google.android.",
+            "com.whitefang.stepsofbabylon.data",
+        )
 
     /** Domain must also stay DI-framework-agnostic — no Dagger/Hilt or javax.inject in domain code. */
     private val forbiddenDiPrefixes = listOf("dagger.", "javax.inject.")
@@ -49,22 +52,24 @@ class DomainPurityTest {
         assertTrue(domainRoot.isDirectory) {
             "domain source root not found at ${domainRoot.absolutePath} (working dir = ${File(".").absolutePath})"
         }
-        return domainRoot.walkTopDown()
+        return domainRoot
+            .walkTopDown()
             .filter { it.isFile && it.extension == "kt" }
             .flatMap { file ->
-                file.readLines()
+                file
+                    .readLines()
                     .map { it.trim() }
                     .filter { it.startsWith("import ") }
                     .map { file.name to it.removePrefix("import ").trim() }
-            }
-            .toList()
+            }.toList()
     }
 
     @Test
     fun `domain layer has no Android and no data-layer imports`() {
-        val offenders = domainImports()
-            .filter { (_, import) -> forbiddenPrefixes.any { import.startsWith(it) } }
-            .map { (file, import) -> "$file: import $import" }
+        val offenders =
+            domainImports()
+                .filter { (_, import) -> forbiddenPrefixes.any { import.startsWith(it) } }
+                .map { (file, import) -> "$file: import $import" }
 
         assertTrue(offenders.isEmpty()) {
             "domain/ must have zero Android AND zero data-layer imports — found:\n" + offenders.joinToString("\n")
@@ -73,9 +78,10 @@ class DomainPurityTest {
 
     @Test
     fun `domain layer is DI-framework-agnostic`() {
-        val offenders = domainImports()
-            .filter { (_, import) -> forbiddenDiPrefixes.any { import.startsWith(it) } }
-            .map { (file, import) -> "$file: import $import" }
+        val offenders =
+            domainImports()
+                .filter { (_, import) -> forbiddenDiPrefixes.any { import.startsWith(it) } }
+                .map { (file, import) -> "$file: import $import" }
 
         assertTrue(offenders.isEmpty()) {
             "domain/ must not import a DI framework (Dagger/Hilt/javax.inject) — found:\n" +
@@ -92,15 +98,20 @@ class DomainPurityTest {
     @Test
     fun `domain layer has no inline fully-qualified data-layer references`() {
         val dataFqn = Regex("""\bcom\.whitefang\.stepsofbabylon\.data\b""")
-        val offenders = domainSourceFiles().flatMap { file ->
-            stripComments(file.readText()).lineSequence()
-                .mapIndexedNotNull { idx, line ->
-                    // Ignore the `import` lines — those are covered (and asserted) by the import scan.
-                    if (!line.trim().startsWith("import ") && dataFqn.containsMatchIn(line)) {
-                        "${file.name}:${idx + 1}: ${line.trim()}"
-                    } else null
-                }
-        }.toList()
+        val offenders =
+            domainSourceFiles()
+                .flatMap { file ->
+                    stripComments(file.readText())
+                        .lineSequence()
+                        .mapIndexedNotNull { idx, line ->
+                            // Ignore the `import` lines — those are covered (and asserted) by the import scan.
+                            if (!line.trim().startsWith("import ") && dataFqn.containsMatchIn(line)) {
+                                "${file.name}:${idx + 1}: ${line.trim()}"
+                            } else {
+                                null
+                            }
+                        }
+                }.toList()
 
         assertTrue(offenders.isEmpty()) {
             "domain/ must have zero inline fully-qualified data-layer references (#220) — found:\n" +
@@ -125,9 +136,10 @@ class DomainPurityTest {
     private fun stripComments(source: String): String {
         // Replace each block comment with the SAME number of newlines it spanned, so line numbers in
         // the offender report stay aligned with the original file.
-        val noBlock = source.replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL)) { match ->
-            "\n".repeat(match.value.count { it == '\n' })
-        }
+        val noBlock =
+            source.replace(Regex("""/\*.*?\*/""", RegexOption.DOT_MATCHES_ALL)) { match ->
+                "\n".repeat(match.value.count { it == '\n' })
+            }
         return noBlock.lines().joinToString("\n") { it.substringBefore("//") }
     }
 }

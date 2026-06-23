@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class EnemyTypeTest {
-
     @Test
     fun `6 entries exist`() {
         assertEquals(6, EnemyType.entries.size)

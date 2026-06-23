@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test
 import kotlin.random.Random
 
 class GenerateSupplyDropTest {
-
     @Test
     fun `returns null when inbox full`() {
         val sut = GenerateSupplyDrop(Random(42))
@@ -108,8 +107,13 @@ class GenerateSupplyDropTest {
     /** A Random whose nextDouble() always returns 1.0 (never < 0.05) but counts each call. */
     private class CountingNeverTriggerRandom : kotlin.random.Random() {
         var doubleCalls = 0
+
         override fun nextBits(bitCount: Int): Int = 0
-        override fun nextDouble(): Double { doubleCalls++; return 1.0 }
+
+        override fun nextDouble(): Double {
+            doubleCalls++
+            return 1.0
+        }
     }
 
     @Test

@@ -11,7 +11,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class OnboardingRoutingTest {
-
     @Test
     fun `startDestination is Onboarding when not completed`() {
         assertEquals(Screen.Onboarding.route, Screen.startDestination(hasCompletedOnboarding = false))

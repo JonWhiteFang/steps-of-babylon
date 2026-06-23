@@ -12,11 +12,13 @@ import org.junit.jupiter.api.Test
  * Validates card balance — no single card is mandatory, tradeoffs are real.
  */
 class CardBalanceTest {
-
     private val resolveStats = ResolveStats()
     private val applyCardEffects = ApplyCardEffects()
 
-    private fun effectivePower(card: CardType?, level: Int): Double {
+    private fun effectivePower(
+        card: CardType?,
+        level: Int,
+    ): Double {
         val baseStats = resolveStats(emptyMap())
         if (card == null) return baseStats.damage * baseStats.attackSpeed * baseStats.maxHealth
 
@@ -49,8 +51,10 @@ class CardBalanceTest {
         val basePower = effectivePower(null, 0)
         for (card in CardType.entries) {
             val power = effectivePower(card, 5)
-            assertTrue(power < basePower * 2.5,
-                "${card.name} Lv5 power ($power) exceeds 2.5x base ($basePower)")
+            assertTrue(
+                power < basePower * 2.5,
+                "${card.name} Lv5 power ($power) exceeds 2.5x base ($basePower)",
+            )
         }
     }
 

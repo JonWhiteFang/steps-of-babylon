@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.map
 class FakeMissionRepository(
     val dao: FakeDailyMissionDao = FakeDailyMissionDao(),
 ) : MissionRepository {
-
     override suspend fun getMissionsForDate(date: String): List<DailyMission> =
         dao.getByDateOnce(date).mapNotNull { it.toDomainOrNull() }
 
@@ -24,28 +23,46 @@ class FakeMissionRepository(
 
     override fun observeClaimableCount(date: String): Flow<Int> = dao.countClaimable(date)
 
-    override suspend fun generateForDate(date: String, missions: List<DailyMission>) {
+    override suspend fun generateForDate(
+        date: String,
+        missions: List<DailyMission>,
+    ) {
         if (dao.getByDateOnce(date).isNotEmpty()) return
         missions.forEach { dao.insert(it.toEntity()) }
     }
 
     override suspend fun markClaimed(id: Int): Int = dao.markClaimed(id)
 
-    override suspend fun updateProgress(id: Int, progress: Int, completed: Boolean) =
-        dao.updateProgress(id, progress, completed)
+    override suspend fun updateProgress(
+        id: Int,
+        progress: Int,
+        completed: Boolean,
+    ) = dao.updateProgress(id, progress, completed)
 
     private fun DailyMissionEntity.toDomainOrNull(): DailyMission? {
         val type = DailyMissionType.entries.find { it.name == missionType } ?: return null
         return DailyMission(
-            id = id, type = type, date = date, target = target, progress = progress,
-            rewardGems = rewardGems, rewardPowerStones = rewardPowerStones,
-            completed = completed, claimed = claimed,
+            id = id,
+            type = type,
+            date = date,
+            target = target,
+            progress = progress,
+            rewardGems = rewardGems,
+            rewardPowerStones = rewardPowerStones,
+            completed = completed,
+            claimed = claimed,
         )
     }
 
-    private fun DailyMission.toEntity() = DailyMissionEntity(
-        date = date, missionType = type.name, target = target, progress = progress,
-        rewardGems = rewardGems, rewardPowerStones = rewardPowerStones,
-        completed = completed, claimed = claimed,
-    )
+    private fun DailyMission.toEntity() =
+        DailyMissionEntity(
+            date = date,
+            missionType = type.name,
+            target = target,
+            progress = progress,
+            rewardGems = rewardGems,
+            rewardPowerStones = rewardPowerStones,
+            completed = completed,
+            claimed = claimed,
+        )
 }

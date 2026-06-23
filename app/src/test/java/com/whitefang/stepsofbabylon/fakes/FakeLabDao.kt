@@ -27,8 +27,7 @@ class FakeLabDao : LabDao {
     override fun getByType(researchType: String): Flow<LabResearchEntity?> =
         rows.map { list -> list.firstOrNull { it.researchType == researchType } }
 
-    override fun getActive(): Flow<List<LabResearchEntity>> =
-        rows.map { list -> list.filter { it.startedAt != null } }
+    override fun getActive(): Flow<List<LabResearchEntity>> = rows.map { list -> list.filter { it.startedAt != null } }
 
     override suspend fun upsert(entity: LabResearchEntity) {
         rows.update { list ->

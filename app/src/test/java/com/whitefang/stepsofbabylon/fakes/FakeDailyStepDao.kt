@@ -40,7 +40,10 @@ class FakeDailyStepDao(
 
     override fun getByDate(date: String): Flow<DailyStepRecordEntity?> = data.map { it[date] }
 
-    override fun getRange(startDate: String, endDate: String): Flow<List<DailyStepRecordEntity>> =
+    override fun getRange(
+        startDate: String,
+        endDate: String,
+    ): Flow<List<DailyStepRecordEntity>> =
         data.map { map -> map.values.filter { it.date in startDate..endDate }.sortedBy { it.date } }
 
     override suspend fun upsert(entity: DailyStepRecordEntity) {
@@ -54,40 +57,64 @@ class FakeDailyStepDao(
         data.value = data.value + (date to e.copy(escrowSteps = 0, escrowSyncCount = 0))
     }
 
-    override suspend fun sumCreditedSteps(startDate: String, endDate: String): Long =
-        data.value.values.filter { it.date in startDate..endDate }.sumOf { it.creditedSteps }
+    override suspend fun sumCreditedSteps(
+        startDate: String,
+        endDate: String,
+    ): Long =
+        data.value.values
+            .filter { it.date in startDate..endDate }
+            .sumOf { it.creditedSteps }
 
     // #121: column-targeted upserts — each touches ONLY its own columns, mirroring the real
     // SQL's `ON CONFLICT(date) DO UPDATE SET <those columns>`. The fake copies the existing
     // row (or starts from a fresh default row) and overwrites only this writer's fields, so
     // a disjoint-column writer cannot clobber another's data through the fake either.
-    override suspend fun setSensorAndCreditedSteps(date: String, sensorSteps: Long, creditedSteps: Long) {
+    override suspend fun setSensorAndCreditedSteps(
+        date: String,
+        sensorSteps: Long,
+        creditedSteps: Long,
+    ) {
         val base = data.value[date] ?: DailyStepRecordEntity(date = date)
         data.value = data.value + (date to base.copy(sensorSteps = sensorSteps, creditedSteps = creditedSteps))
     }
 
-    override suspend fun setHealthConnectSteps(date: String, healthConnectSteps: Long) {
+    override suspend fun setHealthConnectSteps(
+        date: String,
+        healthConnectSteps: Long,
+    ) {
         val base = data.value[date] ?: DailyStepRecordEntity(date = date)
         data.value = data.value + (date to base.copy(healthConnectSteps = healthConnectSteps))
     }
 
-    override suspend fun setActivityMinutes(date: String, activityMinutes: Map<String, Int>, stepEquivalents: Long) {
+    override suspend fun setActivityMinutes(
+        date: String,
+        activityMinutes: Map<String, Int>,
+        stepEquivalents: Long,
+    ) {
         val base = data.value[date] ?: DailyStepRecordEntity(date = date)
-        data.value = data.value + (date to base.copy(activityMinutes = activityMinutes, stepEquivalents = stepEquivalents))
+        data.value =
+            data.value + (date to base.copy(activityMinutes = activityMinutes, stepEquivalents = stepEquivalents))
     }
 
-    override suspend fun setEscrow(date: String, escrowSteps: Long, escrowSyncCount: Int) {
+    override suspend fun setEscrow(
+        date: String,
+        escrowSteps: Long,
+        escrowSyncCount: Int,
+    ) {
         val base = data.value[date] ?: DailyStepRecordEntity(date = date)
         data.value = data.value + (date to base.copy(escrowSteps = escrowSteps, escrowSyncCount = escrowSyncCount))
     }
 
-    override suspend fun getBattleStepsEarned(date: String): Long =
-        data.value[date]?.battleStepsEarned ?: 0L
+    override suspend fun getBattleStepsEarned(date: String): Long = data.value[date]?.battleStepsEarned ?: 0L
 
-    override suspend fun incrementBattleSteps(date: String, delta: Long) {
+    override suspend fun incrementBattleSteps(
+        date: String,
+        delta: Long,
+    ) {
         val existing = data.value[date]
-        val updated = existing?.copy(battleStepsEarned = existing.battleStepsEarned + delta)
-            ?: DailyStepRecordEntity(date = date, battleStepsEarned = delta)
+        val updated =
+            existing?.copy(battleStepsEarned = existing.battleStepsEarned + delta)
+                ?: DailyStepRecordEntity(date = date, battleStepsEarned = delta)
         data.value = data.value + (date to updated)
     }
 
@@ -96,25 +123,29 @@ class FakeDailyStepDao(
         requested: Long,
         dailyCap: Long,
         playerDao: PlayerProfileDao,
-    ): Long = atomicMutex.withLock {
-        creditBattleStepsAtomicCallCount++
-        if (requested <= 0L) return@withLock 0L
-        val alreadyEarned = getBattleStepsEarned(date)
-        val remaining = (dailyCap - alreadyEarned).coerceAtLeast(0L)
-        if (remaining <= 0L) return@withLock 0L
-        val credited = min(requested, remaining)
-        incrementBattleSteps(date, credited)
-        linkedPlayer?.profile?.update { it.copy(stepBalance = it.stepBalance + credited) }
-        credited
-    }
+    ): Long =
+        atomicMutex.withLock {
+            creditBattleStepsAtomicCallCount++
+            if (requested <= 0L) return@withLock 0L
+            val alreadyEarned = getBattleStepsEarned(date)
+            val remaining = (dailyCap - alreadyEarned).coerceAtLeast(0L)
+            if (remaining <= 0L) return@withLock 0L
+            val credited = min(requested, remaining)
+            incrementBattleSteps(date, credited)
+            linkedPlayer?.profile?.update { it.copy(stepBalance = it.stepBalance + credited) }
+            credited
+        }
 
-    override suspend fun getBossPsEarnedToday(date: String): Long =
-        data.value[date]?.bossPsEarnedToday ?: 0L
+    override suspend fun getBossPsEarnedToday(date: String): Long = data.value[date]?.bossPsEarnedToday ?: 0L
 
-    override suspend fun incrementBossPs(date: String, delta: Long) {
+    override suspend fun incrementBossPs(
+        date: String,
+        delta: Long,
+    ) {
         val existing = data.value[date]
-        val updated = existing?.copy(bossPsEarnedToday = existing.bossPsEarnedToday + delta)
-            ?: DailyStepRecordEntity(date = date, bossPsEarnedToday = delta)
+        val updated =
+            existing?.copy(bossPsEarnedToday = existing.bossPsEarnedToday + delta)
+                ?: DailyStepRecordEntity(date = date, bossPsEarnedToday = delta)
         data.value = data.value + (date to updated)
     }
 
@@ -127,15 +158,16 @@ class FakeDailyStepDao(
         requested: Long,
         dailyCap: Long,
         playerDao: PlayerProfileDao,
-    ): Long = atomicMutex.withLock {
-        creditBossPsAtomicCallCount++
-        if (requested <= 0L) return@withLock 0L
-        val alreadyEarned = getBossPsEarnedToday(date)
-        val remaining = (dailyCap - alreadyEarned).coerceAtLeast(0L)
-        if (remaining <= 0L) return@withLock 0L
-        val credited = min(requested, remaining)
-        incrementBossPs(date, credited)
-        linkedPlayer?.profile?.update { it.copy(powerStones = it.powerStones + credited) }
-        credited
-    }
+    ): Long =
+        atomicMutex.withLock {
+            creditBossPsAtomicCallCount++
+            if (requested <= 0L) return@withLock 0L
+            val alreadyEarned = getBossPsEarnedToday(date)
+            val remaining = (dailyCap - alreadyEarned).coerceAtLeast(0L)
+            if (remaining <= 0L) return@withLock 0L
+            val credited = min(requested, remaining)
+            incrementBossPs(date, credited)
+            linkedPlayer?.profile?.update { it.copy(powerStones = it.powerStones + credited) }
+            credited
+        }
 }

@@ -20,7 +20,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class ChronoOverlayPaintTest {
-
     @Test
     fun `chrono overlay reuses one Paint instance across frames`() {
         val engine = GameEngine()
@@ -34,8 +33,10 @@ class ChronoOverlayPaintTest {
         val paints = argumentCaptor<Paint>()
         // drawRect(left, top, right, bottom, paint) — capture the full-screen overlay paint.
         verify(canvas, org.mockito.kotlin.atLeast(2)).drawRect(
-            org.mockito.kotlin.eq(0f), org.mockito.kotlin.eq(0f),
-            org.mockito.kotlin.eq(800f), org.mockito.kotlin.eq(600f),
+            org.mockito.kotlin.eq(0f),
+            org.mockito.kotlin.eq(0f),
+            org.mockito.kotlin.eq(800f),
+            org.mockito.kotlin.eq(600f),
             paints.capture(),
         )
         val captured = paints.allValues

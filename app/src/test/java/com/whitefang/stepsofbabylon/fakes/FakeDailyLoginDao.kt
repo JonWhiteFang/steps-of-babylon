@@ -8,5 +8,7 @@ class FakeDailyLoginDao : DailyLoginDao {
 
     override suspend fun getByDate(date: String): DailyLoginEntity? = data[date]
 
-    override suspend fun upsert(entity: DailyLoginEntity) { data[entity.date] = entity }
+    override suspend fun upsert(entity: DailyLoginEntity) {
+        data[entity.date] = entity
+    }
 }

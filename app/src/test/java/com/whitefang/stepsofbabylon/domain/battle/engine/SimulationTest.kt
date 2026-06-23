@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SimulationTest {
-
     // ---- creditCash ----
 
     @Test
@@ -177,6 +176,7 @@ class SimulationTest {
         override var isAlive = true
         var lastDt = Float.NaN
         var tickCount = 0
+
         override fun update(deltaTime: Float) {
             lastDt = deltaTime
             tickCount++
@@ -231,7 +231,7 @@ class SimulationTest {
     @Test
     fun `detectProjectileEnemyHits stops at the first overlapping enemy per projectile`() {
         val proj = FakeEntity(x = 0f, y = 0f, width = 20f)
-        val first = FakeEntity(x = 3f, y = 0f, width = 20f)  // overlaps
+        val first = FakeEntity(x = 3f, y = 0f, width = 20f) // overlaps
         val second = FakeEntity(x = 5f, y = 0f, width = 20f) // also overlaps
         val hits = mutableListOf<FakeEntity>()
         Simulation().detectProjectileEnemyHits(listOf(proj), listOf(first, second)) { _, e -> hits.add(e) }
@@ -334,37 +334,39 @@ class SimulationTest {
     // ---- events stream (SimulationEvent flow, V1X-09 Phase 3 final slice) ----
 
     @Test
-    fun `emit delivers events to a collector in order`() = runTest(UnconfinedTestDispatcher()) {
-        val sim = Simulation()
-        val received = mutableListOf<SimulationEvent>()
-        // UnconfinedTestDispatcher: the collector subscribes eagerly at launch, so the two
-        // emits below land on an active subscriber.
-        val collector = launch { sim.events.collect { received.add(it) } }
-        sim.emit(SimulationEvent.StepReward(5L, 1f, 2f))
-        sim.emit(SimulationEvent.BossKilled(3, 4f, 5f))
-        advanceUntilIdle()
-        collector.cancel()
-        assertEquals(
-            listOf(
-                SimulationEvent.StepReward(5L, 1f, 2f),
-                SimulationEvent.BossKilled(3, 4f, 5f),
-            ),
-            received,
-        )
-    }
+    fun `emit delivers events to a collector in order`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val sim = Simulation()
+            val received = mutableListOf<SimulationEvent>()
+            // UnconfinedTestDispatcher: the collector subscribes eagerly at launch, so the two
+            // emits below land on an active subscriber.
+            val collector = launch { sim.events.collect { received.add(it) } }
+            sim.emit(SimulationEvent.StepReward(5L, 1f, 2f))
+            sim.emit(SimulationEvent.BossKilled(3, 4f, 5f))
+            advanceUntilIdle()
+            collector.cancel()
+            assertEquals(
+                listOf(
+                    SimulationEvent.StepReward(5L, 1f, 2f),
+                    SimulationEvent.BossKilled(3, 4f, 5f),
+                ),
+                received,
+            )
+        }
 
     @Test
-    fun `events does not replay buffered events to a late subscriber`() = runTest(UnconfinedTestDispatcher()) {
-        val sim = Simulation()
-        // Emitted with no active collector. replay = 0 means a collector that subscribes
-        // afterwards must NOT receive it — the contract that stops the fresh polling-loop
-        // collector started by BattleViewModel.playAgain from re-crediting the previous
-        // round's kills.
-        sim.emit(SimulationEvent.BossKilled(1, 0f, 0f))
-        val received = mutableListOf<SimulationEvent>()
-        val collector = launch { sim.events.collect { received.add(it) } }
-        advanceUntilIdle()
-        collector.cancel()
-        assertTrue(received.isEmpty(), "replay=0 stream must not deliver pre-subscription events")
-    }
+    fun `events does not replay buffered events to a late subscriber`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val sim = Simulation()
+            // Emitted with no active collector. replay = 0 means a collector that subscribes
+            // afterwards must NOT receive it — the contract that stops the fresh polling-loop
+            // collector started by BattleViewModel.playAgain from re-crediting the previous
+            // round's kills.
+            sim.emit(SimulationEvent.BossKilled(1, 0f, 0f))
+            val received = mutableListOf<SimulationEvent>()
+            val collector = launch { sim.events.collect { received.add(it) } }
+            advanceUntilIdle()
+            collector.cancel()
+            assertTrue(received.isEmpty(), "replay=0 stream must not deliver pre-subscription events")
+        }
 }

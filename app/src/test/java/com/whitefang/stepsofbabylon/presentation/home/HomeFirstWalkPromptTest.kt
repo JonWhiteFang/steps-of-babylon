@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test
  * player who simply hasn't walked *today* but has a stockpile isn't nagged).
  */
 class HomeFirstWalkPromptTest {
-
     @Test
     fun `prompt shows for a brand-new player with no steps today and no balance`() {
         assertTrue(HomeUiState(todaySteps = 0, stepBalance = 0, isLoading = false).showFirstWalkPrompt)

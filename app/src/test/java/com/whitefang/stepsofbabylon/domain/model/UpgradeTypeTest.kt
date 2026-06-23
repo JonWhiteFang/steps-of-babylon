@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class UpgradeTypeTest {
-
     @Test
     fun `24 entries exist`() {
         assertEquals(24, UpgradeType.entries.size)

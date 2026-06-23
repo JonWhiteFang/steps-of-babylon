@@ -1,9 +1,9 @@
 package com.whitefang.stepsofbabylon.presentation.navigation
 
-import androidx.navigation.testing.TestNavHostController
 import androidx.navigation.compose.ComposeNavigator
 import androidx.navigation.compose.composable
 import androidx.navigation.createGraph
+import androidx.navigation.testing.TestNavHostController
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -33,23 +33,23 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class BottomNavRestoreTest {
-
     private lateinit var navController: TestNavHostController
 
     @Before
     fun setUp() {
         navController = TestNavHostController(ApplicationProvider.getApplicationContext())
         navController.navigatorProvider.addNavigator(ComposeNavigator())
-        navController.graph = navController.createGraph(startDestination = Screen.Home.route) {
-            // Mirror the real flat NavHost: the 5 tabs + Cards as a push-child of Workshop.
-            // Content is irrelevant to the back-stack behaviour under test, so it's empty.
-            composable(Screen.Home.route) {}
-            composable(Screen.Workshop.route) {}
-            composable(Screen.Battle.route) {}
-            composable(Screen.Labs.route) {}
-            composable(Screen.Stats.route) {}
-            composable(Screen.Cards.route) {}
-        }
+        navController.graph =
+            navController.createGraph(startDestination = Screen.Home.route) {
+                // Mirror the real flat NavHost: the 5 tabs + Cards as a push-child of Workshop.
+                // Content is irrelevant to the back-stack behaviour under test, so it's empty.
+                composable(Screen.Home.route) {}
+                composable(Screen.Workshop.route) {}
+                composable(Screen.Battle.route) {}
+                composable(Screen.Labs.route) {}
+                composable(Screen.Stats.route) {}
+                composable(Screen.Cards.route) {}
+            }
     }
 
     /** A bottom-nav tab tap — the real shared [bottomNavOptions] NavOptions. */
@@ -66,10 +66,10 @@ class BottomNavRestoreTest {
 
     @Test
     fun `returning to a tab after drilling into its push-child shows the tab root, not the child`() {
-        tapTab(Screen.Workshop.route)                       // tab → Workshop root
-        navController.navigate(Screen.Cards.route)          // push Cards (optionless, as Workshop does)
-        tapTab(Screen.Stats.route)                          // switch away to another tab
-        tapTab(Screen.Workshop.route)                       // return to the Workshop tab
+        tapTab(Screen.Workshop.route) // tab → Workshop root
+        navController.navigate(Screen.Cards.route) // push Cards (optionless, as Workshop does)
+        tapTab(Screen.Stats.route) // switch away to another tab
+        tapTab(Screen.Workshop.route) // return to the Workshop tab
 
         assertEquals(
             "Tapping the Workshop tab must land on the Workshop root, not the resurrected Cards child",

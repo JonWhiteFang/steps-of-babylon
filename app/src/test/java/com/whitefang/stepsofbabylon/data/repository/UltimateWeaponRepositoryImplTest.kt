@@ -24,7 +24,6 @@ import org.mockito.kotlin.whenever
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class UltimateWeaponRepositoryImplTest {
-
     private fun mockDao(rows: List<UltimateWeaponStateEntity>): UltimateWeaponDao {
         val dao = mock<UltimateWeaponDao>()
         whenever(dao.getAll()).thenReturn(MutableStateFlow(rows))
@@ -33,165 +32,180 @@ class UltimateWeaponRepositoryImplTest {
     }
 
     @Test
-    fun `observeUnlockedWeapons filters out locked rows`() = runTest {
-        val rows = listOf(
-            UltimateWeaponStateEntity(weaponType = "GOLDEN_ZIGGURAT", isUnlocked = true),
-            UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = false),
-        )
-        val dao = mockDao(rows)
-        val repo = UltimateWeaponRepositoryImpl(dao, mock())
+    fun `observeUnlockedWeapons filters out locked rows`() =
+        runTest {
+            val rows =
+                listOf(
+                    UltimateWeaponStateEntity(weaponType = "GOLDEN_ZIGGURAT", isUnlocked = true),
+                    UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = false),
+                )
+            val dao = mockDao(rows)
+            val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
-        val unlocked = repo.observeUnlockedWeapons().first()
+            val unlocked = repo.observeUnlockedWeapons().first()
 
-        assertEquals(1, unlocked.size)
-        assertEquals(UltimateWeaponType.GOLDEN_ZIGGURAT, unlocked.first().type)
-    }
-
-    @Test
-    fun `observeEquippedWeapons returns empty when none equipped`() = runTest {
-        val dao = mockDao(emptyList())
-        val repo = UltimateWeaponRepositoryImpl(dao, mock())
-
-        assertTrue(repo.observeEquippedWeapons().first().isEmpty())
-    }
+            assertEquals(1, unlocked.size)
+            assertEquals(UltimateWeaponType.GOLDEN_ZIGGURAT, unlocked.first().type)
+        }
 
     @Test
-    fun `observeEquippedWeapons filters out locked-but-equipped rows`() = runTest {
-        // Defensive: a row with isEquipped=true but isUnlocked=false should never persist
-        // (R4-06 contract), but the filter ensures rendering doesn't surface it.
-        val rows = listOf(
-            UltimateWeaponStateEntity(weaponType = "GOLDEN_ZIGGURAT", isUnlocked = false, isEquipped = true),
-            UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = true, isEquipped = true),
-        )
-        val dao = mockDao(rows)
-        val repo = UltimateWeaponRepositoryImpl(dao, mock())
+    fun `observeEquippedWeapons returns empty when none equipped`() =
+        runTest {
+            val dao = mockDao(emptyList())
+            val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
-        val equipped = repo.observeEquippedWeapons().first()
-
-        assertEquals(1, equipped.size)
-        assertEquals(UltimateWeaponType.DEATH_WAVE, equipped.first().type)
-    }
+            assertTrue(repo.observeEquippedWeapons().first().isEmpty())
+        }
 
     @Test
-    fun `unlockWeapon inserts new row when none exists`() = runTest {
-        val dao = mock<UltimateWeaponDao>()
-        whenever(dao.getByType(any())).thenReturn(null)
-        val repo = UltimateWeaponRepositoryImpl(dao, mock())
+    fun `observeEquippedWeapons filters out locked-but-equipped rows`() =
+        runTest {
+            // Defensive: a row with isEquipped=true but isUnlocked=false should never persist
+            // (R4-06 contract), but the filter ensures rendering doesn't surface it.
+            val rows =
+                listOf(
+                    UltimateWeaponStateEntity(weaponType = "GOLDEN_ZIGGURAT", isUnlocked = false, isEquipped = true),
+                    UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = true, isEquipped = true),
+                )
+            val dao = mockDao(rows)
+            val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
-        repo.unlockWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT)
+            val equipped = repo.observeEquippedWeapons().first()
 
-        val captor = argumentCaptor<UltimateWeaponStateEntity>()
-        verify(dao).upsert(captor.capture())
-        assertEquals("GOLDEN_ZIGGURAT", captor.firstValue.weaponType)
-        assertTrue(captor.firstValue.isUnlocked)
-        verify(dao, never()).markUnlocked(any())
-    }
-
-    @Test
-    fun `unlockWeapon flips isUnlocked flag when row already exists`() = runTest {
-        val dao = mock<UltimateWeaponDao>()
-        whenever(dao.getByType("DEATH_WAVE")).thenReturn(
-            UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = false)
-        )
-        val repo = UltimateWeaponRepositoryImpl(dao, mock())
-
-        repo.unlockWeapon(UltimateWeaponType.DEATH_WAVE)
-
-        verify(dao).markUnlocked("DEATH_WAVE")
-        verify(dao, never()).upsert(any())
-    }
+            assertEquals(1, equipped.size)
+            assertEquals(UltimateWeaponType.DEATH_WAVE, equipped.first().type)
+        }
 
     @Test
-    fun `upgradePathLevel DAMAGE dispatches to updateDamageLevel`() = runTest {
-        val dao = mock<UltimateWeaponDao>()
-        whenever(dao.getByType("GOLDEN_ZIGGURAT")).thenReturn(
-            UltimateWeaponStateEntity(weaponType = "GOLDEN_ZIGGURAT", isUnlocked = true)
-        )
-        val repo = UltimateWeaponRepositoryImpl(dao, mock())
+    fun `unlockWeapon inserts new row when none exists`() =
+        runTest {
+            val dao = mock<UltimateWeaponDao>()
+            whenever(dao.getByType(any())).thenReturn(null)
+            val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
-        repo.upgradePathLevel(UltimateWeaponType.GOLDEN_ZIGGURAT, UWPath.DAMAGE, newLevel = 5)
+            repo.unlockWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT)
 
-        verify(dao).updateDamageLevel("GOLDEN_ZIGGURAT", 5)
-        verify(dao, never()).updateSecondaryLevel(any(), any())
-        verify(dao, never()).updateCooldownLevel(any(), any())
-    }
-
-    @Test
-    fun `upgradePathLevel SECONDARY dispatches to updateSecondaryLevel`() = runTest {
-        val dao = mock<UltimateWeaponDao>()
-        whenever(dao.getByType("DEATH_WAVE")).thenReturn(
-            UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = true)
-        )
-        val repo = UltimateWeaponRepositoryImpl(dao, mock())
-
-        repo.upgradePathLevel(UltimateWeaponType.DEATH_WAVE, UWPath.SECONDARY, newLevel = 3)
-
-        verify(dao).updateSecondaryLevel("DEATH_WAVE", 3)
-        verify(dao, never()).updateDamageLevel(any(), any())
-        verify(dao, never()).updateCooldownLevel(any(), any())
-    }
+            val captor = argumentCaptor<UltimateWeaponStateEntity>()
+            verify(dao).upsert(captor.capture())
+            assertEquals("GOLDEN_ZIGGURAT", captor.firstValue.weaponType)
+            assertTrue(captor.firstValue.isUnlocked)
+            verify(dao, never()).markUnlocked(any())
+        }
 
     @Test
-    fun `upgradePathLevel COOLDOWN dispatches to updateCooldownLevel`() = runTest {
-        val dao = mock<UltimateWeaponDao>()
-        whenever(dao.getByType("CHRONO_FIELD")).thenReturn(
-            UltimateWeaponStateEntity(weaponType = "CHRONO_FIELD", isUnlocked = true)
-        )
-        val repo = UltimateWeaponRepositoryImpl(dao, mock())
+    fun `unlockWeapon flips isUnlocked flag when row already exists`() =
+        runTest {
+            val dao = mock<UltimateWeaponDao>()
+            whenever(dao.getByType("DEATH_WAVE")).thenReturn(
+                UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = false),
+            )
+            val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
-        repo.upgradePathLevel(UltimateWeaponType.CHRONO_FIELD, UWPath.COOLDOWN, newLevel = 7)
+            repo.unlockWeapon(UltimateWeaponType.DEATH_WAVE)
 
-        verify(dao).updateCooldownLevel("CHRONO_FIELD", 7)
-    }
-
-    @Test
-    fun `upgradePathLevel inserts row defensively when missing`() = runTest {
-        val dao = mock<UltimateWeaponDao>()
-        whenever(dao.getByType("GOLDEN_ZIGGURAT")).thenReturn(null)
-        val repo = UltimateWeaponRepositoryImpl(dao, mock())
-
-        repo.upgradePathLevel(UltimateWeaponType.GOLDEN_ZIGGURAT, UWPath.DAMAGE, newLevel = 1)
-
-        verify(dao).upsert(any())
-        verify(dao).updateDamageLevel("GOLDEN_ZIGGURAT", 1)
-    }
+            verify(dao).markUnlocked("DEATH_WAVE")
+            verify(dao, never()).upsert(any())
+        }
 
     @Test
-    fun `equipWeapon flips isEquipped flag on existing entity`() = runTest {
-        val dao = mock<UltimateWeaponDao>()
-        val existing = UltimateWeaponStateEntity(weaponType = "GOLDEN_ZIGGURAT", isUnlocked = true, isEquipped = false)
-        whenever(dao.getByType("GOLDEN_ZIGGURAT")).thenReturn(existing)
-        val repo = UltimateWeaponRepositoryImpl(dao, mock())
+    fun `upgradePathLevel DAMAGE dispatches to updateDamageLevel`() =
+        runTest {
+            val dao = mock<UltimateWeaponDao>()
+            whenever(dao.getByType("GOLDEN_ZIGGURAT")).thenReturn(
+                UltimateWeaponStateEntity(weaponType = "GOLDEN_ZIGGURAT", isUnlocked = true),
+            )
+            val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
-        repo.equipWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT)
+            repo.upgradePathLevel(UltimateWeaponType.GOLDEN_ZIGGURAT, UWPath.DAMAGE, newLevel = 5)
 
-        val captor = argumentCaptor<UltimateWeaponStateEntity>()
-        verify(dao).upsert(captor.capture())
-        assertTrue(captor.firstValue.isEquipped)
-    }
-
-    @Test
-    fun `equipWeapon is no-op when entity does not exist`() = runTest {
-        val dao = mock<UltimateWeaponDao>()
-        whenever(dao.getByType(any())).thenReturn(null)
-        val repo = UltimateWeaponRepositoryImpl(dao, mock())
-
-        repo.equipWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT)
-
-        verify(dao, never()).upsert(any())
-    }
+            verify(dao).updateDamageLevel("GOLDEN_ZIGGURAT", 5)
+            verify(dao, never()).updateSecondaryLevel(any(), any())
+            verify(dao, never()).updateCooldownLevel(any(), any())
+        }
 
     @Test
-    fun `unequipWeapon flips isEquipped to false on existing entity`() = runTest {
-        val dao = mock<UltimateWeaponDao>()
-        val existing = UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = true, isEquipped = true)
-        whenever(dao.getByType("DEATH_WAVE")).thenReturn(existing)
-        val repo = UltimateWeaponRepositoryImpl(dao, mock())
+    fun `upgradePathLevel SECONDARY dispatches to updateSecondaryLevel`() =
+        runTest {
+            val dao = mock<UltimateWeaponDao>()
+            whenever(dao.getByType("DEATH_WAVE")).thenReturn(
+                UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = true),
+            )
+            val repo = UltimateWeaponRepositoryImpl(dao, mock())
 
-        repo.unequipWeapon(UltimateWeaponType.DEATH_WAVE)
+            repo.upgradePathLevel(UltimateWeaponType.DEATH_WAVE, UWPath.SECONDARY, newLevel = 3)
 
-        val captor = argumentCaptor<UltimateWeaponStateEntity>()
-        verify(dao).upsert(captor.capture())
-        assertFalse(captor.firstValue.isEquipped)
-    }
+            verify(dao).updateSecondaryLevel("DEATH_WAVE", 3)
+            verify(dao, never()).updateDamageLevel(any(), any())
+            verify(dao, never()).updateCooldownLevel(any(), any())
+        }
+
+    @Test
+    fun `upgradePathLevel COOLDOWN dispatches to updateCooldownLevel`() =
+        runTest {
+            val dao = mock<UltimateWeaponDao>()
+            whenever(dao.getByType("CHRONO_FIELD")).thenReturn(
+                UltimateWeaponStateEntity(weaponType = "CHRONO_FIELD", isUnlocked = true),
+            )
+            val repo = UltimateWeaponRepositoryImpl(dao, mock())
+
+            repo.upgradePathLevel(UltimateWeaponType.CHRONO_FIELD, UWPath.COOLDOWN, newLevel = 7)
+
+            verify(dao).updateCooldownLevel("CHRONO_FIELD", 7)
+        }
+
+    @Test
+    fun `upgradePathLevel inserts row defensively when missing`() =
+        runTest {
+            val dao = mock<UltimateWeaponDao>()
+            whenever(dao.getByType("GOLDEN_ZIGGURAT")).thenReturn(null)
+            val repo = UltimateWeaponRepositoryImpl(dao, mock())
+
+            repo.upgradePathLevel(UltimateWeaponType.GOLDEN_ZIGGURAT, UWPath.DAMAGE, newLevel = 1)
+
+            verify(dao).upsert(any())
+            verify(dao).updateDamageLevel("GOLDEN_ZIGGURAT", 1)
+        }
+
+    @Test
+    fun `equipWeapon flips isEquipped flag on existing entity`() =
+        runTest {
+            val dao = mock<UltimateWeaponDao>()
+            val existing =
+                UltimateWeaponStateEntity(weaponType = "GOLDEN_ZIGGURAT", isUnlocked = true, isEquipped = false)
+            whenever(dao.getByType("GOLDEN_ZIGGURAT")).thenReturn(existing)
+            val repo = UltimateWeaponRepositoryImpl(dao, mock())
+
+            repo.equipWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT)
+
+            val captor = argumentCaptor<UltimateWeaponStateEntity>()
+            verify(dao).upsert(captor.capture())
+            assertTrue(captor.firstValue.isEquipped)
+        }
+
+    @Test
+    fun `equipWeapon is no-op when entity does not exist`() =
+        runTest {
+            val dao = mock<UltimateWeaponDao>()
+            whenever(dao.getByType(any())).thenReturn(null)
+            val repo = UltimateWeaponRepositoryImpl(dao, mock())
+
+            repo.equipWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT)
+
+            verify(dao, never()).upsert(any())
+        }
+
+    @Test
+    fun `unequipWeapon flips isEquipped to false on existing entity`() =
+        runTest {
+            val dao = mock<UltimateWeaponDao>()
+            val existing = UltimateWeaponStateEntity(weaponType = "DEATH_WAVE", isUnlocked = true, isEquipped = true)
+            whenever(dao.getByType("DEATH_WAVE")).thenReturn(existing)
+            val repo = UltimateWeaponRepositoryImpl(dao, mock())
+
+            repo.unequipWeapon(UltimateWeaponType.DEATH_WAVE)
+
+            val captor = argumentCaptor<UltimateWeaponStateEntity>()
+            verify(dao).upsert(captor.capture())
+            assertFalse(captor.firstValue.isEquipped)
+        }
 }

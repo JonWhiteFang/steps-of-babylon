@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test
  * `unitTests.isReturnDefaultValues = true` (app/build.gradle.kts) — no Robolectric, no SDK init.
  */
 class AdRequestConfigurationTest {
-
     @Test
     fun `max ad content rating is capped at PG`() {
         assertEquals(

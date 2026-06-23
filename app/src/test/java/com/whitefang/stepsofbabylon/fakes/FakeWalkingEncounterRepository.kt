@@ -9,25 +9,32 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
 class FakeWalkingEncounterRepository : WalkingEncounterRepository {
-
     private val drops = MutableStateFlow<List<SupplyDrop>>(emptyList())
     private var nextId = 1
 
-    override fun observeUnclaimed(): Flow<List<SupplyDrop>> =
-        drops.map { list -> list.filter { !it.claimed } }
+    override fun observeUnclaimed(): Flow<List<SupplyDrop>> = drops.map { list -> list.filter { !it.claimed } }
 
-    override fun observeHistory(limit: Int): Flow<List<SupplyDrop>> =
-        drops.map { it.take(limit) }
+    override fun observeHistory(limit: Int): Flow<List<SupplyDrop>> = drops.map { it.take(limit) }
 
-    override fun countUnclaimed(): Flow<Int> =
-        drops.map { list -> list.count { !it.claimed } }
+    override fun countUnclaimed(): Flow<Int> = drops.map { list -> list.count { !it.claimed } }
 
-    override suspend fun getUnclaimedCount(): Int =
-        drops.value.count { !it.claimed }
+    override suspend fun getUnclaimedCount(): Int = drops.value.count { !it.claimed }
 
-    override suspend fun createDrop(trigger: SupplyDropTrigger, reward: SupplyDropReward, rewardAmount: Int): Long {
+    override suspend fun createDrop(
+        trigger: SupplyDropTrigger,
+        reward: SupplyDropReward,
+        rewardAmount: Int,
+    ): Long {
         val id = nextId++
-        val drop = SupplyDrop(id = id, trigger = trigger, reward = reward, rewardAmount = rewardAmount, claimed = false, createdAt = System.currentTimeMillis())
+        val drop =
+            SupplyDrop(
+                id = id,
+                trigger = trigger,
+                reward = reward,
+                rewardAmount = rewardAmount,
+                claimed = false,
+                createdAt = System.currentTimeMillis(),
+            )
         drops.value = drops.value + drop
         return id.toLong()
     }
@@ -37,9 +44,10 @@ class FakeWalkingEncounterRepository : WalkingEncounterRepository {
     override suspend fun claimDrop(id: Int): Boolean {
         val target = drops.value.find { it.id == id } ?: return false
         if (target.claimed) return false
-        drops.value = drops.value.map {
-            if (it.id == id) it.copy(claimed = true, claimedAt = System.currentTimeMillis()) else it
-        }
+        drops.value =
+            drops.value.map {
+                if (it.id == id) it.copy(claimed = true, claimedAt = System.currentTimeMillis()) else it
+            }
         return true
     }
 

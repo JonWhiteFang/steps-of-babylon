@@ -55,38 +55,40 @@ class FakeMilestoneDao(
         powerStones: Long,
         claimedAt: Long,
         playerDao: PlayerProfileDao,
-    ): Boolean = atomicMutex.withLock {
-        claimMilestoneAtomicCallCount++
-        val existing = data.value[milestoneId]
-        if (existing?.claimed == true) return@withLock false
-        // Under-the-mutex read-modify-write faithfully emulates the SQL atomic guard.
-        data.value = data.value + (
-            milestoneId to MilestoneEntity(
-                milestoneId = milestoneId,
-                claimed = true,
-                claimedAt = claimedAt,
+    ): Boolean =
+        atomicMutex.withLock {
+            claimMilestoneAtomicCallCount++
+            val existing = data.value[milestoneId]
+            if (existing?.claimed == true) return@withLock false
+            // Under-the-mutex read-modify-write faithfully emulates the SQL atomic guard.
+            data.value = data.value + (
+                milestoneId to
+                    MilestoneEntity(
+                        milestoneId = milestoneId,
+                        claimed = true,
+                        claimedAt = claimedAt,
+                    )
             )
-            )
-        // Test-level decoy: the real impl calls playerDao.adjustGems / incrementGemsEarned
-        // (and the PowerStones equivalents). The fake routes credits to linkedPlayer so tests
-        // can keep asserting on the existing FakePlayerRepository flow. Callers pass
-        // mock<PlayerProfileDao>() for type satisfaction.
-        if (gems > 0L) {
-            linkedPlayer?.profile?.update {
-                it.copy(
-                    gems = it.gems + gems,
-                    totalGemsEarned = it.totalGemsEarned + gems,
-                )
+            // Test-level decoy: the real impl calls playerDao.adjustGems / incrementGemsEarned
+            // (and the PowerStones equivalents). The fake routes credits to linkedPlayer so tests
+            // can keep asserting on the existing FakePlayerRepository flow. Callers pass
+            // mock<PlayerProfileDao>() for type satisfaction.
+            if (gems > 0L) {
+                linkedPlayer?.profile?.update {
+                    it.copy(
+                        gems = it.gems + gems,
+                        totalGemsEarned = it.totalGemsEarned + gems,
+                    )
+                }
             }
-        }
-        if (powerStones > 0L) {
-            linkedPlayer?.profile?.update {
-                it.copy(
-                    powerStones = it.powerStones + powerStones,
-                    totalPowerStonesEarned = it.totalPowerStonesEarned + powerStones,
-                )
+            if (powerStones > 0L) {
+                linkedPlayer?.profile?.update {
+                    it.copy(
+                        powerStones = it.powerStones + powerStones,
+                        totalPowerStonesEarned = it.totalPowerStonesEarned + powerStones,
+                    )
+                }
             }
+            true
         }
-        true
-    }
 }

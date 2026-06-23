@@ -94,11 +94,13 @@
     <ID>LongMethod:BiomeTheme.kt:BiomeTheme.Companion$fun forBiome: BiomeTheme</ID>
     <ID>LongMethod:CardsScreen.kt:@Composable fun CardsScreen</ID>
     <ID>LongMethod:CardsScreen.kt:@Composable private fun CardItem</ID>
+    <ID>LongMethod:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$@Test fun `ensureSeedData inserts newly-added rows on partial catalogue upgrade`</ID>
     <ID>LongMethod:CurrencyDashboardScreen.kt:@Composable fun CurrencyDashboardScreen</ID>
     <ID>LongMethod:DeathEffect.kt:DeathEffect$fun spawn</ID>
     <ID>LongMethod:DescribeUpgradeEffect.kt:DescribeUpgradeEffect$private fun format: String</ID>
     <ID>LongMethod:GameEngine.kt:GameEngine$fun init</ID>
     <ID>LongMethod:GameEngine.kt:GameEngine$fun update</ID>
+    <ID>LongMethod:GameEngineTest.kt:GameEngineTest$@Test fun `A28 partition sweeps only live projectiles-enemies-enemy-projectiles, excluding dead and non-collidable entities`</ID>
     <ID>LongMethod:HelpScreen.kt:@Composable fun HelpScreen</ID>
     <ID>LongMethod:HomeScreen.kt:@Composable fun HomeScreen</ID>
     <ID>LongMethod:InRoundUpgradeMenu.kt:@Composable fun InRoundUpgradeMenu</ID>
@@ -133,120 +135,43 @@
     <ID>MatchingDeclarationName:Migrations.kt:AppMigrations</ID>
     <ID>MatchingDeclarationName:PurchasePulse.kt:PulseState</ID>
     <ID>MaxLineLength:ActivityMinuteConverter.kt:ActivityMinuteConverter$*</ID>
-    <ID>MaxLineLength:AntiCheatPreferencesTimeBaselineTest.kt:AntiCheatPreferencesTimeBaselineTest$TimeBaseline(lastElapsedRealtime = 1234, lastWallClock = 5678, maxWallClockSeen = 9999, trustedWallClock = 7777)</ID>
     <ID>MaxLineLength:BattleViewModel.kt:BattleViewModel$color = com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText.PS_COLOR</ID>
     <ID>MaxLineLength:BattleViewModel.kt:BattleViewModel$color = com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText.STEP_COLOR</ID>
-    <ID>MaxLineLength:BattleViewModelTest.kt:BattleViewModelTest$fun</ID>
-    <ID>MaxLineLength:BattleViewModelTest.kt:BattleViewModelTest$private</ID>
-    <ID>MaxLineLength:BattleViewModelTest.kt:BattleViewModelTest$val jadeColors = listOf(0xFF104E3C.toInt(), 0xFF1A6B52.toInt(), 0xFF2A8F6E.toInt(), 0xFF3CAB82.toInt(), 0xFF54C79A.toInt())</ID>
     <ID>MaxLineLength:BillingManagerImplTest.kt:BillingManagerImplTest$"failed product-details query must surface as null so the UI falls back to the static priceDisplay constant"</ID>
-    <ID>MaxLineLength:BiomeTest.kt:BiomeTest$assertTrue(Biome.CELESTIAL_GATE.isComingSoon, "CELESTIAL_GATE must be Coming Soon (Tier 11+ unreachable in v1.0)")</ID>
     <ID>MaxLineLength:CardDao.kt:CardDao$"UPDATE card_inventory SET copyCount = copyCount - :amount, level = level + 1 WHERE id = :id AND copyCount &gt;= :amount"</ID>
-    <ID>MaxLineLength:CardTypeTest.kt:CardTypeTest$assertNotEquals(type.effectDescriptionAtLevel(type.maxLevel), mid, "$type Lv4 must differ from Lv${type.maxLevel}")</ID>
     <ID>MaxLineLength:CardsScreen.kt:message = "Open a pack above to start your collection. Equip up to 3 cards for per-round bonuses in battle."</ID>
-    <ID>MaxLineLength:CashEconomyTest.kt:CashEconomyTest$assertTrue(affordableUpgrades &gt;= 2, "By wave 5: $totalCash cash, cheapest upgrade $cheapest, can afford $affordableUpgrades")</ID>
-    <ID>MaxLineLength:CashEconomyTest.kt:CashEconomyTest$assertTrue(interestRatio &lt; 0.65, "Interest ratio: $interestRatio (should be &lt;0.65, interest shouldn't dominate)")</ID>
-    <ID>MaxLineLength:ClaimRewardFormatTest.kt:ClaimRewardFormatTest$format(ClaimReward.Bundle(gems = 200, powerStones = 50, cosmeticNames = listOf("Lapis Lazuli Ziggurat Skin")))</ID>
-    <ID>MaxLineLength:ClaimSupplyDropTest.kt:ClaimSupplyDropTest$SupplyDrop(id = 1, trigger = SupplyDropTrigger.RANDOM, reward = reward, rewardAmount = amount, claimed = claimed, createdAt = 1000)</ID>
-    <ID>MaxLineLength:CollisionSystemScratchTest.kt:CollisionSystemScratchTest$val proj = ProjectileEntity(startX = 10f, startY = 10f, targetX = 10f, targetY = 10f, speed = 100f, damage = 1.0)</ID>
-    <ID>MaxLineLength:CombatPowerTest.kt:CombatPowerTest$assertTrue(sut(ResolvedStats(damage = 10.0, attackSpeed = 1.0, critChance = 0.1, critMultiplier = 3.0)) &gt; baseline)</ID>
-    <ID>MaxLineLength:CombatPowerTest.kt:CombatPowerTest$assertTrue(sut(ResolvedStats(damage = 10.0, attackSpeed = 1.0, critChance = 0.2, critMultiplier = 2.0)) &gt; baseline)</ID>
-    <ID>MaxLineLength:CombatPowerTest.kt:CombatPowerTest$assertTrue(sut(ResolvedStats(damage = 10.0, attackSpeed = 1.1, critChance = 0.1, critMultiplier = 2.0)) &gt; baseline)</ID>
-    <ID>MaxLineLength:CombatPowerTest.kt:CombatPowerTest$assertTrue(sut(ResolvedStats(damage = 11.0, attackSpeed = 1.0, critChance = 0.1, critMultiplier = 2.0)) &gt; baseline)</ID>
     <ID>MaxLineLength:CosmeticRepositoryImpl.kt:CosmeticRepositoryImpl.Companion$description = "Bronze ziggurat in honour of Gilgamesh, whose sandals walked the edges of the world"</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$"C.2 PR 3b/3c ships 11 seed rows (7 ziggurat incl. zig_jade + lapis_lazuli_skin + garden_ziggurat_skin + sandals_of_gilgamesh, 2 projectile, 2 enemy)"</ID>
     <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$"ZIGGURAT_COLOR_LOOKUP contract: exactly 5 colors, one per ziggurat layer (matches ZigguratEntity.DEFAULT_COLORS)"</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "enemy_neon", category = "ENEMY_SKIN", name = "Neon Enemies", description = "Glowing neon outlines", priceGems = 100)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "enemy_shadow", category = "ENEMY_SKIN", name = "Shadow Enemies", description = "Dark silhouette enemies", priceGems = 100)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "proj_fire", category = "PROJECTILE_EFFECT", name = "Fire Trails", description = "Blazing projectile trails", priceGems = 150)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "proj_lightning", category = "PROJECTILE_EFFECT", name = "Lightning Arcs", description = "Electric projectile arcs", priceGems = 150)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "zig_crystal", category = "ZIGGURAT_SKIN", name = "Crystal Ziggurat", description = "Translucent crystal layers", priceGems = 200)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "zig_golden", category = "ZIGGURAT_SKIN", name = "Golden Ziggurat", description = "Pure gold plating", priceGems = 300)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$CosmeticEntity(cosmeticId = "zig_obsidian", category = "ZIGGURAT_SKIN", name = "Obsidian Ziggurat", description = "Dark volcanic stone", priceGems = 100)</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$assertEquals(11, countAfterFirst, "C.2 PR 3b/3c ships 11 seed rows (7 ziggurat incl. zig_jade + lapis_lazuli_skin + garden_ziggurat_skin + sandals_of_gilgamesh, 2 projectile, 2 enemy)")</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$assertEquals(11, dao.count(), "after ensureSeedData: zig_jade + lapis_lazuli_skin + garden_ziggurat_skin + sandals_of_gilgamesh added, legacy 7 preserved")</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$assertNotNull(garden.overrideColors, "garden_ziggurat_skin must have overrideColors populated from ZIGGURAT_COLOR_LOOKUP")</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$assertNotNull(lapis.overrideColors, "lapis_lazuli_skin must have overrideColors populated from ZIGGURAT_COLOR_LOOKUP")</ID>
-    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$assertNotNull(sandals.overrideColors, "sandals_of_gilgamesh must have overrideColors populated from ZIGGURAT_COLOR_LOOKUP")</ID>
+    <ID>MaxLineLength:CosmeticRepositoryImplTest.kt:CosmeticRepositoryImplTest$"after ensureSeedData: zig_jade + lapis_lazuli_skin + garden_ziggurat_skin + sandals_of_gilgamesh added, legacy 7 preserved"</ID>
     <ID>MaxLineLength:DailyStepManager.kt:DailyStepManager$// writeTimeBaseline uses SharedPreferences.apply() (async, non-throwing) — it cannot abort the checkAndAward below.</ID>
-    <ID>MaxLineLength:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository$override fun observeHistory: Flow&lt;List&lt;com.whitefang.stepsofbabylon.domain.model.SupplyDrop&gt;&gt;</ID>
-    <ID>MaxLineLength:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository$override fun observeUnclaimed: Flow&lt;List&lt;com.whitefang.stepsofbabylon.domain.model.SupplyDrop&gt;&gt;</ID>
-    <ID>MaxLineLength:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository$override suspend fun createDrop: Long</ID>
-    <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val atMax = describe.workshopPreview(mapOf(UpgradeType.CRITICAL_CHANCE to 160), type = UpgradeType.CRITICAL_CHANCE)</ID>
-    <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val nearMax = describe.workshopPreview(mapOf(UpgradeType.CRITICAL_CHANCE to 159), type = UpgradeType.CRITICAL_CHANCE)</ID>
-    <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val r = describe(mapOf(UpgradeType.RECOVERY_PACKAGES to 75), emptyMap(), emptyMap(), UpgradeType.RECOVERY_PACKAGES)</ID>
-    <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val r100 = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 100), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)</ID>
-    <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val r99 = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 99), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)</ID>
-    <ID>MaxLineLength:EvaluateUpgradeValueTest.kt:EvaluateUpgradeValueTest$assertTrue(best.type != UpgradeType.DAMAGE, "DAMAGE is unaffordable here, so it cannot be the affordable best buy")</ID>
-    <ID>MaxLineLength:EvaluateUpgradeValueTest.kt:EvaluateUpgradeValueTest$val result = sut(mapOf(UpgradeType.CRITICAL_CHANCE to 160), stepBalance = 100_000, candidates = listOf(UpgradeType.CRITICAL_CHANCE))</ID>
-    <ID>MaxLineLength:FakeDailyStepDao.kt:FakeDailyStepDao$data.value = data.value + (date to base.copy(activityMinutes = activityMinutes, stepEquivalents = stepEquivalents))</ID>
-    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$open override suspend fun addPowerStones</ID>
-    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$open override suspend fun updateHighestUnlockedTier</ID>
-    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$override suspend fun addGems</ID>
-    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$override suspend fun spendCardDust</ID>
-    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$override suspend fun updateFreeCardPackAdUsed</ID>
-    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$override suspend fun updateSeasonPass</ID>
-    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$override suspend fun updateStreak</ID>
-    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$profile.update { it.copy(powerStones = it.powerStones - amount, totalPowerStonesSpent = it.totalPowerStonesSpent + amount) }</ID>
-    <ID>MaxLineLength:FakePlayerRepository.kt:FakePlayerRepository$profile.update { it.copy(totalRoundsPlayed = it.totalRoundsPlayed + rounds, totalEnemiesKilled = it.totalEnemiesKilled + kills, totalCashEarned = it.totalCashEarned + cash) }</ID>
-    <ID>MaxLineLength:FakeStepRepository.kt:FakeStepRepository$records.value = records.value + (date to existing.copy(activityMinutes = activityMinutes, stepEquivalents = stepEquivalents))</ID>
-    <ID>MaxLineLength:FakeStepRepository.kt:FakeStepRepository$records.value = records.value + (date to existing.copy(sensorSteps = sensorSteps, creditedSteps = creditedSteps))</ID>
-    <ID>MaxLineLength:FakeWalkingEncounterRepository.kt:FakeWalkingEncounterRepository$val drop = SupplyDrop(id = id, trigger = trigger, reward = reward, rewardAmount = rewardAmount, claimed = false, createdAt = System.currentTimeMillis())</ID>
     <ID>MaxLineLength:GameEngine.kt:GameEngine$/** Engine-internal display strings (V1X-13, ADR-0014). Set by [GameSurfaceView]; null in pure-JVM tests, which fall back to literals. */</ID>
-    <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$OwnedWeapon(UltimateWeaponType.BLACK_HOLE, damageLevel = 10, secondaryLevel = 10, cooldownLevel = 1, isUnlocked = true, isEquipped = true)</ID>
-    <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$OwnedWeapon(UltimateWeaponType.POISON_SWAMP, damageLevel = 10, secondaryLevel = 10, cooldownLevel = 1, isUnlocked = true, isEquipped = true)</ID>
-    <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$eng.initUWs(listOf(OwnedWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT, damageLevel = level, secondaryLevel = level, cooldownLevel = level, isUnlocked = true, isEquipped = true)))</ID>
-    <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$eng1.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, cooldownLevel = 1, isUnlocked = true, isEquipped = true)))</ID>
-    <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$eng2.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, cooldownLevel = 1, isUnlocked = true, isEquipped = true)))</ID>
     <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$fun</ID>
-    <ID>MaxLineLength:GuardedClaimDaoTest.kt:GuardedClaimDaoTest$DailyMissionEntity(date = "2026-06-10", missionType = "WALK_5000", target = 5000, progress = 5000, completed = true)</ID>
     <ID>MaxLineLength:HelpScreen.kt:"• Attack — Damage, Attack Speed, Range, Critical Chance, Multishot, Bounce Shot, Rapid Fire, and more.\n"</ID>
     <ID>MaxLineLength:HelpScreen.kt:"• Duplicate cards add copies. Collect enough copies to level up (3 Common / 4 Rare / 5 Epic per level).\n"</ID>
     <ID>MaxLineLength:HelpScreen.kt:"• Gems — earned from milestones, daily login streaks, and card packs. Spent on card packs and Lab rush.\n"</ID>
     <ID>MaxLineLength:HelpScreen.kt:"• Power Stones — earned from weekly challenges, wave milestones, and boss kills. Spent on Ultimate Weapon upgrades.\n"</ID>
     <ID>MaxLineLength:HelpScreen.kt:"• Upgrade button — opens the in-round upgrade menu. Spend Cash on temporary upgrades that last one round.\n\n"</ID>
-    <ID>MaxLineLength:HomeViewModelTest.kt:HomeViewModelTest$assertEquals(0, mission.progress, "Mission must stay at 0 when no research actually completed (R3-03 false-trigger regression guard)")</ID>
-    <ID>MaxLineLength:HomeViewModelTest.kt:HomeViewModelTest$assertEquals(1, mission.progress, "Expected mission progress to advance to 1 after background research completion")</ID>
-    <ID>MaxLineLength:HomeViewModelTest.kt:HomeViewModelTest$fun</ID>
     <ID>MaxLineLength:LabRepositoryImplTest.kt:LabRepositoryImplTest$fun</ID>
     <ID>MaxLineLength:Migrations.kt:AppMigrations.&lt;no name provided&gt;$"CREATE UNIQUE INDEX IF NOT EXISTS `index_card_inventory_cardType` ON `card_inventory` (`cardType`)"</ID>
-    <ID>MaxLineLength:MissionsViewModelTest.kt:MissionsViewModelTest$missionDao.insert(DailyMissionEntity(date = day1.toString(), missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 10, completed = false, rewardGems = 1))</ID>
-    <ID>MaxLineLength:MissionsViewModelTest.kt:MissionsViewModelTest$missionDao.insert(DailyMissionEntity(date = day2.toString(), missionType = DailyMissionType.WALK_12000.name, target = 12000, progress = 20, completed = false, rewardGems = 2))</ID>
-    <ID>MaxLineLength:MissionsViewModelTest.kt:MissionsViewModelTest$missionDao.insert(DailyMissionEntity(date = today, missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 5000, completed = true, rewardGems = 5))</ID>
-    <ID>MaxLineLength:MusicManagerNullPlayerTest.kt:MusicManagerNullPlayerTest$playerFactory = { _, resId -&gt; if (resId == com.whitefang.stepsofbabylon.R.raw.bgm_walking) walking else battle }</ID>
-    <ID>MaxLineLength:NoRawEnumNameInUiTest.kt:NoRawEnumNameInUiTest$assertTrue(presentationRoot.isDirectory) { "presentation source root not found at ${presentationRoot.absolutePath}" }</ID>
     <ID>MaxLineLength:OnboardingScreen.kt:*</ID>
     <ID>MaxLineLength:OrbStateTest.kt:OrbStateTest$// angularSpeed PI/2 rad/s over dt 1s → angle PI/2 → x ~ zigX, y ~ zigY + R (radius MID at phase 0... phase also advances)</ID>
-    <ID>MaxLineLength:OrbStateTest.kt:OrbStateTest$val s = OrbState(zigX = 0f, zigY = 0f, angle = 0f, angularSpeed = (Math.PI / 2).toFloat(), initialRadialPhase = 0f)</ID>
     <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET currentStepBalance = MAX(0, currentStepBalance + :delta), totalStepsEarned = CASE WHEN :delta &gt; 0 THEN totalStepsEarned + :delta ELSE totalStepsEarned END WHERE id = 1"</ID>
     <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET currentStepBalance = currentStepBalance - :cost WHERE id = 1 AND currentStepBalance &gt;= :cost"</ID>
     <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET gems = gems - :amount, totalGemsSpent = totalGemsSpent + :amount WHERE id = 1 AND gems &gt;= :amount"</ID>
     <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET powerStones = powerStones - :amount, totalPowerStonesSpent = totalPowerStonesSpent + :amount WHERE id = 1 AND powerStones &gt;= :amount"</ID>
     <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET totalRoundsPlayed = totalRoundsPlayed + :rounds, totalEnemiesKilled = totalEnemiesKilled + :kills, totalCashEarned = totalCashEarned + :cash WHERE id = 1"</ID>
-    <ID>MaxLineLength:PremiumSpendDaoTest.kt:PremiumSpendDaoTest$val result = cardDao.openCardPackAtomic(gemCost = 50, cardTypeNames = listOf("IRON_SKIN"), playerDao = playerDao)</ID>
     <ID>MaxLineLength:SettingsScreen.kt:"This will permanently delete all your progress, steps history, upgrades, and currency. This cannot be undone."</ID>
     <ID>MaxLineLength:SettingsScreen.kt:"Update notification with live step count and balance. A minimal tracking notification is always shown while step counting is active."</ID>
-    <ID>MaxLineLength:StatsViewModelTest.kt:StatsViewModelTest$assertEquals(5000L, bars.last().let { it.sensorSteps + it.stepEquivalents }, "this week's record lands in the final bucket")</ID>
-    <ID>MaxLineLength:StatsViewModelTest.kt:StatsViewModelTest$thisWeekA.format(fmt) to DailyStepSummary(thisWeekA.format(fmt), creditedSteps = 5000, stepEquivalents = 1000)</ID>
-    <ID>MaxLineLength:StatsViewModelTest.kt:StatsViewModelTest$today.minusDays(35).format(fmt) to DailyStepSummary(today.minusDays(35).format(fmt), creditedSteps = 2000, stepEquivalents = 0)</ID>
-    <ID>MaxLineLength:StatsViewModelTest.kt:StatsViewModelTest$val thisWeekB = today.minusDays(1).let { if (it.isBefore(today.with(java.time.DayOfWeek.MONDAY))) today else it }</ID>
-    <ID>MaxLineLength:StepIngestionTest.kt:StepIngestionTest$val decision = StepSyncWorker.computeCatchUp(dayStart, currentCounter, roomSensorSteps, sensorStepsAtDayStart)</ID>
-    <ID>MaxLineLength:StepsOfBabylonCrashHandlerTest.kt:StepsOfBabylonCrashHandlerTest$val throwingRecord: (String, Throwable, Long) -&gt; Unit = { _, _, _ -&gt; throw IllegalStateException("record blew up") }</ID>
     <ID>MaxLineLength:StoreScreen.kt:"More cosmetic visuals are still being finalized. Jade and Obsidian Ziggurat skins are available now."</ID>
     <ID>MaxLineLength:StoreScreen.kt:"https://play.google.com/store/account/subscriptions?package=com.whitefang.stepsofbabylon"</ID>
-    <ID>MaxLineLength:StoreViewModelTest.kt:StoreViewModelTest$billingManager.nextResult = com.whitefang.stepsofbabylon.domain.model.PurchaseResult.Error("billing unavailable")</ID>
-    <ID>MaxLineLength:SupplyRewardFormatTest.kt:SupplyRewardFormatTest$SupplyDrop(id = 1, trigger = SupplyDropTrigger.RANDOM, reward = reward, rewardAmount = amount, claimed = false, createdAt = 0L)</ID>
-    <ID>MaxLineLength:SupplyRewardFormatTest.kt:SupplyRewardFormatTest$assertFalse("CARD_COPY must show the resolved card name, not the raw label: \"$label\"", label.contains("Card Copy"))</ID>
     <ID>MaxLineLength:TimeIntegrity.kt:TimeIntegrity$wallDelta.coerceAtLeast(0)</ID>
     <ID>MaxLineLength:UltimateWeaponDao.kt:UltimateWeaponDao$*</ID>
     <ID>MaxLineLength:UltimateWeaponType.kt:UltimateWeaponType$*</ID>
-    <ID>MaxLineLength:UnclaimedSuppliesViewModelTest.kt:UnclaimedSuppliesViewModelTest$fun drop</ID>
     <ID>MaxLineLength:UpgradeType.kt:UpgradeType.Companion$"+1 additional target per level (in-round Cash purchase or Labs research; cap 11 incl. baseline)"</ID>
     <ID>MaxLineLength:WalkingEncounterDao.kt:WalkingEncounterDao$"DELETE FROM walking_encounter WHERE claimed = 0 AND id = (SELECT id FROM walking_encounter WHERE claimed = 0 ORDER BY createdAt ASC LIMIT 1)"</ID>
-    <ID>MaxLineLength:WorkshopRepositoryImplTest.kt:WorkshopRepositoryImplTest$fun</ID>
-    <ID>MaxLineLength:WorkshopRepositoryImplTest.kt:WorkshopRepositoryImplTest$val seededCount = rows.count { it.upgradeType != "RETIRED_ENUM_NAME" &amp;&amp; it.upgradeType != UpgradeType.DAMAGE.name }</ID>
     <ID>MaxLineLength:WorkshopViewModel.kt:WorkshopViewModel$// Per-row workshop-dimension Now→Next preview (intentional fan-out; pure + small N).</ID>
-    <ID>MaxLineLength:WorkshopViewModelTest.kt:WorkshopViewModelTest$assertEquals(0, vm.uiState.value.upgrades.count { it.value?.isBestBuy == true }, "no Best Buy on the Defense tab")</ID>
-    <ID>MaxLineLength:WorkshopViewModelTest.kt:WorkshopViewModelTest$assertFalse(item.canAfford, "${type.name} at cap must NOT be affordable (drives disabled buy control) even with MAX_VALUE balance")</ID>
+    <ID>MaxLineLength:WorkshopViewModelTest.kt:WorkshopViewModelTest$"${type.name} at cap must NOT be affordable (drives disabled buy control) even with MAX_VALUE balance"</ID>
     <ID>NestedBlockDepth:GameLoopThread.kt:GameLoopThread$override fun run</ID>
     <ID>NestedBlockDepth:UWController.kt:UWController$fun update</ID>
     <ID>ReturnCount:BattleAnnouncer.kt:fun battleAnnouncement: BattleAnnouncement?</ID>

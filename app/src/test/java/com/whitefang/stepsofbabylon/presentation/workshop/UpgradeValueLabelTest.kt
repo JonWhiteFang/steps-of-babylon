@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class UpgradeValueLabelTest {
-
     @Test
     fun `formats one decimal place with leading plus and per-1000-steps suffix`() {
         assertEquals("+4.0% power / 1,000 steps", formatPowerPerKStepsLabel(4.0))

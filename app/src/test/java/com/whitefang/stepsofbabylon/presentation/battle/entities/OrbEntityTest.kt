@@ -31,12 +31,15 @@ import kotlin.math.PI
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class OrbEntityTest {
-
     /**
      * Builds a stationary alive enemy at the requested coordinates. Speed = 0 and
      * onMeleeHit = null so the enemy doesn't move or fire callbacks during the test.
      */
-    private fun stationaryEnemyAt(x: Float, y: Float, alive: Boolean = true): EnemyEntity =
+    private fun stationaryEnemyAt(
+        x: Float,
+        y: Float,
+        alive: Boolean = true,
+    ): EnemyEntity =
         EnemyEntity(
             enemyType = EnemyType.BASIC,
             currentHp = 100.0,
@@ -59,17 +62,19 @@ class OrbEntityTest {
         // Distance(orb, enemy) = |25 - 40| = 15 px < HIT_RANGE = 25 → hit expected.
         val hits = mutableListOf<Pair<EnemyEntity, Double>>()
         val enemy = stationaryEnemyAt(40f, 0f)
-        val orb = OrbEntity(
-            zigX = 0f, zigY = 0f,
-            angle = 0f,
-            angularSpeed = 0f,            // freeze angular motion for deterministic geometry
-            damage = 5.0,
-            getEnemies = { listOf(enemy) },
-            onHitEnemy = { e, d -> hits += e to d },
-            initialRadialPhase = (-PI / 2).toFloat(),
-        )
+        val orb =
+            OrbEntity(
+                zigX = 0f,
+                zigY = 0f,
+                angle = 0f,
+                angularSpeed = 0f, // freeze angular motion for deterministic geometry
+                damage = 5.0,
+                getEnemies = { listOf(enemy) },
+                onHitEnemy = { e, d -> hits += e to d },
+                initialRadialPhase = (-PI / 2).toFloat(),
+            )
 
-        orb.update(0.001f)               // tiny dt so radialPhase barely advances
+        orb.update(0.001f) // tiny dt so radialPhase barely advances
 
         assertEquals("Inner-sweep orb should hit melee-range enemy at same angle", 1, hits.size)
         assertEquals("Damage value should pass through verbatim", 5.0, hits[0].second, 0.001)
@@ -82,21 +87,24 @@ class OrbEntityTest {
         // Enemy at (40, 0). Distance = |70 - 40| = 30 px > HIT_RANGE = 25 → no hit expected.
         val hits = mutableListOf<Pair<EnemyEntity, Double>>()
         val enemy = stationaryEnemyAt(40f, 0f)
-        val orb = OrbEntity(
-            zigX = 0f, zigY = 0f,
-            angle = 0f,
-            angularSpeed = 0f,
-            damage = 5.0,
-            getEnemies = { listOf(enemy) },
-            onHitEnemy = { e, d -> hits += e to d },
-            initialRadialPhase = (PI / 2).toFloat(),
-        )
+        val orb =
+            OrbEntity(
+                zigX = 0f,
+                zigY = 0f,
+                angle = 0f,
+                angularSpeed = 0f,
+                damage = 5.0,
+                getEnemies = { listOf(enemy) },
+                onHitEnemy = { e, d -> hits += e to d },
+                initialRadialPhase = (PI / 2).toFloat(),
+            )
 
         orb.update(0.001f)
 
         assertEquals(
             "Outer-sweep orb should NOT hit enemy: orb at R=70, enemy at R=40, distance 30 > HIT_RANGE 25",
-            0, hits.size,
+            0,
+            hits.size,
         )
     }
 
@@ -107,15 +115,17 @@ class OrbEntityTest {
         // enemy because hitCooldowns gates the proximity check.
         val hits = mutableListOf<Pair<EnemyEntity, Double>>()
         val enemy = stationaryEnemyAt(40f, 0f)
-        val orb = OrbEntity(
-            zigX = 0f, zigY = 0f,
-            angle = 0f,
-            angularSpeed = 0f,
-            damage = 5.0,
-            getEnemies = { listOf(enemy) },
-            onHitEnemy = { e, d -> hits += e to d },
-            initialRadialPhase = (-PI / 2).toFloat(),
-        )
+        val orb =
+            OrbEntity(
+                zigX = 0f,
+                zigY = 0f,
+                angle = 0f,
+                angularSpeed = 0f,
+                damage = 5.0,
+                getEnemies = { listOf(enemy) },
+                onHitEnemy = { e, d -> hits += e to d },
+                initialRadialPhase = (-PI / 2).toFloat(),
+            )
 
         orb.update(0.001f)
         assertEquals("Sanity: first update should land 1 hit", 1, hits.size)
@@ -123,7 +133,8 @@ class OrbEntityTest {
         orb.update(0.1f)
         assertEquals(
             "Same orb must not double-hit within HIT_COOLDOWN (0.5s) — cooldown still active",
-            1, hits.size,
+            1,
+            hits.size,
         )
     }
 
@@ -134,15 +145,17 @@ class OrbEntityTest {
         // visibly damaging corpses.
         val hits = mutableListOf<Pair<EnemyEntity, Double>>()
         val deadEnemy = stationaryEnemyAt(40f, 0f, alive = false)
-        val orb = OrbEntity(
-            zigX = 0f, zigY = 0f,
-            angle = 0f,
-            angularSpeed = 0f,
-            damage = 5.0,
-            getEnemies = { listOf(deadEnemy) },
-            onHitEnemy = { e, d -> hits += e to d },
-            initialRadialPhase = (-PI / 2).toFloat(),
-        )
+        val orb =
+            OrbEntity(
+                zigX = 0f,
+                zigY = 0f,
+                angle = 0f,
+                angularSpeed = 0f,
+                damage = 5.0,
+                getEnemies = { listOf(deadEnemy) },
+                onHitEnemy = { e, d -> hits += e to d },
+                initialRadialPhase = (-PI / 2).toFloat(),
+            )
 
         orb.update(0.001f)
 
@@ -157,15 +170,17 @@ class OrbEntityTest {
         // hard-coding regression.
         val hits = mutableListOf<Double>()
         val enemy = stationaryEnemyAt(40f, 0f)
-        val orb = OrbEntity(
-            zigX = 0f, zigY = 0f,
-            angle = 0f,
-            angularSpeed = 0f,
-            damage = 42.5,
-            getEnemies = { listOf(enemy) },
-            onHitEnemy = { _, d -> hits += d },
-            initialRadialPhase = (-PI / 2).toFloat(),
-        )
+        val orb =
+            OrbEntity(
+                zigX = 0f,
+                zigY = 0f,
+                angle = 0f,
+                angularSpeed = 0f,
+                damage = 42.5,
+                getEnemies = { listOf(enemy) },
+                onHitEnemy = { _, d -> hits += d },
+                initialRadialPhase = (-PI / 2).toFloat(),
+            )
 
         orb.update(0.001f)
 
@@ -178,15 +193,17 @@ class OrbEntityTest {
         // full cycle each time. Catches any future regression where the oscillation gets
         // collapsed to a constant radius (e.g. someone dropping the sin() call) and locks
         // in the MIN/MAX/PERIOD contract in case those constants ever drift.
-        val orb = OrbEntity(
-            zigX = 0f, zigY = 0f,
-            angle = 0f,
-            angularSpeed = 0f,
-            damage = 0.0,
-            getEnemies = { emptyList() },
-            onHitEnemy = { _, _ -> },
-            initialRadialPhase = 0f,
-        )
+        val orb =
+            OrbEntity(
+                zigX = 0f,
+                zigY = 0f,
+                angle = 0f,
+                angularSpeed = 0f,
+                damage = 0.0,
+                getEnemies = { emptyList() },
+                onHitEnemy = { _, _ -> },
+                initialRadialPhase = 0f,
+            )
 
         // 1/4 cycle in seconds: ORBIT_PERIOD_SEC / 4 = 2.5 / 4 = 0.625 s.
         // Each call to update(0.625) advances phase by π/2 rad.

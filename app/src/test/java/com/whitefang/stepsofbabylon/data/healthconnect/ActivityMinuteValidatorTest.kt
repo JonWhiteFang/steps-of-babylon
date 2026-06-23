@@ -9,11 +9,13 @@ import java.time.Duration
 import java.time.Instant
 
 class ActivityMinuteValidatorTest {
-
     private val antiCheatPrefs: AntiCheatPreferences = mock()
     private val validator = ActivityMinuteValidator(antiCheatPrefs)
 
-    private fun session(type: Int, minutes: Int): ExerciseSessionInfo {
+    private fun session(
+        type: Int,
+        minutes: Int,
+    ): ExerciseSessionInfo {
         val start = Instant.ofEpochSecond(1_000_000)
         return ExerciseSessionInfo(
             exerciseType = type,
@@ -58,12 +60,13 @@ class ActivityMinuteValidatorTest {
 
     @Test
     fun `mixed valid and invalid sessions filtered correctly`() {
-        val sessions = listOf(
-            session(1, 1),    // micro — rejected
-            session(2, 30),   // valid
-            session(3, 300),  // truncated to 240
-            session(4, 15),   // valid
-        )
+        val sessions =
+            listOf(
+                session(1, 1), // micro — rejected
+                session(2, 30), // valid
+                session(3, 300), // truncated to 240
+                session(4, 15), // valid
+            )
         val result = validator.validate(sessions)
         assertEquals(3, result.size)
         assertEquals(30, result[0].durationMinutes)

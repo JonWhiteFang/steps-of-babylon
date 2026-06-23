@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Test
  * card type.
  */
 class CardTypeTest {
-
     @Test
     fun `9 entries exist`() {
         assertEquals(9, CardType.entries.size)
@@ -276,7 +275,11 @@ class CardTypeTest {
         for (type in continuousCards) {
             val mid = type.effectDescriptionAtLevel(4)
             assertNotEquals(type.effectDescriptionAtLevel(1), mid, "$type Lv4 must differ from Lv1")
-            assertNotEquals(type.effectDescriptionAtLevel(type.maxLevel), mid, "$type Lv4 must differ from Lv${type.maxLevel}")
+            assertNotEquals(
+                type.effectDescriptionAtLevel(type.maxLevel),
+                mid,
+                "$type Lv4 must differ from Lv${type.maxLevel}",
+            )
         }
     }
 }

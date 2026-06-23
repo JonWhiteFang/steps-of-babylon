@@ -43,7 +43,6 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], application = android.app.Application::class)
 class CardsScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -66,10 +65,11 @@ class CardsScreenTest {
     @Test
     fun `renders gem balance and owned-card count`() {
         playerRepo = FakePlayerRepository(PlayerProfile(gems = 250))
-        cardRepo.cards.value = listOf(
-            OwnedCard(1, CardType.SHARP_SHOOTER, 1, false),
-            OwnedCard(2, CardType.IRON_SKIN, 1, false),
-        )
+        cardRepo.cards.value =
+            listOf(
+                OwnedCard(1, CardType.SHARP_SHOOTER, 1, false),
+                OwnedCard(2, CardType.IRON_SKIN, 1, false),
+            )
         val viewModel = vm()
 
         composeRule.setContent { CardsScreen(viewModel = viewModel) }
@@ -82,11 +82,12 @@ class CardsScreenTest {
     @Test
     fun `shows 3 of 3 cap message when three cards are equipped`() {
         playerRepo = FakePlayerRepository(PlayerProfile(gems = 0))
-        cardRepo.cards.value = listOf(
-            OwnedCard(1, CardType.SHARP_SHOOTER, 1, true),
-            OwnedCard(2, CardType.IRON_SKIN, 1, true),
-            OwnedCard(3, CardType.GLASS_CANNON, 1, true),
-        )
+        cardRepo.cards.value =
+            listOf(
+                OwnedCard(1, CardType.SHARP_SHOOTER, 1, true),
+                OwnedCard(2, CardType.IRON_SKIN, 1, true),
+                OwnedCard(3, CardType.GLASS_CANNON, 1, true),
+            )
         val viewModel = vm()
 
         composeRule.setContent { CardsScreen(viewModel = viewModel) }

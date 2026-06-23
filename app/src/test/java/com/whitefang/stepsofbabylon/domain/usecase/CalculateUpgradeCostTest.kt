@@ -8,7 +8,6 @@ import kotlin.math.ceil
 import kotlin.math.pow
 
 class CalculateUpgradeCostTest {
-
     private val sut = CalculateUpgradeCost()
 
     @Test

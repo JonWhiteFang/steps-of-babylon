@@ -19,7 +19,6 @@ import java.io.File
  * reads text — no Android, no Robolectric.
  */
 class NoRawEnumNameInUiTest {
-
     @Test
     fun `no presentation source surfaces a raw enum name via name dot replace`() {
         // Unit tests run with the :app module dir as the working directory (see DomainPurityTest).
@@ -35,7 +34,8 @@ class NoRawEnumNameInUiTest {
 
         var fileCount = 0
         val offenders = mutableListOf<String>()
-        presentationRoot.walkTopDown()
+        presentationRoot
+            .walkTopDown()
             .filter { it.isFile && it.extension == "kt" }
             .forEach { file ->
                 fileCount++
@@ -73,12 +73,15 @@ class NoRawEnumNameInUiTest {
     @Test
     fun `no presentation source de-cases an enum name via name dot take or lowercase`() {
         val presentationRoot = File("src/main/java/com/whitefang/stepsofbabylon/presentation")
-        assertTrue(presentationRoot.isDirectory) { "presentation source root not found at ${presentationRoot.absolutePath}" }
+        assertTrue(
+            presentationRoot.isDirectory,
+        ) { "presentation source root not found at ${presentationRoot.absolutePath}" }
 
         val rawNameTransform = Regex("""\.name\.take\(|\.name\.lowercase\(""")
         var fileCount = 0
         val offenders = mutableListOf<String>()
-        presentationRoot.walkTopDown()
+        presentationRoot
+            .walkTopDown()
             .filter { it.isFile && it.extension == "kt" }
             .forEach { file ->
                 fileCount++

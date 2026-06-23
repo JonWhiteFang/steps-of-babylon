@@ -33,11 +33,19 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], application = android.app.Application::class)
 class SupplyRewardFormatTest {
-
     @get:Rule val rule = createComposeRule()
 
-    private fun drop(reward: SupplyDropReward, amount: Int) =
-        SupplyDrop(id = 1, trigger = SupplyDropTrigger.RANDOM, reward = reward, rewardAmount = amount, claimed = false, createdAt = 0L)
+    private fun drop(
+        reward: SupplyDropReward,
+        amount: Int,
+    ) = SupplyDrop(
+        id = 1,
+        trigger = SupplyDropTrigger.RANDOM,
+        reward = reward,
+        rewardAmount = amount,
+        claimed = false,
+        createdAt = 0L,
+    )
 
     /** Renders every drop inside ONE composition; returns the rendered strings in input order. */
     private fun captureAll(vararg drops: SupplyDrop): List<String> {
@@ -79,7 +87,10 @@ class SupplyRewardFormatTest {
         val drops = (0..8).map { drop(SupplyDropReward.CARD_COPY, it) }
         captureAll(*drops.toTypedArray()).forEach { label ->
             assertFalse("CARD_COPY must not render a '+N' quantity: \"$label\"", label.startsWith("+"))
-            assertFalse("CARD_COPY must show the resolved card name, not the raw label: \"$label\"", label.contains("Card Copy"))
+            assertFalse(
+                "CARD_COPY must show the resolved card name, not the raw label: \"$label\"",
+                label.contains("Card Copy"),
+            )
             assertTrue("CARD_COPY always awards exactly one copy: \"$label\"", label.endsWith("x1"))
         }
     }
@@ -91,8 +102,10 @@ class SupplyRewardFormatTest {
         val labels = captureAll(*drops.toTypedArray())
         for (index in 0..8) {
             val expectedType = CardType.entries[index % CardType.entries.size]
-            val expectedName = expectedType.name.split("_")
-                .joinToString(" ") { it.lowercase().replaceFirstChar { c -> c.uppercase() } }
+            val expectedName =
+                expectedType.name
+                    .split("_")
+                    .joinToString(" ") { it.lowercase().replaceFirstChar { c -> c.uppercase() } }
             assertEquals("$expectedName x1", labels[index])
         }
     }

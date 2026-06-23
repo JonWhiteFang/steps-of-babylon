@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test
  * so regen tests lower it first.
  */
 class ZigguratStateTest {
-
     @Test
     fun `regenHp adds healthRegen times dt below the cap`() {
         val s = ZigguratState(ResolvedStats(maxHealth = 100.0, healthRegen = 10.0))
@@ -37,16 +36,16 @@ class ZigguratStateTest {
         // attackSpeed 2.0 → attackInterval 0.5s.
         val s = ZigguratState(ResolvedStats(attackSpeed = 2.0))
         assertTrue(s.tickAttackReady(deltaTime = 0.1f)) // starts ready (cooldown 0)
-        s.onFired()                                      // cooldown → 0.5
+        s.onFired() // cooldown → 0.5
         assertFalse(s.tickAttackReady(deltaTime = 0.3f)) // 0.2 remaining
-        assertTrue(s.tickAttackReady(deltaTime = 0.3f))  // interval elapsed → ready
+        assertTrue(s.tickAttackReady(deltaTime = 0.3f)) // interval elapsed → ready
     }
 
     @Test
     fun `holdReady keeps the ziggurat ready next tick when no targets`() {
         val s = ZigguratState(ResolvedStats(attackSpeed = 2.0))
         assertTrue(s.tickAttackReady(deltaTime = 0.3f)) // ready, overshoot to -0.3
-        s.holdReady()                                    // clamp to 0
+        s.holdReady() // clamp to 0
         assertTrue(s.tickAttackReady(deltaTime = 0.001f)) // still ready next tick
     }
 

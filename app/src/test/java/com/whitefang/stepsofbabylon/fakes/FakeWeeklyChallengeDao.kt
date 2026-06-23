@@ -11,5 +11,7 @@ class FakeWeeklyChallengeDao : WeeklyChallengeDao {
     override suspend fun getLastNWeeks(limit: Int): List<WeeklyChallengeEntity> =
         data.values.sortedByDescending { it.weekStartDate }.take(limit)
 
-    override suspend fun upsert(entity: WeeklyChallengeEntity) { data[entity.weekStartDate] = entity }
+    override suspend fun upsert(entity: WeeklyChallengeEntity) {
+        data[entity.weekStartDate] = entity
+    }
 }

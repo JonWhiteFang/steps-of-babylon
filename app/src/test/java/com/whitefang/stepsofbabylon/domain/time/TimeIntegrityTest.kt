@@ -5,17 +5,25 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class TimeIntegrityTest {
-    private fun reading(elapsed: Long, wall: Long) = TimeReading(elapsed, wall)
+    private fun reading(
+        elapsed: Long,
+        wall: Long,
+    ) = TimeReading(elapsed, wall)
+
     // 4-slot baseline helper (lastElapsed, lastWall, maxSeen, trustedWall)
-    private fun base(elapsed: Long, wall: Long, max: Long, trusted: Long) =
-        TimeBaseline(elapsed, wall, max, trusted)
+    private fun base(
+        elapsed: Long,
+        wall: Long,
+        max: Long,
+        trusted: Long,
+    ) = TimeBaseline(elapsed, wall, max, trusted)
 
     @Test
     fun `first run with null baseline is Trusted and seeds maxSeen and trustedWallClock`() {
         val v = TimeIntegrity.evaluate(null, reading(elapsed = 1000, wall = 5000))
         assertTrue(v is TimeVerdict.Trusted)
         assertEquals(5000, v.newBaseline.maxWallClockSeen)
-        assertEquals(5000, v.newBaseline.trustedWallClock)   // seeded to wall
+        assertEquals(5000, v.newBaseline.trustedWallClock) // seeded to wall
         assertEquals(5000, v.newBaseline.lastWallClock)
         assertEquals(1000, v.newBaseline.lastElapsedRealtime)
     }
@@ -37,7 +45,7 @@ class TimeIntegrityTest {
         val b = base(elapsed = 1000, wall = 5000, max = 5000, trusted = 5000)
         // wall leapt +30 min (1_800_000) but only 5 min (300_000) of monotonic time passed
         val v = TimeIntegrity.evaluate(b, reading(elapsed = 301_000, wall = 1_805_000))
-        assertTrue(v is TimeVerdict.Trusted)            // forward, not below floor
+        assertTrue(v is TimeVerdict.Trusted) // forward, not below floor
         // capped = min(1_800_000, 300_000) = 300_000 → trusted 5000+300_000 = 305_000 (NOT 1_805_000)
         assertEquals(305_000, v.newBaseline.trustedWallClock)
         assertEquals(1_805_000, v.newBaseline.maxWallClockSeen) // floor advances to the raw wall

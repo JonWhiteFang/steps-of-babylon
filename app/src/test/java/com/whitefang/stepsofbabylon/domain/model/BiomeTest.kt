@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class BiomeTest {
-
     @Test
     fun `tier to biome mapping`() {
         (1..3).forEach { assertEquals(Biome.HANGING_GARDENS, Biome.forTier(it)) }
@@ -21,7 +20,10 @@ class BiomeTest {
     fun `V1X15 - only CELESTIAL_GATE is flagged isComingSoon`() {
         // Set-equality contract: any future biome flagged Coming Soon must be a
         // deliberate decision; this test fails on regression in either direction.
-        assertTrue(Biome.CELESTIAL_GATE.isComingSoon, "CELESTIAL_GATE must be Coming Soon (Tier 11+ unreachable in v1.0)")
+        assertTrue(
+            Biome.CELESTIAL_GATE.isComingSoon,
+            "CELESTIAL_GATE must be Coming Soon (Tier 11+ unreachable in v1.0)",
+        )
         assertFalse(Biome.HANGING_GARDENS.isComingSoon)
         assertFalse(Biome.BURNING_SANDS.isComingSoon)
         assertFalse(Biome.FROZEN_ZIGGURATS.isComingSoon)

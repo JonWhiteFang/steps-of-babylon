@@ -23,15 +23,16 @@ import java.io.File
  * NOT import any DAO or `@Entity`.
  */
 class PresentationPurityTest {
-
-    private val forbiddenPrefixes = listOf(
-        "com.whitefang.stepsofbabylon.data.local.",
-    )
+    private val forbiddenPrefixes =
+        listOf(
+            "com.whitefang.stepsofbabylon.data.local.",
+        )
 
     /** filename → the single data.local import it is allowed to keep. */
-    private val allowlist = mapOf(
-        "BattleViewModel.kt" to "com.whitefang.stepsofbabylon.data.local.AppDatabase",
-    )
+    private val allowlist =
+        mapOf(
+            "BattleViewModel.kt" to "com.whitefang.stepsofbabylon.data.local.AppDatabase",
+        )
 
     @Test
     fun `presentation layer has no DAO, AppDatabase, or entity imports`() {
@@ -40,20 +41,21 @@ class PresentationPurityTest {
             "presentation source root not found at ${root.absolutePath} (working dir = ${File(".").absolutePath})"
         }
 
-        val offenders = root.walkTopDown()
-            .filter { it.isFile && it.extension == "kt" }
-            .flatMap { file ->
-                file.readLines()
-                    .map { it.trim() }
-                    .filter { line ->
-                        line.startsWith("import ") &&
-                            forbiddenPrefixes.any { line.removePrefix("import ").startsWith(it) }
-                    }
-                    .map { line -> file.name to line.removePrefix("import ").trim() }
-            }
-            .filter { (fileName, import) -> allowlist[fileName] != import }
-            .map { (fileName, import) -> "$fileName: import $import" }
-            .toList()
+        val offenders =
+            root
+                .walkTopDown()
+                .filter { it.isFile && it.extension == "kt" }
+                .flatMap { file ->
+                    file
+                        .readLines()
+                        .map { it.trim() }
+                        .filter { line ->
+                            line.startsWith("import ") &&
+                                forbiddenPrefixes.any { line.removePrefix("import ").startsWith(it) }
+                        }.map { line -> file.name to line.removePrefix("import ").trim() }
+                }.filter { (fileName, import) -> allowlist[fileName] != import }
+                .map { (fileName, import) -> "$fileName: import $import" }
+                .toList()
 
         assertTrue(offenders.isEmpty()) {
             "presentation/ must not import Room DAOs / AppDatabase / entities (route through repository " +

@@ -31,7 +31,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class BattleSurfaceLifecycleTest {
-
     /** [GameSurfaceView] is a [android.view.View]; it must be constructed on the main thread. */
     private fun newView(): GameSurfaceView {
         val instrumentation = InstrumentationRegistry.getInstrumentation()

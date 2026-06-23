@@ -1,13 +1,12 @@
 package com.whitefang.stepsofbabylon.presentation.onboarding
 
+import com.whitefang.stepsofbabylon.domain.model.Biome
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import com.whitefang.stepsofbabylon.domain.model.Biome
-import org.junit.jupiter.api.Assertions.assertEquals
 
 class OnboardingContentTest {
-
     @Test
     fun `slides are non-empty and only the final slide is the permission primer`() {
         val slides = OnboardingContent.slides
@@ -35,12 +34,13 @@ class OnboardingContentTest {
     fun `slides map to the biome journey in order, skipping Underworld`() {
         // Bundle E (#164): the 4 slides walk Gardens -> Sands -> Frozen -> Celestial (the destination
         // biome). UNDERWORLD_OF_KUR is intentionally skipped (spec E5). Pin the exact ordered map.
-        val expected = listOf(
-            Biome.HANGING_GARDENS,
-            Biome.BURNING_SANDS,
-            Biome.FROZEN_ZIGGURATS,
-            Biome.CELESTIAL_GATE,
-        )
+        val expected =
+            listOf(
+                Biome.HANGING_GARDENS,
+                Biome.BURNING_SANDS,
+                Biome.FROZEN_ZIGGURATS,
+                Biome.CELESTIAL_GATE,
+            )
         assertEquals(expected, OnboardingContent.slides.map { it.biome })
         assertEquals(
             false,

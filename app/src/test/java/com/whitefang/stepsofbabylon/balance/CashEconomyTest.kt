@@ -1,8 +1,8 @@
 package com.whitefang.stepsofbabylon.balance
 
+import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
-import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath
 import com.whitefang.stepsofbabylon.domain.usecase.CalculateUpgradeCost
 import com.whitefang.stepsofbabylon.presentation.battle.engine.EnemyScaler
 import org.junit.jupiter.api.Assertions.*
@@ -13,7 +13,6 @@ import kotlin.math.min
  * Validates in-round cash economy supports meaningful upgrade decisions.
  */
 class CashEconomyTest {
-
     private val calcCost = CalculateUpgradeCost()
 
     /** Estimate cash earned from kills in a wave (Tier 1, no bonuses). */
@@ -33,7 +32,10 @@ class CashEconomyTest {
         // Cheapest in-round upgrade at level 0
         val cheapest = UpgradeType.entries.minOf { calcCost(it, 0) }
         val affordableUpgrades = totalCash / cheapest
-        assertTrue(affordableUpgrades >= 2, "By wave 5: $totalCash cash, cheapest upgrade $cheapest, can afford $affordableUpgrades")
+        assertTrue(
+            affordableUpgrades >= 2,
+            "By wave 5: $totalCash cash, cheapest upgrade $cheapest, can afford $affordableUpgrades",
+        )
     }
 
     @Test
@@ -41,12 +43,14 @@ class CashEconomyTest {
         var totalCash = 0L
         for (w in 1..15) totalCash += cashFromWave(w)
         // Assume average upgrade cost increases — use level 0-7 costs for cheapest type
-        var spent = 0L; var count = 0
+        var spent = 0L
+        var count = 0
         val cheapestType = UpgradeType.entries.minByOrNull { calcCost(it, 0) }!!
         for (level in 0..20) {
             val cost = calcCost(cheapestType, level)
             if (spent + cost > totalCash) break
-            spent += cost; count++
+            spent += cost
+            count++
         }
         assertTrue(count >= 8, "By wave 15: $totalCash cash, bought $count upgrades of ${cheapestType.name}")
     }
@@ -55,7 +59,9 @@ class CashEconomyTest {
     fun `interest at max level does not dominate kill income`() {
         // Max interest: 10% of held cash per wave
         // Simulate 10 waves with max interest, track interest vs kill income
-        var cash = 0L; var totalInterest = 0L; var totalKillCash = 0L
+        var cash = 0L
+        var totalInterest = 0L
+        var totalKillCash = 0L
         for (w in 1..10) {
             val killCash = cashFromWave(w)
             totalKillCash += killCash
@@ -65,6 +71,9 @@ class CashEconomyTest {
             cash += interest
         }
         val interestRatio = totalInterest.toDouble() / totalKillCash
-        assertTrue(interestRatio < 0.65, "Interest ratio: $interestRatio (should be <0.65, interest shouldn't dominate)")
+        assertTrue(
+            interestRatio < 0.65,
+            "Interest ratio: $interestRatio (should be <0.65, interest shouldn't dominate)",
+        )
     }
 }

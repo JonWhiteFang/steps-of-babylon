@@ -12,7 +12,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
 class AntiCheatPreferencesTimeBaselineTest {
-
     @Test
     fun `readTimeBaseline is null before any write`() {
         val prefs = AntiCheatPreferences(RuntimeEnvironment.getApplication())
@@ -23,7 +22,12 @@ class AntiCheatPreferencesTimeBaselineTest {
     fun `writeTimeBaseline then readTimeBaseline round-trips all four slots`() {
         val prefs = AntiCheatPreferences(RuntimeEnvironment.getApplication())
         prefs.writeTimeBaseline(
-            TimeBaseline(lastElapsedRealtime = 1234, lastWallClock = 5678, maxWallClockSeen = 9999, trustedWallClock = 7777),
+            TimeBaseline(
+                lastElapsedRealtime = 1234,
+                lastWallClock = 5678,
+                maxWallClockSeen = 9999,
+                trustedWallClock = 7777,
+            ),
         )
         val read = prefs.readTimeBaseline()
         assertEquals(TimeBaseline(1234, 5678, 9999, 7777), read)

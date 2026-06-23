@@ -44,11 +44,12 @@ class FakeBillingManager : BillingManager {
         purchases += product
         return if (resultQueue.isNotEmpty()) resultQueue.removeFirst() else nextResult
     }
+
     override suspend fun isAdRemoved(): Boolean = adRemoved
+
     override suspend fun isSeasonPassActive(): Boolean = seasonPassActive
 
-    override suspend fun getPriceDisplay(product: BillingProduct): String? =
-        priceDisplayOverrides[product]
+    override suspend fun getPriceDisplay(product: BillingProduct): String? = priceDisplayOverrides[product]
 
     override suspend fun reconcilePendingPurchases() {
         reconcileCallCount++

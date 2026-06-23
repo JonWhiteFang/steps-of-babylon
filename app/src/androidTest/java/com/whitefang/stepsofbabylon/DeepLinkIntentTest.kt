@@ -29,7 +29,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class DeepLinkIntentTest {
-
     @Test
     fun navigateToExtraSurvivesRealParcelRoundTrip() {
         val original = Intent().putExtra("navigate_to", "supplies")
@@ -83,8 +82,10 @@ class DeepLinkIntentTest {
     @Test
     fun unknownRouteFailsClosedThroughTheRoutingGate() {
         val intent = Intent().putExtra("navigate_to", "not_a_real_route")
-        val screen = Screen.fromRoute(intent.getStringExtra("navigate_to"))
-            ?.takeIf { it.route in Screen.argumentFreeRoutes }
+        val screen =
+            Screen
+                .fromRoute(intent.getStringExtra("navigate_to"))
+                ?.takeIf { it.route in Screen.argumentFreeRoutes }
         assertNull("Unknown deep-link routes must fall through to the start destination", screen)
     }
 }

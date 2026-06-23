@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class CheckTierUnlockTest {
-
     private val sut = CheckTierUnlock()
 
     @Test

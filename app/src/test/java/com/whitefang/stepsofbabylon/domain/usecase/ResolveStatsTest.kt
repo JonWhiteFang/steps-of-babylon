@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class ResolveStatsTest {
-
     private val sut = ResolveStats()
     private val eps = 0.001
 
@@ -159,10 +158,11 @@ class ResolveStatsTest {
 
     @Test
     fun `RO08 in-round attackSpeed stacks multiplicatively with workshop`() {
-        val stats = sut(
-            mapOf(UpgradeType.ATTACK_SPEED to 10),
-            mapOf(UpgradeType.ATTACK_SPEED to 5),
-        )
+        val stats =
+            sut(
+                mapOf(UpgradeType.ATTACK_SPEED to 10),
+                mapOf(UpgradeType.ATTACK_SPEED to 5),
+            )
         // base × (1 + ws*0.015) × (1 + ir*0.015)
         val expected = ZigguratBaseStats.BASE_ATTACK_SPEED * 1.15 * 1.075
         assertEquals(expected, stats.attackSpeed, eps)
@@ -183,10 +183,11 @@ class ResolveStatsTest {
 
         // Combined workshop level 100 (3.0×) + in-round level 100 (3.0×) = 9.0× pre-cap;
         // the `coerceAtMost(BASE × 3)` clamp must hold.
-        val capped = sut(
-            mapOf(UpgradeType.RANGE to 100),
-            mapOf(UpgradeType.RANGE to 100),
-        )
+        val capped =
+            sut(
+                mapOf(UpgradeType.RANGE to 100),
+                mapOf(UpgradeType.RANGE to 100),
+            )
         assertEquals(ZigguratBaseStats.BASE_RANGE * 3.0f, capped.range, 0.5f)
     }
 
@@ -199,18 +200,20 @@ class ResolveStatsTest {
 
     @Test
     fun `RO08 in-round critChance sums additively with workshop and respects 80 percent cap`() {
-        val combined = sut(
-            mapOf(UpgradeType.CRITICAL_CHANCE to 50),
-            mapOf(UpgradeType.CRITICAL_CHANCE to 30),
-        )
+        val combined =
+            sut(
+                mapOf(UpgradeType.CRITICAL_CHANCE to 50),
+                mapOf(UpgradeType.CRITICAL_CHANCE to 30),
+            )
         // (50 + 30) × 0.005 = 0.40
         assertEquals(0.40, combined.critChance, eps)
 
         // Combined 200 levels → 1.0 pre-cap; cap holds.
-        val capped = sut(
-            mapOf(UpgradeType.CRITICAL_CHANCE to 100),
-            mapOf(UpgradeType.CRITICAL_CHANCE to 100),
-        )
+        val capped =
+            sut(
+                mapOf(UpgradeType.CRITICAL_CHANCE to 100),
+                mapOf(UpgradeType.CRITICAL_CHANCE to 100),
+            )
         assertEquals(0.80, capped.critChance, eps)
     }
 
@@ -223,26 +226,29 @@ class ResolveStatsTest {
 
     @Test
     fun `RO08 in-round defensePercent sums additively and caps at 75 percent`() {
-        val combined = sut(
-            mapOf(UpgradeType.DEFENSE_PERCENT to 100),
-            mapOf(UpgradeType.DEFENSE_PERCENT to 100),
-        )
+        val combined =
+            sut(
+                mapOf(UpgradeType.DEFENSE_PERCENT to 100),
+                mapOf(UpgradeType.DEFENSE_PERCENT to 100),
+            )
         // (100 + 100) × 0.003 = 0.60
         assertEquals(0.60, combined.defensePercent, eps)
 
-        val capped = sut(
-            mapOf(UpgradeType.DEFENSE_PERCENT to 200),
-            mapOf(UpgradeType.DEFENSE_PERCENT to 200),
-        )
+        val capped =
+            sut(
+                mapOf(UpgradeType.DEFENSE_PERCENT to 200),
+                mapOf(UpgradeType.DEFENSE_PERCENT to 200),
+            )
         assertEquals(0.75, capped.defensePercent, eps)
     }
 
     @Test
     fun `RO08 in-round defenseAbsolute sums flat`() {
-        val stats = sut(
-            mapOf(UpgradeType.DEFENSE_ABSOLUTE to 5),
-            mapOf(UpgradeType.DEFENSE_ABSOLUTE to 3),
-        )
+        val stats =
+            sut(
+                mapOf(UpgradeType.DEFENSE_ABSOLUTE to 5),
+                mapOf(UpgradeType.DEFENSE_ABSOLUTE to 3),
+            )
         assertEquals(8.0, stats.defenseAbsolute, eps)
     }
 
@@ -254,17 +260,19 @@ class ResolveStatsTest {
 
     @Test
     fun `RO08 in-round lifesteal sums additively and caps at 15 percent`() {
-        val combined = sut(
-            mapOf(UpgradeType.LIFESTEAL to 30),
-            mapOf(UpgradeType.LIFESTEAL to 20),
-        )
+        val combined =
+            sut(
+                mapOf(UpgradeType.LIFESTEAL to 30),
+                mapOf(UpgradeType.LIFESTEAL to 20),
+            )
         // (30 + 20) × 0.002 = 0.10
         assertEquals(0.10, combined.lifestealPercent, eps)
 
-        val capped = sut(
-            mapOf(UpgradeType.LIFESTEAL to 50),
-            mapOf(UpgradeType.LIFESTEAL to 50),
-        )
+        val capped =
+            sut(
+                mapOf(UpgradeType.LIFESTEAL to 50),
+                mapOf(UpgradeType.LIFESTEAL to 50),
+            )
         assertEquals(0.15, capped.lifestealPercent, eps)
     }
 
@@ -276,10 +284,11 @@ class ResolveStatsTest {
 
     @Test
     fun `RO08 in-round deathDefy sums additively and caps at 50 percent`() {
-        val capped = sut(
-            mapOf(UpgradeType.DEATH_DEFY to 30),
-            mapOf(UpgradeType.DEATH_DEFY to 30),
-        )
+        val capped =
+            sut(
+                mapOf(UpgradeType.DEATH_DEFY to 30),
+                mapOf(UpgradeType.DEATH_DEFY to 30),
+            )
         // (30 + 30) × 0.01 = 0.60 → cap at 0.50
         assertEquals(0.50, capped.deathDefyChance, eps)
     }
@@ -290,17 +299,19 @@ class ResolveStatsTest {
         // Workshop levels for MULTISHOT will always be 0 in production (isWorkshopVisible=false)
         // but the formula must still tolerate non-zero values for legacy/test inputs.
         // ws=2 + ir=1 = 3 levels → 1 + 3 = 4 targets.
-        val combined = sut(
-            mapOf(UpgradeType.MULTISHOT to 2),
-            mapOf(UpgradeType.MULTISHOT to 1),
-        )
+        val combined =
+            sut(
+                mapOf(UpgradeType.MULTISHOT to 2),
+                mapOf(UpgradeType.MULTISHOT to 1),
+            )
         assertEquals(4, combined.multishotTargets)
 
         // ws=10 + ir=10 = 20, capped at 11.
-        val capped = sut(
-            mapOf(UpgradeType.MULTISHOT to 10),
-            mapOf(UpgradeType.MULTISHOT to 10),
-        )
+        val capped =
+            sut(
+                mapOf(UpgradeType.MULTISHOT to 10),
+                mapOf(UpgradeType.MULTISHOT to 10),
+            )
         assertEquals(11, capped.multishotTargets)
     }
 
@@ -308,32 +319,36 @@ class ResolveStatsTest {
     fun `R402b in-round bounce sums workshop and in-round levels`() {
         // Post-R4-02b: ws + ir totals additively, +1 bounce each, baseline 0, cap 10.
         // ws=2 + ir=1 = 3 → 3 bounces.
-        val combined = sut(
-            mapOf(UpgradeType.BOUNCE_SHOT to 2),
-            mapOf(UpgradeType.BOUNCE_SHOT to 1),
-        )
+        val combined =
+            sut(
+                mapOf(UpgradeType.BOUNCE_SHOT to 2),
+                mapOf(UpgradeType.BOUNCE_SHOT to 1),
+            )
         assertEquals(3, combined.bounceCount)
 
         // ws=10 + ir=10 = 20, capped at 10.
-        val capped = sut(
-            mapOf(UpgradeType.BOUNCE_SHOT to 10),
-            mapOf(UpgradeType.BOUNCE_SHOT to 10),
-        )
+        val capped =
+            sut(
+                mapOf(UpgradeType.BOUNCE_SHOT to 10),
+                mapOf(UpgradeType.BOUNCE_SHOT to 10),
+            )
         assertEquals(10, capped.bounceCount)
     }
 
     @Test
     fun `RO08 in-round orbs sums levels and caps at 6`() {
-        val combined = sut(
-            mapOf(UpgradeType.ORBS to 2),
-            mapOf(UpgradeType.ORBS to 3),
-        )
+        val combined =
+            sut(
+                mapOf(UpgradeType.ORBS to 2),
+                mapOf(UpgradeType.ORBS to 3),
+            )
         assertEquals(5, combined.orbCount)
 
-        val capped = sut(
-            mapOf(UpgradeType.ORBS to 4),
-            mapOf(UpgradeType.ORBS to 4),
-        )
+        val capped =
+            sut(
+                mapOf(UpgradeType.ORBS to 4),
+                mapOf(UpgradeType.ORBS to 4),
+            )
         assertEquals(6, capped.orbCount)
     }
 
@@ -347,11 +362,12 @@ class ResolveStatsTest {
     @Test
     fun `RO11 DAMAGE_RESEARCH level 10 grants +50 percent base damage`() {
         // 10 levels × 5 % per level = +50 % outer multiplier on damage.
-        val stats = sut(
-            workshopLevels = emptyMap(),
-            inRoundLevels = emptyMap(),
-            labLevels = mapOf(ResearchType.DAMAGE_RESEARCH to 10),
-        )
+        val stats =
+            sut(
+                workshopLevels = emptyMap(),
+                inRoundLevels = emptyMap(),
+                labLevels = mapOf(ResearchType.DAMAGE_RESEARCH to 10),
+            )
         assertEquals(
             ZigguratBaseStats.BASE_DAMAGE * 1.50,
             stats.damage,
@@ -363,11 +379,12 @@ class ResolveStatsTest {
     @Test
     fun `RO11 HEALTH_RESEARCH level 20 grants +100 percent max health`() {
         // 20 levels × 5 % per level = +100 % outer multiplier on max health.
-        val stats = sut(
-            workshopLevels = emptyMap(),
-            inRoundLevels = emptyMap(),
-            labLevels = mapOf(ResearchType.HEALTH_RESEARCH to 20),
-        )
+        val stats =
+            sut(
+                workshopLevels = emptyMap(),
+                inRoundLevels = emptyMap(),
+                labLevels = mapOf(ResearchType.HEALTH_RESEARCH to 20),
+            )
         assertEquals(
             ZigguratBaseStats.BASE_HEALTH * 2.00,
             stats.maxHealth,
@@ -381,11 +398,12 @@ class ResolveStatsTest {
         // Workshop CRITICAL_FACTOR L5 → base crit multiplier 2.0 + 5 × 0.1 = 2.5×
         // CRITICAL_RESEARCH L15 → outer multiplier (1 + 15 × 0.03) = 1.45×
         // Combined: 2.5 × 1.45 = 3.625×
-        val stats = sut(
-            workshopLevels = mapOf(UpgradeType.CRITICAL_FACTOR to 5),
-            inRoundLevels = emptyMap(),
-            labLevels = mapOf(ResearchType.CRITICAL_RESEARCH to 15),
-        )
+        val stats =
+            sut(
+                workshopLevels = mapOf(UpgradeType.CRITICAL_FACTOR to 5),
+                inRoundLevels = emptyMap(),
+                labLevels = mapOf(ResearchType.CRITICAL_RESEARCH to 15),
+            )
         assertEquals(
             3.625,
             stats.critMultiplier,
@@ -397,11 +415,12 @@ class ResolveStatsTest {
     @Test
     fun `RO11 REGEN_RESEARCH level 15 grants +60 percent health regen`() {
         // 15 levels × 4 % per level = +60 % outer multiplier on healthRegen.
-        val stats = sut(
-            workshopLevels = emptyMap(),
-            inRoundLevels = emptyMap(),
-            labLevels = mapOf(ResearchType.REGEN_RESEARCH to 15),
-        )
+        val stats =
+            sut(
+                workshopLevels = emptyMap(),
+                inRoundLevels = emptyMap(),
+                labLevels = mapOf(ResearchType.REGEN_RESEARCH to 15),
+            )
         assertEquals(
             ZigguratBaseStats.BASE_REGEN * 1.60,
             stats.healthRegen,
@@ -417,11 +436,12 @@ class ResolveStatsTest {
 
     @Test
     fun `V1X15b ENEMY_INTEL level 0 produces no damage change`() {
-        val stats = sut(
-            workshopLevels = emptyMap(),
-            inRoundLevels = emptyMap(),
-            labLevels = mapOf(ResearchType.ENEMY_INTEL to 0),
-        )
+        val stats =
+            sut(
+                workshopLevels = emptyMap(),
+                inRoundLevels = emptyMap(),
+                labLevels = mapOf(ResearchType.ENEMY_INTEL to 0),
+            )
         assertEquals(
             ZigguratBaseStats.BASE_DAMAGE,
             stats.damage,
@@ -432,11 +452,12 @@ class ResolveStatsTest {
 
     @Test
     fun `V1X15b ENEMY_INTEL level 1 grants +2 percent base damage`() {
-        val stats = sut(
-            workshopLevels = emptyMap(),
-            inRoundLevels = emptyMap(),
-            labLevels = mapOf(ResearchType.ENEMY_INTEL to 1),
-        )
+        val stats =
+            sut(
+                workshopLevels = emptyMap(),
+                inRoundLevels = emptyMap(),
+                labLevels = mapOf(ResearchType.ENEMY_INTEL to 1),
+            )
         assertEquals(
             ZigguratBaseStats.BASE_DAMAGE * 1.02,
             stats.damage,
@@ -448,11 +469,12 @@ class ResolveStatsTest {
     @Test
     fun `V1X15b ENEMY_INTEL level 10 grants +20 percent base damage`() {
         // 10 levels × 2 % per level = +20 % outer multiplier (max-level cap).
-        val stats = sut(
-            workshopLevels = emptyMap(),
-            inRoundLevels = emptyMap(),
-            labLevels = mapOf(ResearchType.ENEMY_INTEL to 10),
-        )
+        val stats =
+            sut(
+                workshopLevels = emptyMap(),
+                inRoundLevels = emptyMap(),
+                labLevels = mapOf(ResearchType.ENEMY_INTEL to 10),
+            )
         assertEquals(
             ZigguratBaseStats.BASE_DAMAGE * 1.20,
             stats.damage,
@@ -464,14 +486,16 @@ class ResolveStatsTest {
     @Test
     fun `V1X15b ENEMY_INTEL stacks multiplicatively with DAMAGE_RESEARCH`() {
         // ENEMY_INTEL L5 → 1.10× ; DAMAGE_RESEARCH L5 → 1.25× ; combined 1.10 × 1.25 = 1.375×.
-        val stats = sut(
-            workshopLevels = emptyMap(),
-            inRoundLevels = emptyMap(),
-            labLevels = mapOf(
-                ResearchType.ENEMY_INTEL to 5,
-                ResearchType.DAMAGE_RESEARCH to 5,
-            ),
-        )
+        val stats =
+            sut(
+                workshopLevels = emptyMap(),
+                inRoundLevels = emptyMap(),
+                labLevels =
+                    mapOf(
+                        ResearchType.ENEMY_INTEL to 5,
+                        ResearchType.DAMAGE_RESEARCH to 5,
+                    ),
+            )
         assertEquals(
             ZigguratBaseStats.BASE_DAMAGE * 1.375,
             stats.damage,
@@ -486,14 +510,16 @@ class ResolveStatsTest {
         // (L15 on top of workshop CRITICAL_FACTOR L5 → 2.5 × 1.45 = 3.625×). The two are
         // independent fields; this guards that wiring ENEMY_INTEL onto damage didn't disturb
         // the crit-multiplier path.
-        val stats = sut(
-            workshopLevels = mapOf(UpgradeType.CRITICAL_FACTOR to 5),
-            inRoundLevels = emptyMap(),
-            labLevels = mapOf(
-                ResearchType.ENEMY_INTEL to 10,
-                ResearchType.CRITICAL_RESEARCH to 15,
-            ),
-        )
+        val stats =
+            sut(
+                workshopLevels = mapOf(UpgradeType.CRITICAL_FACTOR to 5),
+                inRoundLevels = emptyMap(),
+                labLevels =
+                    mapOf(
+                        ResearchType.ENEMY_INTEL to 10,
+                        ResearchType.CRITICAL_RESEARCH to 15,
+                    ),
+            )
         assertEquals(
             ZigguratBaseStats.BASE_DAMAGE * 1.20,
             stats.damage,

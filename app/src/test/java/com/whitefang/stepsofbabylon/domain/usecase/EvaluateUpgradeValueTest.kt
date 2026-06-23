@@ -19,13 +19,18 @@ import org.junit.jupiter.api.Test
  * So DAMAGE is the Best Buy.
  */
 class EvaluateUpgradeValueTest {
-
     private val sut = EvaluateUpgradeValue()
 
-    private val attackCandidates = listOf(
-        UpgradeType.DAMAGE, UpgradeType.ATTACK_SPEED, UpgradeType.CRITICAL_CHANCE,
-        UpgradeType.CRITICAL_FACTOR, UpgradeType.RANGE, UpgradeType.DAMAGE_PER_METER, UpgradeType.RAPID_FIRE,
-    )
+    private val attackCandidates =
+        listOf(
+            UpgradeType.DAMAGE,
+            UpgradeType.ATTACK_SPEED,
+            UpgradeType.CRITICAL_CHANCE,
+            UpgradeType.CRITICAL_FACTOR,
+            UpgradeType.RANGE,
+            UpgradeType.DAMAGE_PER_METER,
+            UpgradeType.RAPID_FIRE,
+        )
 
     @Test
     fun `only Δpower-positive combat upgrades are returned`() {
@@ -77,7 +82,7 @@ class EvaluateUpgradeValueTest {
         val result = sut(emptyMap(), stepBalance = 100_000, candidates = attackCandidates)
         val damage = result.single { it.type == UpgradeType.DAMAGE }
         val attackSpeed = result.single { it.type == UpgradeType.ATTACK_SPEED }
-        assertEquals(1.0f, damage.barFraction, 1e-6f)            // highest pct -> full bar
+        assertEquals(1.0f, damage.barFraction, 1e-6f) // highest pct -> full bar
         assertTrue(attackSpeed.barFraction in 0.0f..1.0f)
         assertTrue(attackSpeed.barFraction < damage.barFraction) // lower value -> shorter bar
     }
@@ -87,8 +92,8 @@ class EvaluateUpgradeValueTest {
         // Balance below DAMAGE's base cost (50) -> no candidate affordable.
         val result = sut(emptyMap(), stepBalance = 0, candidates = attackCandidates)
         val best = result.single { it.isBestBuy }
-        assertEquals(UpgradeType.DAMAGE, best.type)       // still the highest-value
-        assertFalse(best.bestBuyAffordable)               // but flagged unaffordable (greyed)
+        assertEquals(UpgradeType.DAMAGE, best.type) // still the highest-value
+        assertFalse(best.bestBuyAffordable) // but flagged unaffordable (greyed)
     }
 
     @Test
@@ -102,13 +107,21 @@ class EvaluateUpgradeValueTest {
         val result = sut(levels, stepBalance = balance, candidates = attackCandidates)
         val best = result.single { it.isBestBuy }
         assertTrue(best.bestBuyAffordable)
-        assertTrue(best.type != UpgradeType.DAMAGE, "DAMAGE is unaffordable here, so it cannot be the affordable best buy")
+        assertTrue(
+            best.type != UpgradeType.DAMAGE,
+            "DAMAGE is unaffordable here, so it cannot be the affordable best buy",
+        )
     }
 
     @Test
     fun `maxed candidates are excluded`() {
         // CRITICAL_CHANCE at cap (160) -> excluded by the isAtMax guard (before any Δpower compute).
-        val result = sut(mapOf(UpgradeType.CRITICAL_CHANCE to 160), stepBalance = 100_000, candidates = listOf(UpgradeType.CRITICAL_CHANCE))
+        val result =
+            sut(
+                mapOf(UpgradeType.CRITICAL_CHANCE to 160),
+                stepBalance = 100_000,
+                candidates = listOf(UpgradeType.CRITICAL_CHANCE),
+            )
         assertTrue(result.isEmpty())
     }
 

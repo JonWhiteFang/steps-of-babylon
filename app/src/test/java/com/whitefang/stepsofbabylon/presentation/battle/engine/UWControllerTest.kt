@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test
  * (`testOptions.unitTests.isReturnDefaultValues = true`); UW logic never reads it.
  */
 class UWControllerTest {
-
     private class FakeUWHost(
         override val ziggurat: ZigguratEntity?,
         override var currentStats: ResolvedStats = ResolvedStats(damage = 10.0),
@@ -30,17 +29,22 @@ class UWControllerTest {
         override val uwCooldownMultiplier: Float = 1f
         override val effectEngine: EffectEngine? = EffectEngine(reducedMotion = true)
         override val soundManager = null
-        override fun applyStats(stats: ResolvedStats) { currentStats = stats }
+
+        override fun applyStats(stats: ResolvedStats) {
+            currentStats = stats
+        }
+
         override fun aliveEnemies(): List<EnemyEntity> = emptyList()
     }
 
-    private fun makeZiggurat(): ZigguratEntity = ZigguratEntity(
-        screenWidth = 1080f,
-        screenHeight = 1920f,
-        initialStats = ResolvedStats(damage = 10.0),
-        findNearestEnemies = { emptyList<EnemyEntity>() },
-        onFireProjectile = { _, _, _, _ -> },
-    )
+    private fun makeZiggurat(): ZigguratEntity =
+        ZigguratEntity(
+            screenWidth = 1080f,
+            screenHeight = 1920f,
+            initialStats = ResolvedStats(damage = 10.0),
+            findNearestEnemies = { emptyList<EnemyEntity>() },
+            onFireProjectile = { _, _, _, _ -> },
+        )
 
     @Test
     fun `GOLDEN_ZIGGURAT activation raises fortuneMultiplier above 1x and expiry resets it`() {

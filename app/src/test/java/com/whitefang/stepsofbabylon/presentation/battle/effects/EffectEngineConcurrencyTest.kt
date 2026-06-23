@@ -15,11 +15,12 @@ import java.util.concurrent.atomic.AtomicReference
  * milliseconds, after the fix it completes cleanly.
  */
 class EffectEngineConcurrencyTest {
-
     /** A trivial Effect that never finishes (so the list keeps growing → maximises iteration overlap). */
     private class StubEffect : Effect {
         override val isFinished: Boolean = false
+
         override fun update(dt: Float) {}
+
         override fun render(canvas: Canvas) {}
     }
 
@@ -30,16 +31,17 @@ class EffectEngineConcurrencyTest {
         val caught = AtomicReference<Throwable?>(null)
         val keepLooping = AtomicBoolean(true)
 
-        val loopThread = Thread {
-            try {
-                while (keepLooping.get()) {
-                    fx.update(1f / 60f)
-                    fx.render(canvas)
+        val loopThread =
+            Thread {
+                try {
+                    while (keepLooping.get()) {
+                        fx.update(1f / 60f)
+                        fx.render(canvas)
+                    }
+                } catch (t: Throwable) {
+                    caught.compareAndSet(null, t)
                 }
-            } catch (t: Throwable) {
-                caught.compareAndSet(null, t)
             }
-        }
         loopThread.start()
 
         try {

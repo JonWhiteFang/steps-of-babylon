@@ -3,15 +3,15 @@ package com.whitefang.stepsofbabylon.data.sensor
 import com.whitefang.stepsofbabylon.data.anticheat.AntiCheatPreferences
 import com.whitefang.stepsofbabylon.domain.time.TimeReading
 import com.whitefang.stepsofbabylon.fakes.FakeDailyLoginDao
+import com.whitefang.stepsofbabylon.fakes.FakeDailyLoginRepository
 import com.whitefang.stepsofbabylon.fakes.FakeDailyMissionDao
 import com.whitefang.stepsofbabylon.fakes.FakeDailyStepDao
 import com.whitefang.stepsofbabylon.fakes.FakeLabRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
-import com.whitefang.stepsofbabylon.fakes.FakeDailyLoginRepository
-import com.whitefang.stepsofbabylon.fakes.FakeWeeklyChallengeRepository
 import com.whitefang.stepsofbabylon.fakes.FakeStepRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWalkingEncounterRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWeeklyChallengeDao
+import com.whitefang.stepsofbabylon.fakes.FakeWeeklyChallengeRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWorkshopRepository
 import com.whitefang.stepsofbabylon.service.SupplyDropNotificationManager
 import com.whitefang.stepsofbabylon.service.WidgetUpdateHelper
@@ -46,7 +46,6 @@ import java.util.concurrent.atomic.AtomicBoolean
  * land — the lock is the only thing that can hold the total at the cap.
  */
 class DailyStepManagerConcurrencyTest {
-
     // #211: stub the non-null currentTimeReading() so TimeIntegrity.evaluate (in the economy stage)
     // hits the Trusted/null branch instead of NPEing on a null reading. No baseTime here — literal.
     private fun stubbedAntiCheatPrefs(): AntiCheatPreferences =

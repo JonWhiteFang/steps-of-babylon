@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class ScreenShakeTest {
-
     @Test
     fun `trigger sets intensity and duration`() {
         val shake = ScreenShake()

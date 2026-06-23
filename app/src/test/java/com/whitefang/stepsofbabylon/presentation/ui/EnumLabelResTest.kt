@@ -23,6 +23,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34], application = android.app.Application::class)
 class EnumLabelResTest {
     private val ctx = ApplicationProvider.getApplicationContext<Context>()
+
     private fun str(id: Int) = ctx.getString(id)
 
     @Test fun `every UpgradeCategory has a non-blank label`() =
@@ -36,7 +37,9 @@ class EnumLabelResTest {
 
     @Test fun `every CosmeticCategory has a non-blank label not equal to the raw name`() =
         CosmeticCategory.entries.forEach {
-            val s = str(it.labelRes()); assertTrue(s.isNotBlank()); assertFalse(s == it.name)
+            val s = str(it.labelRes())
+            assertTrue(s.isNotBlank())
+            assertFalse(s == it.name)
         }
 
     @Test fun `wave phase keys resolve and blank returns null`() {
@@ -52,6 +55,7 @@ class EnumLabelResTest {
         assertEquals("EPIC", str(uwRarityLabelRes(RarityTier.TIER_1)))
         assertEquals("LEGENDARY", str(uwRarityLabelRes(RarityTier.TIER_2)))
     }
+
     @Test fun `card rarity labels are the rarity name`() {
         assertEquals("COMMON", str(cardRarityLabelRes(CardRarity.COMMON)))
         assertEquals("RARE", str(cardRarityLabelRes(CardRarity.RARE)))

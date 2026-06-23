@@ -38,18 +38,24 @@ class ClaimRewardFormatTest {
     @Test fun `single currency`() {
         assertEquals("+5 Gems claimed!", format(ClaimReward.Bundle(gems = 5)))
     }
+
     @Test fun `single gem is singular`() {
         assertEquals("+1 Gem claimed!", format(ClaimReward.Bundle(gems = 1)))
     }
+
     @Test fun `multi currency joins`() {
         assertEquals("+5 Gems +2 Power Stones claimed!", format(ClaimReward.Bundle(gems = 5, powerStones = 2)))
     }
+
     @Test fun `cosmetic name is carried verbatim`() {
         assertEquals(
             "+200 Gems +50 Power Stones Lapis Lazuli Ziggurat Skin claimed!",
-            format(ClaimReward.Bundle(gems = 200, powerStones = 50, cosmeticNames = listOf("Lapis Lazuli Ziggurat Skin"))),
+            format(
+                ClaimReward.Bundle(gems = 200, powerStones = 50, cosmeticNames = listOf("Lapis Lazuli Ziggurat Skin")),
+            ),
         )
     }
+
     @Test fun `cards and steps branches render through the formatter`() {
         // The supply CARD_COPY claim celebration is Bundle(cards = 1); the steps drop is Bundle(steps = N).
         // (Distinct from the supply ROW, which resolves the card name + "x1" — see SupplyRewardFormatTest.)
@@ -58,10 +64,12 @@ class ClaimRewardFormatTest {
         assertEquals("+1 Copy claimed!", cards)
         assertEquals("+150 Steps claimed!", steps)
     }
+
     @Test fun `message branch renders its fixed string`() {
         // claimAll() emits Message(reward_all_supplies); pin the branch + the actual aggregate string.
         assertEquals("All supplies claimed!", format(ClaimReward.Message(R.string.reward_all_supplies)))
     }
+
     @Test fun `generic and null`() {
         val (generic, nullText) = formatAll(ClaimReward.Generic, null)
         assertEquals("Reward claimed!", generic)

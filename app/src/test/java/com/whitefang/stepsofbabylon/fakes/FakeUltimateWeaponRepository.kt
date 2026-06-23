@@ -34,12 +34,18 @@ class FakeUltimateWeaponRepository(
     override suspend fun unlockWeapon(type: UltimateWeaponType) {
         weapons.update { m ->
             val existing = m[type]
-            if (existing != null) m + (type to existing.copy(isUnlocked = true))
-            else m + (type to OwnedWeapon(type, isUnlocked = true))
+            if (existing != null) {
+                m + (type to existing.copy(isUnlocked = true))
+            } else {
+                m + (type to OwnedWeapon(type, isUnlocked = true))
+            }
         }
     }
 
-    override suspend fun unlockWeaponAtomic(type: UltimateWeaponType, powerStoneCost: Long): Boolean {
+    override suspend fun unlockWeaponAtomic(
+        type: UltimateWeaponType,
+        powerStoneCost: Long,
+    ): Boolean {
         unlockWeaponAtomicCallCount++
         // Already-unlocked re-check before the deduct (mirrors the DAO transaction).
         if (weapons.value[type]?.isUnlocked == true) return false
@@ -48,14 +54,19 @@ class FakeUltimateWeaponRepository(
         return true
     }
 
-    override suspend fun upgradePathLevel(type: UltimateWeaponType, path: UWPath, newLevel: Int) {
+    override suspend fun upgradePathLevel(
+        type: UltimateWeaponType,
+        path: UWPath,
+        newLevel: Int,
+    ) {
         weapons.update { m ->
             val existing = m[type] ?: OwnedWeapon(type, isUnlocked = true)
-            val updated = when (path) {
-                UWPath.DAMAGE -> existing.copy(damageLevel = newLevel)
-                UWPath.SECONDARY -> existing.copy(secondaryLevel = newLevel)
-                UWPath.COOLDOWN -> existing.copy(cooldownLevel = newLevel)
-            }
+            val updated =
+                when (path) {
+                    UWPath.DAMAGE -> existing.copy(damageLevel = newLevel)
+                    UWPath.SECONDARY -> existing.copy(secondaryLevel = newLevel)
+                    UWPath.COOLDOWN -> existing.copy(cooldownLevel = newLevel)
+                }
             m + (type to updated)
         }
     }

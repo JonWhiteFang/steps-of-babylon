@@ -13,7 +13,6 @@ import org.mockito.kotlin.whenever
 import java.util.concurrent.atomic.AtomicInteger
 
 class GameLoopThreadGuardTest {
-
     @Test
     fun `an exception in update stops the loop, records a breadcrumb, fires onLoopError once`() {
         val engine = mock<GameEngine>()
@@ -22,14 +21,18 @@ class GameLoopThreadGuardTest {
 
         val recordCount = AtomicInteger(0)
         val store = mock<CrashBreadcrumbStore>()
-        whenever(store.record(any(), any(), any())).thenAnswer { recordCount.incrementAndGet(); Unit }
+        whenever(store.record(any(), any(), any())).thenAnswer {
+            recordCount.incrementAndGet()
+            Unit
+        }
 
         val errorCount = AtomicInteger(0)
-        val thread = GameLoopThread(holder, engine, store).apply {
-            onLoopError = { errorCount.incrementAndGet() }
-            isPaused = false
-            isRunning = true
-        }
+        val thread =
+            GameLoopThread(holder, engine, store).apply {
+                onLoopError = { errorCount.incrementAndGet() }
+                isPaused = false
+                isRunning = true
+            }
 
         thread.start()
         thread.join(2_000) // join-then-assert: deterministic, no sleep race
@@ -54,11 +57,12 @@ class GameLoopThreadGuardTest {
 
         val store = mock<CrashBreadcrumbStore>()
         val errorCount = AtomicInteger(0)
-        val thread = GameLoopThread(holder, engine, store).apply {
-            onLoopError = { errorCount.incrementAndGet() }
-            isPaused = false
-            isRunning = true
-        }
+        val thread =
+            GameLoopThread(holder, engine, store).apply {
+                onLoopError = { errorCount.incrementAndGet() }
+                isPaused = false
+                isRunning = true
+            }
 
         thread.start()
         thread.join(2_000)

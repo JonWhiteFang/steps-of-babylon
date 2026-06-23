@@ -4,17 +4,17 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class MilestoneTest {
-
     @Test
     fun `all 6 milestones have correct step thresholds`() {
-        val expected = mapOf(
-            Milestone.FIRST_STEPS to 1_000L,
-            Milestone.MORNING_JOGGER to 10_000L,
-            Milestone.TRAIL_BLAZER to 100_000L,
-            Milestone.MARATHON_WALKER to 500_000L,
-            Milestone.IRON_SOLES to 1_000_000L,
-            Milestone.GLOBE_TROTTER to 5_000_000L,
-        )
+        val expected =
+            mapOf(
+                Milestone.FIRST_STEPS to 1_000L,
+                Milestone.MORNING_JOGGER to 10_000L,
+                Milestone.TRAIL_BLAZER to 100_000L,
+                Milestone.MARATHON_WALKER to 500_000L,
+                Milestone.IRON_SOLES to 1_000_000L,
+                Milestone.GLOBE_TROTTER to 5_000_000L,
+            )
         assertEquals(6, Milestone.entries.size)
         expected.forEach { (milestone, steps) -> assertEquals(steps, milestone.requiredSteps) }
     }
