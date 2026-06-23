@@ -27,7 +27,6 @@ import android.app.Activity
  * Introduced by C.6 PR 1 / ADR-0006.
  */
 internal interface ConsentManager {
-
     /**
      * Runs the UMP consent flow idempotently:
      *

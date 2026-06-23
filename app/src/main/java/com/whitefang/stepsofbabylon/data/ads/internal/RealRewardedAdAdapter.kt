@@ -53,107 +53,113 @@ import javax.inject.Singleton
  * Introduced by C.6 PR 1 / ADR-0006.
  */
 @Singleton
-internal class RealRewardedAdAdapter @Inject constructor(
-    @ApplicationContext private val context: Context,
-) : RewardedAdAdapter {
+internal class RealRewardedAdAdapter
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+    ) : RewardedAdAdapter {
+        /**
+         * Set the first time [loadAd] is invoked and kept true thereafter. [MobileAds.initialize]
+         * itself is idempotent, but avoiding the redundant Play Services round-trip per ad load
+         * saves a few tens of ms on second-and-subsequent loads.
+         */
+        private val initialized = AtomicBoolean(false)
 
-    /**
-     * Set the first time [loadAd] is invoked and kept true thereafter. [MobileAds.initialize]
-     * itself is idempotent, but avoiding the redundant Play Services round-trip per ad load
-     * saves a few tens of ms on second-and-subsequent loads.
-     */
-    private val initialized = AtomicBoolean(false)
+        override suspend fun loadAd(adUnitId: String): SdkAdLoadResult {
+            ensureSdkInitialized()
 
-    override suspend fun loadAd(adUnitId: String): SdkAdLoadResult {
-        ensureSdkInitialized()
+            val result = CompletableDeferred<SdkAdLoadResult>()
+            // AdMob's RewardedAd.load REQUIRES the Main thread despite being asynchronous under
+            // the hood. Calling from Dispatchers.IO throws IllegalStateException on device.
+            withContext(Dispatchers.Main) {
+                RewardedAd.load(
+                    context,
+                    adUnitId,
+                    AdRequest.Builder().build(),
+                    object : RewardedAdLoadCallback() {
+                        override fun onAdLoaded(ad: RewardedAd) {
+                            result.complete(SdkAdLoadResult.Success(SdkRewardedAd(rawRef = ad)))
+                        }
 
-        val result = CompletableDeferred<SdkAdLoadResult>()
-        // AdMob's RewardedAd.load REQUIRES the Main thread despite being asynchronous under
-        // the hood. Calling from Dispatchers.IO throws IllegalStateException on device.
-        withContext(Dispatchers.Main) {
-            RewardedAd.load(
-                context,
-                adUnitId,
-                AdRequest.Builder().build(),
-                object : RewardedAdLoadCallback() {
-                    override fun onAdLoaded(ad: RewardedAd) {
-                        result.complete(SdkAdLoadResult.Success(SdkRewardedAd(rawRef = ad)))
-                    }
-
-                    override fun onAdFailedToLoad(error: LoadAdError) {
-                        // error.code is the AdMob ERROR_CODE_* constant (NO_FILL=3, etc);
-                        // error.message is the human-readable diagnostic. We pass both
-                        // through unchanged — the impl translates to a user-friendly
-                        // message.
-                        result.complete(
-                            SdkAdLoadResult.Error(code = error.code, message = error.message),
-                        )
-                    }
-                },
-            )
-        }
-        return result.await()
-    }
-
-    override suspend fun showAd(activity: Activity, loadedAd: SdkRewardedAd): SdkAdShowResult {
-        val rewardedAd = loadedAd.rawRef as? RewardedAd
-            ?: return SdkAdShowResult.Error(-1, "Invalid SDK ref — expected RewardedAd")
-
-        val result = CompletableDeferred<SdkAdShowResult>()
-        val rewarded = AtomicBoolean(false)
-
-        withContext(Dispatchers.Main) {
-            rewardedAd.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    // Fires AFTER onUserEarnedReward (if rewarded) and AFTER any manual
-                    // user-skip. By the time we reach here the `rewarded` flag is final.
-                    result.complete(
-                        if (rewarded.get()) SdkAdShowResult.Rewarded else SdkAdShowResult.Dismissed,
-                    )
-                }
-
-                override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                    Log.w(TAG, "onAdFailedToShowFullScreenContent: code=${error.code} ${error.message}")
-                    result.complete(
-                        SdkAdShowResult.Error(code = error.code, message = error.message),
-                    )
-                }
+                        override fun onAdFailedToLoad(error: LoadAdError) {
+                            // error.code is the AdMob ERROR_CODE_* constant (NO_FILL=3, etc);
+                            // error.message is the human-readable diagnostic. We pass both
+                            // through unchanged — the impl translates to a user-friendly
+                            // message.
+                            result.complete(
+                                SdkAdLoadResult.Error(code = error.code, message = error.message),
+                            )
+                        }
+                    },
+                )
             }
-
-            rewardedAd.show(
-                activity,
-                OnUserEarnedRewardListener { _ ->
-                    // Fires exactly when the user crosses AdMob's reward threshold. Setting
-                    // the flag is cheap; the actual resume happens in onAdDismissed so the
-                    // full-screen sequence completes before control returns.
-                    rewarded.set(true)
-                },
-            )
+            return result.await()
         }
-        return result.await()
-    }
 
-    private suspend fun ensureSdkInitialized() {
-        if (!initialized.compareAndSet(false, true)) return
-        withContext(Dispatchers.Main) {
-            // #241: cap ad content rating before the first ad request. Global, idempotent, static
-            // config — set before MobileAds.initialize so it's in effect for every AdRequest. 13+/
-            // adult stance retained (no child-directed / under-age tag); only the rating is bounded.
-            // ADR-0006 Q5 (refined) / ADR-0032.
-            MobileAds.setRequestConfiguration(buildAdRequestConfiguration())
-            // MobileAds.initialize is a one-shot; the completion-listener variant lets us
-            // block until Play Services returns the adapter-status map. We ignore the map
-            // (no mediation in v1.0 per ADR-0006 non-goals).
-            val deferred = CompletableDeferred<Unit>()
-            MobileAds.initialize(context) { _ -> deferred.complete(Unit) }
-            deferred.await()
+        override suspend fun showAd(
+            activity: Activity,
+            loadedAd: SdkRewardedAd,
+        ): SdkAdShowResult {
+            val rewardedAd =
+                loadedAd.rawRef as? RewardedAd
+                    ?: return SdkAdShowResult.Error(-1, "Invalid SDK ref — expected RewardedAd")
+
+            val result = CompletableDeferred<SdkAdShowResult>()
+            val rewarded = AtomicBoolean(false)
+
+            withContext(Dispatchers.Main) {
+                rewardedAd.fullScreenContentCallback =
+                    object : FullScreenContentCallback() {
+                        override fun onAdDismissedFullScreenContent() {
+                            // Fires AFTER onUserEarnedReward (if rewarded) and AFTER any manual
+                            // user-skip. By the time we reach here the `rewarded` flag is final.
+                            result.complete(
+                                if (rewarded.get()) SdkAdShowResult.Rewarded else SdkAdShowResult.Dismissed,
+                            )
+                        }
+
+                        override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                            Log.w(TAG, "onAdFailedToShowFullScreenContent: code=${error.code} ${error.message}")
+                            result.complete(
+                                SdkAdShowResult.Error(code = error.code, message = error.message),
+                            )
+                        }
+                    }
+
+                rewardedAd.show(
+                    activity,
+                    OnUserEarnedRewardListener { _ ->
+                        // Fires exactly when the user crosses AdMob's reward threshold. Setting
+                        // the flag is cheap; the actual resume happens in onAdDismissed so the
+                        // full-screen sequence completes before control returns.
+                        rewarded.set(true)
+                    },
+                )
+            }
+            return result.await()
+        }
+
+        private suspend fun ensureSdkInitialized() {
+            if (!initialized.compareAndSet(false, true)) return
+            withContext(Dispatchers.Main) {
+                // #241: cap ad content rating before the first ad request. Global, idempotent, static
+                // config — set before MobileAds.initialize so it's in effect for every AdRequest. 13+/
+                // adult stance retained (no child-directed / under-age tag); only the rating is bounded.
+                // ADR-0006 Q5 (refined) / ADR-0032.
+                MobileAds.setRequestConfiguration(buildAdRequestConfiguration())
+                // MobileAds.initialize is a one-shot; the completion-listener variant lets us
+                // block until Play Services returns the adapter-status map. We ignore the map
+                // (no mediation in v1.0 per ADR-0006 non-goals).
+                val deferred = CompletableDeferred<Unit>()
+                MobileAds.initialize(context) { _ -> deferred.complete(Unit) }
+                deferred.await()
+            }
+        }
+
+        companion object {
+            private const val TAG = "RealRewardedAdAdapter"
         }
     }
-
-    companion object {
-        private const val TAG = "RealRewardedAdAdapter"
-    }
-}
 
 /**
  * #241: the AdMob [RequestConfiguration] applied before the first ad request. Caps ad content at
@@ -164,6 +170,7 @@ internal class RealRewardedAdAdapter @Inject constructor(
  * call itself stays device/build-verified.
  */
 internal fun buildAdRequestConfiguration(): RequestConfiguration =
-    RequestConfiguration.Builder()
+    RequestConfiguration
+        .Builder()
         .setMaxAdContentRating(RequestConfiguration.MAX_AD_CONTENT_RATING_PG)
         .build()

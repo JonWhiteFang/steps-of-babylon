@@ -10,22 +10,24 @@ import javax.inject.Singleton
  * If HC reports more steps than our sensor recorded, the difference is the gap.
  */
 @Singleton
-class StepGapFiller @Inject constructor(
-    private val stepReader: HealthConnectStepReader,
-    private val dailyStepManager: DailyStepManager,
-    private val stepRepository: StepRepository,
-) {
-    suspend fun fillGaps(date: String) {
-        val record = stepRepository.getDailyRecord(date)
-        val sensorTotal = record?.sensorSteps ?: 0
-        val hcTotal = stepReader.getStepsForDate(date) ?: return
+class StepGapFiller
+    @Inject
+    constructor(
+        private val stepReader: HealthConnectStepReader,
+        private val dailyStepManager: DailyStepManager,
+        private val stepRepository: StepRepository,
+    ) {
+        suspend fun fillGaps(date: String) {
+            val record = stepRepository.getDailyRecord(date)
+            val sensorTotal = record?.sensorSteps ?: 0
+            val hcTotal = stepReader.getStepsForDate(date) ?: return
 
-        val gap = hcTotal - sensorTotal
-        if (gap > 0) {
-            // #251: recovered HC gaps are an already-validated batch over an elapsed window, not a
-            // live sensor delta — credit them through the trusted path so the live-walking rate
-            // limiter doesn't clamp a legitimate multi-hour recovery to ~200 steps.
-            dailyStepManager.recordTrustedSteps(gap, System.currentTimeMillis())
+            val gap = hcTotal - sensorTotal
+            if (gap > 0) {
+                // #251: recovered HC gaps are an already-validated batch over an elapsed window, not a
+                // live sensor delta — credit them through the trusted path so the live-walking rate
+                // limiter doesn't clamp a legitimate multi-hour recovery to ~200 steps.
+                dailyStepManager.recordTrustedSteps(gap, System.currentTimeMillis())
+            }
         }
     }
-}

@@ -12,14 +12,24 @@ import javax.inject.Singleton
  * MusicPreferences / AntiCheatPreferences — @Singleton, constructor-injected, no Hilt module.
  */
 @Singleton
-class OnboardingPreferences @Inject constructor(@ApplicationContext context: Context) {
-    private val prefs = context.getSharedPreferences("onboarding_prefs", Context.MODE_PRIVATE)
+class OnboardingPreferences
+    @Inject
+    constructor(
+        @ApplicationContext context: Context,
+    ) {
+        private val prefs = context.getSharedPreferences("onboarding_prefs", Context.MODE_PRIVATE)
 
-    fun hasCompletedOnboarding(): Boolean = prefs.getBoolean(KEY_COMPLETED, false)
-    fun setCompleted() { prefs.edit().putBoolean(KEY_COMPLETED, true).apply() }
-    fun reset() { prefs.edit().putBoolean(KEY_COMPLETED, false).apply() }
+        fun hasCompletedOnboarding(): Boolean = prefs.getBoolean(KEY_COMPLETED, false)
 
-    private companion object {
-        const val KEY_COMPLETED = "has_completed_onboarding"
+        fun setCompleted() {
+            prefs.edit().putBoolean(KEY_COMPLETED, true).apply()
+        }
+
+        fun reset() {
+            prefs.edit().putBoolean(KEY_COMPLETED, false).apply()
+        }
+
+        private companion object {
+            const val KEY_COMPLETED = "has_completed_onboarding"
+        }
     }
-}

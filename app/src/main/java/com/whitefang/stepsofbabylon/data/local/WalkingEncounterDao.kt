@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WalkingEncounterDao {
-
     @Query("SELECT * FROM walking_encounter WHERE claimed = 0 ORDER BY createdAt DESC")
     fun getUnclaimed(): Flow<List<WalkingEncounterEntity>>
 
@@ -26,7 +25,10 @@ interface WalkingEncounterDao {
      * @return rows affected — `1` on the first claim, `0` if already claimed / not found.
      */
     @Query("UPDATE walking_encounter SET claimed = 1, claimedAt = :claimedAt WHERE id = :id AND claimed = 0")
-    suspend fun markClaimed(id: Int, claimedAt: Long): Int
+    suspend fun markClaimed(
+        id: Int,
+        claimedAt: Long,
+    ): Int
 
     @Query("SELECT COUNT(*) FROM walking_encounter WHERE claimed = 0")
     fun countUnclaimed(): Flow<Int>
@@ -34,6 +36,8 @@ interface WalkingEncounterDao {
     @Query("SELECT COUNT(*) FROM walking_encounter WHERE claimed = 0")
     suspend fun countUnclaimedOnce(): Int
 
-    @Query("DELETE FROM walking_encounter WHERE claimed = 0 AND id = (SELECT id FROM walking_encounter WHERE claimed = 0 ORDER BY createdAt ASC LIMIT 1)")
+    @Query(
+        "DELETE FROM walking_encounter WHERE claimed = 0 AND id = (SELECT id FROM walking_encounter WHERE claimed = 0 ORDER BY createdAt ASC LIMIT 1)",
+    )
     suspend fun deleteOldestUnclaimed()
 }

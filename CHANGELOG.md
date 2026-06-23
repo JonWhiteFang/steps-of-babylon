@@ -4,6 +4,26 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Style — ktlint repo-wide format, stage 2/6 (`data/`)
+
+**Pure formatting — no production-logic, schema, economy, or engine change; no test-count change (1254
+JVM, 0 failures).** Stage 2 of the staged, layer-by-layer ktlint auto-format: `ktlint -F` scoped to the
+Android-coupled `data/` layer only (64 files — Room DAOs/entities/migrations, repositories, sensor,
+healthconnect, billing, ads, anticheat, prefs, time). All changes are mechanical Bucket-A transforms
+(class-signature reflow of `@Inject constructor(...)`, function-/parameter-signature reflow,
+block-body→expression-body, if-else & when-entry bracing, trailing-comma on call/declaration sites,
+import ordering, chained-call wrapping) — the full whitespace-ignored diff (3490 lines) was reviewed
+hunk-by-hunk against the safe-transform allowlist; no literal/operator/identifier/string (incl. the SQL
+`@Query` strings, byte-identical) or logic changed. **Baselines regenerated** (the staged mechanism):
+ktlint `config/ktlint/baseline.xml` over the full `app/src` scope **8534 → 7632** (`data/` Bucket-A
+entries cleared; later layers stay covered); detekt `config/detekt/baseline.xml` **489 → 474** — the
+reflow shifted the line-keyed signatures of pre-existing, already-baselined smells (so the
+also-baseline-gated detekt PR gate needed a matching regen; all 10 reported issues were format-induced
+`MaxLineLength` re-keys in `data/`), with no genuinely-new smell introduced. `lint-kotlin.sh` (ktlint
+check) + `:app:detekt` both green. Plan:
+`docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`. Stages 3–6 (`service/`+`di/`+
+top-level, `presentation/` excl battle, `presentation/battle/`, test sources) follow in sequence.
+
 ### Style — ktlint repo-wide format, stage 1/6 (`domain/`)
 
 **Pure formatting — no production-logic, schema, economy, or engine change; no test-count change (1254

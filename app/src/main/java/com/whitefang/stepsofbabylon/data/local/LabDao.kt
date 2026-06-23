@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface LabDao {
-
     @Query("SELECT * FROM lab_research")
     fun getAll(): Flow<List<LabResearchEntity>>
 

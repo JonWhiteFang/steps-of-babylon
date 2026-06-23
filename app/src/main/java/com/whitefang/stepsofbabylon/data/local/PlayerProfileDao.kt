@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PlayerProfileDao {
-
     @Query("SELECT * FROM player_profile WHERE id = 1")
     fun get(): Flow<PlayerProfileEntity?>
 
@@ -38,7 +37,9 @@ interface PlayerProfileDao {
     @Query("UPDATE player_profile SET lastActiveAt = :lastActiveAt WHERE id = 1")
     suspend fun updateLastActiveAt(lastActiveAt: Long)
 
-    @Query("UPDATE player_profile SET currentStepBalance = MAX(0, currentStepBalance + :delta), totalStepsEarned = CASE WHEN :delta > 0 THEN totalStepsEarned + :delta ELSE totalStepsEarned END WHERE id = 1")
+    @Query(
+        "UPDATE player_profile SET currentStepBalance = MAX(0, currentStepBalance + :delta), totalStepsEarned = CASE WHEN :delta > 0 THEN totalStepsEarned + :delta ELSE totalStepsEarned END WHERE id = 1",
+    )
     suspend fun adjustStepBalance(delta: Long)
 
     /**
@@ -50,7 +51,9 @@ interface PlayerProfileDao {
      * @param cost Steps to deduct. Must be non-negative.
      * @return Rows affected — `1` if the player had sufficient Steps and the balance was deducted; `0` otherwise.
      */
-    @Query("UPDATE player_profile SET currentStepBalance = currentStepBalance - :cost WHERE id = 1 AND currentStepBalance >= :cost")
+    @Query(
+        "UPDATE player_profile SET currentStepBalance = currentStepBalance - :cost WHERE id = 1 AND currentStepBalance >= :cost",
+    )
     suspend fun adjustStepBalanceIfSufficient(cost: Long): Int
 
     @Query("UPDATE player_profile SET gems = MAX(0, gems + :delta) WHERE id = 1")
@@ -66,7 +69,10 @@ interface PlayerProfileDao {
     suspend fun updateLabSlotCount(count: Int)
 
     @Query("UPDATE player_profile SET currentStreak = :streak, lastLoginDate = :date WHERE id = 1")
-    suspend fun updateStreak(streak: Int, date: String)
+    suspend fun updateStreak(
+        streak: Int,
+        date: String,
+    )
 
     @Query("UPDATE player_profile SET totalGemsEarned = totalGemsEarned + :amount WHERE id = 1")
     suspend fun incrementGemsEarned(amount: Long)
@@ -80,14 +86,23 @@ interface PlayerProfileDao {
     @Query("UPDATE player_profile SET totalPowerStonesSpent = totalPowerStonesSpent + :amount WHERE id = 1")
     suspend fun incrementPowerStonesSpent(amount: Long)
 
-    @Query("UPDATE player_profile SET totalRoundsPlayed = totalRoundsPlayed + :rounds, totalEnemiesKilled = totalEnemiesKilled + :kills, totalCashEarned = totalCashEarned + :cash WHERE id = 1")
-    suspend fun incrementBattleStats(rounds: Long, kills: Long, cash: Long)
+    @Query(
+        "UPDATE player_profile SET totalRoundsPlayed = totalRoundsPlayed + :rounds, totalEnemiesKilled = totalEnemiesKilled + :kills, totalCashEarned = totalCashEarned + :cash WHERE id = 1",
+    )
+    suspend fun incrementBattleStats(
+        rounds: Long,
+        kills: Long,
+        cash: Long,
+    )
 
     @Query("UPDATE player_profile SET adRemoved = :removed WHERE id = 1")
     suspend fun updateAdRemoved(removed: Boolean)
 
     @Query("UPDATE player_profile SET seasonPassActive = :active, seasonPassExpiry = :expiry WHERE id = 1")
-    suspend fun updateSeasonPass(active: Boolean, expiry: Long)
+    suspend fun updateSeasonPass(
+        active: Boolean,
+        expiry: Long,
+    )
 
     @Query("UPDATE player_profile SET freeLabRushUsedToday = :date WHERE id = 1")
     suspend fun updateFreeLabRushUsed(date: String)
@@ -102,7 +117,9 @@ interface PlayerProfileDao {
      *
      * @return Rows affected — `1` if sufficient and deducted; `0` otherwise.
      */
-    @Query("UPDATE player_profile SET gems = gems - :amount, totalGemsSpent = totalGemsSpent + :amount WHERE id = 1 AND gems >= :amount")
+    @Query(
+        "UPDATE player_profile SET gems = gems - :amount, totalGemsSpent = totalGemsSpent + :amount WHERE id = 1 AND gems >= :amount",
+    )
     suspend fun spendGemsAtomic(amount: Long): Int
 
     /**
@@ -110,6 +127,8 @@ interface PlayerProfileDao {
      *
      * @return Rows affected — `1` if sufficient and deducted; `0` otherwise.
      */
-    @Query("UPDATE player_profile SET powerStones = powerStones - :amount, totalPowerStonesSpent = totalPowerStonesSpent + :amount WHERE id = 1 AND powerStones >= :amount")
+    @Query(
+        "UPDATE player_profile SET powerStones = powerStones - :amount, totalPowerStonesSpent = totalPowerStonesSpent + :amount WHERE id = 1 AND powerStones >= :amount",
+    )
     suspend fun spendPowerStonesAtomic(amount: Long): Int
 }

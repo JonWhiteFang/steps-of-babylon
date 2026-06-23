@@ -21,12 +21,12 @@ import javax.crypto.spec.GCMParameterSpec
  * — non-regenerable player progress (Steps) is never destroyed on a fault we can't prove is unrecoverable.
  */
 object DatabaseKeyManager {
-
     private const val TAG = "DatabaseKeyManager"
     private const val KEYSTORE_ALIAS = "steps_of_babylon_db_key"
     private const val PREFS_NAME = "db_key_prefs"
     private const val PREF_ENCRYPTED = "encrypted_passphrase"
     private const val PREF_IV = "passphrase_iv"
+
     // Must match DatabaseModule.provideDatabase() name — when the passphrase is
     // lost (e.g. backup-restore to a new device), the encrypted DB file on disk
     // cannot be opened with a freshly-generated passphrase, so we delete it
@@ -39,6 +39,7 @@ object DatabaseKeyManager {
      */
     internal sealed interface DecryptFailureAction {
         object Wipe : DecryptFailureAction
+
         object Rethrow : DecryptFailureAction
     }
 
@@ -85,6 +86,7 @@ object DatabaseKeyManager {
                         prefs.edit().clear().apply()
                         wipeDatabaseFile(context)
                     }
+
                     DecryptFailureAction.Rethrow -> {
                         // Alias present but decrypt threw → transient/recoverable Keystore fault. Do NOT
                         // destroy progress; rethrow so DB open fails this launch and the next launch retries.
@@ -96,7 +98,8 @@ object DatabaseKeyManager {
         }
         val passphrase = generateRandomPassphrase()
         val (encrypted, iv) = encrypt(passphrase)
-        prefs.edit()
+        prefs
+            .edit()
             .putString(PREF_ENCRYPTED, android.util.Base64.encodeToString(encrypted, android.util.Base64.NO_WRAP))
             .putString(PREF_IV, android.util.Base64.encodeToString(iv, android.util.Base64.NO_WRAP))
             .apply()
@@ -137,11 +140,15 @@ object DatabaseKeyManager {
         ks.getEntry(KEYSTORE_ALIAS, null)?.let {
             return (it as KeyStore.SecretKeyEntry).secretKey
         }
-        val spec = KeyGenParameterSpec.Builder(KEYSTORE_ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
-            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            .setKeySize(256)
-            .build()
+        val spec =
+            KeyGenParameterSpec
+                .Builder(
+                    KEYSTORE_ALIAS,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT,
+                ).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                .setKeySize(256)
+                .build()
         return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").run {
             init(spec)
             generateKey()
@@ -154,7 +161,10 @@ object DatabaseKeyManager {
         return cipher.doFinal(data) to cipher.iv
     }
 
-    private fun decrypt(data: ByteArray, iv: ByteArray): ByteArray {
+    private fun decrypt(
+        data: ByteArray,
+        iv: ByteArray,
+    ): ByteArray {
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.DECRYPT_MODE, getOrCreateKeystoreKey(), GCMParameterSpec(128, iv))
         return cipher.doFinal(data)

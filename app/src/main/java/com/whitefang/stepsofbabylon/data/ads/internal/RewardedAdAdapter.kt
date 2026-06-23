@@ -32,7 +32,6 @@ import android.app.Activity
  * Introduced by C.6 PR 1 / ADR-0006.
  */
 internal interface RewardedAdAdapter {
-
     /**
      * Loads a rewarded ad for [adUnitId] from AdMob. Returns [SdkAdLoadResult.Success] with
      * a fresh [SdkRewardedAd] on success, or [SdkAdLoadResult.Error] with the SDK's
@@ -54,7 +53,10 @@ internal interface RewardedAdAdapter {
      * **The `loadedAd` is single-use.** Callers must NOT reuse it across multiple
      * [showAd] calls — AdMob invalidates the instance after show. Load a new one.
      */
-    suspend fun showAd(activity: Activity, loadedAd: SdkRewardedAd): SdkAdShowResult
+    suspend fun showAd(
+        activity: Activity,
+        loadedAd: SdkRewardedAd,
+    ): SdkAdShowResult
 }
 
 /**
@@ -63,8 +65,14 @@ internal interface RewardedAdAdapter {
  * to consume; test code constructs instances with `rawRef = null`.
  */
 internal sealed class SdkAdLoadResult {
-    data class Success(val ad: SdkRewardedAd) : SdkAdLoadResult()
-    data class Error(val code: Int, val message: String) : SdkAdLoadResult()
+    data class Success(
+        val ad: SdkRewardedAd,
+    ) : SdkAdLoadResult()
+
+    data class Error(
+        val code: Int,
+        val message: String,
+    ) : SdkAdLoadResult()
 }
 
 /**
@@ -80,7 +88,10 @@ internal sealed class SdkAdShowResult {
     data object Dismissed : SdkAdShowResult()
 
     /** SDK-level error (ad already shown, no activity, show-time failure). */
-    data class Error(val code: Int, val message: String) : SdkAdShowResult()
+    data class Error(
+        val code: Int,
+        val message: String,
+    ) : SdkAdShowResult()
 }
 
 /**
@@ -88,4 +99,6 @@ internal sealed class SdkAdShowResult {
  * back to the SDK instance so the real adapter can pass it to `RewardedAd.show()`. Tests
  * construct instances with `rawRef = null`.
  */
-internal data class SdkRewardedAd(val rawRef: Any?)
+internal data class SdkRewardedAd(
+    val rawRef: Any?,
+)

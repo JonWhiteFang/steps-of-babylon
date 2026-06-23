@@ -34,16 +34,21 @@ the med/low backlog (#262) remain.
 ## Current objective
 
 - **CURRENT (IN FLIGHT — PR open, awaiting controller merge; `[Unreleased]`).**
+  **Staged repo-wide ktlint auto-format — stage 2 of 6 (`data/`).** Mechanical `ktlint -F` over
+  `data/` only (64 files), pure-formatting / zero behaviour change; all hunks on the Bucket-A allowlist
+  (class-signature reflow `@Inject constructor`, function-signature reflow, expression-body, if/when
+  bracing, trailing-comma, import ordering, chained-call wrapping). **Both baselines regenerated:** ktlint
+  `config/ktlint/baseline.xml` **8534 → 7632** (full-`app/src` scope, shrinking per stage); detekt
+  `config/detekt/baseline.xml` **489 → 474** (the reflow drifted line-keyed signatures of pre-existing
+  baselined smells — all 10 reported issues were format-induced `MaxLineLength` in `data/`; no
+  genuinely-new smell). **1254 JVM tests green, 0 failures**; `lint-kotlin.sh` check + `:app:detekt` both
+  exit 0. **Next:** controller merges; then stages 3–6 (`service/`+`di/`+top-level → `presentation/` excl
+  battle → `presentation/battle/` [FRAGILE] → test sources), each repeating scoped `-F` + dual-baseline
+  regen + full-suite gate. Plan: `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`.
+- **Previous objective (DONE — branch `chore/ktlint-format-1-domain`, MERGED; `[Unreleased]`).**
   **Staged repo-wide ktlint auto-format — stage 1 of 6 (`domain/`).** Mechanical `ktlint -F` over
-  `domain/` only (72 files), pure-formatting / zero behaviour change; all hunks on the Bucket-A
-  allowlist (trailing-comma, signature reflow, expression-body, if/when bracing). **Both baselines
-  regenerated:** ktlint `config/ktlint/baseline.xml` **9256 → 8534** (full-`app/src` scope, shrinking
-  per stage); detekt `config/detekt/baseline.xml` **496 → 489** (the reflow drifted line-keyed
-  signatures of pre-existing baselined smells — no genuinely-new smell). **1254 JVM tests green, 0
-  failures**; `lint-kotlin.sh` check + `:app:detekt` both exit 0. **Next:** controller merges; then
-  stages 2–6 (`data/` → `service/`+`di/`+top-level → `presentation/` excl battle → `presentation/battle/`
-  [FRAGILE] → test sources), each repeating scoped `-F` + dual-baseline regen + full-suite gate. Plan:
-  `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`.
+  `domain/` only (72 files), pure-formatting / zero behaviour change. ktlint baseline **9256 → 8534**;
+  detekt baseline **496 → 489** (format-induced signature shifts only). 1254 JVM tests green. See RUN_LOG.
 - **Previous objective (DONE — MERGED PR #318, squash `a218c09`; `[Unreleased]`).**
   **Compose UI tests: critical screens (#253).** 20 Robolectric-backed tests for 7 critical screens
   (Workshop, Store, Labs, Missions, UltimateWeapons, Supplies, BattleControlRail). Covers

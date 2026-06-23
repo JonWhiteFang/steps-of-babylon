@@ -1,3 +1,44 @@
+## 2026-06-23 — ktlint repo-wide auto-format, stage 2/6: `data/` (`[Unreleased]`)
+
+- **Goal:** stage 2 of the staged, layer-by-layer ktlint auto-format (plan
+  `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`). Mechanically fix the
+  auto-fixable ("Bucket A") ktlint violations one layer at a time; stage 1 (`domain/`) is merged. Stage 2
+  = the Android-coupled `data/` layer (Room DAOs/entities/migrations, repositories, sensor, healthconnect,
+  billing, ads, anticheat, prefs, time).
+- **What shipped:** `ktlint -F` scoped to `app/src/main/java/.../data` only — 64 files reformatted.
+  Pure-formatting, zero behaviour change. Transforms were all on the review allowlist: class-signature
+  reflow (`@Inject constructor(...)` wrapped — the dominant pattern), function-signature reflow (multi-param
+  one-per-line + trailing comma), function-expression-body (block→expression, `return`/brace removal),
+  if-else & when-entry bracing (single-statement brace insertion, incl. `when`-arm `-> X` → `-> { X }`),
+  trailing-comma (call/declaration site), import ordering (`HealthConnectStepReader`,
+  `RealBillingClientAdapter`, `DailyStepManager`), blank-line-after-brace removal + member blank-line
+  insertion, multiline/chained-call wrapping (`prefs.edit()…`, Play-Billing builder chains). The full
+  `git diff -w` (whitespace-ignored, 3490 lines) was read end-to-end; no hunk changed a
+  literal/operator/identifier/string or altered logic. Specifically re-verified the SQL `@Query` strings
+  (byte-identical, just moved onto their own line), the `DailyStepManager` import reorder (same imports),
+  and the `MissionRepositoryImpl.generateForDate` comment relocation (same `dao.generateForDate(...)` call).
+- **Baselines regenerated (the staged-format mechanism):**
+  - **ktlint** `config/ktlint/baseline.xml` over the full `app/src` scope (delete-then-create): **8534 →
+    7632** errors (902 `data/` Bucket-A entries gone). Not-yet-swept layers stay covered.
+  - **detekt** `config/detekt/baseline.xml` via `:app:detektBaseline`: **489 → 474** entries. The
+    pure-format reflow shifted the line-keyed signatures of pre-existing, already-baselined smells, so the
+    detekt PR gate (also baseline-gated) reported 10 issues and needed a matching regen. **All 10 added
+    entries are `MaxLineLength`, all in `data/`, all format-induced** — pre-existing over-long lines (SQL
+    `@Query` strings, `CosmeticEntity`/`ConversionRule` literals, the `CREATE UNIQUE INDEX` migration
+    string) that ktlint isolated onto their own line, so they re-key from `@Query("…")`/one-liner form to
+    the bare-string form (25 entries removed: 11 `CosmeticEntity` one-liners + 4 `DailyStepManager` lines +
+    misc now fit ≤120 after wrapping = net improvement; the rest are pure re-keys re-added). No genuinely
+    new smell — no LongMethod/genuine-logic finding, identical logic throughout. Diff verified to touch only
+    `data/` entries; no test/other-layer entries lost.
+- **Verification:** `./run-gradle.sh testDebugUnitTest --rerun-tasks` **BUILD SUCCESSFUL**; **1254 JVM
+  tests, 0 failures, 0 errors** (unchanged count — pure format; counted from report XML). `./lint-kotlin.sh`
+  (ktlint check) exit 0; `:app:detekt` exit 0 after the baseline regen. Scope-checked: only the 64 `data/`
+  files + the two baseline XMLs changed (`git diff --name-only` confirms no out-of-scope code touched).
+- **No production logic, schema, economy, or engine behaviour changed.**
+- **Remains / next:** controller merges this PR (do-not-merge handed off). Then stages 3–6:
+  `service/`+`di/`+top-level → `presentation/` (excl battle) → `presentation/battle/` (FRAGILE) → test
+  sources. Each stage repeats the scoped `-F` + dual-baseline regen + full-suite green gate.
+
 ## 2026-06-23 — ktlint repo-wide auto-format, stage 1/6: `domain/` (`[Unreleased]`)
 
 - **Goal:** pilot stage of the staged, layer-by-layer ktlint auto-format (plan

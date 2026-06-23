@@ -19,63 +19,67 @@ import javax.inject.Inject
  * has been paid for, or by the v9 \u2192 v10 migration's seeding logic) don't surface as
  * unlocked.
  */
-class UltimateWeaponRepositoryImpl @Inject constructor(
-    private val dao: UltimateWeaponDao,
-    private val playerDao: PlayerProfileDao,
-) : UltimateWeaponRepository {
+class UltimateWeaponRepositoryImpl
+    @Inject
+    constructor(
+        private val dao: UltimateWeaponDao,
+        private val playerDao: PlayerProfileDao,
+    ) : UltimateWeaponRepository {
+        override fun observeUnlockedWeapons(): Flow<List<OwnedWeapon>> =
+            dao.getAll().map { list -> list.filter { it.isUnlocked }.map { it.toDomain() } }
 
-    override fun observeUnlockedWeapons(): Flow<List<OwnedWeapon>> =
-        dao.getAll().map { list -> list.filter { it.isUnlocked }.map { it.toDomain() } }
+        override fun observeEquippedWeapons(): Flow<List<OwnedWeapon>> =
+            dao.getEquipped().map { list -> list.filter { it.isUnlocked }.map { it.toDomain() } }
 
-    override fun observeEquippedWeapons(): Flow<List<OwnedWeapon>> =
-        dao.getEquipped().map { list -> list.filter { it.isUnlocked }.map { it.toDomain() } }
-
-    override suspend fun unlockWeapon(type: UltimateWeaponType) {
-        val existing = dao.getByType(type.name)
-        if (existing == null) {
-            dao.upsert(UltimateWeaponStateEntity(weaponType = type.name, isUnlocked = true))
-        } else {
-            dao.markUnlocked(type.name)
+        override suspend fun unlockWeapon(type: UltimateWeaponType) {
+            val existing = dao.getByType(type.name)
+            if (existing == null) {
+                dao.upsert(UltimateWeaponStateEntity(weaponType = type.name, isUnlocked = true))
+            } else {
+                dao.markUnlocked(type.name)
+            }
         }
-    }
 
-    override suspend fun unlockWeaponAtomic(type: UltimateWeaponType, powerStoneCost: Long): Boolean =
-        dao.unlockWeaponAtomic(type.name, powerStoneCost, playerDao)
+        override suspend fun unlockWeaponAtomic(
+            type: UltimateWeaponType,
+            powerStoneCost: Long,
+        ): Boolean = dao.unlockWeaponAtomic(type.name, powerStoneCost, playerDao)
 
-    override suspend fun upgradePathLevel(
-        type: UltimateWeaponType,
-        path: UWPath,
-        newLevel: Int,
-    ) {
-        // Ensure a row exists. The use case only calls this for unlocked UWs, so the
-        // row is guaranteed to exist in the happy path; this defensive insert covers
-        // any future data corruption / test path where the row might not exist.
-        if (dao.getByType(type.name) == null) {
-            dao.upsert(UltimateWeaponStateEntity(weaponType = type.name, isUnlocked = true))
+        override suspend fun upgradePathLevel(
+            type: UltimateWeaponType,
+            path: UWPath,
+            newLevel: Int,
+        ) {
+            // Ensure a row exists. The use case only calls this for unlocked UWs, so the
+            // row is guaranteed to exist in the happy path; this defensive insert covers
+            // any future data corruption / test path where the row might not exist.
+            if (dao.getByType(type.name) == null) {
+                dao.upsert(UltimateWeaponStateEntity(weaponType = type.name, isUnlocked = true))
+            }
+            when (path) {
+                UWPath.DAMAGE -> dao.updateDamageLevel(type.name, newLevel)
+                UWPath.SECONDARY -> dao.updateSecondaryLevel(type.name, newLevel)
+                UWPath.COOLDOWN -> dao.updateCooldownLevel(type.name, newLevel)
+            }
         }
-        when (path) {
-            UWPath.DAMAGE -> dao.updateDamageLevel(type.name, newLevel)
-            UWPath.SECONDARY -> dao.updateSecondaryLevel(type.name, newLevel)
-            UWPath.COOLDOWN -> dao.updateCooldownLevel(type.name, newLevel)
+
+        override suspend fun equipWeapon(type: UltimateWeaponType) {
+            val entity = dao.getByType(type.name) ?: return
+            dao.upsert(entity.copy(isEquipped = true))
         }
-    }
 
-    override suspend fun equipWeapon(type: UltimateWeaponType) {
-        val entity = dao.getByType(type.name) ?: return
-        dao.upsert(entity.copy(isEquipped = true))
-    }
+        override suspend fun unequipWeapon(type: UltimateWeaponType) {
+            val entity = dao.getByType(type.name) ?: return
+            dao.upsert(entity.copy(isEquipped = false))
+        }
 
-    override suspend fun unequipWeapon(type: UltimateWeaponType) {
-        val entity = dao.getByType(type.name) ?: return
-        dao.upsert(entity.copy(isEquipped = false))
+        private fun UltimateWeaponStateEntity.toDomain() =
+            OwnedWeapon(
+                type = UltimateWeaponType.valueOf(weaponType),
+                damageLevel = damageLevel,
+                secondaryLevel = secondaryLevel,
+                cooldownLevel = cooldownLevel,
+                isUnlocked = isUnlocked,
+                isEquipped = isEquipped,
+            )
     }
-
-    private fun UltimateWeaponStateEntity.toDomain() = OwnedWeapon(
-        type = UltimateWeaponType.valueOf(weaponType),
-        damageLevel = damageLevel,
-        secondaryLevel = secondaryLevel,
-        cooldownLevel = cooldownLevel,
-        isUnlocked = isUnlocked,
-        isEquipped = isEquipped,
-    )
-}

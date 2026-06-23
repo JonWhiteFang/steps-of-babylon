@@ -23,7 +23,6 @@ import java.util.Base64
 internal class RealPurchaseVerifier(
     base64PublicKey: String,
 ) : PurchaseVerifier {
-
     /** `true` when no key is configured — verification is a no-op pass (see class KDoc). */
     private val failOpen: Boolean = base64PublicKey.isBlank()
 
@@ -31,17 +30,19 @@ internal class RealPurchaseVerifier(
      * Parsed RSA public key, or `null` if a non-blank key failed to parse (→ fail closed).
      * Parsing once avoids re-decoding on every purchase.
      */
-    private val publicKey: PublicKey? = if (failOpen) {
-        null
-    } else {
-        runCatching {
-            val decoded = Base64.getDecoder().decode(base64PublicKey)
-            KeyFactory.getInstance("RSA")
-                .generatePublic(java.security.spec.X509EncodedKeySpec(decoded))
-        }.onFailure {
-            Log.e(TAG, "Play license public key did not parse; rejecting ALL purchases.", it)
-        }.getOrNull()
-    }
+    private val publicKey: PublicKey? =
+        if (failOpen) {
+            null
+        } else {
+            runCatching {
+                val decoded = Base64.getDecoder().decode(base64PublicKey)
+                KeyFactory
+                    .getInstance("RSA")
+                    .generatePublic(java.security.spec.X509EncodedKeySpec(decoded))
+            }.onFailure {
+                Log.e(TAG, "Play license public key did not parse; rejecting ALL purchases.", it)
+            }.getOrNull()
+        }
 
     override fun isValidPurchase(
         originalJson: String?,
@@ -70,7 +71,11 @@ internal class RealPurchaseVerifier(
         return true
     }
 
-    private fun signatureMatches(key: PublicKey, originalJson: String, signature: String): Boolean =
+    private fun signatureMatches(
+        key: PublicKey,
+        originalJson: String,
+        signature: String,
+    ): Boolean =
         runCatching {
             val sigBytes = Base64.getDecoder().decode(signature)
             val verifier = Signature.getInstance("SHA1withRSA")
@@ -90,8 +95,10 @@ internal class RealPurchaseVerifier(
      * field match is unambiguous and avoids depending on `org.json` (an `android.jar` stub on the
      * pure-JVM unit-test classpath). Only ever called on a signature-verified (trusted) payload.
      */
-    private fun extractJsonString(json: String, field: String): String? =
-        Regex(""""${Regex.escape(field)}"\s*:\s*"([^"\\]*)"""").find(json)?.groupValues?.get(1)
+    private fun extractJsonString(
+        json: String,
+        field: String,
+    ): String? = Regex(""""${Regex.escape(field)}"\s*:\s*"([^"\\]*)"""").find(json)?.groupValues?.get(1)
 
     private companion object {
         const val TAG = "PurchaseVerifier"

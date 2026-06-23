@@ -36,14 +36,12 @@ data class BillingReceiptEntity(
      * per device lifetime).
      */
     @PrimaryKey val purchaseToken: String,
-
     /**
      * Play Billing `orderId`. Nullable because pending purchases surface without an orderId
      * until the user completes payment (per Play Billing docs).
      */
     @ColumnInfo(defaultValue = "NULL")
     val orderId: String? = null,
-
     /**
      * SKU identifier — the lowercase `BillingProduct.<variant>` name produced by
      * [com.whitefang.stepsofbabylon.domain.model.BillingProduct.skuId] (e.g. `gem_pack_small`,
@@ -51,10 +49,8 @@ data class BillingReceiptEntity(
      * lowercase the canonical wire format post-Plan 31 Phase F (refines ADR-0005 decision #6).
      */
     val productId: String,
-
     /** Epoch millis when Play Services recorded the purchase. */
     val purchaseTime: Long,
-
     /**
      * `true` once the wallet side-effect (add gems / set ad-removed / set season-pass) has
      * been committed inside [BillingReceiptDao.grantOnceAtomic]. A `granted = true` row
@@ -62,11 +58,9 @@ data class BillingReceiptEntity(
      */
     @ColumnInfo(defaultValue = "0")
     val granted: Boolean = false,
-
     /** Epoch millis when [granted] flipped to true. Null while pending. */
     @ColumnInfo(defaultValue = "NULL")
     val grantedAt: Long? = null,
-
     /**
      * Non-consumable + subscription path. `true` once the Play Billing
      * `acknowledgePurchaseAsync` RPC succeeded. Google auto-refunds purchases that are not
@@ -74,11 +68,9 @@ data class BillingReceiptEntity(
      */
     @ColumnInfo(defaultValue = "0")
     val acknowledged: Boolean = false,
-
     /** Epoch millis when [acknowledged] flipped to true. */
     @ColumnInfo(defaultValue = "NULL")
     val acknowledgedAt: Long? = null,
-
     /**
      * Consumable path. `true` once the Play Billing `consumeAsync` RPC succeeded. Until this
      * is `true` the user cannot re-purchase the same consumable SKU (Play Services blocks it).
@@ -86,7 +78,6 @@ data class BillingReceiptEntity(
      */
     @ColumnInfo(defaultValue = "0")
     val consumed: Boolean = false,
-
     /** Epoch millis when [consumed] flipped to true. */
     @ColumnInfo(defaultValue = "NULL")
     val consumedAt: Long? = null,

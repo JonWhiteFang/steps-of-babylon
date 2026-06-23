@@ -18,12 +18,14 @@ import javax.inject.Singleton
  * is API 23+; the project minSdk is 34, so no guard is needed.
  */
 @Singleton
-class BatteryOptimizationStatus @Inject constructor(
-    @ApplicationContext private val context: Context,
-) {
-    /** True when the app is whitelisted from battery optimization (the foreground service can run freely). */
-    fun isIgnoring(): Boolean {
-        val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
-        return pm.isIgnoringBatteryOptimizations(context.packageName)
+class BatteryOptimizationStatus
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+    ) {
+        /** True when the app is whitelisted from battery optimization (the foreground service can run freely). */
+        fun isIgnoring(): Boolean {
+            val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+            return pm.isIgnoringBatteryOptimizations(context.packageName)
+        }
     }
-}

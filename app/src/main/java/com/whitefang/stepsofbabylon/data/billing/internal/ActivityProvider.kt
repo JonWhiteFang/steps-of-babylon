@@ -25,24 +25,25 @@ import javax.inject.Singleton
  * C.6 PR 1 onwards.
  */
 @Singleton
-internal class ActivityProvider @Inject constructor() {
+internal class ActivityProvider
+    @Inject
+    constructor() {
+        @Volatile
+        private var activityRef: WeakReference<Activity>? = null
 
-    @Volatile
-    private var activityRef: WeakReference<Activity>? = null
+        /** Registers [activity] as the current foregrounded Activity. Idempotent. */
+        fun set(activity: Activity) {
+            activityRef = WeakReference(activity)
+        }
 
-    /** Registers [activity] as the current foregrounded Activity. Idempotent. */
-    fun set(activity: Activity) {
-        activityRef = WeakReference(activity)
+        /** Clears the registered Activity reference. Safe to call when nothing is registered. */
+        fun clear() {
+            activityRef = null
+        }
+
+        /**
+         * Returns the currently foregrounded Activity, or `null` if nothing is registered or the
+         * registered Activity has been garbage-collected.
+         */
+        fun current(): Activity? = activityRef?.get()
     }
-
-    /** Clears the registered Activity reference. Safe to call when nothing is registered. */
-    fun clear() {
-        activityRef = null
-    }
-
-    /**
-     * Returns the currently foregrounded Activity, or `null` if nothing is registered or the
-     * registered Activity has been garbage-collected.
-     */
-    fun current(): Activity? = activityRef?.get()
-}
