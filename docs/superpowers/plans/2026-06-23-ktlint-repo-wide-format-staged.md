@@ -42,15 +42,76 @@ A stage's PR is mergeable when ALL of these hold:
 
 - `git diff -w --stat` against the stage's pre-sweep state is **near-empty**
   (whitespace-only reflow dominates; only token-level ktlint fixes show).
-- Every **non-whitespace** hunk is confirmed a known-safe ktlint transform
-  (import reorder, trailing comma, signature reflow) with no semantic change.
-- `./run-gradle.sh testDebugUnitTest` → **all green** (headline 1254 JVM tests; a
-  pure-format change must not move that number).
+- Every **non-whitespace** hunk is confirmed a **known-safe ktlint transform**
+  (see the allowlist in "Known-safe ktlint transforms" below) with no semantic
+  change.
+- `./run-gradle.sh testDebugUnitTest --rerun-tasks` → **all green, 0 failures /
+  0 errors**, and the report-derived total equals the headline JVM count
+  (currently 1254). See "Verifying the test result" below — do NOT scrape the
+  count from stdout (Gradle prints none).
 - `config/ktlint/baseline.xml` regenerated; `./lint-kotlin.sh` (check mode) → exit 0.
 - `./run-gradle.sh :app:detekt` → exit 0.
-- `RUN_LOG.md` stage entry appended (+ STATE.md updated on Stage 1 and Stage 6 only).
-- PR opened, **checks watched to green, squash-merged, branch deleted, `main`
-  pulled** — before the next stage starts.
+- `RUN_LOG.md` stage entry appended, `docs/agent/STATE.md` updated (CURRENT
+  section: which stage of 6 + baseline error count), and a `## [Unreleased]`
+  `CHANGELOG.md` entry added — **every stage** (per CLAUDE.md PR Task-List
+  Convention; matches the #311/#256/#253 infra/test-only precedent).
+- PR opened, **checks watched to green** (both required checks — `build-and-test`
+  AND the `connected` emulator suite, ~8-15 min), **squash-merged, branch
+  deleted, `main` pulled** — before the next stage starts.
+
+## Known-safe ktlint transforms (the review allowlist)
+
+When reviewing the non-whitespace hunks of a sweep, EVERY hunk must be one of
+these — all are mechanical and **semantics-preserving** (verified present in the
+baseline; ktlint 1.8.0 applies them under `-F`):
+
+- **`import-ordering`** — re-orders import lines.
+- **`trailing-comma-on-call-site` / `trailing-comma-on-declaration-site`** — adds a
+  trailing comma to a multi-line argument/parameter list.
+- **`function-signature` / `class-signature`** — reflows a function/class header
+  (params onto separate lines), no parameter renamed or reordered.
+- **`function-expression-body`** — converts a single-expression block body to an
+  expression body: drops `return` + the function braces, adds `=`. **Removing
+  `return` here is NOT a control-flow change.** (Present in `domain/`,
+  `presentation/battle/engine/UWController.kt:103`, and several test files.)
+- **`if-else-bracing` / `when-entry-bracing`** — inserts (or removes) `{ }` around
+  a single-statement `if`/`else` branch or `when` arm. Added braces around an
+  **unchanged** branch are NOT a control-flow change.
+- **`if-else-wrapping` / `multiline-if-else`** — wraps an `if`/`else` onto multiple
+  lines.
+
+**STOP the stage only if** a hunk changes a literal, an operator, an identifier's
+value/name, a string, OR alters the actual logic — a statement added / removed /
+reordered, a condition changed, or a branch added / dropped. Added/removed braces
+around an unchanged single branch and block↔expression-body conversions are
+benign ktlint normalizations, not semantic changes — do not flag or revert them.
+
+## Verifying the test result (read once, applies to every stage)
+
+The project's Gradle config has **no `testLogging`** block, so
+`testDebugUnitTest` prints **no "N tests" line** to stdout, and Gradle's
+incremental cache will skip unchanged test tasks (a scoped sweep otherwise re-runs
+only the touched layer). Therefore, every stage:
+
+1. Runs with `--rerun-tasks` so the full suite actually executes (not a cached subset).
+2. Confirms `exit=0` and that the tail shows `BUILD SUCCESSFUL` with no failures.
+3. Derives the real total + failure count from the JUnit result XML, e.g.:
+
+```bash
+python3 - <<'PY'
+import glob, re
+tot = fail = err = 0
+for f in glob.glob('app/build/test-results/testDebugUnitTest/*.xml'):
+    s = open(f).read()
+    tot  += int(re.search(r'tests="(\d+)"', s).group(1))
+    fail += int(re.search(r'failures="(\d+)"', s).group(1))
+    err  += int(re.search(r'errors="(\d+)"', s).group(1))
+print(f"total={tot} failures={fail} errors={err}")
+PY
+```
+
+Expected: `failures=0 errors=0` and `total` == the headline JVM count (currently
+1254). A pure-format change must not move the total.
 
 ---
 
@@ -63,7 +124,8 @@ pipeline and lock in the exact commands. ~104 files, ~1364 Bucket-A violations.
 - Modify (format-only): `app/src/main/java/com/whitefang/stepsofbabylon/domain/**/*.kt`
 - Modify (regenerated): `config/ktlint/baseline.xml`
 - Modify (append): `docs/agent/RUN_LOG.md`
-- Modify: `docs/agent/STATE.md` (kickoff note — Stage 1 only)
+- Modify: `docs/agent/STATE.md` (CURRENT section — every stage)
+- Modify: `CHANGELOG.md` (`## [Unreleased]` entry — every stage)
 
 - [ ] **Step 1: Branch from fresh `main`.**
 
@@ -113,11 +175,15 @@ git diff -w > /tmp/ktlint-s1-nonws.diff
 wc -l /tmp/ktlint-s1-nonws.diff
 ```
 
-Read `/tmp/ktlint-s1-nonws.diff`. Confirm EVERY hunk is one of the known-safe
-ktlint transforms: import re-ordering (`import-ordering`), added trailing commas
-(`trailing-comma-*`), or parameter reflow (`function-signature`). There must be
-NO change to a literal, operator, identifier, control-flow, or string. If
-anything looks semantic, stop and investigate that file.
+Read `/tmp/ktlint-s1-nonws.diff`. Confirm EVERY hunk is one of the **known-safe
+ktlint transforms** listed in "Known-safe ktlint transforms" above (import
+reorder, trailing comma, signature reflow, block↔expression-body, brace
+insert/remove, if/else wrapping). STOP only on a change to a literal, operator,
+identifier value/name, or string, or a change to the actual logic (statement
+added/removed/reordered, condition changed, branch added/dropped). `domain/`
+includes a `function-expression-body` fix (`GenerateSupplyDrop.kt:66` —
+block→expression body, drops `return`); that is expected and benign, not a
+control-flow change.
 
 > When run under subagent-driven-development, this step is the adversarial-verify
 > gate: a fresh reviewer subagent is given `/tmp/ktlint-s1-nonws.diff` and the
@@ -127,12 +193,14 @@ anything looks semantic, stop and investigate that file.
 - [ ] **Step 7: Full test suite — prove behaviour unchanged.**
 
 ```bash
-./run-gradle.sh testDebugUnitTest > /tmp/s1-test.log 2>&1; echo "exit=$?"; tail -25 /tmp/s1-test.log
+./run-gradle.sh testDebugUnitTest --rerun-tasks > /tmp/s1-test.log 2>&1; echo "exit=$?"; tail -25 /tmp/s1-test.log
+# Then derive total + failures from the report XML (stdout prints no count) — see "Verifying the test result".
 ```
 
-Expected: exit 0, BUILD SUCCESSFUL, 1254 tests (unchanged count). If any test
+Expected: exit 0, BUILD SUCCESSFUL; the report XML shows `failures=0 errors=0`
+and `total` == the headline JVM count (currently 1254, unchanged). If any test
 fails, the format introduced a semantic change — stop, diff the failing file,
-revert if needed.
+revert it (`git checkout -- <file>`).
 
 - [ ] **Step 8: Regenerate the baseline (full app/src scope).**
 
@@ -163,13 +231,22 @@ nothing reads as NEW).
 
 Expected: exit 0.
 
-- [ ] **Step 11: Doc sync — append RUN_LOG + STATE kickoff.**
+- [ ] **Step 11: Doc sync — RUN_LOG + STATE + CHANGELOG (per CLAUDE.md convention).**
 
-Append a RUN_LOG entry (use the file's existing format) recording: Stage 1 of the
-staged ktlint format, `domain/` swept, baseline 9256 → N errors, 1254 tests
-green, zero behaviour change. Update `docs/agent/STATE.md` CURRENT section to note
-the staged-format effort is in flight (Stage 1 of 6). No other current-state doc
-changes — test count, architecture, schema, conventions all unchanged.
+Per the CLAUDE.md PR Task-List Convention (every code-changing PR), in order:
+1. Append a `RUN_LOG.md` entry (use the file's existing format): Stage 1 of the
+   staged ktlint format, `domain/` swept, baseline 9256 → N errors, 1254 tests
+   green, zero behaviour change.
+2. Update `docs/agent/STATE.md` CURRENT section: staged-format effort in flight
+   (Stage 1 of 6), baseline at N errors.
+3. Add a `## [Unreleased]` `CHANGELOG.md` entry, e.g. "### Style — ktlint
+   repo-wide format, stage 1/6 (`domain/`)" noting no production-logic change;
+   baseline 9256 → N; 1254 JVM green. (Matches the #311/#256/#253 precedent that
+   infra/build/test-only PRs still get a CHANGELOG section.)
+
+No other current-state doc changes — architecture, schema, conventions, the
+headline test count all unchanged. `master-plan.md` is untouched (ktlint is not a
+master-plan entry).
 
 - [ ] **Step 12: Commit.**
 
@@ -213,6 +290,7 @@ Bounded, well-tested repos/sensors/health-connect/billing/ads. ~78 files, ~1760 
 - Modify (format-only): `app/src/main/java/com/whitefang/stepsofbabylon/data/**/*.kt`
 - Modify (regenerated): `config/ktlint/baseline.xml`
 - Modify (append): `docs/agent/RUN_LOG.md`
+- Modify: `docs/agent/STATE.md` (CURRENT section) + `CHANGELOG.md` (`## [Unreleased]`)
 
 - [ ] **Step 1: Branch from fresh `main`.**
 
@@ -245,10 +323,11 @@ subagent-driven-development, dispatch the refute-it reviewer on this diff.)
 - [ ] **Step 4: Full test suite.**
 
 ```bash
-./run-gradle.sh testDebugUnitTest > /tmp/s2-test.log 2>&1; echo "exit=$?"; tail -25 /tmp/s2-test.log
+./run-gradle.sh testDebugUnitTest --rerun-tasks > /tmp/s2-test.log 2>&1; echo "exit=$?"; tail -25 /tmp/s2-test.log
+# Then derive total + failures from the report XML — see "Verifying the test result".
 ```
 
-Expected: exit 0, 1254 tests.
+Expected: exit 0; report XML `failures=0 errors=0`, `total` == 1254 (unchanged).
 
 - [ ] **Step 5: Regenerate baseline (full scope) + verify gate.**
 
@@ -262,7 +341,11 @@ echo "regen exit=$? (1 expected); errors now: $(grep -c '<error ' config/ktlint/
 
 Expected: baseline error count drops further; check exit 0; detekt exit 0.
 
-- [ ] **Step 6: Append RUN_LOG entry** (Stage 2, `data/` swept, baseline N → M, 1254 green). No STATE.md change.
+- [ ] **Step 6: Doc sync — RUN_LOG + STATE + CHANGELOG.** Append a `RUN_LOG.md`
+  entry (Stage 2, `data/` swept, baseline N → M, 1254 green); update
+  `docs/agent/STATE.md` CURRENT (Stage 2 of 6, baseline at M); add a `##
+  [Unreleased]` `CHANGELOG.md` entry ("### Style — ktlint repo-wide format, stage
+  2/6 (`data/`)"). Per CLAUDE.md PR Task-List Convention.
 
 - [ ] **Step 7: Commit + push + PR.**
 
@@ -299,6 +382,7 @@ stray top-level entries.
 - Modify (format-only): `app/src/main/java/com/whitefang/stepsofbabylon/service/**/*.kt`, `.../di/**/*.kt`, `.../StepsOfBabylonApp.kt`
 - Modify (regenerated): `config/ktlint/baseline.xml`
 - Modify (append): `docs/agent/RUN_LOG.md`
+- Modify: `docs/agent/STATE.md` (CURRENT section) + `CHANGELOG.md` (`## [Unreleased]`)
 
 - [ ] **Step 1: Branch from fresh `main`.**
 
@@ -332,10 +416,11 @@ Read it; confirm all hunks are known-safe transforms.
 - [ ] **Step 4: Full test suite.**
 
 ```bash
-./run-gradle.sh testDebugUnitTest > /tmp/s3-test.log 2>&1; echo "exit=$?"; tail -25 /tmp/s3-test.log
+./run-gradle.sh testDebugUnitTest --rerun-tasks > /tmp/s3-test.log 2>&1; echo "exit=$?"; tail -25 /tmp/s3-test.log
+# Then derive total + failures from the report XML — see "Verifying the test result".
 ```
 
-Expected: exit 0, 1254 tests.
+Expected: exit 0; report XML `failures=0 errors=0`, `total` == 1254 (unchanged).
 
 - [ ] **Step 5: Regenerate baseline + verify gates.**
 
@@ -347,7 +432,11 @@ echo "regen exit=$? (1 expected); errors now: $(grep -c '<error ' config/ktlint/
 ./run-gradle.sh :app:detekt > /tmp/s3-detekt.log 2>&1; echo "detekt exit=$?"; tail -10 /tmp/s3-detekt.log
 ```
 
-- [ ] **Step 6: Append RUN_LOG entry.**
+- [ ] **Step 6: Doc sync — RUN_LOG + STATE + CHANGELOG.** Append `RUN_LOG.md`
+  (Stage 3, `service/`+`di/`+top-level swept, baseline N → M, 1254 green); update
+  `docs/agent/STATE.md` CURRENT (Stage 3 of 6, baseline at M); add a `##
+  [Unreleased]` `CHANGELOG.md` entry ("### Style — ktlint repo-wide format, stage
+  3/6 (`service/`+`di/`)"). Per CLAUDE.md PR Task-List Convention.
 
 - [ ] **Step 7: Commit + push + PR.**
 
@@ -381,16 +470,23 @@ these screen strings.
 
 **Split contingency:** after Step 2, inspect `git diff --stat | tail -1`. If the
 diff is too large to review confidently in one PR, split by screen-group into 4a
-and 4b (e.g. 4a = `home/ workshop/ weapons/ labs/ cards/ supplies/`; 4b =
-`economy/ missions/ settings/ stats/ store/ help/ onboarding/ navigation/ audio/ ui/`).
-Each sub-stage is a full copy of the per-stage protocol with its own branch/PR.
-The decision is made at execution time from the actual diff size; default is a
-single PR.
+and 4b: 4a = `home/ workshop/ weapons/ labs/ cards/ supplies/`; 4b = `economy/
+missions/ settings/ stats/ store/ help/ onboarding/ navigation/ audio/ ui/` **+ the
+two top-level `presentation/*.kt` files (`MainActivity.kt`,
+`HealthConnectPermissionActivity.kt` — together 125 baseline errors)**. The
+top-level files MUST land in exactly one sub-stage — the single-PR command sweeps
+them via `$(fd -e kt --max-depth 1 . "$B")`, so a split that lists only subdirs
+would silently drop them (a Bucket-A leak Stage 6's audit catches two stages
+later). Each sub-stage is a full copy of the per-stage protocol — including the
+Step-2 `BATTLE UNTOUCHED` / `IN SCOPE` guards — with its own branch/PR. The
+decision is made at execution time from the actual diff size; default is a single
+PR.
 
 **Files:**
 - Modify (format-only): everything under `app/src/main/java/com/whitefang/stepsofbabylon/presentation/` EXCEPT `presentation/battle/`
 - Modify (regenerated): `config/ktlint/baseline.xml`
 - Modify (append): `docs/agent/RUN_LOG.md`
+- Modify: `docs/agent/STATE.md` (CURRENT section) + `CHANGELOG.md` (`## [Unreleased]`)
 
 - [ ] **Step 1: Branch from fresh `main`.**
 
@@ -402,20 +498,28 @@ git status --porcelain   # expect empty
 
 - [ ] **Step 2: Sweep presentation EXCEPT battle.**
 
-ktlint has no exclude flag here, so pass every non-battle child directory
-explicitly. List the current non-battle children first, then sweep them:
+ktlint has no exclude flag, so pass every non-battle child directory explicitly.
+Use `fd`'s native `-E battle` exclude — **NOT** `grep -v '/battle$'`: `fd` emits
+directory paths with a **trailing slash** (`.../presentation/battle/`), so a `$`
+anchor after `battle` never matches and battle would leak into the sweep
+(reformatting the fragile zone reserved for Stage 5). Assert the exclusion
+**before** running `ktlint -F`, so a leak is caught before any mutation:
 
 ```bash
 B=app/src/main/java/com/whitefang/stepsofbabylon/presentation
-fd -t d --max-depth 1 . "$B" | grep -v '/battle$'    # inspect the dir list
-# Sweep every non-battle subdir + any top-level presentation/*.kt files:
-ktlint -F $(fd -t d --max-depth 1 . "$B" | grep -v '/battle$') $(fd -e kt --max-depth 1 . "$B")
+DIRS=$(fd -t d --max-depth 1 . "$B" -E battle)        # 16 non-battle subdirs
+echo "$DIRS"                                          # inspect the dir list
+echo "$DIRS" | grep -q '/battle/' && { echo "ERROR: battle in sweep list — STOP"; } || echo "BATTLE EXCLUDED"
+test "$(echo "$DIRS" | wc -l | tr -d ' ')" -eq 16 || echo "ERROR: expected 16 non-battle dirs — STOP"
+# Sweep every non-battle subdir + the 2 top-level presentation/*.kt files:
+ktlint -F $DIRS $(fd -e kt --max-depth 1 . "$B")
 git diff --name-only | grep '/presentation/battle/' && echo "ERROR: battle touched — STOP" || echo "BATTLE UNTOUCHED"
 git diff --name-only | grep -v '^app/src/main/java/com/whitefang/stepsofbabylon/presentation/' && echo "ERROR: out of scope — STOP" || echo "IN SCOPE"
 git diff --stat | tail -1    # size check for split decision
 ```
 
-Expected: `BATTLE UNTOUCHED` and `IN SCOPE`. Decide single-PR vs 4a/4b split here.
+Expected: `BATTLE EXCLUDED` (pre-sweep), then `BATTLE UNTOUCHED` and `IN SCOPE`
+(post-sweep). Decide single-PR vs 4a/4b split here.
 
 - [ ] **Step 3: Whitespace-equivalence + non-whitespace review.**
 
@@ -433,10 +537,11 @@ be a semantic break.)
   the #253 Compose UI tests run on the JVM lane and will catch a broken screen).
 
 ```bash
-./run-gradle.sh testDebugUnitTest > /tmp/s4-test.log 2>&1; echo "exit=$?"; tail -25 /tmp/s4-test.log
+./run-gradle.sh testDebugUnitTest --rerun-tasks > /tmp/s4-test.log 2>&1; echo "exit=$?"; tail -25 /tmp/s4-test.log
+# Then derive total + failures from the report XML — see "Verifying the test result".
 ```
 
-Expected: exit 0, 1254 tests.
+Expected: exit 0; report XML `failures=0 errors=0`, `total` == 1254 (unchanged).
 
 - [ ] **Step 5: Regenerate baseline + verify gates.**
 
@@ -448,7 +553,12 @@ echo "regen exit=$? (1 expected); errors now: $(grep -c '<error ' config/ktlint/
 ./run-gradle.sh :app:detekt > /tmp/s4-detekt.log 2>&1; echo "detekt exit=$?"; tail -10 /tmp/s4-detekt.log
 ```
 
-- [ ] **Step 6: Append RUN_LOG entry.**
+- [ ] **Step 6: Doc sync — RUN_LOG + STATE + CHANGELOG.** Append `RUN_LOG.md`
+  (Stage 4, `presentation/` excl battle swept, baseline N → M, 1254 green; note if
+  split into 4a/4b); update `docs/agent/STATE.md` CURRENT (Stage 4 of 6, baseline
+  at M); add a `## [Unreleased]` `CHANGELOG.md` entry ("### Style — ktlint
+  repo-wide format, stage 4/6 (`presentation/` excl battle)"). Per CLAUDE.md PR
+  Task-List Convention.
 
 - [ ] **Step 7: Commit + push + PR.**
 
@@ -481,13 +591,17 @@ BOTH — each monitored and merged — before Stage 5.)
 ~40 files, ~2037 violations. This is the custom SurfaceView game loop with
 thread-safety invariants (`entitiesLock`/`effectsLock`, `GameLoopThread`
 try/catch). Formatting is purely textual and does not touch lock structure or
-control flow — but treat this PR with extra care and sequence it BEFORE the #233
-Simulation-hoist starts.
+control flow — but treat this PR with extra care and sequence it BEFORE the
+deferred **ADR-0012 clean Simulation-hoist** lands (the larger battle refactor
+still open; issue #233's portrait-lock part already merged in PR #274). The goal
+is to reformat the battle subtree while it is quiet, ahead of that next big battle
+change.
 
 **Files:**
 - Modify (format-only): `app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/**/*.kt`
 - Modify (regenerated): `config/ktlint/baseline.xml`
 - Modify (append): `docs/agent/RUN_LOG.md`
+- Modify: `docs/agent/STATE.md` (CURRENT section) + `CHANGELOG.md` (`## [Unreleased]`)
 
 - [ ] **Step 1: Branch from fresh `main`.**
 
@@ -513,23 +627,37 @@ git diff -w --stat | tail -1
 git diff -w > /tmp/ktlint-s5-nonws.diff; wc -l /tmp/ktlint-s5-nonws.diff
 ```
 
-Read `/tmp/ktlint-s5-nonws.diff` line by line. Beyond the usual transform check,
-confirm specifically: NO `synchronized`/lock block boundary moved semantically,
-NO `@Volatile`/field modifier changed, NO statement reordered across a lock
-acquire/release. Reflow inside a `synchronized(entitiesLock) { ... }` body is
-fine; moving a statement INTO or OUT of one is not (and ktlint never does that —
-this is a paranoia check for the fragile zone). (Under subagent-driven-dev,
-dispatch the refute-it reviewer with these battle-specific invariants in the
-prompt.)
+Read `/tmp/ktlint-s5-nonws.diff` line by line. The usual allowlist applies (see
+"Known-safe ktlint transforms"). **Expected in this sweep:** `UWController.kt:103`
+(`relayerBaseStats`) is rewritten block→expression body — the `return` is dropped
+and a `=` added (`function-expression-body`). That is benign and is test-guarded
+by `UWControllerTest`'s "relayerBaseStats returns the base unchanged when GOLDEN
+is inactive" + the GOLDEN activation/expiry test; the #119 KDoc's "preserve the
+exact pre-decomposition shape" concerns NOT adding a lock, not block-vs-expression
+body. Do not flag it. `ZigguratEntity.kt` / `BattleViewModel.kt` may gain
+single-statement braces (`if-else-bracing`/`when-entry-bracing`) — also benign.
+
+Beyond the allowlist, confirm the fragile-zone invariants specifically: NO
+`synchronized`/lock block boundary moved semantically, NO `@Volatile`/field
+modifier changed, NO statement reordered across a lock acquire/release. Reflow
+inside a `synchronized(entitiesLock) { ... }` body is fine; moving a statement
+INTO or OUT of one is not (ktlint never does that — this is a paranoia check for
+the fragile zone). The named invariants were ground-verified: `GameEngine` 7×
+`synchronized(entitiesLock)`, `EffectEngine` `effectsLock`, `GameLoopThread` 4×
+`@Volatile` + per-tick try/catch, `GameSurfaceView` `pendingSpeed`/`pendingPaused`.
+(Under subagent-driven-dev, dispatch the refute-it reviewer with these
+battle-specific invariants in the prompt.)
 
 - [ ] **Step 4: Full test suite + the battle pure-domain core.**
 
 ```bash
-./run-gradle.sh testDebugUnitTest > /tmp/s5-test.log 2>&1; echo "exit=$?"; tail -25 /tmp/s5-test.log
+./run-gradle.sh testDebugUnitTest --rerun-tasks > /tmp/s5-test.log 2>&1; echo "exit=$?"; tail -25 /tmp/s5-test.log
+# Then derive total + failures from the report XML — see "Verifying the test result".
 ```
 
-Expected: exit 0, 1254 tests (includes `SimulationTest`, the extracted
-pure-domain game-loop core, plus the engine/collaborator tests).
+Expected: exit 0; report XML `failures=0 errors=0`, `total` == 1254 (unchanged) —
+includes `SimulationTest` (the extracted pure-domain game-loop core) plus the
+engine/collaborator tests.
 
 - [ ] **Step 5: Regenerate baseline + verify gates.**
 
@@ -541,7 +669,12 @@ echo "regen exit=$? (1 expected); errors now: $(grep -c '<error ' config/ktlint/
 ./run-gradle.sh :app:detekt > /tmp/s5-detekt.log 2>&1; echo "detekt exit=$?"; tail -10 /tmp/s5-detekt.log
 ```
 
-- [ ] **Step 6: Append RUN_LOG entry** (note the fragile-zone care taken).
+- [ ] **Step 6: Doc sync — RUN_LOG + STATE + CHANGELOG.** Append `RUN_LOG.md`
+  (Stage 5, `presentation/battle/` swept, note the fragile-zone care taken,
+  baseline N → M, 1254 green); update `docs/agent/STATE.md` CURRENT (Stage 5 of 6,
+  baseline at M); add a `## [Unreleased]` `CHANGELOG.md` entry ("### Style —
+  ktlint repo-wide format, stage 5/6 (`presentation/battle/`)"). Per CLAUDE.md PR
+  Task-List Convention.
 
 - [ ] **Step 7: Commit + push + PR.**
 
@@ -576,9 +709,9 @@ compiling and passing.
 
 **Files:**
 - Modify (format-only): `app/src/test/**/*.kt`, `app/src/androidTest/**/*.kt`
-- Modify (regenerated): `config/ktlint/baseline.xml` (should reach its minimum — only Bucket B left)
+- Modify (regenerated): `config/ktlint/baseline.xml` (should reach its minimum — Bucket B + small non-autocorrectable residue)
 - Modify (append): `docs/agent/RUN_LOG.md`
-- Modify: `docs/agent/STATE.md` (completion note — Stage 6)
+- Modify: `docs/agent/STATE.md` (completion note — effort COMPLETE) + `CHANGELOG.md` (`## [Unreleased]`)
 
 - [ ] **Step 1: Branch from fresh `main`.**
 
@@ -606,14 +739,30 @@ git diff -w > /tmp/ktlint-s6-nonws.diff; wc -l /tmp/ktlint-s6-nonws.diff
 
 Read it; confirm all hunks are known-safe transforms.
 
-- [ ] **Step 4: Full test suite — tests must still compile + pass after reformat.**
+- [ ] **Step 4: Full JVM suite — JVM tests must compile + pass after reformat.**
 
 ```bash
-./run-gradle.sh testDebugUnitTest > /tmp/s6-test.log 2>&1; echo "exit=$?"; tail -25 /tmp/s6-test.log
+./run-gradle.sh testDebugUnitTest --rerun-tasks > /tmp/s6-test.log 2>&1; echo "exit=$?"; tail -25 /tmp/s6-test.log
+# Then derive total + failures from the report XML — see "Verifying the test result".
 ```
 
-Expected: exit 0, 1254 tests. (A reformat that broke a test's structure would
-fail to compile here — this is the safety net for the test-code sweep.)
+Expected: exit 0; report XML `failures=0 errors=0`, `total` == 1254 (unchanged).
+This compiles + runs the `src/test` sweep, but **NOT** `src/androidTest` —
+`testDebugUnitTest` only builds the JVM unit-test source set. The 4 reformatted
+androidTest files (`BattleSurfaceLifecycleTest`, `DeepLinkIntentTest`,
+`HiltTestRunner`, `InfrastructureSmokeTest`) are compiled in the next step.
+
+- [ ] **Step 4b: Compile-check the reformatted androidTest source set.**
+
+```bash
+./run-gradle.sh compileDebugAndroidTestKotlin > /tmp/s6-androidtest-compile.log 2>&1; echo "exit=$?"; tail -20 /tmp/s6-androidtest-compile.log
+```
+
+Expected: exit 0 — the reformatted androidTest files compile locally (no emulator
+needed). Their full execution is the blocking `connected` CI lane
+(`:app:connectedDebugAndroidTest`), which Step 8's `gh pr checks --watch` gates
+the merge on. If this fails, a reformat broke an androidTest file — revert it
+(`git checkout -- <file>`).
 
 - [ ] **Step 5: Regenerate baseline + verify gates.**
 
@@ -626,20 +775,41 @@ echo "remaining rules in baseline:"; grep -oE 'source="standard:[a-z-]+"' config
 ./run-gradle.sh :app:detekt > /tmp/s6-detekt.log 2>&1; echo "detekt exit=$?"; tail -10 /tmp/s6-detekt.log
 ```
 
-Expected: baseline reaches its minimum — only Bucket B rules remain
-(`function-naming`, `backing-property-naming`, `no-wildcard-imports`,
-`max-line-length`, `kdoc`, `filename`, `property-naming`). NO mechanical
-wrapping/indent/signature rules should remain. If any Bucket-A rule is still
-present, a layer was missed — investigate before merging.
+Expected: baseline at its minimum — dominated by Bucket B (`function-naming`,
+`backing-property-naming`, `no-wildcard-imports`, `max-line-length`, `kdoc`,
+`filename`, `property-naming`). A **small** number of wrapping-family entries
+(e.g. `multiline-expression-wrapping`, `binary-expression-wrapping`, `wrapping`,
+or `max-line-length`-coupled cases) MAY legitimately remain — `ktlint -F`
+corrects *most*, not all, violations; some are not autocorrectable (printed to
+stderr during the sweep, not a missed layer).
 
-- [ ] **Step 6: Doc sync — append RUN_LOG + STATE completion.**
+Do NOT treat "any wrapping/indent rule present" as "a layer was missed." Use a
+true **idempotence** check instead: re-run `ktlint -F` on an already-swept scope
+and confirm zero further diff (a fully-fixed scope is stable; genuine residue
+can't be shrunk):
 
-Append the final RUN_LOG entry (Stage 6, tests swept, baseline at minimum N
-errors / only Bucket B, 1254 green). Update `docs/agent/STATE.md` to mark the
-staged repo-wide ktlint format COMPLETE (all 6 stages merged), recording the
-final baseline size and that only intentional/non-auto-fixable rules remain. This
-is the right place to also note (if desired) a future follow-up: empty the
-baseline by addressing Bucket B (out of scope here).
+```bash
+ktlint -F app/src/test >/dev/null 2>&1   # already swept this stage
+git diff --quiet && echo "IDEMPOTENT — residue is genuinely non-autocorrectable" || { echo "ERROR: -F still changes a swept scope — a layer was missed"; git diff --stat | tail -1; }
+git checkout -- app/src 2>/dev/null   # discard the no-op re-run if it touched anything
+```
+
+Expected: `IDEMPOTENT`. If instead `-F` still mutates an already-swept scope, a
+layer was genuinely missed — investigate before merging.
+
+- [ ] **Step 6: Doc sync — RUN_LOG + STATE + CHANGELOG completion.**
+
+Per the CLAUDE.md PR Task-List Convention, in order:
+1. Append the final `RUN_LOG.md` entry (Stage 6, `src/test`+`src/androidTest`
+   swept, baseline at minimum N errors / dominated by Bucket B, 1254 green).
+2. Update `docs/agent/STATE.md` to mark the staged repo-wide ktlint format
+   COMPLETE (all 6 stages merged), recording the final baseline size and that only
+   intentional/non-auto-fixable rules (+ a small non-autocorrectable wrapping
+   residue) remain. Note the future follow-up: empty the baseline by addressing
+   Bucket B (out of scope here).
+3. Add the final `## [Unreleased]` `CHANGELOG.md` entry ("### Style — ktlint
+   repo-wide format, stage 6/6 (test sources) — effort complete; baseline 9256 →
+   N, Bucket-B-only floor").
 
 - [ ] **Step 7: Commit + push + PR.**
 
@@ -681,7 +851,20 @@ reformat noise. Done.
   `git diff -w` hunk, and revert that file's sweep (`git checkout -- <file>`) — do
   NOT push a stage with a failing test.
 - **Concurrent feature work:** sequence Stage 4 before #34 (i18n) and Stage 5
-  before #233 (Simulation-hoist) to avoid conflicts in those subtrees.
+  before the deferred #233 clean Simulation-hoist (ADR-0012) — the larger battle
+  refactor still open — to avoid conflicts in those subtrees.
 - **Protected `main`:** every stage uses the branch → PR → checks → squash-merge
   flow; direct pushes to `main` are rejected.
+- **CI cost per stage:** `gh pr checks --watch` waits on BOTH required checks —
+  the fast `build-and-test` (JVM lint+unit+assemble) AND `connected`, the full
+  `:app:connectedDebugAndroidTest` emulator suite (~8-12 min, required on every PR
+  to `main`). The docs-only fast path does NOT apply (each stage changes `.kt`
+  files + the baseline). Budget ~10-15 min CI wait per stage. If `connected` fails
+  for an emulator-flake reason (boot timeout, AVD cache miss) unrelated to the
+  format, re-run it (`gh run rerun --failed`) — the format diff cannot affect
+  instrumented behaviour.
+- **`app/src/release/` is not a scope gap:** it is a 4th source root holding only
+  a generated `baseline-prof.txt` (0 Kotlin files). The by-layer partition (main:
+  domain/data/service/di/presentation + `StepsOfBabylonApp.kt`; test/androidTest)
+  covers all 512 `.kt` files; the full-scope baseline regen no-ops on `release/`.
 ```
