@@ -33,9 +33,9 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (IN FLIGHT — PR open, awaiting controller merge; branch `chore/ktlint-format-6-tests`; `[Unreleased]`).**
+- **CURRENT (DONE — MERGED PR #328, squash `d8b8c5b`; `[Unreleased]`).**
   **Staged repo-wide ktlint auto-format — stage 6 of 6 (FINAL): test sources. The staged format effort is now
-  COMPLETE (all 6 stages).** Mechanical `ktlint -F` (glob form) over the TEST sources only — `app/src/test/`
+  COMPLETE — all 6 stages merged (PRs #322/#324/#325/#326/#327/#328).** Mechanical `ktlint -F` (glob form) over the TEST sources only — `app/src/test/`
   (JVM unit-test source set) + `app/src/androidTest/` (instrumented source set). **196 files changed.**
   Pure-formatting / zero behaviour change; all hunks on the Bucket-A allowlist (blank-line-before-rbrace
   removal, import ordering, function-/class-signature reflow, `function-expression-body` incl. the
@@ -56,7 +56,8 @@ the med/low backlog (#262) remain.
   tests green, 0 failures**; `lint-kotlin.sh` check + `:app:detekt` both exit 0. **Cumulative across the effort:
   ktlint baseline 9256 → 157 over 6 stages.** **Out of scope (future follow-up):** emptying the baseline by
   manually addressing Bucket B (wildcard imports, Compose `@Composable` naming, long lines). **Next:**
-  controller merges this final PR; effort done after merge + checkpoint. Plan:
+  back to the Readiness-Gate / med-low backlog (i18n #34; med/low #262/#128; the larger #233
+  Simulation-hoist, ADR-0012). Plan:
   `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`.
 - **Previous objective (DONE — branch `chore/ktlint-format-5-battle`, MERGED; `[Unreleased]`).**
   **Staged repo-wide ktlint auto-format — stage 5 of 6 (`presentation/battle/`, FRAGILE).** Mechanical

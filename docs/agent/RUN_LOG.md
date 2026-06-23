@@ -1,3 +1,43 @@
+## 2026-06-23 — CHECKPOINT: staged repo-wide ktlint format — EFFORT COMPLETE (6/6 merged) (`[Unreleased]`)
+
+Session-level wrap-up of the whole staged ktlint format (the 6 per-stage entries below hold the
+per-stage detail; this entry holds what no single stage does — the arc, process, and reusable lessons).
+
+- **Outcome:** repo-wide `ktlint -F` auto-format shipped as **6 sequential, layer-scoped PRs**, each
+  human-gated (monitored + merged before the next began). **ktlint baseline 9256 → 157** (a genuine
+  Bucket-B floor: `no-wildcard-imports` 61, `function-naming` 54 [Compose PascalCase], `backing-property-naming`
+  22, `max-line-length` 12, `property-naming` 5, + 3 singletons — **zero auto-fixable Bucket-A rules remain**).
+  **detekt baseline 496 → 258** (every change format-induced, no masked smell). **Zero behaviour change** —
+  **1254 JVM tests** green at every stage; headline count unchanged. Stages/PRs: 1 `domain/` #322 `ee9e177`
+  (9256→8534) · 2 `data/` #324 `fcb1acf` (→7632) · 3 `service/`+`di/`+top-level #325 `0fe7f44` (→7423) ·
+  4 `presentation/` excl battle #326 `e1b1e25` (→4974) · 5 `presentation/battle/` (fragile) #327 `cca0808`
+  (→3571) · 6 test sources #328 `d8b8c5b` (→157). Spec+plan landed first: #321 `38be285`.
+- **Process:** brainstorm → spec (`docs/superpowers/specs/2026-06-23-ktlint-repo-wide-format-staged-design.md`)
+  → adversarially-reviewed plan (`…/plans/2026-06-23-ktlint-repo-wide-format-staged.md`; multi-agent review
+  21 findings/19 applied, incl. a CRITICAL Stage-4 battle-exclusion `grep` bug fixed pre-implementation) →
+  subagent-driven execution: a fresh implementer per stage + **two-stage review each** (spec-compliance then
+  code-quality), every finding verified against the repo. Each stage independently re-confirmed complete via a
+  no-baseline ktlint check (only Bucket-B survivors) before merge.
+- **Reusable lessons (the two plan gaps discovered mid-flight):**
+  1. **detekt baseline drifts under ktlint reflow** — `:app:detekt` is baseline-gated and its findings are
+     line-keyed; reflow shifts signatures and brace-expansion can push a method past `LongMethod`-60 on
+     UNCHANGED logic. Each stage regenerated `config/detekt/baseline.xml` via `:app:detektBaseline` (it
+     OVERWRITES — no `rm`, unlike ktlint's delete-then-create) and diff-checked that every change was
+     format-induced. Plan amended via PR #323 (`docs(plan)`).
+  2. **`ktlint -F` invocation form** — ktlint 1.8.0 wants a **glob relative to CWD** (`'…/**/*.kt'`); a
+     newline list of absolute paths from `fd` **silently no-ops** (matches nothing, exit 0). Stage 4 hit this;
+     stages 5/6 used the glob form. Also: `fd` emits **trailing slashes** on dirs, so `grep -v '/battle$'`
+     fails to exclude battle — use `fd -E battle`. And `compileDebugAndroidTestKotlin` is required to compile
+     `src/androidTest/` (NOT covered by `testDebugUnitTest`) — Stage 6 added it.
+- **Doc sync:** each stage synced RUN_LOG + STATE + CHANGELOG per the PR Task-List Convention; this checkpoint
+  flipped STATE's current objective IN-FLIGHT→DONE (`d8b8c5b`) and reset the "Next" pointer to the
+  Readiness-Gate/med-low backlog. No ADR (ADR-0037 already covers the lint infra; this was an application of
+  it, not a new decision — see ADR note). CLAUDE.md untouched (pure format; the lint note + 1254 count stand).
+- **Next:** baseline-floor cleanup (empty Bucket B — wildcard imports, Compose naming, long lines) is a
+  documented future follow-up, out of scope here. Otherwise back to i18n #34 / med-low #262/#128 / #233 hoist.
+
+---
+
 ## 2026-06-23 — ktlint repo-wide auto-format, stage 6/6 (FINAL): test sources — EFFORT COMPLETE (`[Unreleased]`)
 
 - **Goal:** stage 6 (the FINAL stage) of the staged, layer-by-layer ktlint auto-format (plan
