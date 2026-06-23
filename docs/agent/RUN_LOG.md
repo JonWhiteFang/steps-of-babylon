@@ -9916,6 +9916,13 @@ After the fix, tests pass on first try and assembleDebug is clean.
   `docs/release/release-notes-v1.0.11.md`; pointer sync; STATE current-objective + this RUN_LOG entry.
 - **Verification:** fresh `testDebugUnitTest` (`--rerun-tasks`) BUILD SUCCESSFUL — **1254 JVM tests, 0
   failures, 0 errors** (XML-aggregate confirmed). `assembleDebug` to follow on the branch.
-- **Next:** open the release PR → both CI lanes green → squash-merge → annotated tag `v1.0.11` (message = the
-  "What's new" block) → `release.yml` builds/signs the AAB → Play internal. **Manual Play Console Data-Safety
-  action (#192) remains a separate human step**, not done by this tag. Then back to the med/low backlog.
+- **DONE (SHIPPED):** PR **#330** opened; both CI lanes green (build-and-test 6m35s, connected/instrumented
+  5m2s); squash-merged **`3915fd1`** 2026-06-23; branch deleted. Annotated tag **`v1.0.11`** (message = the
+  "What's new" block, 468 bytes < Play's 500 cap) pushed → `release.yml` run **`28018033566`** **`success`** —
+  every step green: wrapper-validation, unit-test guard, keystore/secret writes, `bundleRelease` (R8 + sign),
+  **`jarsigner -verify`**, **Play-internal upload**, **GitHub Release `v1.0.11`** w/ `app-release.aab`
+  **16.04 MB** (16,040,411 bytes). **v1.0.11 (vc 27) live on the Play internal track.** Post-release
+  reconciliation: STATE headline + current-objective flipped cutting→SHIPPED with the run details; this line.
+- **Next:** **Manual Play Console Data-Safety action (#192) remains a separate human step**, not done by this
+  tag — prerequisite for the later internal→closed promotion. Then the med/low backlog (#262/#128; i18n #34;
+  the larger #233 Simulation-hoist, ADR-0012) + the internal→closed promotion judgment call.
