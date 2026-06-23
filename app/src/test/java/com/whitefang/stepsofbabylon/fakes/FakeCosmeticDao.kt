@@ -70,4 +70,8 @@ class FakeCosmeticDao : CosmeticDao {
             list.map { if (it.category == category) it.copy(isEquipped = false) else it }
         }
     }
+
+    override suspend fun deleteByIds(ids: List<String>) {
+        rows.update { list -> list.filterNot { it.cosmeticId in ids } }
+    }
 }

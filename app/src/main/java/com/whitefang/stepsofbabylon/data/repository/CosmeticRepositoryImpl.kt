@@ -56,6 +56,10 @@ class CosmeticRepositoryImpl
             val existingIds = dao.observeAll().first().mapTo(HashSet()) { it.cosmeticId }
             val missing = SEED_COSMETICS.filter { it.cosmeticId !in existingIds }
             if (missing.isNotEmpty()) dao.upsertAll(missing)
+            // #221: one-time cleanup of the dead projectile/enemy-skin cosmetics on already-installed
+            // devices. DELETE … WHERE cosmeticId IN (…) is a no-op when none are present, so this is
+            // idempotent and cheap in steady state (fresh installs never seeded them).
+            dao.deleteByIds(DEAD_COSMETIC_IDS)
         }
 
         override suspend fun idExists(cosmeticId: String): Boolean {
@@ -154,6 +158,10 @@ class CosmeticRepositoryImpl
                         ),
                 )
 
+            // #221: cosmetics removed because they had no render path (PROJECTILE_EFFECT / ENEMY_SKIN).
+            // Purged from already-installed devices by ensureSeedData; never re-seeded.
+            private val DEAD_COSMETIC_IDS = listOf("proj_fire", "proj_lightning", "enemy_shadow", "enemy_neon")
+
             private val SEED_COSMETICS =
                 listOf(
                     CosmeticEntity(
@@ -220,34 +228,6 @@ class CosmeticRepositoryImpl
                         name = "Golden Ziggurat",
                         description = "Pure gold plating",
                         priceGems = 300,
-                    ),
-                    CosmeticEntity(
-                        cosmeticId = "proj_fire",
-                        category = "PROJECTILE_EFFECT",
-                        name = "Fire Trails",
-                        description = "Blazing projectile trails",
-                        priceGems = 150,
-                    ),
-                    CosmeticEntity(
-                        cosmeticId = "proj_lightning",
-                        category = "PROJECTILE_EFFECT",
-                        name = "Lightning Arcs",
-                        description = "Electric projectile arcs",
-                        priceGems = 150,
-                    ),
-                    CosmeticEntity(
-                        cosmeticId = "enemy_shadow",
-                        category = "ENEMY_SKIN",
-                        name = "Shadow Enemies",
-                        description = "Dark silhouette enemies",
-                        priceGems = 100,
-                    ),
-                    CosmeticEntity(
-                        cosmeticId = "enemy_neon",
-                        category = "ENEMY_SKIN",
-                        name = "Neon Enemies",
-                        description = "Glowing neon outlines",
-                        priceGems = 100,
                     ),
                 )
         }

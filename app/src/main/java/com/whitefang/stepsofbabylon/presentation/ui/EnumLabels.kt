@@ -37,8 +37,6 @@ import com.whitefang.stepsofbabylon.domain.usecase.PackTier
 @StringRes fun CosmeticCategory.labelRes(): Int =
     when (this) {
         CosmeticCategory.ZIGGURAT_SKIN -> R.string.cosmetic_cat_ziggurat_skin
-        CosmeticCategory.PROJECTILE_EFFECT -> R.string.cosmetic_cat_projectile_effect
-        CosmeticCategory.ENEMY_SKIN -> R.string.cosmetic_cat_enemy_skin
     }
 
 /**
