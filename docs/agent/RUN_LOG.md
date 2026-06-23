@@ -26,8 +26,8 @@
     entries are `MaxLineLength`, all in `data/`, all format-induced** — pre-existing over-long lines (SQL
     `@Query` strings, `CosmeticEntity`/`ConversionRule` literals, the `CREATE UNIQUE INDEX` migration
     string) that ktlint isolated onto their own line, so they re-key from `@Query("…")`/one-liner form to
-    the bare-string form (25 entries removed: 8 `CosmeticEntity` one-liners + 4 `DailyStepManager` lines +
-    3 misc now fit ≤120 after wrapping = net improvement; the rest are pure re-keys re-added). No genuinely
+    the bare-string form (25 entries removed: 11 `CosmeticEntity` one-liners + 4 `DailyStepManager` lines +
+    misc now fit ≤120 after wrapping = net improvement; the rest are pure re-keys re-added). No genuinely
     new smell — no LongMethod/genuine-logic finding, identical logic throughout. Diff verified to touch only
     `data/` entries; no test/other-layer entries lost.
 - **Verification:** `./run-gradle.sh testDebugUnitTest --rerun-tasks` **BUILD SUCCESSFUL**; **1254 JVM
