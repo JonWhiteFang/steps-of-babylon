@@ -15,7 +15,7 @@ single-agent review caught a critical pre-code defect). Earlier waves MERGED: #2
 Supersedes **v1.0.9 (vc 25)** · **1254 JVM + 9 instrumented tests**
 green (1110 shipped in v1.0.10; +8 reliability wave #251/#249 → 1118; +8 correctness/UX wave
 #225/#235/#224/#222 → 1126; +4 privacy/monetization #240/#239/#241 → 1130; +9 perf wave #242/#243 → 1139;
-+13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; +26 i18n correctness wave #259/#260 → 1195; +1 #220 domain-purity guard hardening → 1196; +9 GameEngine decomposition #230/#231 → 1205; +8 process-death state survival #234 → 1213; +17 time-axis anti-cheat #211/#258 → 1230; +4 HomeScreen Compose UI #253 → 1234; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
++13 accessibility wave #213/#214/#226 → 1152; +15 test-integrity wave #252/#253 → 1167; +1 architecture-invariant wave #227/#228 → 1168; +1 presentation→data cleanup #219/#229 → 1169; +26 i18n correctness wave #259/#260 → 1195; +1 #220 domain-purity guard hardening → 1196; +9 GameEngine decomposition #230/#231 → 1205; +8 process-death state survival #234 → 1213; +17 time-axis anti-cheat #211/#258 → 1230; +4 HomeScreen Compose UI #253 → 1234; +20 critical-screen Compose UI #253 → 1254; all `[Unreleased]`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -33,11 +33,11 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (IN PROGRESS — `[Unreleased]`).**
+- **CURRENT (DONE — MERGED PR #318, squash `a218c09`; `[Unreleased]`).**
   **Compose UI tests: critical screens (#253).** 20 Robolectric-backed tests for 7 critical screens
   (Workshop, Store, Labs, Missions, UltimateWeapons, Supplies, BattleControlRail). Covers
   purchase/claim/equip affordance gating, balance rendering, empty states, loadout caps. **1234 → 1254
-  JVM**; no production code change. **Next:** PR creation, then remaining audit work — i18n #34;
+  JVM**; no production code change. **Next:** close #253; remaining audit work — i18n #34;
   med/low #262/#128; the larger #233 Simulation-hoist (ADR-0012).
 - **Previous objective (DONE — MERGED PR #316, squash `1eb01ed`; `[Unreleased]`).**
   **HomeScreen Compose UI tests (#253).** 4 Robolectric-backed tests for the Home screen (loaded state,

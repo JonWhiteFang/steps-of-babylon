@@ -2,7 +2,7 @@
 
 - **Goal:** close issue #253 by covering all critical screens with Compose UI tests — every screen with
   purchase/claim/state-transition logic gets rendered-behaviour verification on the JVM lane.
-- **What shipped (7 commits, not yet PR'd):**
+- **What shipped (PR #318, squash `a218c09`):**
   - `WorkshopScreenTest.kt` — 3 tests: balance + upgrade list render, disabled-when-broke, purchase increments level.
   - `StoreScreenTest.kt` — 3 tests: gem balance + section headers, Buy buttons present, ad-removed shows "Purchased".
   - `LabsScreenTest.kt` — 3 tests: slot count render, Start disabled when broke, active research shows Rush.
@@ -15,7 +15,7 @@
   composable (BattleControlRail) since the full screen requires SurfaceView which Robolectric can't render.
   Used `runTest` for MissionsScreen/SuppliesScreen where seeding requires suspend calls (fakes don't expose
   public StateFlows for all entities).
-- **What remains:** PR creation; then close #253. Next priorities: i18n #34, med/low #262/#128, #233 Simulation-hoist.
+- **What remains:** close #253 (issue). Next priorities: i18n #34, med/low #262/#128, #233 Simulation-hoist.
 
 ## 2026-06-22 — HomeScreen Compose UI tests (#253) + close #260 (`[Unreleased]`)
 
