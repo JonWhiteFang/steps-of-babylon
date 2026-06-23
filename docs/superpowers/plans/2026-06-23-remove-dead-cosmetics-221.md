@@ -8,9 +8,20 @@
 
 **Tech Stack:** Kotlin, Clean Architecture (`domain/` Android-free), Room (`CosmeticDao`/`CosmeticEntity`), Hilt, JUnit Jupiter pure-JVM tests via `FakeCosmeticDao`. Build/test with `./run-gradle.sh`.
 
-**Spec:** `docs/superpowers/specs/2026-06-23-remove-dead-cosmetics-221-design.md` (adversarial-review-passed: 6 minor survivors folded into the test plan below).
+**Spec:** `docs/superpowers/specs/2026-06-23-remove-dead-cosmetics-221-design.md` (adversarial-review-passed).
 
 **Branch:** `feat/221-remove-dead-cosmetics` (already created; spec already committed).
+
+---
+
+## Task ordering rationale (read first)
+
+The **enum reduction, seed-row removal, purge, and all the test updates are one atomic functional change** — they must land in a single commit, because the runtime purge in `ensureSeedData` changes the seeded count (11→7) the instant it is added, and the resilient-mapping assertions only become observable once the enum no longer contains the dead categories. Splitting them across commits would leave an intermediate commit red. So:
+
+- **Task 1** is a *behavior-preserving* refactor: introduce the resilient `toDomainOrNull` mapping (while the enum still has all 3 values, this drops nothing for valid rows, so every existing test stays green). It is TDD-driven by a test that uses a **genuinely-unparseable** category token, so it proves the resilience contract independent of the enum reduction.
+- **Task 2** is the atomic removal (purge call + `deleteByIds` DAO/fake + drop the 4 seed rows + reduce the enum + drop labels/strings + update every affected test + add the purge test) — one green commit.
+
+Both tasks end green; every other task (verify/docs/PR) is non-code.
 
 ---
 
@@ -18,62 +29,53 @@
 
 | File | Responsibility / change |
 |---|---|
-| `app/src/main/java/com/whitefang/stepsofbabylon/domain/model/CosmeticCategory.kt` | Enum → `{ ZIGGURAT_SKIN }`. |
-| `app/src/main/java/com/whitefang/stepsofbabylon/data/local/CosmeticDao.kt` | Add `deleteByIds(ids: List<String>)` `@Query`. |
-| `app/src/test/java/com/whitefang/stepsofbabylon/fakes/FakeCosmeticDao.kt` | Implement `deleteByIds`. |
-| `app/src/main/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImpl.kt` | Drop 4 dead rows from `SEED_COSMETICS`; add `DEAD_COSMETIC_IDS` + purge in `ensureSeedData`; replace `toDomain` with resilient `toDomainOrNull` + `mapNotNull`. |
-| `app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/EnumLabels.kt` | Remove the 2 dead `labelRes()` branches. |
-| `app/src/main/res/values/strings.xml` | Remove `cosmetic_cat_projectile_effect` + `cosmetic_cat_enemy_skin`. |
-| `app/src/test/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImplTest.kt` | Update 3 count assertions + fixtures; add purge+resilience test. |
+| `app/src/main/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImpl.kt` | T1: `toDomain`→resilient `toDomainOrNull` + `mapNotNull`. T2: drop 4 dead rows from `SEED_COSMETICS`; add `DEAD_COSMETIC_IDS` + purge in `ensureSeedData`. |
+| `app/src/main/java/com/whitefang/stepsofbabylon/data/local/CosmeticDao.kt` | T2: add `deleteByIds(ids: List<String>)` `@Query`. |
+| `app/src/test/java/com/whitefang/stepsofbabylon/fakes/FakeCosmeticDao.kt` | T2: implement `deleteByIds`. |
+| `app/src/main/java/com/whitefang/stepsofbabylon/domain/model/CosmeticCategory.kt` | T2: enum → `{ ZIGGURAT_SKIN }`. |
+| `app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/EnumLabels.kt` | T2: remove the 2 dead `labelRes()` branches. |
+| `app/src/main/res/values/strings.xml` | T2: remove `cosmetic_cat_projectile_effect` + `cosmetic_cat_enemy_skin`. |
+| `app/src/test/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImplTest.kt` | T1: add resilience test. T2: add purge test; update 3 count assertions + fixtures. |
 
 No schema/version bump. No new dependency. The only DI-visible change is the enum reduction (compiler-enforced).
 
 ---
 
-## Task 1: Add the resilient mapping + purge (TDD, repo layer)
+## Task 1: Resilient `toDomainOrNull` mapping (behavior-preserving, TDD)
 
-This task is ordered first because it makes the catalogue crash-safe *before* the enum shrinks, and the new test drives the `deleteByIds`/`toDomainOrNull` additions.
+Introduce exception-free mapping so a row whose stored `category` doesn't parse is filtered out instead of crashing `valueOf`. While the enum still has all 3 values this changes nothing for the real seed rows — every existing test stays green. The new test drives it with a category token that is **not** any `CosmeticCategory` value (so it exercises the filter regardless of the later enum reduction).
 
 **Files:**
-- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/data/local/CosmeticDao.kt`
-- Modify: `app/src/test/java/com/whitefang/stepsofbabylon/fakes/FakeCosmeticDao.kt`
 - Modify: `app/src/main/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImpl.kt`
 - Test: `app/src/test/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImplTest.kt`
 
 - [ ] **Step 1: Write the failing test**
 
-Add this test to `CosmeticRepositoryImplTest.kt` (anywhere inside the class, e.g. after the existing `V1X14 - zig_obsidian …` test). It pre-seeds a row with a category string that will no longer be a valid enum value and a dead id, then asserts the resilient mapping hides it and the purge removes it:
+Add to `CosmeticRepositoryImplTest.kt` (inside the class, e.g. after the `V1X14 - zig_obsidian …` test):
 
 ```kotlin
     @Test
-    fun `R221 - dead-category rows are filtered from observeAll and purged by ensureSeedData`() =
+    fun `R221 - a row whose category does not parse is filtered from observeAll, not crashed`() =
         runTest {
             val dao = FakeCosmeticDao()
-            // Simulate an already-installed device: a dead projectile cosmetic persisted with a
-            // category string that is no longer a CosmeticCategory value after #221.
+            // A row persisted with a category string that is NOT a CosmeticCategory value (simulates a
+            // legacy/dead row on an upgraded device). The resilient mapping must drop it rather than
+            // throw IllegalArgumentException from CosmeticCategory.valueOf.
             dao.upsert(
                 CosmeticEntity(
-                    cosmeticId = "proj_fire",
-                    category = "PROJECTILE_EFFECT",
-                    name = "Fire Trails",
-                    description = "Blazing projectile trails",
-                    priceGems = 150,
+                    cosmeticId = "legacy_dead",
+                    category = "LEGACY_UNKNOWN_CATEGORY",
+                    name = "Legacy",
+                    description = "A row from before #221",
+                    priceGems = 100,
                 ),
             )
             val repo = CosmeticRepositoryImpl(dao)
 
-            // (a) Resilient mapping: observeAll never exposes the unparseable-category row,
-            // even before ensureSeedData runs (covers the StoreViewModel init race window).
+            val items = repo.observeAll().first()
             assertTrue(
-                repo.observeAll().first().none { it.cosmeticId == "proj_fire" },
+                items.none { it.cosmeticId == "legacy_dead" },
                 "a row whose category no longer parses must be filtered out of the domain list, not crash",
-            )
-
-            // (b) Purge: ensureSeedData deletes the dead row for good.
-            repo.ensureSeedData()
-            assertTrue(
-                dao.observeAll().first().none { it.cosmeticId == "proj_fire" },
-                "ensureSeedData must purge known dead cosmetic ids from the DB",
             )
         }
 ```
@@ -81,32 +83,13 @@ Add this test to `CosmeticRepositoryImplTest.kt` (anywhere inside the class, e.g
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `./run-gradle.sh :app:testDebugUnitTest --tests "com.whitefang.stepsofbabylon.data.repository.CosmeticRepositoryImplTest"`
-Expected: FAIL — compile error (`deleteByIds` unresolved on `FakeCosmeticDao`/`CosmeticDao`) and/or the assertions fail (today `toDomain` would throw `IllegalArgumentException` on `valueOf("PROJECTILE_EFFECT")` once the enum value is gone — but at this point the enum still has it, so the row is *not* filtered and assertion (a) fails). Either way: red.
+Expected: FAIL — `repo.observeAll().first()` throws `IllegalArgumentException` from `CosmeticCategory.valueOf("LEGACY_UNKNOWN_CATEGORY")` in the current `toDomain` (the row is mapped eagerly), so the new test errors out red.
 
-- [ ] **Step 3: Add `deleteByIds` to the DAO**
-
-In `CosmeticDao.kt`, add (after the existing `unequipCategory` query):
-
-```kotlin
-    @Query("DELETE FROM cosmetics WHERE cosmeticId IN (:ids)")
-    suspend fun deleteByIds(ids: List<String>)
-```
-
-- [ ] **Step 4: Implement `deleteByIds` in the fake**
-
-In `FakeCosmeticDao.kt`, add (after `unequipCategory`):
-
-```kotlin
-    override suspend fun deleteByIds(ids: List<String>) {
-        rows.update { list -> list.filterNot { it.cosmeticId in ids } }
-    }
-```
-
-- [ ] **Step 5: Add the resilient mapping + purge to the repo**
+- [ ] **Step 3: Replace the observe mappings + `toDomain` with resilient `toDomainOrNull`**
 
 In `CosmeticRepositoryImpl.kt`:
 
-(a) Replace the three observe mappings. Current:
+(a) The three observe methods. Current:
 
 ```kotlin
         override fun observeAll(): Flow<List<CosmeticItem>> =
@@ -134,7 +117,7 @@ becomes:
             dao.observeEquipped().map { list -> list.mapNotNull { it.toDomainOrNull() } }
 ```
 
-(b) Replace the `toDomain` helper. Current:
+(b) The helper. Current:
 
 ```kotlin
         private fun CosmeticEntity.toDomain() =
@@ -150,13 +133,13 @@ becomes:
             )
 ```
 
-becomes (exception-free — an unparseable/legacy category yields `null`, which `mapNotNull` drops):
+becomes (exception-free; an unparseable category yields `null`, which `mapNotNull` drops):
 
 ```kotlin
-        // Resilient mapping (#221): a row whose stored `category` is no longer a CosmeticCategory
-        // value (a legacy/dead row persisted before #221) maps to null and is filtered out, rather
-        // than throwing IllegalArgumentException from valueOf. Belt-and-suspenders with the
-        // ensureSeedData purge: this covers the window where observeAll() emits before the purge
+        // Resilient mapping (#221): a row whose stored `category` is not a CosmeticCategory value
+        // (a legacy/dead row persisted before #221) maps to null and is filtered out, rather than
+        // throwing IllegalArgumentException from valueOf. Belt-and-suspenders with the ensureSeedData
+        // purge (Task 2): this also covers the window where observeAll() emits before the purge
         // commits (StoreViewModel.init runs ensureSeedData and observeAll in separate coroutines).
         private fun CosmeticEntity.toDomainOrNull(): CosmeticItem? {
             val cat = CosmeticCategory.entries.find { it.name == category } ?: return null
@@ -173,7 +156,96 @@ becomes (exception-free — an unparseable/legacy category yields `null`, which 
         }
 ```
 
-(c) Add the purge to `ensureSeedData`. Current tail of the method:
+- [ ] **Step 4: Run the tests to verify green**
+
+Run: `./run-gradle.sh :app:testDebugUnitTest --tests "com.whitefang.stepsofbabylon.data.repository.CosmeticRepositoryImplTest"`
+Expected: PASS — the new test is green (the `legacy_dead` row is filtered), and **every existing test in the class stays green** (while the enum still has all 3 values, `entries.find` parses every real seed row, so `mapNotNull` drops nothing — behavior-identical to the old `toDomain`).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/src/main/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImpl.kt \
+        app/src/test/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImplTest.kt
+git commit -m "refactor(#221): resilient toDomainOrNull cosmetic mapping (filters unparseable category)"
+```
+
+---
+
+## Task 2: Atomic removal — purge + drop rows + reduce enum + labels/strings + test updates
+
+Everything here lands in **one commit** so no intermediate state is red. Order within the task: write the purge test (red) → add `deleteByIds` (DAO + fake) → add the purge call + drop seed rows → update existing tests → reduce enum + drop labels/strings → all green → commit.
+
+**Files:**
+- Modify: `CosmeticDao.kt`, `FakeCosmeticDao.kt`, `CosmeticRepositoryImpl.kt`, `CosmeticCategory.kt`, `EnumLabels.kt`, `strings.xml`
+- Test: `CosmeticRepositoryImplTest.kt`
+
+- [ ] **Step 1: Write the failing purge test**
+
+Add to `CosmeticRepositoryImplTest.kt`:
+
+```kotlin
+    @Test
+    fun `R221 - ensureSeedData purges known dead cosmetic ids from the DB`() =
+        runTest {
+            val dao = FakeCosmeticDao()
+            // Simulate an already-installed device that still has a dead projectile cosmetic row.
+            dao.upsert(
+                CosmeticEntity(
+                    cosmeticId = "proj_fire",
+                    category = "PROJECTILE_EFFECT",
+                    name = "Fire Trails",
+                    description = "Blazing projectile trails",
+                    priceGems = 150,
+                ),
+            )
+            val repo = CosmeticRepositoryImpl(dao)
+
+            repo.ensureSeedData()
+
+            assertTrue(
+                dao.observeAll().first().none { it.cosmeticId == "proj_fire" },
+                "ensureSeedData must purge known dead cosmetic ids from the DB",
+            )
+        }
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+Run: `./run-gradle.sh :app:testDebugUnitTest --tests "com.whitefang.stepsofbabylon.data.repository.CosmeticRepositoryImplTest"`
+Expected: FAIL — `deleteByIds` does not exist yet, so this won't compile / the row is never purged. (No `valueOf` crash here: this test asserts on `dao.observeAll()` raw entities, and `"PROJECTILE_EFFECT"` is still a valid enum value at this point anyway.)
+
+- [ ] **Step 3: Add `deleteByIds` to the DAO**
+
+In `CosmeticDao.kt`, after the existing `unequipCategory` query:
+
+```kotlin
+    @Query("DELETE FROM cosmetics WHERE cosmeticId IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>)
+```
+
+- [ ] **Step 4: Implement `deleteByIds` in the fake**
+
+In `FakeCosmeticDao.kt`, after `unequipCategory`:
+
+```kotlin
+    override suspend fun deleteByIds(ids: List<String>) {
+        rows.update { list -> list.filterNot { it.cosmeticId in ids } }
+    }
+```
+
+- [ ] **Step 5: Add `DEAD_COSMETIC_IDS` + the purge call, and drop the 4 dead seed rows**
+
+In `CosmeticRepositoryImpl.kt`:
+
+(a) Add the constant inside the `companion object` (e.g. just above `SEED_COSMETICS`):
+
+```kotlin
+            // #221: cosmetics removed because they had no render path (PROJECTILE_EFFECT / ENEMY_SKIN).
+            // Purged from already-installed devices by ensureSeedData; never re-seeded.
+            private val DEAD_COSMETIC_IDS = listOf("proj_fire", "proj_lightning", "enemy_shadow", "enemy_neon")
+```
+
+(b) Append the purge to `ensureSeedData`. Current tail:
 
 ```kotlin
             val existingIds = dao.observeAll().first().mapTo(HashSet()) { it.cosmeticId }
@@ -195,44 +267,11 @@ becomes:
         }
 ```
 
-(d) Add the `DEAD_COSMETIC_IDS` constant inside the `companion object` (e.g. just above `SEED_COSMETICS`):
+(c) Delete the 4 dead `CosmeticEntity(...)` blocks from `SEED_COSMETICS` (`proj_fire`, `proj_lightning`, `enemy_shadow`, `enemy_neon`). After this, `SEED_COSMETICS` has exactly 7 `ZIGGURAT_SKIN` rows: `zig_jade`, `lapis_lazuli_skin`, `garden_ziggurat_skin`, `sandals_of_gilgamesh`, `zig_obsidian`, `zig_crystal`, `zig_golden`.
 
-```kotlin
-            // #221: cosmetics removed because they had no render path (PROJECTILE_EFFECT / ENEMY_SKIN).
-            // Purged from already-installed devices by ensureSeedData; never re-seeded.
-            private val DEAD_COSMETIC_IDS = listOf("proj_fire", "proj_lightning", "enemy_shadow", "enemy_neon")
-```
+- [ ] **Step 6: Update the idempotency test's count + message**
 
-- [ ] **Step 6: Run the new test to verify it passes**
-
-Run: `./run-gradle.sh :app:testDebugUnitTest --tests "com.whitefang.stepsofbabylon.data.repository.CosmeticRepositoryImplTest"`
-Expected: the new `R221 …` test PASSES. (Other tests in this class may still pass here because the dead rows are still in `SEED_COSMETICS` until Task 2 — that's fine; this step only gates the new test green.)
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add app/src/main/java/com/whitefang/stepsofbabylon/data/local/CosmeticDao.kt \
-        app/src/test/java/com/whitefang/stepsofbabylon/fakes/FakeCosmeticDao.kt \
-        app/src/main/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImpl.kt \
-        app/src/test/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImplTest.kt
-git commit -m "feat(#221): resilient cosmetic mapping + deleteByIds purge for dead rows"
-```
-
----
-
-## Task 2: Drop the 4 dead seed rows + update the existing repo tests
-
-**Files:**
-- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImpl.kt`
-- Test: `app/src/test/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImplTest.kt`
-
-- [ ] **Step 1: Remove the 4 dead rows from `SEED_COSMETICS`**
-
-In `CosmeticRepositoryImpl.kt`, delete these 4 `CosmeticEntity(...)` blocks from the `SEED_COSMETICS` list (the `proj_fire`, `proj_lightning`, `enemy_shadow`, `enemy_neon` entries). After this, `SEED_COSMETICS` has exactly 7 `ZIGGURAT_SKIN` rows: `zig_jade`, `lapis_lazuli_skin`, `garden_ziggurat_skin`, `sandals_of_gilgamesh`, `zig_obsidian`, `zig_crystal`, `zig_golden`.
-
-- [ ] **Step 2: Update the idempotency test's count + message**
-
-In `CosmeticRepositoryImplTest.kt`, in `C2PR2 - ensureSeedData is idempotent on repeat call` (~line 222), change the `assertEquals(11, countAfterFirst, …)`:
+In `C2PR2 - ensureSeedData is idempotent on repeat call`, change the `assertEquals(11, countAfterFirst, …)` to:
 
 ```kotlin
             assertEquals(
@@ -242,29 +281,46 @@ In `CosmeticRepositoryImplTest.kt`, in `C2PR2 - ensureSeedData is idempotent on 
             )
 ```
 
-- [ ] **Step 3: Update the `otherIds` regression list + its stale comment**
+- [ ] **Step 7: Update the `otherIds` regression test (list + comment)**
 
-In `C2PR2 - other seeded ziggurat cosmetics have null overrideColors pending content PRs` (~line 170), change the `otherIds` list to drop the 4 dead ids:
+In `C2PR2 - other seeded ziggurat cosmetics have null overrideColors pending content PRs`, replace the comment block and the `otherIds` list. The current comment is:
 
 ```kotlin
+            // Regression guard: only the 4 palette-shipping cosmetics (C.2 PR 2 zig_jade,
+            // PR 3 lapis_lazuli_skin, PR 3b garden_ziggurat_skin, PR 3c sandals_of_gilgamesh)
+            // ship palettes. Remaining seeded ZIGGURAT_SKIN rows (zig_obsidian, zig_crystal,
+            // zig_golden) must continue to return null overrideColors so the renderer falls
+            // through to the biome default (and the StoreScreen keeps them under the R2-11
+            // "Coming Soon" guard). The other category seeds (PROJECTILE_EFFECT, ENEMY_SKIN)
+            // are off the ZIGGURAT_COLOR_LOOKUP entirely — also null.
+            val dao = FakeCosmeticDao()
+            val repo = CosmeticRepositoryImpl(dao)
+            repo.ensureSeedData()
+
+            val allItems = repo.observeAll().first()
+            val otherIds =
+                listOf("zig_crystal", "zig_golden", "proj_fire", "proj_lightning", "enemy_shadow", "enemy_neon")
+```
+
+Replace those lines with:
+
+```kotlin
+            // Regression guard: zig_jade, lapis_lazuli_skin, garden_ziggurat_skin, sandals_of_gilgamesh
+            // and zig_obsidian (V1X-14) ship palettes via ZIGGURAT_COLOR_LOOKUP. The remaining seeded
+            // ZIGGURAT_SKIN rows (zig_crystal, zig_golden) must continue to return null overrideColors
+            // so the renderer falls through to the biome default (and the StoreScreen keeps them under
+            // the "Coming Soon" guard). (#221 removed the dead PROJECTILE_EFFECT/ENEMY_SKIN rows.)
+            val dao = FakeCosmeticDao()
+            val repo = CosmeticRepositoryImpl(dao)
+            repo.ensureSeedData()
+
+            val allItems = repo.observeAll().first()
             val otherIds = listOf("zig_crystal", "zig_golden")
 ```
 
-And update the comment block above it (currently mentions `PROJECTILE_EFFECT, ENEMY_SKIN`) to:
+- [ ] **Step 8: Update the legacy-upgrade test (`legacySeed`, baseline, count)**
 
-```kotlin
-            // Regression guard: only the palette-shipping ziggurat cosmetics (zig_jade,
-            // lapis_lazuli_skin, garden_ziggurat_skin, sandals_of_gilgamesh, zig_obsidian) carry
-            // overrideColors. The remaining seeded ZIGGURAT_SKIN rows (zig_crystal, zig_golden) must
-            // continue to return null overrideColors so the renderer falls through to the biome
-            // default (and the StoreScreen keeps them under the "Coming Soon" guard).
-```
-
-(Note: `zig_obsidian` got a palette in V1X-14, so it is intentionally NOT in `otherIds`.)
-
-- [ ] **Step 4: Update the legacy-upgrade test**
-
-In `ensureSeedData inserts newly-added rows on partial catalogue upgrade` (~line 248):
+In `ensureSeedData inserts newly-added rows on partial catalogue upgrade`:
 
 (a) In `legacySeed`, **delete the 4 dead `CosmeticEntity` rows** (`proj_fire`, `proj_lightning`, `enemy_shadow`, `enemy_neon`), leaving only the 3 legacy ziggurat rows (`zig_obsidian`, `zig_crystal`, `zig_golden`).
 
@@ -284,42 +340,18 @@ In `ensureSeedData inserts newly-added rows on partial catalogue upgrade` (~line
             )
 ```
 
-(d) The survivor loop `for (legacyId in legacySeed.map { it.cosmeticId }) { assertNotNull(…) }` needs **no edit** — it iterates `legacySeed`, which now contains only the 3 ziggurat ids, so it no longer (wrongly) asserts the dead ids survive.
+(d) The survivor loop `for (legacyId in legacySeed.map { it.cosmeticId }) { assertNotNull(…) }` needs **no edit** — it iterates `legacySeed`, which now holds only the 3 ziggurat ids, so it no longer asserts the dead ids survive.
 
-- [ ] **Step 5: Update the player-state-preservation test's count + comment**
+- [ ] **Step 9: Update the player-state-preservation test's count + comment**
 
-In `ensureSeedData preserves player state on existing rows (isOwned, isEquipped)` (~line 352), change the comment + assertion (was `// All 11 seed rows now present (10 new + the pre-existing zig_jade preserved).` then `assertEquals(11, dao.count())`):
+In `ensureSeedData preserves player state on existing rows (isOwned, isEquipped)`, change the comment + assertion (was `// All 11 seed rows now present (10 new + the pre-existing zig_jade preserved).` then `assertEquals(11, dao.count())`):
 
 ```kotlin
             // All 7 seed rows now present (6 new + the pre-existing zig_jade preserved).
             assertEquals(7, dao.count())
 ```
 
-- [ ] **Step 6: Run the repo tests to verify they pass**
-
-Run: `./run-gradle.sh :app:testDebugUnitTest --tests "com.whitefang.stepsofbabylon.data.repository.CosmeticRepositoryImplTest"`
-Expected: PASS (all tests in the class, including the Task-1 `R221` test and the updated counts).
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add app/src/main/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImpl.kt \
-        app/src/test/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImplTest.kt
-git commit -m "feat(#221): drop dead projectile/enemy-skin seed rows + update repo tests"
-```
-
----
-
-## Task 3: Reduce the enum + remove the dead labels/strings
-
-This is ordered last because it's the change that would crash an un-migrated catalogue — Tasks 1+2 have already made the data safe (resilient mapping + purge + no longer seeding the rows), so reducing the enum is now safe.
-
-**Files:**
-- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/domain/model/CosmeticCategory.kt`
-- Modify: `app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/EnumLabels.kt`
-- Modify: `app/src/main/res/values/strings.xml`
-
-- [ ] **Step 1: Reduce the enum**
+- [ ] **Step 10: Reduce the enum**
 
 In `CosmeticCategory.kt`, change:
 
@@ -333,9 +365,9 @@ to:
 enum class CosmeticCategory { ZIGGURAT_SKIN }
 ```
 
-- [ ] **Step 2: Remove the dead `labelRes()` branches**
+- [ ] **Step 11: Remove the dead `labelRes()` branches**
 
-In `EnumLabels.kt`, the `CosmeticCategory.labelRes()` `when` currently has 3 branches. Remove the two dead ones so it reads:
+In `EnumLabels.kt`, the `CosmeticCategory.labelRes()` `when` becomes:
 
 ```kotlin
 @StringRes fun CosmeticCategory.labelRes(): Int =
@@ -344,9 +376,7 @@ In `EnumLabels.kt`, the `CosmeticCategory.labelRes()` `when` currently has 3 bra
     }
 ```
 
-(The `when` stays exhaustive — the compiler enforces this; a stray reference to a removed value would now fail to compile, which is the safety net.)
-
-- [ ] **Step 3: Remove the 2 unused string resources**
+- [ ] **Step 12: Remove the 2 unused string resources**
 
 In `app/src/main/res/values/strings.xml`, delete these two lines (keep `cosmetic_cat_ziggurat_skin`):
 
@@ -355,23 +385,29 @@ In `app/src/main/res/values/strings.xml`, delete these two lines (keep `cosmetic
     <string name="cosmetic_cat_enemy_skin">Enemy Skin</string>
 ```
 
-- [ ] **Step 4: Compile the app module (proves the enum reduction breaks nothing)**
+- [ ] **Step 13: Run the repo test class + compile to verify green**
 
-Run: `./run-gradle.sh :app:compileDebugKotlin > /tmp/221-compile.log 2>&1 && tail -n 5 /tmp/221-compile.log`
-Expected: BUILD SUCCESSFUL. (If any other site referenced `PROJECTILE_EFFECT`/`ENEMY_SKIN`, this fails here — none do, verified in the spec, but the compiler is the guarantee.)
+Run: `./run-gradle.sh :app:testDebugUnitTest --tests "com.whitefang.stepsofbabylon.data.repository.CosmeticRepositoryImplTest"`
+Expected: PASS (both new `R221` tests + all updated counts).
+Then: `./run-gradle.sh :app:compileDebugKotlin > /tmp/221-compile.log 2>&1 && tail -n 5 /tmp/221-compile.log`
+Expected: BUILD SUCCESSFUL — proves no other site referenced the removed enum values (the `when` is exhaustive; the compiler is the guarantee).
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 14: Commit**
 
 ```bash
-git add app/src/main/java/com/whitefang/stepsofbabylon/domain/model/CosmeticCategory.kt \
+git add app/src/main/java/com/whitefang/stepsofbabylon/data/local/CosmeticDao.kt \
+        app/src/test/java/com/whitefang/stepsofbabylon/fakes/FakeCosmeticDao.kt \
+        app/src/main/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImpl.kt \
+        app/src/main/java/com/whitefang/stepsofbabylon/domain/model/CosmeticCategory.kt \
         app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/EnumLabels.kt \
-        app/src/main/res/values/strings.xml
-git commit -m "feat(#221): reduce CosmeticCategory to ZIGGURAT_SKIN; drop dead labels/strings"
+        app/src/main/res/values/strings.xml \
+        app/src/test/java/com/whitefang/stepsofbabylon/data/repository/CosmeticRepositoryImplTest.kt
+git commit -m "feat(#221): remove dead projectile/enemy-skin cosmetics + categories"
 ```
 
 ---
 
-## Task 4: Full verification + lint
+## Task 3: Full verification + lint
 
 **Files:** none (verification only).
 
@@ -393,7 +429,7 @@ for f in $(fd -e xml . app/build/test-results/testDebugUnitTest); do
 done
 echo "TOTAL tests=$total failures=$fails errors=$errs"
 ```
-Expected: `failures=0 errors=0`; total ≈ 1276 (1275 + 1 new test). Record the exact number for Task 5.
+Expected: `failures=0 errors=0`; total ≈ 1277 (1275 + 2 new tests). Record the exact number for Task 4.
 
 - [ ] **Step 3: assembleDebug (full module wiring)**
 
@@ -408,7 +444,7 @@ Expected: both clean.
 
 ---
 
-## Task 5: Sync current-state docs + STATE/RUN_LOG (PR Task-List Convention)
+## Task 4: Sync current-state docs + STATE/RUN_LOG (PR Task-List Convention)
 
 > Per CLAUDE.md: sync current-state docs FIRST, then STATE/RUN_LOG, then the final commit. Touch a doc only if this PR invalidates it. No schema change → do NOT touch `docs/database-schema.md`.
 
@@ -421,7 +457,7 @@ Expected: both clean.
 
 - [ ] **Step 1: Update the CLAUDE.md headline test count**
 
-In `CLAUDE.md` → Testing section, update `**Headline count: 1275 JVM tests + 9 instrumented tests.**` to the count from Task 4 Step 2 (instrumented unchanged at 9).
+In `CLAUDE.md` → Testing section, update `**Headline count: 1275 JVM tests + 9 instrumented tests.**` to the count from Task 3 Step 2 (instrumented unchanged at 9).
 
 - [ ] **Step 2: Add a CHANGELOG `[Unreleased]` entry**
 
@@ -437,7 +473,7 @@ render nothing. Only `ZIGGURAT_SKIN` (the one category with working `overrideCol
 Already-installed devices are cleaned up safely at next launch: a new `CosmeticDao.deleteByIds` purge in
 `ensureSeedData` removes the dead rows, and `CosmeticRepositoryImpl` now maps via a resilient
 `toDomainOrNull` that filters any row whose stored category no longer parses (so `CosmeticCategory.valueOf`
-can never crash the catalogue). No Room schema change (data-only delete). +1 JVM test.
+can never crash the catalogue). No Room schema change (data-only delete). +2 JVM tests.
 ```
 
 If the `[Unreleased]` block has a running test-count line, update it.
@@ -448,11 +484,11 @@ In `docs/steering/source-files.md`, update the `CosmeticRepositoryImpl.kt`, `Cos
 
 - [ ] **Step 4: Update STATE.md**
 
-In `docs/agent/STATE.md`: add a CURRENT bullet for #221 (shipped to `[Unreleased]`), demote the prior CURRENT to "Previous objective", update the test-count line, and remove #221 from the open-issues mention if present. Keep to one page.
+In `docs/agent/STATE.md`: add a CURRENT bullet for #221 (shipped to `[Unreleased]`), demote the prior CURRENT to "Previous objective", update the test-count line. Keep to one page.
 
 - [ ] **Step 5: Append a RUN_LOG.md entry**
 
-Append a dated `## 2026-06-23 — #221 …` entry summarizing: issue, spec→adversarial-review (13→6 survivors)→plan→TDD, files touched, the existing-device data-safety approach (purge + resilient mapping, no migration), test delta, no schema/economy change.
+Append a dated `## 2026-06-23 — #221 …` entry summarizing: issue, spec→adversarial-review→plan→adversarial-review (which caught the task-ordering bug)→TDD, files touched, the existing-device data-safety approach (purge + resilient mapping, no migration), test delta, no schema/economy change.
 
 - [ ] **Step 6: Commit the docs**
 
@@ -463,7 +499,7 @@ git commit -m "docs(#221): sync current-state docs + STATE/RUN_LOG for dead-cosm
 
 ---
 
-## Task 6: Open the PR
+## Task 5: Open the PR
 
 **Files:** none.
 
@@ -491,12 +527,13 @@ Closes #221 (FEAT-1).
 No Room schema migration (data-only delete; table schema unchanged). No render-path implementation. No new `CosmeticCategory`. No economy change (the 4 ids were never purchasable).
 
 ## Tests
-- New `R221` repo test: a persisted dead-category row is filtered from `observeAll` and purged by `ensureSeedData`.
+- New `R221` resilience test: a row with an unparseable category is filtered from `observeAll`, not crashed.
+- New `R221` purge test: `ensureSeedData` deletes the dead ids from the DB.
 - Updated `CosmeticRepositoryImplTest` seed counts (11→7) + fixtures.
 - Full suite green: <N> JVM tests, 0 failures. detekt + ktlint clean. assembleDebug green.
 
 ## Process
-Spec → Adversarial Review Gate (13 findings → 6 minor confirmed/folded, 4 refuted… see spec) → plan → TDD. Spec: `docs/superpowers/specs/2026-06-23-remove-dead-cosmetics-221-design.md`.
+Spec → Adversarial Review Gate (13 findings → 6 minor folded) → plan → Adversarial Review Gate (caught a task-ordering bug → restructured to a behavior-preserving refactor + one atomic removal commit) → TDD. Spec: `docs/superpowers/specs/2026-06-23-remove-dead-cosmetics-221-design.md`.
 EOF
 )"
 ```
@@ -507,8 +544,8 @@ Replace `<N>` with the actual count.
 
 ## Self-review notes (for the executor)
 
-- **Spec coverage:** enum reduction → Task 3; drop seed rows → Task 2 Step 1; `deleteByIds` purge → Task 1 Steps 3-5; resilient `toDomainOrNull` → Task 1 Step 5; labels/strings → Task 3 Steps 2-3; all 3 count-assertion sites + survivor loop + `otherIds` + stale comment → Task 2 Steps 2-5; new purge/resilience test → Task 1 Step 1. Every spec section maps to a task.
-- **Ordering rationale:** Task 1 (safety net) → Task 2 (stop seeding) → Task 3 (reduce enum, now crash-safe). Reducing the enum before Task 1 would make the un-purged catalogue throw; this order keeps every intermediate commit green.
-- **Type consistency:** `toDomainOrNull(): CosmeticItem?` + `mapNotNull` used consistently (Task 1 Step 5). `deleteByIds(ids: List<String>)` signature identical across DAO (Step 3), fake (Step 4), and call site (Step 5). `DEAD_COSMETIC_IDS` defined once (Step 5d), referenced in `ensureSeedData` (Step 5c). `CosmeticItem`/`CosmeticEntity` constructor args match the real data classes (`priceGems` is the entity's existing int literal style).
-- **Verify-before-assert:** Task 4 Step 2 reads the result XMLs for the true count rather than trusting a log tail.
+- **Spec coverage:** resilient `toDomainOrNull` → T1; `deleteByIds` purge → T2 S3-S5; drop seed rows → T2 S5c; enum reduction → T2 S10; labels/strings → T2 S11-S12; all 3 count sites (idempotency S6, legacy-upgrade S8, player-state S9) + survivor loop (S8d) + otherIds list/comment (S7) → T2; two new tests (resilience T1 S1, purge T2 S1). Every spec section maps to a step.
+- **Green-at-every-commit (fixed from plan review):** T1 is behavior-preserving (resilient map drops nothing while the enum is full → all existing tests stay green; the new test uses an unparseable token, not a live enum name). T2 bundles the purge + seed-row removal + enum reduction + every test update into ONE commit, so the runtime purge's count change (11→7) never lands without its matching test updates. No intermediate red.
+- **Type consistency:** `toDomainOrNull(): CosmeticItem?` + `mapNotNull` (T1 S3). `deleteByIds(ids: List<String>)` identical across DAO (T2 S3), fake (T2 S4), call site (T2 S5b). `DEAD_COSMETIC_IDS` defined once (T2 S5a). `CosmeticItem.priceGems` is `Long` — the entity's `Int` literals widen on map; the new test rows use `priceGems = 100/150` (entity ints), consistent with existing fixtures.
+- **Verify-before-assert:** T3 S2 reads the result XMLs for the true count.
 ```
