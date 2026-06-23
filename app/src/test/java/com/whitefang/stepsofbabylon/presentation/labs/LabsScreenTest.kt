@@ -37,7 +37,6 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], application = android.app.Application::class)
 class LabsScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -59,9 +58,10 @@ class LabsScreenTest {
         gems: Long = 0,
         labSlotCount: Int = 1,
     ): LabsViewModel {
-        playerRepo = FakePlayerRepository(
-            PlayerProfile(stepBalance = stepBalance, gems = gems, labSlotCount = labSlotCount)
-        )
+        playerRepo =
+            FakePlayerRepository(
+                PlayerProfile(stepBalance = stepBalance, gems = gems, labSlotCount = labSlotCount),
+            )
         labRepo = FakeLabRepository()
         return LabsViewModel(labRepo, playerRepo, missionRepo, timeBaselineSource)
     }
@@ -88,21 +88,23 @@ class LabsScreenTest {
 
     @Test
     fun `active research shows Rush button`() {
-        playerRepo = FakePlayerRepository(
-            PlayerProfile(stepBalance = 5000, gems = 200, labSlotCount = 2)
-        )
+        playerRepo =
+            FakePlayerRepository(
+                PlayerProfile(stepBalance = 5000, gems = 200, labSlotCount = 2),
+            )
         labRepo = FakeLabRepository()
         // Seed active research with completesAt far ahead of the time source's wall clock (1000ms)
         // so checkCompletion in init does not auto-complete it.
         val source = FakeTimeBaselineSource(reading = TimeReading(0, 1000L))
-        labRepo.active.value = listOf(
-            ActiveResearch(
-                type = ResearchType.DAMAGE_RESEARCH,
-                level = 0,
-                startedAt = 0L,
-                completesAt = Long.MAX_VALUE,
+        labRepo.active.value =
+            listOf(
+                ActiveResearch(
+                    type = ResearchType.DAMAGE_RESEARCH,
+                    level = 0,
+                    startedAt = 0L,
+                    completesAt = Long.MAX_VALUE,
+                ),
             )
-        )
         val viewModel = LabsViewModel(labRepo, playerRepo, missionRepo, source)
 
         composeRule.setContent { LabsScreen(viewModel = viewModel) }

@@ -36,7 +36,6 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], application = android.app.Application::class)
 class UltimateWeaponScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -81,17 +80,27 @@ class UltimateWeaponScreenTest {
     @Test
     fun `equipped 3 of 3 cap message when three equipped`() {
         playerRepo = FakePlayerRepository(PlayerProfile(powerStones = 100))
-        uwRepo.weapons.value = mapOf(
-            UltimateWeaponType.DEATH_WAVE to OwnedWeapon(
-                type = UltimateWeaponType.DEATH_WAVE, isUnlocked = true, isEquipped = true,
-            ),
-            UltimateWeaponType.CHAIN_LIGHTNING to OwnedWeapon(
-                type = UltimateWeaponType.CHAIN_LIGHTNING, isUnlocked = true, isEquipped = true,
-            ),
-            UltimateWeaponType.BLACK_HOLE to OwnedWeapon(
-                type = UltimateWeaponType.BLACK_HOLE, isUnlocked = true, isEquipped = true,
-            ),
-        )
+        uwRepo.weapons.value =
+            mapOf(
+                UltimateWeaponType.DEATH_WAVE to
+                    OwnedWeapon(
+                        type = UltimateWeaponType.DEATH_WAVE,
+                        isUnlocked = true,
+                        isEquipped = true,
+                    ),
+                UltimateWeaponType.CHAIN_LIGHTNING to
+                    OwnedWeapon(
+                        type = UltimateWeaponType.CHAIN_LIGHTNING,
+                        isUnlocked = true,
+                        isEquipped = true,
+                    ),
+                UltimateWeaponType.BLACK_HOLE to
+                    OwnedWeapon(
+                        type = UltimateWeaponType.BLACK_HOLE,
+                        isUnlocked = true,
+                        isEquipped = true,
+                    ),
+            )
         val viewModel = vm()
 
         composeRule.setContent { UltimateWeaponScreen(viewModel = viewModel) }

@@ -35,7 +35,6 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], application = android.app.Application::class)
 class UnclaimedSuppliesScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -54,39 +53,41 @@ class UnclaimedSuppliesScreenTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun createVm(): UnclaimedSuppliesViewModel =
-        UnclaimedSuppliesViewModel(encounterRepo, playerRepo, cardRepo)
+    private fun createVm(): UnclaimedSuppliesViewModel = UnclaimedSuppliesViewModel(encounterRepo, playerRepo, cardRepo)
 
     @Test
-    fun `renders supply drop list with Claim buttons`() = runTest {
-        encounterRepo.createDrop(SupplyDropTrigger.STEP_THRESHOLD, SupplyDropReward.STEPS, 100)
-        encounterRepo.createDrop(SupplyDropTrigger.RANDOM, SupplyDropReward.GEMS, 5)
+    fun `renders supply drop list with Claim buttons`() =
+        runTest {
+            encounterRepo.createDrop(SupplyDropTrigger.STEP_THRESHOLD, SupplyDropReward.STEPS, 100)
+            encounterRepo.createDrop(SupplyDropTrigger.RANDOM, SupplyDropReward.GEMS, 5)
 
-        val viewModel = createVm()
-        composeRule.setContent { UnclaimedSuppliesScreen(viewModel = viewModel) }
-        composeRule.waitForIdle()
+            val viewModel = createVm()
+            composeRule.setContent { UnclaimedSuppliesScreen(viewModel = viewModel) }
+            composeRule.waitForIdle()
 
-        composeRule.onAllNodesWithText("Claim").assertCountEquals(2)
-        composeRule.onNodeWithText(SupplyDropTrigger.STEP_THRESHOLD.message).assertExists()
-    }
-
-    @Test
-    fun `empty state shows no drops message`() = runTest {
-        val viewModel = createVm()
-        composeRule.setContent { UnclaimedSuppliesScreen(viewModel = viewModel) }
-        composeRule.waitForIdle()
-
-        composeRule.onNodeWithText("No supply drops yet — keep walking!").assertExists()
-    }
+            composeRule.onAllNodesWithText("Claim").assertCountEquals(2)
+            composeRule.onNodeWithText(SupplyDropTrigger.STEP_THRESHOLD.message).assertExists()
+        }
 
     @Test
-    fun `Claim All button present when drops exist`() = runTest {
-        encounterRepo.createDrop(SupplyDropTrigger.DAILY_MILESTONE, SupplyDropReward.POWER_STONES, 3)
+    fun `empty state shows no drops message`() =
+        runTest {
+            val viewModel = createVm()
+            composeRule.setContent { UnclaimedSuppliesScreen(viewModel = viewModel) }
+            composeRule.waitForIdle()
 
-        val viewModel = createVm()
-        composeRule.setContent { UnclaimedSuppliesScreen(viewModel = viewModel) }
-        composeRule.waitForIdle()
+            composeRule.onNodeWithText("No supply drops yet — keep walking!").assertExists()
+        }
 
-        composeRule.onNodeWithText("Claim All").assertExists()
-    }
+    @Test
+    fun `Claim All button present when drops exist`() =
+        runTest {
+            encounterRepo.createDrop(SupplyDropTrigger.DAILY_MILESTONE, SupplyDropReward.POWER_STONES, 3)
+
+            val viewModel = createVm()
+            composeRule.setContent { UnclaimedSuppliesScreen(viewModel = viewModel) }
+            composeRule.waitForIdle()
+
+            composeRule.onNodeWithText("Claim All").assertExists()
+        }
 }

@@ -37,7 +37,6 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], application = android.app.Application::class)
 class MissionsScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
@@ -70,70 +69,73 @@ class MissionsScreenTest {
         MissionsViewModel(missionRepo, milestoneRepo, stepRepo, playerRepo, cosmeticRepo, timeProvider)
 
     @Test
-    fun `renders Daily Missions header and mission cards`() = runTest {
-        // Seed a mission before VM creation so generateForDate no-ops (data exists for date).
-        missionDao.insert(
-            DailyMissionEntity(
-                date = today,
-                missionType = "KILL_500_ENEMIES",
-                target = 500,
-                progress = 200,
-                rewardGems = 5,
+    fun `renders Daily Missions header and mission cards`() =
+        runTest {
+            // Seed a mission before VM creation so generateForDate no-ops (data exists for date).
+            missionDao.insert(
+                DailyMissionEntity(
+                    date = today,
+                    missionType = "KILL_500_ENEMIES",
+                    target = 500,
+                    progress = 200,
+                    rewardGems = 5,
+                ),
             )
-        )
 
-        val viewModel = createVm()
-        composeRule.setContent { MissionsScreen(viewModel = viewModel) }
-        composeRule.waitForIdle()
+            val viewModel = createVm()
+            composeRule.setContent { MissionsScreen(viewModel = viewModel) }
+            composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Daily Missions").assertExists()
-        composeRule.onNodeWithText("200 / 500").assertExists()
+            composeRule.onNodeWithText("Daily Missions").assertExists()
+            composeRule.onNodeWithText("200 / 500").assertExists()
 
-        viewModel.cancelForTest()
-    }
+            viewModel.cancelForTest()
+        }
 
     @Test
-    fun `Claim button appears when mission is complete but unclaimed`() = runTest {
-        missionDao.insert(
-            DailyMissionEntity(
-                date = today,
-                missionType = "WALK_5000",
-                target = 5000,
-                progress = 5000,
-                rewardGems = 5,
-                completed = true,
-                claimed = false,
+    fun `Claim button appears when mission is complete but unclaimed`() =
+        runTest {
+            missionDao.insert(
+                DailyMissionEntity(
+                    date = today,
+                    missionType = "WALK_5000",
+                    target = 5000,
+                    progress = 5000,
+                    rewardGems = 5,
+                    completed = true,
+                    claimed = false,
+                ),
             )
-        )
 
-        val viewModel = createVm()
-        composeRule.setContent { MissionsScreen(viewModel = viewModel) }
-        composeRule.waitForIdle()
+            val viewModel = createVm()
+            composeRule.setContent { MissionsScreen(viewModel = viewModel) }
+            composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Claim").assertExists()
+            composeRule.onNodeWithText("Claim").assertExists()
 
-        viewModel.cancelForTest()
-    }
+            viewModel.cancelForTest()
+        }
 
     @Test
-    fun `milestones section renders`() = runTest {
-        // Milestones are static (Milestone.entries) — no seeding needed; just confirm the header.
-        missionDao.insert(
-            DailyMissionEntity(
-                date = today,
-                missionType = "WALK_5000",
-                target = 5000,
-                progress = 0,
-                rewardGems = 5,
+    fun `milestones section renders`() =
+        runTest {
+            // Milestones are static (Milestone.entries) — no seeding needed; just confirm the header.
+            missionDao.insert(
+                DailyMissionEntity(
+                    date = today,
+                    missionType = "WALK_5000",
+                    target = 5000,
+                    progress = 0,
+                    rewardGems = 5,
+                ),
             )
-        )
 
-        val viewModel = createVm()
-        composeRule.setContent { MissionsScreen(viewModel = viewModel) }
-        composeRule.waitForIdle()
+            val viewModel = createVm()
+            composeRule.setContent { MissionsScreen(viewModel = viewModel) }
+            composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Walking Milestones").assertExists()
+            composeRule.onNodeWithText("Walking Milestones").assertExists()
 
-        viewModel.cancelForTest()
-    }
+            viewModel.cancelForTest()
+        }
 }

@@ -34,7 +34,6 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [34], application = android.app.Application::class)
 class StoreScreenTest {
-
     @get:Rule
     val composeRule = createComposeRule()
 
