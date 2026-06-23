@@ -51,9 +51,12 @@
     the baseline diff: every added entry is `LongMethod`/`MaxLineLength` (NO new smell TYPE — no
     ComplexMethod/CyclomaticComplexity/NestedBlockDepth); all changed entries are presentation files
     (the one `Screen.kt:…Battle…` entry is `presentation/navigation/Screen.kt`, in scope — "Battle" is a
-    nav-destination identifier, NOT a `presentation/battle/` file). `SmartReminderManager.kt`/`SoundManager.kt`
-    removed entries are stale pre-existing keys cleared by the global regen (SmartReminderManager is
-    `service/`, source untouched by this PR). `:app:detekt` exit 0 after regen.
+    nav-destination identifier, NOT a `presentation/battle/` file). The one cross-layer drop —
+    `SmartReminderManager.kt` (`service/`, source untouched by this PR) — is a stale pre-existing key
+    cleared by the global regen (its line was wrapped back in Stage 3 #325; now <120). `SoundManager.kt`
+    is in-scope (`presentation/audio/`, reformatted by this PR); its `MaxLineLength` entry fell out
+    legitimately because ktlint wrapped the line, like the other in-scope long-one-liner removals.
+    `:app:detekt` exit 0 after regen.
 - **Verification:** `./run-gradle.sh testDebugUnitTest --rerun-tasks` **BUILD SUCCESSFUL**; **1254 JVM
   tests, 0 failures, 0 errors** (unchanged count — pure format; counted from report XML; incl. the #253
   Robolectric Compose UI tests that exercise the reformatted screens). `./lint-kotlin.sh` (ktlint check)
