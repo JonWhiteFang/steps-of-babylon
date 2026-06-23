@@ -4,6 +4,40 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Docs — Batch A: audit docs/content-drift sweep (no production-code change)
+
+**Docs + two build-file justification strings only — no production Kotlin, no schema/economy/engine
+change, no test-count change (1254 JVM, 0 failures, verified with `--rerun-tasks`).** Closes the
+lowest-risk cluster of LIVE findings from the audit-tracker triage (verification workflow code-grounded
+~125 tracker findings vs HEAD `617babd`; 83 LIVE / 23 FIXED / 6 STALE / 4 DUP / 1 POSITIVE). Findings
+closed from #262: **L79, L81, L82, L83, L84, L85, L86, L93, L94, L95** (+ the L70 README-residue + the
+code-side of the L78-stale billing-version drift).
+
+- **Billing-version drift (L78 code-side):** the app ships Play Billing **9.1.0** but 10 live current-state
+  docs still said "Play Billing v8". Corrected v8 → v9 across CLAUDE.md, README (×2), `docs/steering/`
+  (source-files, structure), `docs/monetization.md` (×4), `docs/agent/STATE.md`, and the `data-safety-form.md`
+  *ground-truth* table row. The historically-anchored "v1.0.8 release ships … Play Billing v8" prose is
+  preserved (v1.0.8 genuinely shipped v8).
+- **L82** wrong instrumented-test command in `docs/steering/tech.md` (`connectedAndroidTest` →
+  `connectedDebugAndroidTest`, fixes the post-multi-module-split breakage).
+- **L83** CLAUDE.md architecture tree gains the omitted `data/diagnostics/` package (#190 crash breadcrumb).
+- **L84** `docs/agent/STATE.md` collapsed from 846 → 385 lines: the redundant ~460-line "Previous objective"
+  stack (all duplicated in RUN_LOG) replaced with a pointer, and the per-wave test-count tally removed from
+  the headline (lives in CHANGELOG/RUN_LOG). CURRENT objective + all reference sections untouched.
+- **L85** broken README→CLAUDE.md cross-reference made self-contained (StoreIapFlowTest deferral rationale
+  stated inline). **L86** `AwardBattleSteps.kt` added to the `source-files.md` main-source index.
+  **L70-residue** README "1126 JVM tests" → 1254 (matches the canonical headline).
+- **L79** guava security-constraint justification (`app/build.gradle.kts` `because()` + `libs.versions.toml`
+  comment) corrected `>=32-android` → `>=33.6.0-android` to match the actual pin. **String/comment only —
+  version refs untouched, dependency graph byte-identical.**
+- **GDD design-vs-reality (L93/L94/L95):** annotated the biome-transition cinematic + biome→cosmetic-unlock
+  claims and the `TYPE_STEP_DETECTOR` tertiary-sensor line as *deferred (not in v1.0)* — vision preserved,
+  contradiction with the code ended. **L81** deleted the stale binary `docs/StepsOfBabylon_GDD.docx` (the
+  `.md` is canonical; the binary still described removed mechanics — Overdrive, Card Dust, GPS — as current).
+
+Plan + adversarial review: `docs/superpowers/plans/2026-06-23-batch-a-docs-content-drift.md` (review gate:
+14 findings, all CONFIRMED, 0 refuted; the 1 MAJOR widened the billing-v8 fix from 1 site to all 10).
+
 ## [1.0.11] — 2026-06-23 (versionCode 27)
 
 Release collateral promotes everything accumulated since v1.0.10 to the Play **internal** track.

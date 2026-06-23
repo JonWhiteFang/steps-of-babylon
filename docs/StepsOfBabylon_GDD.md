@@ -217,7 +217,7 @@ attack-speed buff. See `docs/battle-formulas.md` § Rapid Fire for the full inte
 | The Underworld of Kur | 9–10 | Subterranean realm, bioluminescent cuneiform, River of the Dead. Purple/teal. | Underworld horrors: shadow demons of Ereshkigal, bone revenants, void spawn | Obsidian ziggurat with glowing protective wards |
 | The Celestial Gate | 11+ | Floating temple platforms, reality tears, starfield. Multi-chromatic. | Celestial beings: star devourers, divine sentinels of Anu, chaos fragments of Tiamat | Celestial ziggurat crackling with divine energy |
 
-Biome transitions trigger a cinematic showing the ziggurat "ascending" with total steps walked displayed. Each biome has a unique evolving soundtrack, cohesive enemy visual language, and unlocks a cosmetic ziggurat skin.
+Biome transitions trigger a cinematic showing the ziggurat "ascending" with total steps walked displayed. Each biome has a unique evolving soundtrack, cohesive enemy visual language, and unlocks a cosmetic ziggurat skin. *(Deferred — not in v1.0: the transition ships as a static text/gradient overlay (`BiomeTransitionOverlay`), not an animated cinematic, and there is no biome→cosmetic unlock — ziggurat skins are Store-purchase only. Animated cinematic + biome-linked unlocks are post-v1.0.)*
 
 ---
 
@@ -300,7 +300,7 @@ Temporary per-round bonuses activated at round start. Equip up to 3 Cards. Acqui
 
 - **Primary:** Android `TYPE_STEP_COUNTER` hardware sensor (always-on, battery efficient)
 - **Secondary:** Health Connect SDK for cross-validation and gap-filling
-- **Tertiary:** `TYPE_STEP_DETECTOR` for realtime feedback (notifications, widget)
+- **Tertiary:** `TYPE_STEP_DETECTOR` for realtime feedback (notifications, widget) *(Deferred — not implemented in v1.0; only `TYPE_STEP_COUNTER` (+ Health Connect) is used. See `docs/steering/` for the deferral note.)*
 
 ### 11.2 Background Service Architecture
 
@@ -359,7 +359,7 @@ Blends clean minimalist game aesthetic with ancient Mesopotamian art direction. 
 - **Walking Encounter Supply Drops:** Rich notifications with thematic messages and one-tap claim.
 - **Smart reminders:** "You're 2,000 steps away from upgrading Chain Lightning!"
 - **Milestone alerts:** "New personal best! Wave 87 in The Burning Sands!"
-- **Biome unlock cinematics:** "You have walked 168,000 steps to reach The Frozen Ziggurats."
+- **Biome unlock cinematics:** "You have walked 168,000 steps to reach The Frozen Ziggurats." *(Deferred — v1.0 shows a static biome-transition overlay, not a cinematic; see §10/`BiomeTransitionOverlay`.)*
 
 ---
 

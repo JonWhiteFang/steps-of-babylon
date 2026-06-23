@@ -30,7 +30,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── time/           # SystemTimeProvider — production TimeProvider (testable clock; B.1 / RO-01)
 │   ├── sensor/         # Step sensor data source, rate limiter, velocity analyzer, ingestion preferences, daily step manager
 │   ├── healthconnect/  # Health Connect client, step reader, cross-validator, gap filler, activity minutes
-│   ├── billing/        # BillingManagerImpl (real Play Billing v8, sole binding for both debug + release as of C.5 PR 3; StubBillingManager deleted after Phase G internal-track on-device verification PASSED 2026-05-18)
+│   ├── billing/        # BillingManagerImpl (real Play Billing v9, sole binding for both debug + release as of C.5 PR 3; StubBillingManager deleted after Phase G internal-track on-device verification PASSED 2026-05-18)
 │   │   └── internal/   # BillingClientAdapter (SDK-neutral seam) + RealBillingClientAdapter (concrete v8 glue) + ActivityProvider (set/cleared by MainActivity lifecycle, C.5 PR 2; also consumed by data/ads/RewardAdManagerImpl from C.6 PR 1)
 │   ├── ads/            # RewardAdManagerImpl (real, sole binding for both debug + release as of C.6 PR 3; StubRewardAdManager deleted)
 │   │   └── internal/   # RewardedAdAdapter (SDK-neutral seam) + RealRewardedAdAdapter (concrete AdMob glue) + ConsentManager (UMP seam) + RealConsentManager (concrete UMP glue)

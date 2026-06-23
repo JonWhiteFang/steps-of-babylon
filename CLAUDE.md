@@ -152,8 +152,9 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── healthconnect/  # Health Connect client, step reader, cross-validator, gap filler, activity-minute converter
 │   ├── anticheat/      # Anti-cheat preferences / offense tracking
 │   ├── onboarding/     # OnboardingPreferences (device-local first-launch completion flag, SharedPreferences)
-│   ├── billing/        # Play Billing v8 (BillingManagerImpl + internal SDK adapters)
+│   ├── billing/        # Play Billing v9 (BillingManagerImpl + internal SDK adapters)
 │   ├── ads/            # AdMob v25 + UMP consent (RewardAdManagerImpl + internal adapters)
+│   ├── diagnostics/    # CrashBreadcrumb + CrashBreadcrumbStore (#190 game-loop crash visibility)
 │   └── time/           # TimeProvider abstraction (testable clock)
 ├── domain/             # Pure Kotlin — ZERO Android imports (enforced by DomainPurityTest)
 │   ├── model/          # Currency, PlayerWallet, PlayerProfile, all enums + game domain models

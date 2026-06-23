@@ -9926,3 +9926,46 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - **Next:** **Manual Play Console Data-Safety action (#192) remains a separate human step**, not done by this
   tag — prerequisite for the later internal→closed promotion. Then the med/low backlog (#262/#128; i18n #34;
   the larger #233 Simulation-hoist, ADR-0012) + the internal→closed promotion judgment call.
+
+## 2026-06-23 — Audit-finding triage + Batch A (docs/content-drift)
+
+- **Goal:** developer asked to find more audit findings to batch-fix. Both Low trackers (#262 95-item,
+  #128 30-item) explicitly say their findings were **never individually verified**, and HEAD (`617babd`)
+  has moved far since they were filed (v1.0.11 wave closed #213–#261 + dozens more). So step 1 was to
+  **code-ground every finding against HEAD**, not trust the tracker text.
+- **Triage (multi-agent `Workflow`, 18 agents):** 9 area-coherent clusters (battle / economy / sensor-service
+  / security-billing / ui-state / i18n / build-ci / db-test-infra / docs-content), each finding **verified
+  against real code then adversarially skeptic-checked** (default-to-LIVE so no real defect is waved away;
+  also flag LIVE findings that are actually no-ops). **117 entries → 83 LIVE / 23 FIXED / 6 STALE / 4 DUP /
+  1 POSITIVE**; skeptic flipped only 1 verdict (high reviewer/skeptic agreement). Notable: **all #128
+  high-conf economy findings already FIXED** (A19 atomic-guard gating, A20/A21/A22, A29/A30, A35), plus
+  currency/card atomicity (L25/L33/L34), sensor races (A40/A42/A43); several CI/docs findings are **STALE**
+  (cited AGP 9.0.1 / billing 8.3.0 / Compose BOM 2026.02 no longer exist — billing is on 9.1.0, ahead of the
+  migration the finding asked for). Verdicts cached at `/tmp/audit-triage/verdicts.json` (this session).
+- **LIVE survivors clustered** into ~7 batch candidates: A docs-drift · B dead-code · C i18n-locale · D
+  CI/release hardening · E VM-flow/a11y · F sensor/service reliability · G security/privacy. Non-batchable
+  (fragile/large/by-design) flagged separately: battle game-loop perf (L46–L51, intentional allocs), A24
+  step-rate-limit clock-tamper (large; #211 covered time-gated mechanics, NOT the rate limiter), L12
+  BattleViewModel decomposition (#306/ADR-0012), billing-anti-fraud (L35/A25/A26/L41 — by-design, CONSTRAINTS
+  forbids server-side verification for v1.0).
+- **Batch A executed** (developer-picked first via AskUserQuestion): **docs + content drift, zero
+  production-code behavior change.** Spec→plan→**adversarial review gate** (3-dimension `Workflow`,
+  grounding/scope/risk, each verify→skeptic): **14 findings, all CONFIRMED, 0 refuted.** The 1 MAJOR caught
+  a real scope gap — the plan fixed "Play Billing v8" at only CLAUDE.md:155 while it was stale in **10 live
+  current-state docs** (billing is 9.1.0); widened the fix to all 10 (preserving the v1.0.8-historical prose
+  in data-safety-form.md). Minors folded in (guava `libs.versions.toml` comment dup; STATE headline tally
+  removal made firm; GDD:220 same-line edits merged).
+- **Edits (12):** v8→v9 across 10 docs; tech.md instrumented-test command (L82); CLAUDE.md `data/diagnostics/`
+  tree line (L83); README test-count 1126→1254 (L70) + self-contained StoreIapFlowTest xref (L85);
+  source-files.md `AwardBattleSteps.kt` entry (L86); guava `because()`+toml comment `>=32`→`>=33.6.0` (L79,
+  string/comment-only); GDD deferred-annotations for biome cinematic/skin + `TYPE_STEP_DETECTOR` (L93/L94/L95);
+  **deleted** stale binary `StepsOfBabylon_GDD.docx` (L81); **STATE.md trimmed 846→385** — redundant
+  ~460-line objective stack → RUN_LOG pointer + headline tally removed (L84).
+- **Verify:** `testDebugUnitTest --rerun-tasks` BUILD SUCCESSFUL — **1254 JVM, 0 failures/errors** (forced
+  re-execution confirms the build-file string edits are inert; README/CLAUDE "1254" now exactly correct).
+  Final `rg` sweeps: no current-state `Billing v8` / bare `connectedAndroidTest` / stale `1126` left;
+  `.docx` gone with no live reference; `diagnostics/` in the tree.
+- **No ADR** (docs-only batch on established conventions). Plan:
+  `docs/superpowers/plans/2026-06-23-batch-a-docs-content-drift.md`.
+- **Next:** open the Batch A PR (branch `docs/batch-a-doc-drift`); check off the closed findings in #262.
+  Then the remaining LIVE batches (recommended B→C→D first — cheapest/safest) + the non-batchable items.
