@@ -5,7 +5,7 @@
 An idle tower defense game where your real-world steps raise an ancient ziggurat.
 
 **Platform:** Android | **Experience:** Solo | **Battles:** Real-Time
-**Game Version:** 1.0.11 (versionCode 27) | **GDD last reconciled with code:** 2026-06-16
+**Game Version:** 1.0.12 (versionCode 28) | **GDD last reconciled with code:** 2026-06-16
 
 ---
 

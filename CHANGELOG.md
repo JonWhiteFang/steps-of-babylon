@@ -4,6 +4,16 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+## [1.0.12] — 2026-06-23 (versionCode 28)
+
+Shipped to the Play Console **internal** track (tag `v1.0.12`). Promotes everything accumulated since
+v1.0.11 — the audit-triage batches A–D plus two focused audit fixes (#216 notification quiet-hours/cap,
+#221 dead-cosmetic removal). **No new mechanics, no schema change** (the `app/schemas` tree is
+byte-identical to v1.0.11). Player-facing: overnight-quiet + capped supply-drop notifications (#216) and
+a Turkish/`az`-locale purchase fix (Batch C L88). **1256 → 1277 JVM tests** across the body. `versionCode`
+27 → 28, `versionName` 1.0.11 → 1.0.12 (the bump rides in with this release PR). Per-change detail in the
+entries below.
+
 ### Removed — Dead projectile/enemy-skin cosmetics (#221 / FEAT-1)
 
 Removed the 4 seeded cosmetics that had no render path (`proj_fire`, `proj_lightning`, `enemy_shadow`,
