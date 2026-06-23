@@ -11,5 +11,6 @@ abstract class Entity(
     override var isAlive: Boolean = true,
 ) : EntityProtocol {
     abstract override fun update(deltaTime: Float)
+
     abstract fun render(canvas: Canvas)
 }

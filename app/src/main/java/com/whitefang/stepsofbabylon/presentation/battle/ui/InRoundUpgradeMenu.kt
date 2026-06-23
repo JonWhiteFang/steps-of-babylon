@@ -33,9 +33,9 @@ import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.usecase.UpgradeEffectReadout
 import com.whitefang.stepsofbabylon.presentation.ui.labelRes
+import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
-import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import kotlin.math.ceil
 import kotlin.math.pow
@@ -79,11 +79,12 @@ fun InRoundUpgradeMenu(
     val upgrades = UpgradeType.entries.filter { it.category == category && it !in hiddenInRound }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IN_ROUND_MENU_HEIGHT)
-            .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-            .padding(8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(IN_ROUND_MENU_HEIGHT)
+                .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                .padding(8.dp),
     ) {
         // Header
         Row(
@@ -92,7 +93,11 @@ fun InRoundUpgradeMenu(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.cash_amount, cash), color = Color(0xFFD4A843), style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.cash_amount, cash),
+                    color = Color(0xFFD4A843),
+                    style = MaterialTheme.typography.titleMedium,
+                )
                 if (lastPurchaseFree) {
                     Text(
                         stringResource(R.string.inround_free),
@@ -107,8 +112,11 @@ fun InRoundUpgradeMenu(
         // Tabs
         PrimaryTabRow(selectedTabIndex = selectedTab) {
             tabs.forEachIndexed { i, cat ->
-                Tab(selected = i == selectedTab, onClick = { selectedTab = i },
-                    text = { Text(stringResource(cat.labelRes()), fontSize = 12.sp) })
+                Tab(
+                    selected = i == selectedTab,
+                    onClick = { selectedTab = i },
+                    text = { Text(stringResource(cat.labelRes()), fontSize = 12.sp) },
+                )
             }
         }
 
@@ -129,18 +137,23 @@ fun InRoundUpgradeMenu(
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(type.name.toDisplayName(), color = Color.White, fontSize = 13.sp)
-                        Text(stringResource(R.string.inround_level_desc, level, type.config.description), color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
+                        Text(
+                            stringResource(R.string.inround_level_desc, level, type.config.description),
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 10.sp,
+                        )
                         // RO-11 #C / RO-10: live "Now → Next" readout.
                         // Skip when describeEffect returns an empty current string — keeps
                         // unit-test / preview call sites (which pass the default no-op
                         // lambda) visually identical to the pre-RO-11 layout.
                         val readout = describeEffect(type)
                         if (readout.current.isNotEmpty()) {
-                            val line = if (readout.next != null) {
-                                stringResource(R.string.inround_readout_next, readout.current, readout.next)
-                            } else {
-                                stringResource(R.string.inround_readout_max, readout.current)
-                            }
+                            val line =
+                                if (readout.next != null) {
+                                    stringResource(R.string.inround_readout_next, readout.current, readout.next)
+                                } else {
+                                    stringResource(R.string.inround_readout_max, readout.current)
+                                }
                             Text(
                                 line,
                                 color = Color(0xFFD4A843),
@@ -149,14 +162,24 @@ fun InRoundUpgradeMenu(
                         }
                     }
                     if (maxed) {
-                        Text(stringResource(R.string.upgrade_max), color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(end = 8.dp))
+                        Text(
+                            stringResource(R.string.upgrade_max),
+                            color = Color.Gray,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(end = 8.dp),
+                        )
                     } else {
                         Button(
-                            onClick = { pulse.trigger(); haptics.tap(); onPurchase(type) },
+                            onClick = {
+                                pulse.trigger()
+                                haptics.tap()
+                                onPurchase(type)
+                            },
                             enabled = affordable,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (affordable) Color(0xFFD4A843) else Color.DarkGray,
-                            ),
+                            colors =
+                                ButtonDefaults.buttonColors(
+                                    containerColor = if (affordable) Color(0xFFD4A843) else Color.DarkGray,
+                                ),
                             modifier = Modifier.pulseScale(pulse),
                         ) { Text(stringResource(R.string.cash_amount, cost), fontSize = 11.sp) }
                     }

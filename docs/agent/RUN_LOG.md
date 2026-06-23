@@ -1,3 +1,59 @@
+## 2026-06-23 — ktlint repo-wide auto-format, stage 5/6: `presentation/battle/` (FRAGILE) (`[Unreleased]`)
+
+- **Goal:** stage 5 of the staged, layer-by-layer ktlint auto-format (plan
+  `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`). Stages 1 (`domain/`), 2 (`data/`),
+  3 (`service/`+`di/`+top-level), 4 (`presentation/` excl battle) are merged. Stage 5 = **`presentation/battle/`
+  ONLY** — the FRAGILE ZONE: the custom `SurfaceView` game-loop renderer + engine (`GameEngine`,
+  `GameLoopThread`, `EffectEngine`, `UWController`, `CombatResolver`, `BuffTickers`, entities, effects, biome,
+  ui). Pure-formatting, zero behaviour change. **37 files changed.**
+- **Tooling:** single dir-glob `ktlint -F 'app/src/main/java/.../presentation/battle/**/*.kt'` (the Stage-4
+  lesson — multi-positional-arg paths silently no-op). Verified the sweep actually applied (`git diff
+  --name-only | wc -l` = 37, all under `presentation/battle/`; out-of-scope grep empty → `IN SCOPE`).
+- **Fragile-zone review (extra-careful, beyond the Bucket-A allowlist):** read the full `git diff -w`
+  (3776 lines / 1957 content lines) end-to-end. **Confirmed intact:**
+  - **`@Volatile` integrity** — every `@Volatile` stayed attached to its field; ktlint only inserted blank
+    lines *before* the annotation (`GameEngine` `stats`/`roundOver`/`secondWindHpPercent`/`secondWindUsed`/
+    `cashBonusPercent`; `GameLoopThread.isRunning`; `BattleViewModel.roundEnded`). No modifier changed/detached.
+  - **Lock boundaries** — NO statement moved into/out of any `synchronized(...)` block. `EffectEngine`
+    (`addEffect`/`update`-drain/`clear`) and `GameEngine` (`init`/`aliveEnemyCount`) reflowed only *inside*
+    their `synchronized(effectsLock)` / `synchronized(entitiesLock)` bodies (`a; b` split to two lines, block-
+    body expansion). Lock order `entitiesLock → effectsLock` untouched.
+  - **`GameLoopThread` per-tick try/catch guard** — structure fully intact; only the empty
+    `catch (_: Exception) {}` / `catch (_: InterruptedException) {}` bodies were brace-expanded onto their own
+    lines. The outer `catch (t: Throwable)` crash-breadcrumb path untouched.
+  - **No statement reordering** across any lock acquire/release; `init`/`update` statement order preserved.
+- **Transforms (all on the allowlist):** class-signature reflow (`GameEngine : UWHost, BuffHost, CombatHost`
+  multi-line; `GameSurfaceView`/`EffectEngine`/`BuffTickers`/`CombatResolver`/`UWController` ctor wrap);
+  function-signature reflow (one-param-per-line + trailing comma — `init`/`configure`/`checkCollisions`/
+  `spawnEnemy`/`scaleHealth`/etc.); `function-expression-body` incl. the **EXPECTED `UWController.relayerBaseStats`
+  block→`=` rewrite** (`return` dropped — benign, test-guarded by `UWControllerTest`); if-else & when-entry
+  bracing (the biome/enemy-type/UW `when` arms braced; empty `BLACK_HOLE -> {}` no-ops preserved); trailing-
+  comma; import ordering (`advanceTrail`/`UWSlotInfo`/etc.); `property-accessor` brace insertion (`private set`
+  on its own line; `set(value) {...}`); statement-on-same-line split. A few cosmetically awkward but value-
+  preserving wraps (`age =\n0f`, `strokeWidth =\n6f`, `if (i % 2 ==\n0)`) — line-width wrapping of unchanged
+  expressions, NOT value changes. No literal/operator/identifier/string changed.
+- **Baselines regenerated:**
+  - **ktlint** `config/ktlint/baseline.xml` over full `app/src` (delete-then-create): **4974 → 3571**
+    (−1403 battle Bucket-A entries gone). `lint-kotlin.sh` check exit 0.
+  - **detekt** `config/detekt/baseline.xml`: **REGEN needed** — `:app:detekt` flagged 9 new findings, all
+    format-induced and all in `presentation/battle/`: **7 `LongMethod`** (`BattleControlRail`,
+    `BiomeTheme.forBiome`, `DeathEffect.spawn`, `GameEngine.init`/`update`, `UWController.activateUW`,
+    `UWVisualEffect.spawnParticles` — pushed past the 60-line cap purely by brace/wrap-expansion of UNCHANGED
+    bodies) + **2 `MaxLineLength`** (`BattleViewModel` `FloatingText.PS_COLOR`/`STEP_COLOR` lines re-indented
+    past the limit by the surrounding multiline-if-else expansion — content unchanged). Regen via
+    `:app:detektBaseline` (overwrites): **387 → 333** (NET drop: 9 added, 63 removed — the 63 are pre-existing
+    `MaxLineLength` one-liners ktlint successfully WRAPPED, so they fell out). Inspected the baseline diff: NO
+    new smell *type* (no ComplexMethod/CyclomaticComplexity/NestedBlockDepth); every changed entry is a
+    `presentation/battle/` file. `:app:detekt` exit 0 after regen.
+- **Verification:** `./run-gradle.sh testDebugUnitTest --rerun-tasks` **BUILD SUCCESSFUL**; **1254 JVM tests,
+  0 failures, 0 errors** (unchanged count — pure format; counted from report XML; incl. `SimulationTest` + the
+  battle engine/concurrency tests `GameEngineConcurrencyTest`/`EffectEngineConcurrencyTest`/`UWControllerTest`).
+  `lint-kotlin.sh` (ktlint check) exit 0; `:app:detekt` exit 0 (after regen). Scope-checked: only the 37
+  `presentation/battle/` files + the two baseline XMLs + docs changed.
+- **No production logic, schema, economy, or engine behaviour changed; no thread-safety invariant touched.**
+- **Remains / next:** controller merges this PR (do-not-merge handed off). Then stage 6: test sources — the
+  final stage, repeating the scoped `-F` + baseline regen (detekt when the gate flags) + full-suite green gate.
+
 ## 2026-06-23 — ktlint repo-wide auto-format, stage 4/6: `presentation/` (excl battle) (`[Unreleased]`)
 
 - **Goal:** stage 4 of the staged, layer-by-layer ktlint auto-format (plan

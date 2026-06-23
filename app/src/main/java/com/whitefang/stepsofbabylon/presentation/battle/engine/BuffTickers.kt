@@ -11,8 +11,9 @@ import com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText
  * (R3-02 / #4). Lifted verbatim from GameEngine; reaches engine state via [BuffHost]. Loop-thread
  * only — invoked from inside the engine's held `entitiesLock`; holds no monitor of its own.
  */
-class BuffTickers(private val host: BuffHost) {
-
+class BuffTickers(
+    private val host: BuffHost,
+) {
     /** RECOVERY heal timer (accumulates during SPAWNING phase only). */
     private var recoveryTimer: Float = 0f
 

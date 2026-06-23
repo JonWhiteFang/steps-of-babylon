@@ -17,8 +17,10 @@ import kotlin.math.hypot
  * engine's held `entitiesLock`; [initUWs] / [uwSnapshot] are the main-thread paths the engine wraps
  * (#191 CONC-2). Holds no monitor of its own.
  */
-class UWController(private val host: UWHost, private val simulation: Simulation) {
-
+class UWController(
+    private val host: UWHost,
+    private val simulation: Simulation,
+) {
     /**
      * R4-06: per-UW state with three independent path levels (see UWPath). Pre-R4-06 this held a
      * single `level: Int`; the engine now reads each path explicitly via [damageLevel] /
@@ -90,7 +92,9 @@ class UWController(private val host: UWHost, private val simulation: Simulation)
 
     /** Test seam for the chrono overlay (delegated from GameEngine.setChronoActiveForTest). */
     @androidx.annotation.VisibleForTesting
-    internal fun setChronoActiveForTest(active: Boolean) { chronoActive = active }
+    internal fun setChronoActiveForTest(active: Boolean) {
+        chronoActive = active
+    }
 
     /**
      * #119 GOLDEN re-layer entry point, called by GameEngine.updateZigguratStats on the MAIN thread.
@@ -100,14 +104,13 @@ class UWController(private val host: UWHost, private val simulation: Simulation)
      * single adjacent read-modify-write of the GOLDEN trio with NO host round-trip that re-reads the
      * trio; do NOT add a lock (preserve the exact pre-decomposition shape, #119 / spec §5.B).
      */
-    fun relayerBaseStats(newStats: ResolvedStats): ResolvedStats {
-        return if (goldenZigActive) {
+    fun relayerBaseStats(newStats: ResolvedStats): ResolvedStats =
+        if (goldenZigActive) {
             preGoldenStats = newStats
             newStats.copy(damage = newStats.damage * goldenDamageMult)
         } else {
             newStats
         }
-    }
 
     /**
      * R4-06: populates [uwStates] from the player's equipped UWs, mapping each [OwnedWeapon]'s 3
@@ -130,7 +133,9 @@ class UWController(private val host: UWHost, private val simulation: Simulation)
 
     fun uwSnapshot(): List<UWState> = uwStates.toList()
 
-    fun resetUWCooldowns() { uwStates.forEach { it.cooldownRemaining = 0f } }
+    fun resetUWCooldowns() {
+        uwStates.forEach { it.cooldownRemaining = 0f }
+    }
 
     /**
      * R4-06: fires the UW at [index] if it's off cooldown and not already mid-effect.
@@ -163,11 +168,12 @@ class UWController(private val host: UWHost, private val simulation: Simulation)
 
         // CHRONO_FIELD overrides the flat effectDurationSeconds with the SECONDARY-path value; all
         // other UWs use the flat constant.
-        val duration = if (uw.type == UltimateWeaponType.CHRONO_FIELD) {
-            uw.type.secondaryAtLevel(uw.secondaryLevel).toFloat()
-        } else {
-            uw.type.effectDurationSeconds
-        }
+        val duration =
+            if (uw.type == UltimateWeaponType.CHRONO_FIELD) {
+                uw.type.secondaryAtLevel(uw.secondaryLevel).toFloat()
+            } else {
+                uw.type.effectDurationSeconds
+            }
         if (duration > 0f) uw.effectTimeRemaining = duration
 
         host.soundManager?.play(SoundEffect.UW_ACTIVATE)
@@ -175,18 +181,42 @@ class UWController(private val host: UWHost, private val simulation: Simulation)
         // Spawn particle-based UW visual effect
         val fx = host.effectEngine
         if (fx != null) {
-            val effectDuration = when {
-                uw.type == UltimateWeaponType.DEATH_WAVE -> 1.2f
-                duration > 0f -> duration
-                else -> 0.5f
-            }
-            val cx: Float; val cy: Float
+            val effectDuration =
+                when {
+                    uw.type == UltimateWeaponType.DEATH_WAVE -> 1.2f
+                    duration > 0f -> duration
+                    else -> 0.5f
+                }
+            val cx: Float
+            val cy: Float
             when (uw.type) {
-                UltimateWeaponType.BLACK_HOLE -> { cx = host.screenWidth / 2f; cy = host.screenHeight * 0.35f }
-                UltimateWeaponType.POISON_SWAMP -> { cx = host.screenWidth / 2f; cy = host.screenHeight * 0.6f }
-                else -> { cx = zig.x; cy = zig.originY }
+                UltimateWeaponType.BLACK_HOLE -> {
+                    cx = host.screenWidth / 2f
+                    cy = host.screenHeight * 0.35f
+                }
+
+                UltimateWeaponType.POISON_SWAMP -> {
+                    cx = host.screenWidth / 2f
+                    cy = host.screenHeight * 0.6f
+                }
+
+                else -> {
+                    cx = zig.x
+                    cy = zig.originY
+                }
             }
-            fx.addEffect(UWVisualEffect(uw.type, fx.pool, cx, cy, host.screenWidth, host.screenHeight, effectDuration, host.reducedMotion))
+            fx.addEffect(
+                UWVisualEffect(
+                    uw.type,
+                    fx.pool,
+                    cx,
+                    cy,
+                    host.screenWidth,
+                    host.screenHeight,
+                    effectDuration,
+                    host.reducedMotion,
+                ),
+            )
         }
 
         // Screen shake for Death Wave
@@ -199,20 +229,32 @@ class UWController(private val host: UWHost, private val simulation: Simulation)
                 val dmg = uw.type.damageAtLevel(uw.damageLevel)
                 host.aliveEnemies().forEach { it.takeDamage(dmg) }
             }
+
             UltimateWeaponType.CHAIN_LIGHTNING -> {
                 val dmg = uw.type.damageAtLevel(uw.damageLevel)
-                val chainLen = uw.type.secondaryAtLevel(uw.secondaryLevel).toInt().coerceAtLeast(1)
+                val chainLen =
+                    uw.type
+                        .secondaryAtLevel(uw.secondaryLevel)
+                        .toInt()
+                        .coerceAtLeast(1)
                 val targets = host.aliveEnemies().sortedBy { hypot(it.x - zig.x, it.y - zig.y) }.take(chainLen)
                 targets.forEach { it.takeDamage(dmg) }
             }
-            UltimateWeaponType.BLACK_HOLE -> {} // Ongoing effect in update
+
+            UltimateWeaponType.BLACK_HOLE -> {}
+
+            // Ongoing effect in update
             UltimateWeaponType.CHRONO_FIELD -> {
                 chronoActive = true
                 chronoSlowFactor = uw.type.damageAtLevel(uw.damageLevel).toFloat()
             }
-            UltimateWeaponType.POISON_SWAMP -> {} // Ongoing effect in update
+
+            UltimateWeaponType.POISON_SWAMP -> {}
+
+            // Ongoing effect in update
             UltimateWeaponType.GOLDEN_ZIGGURAT -> {
-                goldenZigActive = true; preGoldenStats = host.currentStats
+                goldenZigActive = true
+                preGoldenStats = host.currentStats
                 // R4-06: cash multiplier comes from DAMAGE path. coerceAtLeast preserves any
                 // pre-existing higher fortuneMultiplier value (defensive for future multi-source
                 // stacking; R4-01 already removed Step Overdrive as the only other writer, so in
@@ -249,11 +291,14 @@ class UWController(private val host: UWHost, private val simulation: Simulation)
                             chronoActive = false
                             chronoSlowFactor = 1f
                         }
+
                         UltimateWeaponType.GOLDEN_ZIGGURAT -> {
                             // #119: preGoldenStats now reflects any in-round upgrade bought during
                             // the GOLDEN window (re-captured by relayerBaseStats), so restoring it
                             // preserves the purchase instead of discarding it.
-                            goldenZigActive = false; preGoldenStats?.let { host.applyStats(it) }; preGoldenStats = null
+                            goldenZigActive = false
+                            preGoldenStats?.let { host.applyStats(it) }
+                            preGoldenStats = null
                             goldenDamageMult = 1.0
                             // R4-01 / R4-06: GOLDEN is the sole writer of fortuneMultiplier
                             // post-R4-01 (Step Overdrive removed). Per-path damage value
@@ -261,28 +306,35 @@ class UWController(private val host: UWHost, private val simulation: Simulation)
                             // because no other writer exists.
                             fortuneMultiplier = 1.0
                         }
+
                         else -> {}
                     }
                 }
                 // Ongoing effects (per-path reads)
                 when (uw.type) {
                     UltimateWeaponType.BLACK_HOLE -> {
-                        val cx = host.screenWidth / 2f; val cy = host.screenHeight * 0.35f
+                        val cx = host.screenWidth / 2f
+                        val cy = host.screenHeight * 0.35f
                         // R4-06: damage DPS from DAMAGE path; pull strength from SECONDARY path.
                         val dps = uw.type.damageAtLevel(uw.damageLevel)
                         val pull = uw.type.secondaryAtLevel(uw.secondaryLevel).toFloat()
                         host.aliveEnemies().forEach { e ->
-                            val dx = cx - e.x; val dy = cy - e.y; val d = hypot(dx, dy).coerceAtLeast(1f)
-                            e.x += dx / d * pull * deltaTime; e.y += dy / d * pull * deltaTime
+                            val dx = cx - e.x
+                            val dy = cy - e.y
+                            val d = hypot(dx, dy).coerceAtLeast(1f)
+                            e.x += dx / d * pull * deltaTime
+                            e.y += dy / d * pull * deltaTime
                             e.takeDamage(dps * deltaTime)
                         }
                     }
+
                     UltimateWeaponType.POISON_SWAMP -> {
                         // R4-06: DoT % MaxHP/sec from DAMAGE path. Area path (SECONDARY) is captured
                         // for visual / future filtering but every alive enemy is hit in v1 of R4-06.
                         val dotFrac = uw.type.damageAtLevel(uw.damageLevel)
                         host.aliveEnemies().forEach { e -> e.takeDamage(e.maxHp * dotFrac * deltaTime) }
                     }
+
                     else -> {}
                 }
             }

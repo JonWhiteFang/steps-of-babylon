@@ -12,13 +12,16 @@ import com.whitefang.stepsofbabylon.presentation.audio.SoundManager
 import com.whitefang.stepsofbabylon.presentation.battle.effects.ReducedMotionCheck
 import com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine
 
-class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Callback {
-
+class GameSurfaceView(
+    context: Context,
+) : SurfaceView(context),
+    SurfaceHolder.Callback {
     val engine = GameEngine()
     private var gameThread: GameLoopThread? = null
     private var currentStats: ResolvedStats = ResolvedStats()
     private var currentTier: Int = 1
     private var currentWsLevels: Map<UpgradeType, Int> = emptyMap()
+
     /**
      * Wave number the next [GameEngine.init] call should open on (RO-11 #B.1, WAVE_SKIP).
      * Updated by [BattleViewModel] via [configure]; default `1` preserves pre-RO-11 behaviour
@@ -35,6 +38,7 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
     // surfaceCreated must recreate it and re-point engine.soundManager, or every battle SFX after
     // the first background round-trip would target a released SoundPool (silent no-op).
     private var soundManager: SoundManager
+
     // True once [releaseSoundManager] has freed the current SoundManager, so [ensureSoundManager]
     // knows whether it must rebuild (skip the rebuild + clip-reload on the first surfaceCreated).
     private var soundManagerReleased = false
@@ -119,10 +123,27 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
         soundManagerReleased = true
     }
 
-    fun configure(stats: ResolvedStats, tier: Int, wsLevels: Map<UpgradeType, Int>, startWave: Int = 1) {
-        currentStats = stats; currentTier = tier; currentWsLevels = wsLevels
+    fun configure(
+        stats: ResolvedStats,
+        tier: Int,
+        wsLevels: Map<UpgradeType, Int>,
+        startWave: Int = 1,
+    ) {
+        currentStats = stats
+        currentTier = tier
+        currentWsLevels = wsLevels
         currentStartWave = startWave
-        if (surfaceReady) engine.init(width.toFloat(), height.toFloat(), stats, tier, wsLevels, isReducedMotion, startWave)
+        if (surfaceReady) {
+            engine.init(
+                width.toFloat(),
+                height.toFloat(),
+                stats,
+                tier,
+                wsLevels,
+                isReducedMotion,
+                startWave,
+            )
+        }
     }
 
     /**
@@ -145,7 +166,15 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
     @VisibleForTesting
     internal fun initEngineIfNeeded() {
         if (!engine.hasWaveProgress()) {
-            engine.init(width.toFloat(), height.toFloat(), currentStats, currentTier, currentWsLevels, isReducedMotion, currentStartWave)
+            engine.init(
+                width.toFloat(),
+                height.toFloat(),
+                currentStats,
+                currentTier,
+                currentWsLevels,
+                isReducedMotion,
+                currentStartWave,
+            )
         }
     }
 
@@ -161,16 +190,23 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
         // inherits the player's UI selections — setSpeedMultiplier / setPaused calls made
         // while gameThread was null (between surfaceDestroyed and this surfaceCreated) would
         // otherwise be lost (R3-01 / issue #2 sub-bug 2b).
-        val thread = GameLoopThread(holder, engine, crashBreadcrumbStore).apply {
-            speedMultiplier = pendingSpeed
-            isPaused = pendingPaused
-            onLoopError = this@GameSurfaceView.onLoopError
-            isRunning = true
-        }
-        thread.start(); gameThread = thread
+        val thread =
+            GameLoopThread(holder, engine, crashBreadcrumbStore).apply {
+                speedMultiplier = pendingSpeed
+                isPaused = pendingPaused
+                onLoopError = this@GameSurfaceView.onLoopError
+                isRunning = true
+            }
+        thread.start()
+        gameThread = thread
     }
 
-    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
+    override fun surfaceChanged(
+        holder: SurfaceHolder,
+        format: Int,
+        width: Int,
+        height: Int,
+    ) {
         // Same guarded-init contract as surfaceCreated: a re-layout (e.g. orientation change)
         // must not destroy in-flight round state.
         initEngineIfNeeded()
@@ -180,7 +216,10 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
         surfaceReady = false
         val thread = gameThread ?: return
         thread.isRunning = false
-        try { thread.join(1000) } catch (_: InterruptedException) {}
+        try {
+            thread.join(1000)
+        } catch (_: InterruptedException) {
+        }
         gameThread = null
         // #245: release frees the SoundPool; ensureSoundManager() in the next surfaceCreated
         // rebuilds it so SFX don't silently die after a background→resume.
@@ -193,11 +232,15 @@ class GameSurfaceView(context: Context) : SurfaceView(context), SurfaceHolder.Ca
         pendingSpeed = speed
         gameThread?.speedMultiplier = speed
     }
+
     fun setPaused(paused: Boolean) {
         // Same shape as setSpeedMultiplier — [pendingPaused] survives surface lifecycle gaps
         // so the new thread starts in the player's intended pause state.
         pendingPaused = paused
         gameThread?.isPaused = paused
     }
-    fun updateSoundMuted(muted: Boolean) { soundManager.setMuted(muted) }
+
+    fun updateSoundMuted(muted: Boolean) {
+        soundManager.setMuted(muted)
+    }
 }

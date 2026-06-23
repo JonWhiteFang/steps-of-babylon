@@ -43,11 +43,22 @@ fun BattleErrorOverlay(onReturnToMenu: () -> Unit) {
                 Modifier.padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(stringResource(R.string.battle_error_title), style = MaterialTheme.typography.headlineLarge, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.battle_error_title),
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = Color(0xFFD4A843),
+                    fontWeight = FontWeight.Bold,
+                )
                 Spacer(Modifier.height(16.dp))
-                Text(stringResource(R.string.battle_error_body), style = MaterialTheme.typography.bodyMedium, color = Color.White)
+                Text(
+                    stringResource(R.string.battle_error_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White,
+                )
                 Spacer(Modifier.height(24.dp))
-                Button(onClick = onReturnToMenu, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.battle_error_return)) }
+                Button(onClick = onReturnToMenu, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.battle_error_return))
+                }
             }
         }
     }

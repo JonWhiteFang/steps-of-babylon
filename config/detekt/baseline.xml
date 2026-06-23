@@ -88,12 +88,17 @@
     <ID>FunctionNaming:WorkshopScreen.kt:@Composable fun WorkshopScreen</ID>
     <ID>LargeClass:BattleViewModelTest.kt:BattleViewModelTest</ID>
     <ID>LargeClass:GameEngineTest.kt:GameEngineTest</ID>
+    <ID>LongMethod:BattleControlRail.kt:@Composable fun BattleControlRail</ID>
     <ID>LongMethod:BattleScreen.kt:@Composable fun BattleScreen</ID>
     <ID>LongMethod:BattleViewModel.kt:BattleViewModel$private suspend fun runEndRoundPersistence</ID>
+    <ID>LongMethod:BiomeTheme.kt:BiomeTheme.Companion$fun forBiome: BiomeTheme</ID>
     <ID>LongMethod:CardsScreen.kt:@Composable fun CardsScreen</ID>
     <ID>LongMethod:CardsScreen.kt:@Composable private fun CardItem</ID>
     <ID>LongMethod:CurrencyDashboardScreen.kt:@Composable fun CurrencyDashboardScreen</ID>
+    <ID>LongMethod:DeathEffect.kt:DeathEffect$fun spawn</ID>
     <ID>LongMethod:DescribeUpgradeEffect.kt:DescribeUpgradeEffect$private fun format: String</ID>
+    <ID>LongMethod:GameEngine.kt:GameEngine$fun init</ID>
+    <ID>LongMethod:GameEngine.kt:GameEngine$fun update</ID>
     <ID>LongMethod:HelpScreen.kt:@Composable fun HelpScreen</ID>
     <ID>LongMethod:HomeScreen.kt:@Composable fun HomeScreen</ID>
     <ID>LongMethod:InRoundUpgradeMenu.kt:@Composable fun InRoundUpgradeMenu</ID>
@@ -108,6 +113,8 @@
     <ID>LongMethod:StatsScreen.kt:@Composable fun StatsScreen</ID>
     <ID>LongMethod:StepCrossValidator.kt:StepCrossValidator$suspend fun validate</ID>
     <ID>LongMethod:StoreScreen.kt:@Composable fun StoreScreen</ID>
+    <ID>LongMethod:UWController.kt:UWController$fun activateUW</ID>
+    <ID>LongMethod:UWVisualEffect.kt:UWVisualEffect$private fun spawnParticles</ID>
     <ID>LongMethod:UltimateWeaponScreen.kt:@Composable private fun UWCard</ID>
     <ID>LongMethod:UpgradeCard.kt:@Composable fun UpgradeCard</ID>
     <ID>LongMethod:WalkingHistoryChart.kt:@Composable fun WalkingHistoryChart</ID>
@@ -127,37 +134,13 @@
     <ID>MatchingDeclarationName:PurchasePulse.kt:PulseState</ID>
     <ID>MaxLineLength:ActivityMinuteConverter.kt:ActivityMinuteConverter$*</ID>
     <ID>MaxLineLength:AntiCheatPreferencesTimeBaselineTest.kt:AntiCheatPreferencesTimeBaselineTest$TimeBaseline(lastElapsedRealtime = 1234, lastWallClock = 5678, maxWallClockSeen = 9999, trustedWallClock = 7777)</ID>
-    <ID>MaxLineLength:BackgroundRenderer.kt:BackgroundRenderer$Particle(Random.nextFloat() * width, Random.nextFloat() * height, 0.4f + Random.nextFloat() * 0.6f, 2f + Random.nextFloat() * 3f)</ID>
-    <ID>MaxLineLength:BackgroundRenderer.kt:BackgroundRenderer$shader = LinearGradient(0f, 0f, 0f, height * 0.70f, theme.skyColorTop, theme.skyColorBottom, Shader.TileMode.CLAMP)</ID>
-    <ID>MaxLineLength:BattleControlRail.kt:)</ID>
-    <ID>MaxLineLength:BattleControlRail.kt:containerColor = if (showUpgradeMenu) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)</ID>
-    <ID>MaxLineLength:BattleErrorOverlay.kt:Button(onClick = onReturnToMenu, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.battle_error_return)) }</ID>
-    <ID>MaxLineLength:BattleErrorOverlay.kt:Text(stringResource(R.string.battle_error_body), style = MaterialTheme.typography.bodyMedium, color = Color.White)</ID>
-    <ID>MaxLineLength:BattleErrorOverlay.kt:Text(stringResource(R.string.battle_error_title), style = MaterialTheme.typography.headlineLarge, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)</ID>
-    <ID>MaxLineLength:BattleRenderer.kt:BattleRenderer$color = 0xFFF44336.toInt(); textSize = 26f; textAlign = android.graphics.Paint.Align.RIGHT; isFakeBoldText = true</ID>
-    <ID>MaxLineLength:BattleScreen.kt:Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.battle_cd_quit_round), tint = Color.White)</ID>
-    <ID>MaxLineLength:BattleScreen.kt:IconButton</ID>
-    <ID>MaxLineLength:BattleScreen.kt:PostRoundOverlay(state = roundEnd, onPlayAgain = { viewModel.playAgain() }, onExitBattle = onExitBattle, onWatchGemAd = { viewModel.watchGemAd() }, onWatchPsAd = { viewModel.watchPsAd() })</ID>
-    <ID>MaxLineLength:BattleScreen.kt:Text(stringResource(R.string.cash_amount, state.cash), color = Color(0xFFD4A843), style = MaterialTheme.typography.titleSmall)</ID>
-    <ID>MaxLineLength:BattleScreen.kt:state.biomeTransition?.let { BiomeTransitionOverlay(info = it, onContinue = { viewModel.dismissBiomeTransition() }) }</ID>
-    <ID>MaxLineLength:BattleScreen.kt:surfaceView.configure(viewModel.resolvedStats, viewModel.tier, viewModel.workshopLevels, viewModel.startWave)</ID>
-    <ID>MaxLineLength:BattleViewModel.kt:BattleViewModel$speedMultiplier = it.speedMultiplier</ID>
-    <ID>MaxLineLength:BattleViewModel.kt:BattleViewModel$val dur = if (s.phase == WavePhase.SPAWNING) WaveSpawner.SPAWN_DURATION else WaveSpawner.COOLDOWN_DURATION</ID>
-    <ID>MaxLineLength:BattleViewModel.kt:BattleViewModel$val transition = if (!biomePreferences.hasSeenBiome(biome)) BiomeTransitionInfo(biome, profile.totalStepsEarned) else null</ID>
+    <ID>MaxLineLength:BattleViewModel.kt:BattleViewModel$color = com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText.PS_COLOR</ID>
+    <ID>MaxLineLength:BattleViewModel.kt:BattleViewModel$color = com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText.STEP_COLOR</ID>
     <ID>MaxLineLength:BattleViewModelTest.kt:BattleViewModelTest$fun</ID>
     <ID>MaxLineLength:BattleViewModelTest.kt:BattleViewModelTest$private</ID>
     <ID>MaxLineLength:BattleViewModelTest.kt:BattleViewModelTest$val jadeColors = listOf(0xFF104E3C.toInt(), 0xFF1A6B52.toInt(), 0xFF2A8F6E.toInt(), 0xFF3CAB82.toInt(), 0xFF54C79A.toInt())</ID>
     <ID>MaxLineLength:BillingManagerImplTest.kt:BillingManagerImplTest$"failed product-details query must surface as null so the UI falls back to the static priceDisplay constant"</ID>
     <ID>MaxLineLength:BiomeTest.kt:BiomeTest$assertTrue(Biome.CELESTIAL_GATE.isComingSoon, "CELESTIAL_GATE must be Coming Soon (Tier 11+ unreachable in v1.0)")</ID>
-    <ID>MaxLineLength:BiomeTheme.kt:BiomeTheme.Companion$zigguratColors = listOf(0xFF2D1B4E.toInt(), 0xFF3D2B5E.toInt(), 0xFF4A3570.toInt(), 0xFF6A4C93.toInt(), 0xFF9B59B6.toInt())</ID>
-    <ID>MaxLineLength:BiomeTheme.kt:BiomeTheme.Companion$zigguratColors = listOf(0xFF4169E1.toInt(), 0xFF6A5ACD.toInt(), 0xFF9370DB.toInt(), 0xFFBA55D3.toInt(), 0xFFFFD700.toInt())</ID>
-    <ID>MaxLineLength:BiomeTheme.kt:BiomeTheme.Companion$zigguratColors = listOf(0xFF4682B4.toInt(), 0xFF6CA6CD.toInt(), 0xFF87CEEB.toInt(), 0xFFB0E0E6.toInt(), 0xFFE0F0FF.toInt())</ID>
-    <ID>MaxLineLength:BiomeTheme.kt:BiomeTheme.Companion$zigguratColors = listOf(0xFF8B4513.toInt(), 0xFFA0522D.toInt(), 0xFFB8742C.toInt(), 0xFFCD853F.toInt(), 0xFFFF8C00.toInt())</ID>
-    <ID>MaxLineLength:BiomeTheme.kt:BiomeTheme.Companion$zigguratColors = listOf(0xFF8B7355.toInt(), 0xFF9C8565.toInt(), 0xFFA09060.toInt(), 0xFF7BA05B.toInt(), 0xFFD4A843.toInt())</ID>
-    <ID>MaxLineLength:BiomeTransitionOverlay.kt:Button(onClick = onContinue, modifier = Modifier.fillMaxWidth(0.5f)) { Text(stringResource(R.string.action_continue)) }</ID>
-    <ID>MaxLineLength:BiomeTransitionOverlay.kt:Text(stringResource(R.string.biome_steps_walked, info.totalSteps), style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.6f))</ID>
-    <ID>MaxLineLength:BiomeTransitionOverlay.kt:Text(stringResource(R.string.biome_welcome), style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.7f))</ID>
-    <ID>MaxLineLength:BiomeTransitionOverlay.kt:style = MaterialTheme.typography.headlineLarge</ID>
     <ID>MaxLineLength:CardDao.kt:CardDao$"UPDATE card_inventory SET copyCount = copyCount - :amount, level = level + 1 WHERE id = :id AND copyCount &gt;= :amount"</ID>
     <ID>MaxLineLength:CardTypeTest.kt:CardTypeTest$assertNotEquals(type.effectDescriptionAtLevel(type.maxLevel), mid, "$type Lv4 must differ from Lv${type.maxLevel}")</ID>
     <ID>MaxLineLength:CardsScreen.kt:message = "Open a pack above to start your collection. Equip up to 3 cards for per-round bonuses in battle."</ID>
@@ -188,16 +171,11 @@
     <ID>MaxLineLength:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository$override fun observeHistory: Flow&lt;List&lt;com.whitefang.stepsofbabylon.domain.model.SupplyDrop&gt;&gt;</ID>
     <ID>MaxLineLength:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository$override fun observeUnclaimed: Flow&lt;List&lt;com.whitefang.stepsofbabylon.domain.model.SupplyDrop&gt;&gt;</ID>
     <ID>MaxLineLength:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository$override suspend fun createDrop: Long</ID>
-    <ID>MaxLineLength:DeathEffect.kt:DeathEffect$EnemyType.FAST -&gt; { p.vx = (if (i % 2 == 0) 1f else -1f) * speedBase * (0.5f + Random.nextFloat()); p.vy = Random.nextFloat() * 30f - 15f }</ID>
     <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val atMax = describe.workshopPreview(mapOf(UpgradeType.CRITICAL_CHANCE to 160), type = UpgradeType.CRITICAL_CHANCE)</ID>
     <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val nearMax = describe.workshopPreview(mapOf(UpgradeType.CRITICAL_CHANCE to 159), type = UpgradeType.CRITICAL_CHANCE)</ID>
     <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val r = describe(mapOf(UpgradeType.RECOVERY_PACKAGES to 75), emptyMap(), emptyMap(), UpgradeType.RECOVERY_PACKAGES)</ID>
     <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val r100 = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 100), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)</ID>
     <ID>MaxLineLength:DescribeUpgradeEffectTest.kt:DescribeUpgradeEffectTest$val r99 = describe(mapOf(UpgradeType.STEP_MULTIPLIER to 99), emptyMap(), emptyMap(), UpgradeType.STEP_MULTIPLIER)</ID>
-    <ID>MaxLineLength:EnemyEntity.kt:EnemyEntity$HP_FILL.color = when { ratio &gt; 0.6f -&gt; 0xFF4CAF50.toInt(); ratio &gt; 0.3f -&gt; 0xFFFFEB3B.toInt(); else -&gt; 0xFFF44336.toInt() }</ID>
-    <ID>MaxLineLength:EnemyEntity.kt:EnemyEntity$bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = if (enemyTint != 0) blendColor(baseColor, enemyTint, 0.3f) else baseColor }</ID>
-    <ID>MaxLineLength:EnemyEntity.kt:EnemyEntity$trianglePath.moveTo(x, y - r)</ID>
-    <ID>MaxLineLength:EnemyEntity.kt:EnemyEntity.Companion$private val ARMOR_PAINT = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x5500BCD4; style = Paint.Style.STROKE; strokeWidth = 2f }</ID>
     <ID>MaxLineLength:EvaluateUpgradeValueTest.kt:EvaluateUpgradeValueTest$assertTrue(best.type != UpgradeType.DAMAGE, "DAMAGE is unaffordable here, so it cannot be the affordable best buy")</ID>
     <ID>MaxLineLength:EvaluateUpgradeValueTest.kt:EvaluateUpgradeValueTest$val result = sut(mapOf(UpgradeType.CRITICAL_CHANCE to 160), stepBalance = 100_000, candidates = listOf(UpgradeType.CRITICAL_CHANCE))</ID>
     <ID>MaxLineLength:FakeDailyStepDao.kt:FakeDailyStepDao$data.value = data.value + (date to base.copy(activityMinutes = activityMinutes, stepEquivalents = stepEquivalents))</ID>
@@ -214,19 +192,13 @@
     <ID>MaxLineLength:FakeStepRepository.kt:FakeStepRepository$records.value = records.value + (date to existing.copy(sensorSteps = sensorSteps, creditedSteps = creditedSteps))</ID>
     <ID>MaxLineLength:FakeWalkingEncounterRepository.kt:FakeWalkingEncounterRepository$val drop = SupplyDrop(id = id, trigger = trigger, reward = reward, rewardAmount = rewardAmount, claimed = false, createdAt = System.currentTimeMillis())</ID>
     <ID>MaxLineLength:GameEngine.kt:GameEngine$/** Engine-internal display strings (V1X-13, ADR-0014). Set by [GameSurfaceView]; null in pure-JVM tests, which fall back to literals. */</ID>
-    <ID>MaxLineLength:GameEngine.kt:GameEngine$pendingAdd.add(ProjectileEntity(sx, sy, tx, ty, ZigguratBaseStats.PROJECTILE_SPEED, bouncesRemaining = stats.bounceCount))</ID>
-    <ID>MaxLineLength:GameEngine.kt:GameEngine$simulation.tickEntities(entities, deltaTime, if (uwController.chronoActive) uwController.chronoSlowFactor else 1f)</ID>
-    <ID>MaxLineLength:GameEngine.kt:GameEngine$val</ID>
     <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$OwnedWeapon(UltimateWeaponType.BLACK_HOLE, damageLevel = 10, secondaryLevel = 10, cooldownLevel = 1, isUnlocked = true, isEquipped = true)</ID>
     <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$OwnedWeapon(UltimateWeaponType.POISON_SWAMP, damageLevel = 10, secondaryLevel = 10, cooldownLevel = 1, isUnlocked = true, isEquipped = true)</ID>
     <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$eng.initUWs(listOf(OwnedWeapon(UltimateWeaponType.GOLDEN_ZIGGURAT, damageLevel = level, secondaryLevel = level, cooldownLevel = level, isUnlocked = true, isEquipped = true)))</ID>
     <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$eng1.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, cooldownLevel = 1, isUnlocked = true, isEquipped = true)))</ID>
     <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$eng2.initUWs(listOf(OwnedWeapon(UltimateWeaponType.CHAIN_LIGHTNING, cooldownLevel = 1, isUnlocked = true, isEquipped = true)))</ID>
     <ID>MaxLineLength:GameEngineTest.kt:GameEngineTest$fun</ID>
-    <ID>MaxLineLength:GameSurfaceView.kt:GameSurfaceView$engine.init(width.toFloat(), height.toFloat(), currentStats, currentTier, currentWsLevels, isReducedMotion, currentStartWave)</ID>
-    <ID>MaxLineLength:GameSurfaceView.kt:GameSurfaceView$if (surfaceReady) engine.init(width.toFloat(), height.toFloat(), stats, tier, wsLevels, isReducedMotion, startWave)</ID>
     <ID>MaxLineLength:GuardedClaimDaoTest.kt:GuardedClaimDaoTest$DailyMissionEntity(date = "2026-06-10", missionType = "WALK_5000", target = 5000, progress = 5000, completed = true)</ID>
-    <ID>MaxLineLength:HealthBarRenderer.kt:HealthBarRenderer$canvas.drawRoundRect(RectF(barMargin, barTop, barMargin + barWidth * ratio, barTop + barHeight), 8f, 8f, fillPaint)</ID>
     <ID>MaxLineLength:HelpScreen.kt:"• Attack — Damage, Attack Speed, Range, Critical Chance, Multishot, Bounce Shot, Rapid Fire, and more.\n"</ID>
     <ID>MaxLineLength:HelpScreen.kt:"• Duplicate cards add copies. Collect enough copies to level up (3 Common / 4 Rare / 5 Epic per level).\n"</ID>
     <ID>MaxLineLength:HelpScreen.kt:"• Gems — earned from milestones, daily login streaks, and card packs. Spent on card packs and Lab rush.\n"</ID>
@@ -235,9 +207,6 @@
     <ID>MaxLineLength:HomeViewModelTest.kt:HomeViewModelTest$assertEquals(0, mission.progress, "Mission must stay at 0 when no research actually completed (R3-03 false-trigger regression guard)")</ID>
     <ID>MaxLineLength:HomeViewModelTest.kt:HomeViewModelTest$assertEquals(1, mission.progress, "Expected mission progress to advance to 1 after background research completion")</ID>
     <ID>MaxLineLength:HomeViewModelTest.kt:HomeViewModelTest$fun</ID>
-    <ID>MaxLineLength:InRoundUpgradeMenu.kt:Text(stringResource(R.string.cash_amount, cash), color = Color(0xFFD4A843), style = MaterialTheme.typography.titleMedium)</ID>
-    <ID>MaxLineLength:InRoundUpgradeMenu.kt:Text(stringResource(R.string.inround_level_desc, level, type.config.description), color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)</ID>
-    <ID>MaxLineLength:InRoundUpgradeMenu.kt:Text(stringResource(R.string.upgrade_max), color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(end = 8.dp))</ID>
     <ID>MaxLineLength:LabRepositoryImplTest.kt:LabRepositoryImplTest$fun</ID>
     <ID>MaxLineLength:Migrations.kt:AppMigrations.&lt;no name provided&gt;$"CREATE UNIQUE INDEX IF NOT EXISTS `index_card_inventory_cardType` ON `card_inventory` (`cardType`)"</ID>
     <ID>MaxLineLength:MissionsViewModelTest.kt:MissionsViewModelTest$missionDao.insert(DailyMissionEntity(date = day1.toString(), missionType = DailyMissionType.WALK_5000.name, target = 5000, progress = 10, completed = false, rewardGems = 1))</ID>
@@ -248,27 +217,11 @@
     <ID>MaxLineLength:OnboardingScreen.kt:*</ID>
     <ID>MaxLineLength:OrbStateTest.kt:OrbStateTest$// angularSpeed PI/2 rad/s over dt 1s → angle PI/2 → x ~ zigX, y ~ zigY + R (radius MID at phase 0... phase also advances)</ID>
     <ID>MaxLineLength:OrbStateTest.kt:OrbStateTest$val s = OrbState(zigX = 0f, zigY = 0f, angle = 0f, angularSpeed = (Math.PI / 2).toFloat(), initialRadialPhase = 0f)</ID>
-    <ID>MaxLineLength:ParticlePool.kt:Particle$fun reset</ID>
-    <ID>MaxLineLength:PauseOverlay.kt:Button(onClick = { haptics.tap(); onResume() }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_resume)) }</ID>
-    <ID>MaxLineLength:PauseOverlay.kt:OutlinedButton(onClick = onQuitRound, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.pause_quit_round)) }</ID>
-    <ID>MaxLineLength:PauseOverlay.kt:Text(stringResource(R.string.pause_title), style = MaterialTheme.typography.headlineLarge, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)</ID>
     <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET currentStepBalance = MAX(0, currentStepBalance + :delta), totalStepsEarned = CASE WHEN :delta &gt; 0 THEN totalStepsEarned + :delta ELSE totalStepsEarned END WHERE id = 1"</ID>
     <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET currentStepBalance = currentStepBalance - :cost WHERE id = 1 AND currentStepBalance &gt;= :cost"</ID>
     <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET gems = gems - :amount, totalGemsSpent = totalGemsSpent + :amount WHERE id = 1 AND gems &gt;= :amount"</ID>
     <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET powerStones = powerStones - :amount, totalPowerStonesSpent = totalPowerStonesSpent + :amount WHERE id = 1 AND powerStones &gt;= :amount"</ID>
     <ID>MaxLineLength:PlayerProfileDao.kt:PlayerProfileDao$"UPDATE player_profile SET totalRoundsPlayed = totalRoundsPlayed + :rounds, totalEnemiesKilled = totalEnemiesKilled + :kills, totalCashEarned = totalCashEarned + :cash WHERE id = 1"</ID>
-    <ID>MaxLineLength:PostRoundOverlay.kt:StatRow(stringResource(R.string.postround_stat_cash), stringResource(R.string.cash_amount, state.totalCashEarned))</ID>
-    <ID>MaxLineLength:PostRoundOverlay.kt:StatRow(stringResource(R.string.postround_stat_steps), stringResource(R.string.postround_stat_steps_value, state.stepsEarned))</ID>
-    <ID>MaxLineLength:PostRoundOverlay.kt:StatRow(stringResource(R.string.postround_stat_time), stringResource(R.string.postround_time_value, minutes, seconds))</ID>
-    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_cash_multiplier, TierConfig.forTier(tier).cashMultiplier.toString()), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)</ID>
-    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_gem_earned), color = Color(0xFF4CAF50), style = MaterialTheme.typography.bodySmall)</ID>
-    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_new_record), style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFD700))</ID>
-    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_power_stones, state.powerStonesAwarded), style = MaterialTheme.typography.titleMedium, color = Color(0xFF9C27B0))</ID>
-    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_previous_best, state.previousBest), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)</ID>
-    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_ps_doubled), color = Color(0xFF9C27B0), style = MaterialTheme.typography.bodySmall)</ID>
-    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_tier_unlocked, tier), style = MaterialTheme.typography.titleMedium, color = Color(0xFF4CAF50))</ID>
-    <ID>MaxLineLength:PostRoundOverlay.kt:Text(stringResource(R.string.postround_title), style = MaterialTheme.typography.headlineMedium, color = Color(0xFFD4A843), fontWeight = FontWeight.Bold)</ID>
-    <ID>MaxLineLength:PostRoundOverlay.kt:val shareText = stringResource(R.string.postround_share_text, state.waveReached, BuildConfig.PLAY_STORE_URL)</ID>
     <ID>MaxLineLength:PremiumSpendDaoTest.kt:PremiumSpendDaoTest$val result = cardDao.openCardPackAtomic(gemCost = 50, cardTypeNames = listOf("IRON_SKIN"), playerDao = playerDao)</ID>
     <ID>MaxLineLength:SettingsScreen.kt:"This will permanently delete all your progress, steps history, upgrades, and currency. This cannot be undone."</ID>
     <ID>MaxLineLength:SettingsScreen.kt:"Update notification with live step count and balance. A minimal tracking notification is always shown while step counting is active."</ID>
@@ -284,23 +237,16 @@
     <ID>MaxLineLength:SupplyRewardFormatTest.kt:SupplyRewardFormatTest$SupplyDrop(id = 1, trigger = SupplyDropTrigger.RANDOM, reward = reward, rewardAmount = amount, claimed = false, createdAt = 0L)</ID>
     <ID>MaxLineLength:SupplyRewardFormatTest.kt:SupplyRewardFormatTest$assertFalse("CARD_COPY must show the resolved card name, not the raw label: \"$label\"", label.contains("Card Copy"))</ID>
     <ID>MaxLineLength:TimeIntegrity.kt:TimeIntegrity$wallDelta.coerceAtLeast(0)</ID>
-    <ID>MaxLineLength:UWController.kt:UWController$fx.addEffect(UWVisualEffect(uw.type, fx.pool, cx, cy, host.screenWidth, host.screenHeight, effectDuration, host.reducedMotion))</ID>
-    <ID>MaxLineLength:UWVisualEffect.kt:UWVisualEffect$fallbackPaint.color = 0xFFE53935.toInt()</ID>
     <ID>MaxLineLength:UltimateWeaponDao.kt:UltimateWeaponDao$*</ID>
     <ID>MaxLineLength:UltimateWeaponType.kt:UltimateWeaponType$*</ID>
     <ID>MaxLineLength:UnclaimedSuppliesViewModelTest.kt:UnclaimedSuppliesViewModelTest$fun drop</ID>
     <ID>MaxLineLength:UpgradeType.kt:UpgradeType.Companion$"+1 additional target per level (in-round Cash purchase or Labs research; cap 11 incl. baseline)"</ID>
     <ID>MaxLineLength:WalkingEncounterDao.kt:WalkingEncounterDao$"DELETE FROM walking_encounter WHERE claimed = 0 AND id = (SELECT id FROM walking_encounter WHERE claimed = 0 ORDER BY createdAt ASC LIMIT 1)"</ID>
-    <ID>MaxLineLength:WaveAnnouncement.kt:WaveAnnouncement$val alpha = if (age &lt; holdDuration) 255 else ((1f - (age - holdDuration) / fadeDuration) * 255).toInt().coerceIn(0, 255)</ID>
-    <ID>MaxLineLength:WaveSpawner.kt:WaveSpawner$else -&gt; mapOf(EnemyType.SCATTER to 0.10, EnemyType.TANK to 0.10, EnemyType.RANGED to 0.15, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.45)</ID>
-    <ID>MaxLineLength:WaveSpawner.kt:WaveSpawner$wave &lt;= 30 -&gt; mapOf(EnemyType.TANK to 0.10, EnemyType.RANGED to 0.15, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.55)</ID>
     <ID>MaxLineLength:WorkshopRepositoryImplTest.kt:WorkshopRepositoryImplTest$fun</ID>
     <ID>MaxLineLength:WorkshopRepositoryImplTest.kt:WorkshopRepositoryImplTest$val seededCount = rows.count { it.upgradeType != "RETIRED_ENUM_NAME" &amp;&amp; it.upgradeType != UpgradeType.DAMAGE.name }</ID>
     <ID>MaxLineLength:WorkshopViewModel.kt:WorkshopViewModel$// Per-row workshop-dimension Now→Next preview (intentional fan-out; pure + small N).</ID>
     <ID>MaxLineLength:WorkshopViewModelTest.kt:WorkshopViewModelTest$assertEquals(0, vm.uiState.value.upgrades.count { it.value?.isBestBuy == true }, "no Best Buy on the Defense tab")</ID>
     <ID>MaxLineLength:WorkshopViewModelTest.kt:WorkshopViewModelTest$assertFalse(item.canAfford, "${type.name} at cap must NOT be affordable (drives disabled buy control) even with MAX_VALUE balance")</ID>
-    <ID>MaxLineLength:ZigguratEntity.kt:ZigguratEntity$private val rangeStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0x44FFFFFF; style = Paint.Style.STROKE; strokeWidth = 1.5f }</ID>
-    <ID>MaxLineLength:ZigguratEntity.kt:ZigguratEntity.Companion$val DEFAULT_COLORS = listOf(0xFF8B7355.toInt(), 0xFF9C8565.toInt(), 0xFFC2B280.toInt(), 0xFFCDBFA0.toInt(), 0xFFD4A843.toInt())</ID>
     <ID>NestedBlockDepth:GameLoopThread.kt:GameLoopThread$override fun run</ID>
     <ID>NestedBlockDepth:UWController.kt:UWController$fun update</ID>
     <ID>ReturnCount:BattleAnnouncer.kt:fun battleAnnouncement: BattleAnnouncement?</ID>

@@ -24,12 +24,16 @@ import kotlin.random.Random
  * invoked from inside the engine's held `entitiesLock` (collision callbacks, death handler); holds no
  * monitor of its own.
  */
-class CombatResolver(private val host: CombatHost) {
-
+class CombatResolver(
+    private val host: CombatHost,
+) {
     private val calculateDamage = CalculateDamage()
     private val calculateDefense = CalculateDefense()
 
-    fun onProjectileHitEnemy(proj: ProjectileEntity, enemy: EnemyEntity) {
+    fun onProjectileHitEnemy(
+        proj: ProjectileEntity,
+        enemy: EnemyEntity,
+    ) {
         val zig = host.ziggurat ?: return
         val stats = host.currentStats
         val dist = hypot(zig.originX - enemy.x, zig.originY - enemy.y)
@@ -45,7 +49,8 @@ class CombatResolver(private val host: CombatHost) {
         host.soundManager?.play(SoundEffect.HIT)
 
         if (dealt > 0.0 && stats.knockbackForce > 0f) {
-            val dx = enemy.x - zig.originX; val dy = enemy.y - zig.originY
+            val dx = enemy.x - zig.originX
+            val dy = enemy.y - zig.originY
             val d = hypot(dx, dy).coerceAtLeast(1f)
             val kb = stats.knockbackForce * host.conditions.knockbackMultiplier
             enemy.applyKnockback(dx / d * kb, dy / d * kb)
@@ -56,28 +61,39 @@ class CombatResolver(private val host: CombatHost) {
 
         // Bounce shot
         if (proj.bouncesRemaining > 0) {
-            val nextTarget = host.aliveEnemies().asSequence()
-                .filter { it.isAlive && it !in proj.hitEnemies }
-                .minByOrNull { hypot(it.x - enemy.x, it.y - enemy.y) }
+            val nextTarget =
+                host
+                    .aliveEnemies()
+                    .asSequence()
+                    .filter { it.isAlive && it !in proj.hitEnemies }
+                    .minByOrNull { hypot(it.x - enemy.x, it.y - enemy.y) }
             if (nextTarget != null) {
-                host.addPending(ProjectileEntity(
-                    startX = enemy.x, startY = enemy.y,
-                    targetX = nextTarget.x, targetY = nextTarget.y,
-                    speed = ZigguratBaseStats.PROJECTILE_SPEED,
-                    bouncesRemaining = proj.bouncesRemaining - 1,
-                    hitEnemies = proj.hitEnemies,
-                ))
+                host.addPending(
+                    ProjectileEntity(
+                        startX = enemy.x,
+                        startY = enemy.y,
+                        targetX = nextTarget.x,
+                        targetY = nextTarget.y,
+                        speed = ZigguratBaseStats.PROJECTILE_SPEED,
+                        bouncesRemaining = proj.bouncesRemaining - 1,
+                        hitEnemies = proj.hitEnemies,
+                    ),
+                )
             }
         }
     }
 
-    private fun onOrbHitEnemy(enemy: EnemyEntity, damage: Double) {
+    private fun onOrbHitEnemy(
+        enemy: EnemyEntity,
+        damage: Double,
+    ) {
         // #17: gate knockback + lifesteal on damage actually dealt (0.0 when armor-absorbed).
         val dealt = enemy.takeDamage(damage)
         val zig = host.ziggurat ?: return
         val stats = host.currentStats
         if (dealt > 0.0 && stats.knockbackForce > 0f) {
-            val dx = enemy.x - zig.originX; val dy = enemy.y - zig.originY
+            val dx = enemy.x - zig.originX
+            val dy = enemy.y - zig.originY
             val d = hypot(dx, dy).coerceAtLeast(1f)
             val kb = stats.knockbackForce * 0.5f * host.conditions.knockbackMultiplier
             enemy.applyKnockback(dx / d * kb, dy / d * kb)
@@ -87,20 +103,29 @@ class CombatResolver(private val host: CombatHost) {
         }
     }
 
-    fun onOrbHit(enemy: EnemyEntity, damage: Double) = onOrbHitEnemy(enemy, damage)
+    fun onOrbHit(
+        enemy: EnemyEntity,
+        damage: Double,
+    ) = onOrbHitEnemy(enemy, damage)
 
-    fun applyDamageToZiggurat(rawDamage: Double, attacker: EnemyEntity?) {
+    fun applyDamageToZiggurat(
+        rawDamage: Double,
+        attacker: EnemyEntity?,
+    ) {
         val zig = host.ziggurat ?: return
         val stats = host.currentStats
         val mitigated = calculateDefense(rawDamage, stats)
         if (zig.currentHp - mitigated <= 0.0 && stats.deathDefyChance > 0) {
             if (Random.nextDouble() < stats.deathDefyChance) {
-                zig.currentHp = 1.0; applyThorn(rawDamage, attacker); return
+                zig.currentHp = 1.0
+                applyThorn(rawDamage, attacker)
+                return
             }
         }
         if (zig.currentHp - mitigated <= 0.0 && host.secondWindHpPercent > 0.0 && host.consumeSecondWind()) {
             zig.currentHp = zig.maxHp * host.secondWindHpPercent
-            applyThorn(rawDamage, attacker); return
+            applyThorn(rawDamage, attacker)
+            return
         }
         val prevHpRatio = zig.currentHp / zig.maxHp
         zig.currentHp = (zig.currentHp - mitigated).coerceAtLeast(0.0)
@@ -112,23 +137,28 @@ class CombatResolver(private val host: CombatHost) {
         applyThorn(rawDamage, attacker)
     }
 
-    private fun applyThorn(rawDamage: Double, attacker: EnemyEntity?) {
+    private fun applyThorn(
+        rawDamage: Double,
+        attacker: EnemyEntity?,
+    ) {
         if (attacker == null || !attacker.isAlive) return
-        val reflection = SimulationMath.thornReflectionDamage(
-            rawDamage = rawDamage,
-            thornPercent = host.currentStats.thornPercent,
-            conditionMultiplier = host.conditions.thornMultiplier.toDouble(),
-        )
+        val reflection =
+            SimulationMath.thornReflectionDamage(
+                rawDamage = rawDamage,
+                thornPercent = host.currentStats.thornPercent,
+                conditionMultiplier = host.conditions.thornMultiplier.toDouble(),
+            )
         if (reflection > 0) attacker.takeDamage(reflection)
     }
 
     fun handleWaveComplete(wave: Int) {
         // RO-11 #A.2: CASH_RESEARCH multiplies the wave-end cash payout.
-        val waveCash = SimulationMath.waveCompleteCash(
-            cashPerWaveLevel = host.wsLevel(UpgradeType.CASH_PER_WAVE),
-            fortuneMultiplier = host.fortuneMultiplier,
-            cashResearchMultiplier = host.cashResearchMultiplier,
-        )
+        val waveCash =
+            SimulationMath.waveCompleteCash(
+                cashPerWaveLevel = host.wsLevel(UpgradeType.CASH_PER_WAVE),
+                fortuneMultiplier = host.fortuneMultiplier,
+                cashResearchMultiplier = host.cashResearchMultiplier,
+            )
         host.simulation.creditCash(waveCash)
         host.simulation.applyInterest(host.wsLevel(UpgradeType.INTEREST))
     }
@@ -140,14 +170,15 @@ class CombatResolver(private val host: CombatHost) {
         // RO-11 #A.2: CASH_RESEARCH multiplies the per-kill cash. Stacks multiplicatively with
         // workshop CASH_BONUS, tier cash multiplier, GOLDEN_ZIGGURAT UW, and the CASH_BONUS_GAIN card.
         // Default 1.0× means "no CASH_RESEARCH research".
-        val killCash = SimulationMath.killCashReward(
-            baseCash = baseCash,
-            tierMultiplier = tierMult,
-            cashBonusLevel = host.wsLevel(UpgradeType.CASH_BONUS),
-            fortuneMultiplier = host.fortuneMultiplier,
-            cashBonusPercent = host.cashBonusPercent,
-            cashResearchMultiplier = host.cashResearchMultiplier,
-        )
+        val killCash =
+            SimulationMath.killCashReward(
+                baseCash = baseCash,
+                tierMultiplier = tierMult,
+                cashBonusLevel = host.wsLevel(UpgradeType.CASH_BONUS),
+                fortuneMultiplier = host.fortuneMultiplier,
+                cashBonusPercent = host.cashBonusPercent,
+                cashResearchMultiplier = host.cashResearchMultiplier,
+            )
         host.simulation.creditCash(killCash)
         // #146: the on-screen enemy count is now derived live by [aliveEnemyCount] from the
         // entity list, so there is no hand-kept WaveSpawner tally to decrement here (the old
@@ -188,20 +219,25 @@ class CombatResolver(private val host: CombatHost) {
             val zig = host.ziggurat ?: return
             val childCount = (2..3).random()
             repeat(childCount) { i ->
-                val child = EnemyEntity(
-                    enemyType = EnemyType.BASIC,
-                    currentHp = enemy.maxHp * 0.5, maxHp = enemy.maxHp * 0.5,
-                    speed = EnemyScaler.scaleSpeed(EnemyType.SCATTER) * host.conditions.enemySpeedMultiplier,
-                    damage = enemy.damage * 0.5,
-                    targetX = zig.originX, targetY = zig.originY,
-                    onDeath = ::handleEnemyDeath,
-                    // R3-02: SCATTER child enemies also forward their attacker reference so
-                    // THORN_DAMAGE reflects against them (same fix as the wave-spawner path —
-                    // these melee-hit lambdas previously dropped the attacker).
-                    onMeleeHit = { atk, dmg -> applyDamageToZiggurat(dmg, atk) },
-                ).apply {
-                    x = enemy.x + (i - childCount / 2f) * 15f; y = enemy.y; initDistance()
-                }
+                val child =
+                    EnemyEntity(
+                        enemyType = EnemyType.BASIC,
+                        currentHp = enemy.maxHp * 0.5,
+                        maxHp = enemy.maxHp * 0.5,
+                        speed = EnemyScaler.scaleSpeed(EnemyType.SCATTER) * host.conditions.enemySpeedMultiplier,
+                        damage = enemy.damage * 0.5,
+                        targetX = zig.originX,
+                        targetY = zig.originY,
+                        onDeath = ::handleEnemyDeath,
+                        // R3-02: SCATTER child enemies also forward their attacker reference so
+                        // THORN_DAMAGE reflects against them (same fix as the wave-spawner path —
+                        // these melee-hit lambdas previously dropped the attacker).
+                        onMeleeHit = { atk, dmg -> applyDamageToZiggurat(dmg, atk) },
+                    ).apply {
+                        x = enemy.x + (i - childCount / 2f) * 15f
+                        y = enemy.y
+                        initDistance()
+                    }
                 host.addPending(child)
             }
         }

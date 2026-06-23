@@ -1,5 +1,12 @@
 package com.whitefang.stepsofbabylon.presentation.battle
 
+import android.content.pm.ActivityInfo
+import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -15,6 +22,8 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -22,13 +31,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -41,8 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import android.content.pm.ActivityInfo
-import androidx.activity.compose.LocalActivity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -50,21 +50,21 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BattleControlRail
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BattleErrorOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BiomeTransitionOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.InRoundUpgradeMenu
-import com.whitefang.stepsofbabylon.presentation.battle.ui.UltimateWeaponBar
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PauseOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PostRoundOverlay
+import com.whitefang.stepsofbabylon.presentation.battle.ui.UltimateWeaponBar
 import com.whitefang.stepsofbabylon.presentation.ui.wavePhaseLabelRes
 
 @Composable
@@ -101,16 +101,20 @@ fun BattleScreen(
     // #171: single source of truth for the left-edge inset, shared by the control rail (CenterStart)
     // and the upgrade-menu wrapper so the menu clears the rail by exactly GAP on any device — incl. a
     // side display cutout in landscape. systemBars ∪ displayCutout, Start side only (RTL-aware).
-    val railStartInset = WindowInsets.systemBars
-        .union(WindowInsets.displayCutout)
-        .only(WindowInsetsSides.Start)
+    val railStartInset =
+        WindowInsets.systemBars
+            .union(WindowInsets.displayCutout)
+            .only(WindowInsetsSides.Start)
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Surface watchGemAd / watchPsAd ad-failure messages as a snackbar so testers see
     // why nothing happened when they tap "Watch ad" and AdMob returns NO_FILL or the
     // user dismisses the ad. Mirrors CardsScreen + LabsScreen + WorkshopScreen.
     LaunchedEffect(state.userMessage) {
-        state.userMessage?.let { snackbarHostState.showSnackbar(it); viewModel.clearMessage() }
+        state.userMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearMessage()
+        }
     }
 
     // #214: battle TalkBack live region. A pure (prev → next) diff (battleAnnouncement) decides what
@@ -126,30 +130,55 @@ fun BattleScreen(
     var lastAnnouncement by remember { mutableStateOf<BattleAnnouncement?>(null) }
     val prevSnapshot = remember { mutableStateOf<BattleSnapshot?>(null) }
     LaunchedEffect(
-        state.currentWave, state.wavePhase, state.currentHp, state.maxHp,
-        state.roundEndState != null, state.battleError,
+        state.currentWave,
+        state.wavePhase,
+        state.currentHp,
+        state.maxHp,
+        state.roundEndState != null,
+        state.battleError,
     ) {
-        val next = BattleSnapshot(
-            currentWave = state.currentWave,
-            wavePhase = state.wavePhase,
-            currentHp = state.currentHp,
-            maxHp = state.maxHp,
-            roundEnded = state.roundEndState != null,
-            battleError = state.battleError,
-        )
+        val next =
+            BattleSnapshot(
+                currentWave = state.currentWave,
+                wavePhase = state.wavePhase,
+                currentHp = state.currentHp,
+                maxHp = state.maxHp,
+                roundEnded = state.roundEndState != null,
+                battleError = state.battleError,
+            )
         battleAnnouncement(prevSnapshot.value, next)?.let { lastAnnouncement = it }
         prevSnapshot.value = next
     }
-    val battleAnnouncementText = when (val a = lastAnnouncement) {
-        is BattleAnnouncement.Wave -> stringResource(R.string.battle_a11y_wave, a.wave)
-        is BattleAnnouncement.Phase ->
-            if (a.rawPhase == "COOLDOWN") stringResource(R.string.battle_a11y_phase_cooldown)
-            else stringResource(R.string.battle_a11y_phase_spawning)
-        is BattleAnnouncement.Health -> stringResource(R.string.battle_a11y_health, a.bucket * 25)
-        is BattleAnnouncement.RoundOver -> stringResource(R.string.battle_a11y_round_over, a.wave)
-        BattleAnnouncement.Error -> stringResource(R.string.battle_a11y_error)
-        null -> ""
-    }
+    val battleAnnouncementText =
+        when (val a = lastAnnouncement) {
+            is BattleAnnouncement.Wave -> {
+                stringResource(R.string.battle_a11y_wave, a.wave)
+            }
+
+            is BattleAnnouncement.Phase -> {
+                if (a.rawPhase == "COOLDOWN") {
+                    stringResource(R.string.battle_a11y_phase_cooldown)
+                } else {
+                    stringResource(R.string.battle_a11y_phase_spawning)
+                }
+            }
+
+            is BattleAnnouncement.Health -> {
+                stringResource(R.string.battle_a11y_health, a.bucket * 25)
+            }
+
+            is BattleAnnouncement.RoundOver -> {
+                stringResource(R.string.battle_a11y_round_over, a.wave)
+            }
+
+            BattleAnnouncement.Error -> {
+                stringResource(R.string.battle_a11y_error)
+            }
+
+            null -> {
+                ""
+            }
+        }
 
     LaunchedEffect(state.speedMultiplier) { surfaceView.setSpeedMultiplier(state.speedMultiplier) }
     LaunchedEffect(state.isPaused) { surfaceView.setPaused(state.isPaused) }
@@ -173,15 +202,21 @@ fun BattleScreen(
     // so the polling coroutine inside `startPollingEngine` is launched exactly once.
     LaunchedEffect(state.isLoading) {
         if (!state.isLoading) {
-            surfaceView.configure(viewModel.resolvedStats, viewModel.tier, viewModel.workshopLevels, viewModel.startWave)
+            surfaceView.configure(
+                viewModel.resolvedStats,
+                viewModel.tier,
+                viewModel.workshopLevels,
+                viewModel.startWave,
+            )
             viewModel.startPollingEngine(surfaceView.engine, surfaceView)
         }
     }
 
     DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_PAUSE) viewModel.pause()
-        }
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_PAUSE) viewModel.pause()
+            }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
@@ -200,7 +235,7 @@ fun BattleScreen(
                 .semantics {
                     liveRegion = LiveRegionMode.Polite
                     contentDescription = battleAnnouncementText
-                }
+                },
         )
 
         // Top-left: wave info + cash + battle-step counter.
@@ -217,7 +252,8 @@ fun BattleScreen(
                     state.currentWave,
                     pluralStringResource(R.plurals.wave_enemies, state.enemyCount, state.enemyCount),
                 ),
-                color = Color.White, style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium,
             )
             wavePhaseLabelRes(state.wavePhase)?.let { phaseRes ->
                 Text(stringResource(phaseRes), color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
@@ -228,7 +264,11 @@ fun BattleScreen(
                 color = if (state.wavePhase == "SPAWNING") Color(0xFF4CAF50) else Color(0xFFFFA726),
                 trackColor = Color.White.copy(alpha = 0.2f),
             )
-            Text(stringResource(R.string.cash_amount, state.cash), color = Color(0xFFD4A843), style = MaterialTheme.typography.titleSmall)
+            Text(
+                stringResource(R.string.cash_amount, state.cash),
+                color = Color(0xFFD4A843),
+                style = MaterialTheme.typography.titleSmall,
+            )
             if (state.stepsEarnedThisRound > 0) {
                 val stepsDesc = stringResource(R.string.battle_steps_earned_desc, state.stepsEarnedThisRound)
                 Text(
@@ -245,8 +285,14 @@ fun BattleScreen(
         }
 
         if (showGameChrome) {
-            IconButton(onClick = { viewModel.quitRound() }, modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = 32.dp)) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.battle_cd_quit_round), tint = Color.White)
+            IconButton(onClick = {
+                viewModel.quitRound()
+            }, modifier = Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = 32.dp)) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.battle_cd_quit_round),
+                    tint = Color.White,
+                )
             }
         }
 
@@ -259,7 +305,7 @@ fun BattleScreen(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .windowInsetsPadding(WindowInsets.navigationBars)
-                    .padding(bottom = 24.dp)
+                    .padding(bottom = 24.dp),
             ) {
                 UltimateWeaponBar(slots = state.uwSlots)
             }
@@ -278,9 +324,10 @@ fun BattleScreen(
                 onSetSpeed = viewModel::setSpeed,
                 onTogglePause = viewModel::togglePause,
                 onToggleUpgradeMenu = viewModel::toggleUpgradeMenu,
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .windowInsetsPadding(railStartInset),
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .windowInsetsPadding(railStartInset),
             )
         }
 
@@ -295,12 +342,16 @@ fun BattleScreen(
             Box(
                 Modifier
                     .align(Alignment.BottomCenter)
-                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .windowInsetsPadding(WindowInsets.navigationBars),
             ) {
-                InRoundUpgradeMenu(cash = state.cash, inRoundLevels = state.inRoundLevels,
-                    onPurchase = viewModel::purchaseInRoundUpgrade, onDismiss = viewModel::toggleUpgradeMenu,
+                InRoundUpgradeMenu(
+                    cash = state.cash,
+                    inRoundLevels = state.inRoundLevels,
+                    onPurchase = viewModel::purchaseInRoundUpgrade,
+                    onDismiss = viewModel::toggleUpgradeMenu,
                     lastPurchaseFree = state.lastPurchaseFree,
-                    describeEffect = viewModel::describeEffect)
+                    describeEffect = viewModel::describeEffect,
+                )
             }
         }
 
@@ -312,10 +363,20 @@ fun BattleScreen(
         showRoundEnd.targetState = state.roundEndState != null
         state.roundEndState?.let { roundEnd ->
             AnimatedVisibility(visibleState = showRoundEnd, enter = scaleIn() + fadeIn(), exit = fadeOut()) {
-                PostRoundOverlay(state = roundEnd, onPlayAgain = { viewModel.playAgain() }, onExitBattle = onExitBattle, onWatchGemAd = { viewModel.watchGemAd() }, onWatchPsAd = { viewModel.watchPsAd() })
+                PostRoundOverlay(state = roundEnd, onPlayAgain = {
+                    viewModel.playAgain()
+                }, onExitBattle = onExitBattle, onWatchGemAd = { viewModel.watchGemAd() }, onWatchPsAd = {
+                    viewModel
+                        .watchPsAd()
+                })
             }
         }
-        state.biomeTransition?.let { BiomeTransitionOverlay(info = it, onContinue = { viewModel.dismissBiomeTransition() }) }
+        state.biomeTransition?.let {
+            BiomeTransitionOverlay(
+                info = it,
+                onContinue = { viewModel.dismissBiomeTransition() },
+            )
+        }
 
         if (state.battleError) {
             BattleErrorOverlay(onReturnToMenu = onExitBattle)

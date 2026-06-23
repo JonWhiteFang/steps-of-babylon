@@ -29,10 +29,13 @@ class WaveSpawner(
     private val startWave: Int = 1,
     private val tierMultiplier: Double = 1.0,
 ) {
-    var currentWave: Int = startWave; private set
-    var phase: WavePhase = WavePhase.SPAWNING; private set
+    var currentWave: Int = startWave
+        private set
+    var phase: WavePhase = WavePhase.SPAWNING
+        private set
 
-    var phaseTimer = 0f; private set
+    var phaseTimer = 0f
+        private set
     private var spawnTimer = 0f
     private var enemiesSpawned = 0
     private var totalToSpawn = 0
@@ -42,7 +45,9 @@ class WaveSpawner(
         const val COOLDOWN_DURATION = 9f
     }
 
-    init { startWave() }
+    init {
+        startWave()
+    }
 
     private fun startWave() {
         phase = WavePhase.SPAWNING
@@ -52,7 +57,11 @@ class WaveSpawner(
         totalToSpawn = enemiesPerWave(currentWave)
     }
 
-    fun update(deltaTime: Float, screenWidth: Float, screenHeight: Float) {
+    fun update(
+        deltaTime: Float,
+        screenWidth: Float,
+        screenHeight: Float,
+    ) {
         phaseTimer += deltaTime
         when (phase) {
             WavePhase.SPAWNING -> {
@@ -71,6 +80,7 @@ class WaveSpawner(
                     phaseTimer = 0f
                 }
             }
+
             WavePhase.COOLDOWN -> {
                 if (phaseTimer >= COOLDOWN_DURATION) {
                     currentWave++
@@ -80,7 +90,10 @@ class WaveSpawner(
         }
     }
 
-    private fun spawnEnemy(screenWidth: Float, screenHeight: Float) {
+    private fun spawnEnemy(
+        screenWidth: Float,
+        screenHeight: Float,
+    ) {
         val type = pickType(currentWave, enemiesSpawned)
         val hp = EnemyScaler.scaleHealth(type, currentWave, tierMultiplier)
         val dmg = EnemyScaler.scaleDamage(type, currentWave, tierMultiplier)
@@ -88,44 +101,71 @@ class WaveSpawner(
         val atkInterval = 1f / conditions.enemyAttackSpeedMultiplier
         val (sx, sy) = spawnPosition(screenWidth, screenHeight, type)
 
-        val enemy = EnemyEntity(
-            enemyType = type, currentHp = hp, maxHp = hp, speed = spd, damage = dmg,
-            targetX = zigguratX, targetY = zigguratY,
-            onDeath = onEnemyDeath,
-            onMeleeHit = if (type != EnemyType.RANGED) onMeleeHit else null,
-            onFireProjectile = if (type == EnemyType.RANGED) onEnemyFireProjectile else null,
-            attackInterval = atkInterval,
-            armorHits = conditions.armorHits,
-            enemyTint = enemyTint,
-        ).apply { x = sx; y = sy; initDistance() }
+        val enemy =
+            EnemyEntity(
+                enemyType = type,
+                currentHp = hp,
+                maxHp = hp,
+                speed = spd,
+                damage = dmg,
+                targetX = zigguratX,
+                targetY = zigguratY,
+                onDeath = onEnemyDeath,
+                onMeleeHit = if (type != EnemyType.RANGED) onMeleeHit else null,
+                onFireProjectile = if (type == EnemyType.RANGED) onEnemyFireProjectile else null,
+                attackInterval = atkInterval,
+                armorHits = conditions.armorHits,
+                enemyTint = enemyTint,
+            ).apply {
+                x = sx
+                y = sy
+                initDistance()
+            }
 
         enemiesSpawned++
         onSpawnEnemy(enemy)
     }
 
-    private fun pickType(wave: Int, index: Int): EnemyType {
+    private fun pickType(
+        wave: Int,
+        index: Int,
+    ): EnemyType {
         if (wave % conditions.bossWaveInterval == 0 && index == 0) return EnemyType.BOSS
         val roll = Random.nextFloat()
         return when {
-            wave <= 5 -> EnemyType.BASIC
-            wave <= 10 -> if (roll < 0.20f) EnemyType.FAST else EnemyType.BASIC
-            wave <= 20 -> when {
-                roll < 0.10f -> EnemyType.TANK
-                roll < 0.30f -> EnemyType.FAST
-                else -> EnemyType.BASIC
+            wave <= 5 -> {
+                EnemyType.BASIC
             }
-            wave <= 30 -> when {
-                roll < 0.10f -> EnemyType.TANK
-                roll < 0.25f -> EnemyType.RANGED
-                roll < 0.45f -> EnemyType.FAST
-                else -> EnemyType.BASIC
+
+            wave <= 10 -> {
+                if (roll < 0.20f) EnemyType.FAST else EnemyType.BASIC
             }
-            else -> when {
-                roll < 0.10f -> EnemyType.SCATTER
-                roll < 0.20f -> EnemyType.TANK
-                roll < 0.35f -> EnemyType.RANGED
-                roll < 0.55f -> EnemyType.FAST
-                else -> EnemyType.BASIC
+
+            wave <= 20 -> {
+                when {
+                    roll < 0.10f -> EnemyType.TANK
+                    roll < 0.30f -> EnemyType.FAST
+                    else -> EnemyType.BASIC
+                }
+            }
+
+            wave <= 30 -> {
+                when {
+                    roll < 0.10f -> EnemyType.TANK
+                    roll < 0.25f -> EnemyType.RANGED
+                    roll < 0.45f -> EnemyType.FAST
+                    else -> EnemyType.BASIC
+                }
+            }
+
+            else -> {
+                when {
+                    roll < 0.10f -> EnemyType.SCATTER
+                    roll < 0.20f -> EnemyType.TANK
+                    roll < 0.35f -> EnemyType.RANGED
+                    roll < 0.55f -> EnemyType.FAST
+                    else -> EnemyType.BASIC
+                }
             }
         }
     }
@@ -145,7 +185,10 @@ class WaveSpawner(
         val isBoss = wave % conditions.bossWaveInterval == 0 && wave > 0
         val result = linkedMapOf<EnemyType, Int>()
         var remaining = total
-        if (isBoss) { result[EnemyType.BOSS] = 1; remaining-- }
+        if (isBoss) {
+            result[EnemyType.BOSS] = 1
+            remaining--
+        }
         for ((type, prob) in typeProbabilities(wave)) {
             val count = Math.round(remaining * prob).toInt()
             if (count > 0) result[type] = (result[type] ?: 0) + count
@@ -165,15 +208,45 @@ class WaveSpawner(
     }
 
     /** Per-type spawn probabilities for the non-boss slots of [wave] (mirrors [pickType] bands). */
-    private fun typeProbabilities(wave: Int): Map<EnemyType, Double> = when {
-        wave <= 5 -> mapOf(EnemyType.BASIC to 1.0)
-        wave <= 10 -> mapOf(EnemyType.FAST to 0.20, EnemyType.BASIC to 0.80)
-        wave <= 20 -> mapOf(EnemyType.TANK to 0.10, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.70)
-        wave <= 30 -> mapOf(EnemyType.TANK to 0.10, EnemyType.RANGED to 0.15, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.55)
-        else -> mapOf(EnemyType.SCATTER to 0.10, EnemyType.TANK to 0.10, EnemyType.RANGED to 0.15, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.45)
-    }
+    private fun typeProbabilities(wave: Int): Map<EnemyType, Double> =
+        when {
+            wave <= 5 -> {
+                mapOf(EnemyType.BASIC to 1.0)
+            }
 
-    private fun spawnPosition(screenWidth: Float, screenHeight: Float, type: EnemyType): Pair<Float, Float> {
+            wave <= 10 -> {
+                mapOf(EnemyType.FAST to 0.20, EnemyType.BASIC to 0.80)
+            }
+
+            wave <= 20 -> {
+                mapOf(EnemyType.TANK to 0.10, EnemyType.FAST to 0.20, EnemyType.BASIC to 0.70)
+            }
+
+            wave <= 30 -> {
+                mapOf(
+                    EnemyType.TANK to 0.10,
+                    EnemyType.RANGED to 0.15,
+                    EnemyType.FAST to 0.20,
+                    EnemyType.BASIC to 0.55,
+                )
+            }
+
+            else -> {
+                mapOf(
+                    EnemyType.SCATTER to 0.10,
+                    EnemyType.TANK to 0.10,
+                    EnemyType.RANGED to 0.15,
+                    EnemyType.FAST to 0.20,
+                    EnemyType.BASIC to 0.45,
+                )
+            }
+        }
+
+    private fun spawnPosition(
+        screenWidth: Float,
+        screenHeight: Float,
+        type: EnemyType,
+    ): Pair<Float, Float> {
         val margin = if (type == EnemyType.BOSS) 50f else 30f
         return when (Random.nextInt(3)) {
             0 -> Random.nextFloat() * screenWidth to -margin

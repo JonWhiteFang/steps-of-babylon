@@ -24,31 +24,51 @@ import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.presentation.battle.biome.BiomeTheme
 
-data class BiomeTransitionInfo(val biome: Biome, val totalSteps: Long)
+data class BiomeTransitionInfo(
+    val biome: Biome,
+    val totalSteps: Long,
+)
 
 @Composable
-fun BiomeTransitionOverlay(info: BiomeTransitionInfo, onContinue: () -> Unit) {
+fun BiomeTransitionOverlay(
+    info: BiomeTransitionInfo,
+    onContinue: () -> Unit,
+) {
     val theme = BiomeTheme.forBiome(info.biome)
     Box(
         Modifier.fillMaxSize().background(
-            Brush.verticalGradient(listOf(Color(theme.skyColorTop), Color(theme.skyColorBottom)))
+            Brush.verticalGradient(listOf(Color(theme.skyColorTop), Color(theme.skyColorBottom))),
         ),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.biome_welcome), style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.7f))
+            Text(
+                stringResource(R.string.biome_welcome),
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White.copy(alpha = 0.7f),
+            )
             Text(
                 // Title-case every word: "HANGING_GARDENS" -> "Hanging Gardens".
                 // (The old replaceFirstChar only capitalised the first word -> "Hanging gardens".)
                 info.biome.name.split('_').joinToString(" ") { word ->
                     word.lowercase().replaceFirstChar { it.uppercase() }
                 },
-                style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(8.dp))
-            Text(stringResource(R.string.biome_steps_walked, info.totalSteps), style = MaterialTheme.typography.titleSmall, color = Color.White.copy(alpha = 0.6f))
+            Text(
+                stringResource(R.string.biome_steps_walked, info.totalSteps),
+                style = MaterialTheme.typography.titleSmall,
+                color = Color.White.copy(alpha = 0.6f),
+            )
             Spacer(Modifier.height(24.dp))
-            Button(onClick = onContinue, modifier = Modifier.fillMaxWidth(0.5f)) { Text(stringResource(R.string.action_continue)) }
+            Button(
+                onClick = onContinue,
+                modifier = Modifier.fillMaxWidth(0.5f),
+            ) { Text(stringResource(R.string.action_continue)) }
         }
     }
 }

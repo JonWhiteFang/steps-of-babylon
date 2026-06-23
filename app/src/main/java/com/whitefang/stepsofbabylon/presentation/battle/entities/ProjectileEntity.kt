@@ -21,7 +21,6 @@ class ProjectileEntity(
     var bouncesRemaining: Int = 0,
     val hitEnemies: MutableSet<EnemyEntity> = mutableSetOf(),
 ) : Entity(x = startX, y = startY, width = 8f, height = 8f) {
-
     private val state = ProjectileState(startX, startY, targetX, targetY, speed)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFD4A843.toInt() }
 

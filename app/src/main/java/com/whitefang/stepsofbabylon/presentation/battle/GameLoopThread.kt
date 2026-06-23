@@ -11,7 +11,6 @@ class GameLoopThread(
     private val engine: GameEngine,
     private val crashBreadcrumbStore: CrashBreadcrumbStore,
 ) : Thread("GameLoop") {
-
     @Volatile
     var isRunning: Boolean = false
 
@@ -76,7 +75,10 @@ class GameLoopThread(
                     }
                 } finally {
                     canvas?.let {
-                        try { surfaceHolder.unlockCanvasAndPost(it) } catch (_: Exception) {}
+                        try {
+                            surfaceHolder.unlockCanvasAndPost(it)
+                        } catch (_: Exception) {
+                        }
                     }
                 }
             } catch (t: Throwable) {
@@ -99,7 +101,10 @@ class GameLoopThread(
             val frameTime = System.nanoTime() - currentTime
             val sleepMs = (TICK_NS - frameTime) / 1_000_000
             if (sleepMs > 0) {
-                try { sleep(sleepMs) } catch (_: InterruptedException) {}
+                try {
+                    sleep(sleepMs)
+                } catch (_: InterruptedException) {
+                }
             }
         }
     }
