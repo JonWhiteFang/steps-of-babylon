@@ -10127,3 +10127,30 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - **Next:** open the D2 PR; check off L77 + #218 in #262/#218. Then the audit backlog's non-batchable items
   (battle game-loop perf L46-L51, A24 rate-limit clock-tamper, L12 BattleViewModel decomposition,
   billing-anti-fraud-by-design) + remaining med/low. Batches A–D now shipped.
+- **SHIPPED:** PR **#337** all 3 lanes green (build-and-test 11m37s incl. the Kover step + cold-cache fetch
+  of Kover's strict-verified deps, connected 7m20s, ktlint 20s); squash-merged **`9cef4c8`**; branch deleted;
+  **#218 closed**, #262 annotated.
+
+## 2026-06-23 — Checkpoint: audit-triage A–D session reconciliation
+
+- **Session close** (`/checkpoint`). No new code since PR #337; this is a STATE/RUN_LOG reconciliation only.
+- **Doc-drift sweep:** confirmed all per-PR current-state syncs already landed on `main` — CHANGELOG has all
+  5 batch entries (A/B/C/D1/D2), CLAUDE.md headline = 1256, tech.md carries Kover+OSV-Scanner, source-files.md
+  has NumberFormatting.kt + AwardBattleSteps.kt, plan-32-ci.md + ADR-0018 note the new CI capabilities. **No
+  residual current-state drift** in CHANGELOG/CLAUDE/tech/source-files/README — nothing to re-sync.
+- **The one drift fixed:** STATE.md still showed **Batch D2 as "in flight"** (it merged as `9cef4c8`) and
+  carried two "CURRENT" bullets + a 5-deep batch stack. Reconciled to a single CURRENT (audit-triage A–D
+  ALL SHIPPED, nothing in flight) + Previous-objective bullets for D2/D1/C; collapsed B/A/the-v1.0.11-release
+  into the pointer (fully in RUN_LOG/CHANGELOG). Headline gained a post-v1.0.11 "A–D shipped on `main`,
+  unreleased" line; the test-count tail corrected to land on 1256 (B −1→1253, C +3→1256, A/D no-app-change).
+  STATE 422→406 lines (one-page mandate honored).
+- **Session arc (this conversation):** started from "what other audit findings can we batch-fix" → ran the
+  triage workflow → shipped **5 PRs (A–D)** closing ~30 #262 Low findings + #218, each through the full
+  spec→plan→adversarial-review→verify→PR→merge loop. Notable: the triage caught that the shipping wave had
+  already FIXED far more than the trackers reflected; Batch C surfaced a **real Turkish-locale billing bug**
+  the triage had mis-rated cosmetic; the Kover spike de-risked the strict-verification interaction
+  empirically; the ktlint-job split (developer's CI-parallelism question) cut formatting-failure latency to
+  ~17s. **No ADR** across A–D (all on established patterns/conventions).
+- **No ADR for this checkpoint** (reconciliation only). **Next session:** the non-batchable items
+  (A24 / L12 are the most substantive) or the #34 i18n-externalization push; triage verdicts were cached at
+  `/tmp/audit-triage/verdicts.json` THIS session only (ephemeral — re-run the triage workflow if needed).

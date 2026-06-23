@@ -8,6 +8,9 @@ release run `28018033566` `success`: every step green incl. `bundleRelease` [R8+
 Play-internal upload, GitHub Release `v1.0.11` w/ `app-release.aab` 16.04 MB; release PR #330 squash `3915fd1`).
 v1.0.11 promotes the **large polish/hardening body
 accumulated since v1.0.10** — no new features, **no schema change** (`app/schemas` byte-identical to v1.0.10).
+**Post-v1.0.11 (unreleased, on `main`):** the audit-triage **batches A–D shipped** (PRs #333–#337) —
+docs-drift, dead-code, i18n locale-safety (incl. a real Turkish-locale billing fix), CI/release hardening,
+and Kover+OSV tooling. No new release tag yet; this is the next release's `[Unreleased]` body.
 Player-facing: accessibility (#213/#214), i18n correctness (#225/#259/#260), Home zero-state (#224),
 perf-smoothness (#242/#243), offline step/purchase reliability (#251/#249), process-death survival (#234).
 Internal: detekt+ktlint gate + 6-stage format (#312/#311), Compose UI + DAO-contention tests (#253/#252),
@@ -16,7 +19,8 @@ dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependab
 (#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
 (CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
 #311→#312; #310/#311/#287 given a CI/tooling note). **Supersedes v1.0.10 (vc 26)** · **1256 JVM + 9 instrumented tests**
-green (the per-wave running tally 1110→1254 since v1.0.10 lives in `CHANGELOG.md` + `RUN_LOG.md`; −1 from Batch B dead-code removal → 1253) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
+green (the per-wave running tally 1110→1254 since v1.0.10 lives in `CHANGELOG.md` + `RUN_LOG.md`; post-v1.0.11
+audit-triage arc: B −1 → 1253, C +3 → 1256, A/D no-app-change) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -34,63 +38,43 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — SHIPPED v1.0.11 / versionCode 27 → Play internal track).** First release
-  since v1.0.10; promotes the large polish/hardening `[Unreleased]` body (no new features, **no schema
-  change** — `app/schemas` byte-identical to v1.0.10). Collateral-only PR on branch `release/v1.0.11` (no
-  production-code change in the PR itself): bump `versionCode` 26→27 / `versionName` 1.0.10→1.0.11 in
-  `app/build.gradle.kts`; promote CHANGELOG `[Unreleased]`→`[1.0.11]` (2026-06-23, vc 27) + fresh empty
-  `[Unreleased]`; add `docs/release/release-notes-v1.0.11.md` (Play "What's new" 454 chars, developer-approved
-  — the "Drafted" option); sync current-state version pointers (README incl. 1126→1254 test count, GDD,
-  master-plan ×2 [current clause only], plan-31, STATE headline). **Two CHANGELOG corrections folded in from
-  the release-grounding verification fan-out** (all findings adversarially confirmed): the lint entry header
-  PR# `#311`→`#312` (#311 is the unrelated CLI-tooling chore), and a new **CI/tooling note** accounting for the
-  three functional commits that had no dedicated entry (#310 CI docs-only fast path, #311 CLI-tooling hook, #287
-  all-actions bump). Fresh `testDebugUnitTest` green (**1254 JVM, 0 failures**). PR #330 both CI lanes green
-  (build-and-test 6m35s, connected/instrumented 5m2s); squash-merged `3915fd1`; branch deleted. Annotated tag
-  `v1.0.11` (message = the "What's new" block) fired `release.yml` → run `28018033566` `success` (signed AAB,
-  `jarsigner -verify`, Play-internal upload, GitHub Release `v1.0.11` + `app-release.aab` 16.04 MB).
-  Player-facing in this release: accessibility (#213/#214), i18n correctness (#225/#259/#260), Home zero-state
-  (#224), perf-smoothness (#242/#243), offline step/purchase reliability (#251/#249), process-death survival
-  (#234). **Manual Play Console Data-Safety action (#192) is still NOT done by this tag** — separate human step
-  (`docs/release/data-safety-form.md`). **Next:** med/low backlog (#262/#128; i18n #34; the larger #233
-  Simulation-hoist, ADR-0012) + the internal→closed promotion judgment call (Data-Safety #192 prerequisite).
-- **CURRENT (in flight — branch `ci/batch-d2-tooling`; `[Unreleased]`).** **Audit-finding triage — Batch D2
-  (additive CI tooling).** Second half of the D1/D2 split; **two NON-GATING informational capabilities, no
-  app/Kotlin/schema change, 1256 JVM unchanged.** Closes #262 **L77** + **#218/TEST-3**. **Kover** (`:app`,
-  `org.jetbrains.kotlinx.kover` 0.9.8) — non-gating `:app:koverXmlReport`/`koverHtmlReport` CI step
-  (informational; baseline ~59% line cov). **Kover↔Kotlin 2.3.0/AGP 9.2.1 compat verified by a local spike**
-  (the riskiest unknown — answered empirically before commit). Strict dependency-verification (#256) forced a
-  `verification-metadata.xml` regen (+ extended the documented regen command with the Kover tasks). **OSV-Scanner**
-  (`osv-scan.yml`, SHA-pinned reusable workflow) — full-dependency-set supply-chain scan → Code Scanning tab,
-  non-gating (`fail-on-vuln:false`), weekly + on `main`. Spec→plan→**adversarial review gate** (D1+D2
-  concurrent; both D2 majors — regen-as-hard-step + the regen command missing Kover — addressed). Spike found
-  the OSV *reusable workflow in the osv-scanner repo is DEPRECATED*; used the live `osv-scanner-action` one.
-  Verified locally: full build + Kover under strict verify BUILD SUCCESSFUL, actionlint clean, detekt+ktlint
-  pass. **OSV SARIF upload only exercises in real CI** (needs GitHub Code-Scanning context). **Next:** open
-  the D2 PR (after D1 merges — both edit ci.yml); then the non-batchable items (battle perf, A24, L12,
-  billing-by-design). Triage verdicts cached in this session.
+- **CURRENT (DONE — audit-triage batches A–D all SHIPPED to `main`; nothing in flight).** A verification
+  `Workflow` code-grounded ~125 unverified #262/#128 tracker findings vs HEAD `617babd` → **83 LIVE / 23
+  FIXED / 6 STALE / 4 DUP / 1 POSITIVE**; LIVE survivors clustered into batches A–G. **A–D merged this
+  session** (each spec→plan→adversarial-review→implement→PR→merge): **A** docs/content-drift (PR #333,
+  `9e186bc`); **B** dead-code removal (#334, `367fe6f`); **C** i18n locale-safety incl. a REAL Turkish-locale
+  billing bug L88 (#335, `13d19c2`); **D1** release/CI config hardening + ktlint-job split (#336, `6c487f4`);
+  **D2** Kover coverage + OSV supply-chain scan (#337, `9cef4c8`). **1256 JVM tests** (A/B docs+removal, C
+  +3, D no app change); **no schema change** across the arc. #218 closed; #262 annotated per batch. **Next
+  (no work in flight):** the audit backlog's **non-batchable items**, each its own focused effort — A24
+  anti-cheat rate-limit clock-tamper (large/fragile), battle game-loop perf L46-L51 (fragile), L12
+  BattleViewModel decomposition (large, #306/ADR-0012), billing-anti-fraud L35/A25/A26/L41 (by-design, no
+  fix). Plus the #34 i18n-externalization push (L2/L8/L27, L23, L90), release-log-hardening (L37/L43/L38,
+  security/Batch-G), A33 (dev-only pre-release deps), and remaining med findings. Also still open: the
+  v1.0.11 **internal→closed** promotion judgment call (gated on the **manual Play Console Data-Safety action
+  #192** — `docs/release/data-safety-form.md`, a human step). Triage verdicts cached at
+  `/tmp/audit-triage/verdicts.json` (ephemeral — re-run the triage workflow if a fresh session needs them).
+- **Previous objective (DONE — MERGED PR #337, squash `9cef4c8`; `[Unreleased]`).** **Batch D2 (additive CI
+  tooling).** Two NON-GATING capabilities, no app/schema change, 1256 JVM. **Kover** (`:app`, 0.9.8)
+  informational coverage CI step (baseline ~59% line cov; Kotlin-2.3.0 compat verified by a local spike;
+  forced a `verification-metadata.xml` regen under strict verify #256). **OSV-Scanner** (`osv-scan.yml`,
+  SHA-pinned) full-dep supply-chain scan → Code Scanning, non-gating, weekly+main (spike found the
+  osv-scanner-repo reusable workflow is deprecated → used the live osv-scanner-action one). Real-CI green at
+  11m37s. Closed #262 L77 + #218.
 - **Previous objective (DONE — MERGED PR #336, squash `6c487f4`; `[Unreleased]`).** **Batch D1 (release/CI
-  config hardening).** CI/release cluster split D1/D2 by risk. Closed #262 L39/L68/L71/L73/L74/L75/L50 + a
-  ktlint-job CI-speed split (passed in 17s vs the ~6-min build). release.yml: concurrency/tag-guard/cert-identity/
-  secret-cleanup; ci.yml: `lintRelease` gate; gradle parallel+caching. L69 NDK pin DEFERRED. Review: 9
-  confirmed + 4 partial, 5 refuted. No app/schema change; 1256 JVM. Both CI lanes green.
-- **Previous objective (DONE — MERGED PR #335, squash `13d19c2`; `[Unreleased]`).** **Batch C
-  (i18n locale-safety).** Closed #262 L88/L89/L87/L91. **L88 was a REAL bug** — `BillingProduct.skuId()`
+  config hardening).** Closed #262 L39/L68/L71/L73/L74/L75/L50 + a ktlint-job CI-speed split (passed in 17s
+  vs the ~6-min build). release.yml: concurrency/tag-guard/cert-identity/secret-cleanup; ci.yml: `lintRelease`
+  gate; gradle parallel+caching. L69 NDK pin DEFERRED (needs a runner-image-confirmed version). Review: 9
+  confirmed + 4 partial, 5 refuted. No app/schema change; 1256 JVM.
+- **Previous objective (DONE — MERGED PR #335, squash `13d19c2`; `[Unreleased]`).** **Batch C (i18n
+  locale-safety).** Closed #262 L88/L89/L87/L91. **L88 was a REAL bug** — `BillingProduct.skuId()`
   default-locale `lowercase()` corrupted `GEM_PACK_MEDIUM`'s `I`→dotless ı under Turkish → broke that
-  purchase + reconciliation; fixed `Locale.ROOT` + Turkish regression test. Plus `Locale.ROOT` on 3
-  display-case sites + `%.Nf` formats, a `Locale.US` `formatCount` helper. Review gate: 6 confirmed, 0
-  refuted (2 MAJORs: L89 `Char.uppercase()` non-compile + missed `%.Nf` sites). 1253 → 1256 JVM. Both CI
-  lanes green.
-- **Previous objective (DONE — MERGED PR #334, squash `367fe6f`; `[Unreleased]`).** **Batch B
-  (dead-code removal).** Pure removal, **zero behavior change, no schema change**; closed #262
-  L15/L16/L17/L13/L18 (`resetUWCooldowns`, `cooldownText`, `GameLoopThread.fps`, dead Card-Dust API —
-  column kept). L26 `fortuneMultiplier` rename DEFERRED. Review gate: 0 confirmed findings. 1254 → 1253 JVM.
-  Both CI lanes green.
-- **Previous objective (DONE — MERGED PR #333, squash `9e186bc`; `[Unreleased]`).** **Batch A
-  (docs/content-drift).** Docs-only + two build-file justification strings, **zero production-code change**;
-  closed #262 L79/L81/L82/L83/L84/L85/L86/L93/L94/L95 (+ L70-residue + L78 code-side). Adversarial review
-  gate: 14 findings all CONFIRMED, 0 refuted (1 MAJOR widened the billing-v8 doc fix to all 10 live docs).
-  STATE.md trimmed 846→385. Both CI lanes green.
+  purchase + reconciliation; fixed `Locale.ROOT` + Turkish regression test. Review gate: 6 confirmed, 0
+  refuted (2 MAJORs caught: L89 `Char.uppercase()` non-compile + missed `%.Nf` sites). 1253 → 1256 JVM.
+- *Prior objectives — **Batch B** dead-code removal (PR #334, `367fe6f`; #262 L15/L16/L17/L13/L18), **Batch
+  A** docs/content-drift (PR #333, `9e186bc`; #262 L79/L81/L82/L83/L84/L85/L86/L93/L94/L95 + STATE trim
+  846→385), and the **v1.0.11 release** (vc 27 → Play internal, tag `v1.0.11`, PR #330 `3915fd1`) — are
+  recorded per-PR in `docs/agent/RUN_LOG.md` + `CHANGELOG.md` and under "Recently shipped" below.
 - *Prior objectives (all DONE, `[Unreleased]` unless noted) are recorded per-PR in `docs/agent/RUN_LOG.md` and summarized under "Recently shipped" below — not duplicated here.*
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
