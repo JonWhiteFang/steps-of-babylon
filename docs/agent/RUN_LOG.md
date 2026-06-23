@@ -1,3 +1,39 @@
+## 2026-06-23 — ktlint repo-wide auto-format, stage 3/6: `service/`+`di/`+top-level (`[Unreleased]`)
+
+- **Goal:** stage 3 of the staged, layer-by-layer ktlint auto-format (plan
+  `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`). Mechanically fix the
+  auto-fixable ("Bucket A") ktlint violations one layer at a time; stages 1 (`domain/`) and 2 (`data/`)
+  are merged. Stage 3 = the `service/` layer (foreground step service, WorkManager workers, boot
+  receiver, notification managers, widget), the `di/` Hilt modules, and the top-level `StepsOfBabylonApp.kt`.
+- **What shipped:** `ktlint -F` scoped to `app/src/main/java/.../service`, `.../di`, and `.../StepsOfBabylonApp.kt`
+  only — 17 files reformatted. Pure-formatting, zero behaviour change. Transforms were all on the review
+  allowlist: class-signature reflow (`@Inject constructor(...)`/`@AssistedInject constructor(...)` wrapped —
+  the dominant pattern across the notification managers + workers; `StepsOfBabylonApp` supertype-list split),
+  function-signature reflow (multi-param one-per-line + trailing comma — `onReceive`/`onUpdate`/
+  `onStartCommand`/notify-fns), function-expression-body wrapping (`= try {`/`= if {`/`= object {` moved to
+  next line), if-else & when-entry bracing (the `StepSyncWorker` `CatchUpDecision` `when`-arms `-> X` →
+  `-> { X }`, incl. `Skip -> { Unit }` — the `Unit` no-op preserved), trailing-comma (call/declaration site),
+  import ordering (`CoroutineScopeModule` `javax.inject.*` reordered after `kotlinx.coroutines.*`),
+  blank-line-after-brace removal + `@Inject`/`@Provides` member blank-line insertion, multiline/chained-call
+  wrapping (`Configuration.Builder()`, `NotificationCompat.Builder(...)`, `Room.databaseBuilder(...)`,
+  `prefs.edit()…` chains). The full `git diff -w` (whitespace-ignored, 875 lines) was read end-to-end; no
+  hunk changed a literal/operator/identifier/string or altered logic. Specifically re-verified the
+  `StepSyncWorker` `when` (every arm's body byte-identical, just brace-wrapped) and the notification
+  `PendingIntent`/`putExtra` argument reflows (same args, same order).
+- **Baselines regenerated (the staged-format mechanism):**
+  - **ktlint** `config/ktlint/baseline.xml` over the full `app/src` scope (delete-then-create): **7632 →
+    7423** errors (209 `service/`+`di/`+top-level Bucket-A entries gone). Not-yet-swept layers stay covered.
+  - **detekt** `config/detekt/baseline.xml`: **no regen needed** — `:app:detekt` exit 0 against the existing
+    baseline after the sweep (the reflow added no new line-keyed smell signatures in these files).
+- **Verification:** `./run-gradle.sh testDebugUnitTest --rerun-tasks` **BUILD SUCCESSFUL**; **1254 JVM
+  tests, 0 failures, 0 errors** (unchanged count — pure format; counted from report XML). `./lint-kotlin.sh`
+  (ktlint check) exit 0; `:app:detekt` exit 0 (no regen). Scope-checked: only the 17 `service/`+`di/`+top-level
+  files + the ktlint baseline XML changed (`git diff --name-only` confirms no out-of-scope code touched).
+- **No production logic, schema, economy, or engine behaviour changed.**
+- **Remains / next:** controller merges this PR (do-not-merge handed off). Then stages 4–6:
+  `presentation/` (excl battle) → `presentation/battle/` (FRAGILE) → test sources. Each stage repeats the
+  scoped `-F` + baseline regen (detekt only when the gate flags) + full-suite green gate.
+
 ## 2026-06-23 — ktlint repo-wide auto-format, stage 2/6: `data/` (`[Unreleased]`)
 
 - **Goal:** stage 2 of the staged, layer-by-layer ktlint auto-format (plan

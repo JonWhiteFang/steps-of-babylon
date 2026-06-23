@@ -48,7 +48,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class AdModule {
-
     @Binds
     @Singleton
     abstract fun bindRewardAdManager(impl: RewardAdManagerImpl): RewardAdManager
@@ -72,7 +71,6 @@ internal abstract class AdModule {
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class AdInternalModule {
-
     @Binds
     @Singleton
     abstract fun bindRewardedAdAdapter(impl: RealRewardedAdAdapter): RewardedAdAdapter

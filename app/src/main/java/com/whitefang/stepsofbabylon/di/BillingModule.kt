@@ -43,7 +43,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class BillingModule {
-
     @Binds
     @Singleton
     abstract fun bindBillingManager(impl: BillingManagerImpl): BillingManager
@@ -66,7 +65,6 @@ internal abstract class BillingModule {
 @Module
 @InstallIn(SingletonComponent::class)
 internal abstract class BillingInternalModule {
-
     @Binds
     @Singleton
     abstract fun bindBillingClientAdapter(impl: RealBillingClientAdapter): BillingClientAdapter
@@ -82,7 +80,6 @@ internal abstract class BillingInternalModule {
          */
         @Provides
         @Singleton
-        fun providePurchaseVerifier(): PurchaseVerifier =
-            RealPurchaseVerifier(BuildConfig.PLAY_LICENSE_KEY)
+        fun providePurchaseVerifier(): PurchaseVerifier = RealPurchaseVerifier(BuildConfig.PLAY_LICENSE_KEY)
     }
 }

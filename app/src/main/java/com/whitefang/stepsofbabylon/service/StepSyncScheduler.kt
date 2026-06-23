@@ -7,7 +7,6 @@ import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
 
 object StepSyncScheduler {
-
     private const val WORK_NAME = "step_sync"
 
     fun schedule(context: Context) {

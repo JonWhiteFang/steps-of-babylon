@@ -33,7 +33,10 @@ import javax.inject.Inject
  * `null` so the caller skips that notification refresh rather than inventing a "0". Pure +
  * top-level for unit coverage (StepBalanceDisplayTest).
  */
-internal fun resolveDisplayBalance(fresh: Long?, lastKnown: Long?): Long? = fresh ?: lastKnown
+internal fun resolveDisplayBalance(
+    fresh: Long?,
+    lastKnown: Long?,
+): Long? = fresh ?: lastKnown
 
 /**
  * #244: runs [start] (a `startForeground(...)` call) defensively. On Android 14 (minSdk 34) a typed
@@ -50,27 +53,33 @@ internal fun resolveDisplayBalance(fresh: Long?, lastKnown: Long?): Long? = fres
 internal inline fun startForegroundSafely(
     start: () -> Unit,
     onFailure: (Throwable) -> Unit,
-): Boolean = try {
-    start()
-    true
-} catch (e: RuntimeException) {
-    onFailure(e)
-    false
-}
+): Boolean =
+    try {
+        start()
+        true
+    } catch (e: RuntimeException) {
+        onFailure(e)
+        false
+    }
 
 @AndroidEntryPoint
 class StepCounterService : Service() {
-
     private companion object {
         const val TAG = "StepCounterService"
     }
 
     @Inject lateinit var sensorDataSource: StepSensorDataSource
+
     @Inject lateinit var dailyStepManager: DailyStepManager
+
     @Inject lateinit var notificationManager: StepNotificationManager
+
     @Inject lateinit var playerRepository: PlayerRepository
+
     @Inject lateinit var stepIngestionPrefs: StepIngestionPreferences
+
     @Inject lateinit var sensorManager: SensorManager
+
     @Inject lateinit var notificationPreferences: NotificationPreferences
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -81,11 +90,12 @@ class StepCounterService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        val notification = if (notificationPreferences.isPersistentEnabled()) {
-            notificationManager.buildNotification(0, 0)
-        } else {
-            notificationManager.buildMinimalNotification()
-        }
+        val notification =
+            if (notificationPreferences.isPersistentEnabled()) {
+                notificationManager.buildNotification(0, 0)
+            } else {
+                notificationManager.buildMinimalNotification()
+            }
         // #244: a typed FGS start can throw on Android 14 (background-start restriction via
         // BootReceiver, missing FGS-type prerequisite). Don't let it kill the process — log it and
         // stopSelf() so WorkManager's StepSyncWorker takes over step catch-up. Deliberately Log.w
@@ -93,16 +103,17 @@ class StepCounterService : Service() {
         // recurring FGS-not-allowed failure, and the single-slot, newest-wins breadcrumb (#190) must
         // not be clobbered by a per-boot service-start warning — same rationale as #232's pipeline
         // errors. stopSelf() already averts the hard process-death the breadcrumb exists to record.
-        val started = startForegroundSafely(
-            start = {
-                startForeground(
-                    StepNotificationManager.NOTIFICATION_ID,
-                    notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH,
-                )
-            },
-            onFailure = { Log.w(TAG, "startForeground failed; stopping service (WorkManager will catch up)", it) },
-        )
+        val started =
+            startForegroundSafely(
+                start = {
+                    startForeground(
+                        StepNotificationManager.NOTIFICATION_ID,
+                        notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH,
+                    )
+                },
+                onFailure = { Log.w(TAG, "startForeground failed; stopping service (WorkManager will catch up)", it) },
+            )
         if (!started) {
             stopSelf()
             return
@@ -126,7 +137,12 @@ class StepCounterService : Service() {
                 // balance falls back: to the last good value, or 0 on a cold start before any
                 // successful read (matching the initial onCreate notification, so it never regresses
                 // a known non-zero balance to 0).
-                val fresh = try { playerRepository.observeProfile().first().stepBalance } catch (_: Exception) { null }
+                val fresh =
+                    try {
+                        playerRepository.observeProfile().first().stepBalance
+                    } catch (_: Exception) {
+                        null
+                    }
                 val balance = resolveDisplayBalance(fresh = fresh, lastKnown = lastKnownBalance)
                 if (balance != null) lastKnownBalance = balance
                 notificationManager.updateNotification(
@@ -149,14 +165,19 @@ class StepCounterService : Service() {
         var value: Long? = null
         val latch = CountDownLatch(1)
 
-        val listener = object : SensorEventListener {
-            override fun onSensorChanged(event: SensorEvent) {
-                value = event.values[0].toLong()
-                sensorManager.unregisterListener(this)
-                latch.countDown()
+        val listener =
+            object : SensorEventListener {
+                override fun onSensorChanged(event: SensorEvent) {
+                    value = event.values[0].toLong()
+                    sensorManager.unregisterListener(this)
+                    latch.countDown()
+                }
+
+                override fun onAccuracyChanged(
+                    s: Sensor?,
+                    accuracy: Int,
+                ) {}
             }
-            override fun onAccuracyChanged(s: Sensor?, accuracy: Int) {}
-        }
 
         sensorManager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
         latch.await(5, TimeUnit.SECONDS)
@@ -165,7 +186,11 @@ class StepCounterService : Service() {
         value?.let { stepIngestionPrefs.setCounterAtDayStart(today, it) }
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int = START_STICKY
 
     override fun onBind(intent: Intent?): IBinder? = null
 
