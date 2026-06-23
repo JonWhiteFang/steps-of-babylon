@@ -4,6 +4,36 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### CI — Batch D1: release/CI config hardening (no app change)
+
+**CI/release workflow + gradle-config hardening — no app/Kotlin/schema change, test count unchanged
+(1256 JVM).** Fourth batch off the audit-tracker triage (split D1/D2 by risk); closes #262 **L39, L68, L71,
+L73, L74, L75, L50** (+ a ktlint-job CI-speed split). **L69 deferred** (NDK pin needs a runner-image-confirmed
+version).
+
+- **L74** — `release.yml` gains a `concurrency` guard (`cancel-in-progress: false`) so overlapping `v*` tags
+  can't race the Play upload.
+- **L68** — release lane fails fast if the pushed tag ≠ committed `versionName` (catches a tag on the wrong commit).
+- **L73** — release signature check now asserts the AAB's signer-cert SHA-256 matches the upload keystore
+  (identity), not just `jarsigner -verify` integrity. Uses the existing keystore + alias secrets; no new secret.
+- **L39** — release lane removes the materialized keystore / `keystore.properties` / `local.properties` at
+  job end (`if: always()`).
+- **L71** — PR gate now runs `lintRelease` (release-variant lint that `lintDebug` skips). It does not trip the
+  `play.licenseKey` artifact guard (lint ≠ an `assemble`/`bundle` task) and needs no secrets.
+- **L50** — `gradle.properties` enables `org.gradle.parallel` + `org.gradle.caching` (NOT configuration-cache
+  — fragile on AGP 9 / Hilt-KSP / the benchmark plugins).
+- **L75** — `dependency-submission.yml`'s `contents: write` documented as the action's required scope (it
+  pushes the dependency graph) — intentionally kept, not narrowed.
+- **CI speed** — ktlint hoisted into its own parallel job (standalone SHA-pinned binary, no Gradle/SDK/compile),
+  so a formatting nit fails in ~30s instead of after the ~6-min build; detekt stays in `build-and-test` (it
+  needs type resolution). Also corrected a pre-existing `plan-32-ci.md` misstatement of the license-guard scope.
+
+Plan + adversarial review (D1+D2 reviewed concurrently; 9 confirmed + 4 partial, 5 refuted): the release-lane
+steps (L68/L73/L39/L74) can only be exercised on the next `v*` tag — the PR validates ci.yml + gradle +
+`lintRelease` (BUILD SUCCESSFUL, lintRelease clean, guard not tripped). Plan:
+`docs/superpowers/plans/2026-06-23-batch-d1-ci-release-hardening.md`. (Batch D2 — Kover + SCA tooling — ships
+separately, after this.)
+
 ### Fix — Batch C: i18n locale-safety (one real bug + consistency)
 
 **Locale-correctness — near-zero behavior change on en/US devices; fixes one real reachable bug. 1253 →

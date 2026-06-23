@@ -17,6 +17,10 @@ on:
   push:
     branches: [main]
 
+# #262 L75: contents:write is REQUIRED here — gradle/actions/dependency-submission pushes the resolved
+# dependency graph via GitHub's Dependency-submission API, which writes to the repository's dependency
+# graph (a contents-scoped write). This is the action's documented required scope, NOT an over-grant;
+# narrowing to contents:read would break graph submission. Intentionally kept as-is.
 permissions:
   contents: write
 

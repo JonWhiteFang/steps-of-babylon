@@ -10051,3 +10051,45 @@ After the fix, tests pass on first try and assembleDebug is clean.
   `docs/superpowers/plans/2026-06-23-batch-c-locale-safety.md`.
 - **Next:** open the Batch C PR (branch `fix/batch-c-locale-safety`); check off L88/L89/L87/L91 in #262.
   Then batch D (CI) + the non-batchable items.
+- **SHIPPED:** PR **#335** both CI lanes green (build-and-test 5m55s, connected 4m58s); squash-merged
+  **`13d19c2`**; branch deleted; tracker #262 annotated.
+
+## 2026-06-23 — Audit triage Batch D1 (release/CI config hardening, #262 L39/L68/L71/L73/L74/L75/L50)
+
+- **Goal:** fourth batch off the triage — the CI/build/release cluster. **Split D1/D2 by risk** (developer
+  call): D1 = release/CI config hardening (low app-risk); D2 = additive Kover+SCA tooling (can be flaky),
+  ships separately AFTER D1 (both edit ci.yml → serial to avoid conflict).
+- **Parallelism question (developer):** clarified that splitting into multiple concurrent PRs would NOT cut
+  wall-clock (shared ci.yml + doc-spine → serial merges) — it buys risk isolation, not speed. The genuine
+  CI-speed win is splitting the *jobs*: hoisted **ktlint into its own parallel job** (standalone SHA-pinned
+  binary, no Gradle/SDK/compile → a formatting nit fails in ~30s vs after the ~6-min build); detekt stays in
+  build-and-test (Gradle task, needs type resolution → splitting would duplicate compilation).
+- **Re-grounded at HEAD `13d19c2`** — every finding confirmed LIVE. Key grounding that shaped the plan:
+  (a) **L71 must use `lintRelease`, NOT `assembleRelease`** — `app/build.gradle.kts:163-189` has a
+  `gradle.taskGraph.whenReady` guard that hard-fails any `^(bundle|assemble|package).*Release$` task on a
+  blank `play.licenseKey` (the PR gate has no secret); `lintRelease` ∉ that regex. (b) **L73 needs no new
+  secret** — derive the expected cert fingerprint from the already-decoded keystore. (c) **L75 is a
+  non-issue** — `contents: write` is the dependency-submission action's required scope.
+- **Adversarial review gate** (D1+D2 reviewed CONCURRENTLY in one `Workflow`, 4 dim × verify→skeptic, 8
+  agents): **9 confirmed + 4 partial, 5 refuted.** Most confirmed were the plans' own caveats affirmed.
+  Folded into D1: L73 pin `-alias "$KEY_ALIAS"` + use `keytool -printcert -jarfile` (robust); L71 wording
+  fix (`lintRelease` analyzes release sources/manifest/resources, NOT post-R8 output) + no-lint-baseline
+  note; **correct plan-32-ci.md's pre-existing misstatement** of the license-guard scope.
+- **L69 NDK pin DEFERRED** (developer call): no NDK installed/referenced anywhere; can't confirm the runner
+  image's version without a CI round-trip, and pinning a wrong one would break the tag-only release build.
+  Added a documented code comment + tracking note instead.
+- **Edits:** release.yml — `concurrency` block (L74), tag↔versionName guard step (L68), signer-cert identity
+  assertion replacing the bare `jarsigner -verify` (L73), `if:always()` secret-file cleanup (L39). ci.yml —
+  `lintRelease` added to the gate (L71) + ktlint moved to its own `ktlint` job. gradle.properties —
+  `org.gradle.parallel`+`caching` (L50). app/build.gradle.kts — L69-deferral comment.
+  dependency-submission.yml — L75 required-scope comment.
+- **Verify (local):** `testDebugUnitTest lintRelease` BUILD SUCCESSFUL with the new gradle flags active —
+  **1256 JVM unchanged**, `lintRelease` ran clean and did NOT trip the license guard (grounding confirmed),
+  no new release-only lint errors. `actionlint` clean on all 3 edited workflows. `./lint-kotlin.sh` exit 0.
+  `app/schemas` unchanged. **The release-lane steps (L68/L73/L39/L74) cannot be PR-validated — they run only
+  on the next `v*` tag.**
+- **No ADR** (CI/config hardening on the established ADR-0018 lane; no new architectural decision). Plan:
+  `docs/superpowers/plans/2026-06-23-batch-d1-ci-release-hardening.md`.
+- **Next:** open the D1 PR (branch `ci/batch-d1-release-hardening`); check off L39/L68/L71/L73/L74/L75/L50 in
+  #262. Then **D2** (Kover #218 + SCA L77 — reviewed plan `2026-06-23-batch-d2-additive-tooling.md` ready,
+  rebases on D1's merged ci.yml) + the non-batchable items (battle perf, A24, L12, billing-by-design).

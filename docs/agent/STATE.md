@@ -54,21 +54,30 @@ the med/low backlog (#262) remain.
   (#234). **Manual Play Console Data-Safety action (#192) is still NOT done by this tag** — separate human step
   (`docs/release/data-safety-form.md`). **Next:** med/low backlog (#262/#128; i18n #34; the larger #233
   Simulation-hoist, ADR-0012) + the internal→closed promotion judgment call (Data-Safety #192 prerequisite).
-- **CURRENT (in flight — branch `fix/batch-c-locale-safety`; `[Unreleased]`).** **Audit-finding triage —
-  Batch C (i18n locale-safety).** Third batch off the triage (which code-grounded ~125 unverified #262/#128
-  findings vs HEAD `617babd` → **83 LIVE**; clustered into ~7 batches A–G). Batch C = locale-correctness;
-  closes #262 **L88/L89/L87/L91**. **L88 is a REAL bug** (not the cosmetic risk the triage implied):
-  `BillingProduct.skuId()` default-locale `lowercase()` corrupted `GEM_PACK_MEDIUM`'s `I`→dotless ı under
-  Turkish → wrong wire SKU → broke that purchase + reconciliation. Fixed `lowercase(Locale.ROOT)` + Turkish
-  regression test. Also: 3 display-case sites `Locale.ROOT` (L89); a single Compose-free `formatCount`
-  `Locale.US` helper consolidating the 3 number-format mechanisms (L87) + `%.Nf` `Locale.ROOT` pins on
-  `WorkshopViewModel`/`LabsScreen` (L87b, review-found); L91 = no-op (lowercase correct in the verb phrase).
-  Spec→plan→**adversarial review gate** (3-dim, **6 findings all CONFIRMED, 0 refuted**; 2 MAJORs caught —
-  the L89 `Char.uppercase()` non-compile + the missed `%.Nf` sites). **1253 → 1256 JVM, 0 failures**;
-  `assembleDebug` + detekt + ktlint clean (ktlint baseline regen'd for line-drift); `app/schemas` unchanged;
-  en/US output byte-identical. **Next:** open the Batch C PR; then batch D (CI) + the non-batchable
-  fragile/large items (battle perf, A24 rate-limit clock, L12 BattleViewModel decomposition,
-  billing-anti-fraud-by-design). Triage verdicts cached in this session.
+- **CURRENT (in flight — branch `ci/batch-d1-release-hardening`; `[Unreleased]`).** **Audit-finding triage
+  — Batch D1 (release/CI config hardening).** Fourth batch off the triage; the CI/build/release cluster was
+  split **D1/D2 by risk** (D1 = config hardening; D2 = additive Kover+SCA tooling, ships after). D1 closes
+  #262 **L39/L68/L71/L73/L74/L75/L50** + a ktlint-job CI-speed split. **No app/Kotlin/schema change; 1256 JVM
+  unchanged.** release.yml: concurrency guard (L74), tag↔versionName guard (L68), AAB signer-cert identity
+  assertion (L73), `if:always()` secret-file cleanup (L39). ci.yml: `lintRelease` added to the PR gate (L71 —
+  verified it does NOT trip the #124 license guard, no secrets) + ktlint hoisted to its own parallel job
+  (fails fast, no Gradle/SDK). gradle.properties: parallel+caching (L50, NOT config-cache). L75 = documented
+  as the dependency-submission action's required scope. **L69 NDK pin DEFERRED** (needs a runner-image-
+  confirmed version — pinning wrong would break the tag-only release build). Spec→plan→**adversarial review
+  gate** (D1+D2 reviewed concurrently; **9 confirmed + 4 partial, 5 refuted**; folded in: L73 `-alias` pin +
+  `keytool -printcert`, L71 wording, plan-32-ci.md guard-scope correction). Verified locally:
+  `testDebugUnitTest lintRelease` BUILD SUCCESSFUL (lintRelease clean, guard not tripped), actionlint clean,
+  ktlint pass. **The release-lane steps (L68/L73/L39/L74) can only be exercised on the next `v*` tag** — the
+  PR validates ci.yml/gradle/lintRelease only. **Next:** open the D1 PR; then **D2** (Kover #218 + SCA L77 —
+  reviewed plan ready, sequenced after D1 since both edit ci.yml) + the non-batchable items. Triage verdicts
+  cached in this session.
+- **Previous objective (DONE — MERGED PR #335, squash `13d19c2`; `[Unreleased]`).** **Batch C
+  (i18n locale-safety).** Closed #262 L88/L89/L87/L91. **L88 was a REAL bug** — `BillingProduct.skuId()`
+  default-locale `lowercase()` corrupted `GEM_PACK_MEDIUM`'s `I`→dotless ı under Turkish → broke that
+  purchase + reconciliation; fixed `Locale.ROOT` + Turkish regression test. Plus `Locale.ROOT` on 3
+  display-case sites + `%.Nf` formats, a `Locale.US` `formatCount` helper. Review gate: 6 confirmed, 0
+  refuted (2 MAJORs: L89 `Char.uppercase()` non-compile + missed `%.Nf` sites). 1253 → 1256 JVM. Both CI
+  lanes green.
 - **Previous objective (DONE — MERGED PR #334, squash `367fe6f`; `[Unreleased]`).** **Batch B
   (dead-code removal).** Pure removal, **zero behavior change, no schema change**; closed #262
   L15/L16/L17/L13/L18 (`resetUWCooldowns`, `cooldownText`, `GameLoopThread.fps`, dead Card-Dust API —

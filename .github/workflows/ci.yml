@@ -89,9 +89,13 @@ jobs:
         if: needs.changes.outputs.code == 'true'
 
       # The documented one-call gate (docs/archive/smoke_tests/.../README.md): lint + unit + debug build.
-      - name: Lint, unit tests, debug build
+      # #262 L71: lintRelease added so the RELEASE variant's lint (release manifest/resource config +
+      # release-only lint, which lintDebug skips) is gated on every PR. lintRelease is a lint task — it does
+      # NOT match the play.licenseKey release-artifact guard regex and needs no signing secrets (it does not
+      # assemble/sign). It analyzes the release variant's sources/manifest/resources, not the post-R8 output.
+      - name: Lint (debug + release), unit tests, debug build
         if: needs.changes.outputs.code == 'true'
-        run: ./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace
+        run: ./gradlew testDebugUnitTest lintDebug lintRelease assembleDebug --stacktrace
 
       - name: Compile benchmark modules (type-check only; benchmarks run locally, never CI-gated)
         if: needs.changes.outputs.code == 'true'
@@ -118,17 +122,6 @@ jobs:
         if: needs.changes.outputs.code == 'true'
         run: ./gradlew :app:detekt --stacktrace
 
-      - name: ktlint (formatting gate)
-        if: needs.changes.outputs.code == 'true'
-        run: |
-          KTLINT_VERSION="1.8.0"
-          KTLINT_SHA256="a3fd620207d5c40da6ca789b95e7f823c54e854b7fade7f613e91096a3706d75"
-          mkdir -p .ktlint
-          curl -sSfL "https://github.com/pinterest/ktlint/releases/download/${KTLINT_VERSION}/ktlint" -o .ktlint/ktlint
-          echo "$KTLINT_SHA256  .ktlint/ktlint" | shasum -a 256 -c -
-          chmod +x .ktlint/ktlint
-          ./lint-kotlin.sh
-
       - name: Upload reports
         if: always() && needs.changes.outputs.code == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -144,3 +137,28 @@ jobs:
       - name: Docs-only — heavy gate skipped
         if: needs.changes.outputs.code != 'true'
         run: echo "Docs-only change — build/lint/test skipped; required check satisfied."
+
+  # #262 (CI speed): ktlint runs in its OWN job, parallel to build-and-test. ktlint is a standalone
+  # SHA-pinned binary linting source files — it needs NO JDK / Android SDK / Gradle setup and does NOT
+  # compile, so a formatting nit fails in ~30s instead of waiting on the ~6-min build. (detekt stays in
+  # build-and-test: it's a Gradle task needing type resolution, so splitting it would duplicate compilation.)
+  ktlint:
+    needs: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        if: needs.changes.outputs.code == 'true'
+      - name: ktlint (formatting gate)
+        if: needs.changes.outputs.code == 'true'
+        run: |
+          KTLINT_VERSION="1.8.0"
+          KTLINT_SHA256="a3fd620207d5c40da6ca789b95e7f823c54e854b7fade7f613e91096a3706d75"
+          mkdir -p .ktlint
+          curl -sSfL "https://github.com/pinterest/ktlint/releases/download/${KTLINT_VERSION}/ktlint" -o .ktlint/ktlint
+          echo "$KTLINT_SHA256  .ktlint/ktlint" | shasum -a 256 -c -
+          chmod +x .ktlint/ktlint
+          ./lint-kotlin.sh
+      - name: Docs-only — ktlint skipped
+        if: needs.changes.outputs.code != 'true'
+        run: echo "Docs-only change — ktlint skipped."

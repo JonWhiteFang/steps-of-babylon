@@ -13,6 +13,12 @@ on:
 permissions:
   contents: write
 
+# #262 L74: serialize overlapping `v*` tag pushes so two releases can't race the Play upload.
+# cancel-in-progress:false — a release upload must NEVER be interrupted mid-flight; queue instead.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -31,6 +37,23 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
       - uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+
+      # #262 L68: fail fast if the pushed tag doesn't match the committed versionName, so a tag on the
+      # wrong commit can't ship a mislabeled AAB. CI builds the COMMITTED versionCode/versionName (no
+      # auto-bump); the tag is the human's assertion of which version this is. Skipped on manual dispatch
+      # (no tag). versionName is the comparand (versionCode is not encoded in the tag).
+      - name: Tag ↔ versionName consistency guard
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME#v}"
+          vn="$(grep -oE 'versionName = "[^"]+"' app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')"
+          echo "tag=$GITHUB_REF_NAME (→ $tag) · committed versionName=$vn"
+          if [ "$tag" != "$vn" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME ($tag) != committed versionName ($vn) in app/build.gradle.kts." \
+              "Re-tag the correct commit or bump versionName before tagging."
+            exit 1
+          fi
 
       # Never ship a signed build that fails unit tests.
       - name: Unit test guard
@@ -90,8 +113,30 @@ jobs:
       - name: Build release bundle
         run: ./gradlew bundleRelease
 
-      - name: Verify signature
-        run: jarsigner -verify app/build/outputs/bundle/release/app-release.aab
+      # #262 L73: jarsigner -verify alone proves only INTEGRITY (the AAB is signed + intact), not
+      # WHICH key signed it. Additionally assert the AAB's signer cert SHA-256 matches the upload
+      # keystore's cert — catching a wrong/substituted signing key before it reaches Play. (Play App
+      # Signing re-signs server-side, so this guards the *upload* identity.) Uses the existing keystore
+      # + alias/storepass secrets; no new secret.
+      - name: Verify signature + assert signing identity
+        env:
+          STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEYSTORE_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          AAB=app/build/outputs/bundle/release/app-release.aab
+          jarsigner -verify "$AAB"
+          norm() { grep -m1 'SHA256:' | sed -E 's/.*SHA256:[[:space:]]*//; s/[: ]//g' | tr 'a-f' 'A-F'; }
+          expected="$(keytool -list -v -keystore release/upload-keystore.jks -alias "$KEY_ALIAS" \
+            -storepass "$STORE_PASSWORD" | norm)"
+          actual="$(keytool -printcert -jarfile "$AAB" | norm)"
+          echo "upload-key SHA256=$expected"
+          echo "aab-signer SHA256=$actual"
+          if [ -z "$expected" ] || [ "$expected" != "$actual" ]; then
+            echo "::error::AAB signer cert ($actual) does not match the upload keystore ($expected)." \
+              "Refusing to publish an AAB signed by an unexpected key."
+            exit 1
+          fi
 
       # Play "What's new" comes from the annotated tag message (capped at Play's 500-char
       # limit). Falls back to a generic line for lightweight tags / manual dispatch runs.
@@ -121,3 +166,11 @@ jobs:
         with:
           files: app/build/outputs/bundle/release/app-release.aab
           generate_release_notes: true
+
+      # #262 L39: explicitly remove the materialized signing/credential files. Hosted runners are
+      # ephemeral (so residual risk is low), but explicit cleanup is best practice and defends against
+      # a future artifact-upload step accidentally capturing them. if:always() — runs even on failure.
+      - name: Clean up secret files
+        if: always()
+        run: |
+          rm -f release/upload-keystore.jks keystore.properties local.properties
