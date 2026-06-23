@@ -7,11 +7,21 @@ import com.whitefang.stepsofbabylon.R
 
 enum class SoundEffect { SHOOT, HIT, ENEMY_DEATH, UW_ACTIVATE, UPGRADE_PURCHASE, WAVE_START, ROUND_END }
 
-class SoundManager(context: Context) {
-    private val soundPool = SoundPool.Builder()
-        .setMaxStreams(8)
-        .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build())
-        .build()
+class SoundManager(
+    context: Context,
+) {
+    private val soundPool =
+        SoundPool
+            .Builder()
+            .setMaxStreams(8)
+            .setAudioAttributes(
+                AudioAttributes
+                    .Builder()
+                    .setUsage(
+                        AudioAttributes.USAGE_GAME,
+                    ).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build(),
+            ).build()
 
     private val soundIds = mutableMapOf<SoundEffect, Int>()
     private var volume = 1f
@@ -28,7 +38,10 @@ class SoundManager(context: Context) {
         soundIds[SoundEffect.ROUND_END] = soundPool.load(context, R.raw.sfx_round_end, 1)
     }
 
-    fun play(effect: SoundEffect, expectedIntervalMs: Long = 100L) {
+    fun play(
+        effect: SoundEffect,
+        expectedIntervalMs: Long = 100L,
+    ) {
         if (muted) return
         // Frequency-aware throttle for SHOOT: scales to ~1/3 of expected interval,
         // floored at 30ms (SoundPool channel safety) and capped at 100ms (baseline).
@@ -41,8 +54,17 @@ class SoundManager(context: Context) {
         soundIds[effect]?.let { soundPool.play(it, volume, volume, 1, 0, 1f) }
     }
 
-    fun setVolume(v: Float) { volume = v.coerceIn(0f, 1f) }
-    fun setMuted(m: Boolean) { muted = m }
+    fun setVolume(v: Float) {
+        volume = v.coerceIn(0f, 1f)
+    }
+
+    fun setMuted(m: Boolean) {
+        muted = m
+    }
+
     fun isMuted(): Boolean = muted
-    fun release() { soundPool.release() }
+
+    fun release() {
+        soundPool.release()
+    }
 }

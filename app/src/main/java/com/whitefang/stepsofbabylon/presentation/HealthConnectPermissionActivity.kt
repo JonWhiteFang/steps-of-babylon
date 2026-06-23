@@ -25,12 +25,13 @@ class HealthConnectPermissionActivity : ComponentActivity() {
                 Modifier
                     .fillMaxSize()
                     .padding(24.dp)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(rememberScrollState()),
             ) {
                 Text("Privacy Policy", style = MaterialTheme.typography.headlineMedium)
                 Text(
                     modifier = Modifier.padding(top = 16.dp),
-                    text = """
+                    text =
+                        """
 Steps of Babylon uses your device's step counter sensor to track daily walking activity. This data powers all in-game progression.
 
 Health Connect Integration
@@ -47,7 +48,7 @@ Advertising
 The app shows optional, opt-in reward ads via Google AdMob. To serve these, Google's ads SDK collects your device's advertising ID; this is collected by Google, not by us. A consent prompt governs ad personalisation. You can reset or limit your advertising ID in Settings → Google → Ads. Full privacy policy: https://jonwhitefang.github.io/steps-of-babylon/
 
 Contact: jonwhitefang@gmail.com
-                    """.trimIndent()
+                        """.trimIndent(),
                 )
             }
         }

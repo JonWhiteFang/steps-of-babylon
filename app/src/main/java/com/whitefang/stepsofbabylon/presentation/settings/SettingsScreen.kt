@@ -35,10 +35,20 @@ fun SettingsScreen(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        ToggleRow("Live Step Updates", "Update notification with live step count and balance. A minimal tracking notification is always shown while step counting is active.", state.persistentSteps, viewModel::setPersistent)
+        ToggleRow(
+            "Live Step Updates",
+            "Update notification with live step count and balance. A minimal tracking notification is always shown while step counting is active.",
+            state.persistentSteps,
+            viewModel::setPersistent,
+        )
         ToggleRow("Supply Drops", "Notifications for walking rewards", state.supplyDrops, viewModel::setSupplyDrops)
         ToggleRow("Smart Reminders", "Upgrade proximity reminders", state.smartReminders, viewModel::setSmartReminders)
-        ToggleRow("Milestone Alerts", "Wave records and step milestones", state.milestoneAlerts, viewModel::setMilestoneAlerts)
+        ToggleRow(
+            "Milestone Alerts",
+            "Wave records and step milestones",
+            state.milestoneAlerts,
+            viewModel::setMilestoneAlerts,
+        )
         Spacer(Modifier.height(16.dp))
         Text("Sound", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
@@ -54,7 +64,12 @@ fun SettingsScreen(
                 )
             }
         }
-        ToggleRow("Haptic Feedback", "Vibrate on taps, claims, and rewards", state.hapticsEnabled, viewModel::setHapticsEnabled)
+        ToggleRow(
+            "Haptic Feedback",
+            "Vibrate on taps, claims, and rewards",
+            state.hapticsEnabled,
+            viewModel::setHapticsEnabled,
+        )
         Spacer(Modifier.height(16.dp))
         Text("Help", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
@@ -77,7 +92,11 @@ fun SettingsScreen(
         OutlinedCard(onClick = onOptimizeBattery, modifier = Modifier.fillMaxWidth()) {
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column {
-                    Text("Background activity", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Text(
+                        "Background activity",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                    )
                     Text(
                         "Allow step counting to keep running in the background",
                         style = MaterialTheme.typography.bodySmall,
@@ -108,14 +127,26 @@ fun SettingsScreen(
         OutlinedCard(
             onClick = { deleteStep = 1 },
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)),
+            colors =
+                CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
+                ),
         ) {
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text("Delete All Data", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)
-                    Text("Permanently erase all progress", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "Delete All Data",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    Text(
+                        "Permanently erase all progress",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
@@ -125,8 +156,14 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { deleteStep = 0 },
             title = { Text("Delete All Data?") },
-            text = { Text("This will permanently delete all your progress, steps history, upgrades, and currency. This cannot be undone.") },
-            confirmButton = { TextButton(onClick = { deleteStep = 2 }) { Text("Continue", color = MaterialTheme.colorScheme.error) } },
+            text = {
+                Text(
+                    "This will permanently delete all your progress, steps history, upgrades, and currency. This cannot be undone.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { deleteStep = 2 }) { Text("Continue", color = MaterialTheme.colorScheme.error) }
+            },
             dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text("Cancel") } },
         )
     }
@@ -135,7 +172,11 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { deleteStep = 0 },
             title = { Text("Are you absolutely sure?") },
-            text = { Text("All steps, upgrades, cards, weapons, and purchases will be lost forever. The app will restart.") },
+            text = {
+                Text(
+                    "All steps, upgrades, cards, weapons, and purchases will be lost forever. The app will restart.",
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     deleteStep = 0
@@ -148,11 +189,20 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun ToggleRow(title: String, subtitle: String, checked: Boolean, onToggle: (Boolean) -> Unit) {
+private fun ToggleRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onToggle: (Boolean) -> Unit,
+) {
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         Switch(checked = checked, onCheckedChange = onToggle)
     }

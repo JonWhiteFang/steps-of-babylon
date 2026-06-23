@@ -4,6 +4,32 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Style — ktlint repo-wide format, stage 4/6 (`presentation/` excl battle)
+
+**Pure formatting — no production-logic, schema, economy, or engine change; no test-count change (1254
+JVM, 0 failures).** Stage 4 of the staged, layer-by-layer ktlint auto-format: `ktlint -F` scoped to the
+`presentation/` layer **EXCLUDING `presentation/battle/`** (the fragile battle renderer/engine zone,
+reserved for Stage 5) — the Compose screens, ViewModels, UiState/DTO files, navigation, onboarding, audio,
+theme + ui-helpers, plus the two top-level activities (`MainActivity.kt`,
+`HealthConnectPermissionActivity.kt`); ~50 of 64 in-scope files changed. The largest stage; kept a single
+PR. Battle exclusion was asserted before and after the sweep. All changes are mechanical Bucket-A transforms
+(the dominant pattern = `@HiltViewModel class X @Inject constructor(...)` class-signature reflow; plus
+function-/parameter-signature reflow, block-body→expression-body wrapping, if-else & when-entry bracing,
+multiline/property wrapping, trailing-comma on call/declaration sites, import ordering + no-wildcard-imports,
+same-line-statement split) — the full whitespace-ignored diff (5163 lines / 2445 +/- content lines) was
+reviewed hunk-by-hunk against the safe-transform allowlist by two parallel reviewer subagents plus the main
+agent; no literal/operator/identifier/string or logic changed, and **zero `@Composable` function names
+changed** (PascalCase Compose names are Bucket B — ktlint leaves them untouched). **Baselines regenerated**
+(the staged mechanism): `config/ktlint/baseline.xml` over the full `app/src` scope **7423 → 4974** (the
+biggest single-stage drop; `presentation/`-non-battle Bucket-A entries cleared, `presentation/battle/` +
+test layers stay covered); `config/detekt/baseline.xml` **474 → 387** (regen needed this stage — 11
+format-induced findings added: 5 `LongMethod` Composables pushed past 60 lines by brace-expansion of
+unchanged bodies + 6 `MaxLineLength` long-line/comment re-keys; 98 pre-existing long one-liners ktlint
+wrapped fell out — no new smell type). `lint-kotlin.sh` (ktlint check) + `:app:detekt` both green; the #253
+Robolectric Compose UI tests exercise the reformatted screens green. Plan:
+`docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`. Stages 5–6 (`presentation/battle/`,
+test sources) follow in sequence.
+
 ### Style — ktlint repo-wide format, stage 3/6 (`service/`+`di/`)
 
 **Pure formatting — no production-logic, schema, economy, or engine change; no test-count change (1254

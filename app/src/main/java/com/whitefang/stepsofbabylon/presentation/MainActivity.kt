@@ -11,12 +11,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -44,7 +44,7 @@ import com.whitefang.stepsofbabylon.data.ads.internal.ConsentManager
 import com.whitefang.stepsofbabylon.data.billing.internal.ActivityProvider
 import com.whitefang.stepsofbabylon.data.healthconnect.HealthConnectClientWrapper
 import com.whitefang.stepsofbabylon.data.onboarding.OnboardingPreferences
-import com.whitefang.stepsofbabylon.presentation.onboarding.OnboardingScreen
+import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.presentation.audio.MusicManager
 import com.whitefang.stepsofbabylon.presentation.audio.MusicPreferences
 import com.whitefang.stepsofbabylon.presentation.battle.BattleScreen
@@ -55,6 +55,7 @@ import com.whitefang.stepsofbabylon.presentation.labs.LabsScreen
 import com.whitefang.stepsofbabylon.presentation.missions.MissionsScreen
 import com.whitefang.stepsofbabylon.presentation.navigation.BottomNavBar
 import com.whitefang.stepsofbabylon.presentation.navigation.Screen
+import com.whitefang.stepsofbabylon.presentation.onboarding.OnboardingScreen
 import com.whitefang.stepsofbabylon.presentation.settings.SettingsScreen
 import com.whitefang.stepsofbabylon.presentation.stats.StatsScreen
 import com.whitefang.stepsofbabylon.presentation.store.StoreScreen
@@ -65,27 +66,32 @@ import com.whitefang.stepsofbabylon.presentation.ui.theme.StepsOfBabylonTheme
 import com.whitefang.stepsofbabylon.presentation.weapons.UltimateWeaponScreen
 import com.whitefang.stepsofbabylon.presentation.workshop.WorkshopScreen
 import com.whitefang.stepsofbabylon.service.StepCounterService
-import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
     @Inject lateinit var healthConnectWrapper: HealthConnectClientWrapper
+
     @Inject lateinit var playerRepository: PlayerRepository
+
     @Inject internal lateinit var activityProvider: ActivityProvider
+
     @Inject internal lateinit var consentManager: ConsentManager
+
     @Inject lateinit var musicPreferences: MusicPreferences
+
     @Inject lateinit var onboardingPreferences: OnboardingPreferences
+
     @Inject lateinit var crashBreadcrumbStore: com.whitefang.stepsofbabylon.data.diagnostics.CrashBreadcrumbStore
+
     @Inject lateinit var billingManager: com.whitefang.stepsofbabylon.domain.repository.BillingManager
 
     private lateinit var musicManager: MusicManager
@@ -103,10 +109,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        musicManager = MusicManager(this).apply {
-            setVolume(musicPreferences.getVolume())
-            setMuted(musicPreferences.isMuted())
-        }
+        musicManager =
+            MusicManager(this).apply {
+                setVolume(musicPreferences.getVolume())
+                setMuted(musicPreferences.isMuted())
+            }
         enableEdgeToEdge()
         setContent {
             StepsOfBabylonTheme {
@@ -120,8 +127,9 @@ class MainActivity : ComponentActivity() {
                 var stepCountingGranted by remember {
                     mutableStateOf(
                         ContextCompat.checkSelfPermission(
-                            context, Manifest.permission.ACTIVITY_RECOGNITION
-                        ) == PackageManager.PERMISSION_GRANTED
+                            context,
+                            Manifest.permission.ACTIVITY_RECOGNITION,
+                        ) == PackageManager.PERMISSION_GRANTED,
                     )
                 }
                 // Permanently-denied recovery (spec §4): when set, the Scaffold snackbar offers a
@@ -129,48 +137,55 @@ class MainActivity : ComponentActivity() {
                 val snackbarHostState = remember { SnackbarHostState() }
                 var showStepPermissionSettingsHint by remember { mutableStateOf(false) }
 
-                val hcPermissionLauncher = rememberLauncherForActivityResult(
-                    PermissionController.createRequestPermissionResultContract()
-                ) { }
+                val hcPermissionLauncher =
+                    rememberLauncherForActivityResult(
+                        PermissionController.createRequestPermissionResultContract(),
+                    ) { }
 
-                val permissionLauncher = rememberLauncherForActivityResult(
-                    ActivityResultContracts.RequestMultiplePermissions()
-                ) { results ->
-                    val activityGranted = results[Manifest.permission.ACTIVITY_RECOGNITION] == true
-                    permissionAsked = true
-                    stepCountingGranted = activityGranted
-                    if (activityGranted) {
-                        context.startForegroundService(
-                            Intent(context, StepCounterService::class.java)
-                        )
-                        if (healthConnectWrapper.isAvailable()) {
-                            hcPermissionLauncher.launch(healthConnectWrapper.getRequiredPermissions())
+                val permissionLauncher =
+                    rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestMultiplePermissions(),
+                    ) { results ->
+                        val activityGranted = results[Manifest.permission.ACTIVITY_RECOGNITION] == true
+                        permissionAsked = true
+                        stepCountingGranted = activityGranted
+                        if (activityGranted) {
+                            context.startForegroundService(
+                                Intent(context, StepCounterService::class.java),
+                            )
+                            if (healthConnectWrapper.isAvailable()) {
+                                hcPermissionLauncher.launch(healthConnectWrapper.getRequiredPermissions())
+                            }
+                        } else if (onboardingComplete &&
+                            !ActivityCompat.shouldShowRequestPermissionRationale(
+                                this@MainActivity,
+                                Manifest.permission.ACTIVITY_RECOGNITION,
+                            )
+                        ) {
+                            // Permanently denied ("Don't ask again") AND past onboarding: a bare
+                            // launch() is now a silent no-op, so surface the Settings-recovery hint
+                            // instead of stranding the player (spec §4). During onboarding itself the
+                            // carousel's own "Open Settings" affordance handles this, so we don't
+                            // double up while !onboardingComplete.
+                            showStepPermissionSettingsHint = true
                         }
-                    } else if (onboardingComplete &&
-                        !ActivityCompat.shouldShowRequestPermissionRationale(
-                            this@MainActivity, Manifest.permission.ACTIVITY_RECOGNITION
-                        )
-                    ) {
-                        // Permanently denied ("Don't ask again") AND past onboarding: a bare
-                        // launch() is now a silent no-op, so surface the Settings-recovery hint
-                        // instead of stranding the player (spec §4). During onboarding itself the
-                        // carousel's own "Open Settings" affordance handles this, so we don't
-                        // double up while !onboardingComplete.
-                        showStepPermissionSettingsHint = true
                     }
-                }
 
                 LaunchedEffect(Unit) {
-                    val activityGranted = ContextCompat.checkSelfPermission(
-                        context, Manifest.permission.ACTIVITY_RECOGNITION
-                    ) == PackageManager.PERMISSION_GRANTED
-                    val notifGranted = ContextCompat.checkSelfPermission(
-                        context, Manifest.permission.POST_NOTIFICATIONS
-                    ) == PackageManager.PERMISSION_GRANTED
+                    val activityGranted =
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.ACTIVITY_RECOGNITION,
+                        ) == PackageManager.PERMISSION_GRANTED
+                    val notifGranted =
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.POST_NOTIFICATIONS,
+                        ) == PackageManager.PERMISSION_GRANTED
 
                     if (activityGranted) {
                         context.startForegroundService(
-                            Intent(context, StepCounterService::class.java)
+                            Intent(context, StepCounterService::class.java),
                         )
                         if (healthConnectWrapper.isAvailable() && !healthConnectWrapper.hasPermissions()) {
                             hcPermissionLauncher.launch(healthConnectWrapper.getRequiredPermissions())
@@ -184,10 +199,11 @@ class MainActivity : ComponentActivity() {
                     // and because permanent-denial recovery lives in the launcher callback
                     // (Step 3), the previously-silent no-op now surfaces the Settings hint.
                     if (onboardingComplete && (!activityGranted || !notifGranted)) {
-                        val needed = buildList {
-                            if (!activityGranted) add(Manifest.permission.ACTIVITY_RECOGNITION)
-                            if (!notifGranted) add(Manifest.permission.POST_NOTIFICATIONS)
-                        }
+                        val needed =
+                            buildList {
+                                if (!activityGranted) add(Manifest.permission.ACTIVITY_RECOGNITION)
+                                if (!notifGranted) add(Manifest.permission.POST_NOTIFICATIONS)
+                            }
                         permissionLauncher.launch(needed.toTypedArray())
                     }
 
@@ -202,10 +218,13 @@ class MainActivity : ComponentActivity() {
                             // A brand-new install has no scheduled notifications to deep-link from,
                             // and during a replay the user is mid-tutorial — drop rather than
                             // buffer; the route is reissued by the notification tap if it recurs.
-                            val onOnboarding = navController.currentBackStackEntry
-                                ?.destination?.route == Screen.Onboarding.route
+                            val onOnboarding =
+                                navController.currentBackStackEntry
+                                    ?.destination
+                                    ?.route == Screen.Onboarding.route
                             if (!onOnboarding) {
-                                Screen.fromRoute(route)
+                                Screen
+                                    .fromRoute(route)
                                     ?.takeIf { it.route in Screen.argumentFreeRoutes }
                                     ?.let { navController.navigate(it.route) }
                             }
@@ -247,7 +266,7 @@ class MainActivity : ComponentActivity() {
                         ) {
                             BottomNavBar(navController)
                         }
-                    }
+                    },
                 ) { innerPadding ->
                     // #190 REL-1: surface a one-time notice if the previous session crashed.
                     // Informational only — there is no in-app report channel to wire an action to.
@@ -264,16 +283,17 @@ class MainActivity : ComponentActivity() {
                     }
                     LaunchedEffect(showStepPermissionSettingsHint) {
                         if (showStepPermissionSettingsHint) {
-                            val result = snackbarHostState.showSnackbar(
-                                message = "Step counting is off — enable it in Settings",
-                                actionLabel = "Settings",
-                            )
+                            val result =
+                                snackbarHostState.showSnackbar(
+                                    message = "Step counting is off — enable it in Settings",
+                                    actionLabel = "Settings",
+                                )
                             if (result == SnackbarResult.ActionPerformed) {
                                 context.startActivity(
                                     Intent(
                                         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                                         Uri.fromParts("package", context.packageName, null),
-                                    )
+                                    ),
                                 )
                             }
                             // Reset AFTER await (not before): resetting first would change this
@@ -283,11 +303,29 @@ class MainActivity : ComponentActivity() {
                             showStepPermissionSettingsHint = false
                         }
                     }
-                    val reducedMotion = remember {
-                        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-                    }
-                    val enterAnim = if (reducedMotion) fadeIn(snap()) else fadeIn(tween(200)) + slideInHorizontally(tween(200)) { it / 4 }
-                    val exitAnim = if (reducedMotion) fadeOut(snap()) else fadeOut(tween(200)) + slideOutHorizontally(tween(200)) { -it / 4 }
+                    val reducedMotion =
+                        remember {
+                            Settings.Global.getFloat(
+                                context.contentResolver,
+                                Settings.Global.ANIMATOR_DURATION_SCALE,
+                                1f,
+                            ) ==
+                                0f
+                        }
+                    val enterAnim =
+                        if (reducedMotion) {
+                            fadeIn(snap())
+                        } else {
+                            fadeIn(tween(200)) +
+                                slideInHorizontally(tween(200)) { it / 4 }
+                        }
+                    val exitAnim =
+                        if (reducedMotion) {
+                            fadeOut(snap())
+                        } else {
+                            fadeOut(tween(200)) +
+                                slideOutHorizontally(tween(200)) { -it / 4 }
+                        }
 
                     NavHost(
                         navController = navController,
@@ -295,8 +333,22 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding),
                         enterTransition = { enterAnim },
                         exitTransition = { exitAnim },
-                        popEnterTransition = { if (reducedMotion) fadeIn(snap()) else fadeIn(tween(200)) + slideInHorizontally(tween(200)) { -it / 4 } },
-                        popExitTransition = { if (reducedMotion) fadeOut(snap()) else fadeOut(tween(200)) + slideOutHorizontally(tween(200)) { it / 4 } },
+                        popEnterTransition = {
+                            if (reducedMotion) {
+                                fadeIn(snap())
+                            } else {
+                                fadeIn(tween(200)) +
+                                    slideInHorizontally(tween(200)) { -it / 4 }
+                            }
+                        },
+                        popExitTransition = {
+                            if (reducedMotion) {
+                                fadeOut(snap())
+                            } else {
+                                fadeOut(tween(200)) +
+                                    slideOutHorizontally(tween(200)) { it / 4 }
+                            }
+                        },
                     ) {
                         composable(Screen.Home.route) {
                             HomeScreen(
@@ -310,10 +362,12 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(Screen.Onboarding.route) {
-                            val reducedMotion = remember {
-                                com.whitefang.stepsofbabylon.presentation.battle.effects
-                                    .ReducedMotionCheck.isReducedMotionEnabled(context)
-                            }
+                            val reducedMotion =
+                                remember {
+                                    com.whitefang.stepsofbabylon.presentation.battle.effects
+                                        .ReducedMotionCheck
+                                        .isReducedMotionEnabled(context)
+                                }
                             OnboardingScreen(
                                 stepCountingGranted = stepCountingGranted,
                                 permissionAsked = permissionAsked,
@@ -323,7 +377,7 @@ class MainActivity : ComponentActivity() {
                                         arrayOf(
                                             Manifest.permission.ACTIVITY_RECOGNITION,
                                             Manifest.permission.POST_NOTIFICATIONS,
-                                        )
+                                        ),
                                     )
                                 },
                                 onOpenAppSettings = {
@@ -331,7 +385,7 @@ class MainActivity : ComponentActivity() {
                                         Intent(
                                             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                                             Uri.fromParts("package", context.packageName, null),
-                                        )
+                                        ),
                                     )
                                 },
                                 onRequestBatteryExemption = { requestBatteryExemption(context) },
@@ -396,7 +450,8 @@ class MainActivity : ComponentActivity() {
                             StoreScreen()
                         }
                         composable(Screen.Help.route) {
-                            com.whitefang.stepsofbabylon.presentation.help.HelpScreen()
+                            com.whitefang.stepsofbabylon.presentation.help
+                                .HelpScreen()
                         }
                     }
                 }
@@ -421,7 +476,8 @@ class MainActivity : ComponentActivity() {
         // helper (BillingManagerImpl.connect() has no internal timeout). StepSyncWorker is the
         // background safety net for users who never re-foreground.
         activityScope.launch(Dispatchers.IO) {
-            com.whitefang.stepsofbabylon.service.reconcileBillingSafely(billingManager)
+            com.whitefang.stepsofbabylon.service
+                .reconcileBillingSafely(billingManager)
         }
         // Prefetch UMP consent so the first reward-ad tap doesn't pay the
         // ~200-500ms UMP init latency. Flag-gated on BuildConfig.USE_REAL_ADS so debug
@@ -469,14 +525,21 @@ class MainActivity : ComponentActivity() {
  * battery-optimization settings list if the direct-ask intent can't be resolved on this device.
  */
 private fun requestBatteryExemption(context: android.content.Context) {
-    val direct = Intent(
-        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-        Uri.parse("package:${context.packageName}"),
-    )
+    val direct =
+        Intent(
+            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+            Uri.parse("package:${context.packageName}"),
+        )
     val settingsList = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
     when {
-        direct.resolveActivity(context.packageManager) != null -> context.startActivity(direct)
-        settingsList.resolveActivity(context.packageManager) != null -> context.startActivity(settingsList)
+        direct.resolveActivity(context.packageManager) != null -> {
+            context.startActivity(direct)
+        }
+
+        settingsList.resolveActivity(context.packageManager) != null -> {
+            context.startActivity(settingsList)
+        }
+
         else -> { /* no battery-optimization UI on this device — nothing to do */ }
     }
 }
@@ -493,4 +556,3 @@ private fun openPrivacyPolicy(context: android.content.Context) {
         context.startActivity(view)
     }
 }
-

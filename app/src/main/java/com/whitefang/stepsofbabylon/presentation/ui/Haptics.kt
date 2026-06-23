@@ -17,7 +17,10 @@ import com.whitefang.stepsofbabylon.data.HapticsPreferences
  * is enabled) and VIRTUAL_KEY additionally honours the system touch-haptic setting — intended.
  * No VIBRATE permission required.
  */
-class Haptics(private val view: View, private val prefs: HapticsPreferences) {
+class Haptics(
+    private val view: View,
+    private val prefs: HapticsPreferences,
+) {
     /** Light tick — purchase / equip / battle-start / pause taps. */
     fun tap() {
         if (prefs.isEnabled()) view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)

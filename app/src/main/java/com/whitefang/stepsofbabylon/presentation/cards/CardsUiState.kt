@@ -30,4 +30,7 @@ data class CardsUiState(
     val userMessage: String? = null,
 )
 
-data class PackOption(val tier: PackTier, val canAfford: Boolean)
+data class PackOption(
+    val tier: PackTier,
+    val canAfford: Boolean,
+)

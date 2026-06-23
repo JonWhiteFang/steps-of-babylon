@@ -2,9 +2,9 @@ package com.whitefang.stepsofbabylon.presentation.labs
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
 import com.whitefang.stepsofbabylon.domain.model.ResearchType
 import com.whitefang.stepsofbabylon.domain.repository.LabRepository
+import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.time.TimeBaselineSource
 import com.whitefang.stepsofbabylon.domain.time.TimeIntegrity
@@ -15,8 +15,8 @@ import com.whitefang.stepsofbabylon.domain.usecase.RushResearch
 import com.whitefang.stepsofbabylon.domain.usecase.StartResearch
 import com.whitefang.stepsofbabylon.domain.usecase.UnlockLabSlot
 import com.whitefang.stepsofbabylon.domain.usecase.UpdateCompleteResearchMissionProgress
-import dagger.hilt.android.lifecycle.HiltViewModel
 import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,190 +34,215 @@ import kotlin.math.max
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class LabsViewModel @Inject constructor(
-    private val labRepository: LabRepository,
-    private val playerRepository: PlayerRepository,
-    private val missionRepository: MissionRepository,
-    private val timeBaselineSource: TimeBaselineSource,
-) : ViewModel() {
+class LabsViewModel
+    @Inject
+    constructor(
+        private val labRepository: LabRepository,
+        private val playerRepository: PlayerRepository,
+        private val missionRepository: MissionRepository,
+        private val timeBaselineSource: TimeBaselineSource,
+    ) : ViewModel() {
+        private val calculateCost = CalculateResearchCost()
+        private val calculateTime = CalculateResearchTime()
+        private val startResearch = StartResearch(labRepository, playerRepository, calculateCost, calculateTime)
+        private val rushResearch = RushResearch(labRepository, playerRepository)
+        private val unlockLabSlot = UnlockLabSlot(playerRepository)
+        private val checkCompletion = CheckResearchCompletion(labRepository)
+        private val updateMissionProgress = UpdateCompleteResearchMissionProgress(missionRepository)
 
-    private val calculateCost = CalculateResearchCost()
-    private val calculateTime = CalculateResearchTime()
-    private val startResearch = StartResearch(labRepository, playerRepository, calculateCost, calculateTime)
-    private val rushResearch = RushResearch(labRepository, playerRepository)
-    private val unlockLabSlot = UnlockLabSlot(playerRepository)
-    private val checkCompletion = CheckResearchCompletion(labRepository)
-    private val updateMissionProgress = UpdateCompleteResearchMissionProgress(missionRepository)
+        private val tick = MutableStateFlow(System.currentTimeMillis())
+        private val _processing = MutableStateFlow(false)
+        private val _userMessage = MutableStateFlow<String?>(null)
 
-    private val tick = MutableStateFlow(System.currentTimeMillis())
-    private val _processing = MutableStateFlow(false)
-    private val _userMessage = MutableStateFlow<String?>(null)
-    // #194: bump to re-subscribe the data flow after a load error (retry).
-    private val _retry = MutableStateFlow(0)
+        // #194: bump to re-subscribe the data flow after a load error (retry).
+        private val _retry = MutableStateFlow(0)
 
-    init {
-        viewModelScope.launch {
-            labRepository.ensureResearchExists()
-            // #211 read-only: derive trusted-now from the CURRENT baseline; do NOT persist
-            // (DailyStepManager owns the baseline). trustedWallClock is the capped-accrual anchor.
-            val verdict = TimeIntegrity.evaluate(
-                timeBaselineSource.readTimeBaseline(), timeBaselineSource.currentTimeReading(),
-            )
-            val completed = checkCompletion(now = verdict.newBaseline.trustedWallClock)
-            // R3-03: only tick the COMPLETE_RESEARCH daily mission when something
-            // actually completed. The use case applies the count gating internally so
-            // every call site (init / rushResearch / freeRush) gets the same semantics
-            // for free — closes the false-trigger that previously fired every time the
-            // Labs screen was opened with nothing in flight.
-            updateMissionProgress(completedCount = completed.size)
-        }
-        viewModelScope.launch {
-            while (true) {
-                delay(1000)
-                tick.value = System.currentTimeMillis()
+        init {
+            viewModelScope.launch {
+                labRepository.ensureResearchExists()
+                // #211 read-only: derive trusted-now from the CURRENT baseline; do NOT persist
+                // (DailyStepManager owns the baseline). trustedWallClock is the capped-accrual anchor.
+                val verdict =
+                    TimeIntegrity.evaluate(
+                        timeBaselineSource.readTimeBaseline(),
+                        timeBaselineSource.currentTimeReading(),
+                    )
+                val completed = checkCompletion(now = verdict.newBaseline.trustedWallClock)
+                // R3-03: only tick the COMPLETE_RESEARCH daily mission when something
+                // actually completed. The use case applies the count gating internally so
+                // every call site (init / rushResearch / freeRush) gets the same semantics
+                // for free — closes the false-trigger that previously fired every time the
+                // Labs screen was opened with nothing in flight.
+                updateMissionProgress(completedCount = completed.size)
+            }
+            viewModelScope.launch {
+                while (true) {
+                    delay(1000)
+                    tick.value = System.currentTimeMillis()
+                }
             }
         }
-    }
 
-    val uiState: StateFlow<LabsUiState> = _retry.flatMapLatest {
-    combine(
-        labRepository.observeAllResearch(),
-        labRepository.observeActiveResearch(),
-        playerRepository.observeProfile(),
-        tick,
-        combine(_processing, _userMessage) { p, m -> p to m },
-    ) { levels, activeList, profile, now, (processing, message) ->
-        val activeMap = activeList.associateBy { it.type }
-        LabsUiState(
-            researchList = ResearchType.surfacedInLabs().map { type ->
-                val level = levels[type] ?: 0
-                val isMaxed = level >= type.maxLevel
-                val active = activeMap[type]
-                val cost = if (isMaxed) 0L else calculateCost(type, level)
-                val timeHours = if (isMaxed) 0.0 else calculateTime(type, level)
-                val remainingMs = active?.let { max(0L, it.completesAt - now) } ?: 0L
-                val rushCost = active?.let {
-                    RushResearch.calculateRushCost(it.startedAt, it.completesAt, now)
-                } ?: 0L
-                ResearchDisplayInfo(
-                    type = type, level = level, isMaxed = isMaxed,
-                    costToStart = cost,
-                    canAffordStart = !isMaxed && active == null && profile.stepBalance >= cost,
-                    timeToCompleteHours = timeHours,
-                    isActive = active != null,
-                    remainingMs = remainingMs,
-                    rushCostGems = rushCost,
-                    canAffordRush = active != null && profile.gems >= rushCost,
-                )
-            },
-            activeSlots = activeList.size,
-            totalSlots = profile.labSlotCount,
-            stepBalance = profile.stepBalance,
-            gems = profile.gems,
-            canAffordSlotUnlock = profile.labSlotCount < UnlockLabSlot.MAX_SLOTS && profile.gems >= UnlockLabSlot.SLOT_COST_GEMS,
-            seasonPassFreeRushAvailable = profile.seasonPassActive && profile.seasonPassExpiry > now && profile.freeLabRushUsedToday != LocalDate.now().toString(),
-            isLoading = false,
-            isProcessing = processing,
-            userMessage = message,
-        )
-    }
-        // #194: surface a source-flow throw as an error state, not a silent spinner. .catch INSIDE
-        // flatMapLatest so retry() re-subscribes.
-        .catch { emit(LabsUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LabsUiState())
-
-    /** #194: re-subscribe the data flow after a load error. */
-    fun retry() { _retry.value++ }
-
-    fun startResearch(type: ResearchType) {
-        if (_processing.value) return
-        // #44 / RO-11 #B.2 / V1X-15b: defensive belt-and-braces guard. Coming-soon research is
-        // filtered out of the surfaced list entirely (ResearchType.surfacedInLabs()), so the UI
-        // never renders a Start button for it; this block is the reachable second layer that
-        // protects against any future caller (quick-research flow, deep-link) reaching
-        // startResearch with a deferred type and spending Steps. Both layers read the same
-        // content-as-code isComingSoon flag (only AUTO_UPGRADE_AI today), so they cannot drift.
-        if (type.isComingSoon) {
-            _userMessage.value = "Coming soon \u2014 reserved for v1.x"
-            return
-        }
-        viewModelScope.launch {
-            _processing.value = true
-            try {
-                val profile = playerRepository.observeProfile().first()
-                val result = startResearch(type, profile.toWallet(), profile.labSlotCount)
-                if (result !is StartResearch.Result.Success) {
-                    _userMessage.value = when (result) {
-                        is StartResearch.Result.InsufficientSteps -> "Not enough Steps"
-                        is StartResearch.Result.NoSlotAvailable -> "No research slot available"
-                        is StartResearch.Result.MaxLevelReached -> "Already at max level"
-                        is StartResearch.Result.AlreadyResearching -> "Already researching"
-                        is StartResearch.Result.Success -> null
+        val uiState: StateFlow<LabsUiState> =
+            _retry
+                .flatMapLatest {
+                    combine(
+                        labRepository.observeAllResearch(),
+                        labRepository.observeActiveResearch(),
+                        playerRepository.observeProfile(),
+                        tick,
+                        combine(_processing, _userMessage) { p, m -> p to m },
+                    ) { levels, activeList, profile, now, (processing, message) ->
+                        val activeMap = activeList.associateBy { it.type }
+                        LabsUiState(
+                            researchList =
+                                ResearchType.surfacedInLabs().map { type ->
+                                    val level = levels[type] ?: 0
+                                    val isMaxed = level >= type.maxLevel
+                                    val active = activeMap[type]
+                                    val cost = if (isMaxed) 0L else calculateCost(type, level)
+                                    val timeHours = if (isMaxed) 0.0 else calculateTime(type, level)
+                                    val remainingMs = active?.let { max(0L, it.completesAt - now) } ?: 0L
+                                    val rushCost =
+                                        active?.let {
+                                            RushResearch.calculateRushCost(it.startedAt, it.completesAt, now)
+                                        } ?: 0L
+                                    ResearchDisplayInfo(
+                                        type = type,
+                                        level = level,
+                                        isMaxed = isMaxed,
+                                        costToStart = cost,
+                                        canAffordStart = !isMaxed && active == null && profile.stepBalance >= cost,
+                                        timeToCompleteHours = timeHours,
+                                        isActive = active != null,
+                                        remainingMs = remainingMs,
+                                        rushCostGems = rushCost,
+                                        canAffordRush = active != null && profile.gems >= rushCost,
+                                    )
+                                },
+                            activeSlots = activeList.size,
+                            totalSlots = profile.labSlotCount,
+                            stepBalance = profile.stepBalance,
+                            gems = profile.gems,
+                            canAffordSlotUnlock =
+                                profile.labSlotCount < UnlockLabSlot.MAX_SLOTS &&
+                                    profile.gems >= UnlockLabSlot.SLOT_COST_GEMS,
+                            seasonPassFreeRushAvailable =
+                                profile.seasonPassActive && profile.seasonPassExpiry > now &&
+                                    profile.freeLabRushUsedToday != LocalDate.now().toString(),
+                            isLoading = false,
+                            isProcessing = processing,
+                            userMessage = message,
+                        )
                     }
+                        // #194: surface a source-flow throw as an error state, not a silent spinner. .catch INSIDE
+                        // flatMapLatest so retry() re-subscribes.
+                        .catch { emit(LabsUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LabsUiState())
+
+        /** #194: re-subscribe the data flow after a load error. */
+        fun retry() {
+            _retry.value++
+        }
+
+        fun startResearch(type: ResearchType) {
+            if (_processing.value) return
+            // #44 / RO-11 #B.2 / V1X-15b: defensive belt-and-braces guard. Coming-soon research is
+            // filtered out of the surfaced list entirely (ResearchType.surfacedInLabs()), so the UI
+            // never renders a Start button for it; this block is the reachable second layer that
+            // protects against any future caller (quick-research flow, deep-link) reaching
+            // startResearch with a deferred type and spending Steps. Both layers read the same
+            // content-as-code isComingSoon flag (only AUTO_UPGRADE_AI today), so they cannot drift.
+            if (type.isComingSoon) {
+                _userMessage.value = "Coming soon \u2014 reserved for v1.x"
+                return
+            }
+            viewModelScope.launch {
+                _processing.value = true
+                try {
+                    val profile = playerRepository.observeProfile().first()
+                    val result = startResearch(type, profile.toWallet(), profile.labSlotCount)
+                    if (result !is StartResearch.Result.Success) {
+                        _userMessage.value =
+                            when (result) {
+                                is StartResearch.Result.InsufficientSteps -> "Not enough Steps"
+                                is StartResearch.Result.NoSlotAvailable -> "No research slot available"
+                                is StartResearch.Result.MaxLevelReached -> "Already at max level"
+                                is StartResearch.Result.AlreadyResearching -> "Already researching"
+                                is StartResearch.Result.Success -> null
+                            }
+                    }
+                } finally {
+                    _processing.value = false
                 }
-            } finally {
-                _processing.value = false
             }
         }
-    }
 
-    fun rushResearch(type: ResearchType) {
-        if (_processing.value) return
-        viewModelScope.launch {
-            _processing.value = true
-            try {
-                val profile = playerRepository.observeProfile().first()
-                val activeList = labRepository.observeActiveResearch().first()
-                val active = activeList.find { it.type == type } ?: return@launch
-                val result = rushResearch(type, active, profile.toWallet())
-                if (result is RushResearch.Result.Rushed) updateMissionProgress(completedCount = 1)
-                else _userMessage.value = "Not enough Gems"
-            } finally {
-                _processing.value = false
+        fun rushResearch(type: ResearchType) {
+            if (_processing.value) return
+            viewModelScope.launch {
+                _processing.value = true
+                try {
+                    val profile = playerRepository.observeProfile().first()
+                    val activeList = labRepository.observeActiveResearch().first()
+                    val active = activeList.find { it.type == type } ?: return@launch
+                    val result = rushResearch(type, active, profile.toWallet())
+                    if (result is RushResearch.Result.Rushed) {
+                        updateMissionProgress(completedCount = 1)
+                    } else {
+                        _userMessage.value = "Not enough Gems"
+                    }
+                } finally {
+                    _processing.value = false
+                }
             }
         }
-    }
 
-    fun freeRush(type: ResearchType) {
-        if (_processing.value) return
-        viewModelScope.launch {
-            _processing.value = true
-            try {
-                val profile = playerRepository.observeProfile().first()
-                if (!profile.seasonPassActive || profile.seasonPassExpiry <= System.currentTimeMillis()) {
-                    _userMessage.value = "Season Pass required"
-                    return@launch
+        fun freeRush(type: ResearchType) {
+            if (_processing.value) return
+            viewModelScope.launch {
+                _processing.value = true
+                try {
+                    val profile = playerRepository.observeProfile().first()
+                    if (!profile.seasonPassActive || profile.seasonPassExpiry <= System.currentTimeMillis()) {
+                        _userMessage.value = "Season Pass required"
+                        return@launch
+                    }
+                    if (profile.freeLabRushUsedToday == LocalDate.now().toString()) {
+                        _userMessage.value = "Free rush already used today"
+                        return@launch
+                    }
+                    val activeList = labRepository.observeActiveResearch().first()
+                    if (activeList.find { it.type == type } == null) {
+                        _userMessage.value = "No active research to rush"
+                        return@launch
+                    }
+                    labRepository.completeResearch(type)
+                    playerRepository.updateFreeLabRushUsed(LocalDate.now().toString())
+                    updateMissionProgress(completedCount = 1)
+                } finally {
+                    _processing.value = false
                 }
-                if (profile.freeLabRushUsedToday == LocalDate.now().toString()) {
-                    _userMessage.value = "Free rush already used today"
-                    return@launch
-                }
-                val activeList = labRepository.observeActiveResearch().first()
-                if (activeList.find { it.type == type } == null) {
-                    _userMessage.value = "No active research to rush"
-                    return@launch
-                }
-                labRepository.completeResearch(type)
-                playerRepository.updateFreeLabRushUsed(LocalDate.now().toString())
-                updateMissionProgress(completedCount = 1)
-            } finally {
-                _processing.value = false
             }
         }
-    }
 
-    fun unlockSlot() {
-        if (_processing.value) return
-        viewModelScope.launch {
-            _processing.value = true
-            try {
-                val result = unlockLabSlot(uiState.value.totalSlots, uiState.value.gems)
-                if (result !is UnlockLabSlot.Result.Unlocked) _userMessage.value = "Not enough Gems or max slots reached"
-            } finally {
-                _processing.value = false
+        fun unlockSlot() {
+            if (_processing.value) return
+            viewModelScope.launch {
+                _processing.value = true
+                try {
+                    val result = unlockLabSlot(uiState.value.totalSlots, uiState.value.gems)
+                    if (result !is UnlockLabSlot.Result.Unlocked) {
+                        _userMessage.value =
+                            "Not enough Gems or max slots reached"
+                    }
+                } finally {
+                    _processing.value = false
+                }
             }
         }
-    }
 
-    fun clearMessage() { _userMessage.value = null }
-}
+        fun clearMessage() {
+            _userMessage.value = null
+        }
+    }

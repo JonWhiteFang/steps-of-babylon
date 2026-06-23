@@ -28,52 +28,64 @@ import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
-class UnclaimedSuppliesViewModel @Inject constructor(
-    private val encounterRepository: WalkingEncounterRepository,
-    private val playerRepository: PlayerRepository,
-    private val cardRepository: CardRepository,
-) : ViewModel() {
+class UnclaimedSuppliesViewModel
+    @Inject
+    constructor(
+        private val encounterRepository: WalkingEncounterRepository,
+        private val playerRepository: PlayerRepository,
+        private val cardRepository: CardRepository,
+    ) : ViewModel() {
+        private val claimSupplyDrop = ClaimSupplyDrop(encounterRepository, playerRepository, cardRepository)
 
-    private val claimSupplyDrop = ClaimSupplyDrop(encounterRepository, playerRepository, cardRepository)
+        // #194: bump to re-subscribe the data flow after a load error (retry).
+        private val _retry = MutableStateFlow(0)
 
-    // #194: bump to re-subscribe the data flow after a load error (retry).
-    private val _retry = MutableStateFlow(0)
+        val uiState: StateFlow<SuppliesUiState> =
+            _retry
+                .flatMapLatest {
+                    encounterRepository
+                        .observeUnclaimed()
+                        .map { SuppliesUiState(drops = it, isLoading = false) }
+                        // #194: surface a source-flow throw as an error state, not a silent spinner.
+                        .catch { emit(SuppliesUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
+                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SuppliesUiState())
 
-    val uiState: StateFlow<SuppliesUiState> = _retry.flatMapLatest {
-        encounterRepository.observeUnclaimed()
-            .map { SuppliesUiState(drops = it, isLoading = false) }
-            // #194: surface a source-flow throw as an error state, not a silent spinner.
-            .catch { emit(SuppliesUiState(isLoading = false, error = SCREEN_LOAD_ERROR)) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SuppliesUiState())
+        /** #194: re-subscribe the data flow after a load error. */
+        fun retry() {
+            _retry.value++
+        }
 
-    /** #194: re-subscribe the data flow after a load error. */
-    fun retry() { _retry.value++ }
+        private val _celebration = Channel<ClaimCelebrationEvent>(Channel.CONFLATED)
+        val celebration = _celebration.receiveAsFlow()
 
-    private val _celebration = Channel<ClaimCelebrationEvent>(Channel.CONFLATED)
-    val celebration = _celebration.receiveAsFlow()
+        fun claimDrop(drop: SupplyDrop) {
+            viewModelScope.launch {
+                if (claimSupplyDrop(drop) is ClaimSupplyDrop.Result.Success) {
+                    _celebration.trySend(ClaimCelebrationEvent(reward = drop.toClaimReward()))
+                }
+            }
+        }
 
-    fun claimDrop(drop: SupplyDrop) {
-        viewModelScope.launch {
-            if (claimSupplyDrop(drop) is ClaimSupplyDrop.Result.Success) {
-                _celebration.trySend(ClaimCelebrationEvent(reward = drop.toClaimReward()))
+        fun claimAll() {
+            viewModelScope.launch {
+                val anySuccess =
+                    uiState.value.drops.fold(false) { acc, d ->
+                        (claimSupplyDrop(d) is ClaimSupplyDrop.Result.Success) || acc
+                    }
+                if (anySuccess) {
+                    _celebration.trySend(
+                        ClaimCelebrationEvent(reward = ClaimReward.Message(R.string.reward_all_supplies)),
+                    )
+                }
             }
         }
     }
-
-    fun claimAll() {
-        viewModelScope.launch {
-            val anySuccess = uiState.value.drops.fold(false) { acc, d ->
-                (claimSupplyDrop(d) is ClaimSupplyDrop.Result.Success) || acc
-            }
-            if (anySuccess) _celebration.trySend(ClaimCelebrationEvent(reward = ClaimReward.Message(R.string.reward_all_supplies)))
-        }
-    }
-}
 
 /** Maps a supply drop to a structured celebration reward (#260). CARD_COPY → one card grant. */
-internal fun SupplyDrop.toClaimReward(): ClaimReward = when (reward) {
-    SupplyDropReward.STEPS -> ClaimReward.Bundle(steps = rewardAmount)
-    SupplyDropReward.GEMS -> ClaimReward.Bundle(gems = rewardAmount)
-    SupplyDropReward.POWER_STONES -> ClaimReward.Bundle(powerStones = rewardAmount)
-    SupplyDropReward.CARD_COPY -> ClaimReward.Bundle(cards = 1)
-}
+internal fun SupplyDrop.toClaimReward(): ClaimReward =
+    when (reward) {
+        SupplyDropReward.STEPS -> ClaimReward.Bundle(steps = rewardAmount)
+        SupplyDropReward.GEMS -> ClaimReward.Bundle(gems = rewardAmount)
+        SupplyDropReward.POWER_STONES -> ClaimReward.Bundle(powerStones = rewardAmount)
+        SupplyDropReward.CARD_COPY -> ClaimReward.Bundle(cards = 1)
+    }

@@ -21,15 +21,22 @@ import java.text.NumberFormat
 @Composable
 fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    if (state.error != null) { ErrorState(state.error!!, onRetry = viewModel::retry); return }
-    if (state.isLoading) { LoadingBox(); return }
+    if (state.error != null) {
+        ErrorState(state.error!!, onRetry = viewModel::retry)
+        return
+    }
+    if (state.isLoading) {
+        LoadingBox()
+        return
+    }
     val fmt = NumberFormat.getNumberInstance()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshDate()
-        }
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshDate()
+            }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
@@ -64,8 +71,13 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
                         StatRow("Activity Step-Equivalents", fmt.format(state.todayStepEquivalents))
                     }
                     state.todayActivityMinutes.forEach { (activity, minutes) ->
-                        StatRow(activity.replace("_", " ").lowercase()
-                            .replaceFirstChar { it.uppercase() }, "$minutes min")
+                        StatRow(
+                            activity
+                                .replace("_", " ")
+                                .lowercase()
+                                .replaceFirstChar { it.uppercase() },
+                            "$minutes min",
+                        )
                     }
                 }
             }
@@ -114,7 +126,10 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun StatRow(label: String, value: String) {
+private fun StatRow(
+    label: String,
+    value: String,
+) {
     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)

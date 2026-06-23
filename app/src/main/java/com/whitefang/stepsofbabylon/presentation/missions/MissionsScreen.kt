@@ -28,10 +28,10 @@ import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebration
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimReward
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
-import com.whitefang.stepsofbabylon.presentation.ui.formatRewardParts
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.formatRewardParts
 import java.text.NumberFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,15 +43,22 @@ fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
     // #195: refresh the day on resume so a return-from-background across midnight immediately shows
     // the new day's missions (belt-and-suspenders with the in-VM ticker). Mirrors StatsScreen/HomeScreen.
     DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshDate()
-        }
+        val observer =
+            LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshDate()
+            }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    if (state.error != null) { ErrorState(state.error!!, onRetry = viewModel::retry); return }
-    if (state.isLoading) { LoadingBox(); return }
+    if (state.error != null) {
+        ErrorState(state.error!!, onRetry = viewModel::retry)
+        return
+    }
+    if (state.isLoading) {
+        LoadingBox()
+        return
+    }
     val fmt = NumberFormat.getNumberInstance()
     val snackbarHostState = remember { SnackbarHostState() }
     var celebration by remember { mutableStateOf<ClaimCelebrationEvent?>(null) }
@@ -78,8 +85,11 @@ fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
                     val hours = (state.timeUntilMidnightMs / 3_600_000).toInt()
                     val minutes = ((state.timeUntilMidnightMs % 3_600_000) / 60_000).toInt()
                     Text("Daily Missions", style = MaterialTheme.typography.headlineSmall)
-                    Text("Resets in ${hours}h ${minutes}m", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "Resets in ${hours}h ${minutes}m",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
 
                 // Daily missions
@@ -104,27 +114,49 @@ fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun MissionCard(mission: MissionDisplayInfo, onClaim: () -> Unit, fmt: NumberFormat) {
+private fun MissionCard(
+    mission: MissionDisplayInfo,
+    onClaim: () -> Unit,
+    fmt: NumberFormat,
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(mission.description, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                 if (mission.claimed) {
-                    Icon(Icons.Filled.CheckCircle, contentDescription = "Claimed", tint = MaterialTheme.colorScheme.primary)
+                    Icon(
+                        Icons.Filled.CheckCircle,
+                        contentDescription = "Claimed",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
                 }
             }
             Spacer(Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = { if (mission.target > 0) (mission.progress.toFloat() / mission.target).coerceIn(0f, 1f) else 0f },
+                progress = {
+                    if (mission.target >
+                        0
+                    ) {
+                        (mission.progress.toFloat() / mission.target).coerceIn(0f, 1f)
+                    } else {
+                        0f
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
             Spacer(Modifier.height(4.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("${fmt.format(mission.progress)} / ${fmt.format(mission.target)}",
-                    style = MaterialTheme.typography.bodySmall)
+                Text(
+                    "${fmt.format(mission.progress)} / ${fmt.format(mission.target)}",
+                    style = MaterialTheme.typography.bodySmall,
+                )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (mission.rewardGems > 0) {
-                        CurrencyValue(CurrencyType.GEMS, mission.rewardGems.toLong(), style = MaterialTheme.typography.bodySmall)
+                        CurrencyValue(
+                            CurrencyType.GEMS,
+                            mission.rewardGems.toLong(),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                     }
                     if (mission.rewardPowerStones > 0) {
                         if (mission.rewardGems > 0) {
@@ -132,7 +164,11 @@ private fun MissionCard(mission: MissionDisplayInfo, onClaim: () -> Unit, fmt: N
                             Text("+", style = MaterialTheme.typography.bodySmall)
                             Spacer(Modifier.width(6.dp))
                         }
-                        CurrencyValue(CurrencyType.POWER_STONES, mission.rewardPowerStones.toLong(), style = MaterialTheme.typography.bodySmall)
+                        CurrencyValue(
+                            CurrencyType.POWER_STONES,
+                            mission.rewardPowerStones.toLong(),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                     }
                 }
             }
@@ -147,30 +183,60 @@ private fun MissionCard(mission: MissionDisplayInfo, onClaim: () -> Unit, fmt: N
 }
 
 @Composable
-private fun MilestoneCard(ms: MilestoneDisplayInfo, onClaim: () -> Unit, fmt: NumberFormat) {
+private fun MilestoneCard(
+    ms: MilestoneDisplayInfo,
+    onClaim: () -> Unit,
+    fmt: NumberFormat,
+) {
     val milestone = ms.milestone
     val progress = (ms.totalStepsEarned.toFloat() / milestone.requiredSteps).coerceIn(0f, 1f)
 
-    Card(modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (ms.isClaimed) MaterialTheme.colorScheme.surfaceVariant
-            else MaterialTheme.colorScheme.surface
-        )
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (ms.isClaimed) {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+            ),
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(milestone.displayName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                if (ms.isClaimed) Icon(Icons.Filled.CheckCircle, contentDescription = "Claimed", tint = MaterialTheme.colorScheme.primary)
+                if (ms.isClaimed) {
+                    Icon(
+                        Icons.Filled.CheckCircle,
+                        contentDescription = "Claimed",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
-            Text("${fmt.format(milestone.requiredSteps)} steps", style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                "${fmt.format(milestone.requiredSteps)} steps",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.height(4.dp))
             Text(
                 formatRewardParts(
                     ClaimReward.Bundle(
-                        gems = milestone.rewards.filterIsInstance<MilestoneReward.Gems>().sumOf { it.amount }.toInt(),
-                        powerStones = milestone.rewards.filterIsInstance<MilestoneReward.PowerStones>().sumOf { it.amount }.toInt(),
-                        cosmeticNames = milestone.rewards.filterIsInstance<MilestoneReward.Cosmetic>().map { it.name },
+                        gems =
+                            milestone.rewards
+                                .filterIsInstance<MilestoneReward.Gems>()
+                                .sumOf { it.amount }
+                                .toInt(),
+                        powerStones =
+                            milestone.rewards
+                                .filterIsInstance<MilestoneReward.PowerStones>()
+                                .sumOf { it.amount }
+                                .toInt(),
+                        cosmeticNames =
+                            milestone.rewards.filterIsInstance<MilestoneReward.Cosmetic>().map {
+                                it.name
+                            },
                     ),
                 ),
                 style = MaterialTheme.typography.bodySmall,
@@ -180,8 +246,10 @@ private fun MilestoneCard(ms: MilestoneDisplayInfo, onClaim: () -> Unit, fmt: Nu
                 progress = { progress },
                 modifier = Modifier.fillMaxWidth(),
             )
-            Text("${fmt.format(ms.totalStepsEarned)} / ${fmt.format(milestone.requiredSteps)}",
-                style = MaterialTheme.typography.bodySmall)
+            Text(
+                "${fmt.format(ms.totalStepsEarned)} / ${fmt.format(milestone.requiredSteps)}",
+                style = MaterialTheme.typography.bodySmall,
+            )
             if (ms.isAchieved && !ms.isClaimed) {
                 Spacer(Modifier.height(8.dp))
                 Button(onClick = onClaim, modifier = Modifier.align(Alignment.End)) {

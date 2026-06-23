@@ -14,8 +14,9 @@ import androidx.compose.ui.unit.dp
  * existing explicit `RoundedCornerShape(...)` call-sites are left untouched (no behaviour change),
  * and can migrate to these tokens incrementally.
  */
-val SobShapes = Shapes(
-    small = RoundedCornerShape(8.dp),
-    medium = RoundedCornerShape(14.dp),
-    large = RoundedCornerShape(20.dp),
-)
+val SobShapes =
+    Shapes(
+        small = RoundedCornerShape(8.dp),
+        medium = RoundedCornerShape(14.dp),
+        large = RoundedCornerShape(20.dp),
+    )

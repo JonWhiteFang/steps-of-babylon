@@ -37,7 +37,6 @@ class MusicManager(
     private val playerFactory: (Context, Int) -> MediaPlayer? = { ctx, resId -> MediaPlayer.create(ctx, resId) },
     injectedExecutor: Executor? = null,
 ) : AudioManager.OnAudioFocusChangeListener {
-
     private val ownedExecutorService: ExecutorService? =
         if (injectedExecutor == null) Executors.newSingleThreadExecutor() else null
     private val decodeExecutor: Executor = injectedExecutor ?: ownedExecutorService!!
@@ -55,13 +54,17 @@ class MusicManager(
     private var focusLost: Boolean = false
 
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private val focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-        .setAudioAttributes(AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_GAME)
-            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-            .build())
-        .setOnAudioFocusChangeListener(this)
-        .build()
+    private val focusRequest =
+        AudioFocusRequest
+            .Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(
+                AudioAttributes
+                    .Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build(),
+            ).setOnAudioFocusChangeListener(this)
+            .build()
 
     enum class Track { NONE, WALKING, BATTLE }
 
@@ -74,7 +77,10 @@ class MusicManager(
      * navigations that all call [playWalking]). Already built → switch in immediately. Otherwise
      * dispatch the decode once (dedup'd by the pending flag) and resolve in [onDecoded].
      */
-    private fun switchTo(track: Track, resId: Int) {
+    private fun switchTo(
+        track: Track,
+        resId: Int,
+    ) {
         desiredTrack = track
         if (activeTrack == track) return // already playing this track — don't restart
         val existing = playerFor(track)
@@ -93,7 +99,10 @@ class MusicManager(
     }
 
     /** Main-thread callback once a decode finishes (or fails). */
-    private fun onDecoded(track: Track, player: MediaPlayer?) {
+    private fun onDecoded(
+        track: Track,
+        player: MediaPlayer?,
+    ) {
         setPending(track, false)
         if (released) {
             // App is being torn down — don't retain or start; just free the just-built player.
@@ -116,7 +125,10 @@ class MusicManager(
     }
 
     /** Switch playback to [player] for [track]: pause the outgoing track, rewind, start if unmuted. */
-    private fun activate(track: Track, player: MediaPlayer) {
+    private fun activate(
+        track: Track,
+        player: MediaPlayer,
+    ) {
         activePlayer()?.pause()
         activeTrack = track
         player.seekTo(0) // restart each track at the top on entry (matches the pre-#242 recreate feel)
@@ -138,17 +150,23 @@ class MusicManager(
 
     fun setMuted(m: Boolean) {
         muted = m
-        if (muted) activePlayer()?.pause()
-        else if (!focusLost) activePlayer()?.start()
+        if (muted) {
+            activePlayer()?.pause()
+        } else if (!focusLost) {
+            activePlayer()?.start()
+        }
     }
 
     fun isMuted(): Boolean = muted
+
     fun getVolume(): Float = volume
 
     fun release() {
         released = true
-        walkingPlayer?.release(); walkingPlayer = null
-        battlePlayer?.release(); battlePlayer = null
+        walkingPlayer?.release()
+        walkingPlayer = null
+        battlePlayer?.release()
+        battlePlayer = null
         audioManager.abandonAudioFocusRequest(focusRequest)
         activeTrack = Track.NONE
         desiredTrack = Track.NONE
@@ -159,14 +177,17 @@ class MusicManager(
     override fun onAudioFocusChange(focusChange: Int) {
         when (focusChange) {
             AudioManager.AUDIOFOCUS_LOSS,
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
+            -> {
                 focusLost = true
                 activePlayer()?.pause()
             }
+
             AudioManager.AUDIOFOCUS_GAIN -> {
                 focusLost = false
                 if (!muted) activePlayer()?.start()
             }
+
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                 activePlayer()?.setVolume(volume * 0.3f, volume * 0.3f)
             }
@@ -185,30 +206,50 @@ class MusicManager(
 
     private fun activePlayer(): MediaPlayer? = playerFor(activeTrack)
 
-    private fun playerFor(track: Track): MediaPlayer? = when (track) {
-        Track.WALKING -> walkingPlayer
-        Track.BATTLE -> battlePlayer
-        Track.NONE -> null
-    }
-
-    private fun storePlayer(track: Track, player: MediaPlayer) {
+    private fun playerFor(track: Track): MediaPlayer? =
         when (track) {
-            Track.WALKING -> walkingPlayer = player
-            Track.BATTLE -> battlePlayer = player
+            Track.WALKING -> walkingPlayer
+            Track.BATTLE -> battlePlayer
+            Track.NONE -> null
+        }
+
+    private fun storePlayer(
+        track: Track,
+        player: MediaPlayer,
+    ) {
+        when (track) {
+            Track.WALKING -> {
+                walkingPlayer = player
+            }
+
+            Track.BATTLE -> {
+                battlePlayer = player
+            }
+
             Track.NONE -> {}
         }
     }
 
-    private fun isPending(track: Track): Boolean = when (track) {
-        Track.WALKING -> walkingPending
-        Track.BATTLE -> battlePending
-        Track.NONE -> false
-    }
-
-    private fun setPending(track: Track, pending: Boolean) {
+    private fun isPending(track: Track): Boolean =
         when (track) {
-            Track.WALKING -> walkingPending = pending
-            Track.BATTLE -> battlePending = pending
+            Track.WALKING -> walkingPending
+            Track.BATTLE -> battlePending
+            Track.NONE -> false
+        }
+
+    private fun setPending(
+        track: Track,
+        pending: Boolean,
+    ) {
+        when (track) {
+            Track.WALKING -> {
+                walkingPending = pending
+            }
+
+            Track.BATTLE -> {
+                battlePending = pending
+            }
+
             Track.NONE -> {}
         }
     }

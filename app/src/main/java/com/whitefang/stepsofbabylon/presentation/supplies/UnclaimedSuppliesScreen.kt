@@ -34,22 +34,26 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.CardType
+import com.whitefang.stepsofbabylon.domain.model.SupplyDrop
+import com.whitefang.stepsofbabylon.domain.model.SupplyDropReward
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebration
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
-import com.whitefang.stepsofbabylon.domain.model.SupplyDrop
-import com.whitefang.stepsofbabylon.domain.model.SupplyDropReward
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
 import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 
 @Composable
-fun UnclaimedSuppliesScreen(
-    viewModel: UnclaimedSuppliesViewModel = hiltViewModel(),
-) {
+fun UnclaimedSuppliesScreen(viewModel: UnclaimedSuppliesViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    if (state.error != null) { ErrorState(state.error!!, onRetry = viewModel::retry); return }
-    if (state.isLoading) { LoadingBox(); return }
+    if (state.error != null) {
+        ErrorState(state.error!!, onRetry = viewModel::retry)
+        return
+    }
+    if (state.isLoading) {
+        LoadingBox()
+        return
+    }
     var celebration by remember { mutableStateOf<ClaimCelebrationEvent?>(null) }
 
     LaunchedEffect(Unit) { viewModel.celebration.collect { celebration = it } }
@@ -57,7 +61,11 @@ fun UnclaimedSuppliesScreen(
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().padding(16.dp)) {
             if (state.drops.isNotEmpty()) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Button(onClick = viewModel::claimAll, colors = ButtonDefaults.buttonColors(containerColor = Gold)) {
                         Text("Claim All")
                     }
@@ -67,7 +75,11 @@ fun UnclaimedSuppliesScreen(
 
             if (state.drops.isEmpty() && !state.isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No supply drops yet — keep walking!", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "No supply drops yet — keep walking!",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -82,7 +94,10 @@ fun UnclaimedSuppliesScreen(
 }
 
 @Composable
-private fun SupplyDropCard(drop: SupplyDrop, onClaim: () -> Unit) {
+private fun SupplyDropCard(
+    drop: SupplyDrop,
+    onClaim: () -> Unit,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -124,16 +139,26 @@ private fun SupplyDropCard(drop: SupplyDrop, onClaim: () -> Unit) {
  * `SupplyRewardFormatTest` on the Robolectric/Compose lane.
  */
 @Composable
-internal fun formatSupplyReward(drop: SupplyDrop): String = when (drop.reward) {
-    SupplyDropReward.STEPS -> pluralStringResource(R.plurals.reward_steps, drop.rewardAmount, drop.rewardAmount)
-    SupplyDropReward.GEMS -> pluralStringResource(R.plurals.reward_gems, drop.rewardAmount, drop.rewardAmount)
-    SupplyDropReward.POWER_STONES -> pluralStringResource(R.plurals.reward_power_stones, drop.rewardAmount, drop.rewardAmount)
-    SupplyDropReward.CARD_COPY -> {
-        // #20: rewardAmount is a card-TYPE index, NOT a quantity — resolve the card name + "x1".
-        val cardType = CardType.entries[drop.rewardAmount % CardType.entries.size]
-        "${cardType.name.toDisplayName()} x1"
+internal fun formatSupplyReward(drop: SupplyDrop): String =
+    when (drop.reward) {
+        SupplyDropReward.STEPS -> {
+            pluralStringResource(R.plurals.reward_steps, drop.rewardAmount, drop.rewardAmount)
+        }
+
+        SupplyDropReward.GEMS -> {
+            pluralStringResource(R.plurals.reward_gems, drop.rewardAmount, drop.rewardAmount)
+        }
+
+        SupplyDropReward.POWER_STONES -> {
+            pluralStringResource(R.plurals.reward_power_stones, drop.rewardAmount, drop.rewardAmount)
+        }
+
+        SupplyDropReward.CARD_COPY -> {
+            // #20: rewardAmount is a card-TYPE index, NOT a quantity — resolve the card name + "x1".
+            val cardType = CardType.entries[drop.rewardAmount % CardType.entries.size]
+            "${cardType.name.toDisplayName()} x1"
+        }
     }
-}
 
 private fun formatTimeAgo(timestampMs: Long): String {
     val diff = System.currentTimeMillis() - timestampMs

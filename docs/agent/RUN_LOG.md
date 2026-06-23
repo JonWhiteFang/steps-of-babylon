@@ -1,3 +1,69 @@
+## 2026-06-23 — ktlint repo-wide auto-format, stage 4/6: `presentation/` (excl battle) (`[Unreleased]`)
+
+- **Goal:** stage 4 of the staged, layer-by-layer ktlint auto-format (plan
+  `docs/superpowers/plans/2026-06-23-ktlint-repo-wide-format-staged.md`). Mechanically fix the
+  auto-fixable ("Bucket A") ktlint violations one layer at a time; stages 1 (`domain/`), 2 (`data/`),
+  3 (`service/`+`di/`+top-level) are merged. Stage 4 = the `presentation/` layer **EXCLUDING
+  `presentation/battle/`** (the fragile battle renderer/engine zone is reserved for Stage 5) — the
+  Compose screens, ViewModels, UiState/DTO files, navigation, onboarding, audio, theme + ui-helpers,
+  plus the two top-level activities (`MainActivity.kt`, `HealthConnectPermissionActivity.kt`).
+- **Kept as a SINGLE PR** (not split 4a/4b) — the diff, while the largest stage (~50 files changed of
+  64 in scope), is entirely mechanical and was fully reviewed.
+- **Tooling note (recorded for Stage 5):** `ktlint -F` was invoked over `presentation/**/*.kt` with a
+  `!presentation/battle/**` negation glob in ONE invocation. An earlier attempt passing the 16 subdir
+  paths + 2 top-level files as many positional args silently no-op'd (`ktlint -F` returned exit 0 and
+  wrote nothing — multi-positional-arg globbing fails to recurse). The single dir-glob + negation form
+  writes correctly (exit 1 = uncorrectable Bucket-B residuals remain, EXPECTED). Battle exclusion was
+  asserted BEFORE the sweep (`fd -E battle`) AND after (`git diff --name-only | grep /battle/` empty).
+- **What shipped:** ~50 `presentation/` (non-battle) files reformatted. Pure-formatting, zero behaviour
+  change. Transforms were all on the review allowlist: **class-signature reflow** (the dominant pattern —
+  every `@HiltViewModel class X @Inject constructor(...)` wrapped to the multi-line `class X` / `@Inject` /
+  `constructor(` form; `MusicPreferences`/`SoundManager` ctors too); **function-signature reflow**
+  (multi-param one-per-line + trailing comma — `switchTo`/`onDecoded`/`activate`/`storePlayer`/`setPending`/
+  `play`/`upgrade`/`buildBars`/`statValueFor` and the Compose helpers); **function-expression-body** wrapping
+  (`playerFor`/`isPending`/`powerStonesForTier`/`toClaimReward`/`statValueFor`/`toCardResultsOrNull` block→`=`,
+  `return` dropped — benign); **if-else & when-entry bracing** (`setMuted`/`onAudioFocusChange`/the
+  `UpgradeCard.Result`/`AdResult`/`ClaimMilestoneResult` `when`-arms → braced, `StatsPeriod.WEEK/MONTH`
+  branches braced, `Track.NONE -> {}` no-op preserved); **multiline/property wrapping** (`StoreViewModel`
+  `daysRemaining` if/else, `MissionsViewModel` celebration if/else, `HomeViewModel` `TimeIntegrity.evaluate`
+  args, `MainActivity` nav `enterAnim`/`exitAnim`/`popEnter/ExitTransition`); **trailing-comma**
+  (call/declaration site, incl. enum `WEEK/MONTH/QUARTER,` + `OnboardingArt { ZIGGURAT, }`); **import
+  ordering + no-wildcard-imports** (e.g. `OwnedCard`/`AdPlacement` reorder; `kotlinx`/`dagger`/`javax`
+  regroup); **statement-on-same-line split** (`walkingPlayer?.release(); walkingPlayer = null` → 2 lines;
+  the `SettingsViewModel` `prefs.setX(); _state.update{}` setters expanded). The full `git diff -w`
+  (whitespace-ignored, 5163 lines / 2445 +/- content lines) was reviewed end-to-end via **two parallel
+  reviewer subagents** (UI/theme group + logic/ViewModel group), both **CLEAN**; the logic group was also
+  read in full by the main agent. No hunk changed a literal/operator/identifier/string or altered logic.
+  **Explicitly verified: ZERO `@Composable` function-name changes** — Compose PascalCase names are Bucket B
+  (`function-naming` "cannot be auto-corrected") and ktlint left them untouched; theme literals
+  (Color hex, Type sp/lineHeight/letterSpacing, Shape dp) byte-identical; no Composable-call argument reorder.
+- **Baselines regenerated (the staged-format mechanism):**
+  - **ktlint** `config/ktlint/baseline.xml` over the full `app/src` scope (delete-then-create): **7423 →
+    4974** errors (2449 `presentation/`-non-battle Bucket-A entries gone — the biggest single-stage drop).
+    Not-yet-swept layers (incl. `presentation/battle/`) stay covered.
+  - **detekt** `config/detekt/baseline.xml`: **REGEN needed** (expected for this Compose-heavy layer).
+    `:app:detekt` flagged 11 new findings after the sweep, all format-induced: **5 `LongMethod`**
+    (`@Composable` `CardItem`/`LabsScreen`/`MilestoneCard`/`MissionCard`/`WorkshopScreen` pushed past the
+    60-line cap purely by brace/wrap expansion of UNCHANGED bodies) + **6 `MaxLineLength`** (long string-literal /
+    comment lines re-keyed to a new detekt signature after surrounding reflow — content unchanged). Regenerated
+    via `:app:detektBaseline` (overwrites): **474 → 387** entries (NET drop: 11 added, 98 removed — the 98
+    are pre-existing `MaxLineLength` one-liners that ktlint successfully WRAPPED, so they fell out). Inspected
+    the baseline diff: every added entry is `LongMethod`/`MaxLineLength` (NO new smell TYPE — no
+    ComplexMethod/CyclomaticComplexity/NestedBlockDepth); all changed entries are presentation files
+    (the one `Screen.kt:…Battle…` entry is `presentation/navigation/Screen.kt`, in scope — "Battle" is a
+    nav-destination identifier, NOT a `presentation/battle/` file). `SmartReminderManager.kt`/`SoundManager.kt`
+    removed entries are stale pre-existing keys cleared by the global regen (SmartReminderManager is
+    `service/`, source untouched by this PR). `:app:detekt` exit 0 after regen.
+- **Verification:** `./run-gradle.sh testDebugUnitTest --rerun-tasks` **BUILD SUCCESSFUL**; **1254 JVM
+  tests, 0 failures, 0 errors** (unchanged count — pure format; counted from report XML; incl. the #253
+  Robolectric Compose UI tests that exercise the reformatted screens). `./lint-kotlin.sh` (ktlint check)
+  exit 0; `:app:detekt` exit 0 (after regen). Scope-checked: only the ~50 `presentation/` (non-battle)
+  files + the two baseline XMLs + docs changed; `BATTLE EXCLUDED` + `BATTLE UNTOUCHED` both confirmed.
+- **No production logic, schema, economy, or engine behaviour changed.**
+- **Remains / next:** controller merges this PR (do-not-merge handed off). Then stages 5–6:
+  `presentation/battle/` (FRAGILE — the renderer/engine fragile zone) → test sources. Each stage repeats
+  the scoped `-F` + baseline regen (detekt when the gate flags) + full-suite green gate.
+
 ## 2026-06-23 — ktlint repo-wide auto-format, stage 3/6: `service/`+`di/`+top-level (`[Unreleased]`)
 
 - **Goal:** stage 3 of the staged, layer-by-layer ktlint auto-format (plan

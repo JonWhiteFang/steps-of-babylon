@@ -10,7 +10,11 @@ import kotlin.math.sign
  * adjacent slide's as the pager scrolls. [t] is clamped to [0,1]; channels are interpolated
  * independently with truncating rounding.
  */
-fun lerpArgb(a: Int, b: Int, t: Float): Int {
+fun lerpArgb(
+    a: Int,
+    b: Int,
+    t: Float,
+): Int {
     val clamped = t.coerceIn(0f, 1f)
     val af = (a ushr 24) and 0xFF
     val rf = (a ushr 16) and 0xFF
@@ -34,5 +38,8 @@ fun lerpArgb(a: Int, b: Int, t: Float): Int {
  * at page 0 (negative) or at the last page (positive) returns the settled page itself (no neighbour) —
  * the caller then blends colour-to-itself (a no-op), never indexing out of range.
  */
-fun crossfadeNeighborIndex(page: Int, offset: Float, lastIndex: Int): Int =
-    (page + sign(offset).toInt()).coerceIn(0, lastIndex)
+fun crossfadeNeighborIndex(
+    page: Int,
+    offset: Float,
+    lastIndex: Int,
+): Int = (page + sign(offset).toInt()).coerceIn(0, lastIndex)

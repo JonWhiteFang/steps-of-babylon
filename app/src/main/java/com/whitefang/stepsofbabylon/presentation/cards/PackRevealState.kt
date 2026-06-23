@@ -12,7 +12,9 @@ import kotlinx.parcelize.Parcelize
  * (cards + gems) is already durable in Room; this persists the reveal-once VISUAL confirmation only.
  */
 @Parcelize
-data class PackRevealState(val cards: List<RevealedCard>) : Parcelable
+data class PackRevealState(
+    val cards: List<RevealedCard>,
+) : Parcelable
 
 @Parcelize
 data class RevealedCard(
@@ -34,5 +36,4 @@ fun PackRevealState.toCardResults(): List<CardResult> =
  * renamed between the write and a later app version reading the saved bundle), drop the whole reveal
  * (returns null) rather than crashing. The reveal is a transient nicety; the cards are already in Room.
  */
-fun PackRevealState.toCardResultsOrNull(): List<CardResult>? =
-    runCatching { toCardResults() }.getOrNull()
+fun PackRevealState.toCardResultsOrNull(): List<CardResult>? = runCatching { toCardResults() }.getOrNull()
