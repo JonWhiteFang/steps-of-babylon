@@ -4,6 +4,28 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Chore — Batch B: dead-code removal (no behavior change)
+
+**Removal of confirmed dead code — no behavior change, no schema change (`app/schemas` byte-identical).
+1254 → 1253 JVM tests** (−1: one dedicated test for a removed method). Second batch off the audit-tracker
+triage; closes #262 **L15, L16, L17, L13/L18**. Every target verified unreferenced (no caller, no test, no
+reflection, no DI) at HEAD `9e186bc` by the triage workflow + the adversarial review gate.
+
+- **L15** removed `GameEngine.resetUWCooldowns()` + `UWController.resetUWCooldowns()` — zero callers repo-wide.
+- **L16** removed the write-only `GameEngine.cooldownText` field + its two dead writes; the local
+  `WaveCooldownText` + `EffectEngine.addEffect` path that actually drives the overlay is unchanged.
+- **L17** removed `GameLoopThread.fps` + its `frameCount`/`fpsTimer` bookkeeping — never read; the loop's
+  fixed-timestep accumulation and CPU-yield logic are unchanged.
+- **L13/L18** removed the dead Card Dust **API** (Card Dust was removed as a mechanic in R4-08/ADR-0010):
+  `PlayerRepository.addCardDust`/`spendCardDust` (interface + impl + fake override), the orphaned
+  `PlayerProfileDao.updateCardDust`/`adjustCardDust` queries, and the one `CurrencyGuardTest` case that
+  exercised them. **The `cardDust` DB column + domain `PlayerProfile.cardDust` field + `toDomain` mapping
+  are KEPT** (schema-bound — dropping the column would be a migration, out of scope).
+
+Deferred (developer decision): **L26** (`fortuneMultiplier` rename) — a cosmetic rename of a *correct*
+field spanning the battle fragile zone + pure-domain `SimulationMath` + a reflection test; not dead code.
+Plan + adversarial review: `docs/superpowers/plans/2026-06-23-batch-b-dead-code-removal.md` (gate: 0 confirmed findings).
+
 ### Docs — Batch A: audit docs/content-drift sweep (no production-code change)
 
 **Docs + two build-file justification strings only — no production Kotlin, no schema/economy/engine

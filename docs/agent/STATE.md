@@ -15,8 +15,8 @@ dependency-verification (#256), clock-tamper (#211), GameEngine decomposition (#
 dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependabot wave, CI/supply-chain
 (#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
 (CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
-#311→#312; #310/#311/#287 given a CI/tooling note). **Supersedes v1.0.10 (vc 26)** · **1254 JVM + 9 instrumented tests**
-green (the per-wave running tally 1110→1254 since v1.0.10 lives in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
+#311→#312; #310/#311/#287 given a CI/tooling note). **Supersedes v1.0.10 (vc 26)** · **1253 JVM + 9 instrumented tests**
+green (the per-wave running tally 1110→1254 since v1.0.10 lives in `CHANGELOG.md` + `RUN_LOG.md`; −1 from Batch B dead-code removal → 1253) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
 Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
@@ -54,20 +54,25 @@ the med/low backlog (#262) remain.
   (#234). **Manual Play Console Data-Safety action (#192) is still NOT done by this tag** — separate human step
   (`docs/release/data-safety-form.md`). **Next:** med/low backlog (#262/#128; i18n #34; the larger #233
   Simulation-hoist, ADR-0012) + the internal→closed promotion judgment call (Data-Safety #192 prerequisite).
-- **CURRENT (in flight — branch `docs/batch-a-doc-drift`; `[Unreleased]`).** **Audit-finding triage +
-  Batch A (docs/content-drift).** A verification `Workflow` code-grounded ~125 unverified tracker findings
-  (#262 95-low + #128 30-low + standalone #221/#218/#217/#216) against HEAD `617babd` → **83 LIVE / 23
-  FIXED / 6 STALE / 4 DUP / 1 POSITIVE** (skeptic flipped only 1). The shipping wave had already closed far
-  more than the trackers reflect (all #128 high-conf economy findings, currency/card atomicity, several
-  sensor races, and a batch of CI/docs claims that are now simply STALE — cited AGP 9.0.1 / billing 8.3.0
-  versions no longer exist). LIVE survivors clustered into ~7 batch candidates (A docs · B dead-code · C
-  i18n · D CI · E VM/a11y · F sensor · G security). **Batch A executed** (developer-picked first): docs-only
-  + two build-file justification strings, **zero production-code change**; closes #262 L79/L81/L82/L83/L84/
-  L85/L86/L93/L94/L95 (+ L70-residue + L78 code-side). Spec→plan→**adversarial review gate** (14 findings
-  all CONFIRMED, 0 refuted; 1 MAJOR widened billing-v8 fix to all 10 live docs). **1254 JVM, 0 failures**
-  (`--rerun-tasks`). STATE.md trimmed 846→385. **Next:** open the PR; then the remaining LIVE batches
-  (B/C/D recommended order) + the non-batchable fragile/large items (battle perf, A24 rate-limit clock,
-  L12 BattleViewModel decomposition, billing-anti-fraud-by-design). Triage verdicts cached in this session.
+- **CURRENT (in flight — branch `chore/batch-b-dead-code`; `[Unreleased]`).** **Audit-finding triage —
+  Batch B (dead-code removal).** Second batch off the triage (the triage `Workflow` code-grounded ~125
+  unverified tracker findings #262/#128 + standalone vs HEAD `617babd` → **83 LIVE / 23 FIXED / 6 STALE /
+  4 DUP / 1 POSITIVE**; LIVE survivors clustered into ~7 batches A–G). Batch B = pure dead-code REMOVAL,
+  **zero behavior change, no schema change**; closes #262 **L15/L16/L17/L13/L18**. Removed:
+  `GameEngine`/`UWController.resetUWCooldowns` (zero callers), the write-only `GameEngine.cooldownText`
+  field, `GameLoopThread.fps` + bookkeeping, and the dead Card Dust **API** (repo methods + orphaned DAOs +
+  fake override + 1 test) — the `cardDust` **column/domain field kept** (schema-bound). **L26
+  `fortuneMultiplier` rename DEFERRED** (cosmetic, fragile-zone + domain-math + reflection test).
+  Spec→plan→**adversarial review gate** (3-dim, **0 confirmed findings** — grounding+completeness empty,
+  2 risk nits refuted). **1254 → 1253 JVM, 0 failures** (−1: the one removed-method test); `assembleDebug` +
+  detekt + ktlint clean; `app/schemas` unchanged. **Next:** open the Batch B PR; then batches C (i18n) / D
+  (CI) + the non-batchable fragile/large items (battle perf, A24 rate-limit clock, L12 BattleViewModel
+  decomposition, billing-anti-fraud-by-design). Triage verdicts cached in this session.
+- **Previous objective (DONE — MERGED PR #333, squash `9e186bc`; `[Unreleased]`).** **Batch A
+  (docs/content-drift).** Docs-only + two build-file justification strings, **zero production-code change**;
+  closed #262 L79/L81/L82/L83/L84/L85/L86/L93/L94/L95 (+ L70-residue + L78 code-side). Adversarial review
+  gate: 14 findings all CONFIRMED, 0 refuted (1 MAJOR widened the billing-v8 doc fix to all 10 live docs).
+  STATE.md trimmed 846→385. Both CI lanes green.
 - *Prior objectives (all DONE, `[Unreleased]` unless noted) are recorded per-PR in `docs/agent/RUN_LOG.md` and summarized under "Recently shipped" below — not duplicated here.*
 
 ## Recently shipped (newest first — see RUN_LOG for detail)

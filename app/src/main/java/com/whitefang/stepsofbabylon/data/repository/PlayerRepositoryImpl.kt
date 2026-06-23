@@ -60,10 +60,6 @@ class PlayerRepositoryImpl
 
         override suspend fun spendPowerStones(amount: Long): Boolean = dao.spendPowerStonesAtomic(amount) > 0
 
-        override suspend fun addCardDust(amount: Long) = dao.adjustCardDust(amount)
-
-        override suspend fun spendCardDust(amount: Long) = dao.adjustCardDust(-amount)
-
         override suspend fun updateTier(tier: Int) = dao.updateTier(tier)
 
         override suspend fun updateHighestUnlockedTier(tier: Int) = dao.updateHighestUnlockedTier(tier)

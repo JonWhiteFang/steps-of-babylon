@@ -133,10 +133,6 @@ class UWController(
 
     fun uwSnapshot(): List<UWState> = uwStates.toList()
 
-    fun resetUWCooldowns() {
-        uwStates.forEach { it.cooldownRemaining = 0f }
-    }
-
     /**
      * R4-06: fires the UW at [index] if it's off cooldown and not already mid-effect.
      * Pre-R4-06 this was the entry point for the player-tap activation path; post-R4-06

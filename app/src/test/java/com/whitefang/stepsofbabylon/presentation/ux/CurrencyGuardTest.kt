@@ -53,14 +53,6 @@ class CurrencyGuardTest {
         }
 
     @Test
-    fun `spending more card dust than balance clamps to zero`() =
-        runTest {
-            val repo = FakePlayerRepository(PlayerProfile(cardDust = 3))
-            repo.spendCardDust(100)
-            assertEquals(0L, repo.profile.value.cardDust)
-        }
-
-    @Test
     fun `spendSteps keeps the clamp for the anti-cheat escrow clawback`() =
         runTest {
             // spendSteps (NOT spendStepsIfSufficient) is the escrow path: it must clamp at 0 so a
