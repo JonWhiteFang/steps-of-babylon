@@ -9969,3 +9969,41 @@ After the fix, tests pass on first try and assembleDebug is clean.
   `docs/superpowers/plans/2026-06-23-batch-a-docs-content-drift.md`.
 - **Next:** open the Batch A PR (branch `docs/batch-a-doc-drift`); check off the closed findings in #262.
   Then the remaining LIVE batches (recommended B→C→D first — cheapest/safest) + the non-batchable items.
+- **SHIPPED:** PR **#333** both CI lanes green (build-and-test 8m16s, connected 4m52s); squash-merged
+  **`9e186bc`**; branch deleted; tracker #262 annotated with the 11 closed findings.
+
+## 2026-06-23 — Audit triage Batch B (dead-code removal, #262 L15/L16/L17/L13/L18)
+
+- **Goal:** second batch off the audit-finding triage (see the prior entry). Batch B = the LIVE dead-code
+  cluster. **Pure removal, zero behavior change, no schema change.**
+- **Re-grounded at HEAD `9e186bc`** (Batch A touched no `.kt` files, so the triage verdicts held). Each
+  target re-confirmed unreferenced before planning.
+- **Decisions (developer, via AskUserQuestion):** (a) **DEFER L26** (`fortuneMultiplier` rename) — it's a
+  cosmetic rename of a *correct* field spanning the battle fragile zone + pure-domain `SimulationMath` + a
+  reflection test, not dead code; kept out of a removal PR. (b) **Card Dust = API methods only** — remove
+  the methods, KEEP the `cardDust` column + domain field (schema-bound; dropping it is a migration).
+- **Adversarial review gate** (3-dim `Workflow`: grounding-unreferenced / completeness-compile /
+  risk-column-fragile, each verify→skeptic): **0 confirmed findings.** Grounding + completeness dimensions
+  returned EMPTY (every target unreferenced; build safe — only 2 `PlayerRepository` implementors own the
+  Card Dust overrides, both in scope; `ThrowingPlayerRepository` extends the fake and only overrides
+  `observeProfile`, so it inherits-then-loses the methods cleanly). 2 risk nits both REFUTED (execution
+  reminders, not defects). Folded in: exact live-vs-historical test-count doc-sync targets.
+- **Edits (8):** removed `GameEngine.resetUWCooldowns` (548) + `UWController.resetUWCooldowns` (136-138);
+  `GameEngine.cooldownText` field (102) + its 2 writes (kept the local `ct` + `fx.addEffect(ct)`);
+  `GameLoopThread.fps` field + `frameCount`/`fpsTimer` + the FPS-counter block (kept the yield logic);
+  `PlayerRepository.addCardDust`/`spendCardDust` (interface + impl); `PlayerProfileDao.updateCardDust`
+  (0 callers) + `adjustCardDust`; `FakePlayerRepository` overrides; the one `CurrencyGuardTest` Card-Dust
+  case.
+- **Verify:** `testDebugUnitTest assembleDebug` BUILD SUCCESSFUL — **1253 JVM, 0 failures** (−1 as
+  predicted; Room regenerated `PlayerProfileDao_Impl` without the removed queries). `:app:detekt` +
+  `lint-kotlin.sh` exit 0. **`app/schemas/` unchanged** (git clean — no `@Entity`/version touched). Grep
+  proof: removed symbols gone from `app/src/main`; no removed-symbol refs in tests (only surviving
+  `cardDust`-column fixtures remain).
+- **Doc sync:** CLAUDE.md headline 1254→**1253**; README ×2 (1254→1253); STATE.md live headline (:18) →1253
+  (historical :19/:43/:48/:67 left as point-in-time snapshots); CHANGELOG `[Unreleased]` Batch-B entry.
+  source-files.md needed NO edit (its DAO/repo entries describe currency adjustments generically, don't
+  enumerate the removed methods).
+- **No ADR** (removal on established conventions; the Card-Dust mechanic removal predates this — R4-08/
+  ADR-0010). Plan: `docs/superpowers/plans/2026-06-23-batch-b-dead-code-removal.md`.
+- **Next:** open the Batch B PR (branch `chore/batch-b-dead-code`); check off L15/L16/L17/L13/L18 in #262.
+  Then batches C (i18n) / D (CI) + the non-batchable items.

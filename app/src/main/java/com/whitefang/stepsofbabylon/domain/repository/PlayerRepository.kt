@@ -44,10 +44,6 @@ interface PlayerRepository {
     /** Atomic guarded Power Stone deduction (#122). Same contract as [spendGems]. */
     suspend fun spendPowerStones(amount: Long): Boolean
 
-    suspend fun addCardDust(amount: Long)
-
-    suspend fun spendCardDust(amount: Long)
-
     suspend fun updateTier(tier: Int)
 
     suspend fun updateHighestUnlockedTier(tier: Int)

@@ -28,9 +28,6 @@ class GameLoopThread(
     @Volatile
     var onLoopError: ((Throwable) -> Unit)? = null
 
-    var fps: Int = 0
-        private set
-
     companion object {
         private const val TICK_NS = 16_666_667L // ~60 UPS (1e9 / 60)
         private const val TAG = "GameLoopThread"
@@ -39,8 +36,6 @@ class GameLoopThread(
     override fun run() {
         var previousTime = System.nanoTime()
         var accumulator = 0L
-        var frameCount = 0
-        var fpsTimer = System.nanoTime()
 
         while (isRunning) {
             val currentTime = System.nanoTime()
@@ -87,14 +82,6 @@ class GameLoopThread(
                 isRunning = false
                 runCatching { onLoopError?.invoke(t) }
                 break
-            }
-
-            // FPS counter
-            frameCount++
-            if (currentTime - fpsTimer >= 1_000_000_000L) {
-                fps = frameCount
-                frameCount = 0
-                fpsTimer = currentTime
             }
 
             // Yield to avoid burning CPU if we're ahead

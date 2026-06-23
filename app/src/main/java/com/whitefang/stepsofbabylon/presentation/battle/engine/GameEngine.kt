@@ -99,7 +99,6 @@ class GameEngine :
     override var strings: Strings? = null
     override var reducedMotion: Boolean = false
         private set
-    private var cooldownText: WaveCooldownText? = null
     private var lastWave: Int = 0
 
     /**
@@ -545,8 +544,6 @@ class GameEngine :
     /** R4-06: fires the UW at [index] (delegated to [UWController]). Public for direct invocation by tests. */
     fun activateUW(index: Int) = uwController.activateUW(index)
 
-    fun resetUWCooldowns() = uwController.resetUWCooldowns()
-
     // --- Wave announcements ---
 
     private fun triggerWaveAnnouncement(wave: Int) {
@@ -555,8 +552,8 @@ class GameEngine :
         fx.addEffect(WaveAnnouncement(wave, isBoss, screenWidth, screenHeight, reducedMotion))
         soundManager?.play(SoundEffect.WAVE_START)
 
-        // Add cooldown text for next wave
-        cooldownText = null // Old one auto-finishes
+        // Add cooldown text for next wave. The previous WaveCooldownText auto-finishes via the
+        // EffectEngine, so there is no per-engine handle to clear.
         val spawner = waveSpawner
         if (spawner != null) {
             // V1X-15b: ENEMY_INTEL L1+ reveals the next wave's composition during cooldown.
@@ -568,7 +565,6 @@ class GameEngine :
                         0f
                     }
                 }
-            cooldownText = ct
             fx.addEffect(ct)
         }
     }

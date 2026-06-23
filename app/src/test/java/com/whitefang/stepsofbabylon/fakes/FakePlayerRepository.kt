@@ -85,14 +85,6 @@ open class FakePlayerRepository(
         return true
     }
 
-    override suspend fun addCardDust(amount: Long) {
-        profile.update { it.copy(cardDust = it.cardDust + amount) }
-    }
-
-    override suspend fun spendCardDust(amount: Long) {
-        profile.update { it.copy(cardDust = maxOf(0, it.cardDust - amount)) }
-    }
-
     override suspend fun updateTier(tier: Int) {
         profile.update { it.copy(currentTier = tier) }
     }

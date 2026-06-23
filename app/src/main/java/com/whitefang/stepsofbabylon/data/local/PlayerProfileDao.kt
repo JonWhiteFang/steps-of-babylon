@@ -22,9 +22,6 @@ interface PlayerProfileDao {
     @Query("UPDATE player_profile SET powerStones = :powerStones WHERE id = 1")
     suspend fun updatePowerStones(powerStones: Long)
 
-    @Query("UPDATE player_profile SET cardDust = :cardDust WHERE id = 1")
-    suspend fun updateCardDust(cardDust: Long)
-
     @Query("UPDATE player_profile SET currentTier = :tier WHERE id = 1")
     suspend fun updateTier(tier: Int)
 
@@ -61,9 +58,6 @@ interface PlayerProfileDao {
 
     @Query("UPDATE player_profile SET powerStones = MAX(0, powerStones + :delta) WHERE id = 1")
     suspend fun adjustPowerStones(delta: Long)
-
-    @Query("UPDATE player_profile SET cardDust = MAX(0, cardDust + :delta) WHERE id = 1")
-    suspend fun adjustCardDust(delta: Long)
 
     @Query("UPDATE player_profile SET labSlotCount = :count WHERE id = 1")
     suspend fun updateLabSlotCount(count: Int)
