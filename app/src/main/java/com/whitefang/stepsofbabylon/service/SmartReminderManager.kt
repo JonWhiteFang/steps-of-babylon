@@ -9,6 +9,7 @@ import androidx.core.app.NotificationCompat
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.data.NotificationPreferences
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
+import com.whitefang.stepsofbabylon.domain.notification.NotificationPolicy
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.WorkshopRepository
 import com.whitefang.stepsofbabylon.domain.usecase.CalculateUpgradeCost
@@ -16,6 +17,7 @@ import com.whitefang.stepsofbabylon.presentation.MainActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
+import java.time.LocalTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -52,6 +54,12 @@ class SmartReminderManager
 
         suspend fun checkAndNotify() {
             if (!notificationPreferences.isSmartRemindersEnabled()) return
+            // #216: no reminder during quiet hours. Routed through canSendReminder (not
+            // isWithinQuietHours) so the unit-tested decision fn is the one on the shipping path.
+            // Placed before the last_sent write below, so a suppressed reminder doesn't burn the
+            // day's slot. (This path runs from StepSyncWorker, NOT under the #120 credit mutex, so
+            // its in-method getSharedPreferences is not lock-sensitive — unlike the supply-drop path.)
+            if (!NotificationPolicy.canSendReminder(LocalTime.now())) return
 
             val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             val today = LocalDate.now().toString()
