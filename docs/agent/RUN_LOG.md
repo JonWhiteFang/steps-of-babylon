@@ -1,3 +1,36 @@
+## 2026-06-24 — #217 service/boot-receiver test coverage (TEST-2; test-only, `[Unreleased]`)
+
+- **Goal:** close the 2026-06-17 complete-app-review's TEST-2 finding — `StepCounterService` and
+  `BootReceiver` had zero test references.
+- **Scope confirmation (held the skeptic correction):** the catch-up *logic* is already covered
+  (`StepSyncWorker.computeCatchUp`) and the service's crash-safety + notification-balance seams have pure
+  JVM tests (`StartForegroundSafelyTest`, `StepBalanceDisplayTest`). So the genuinely-uncovered surface is
+  only the thin Android glue: the boot-restart path and the injection-independent service lifecycle. No
+  production code changed.
+- **What changed (2 new JVM-lane Robolectric test files, branch `test/217-service-bootreceiver-coverage`):**
+  - `app/src/test/java/com/whitefang/stepsofbabylon/service/BootReceiverTest.kt` — 3 tests. `BootReceiver`
+    is a plain `BroadcastReceiver` (NOT `@AndroidEntryPoint`), so it's fully testable on the JVM lane with
+    no Hilt graph. Drives `onReceive` and asserts via `Shadows.shadowOf(application)`: (a) a
+    non-`BOOT_COMPLETED` action short-circuits → no service start (`peekNextStartedService()` null); (b)
+    `BOOT_COMPLETED` + `ACTIVITY_RECOGNITION` **denied** → no service start; (c) `BOOT_COMPLETED` + **granted**
+    → a service-start Intent whose component targets `StepCounterService` in this package. Matches the
+    `StepWidgetProviderTest` convention (`@RunWith(RobolectricTestRunner)` + `@Config(sdk=[34], application=Application)`,
+    JUnit 4).
+  - `app/src/test/java/com/whitefang/stepsofbabylon/service/StepCounterServiceTest.kt` — 2 tests on a
+    directly-constructed `StepCounterService()` (no Hilt): `onStartCommand(null,0,1)` returns `START_STICKY`
+    (restart-after-kill contract), `onBind(Intent())` returns `null` (started, not bound). The agent
+    verified these overrides touch no injected field, so the `@AndroidEntryPoint` `onCreate` is NOT exercised
+    — that path stays on its pure seams + the instrumented lifecycle suite (`BattleSurfaceLifecycleTest`).
+- **Verification:** `./run-gradle.sh :app:testDebugUnitTest` → `BUILD SUCCESSFUL`, aggregate **1282 JVM
+  tests, 0 failures, 0 errors** (1277 → 1282, +5). Scoped run of the two new classes also green
+  (BootReceiverTest 3/0/0, StepCounterServiceTest 2/0/0). Authored via the `android-test-writer` subagent;
+  test files reviewed against source before accepting.
+- **Docs synced:** `CLAUDE.md` headline 1277 → 1282; `CHANGELOG.md` `[Unreleased]` new Tests subsection;
+  `docs/steering/source-files.md` two new test-index entries; `STATE.md` current-objective rotation.
+- **Next:** commit + open PR (squash disabled → merge commit); then the audit backlog's remaining
+  non-batchable items (A24 anti-cheat clock-tamper, battle perf L46-L51, L12 BattleViewModel decomposition,
+  billing-anti-fraud by-design items, #34 i18n) + the internal→closed promotion judgment call.
+
 ## 2026-06-24 — Claude Code automations + CI docs/tooling fast-path (tooling only, `[Unreleased]`)
 
 - **Goal:** act on the `claude-automation-recommender` review of this repo's Claude Code setup — add the

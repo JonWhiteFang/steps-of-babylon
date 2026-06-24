@@ -42,7 +42,19 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — Claude Code tooling + CI fast-path MERGED to `main`; nothing in flight, no app change).**
+- **CURRENT (IN FLIGHT — #217 service/boot-receiver test coverage on branch
+  `test/217-service-bootreceiver-coverage`; test-only, no app change).** Closed the 2026-06-17 audit's
+  TEST-2 gap (`StepCounterService`/`BootReceiver` had zero test references). The skeptic scope-correction
+  held: the catch-up logic + crash-safety/notification seams were already covered, so the only
+  uncovered surface was thin Android glue. Added **`BootReceiverTest`** (3 Robolectric/JUnit-4 tests —
+  action gate, ACTIVITY_RECOGNITION permission gate, `StepCounterService` dispatch; `BootReceiver` is
+  not `@AndroidEntryPoint` so no Hilt) + **`StepCounterServiceTest`** (2 Robolectric tests — the
+  injection-independent lifecycle: `onStartCommand`→`START_STICKY`, `onBind`→`null`, on a
+  directly-constructed instance; the Hilt-injected `onCreate` stays on its pure seams + the instrumented
+  suite). Authored via the `android-test-writer` subagent; full suite green at **1277 → 1282 JVM (+5)**,
+  0 failures. **No production-code/schema change.** **Next:** commit + open PR; then the audit backlog's
+  remaining non-batchable items (below).
+- **Previous objective (DONE — Claude Code tooling + CI fast-path MERGED to `main`; nothing in flight, no app change).**
   Acted on the `claude-automation-recommender` review of this repo's Claude Code setup. **PR #345**
   (`ca239c2`) added two subagents (`concurrency-reviewer`, `android-test-writer`), two skills
   (`adversarial-review`, `new-migration`), a Tier-3 `Migrations.kt` advisory in `guard-sensitive-edits.sh`,
