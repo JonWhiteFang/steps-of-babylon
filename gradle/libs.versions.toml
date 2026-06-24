@@ -5,7 +5,7 @@ agp = "9.2.1"
 # AND KSP #2964 (Kotlin 2.4's module-name change breaks code-gen, no fix released). Note: the
 # `kotlin-compose` plugin (org.jetbrains.kotlin.plugin.compose) tracks this ref, so it stays 2.3.0 too.
 # Revisit when a Dagger release > 2.59.2 ships AND KSP #2964 is fixed+released. (Dependabot #290 wave.)
-kotlin = "2.3.0"
+kotlin = "2.4.0"
 ksp = "2.3.9"
 hilt = "2.59.2"
 room = "2.8.4"
