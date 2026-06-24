@@ -42,7 +42,20 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (DONE — v1.0.12 / versionCode 28 SHIPPED → Play internal; nothing in flight).** The
+- **CURRENT (DONE — Claude Code tooling + CI fast-path MERGED to `main`; nothing in flight, no app change).**
+  Acted on the `claude-automation-recommender` review of this repo's Claude Code setup. **PR #345**
+  (`ca239c2`) added two subagents (`concurrency-reviewer`, `android-test-writer`), two skills
+  (`adversarial-review`, `new-migration`), a Tier-3 `Migrations.kt` advisory in `guard-sensitive-edits.sh`,
+  and a shared `.mcp.json` (context7; key via `CONTEXT7_API_KEY`, never committed). **PR #346** (`4b28b38`)
+  widened the CI `changes` classifier (both `ci.yml` + `instrumented.yml`) so `.claude/**` / `.mcp.json`-only
+  diffs skip the build gate **and** the emulator suite (anchored patterns; everything app-affecting still
+  gates; verified with a path-classification harness). Also flipped the **repo merge policy** to
+  merge-commits only (squash+rebase disabled) + enabled auto-merge. Each authored artifact was code-grounded
+  and adversarially verified via an 8-agent research→draft→refute Workflow before writing (140 claims
+  checked; 1 refuted, 3 partial, all corrected). **No app/Kotlin/schema/test change — 1277 JVM unchanged.**
+  **Next (no work in flight):** unchanged from below — the audit backlog's non-batchable items + the
+  internal→closed promotion judgment call.
+- **Previous objective (DONE — v1.0.12 / versionCode 28 SHIPPED → Play internal; nothing in flight).** The
   collateral-only release PR #342 (`8aa7c3e`) merged, the annotated `v1.0.12` tag was pushed, and
   `release.yml` (run `28051957931`) fired green end-to-end → signed AAB uploaded to the Play **internal**
   track + GitHub Release `v1.0.12` (`app-release.aab` 15.29 MB). Promoted the post-v1.0.11 body already on
@@ -406,7 +419,8 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 ## References
 
 - **Memory loop:** `CLAUDE.md` (canonical guide; now incl. the **Adversarial Review Gate** for specs/plans) · `docs/agent/START_HERE.md` (contract) · `docs/agent/CONSTRAINTS.md` · SessionStart hook + `/checkpoint` skill.
-- **Skills (`.claude/skills/`):** `checkpoint` (end-of-session memory write) · `complete-app-review` (ultracode `Workflow` for the full 20-section audit — every finding refuted by separate subagents 3/3/2/1; writes `docs/reviews/<date>-complete-app-review.md` + emits a propose-then-confirm GitHub-issue plan).
+- **Skills (`.claude/skills/`):** `checkpoint` (end-of-session memory write) · `complete-app-review` (ultracode `Workflow` for the full 20-section audit — every finding refuted by separate subagents 3/3/2/1; writes `docs/reviews/<date>-complete-app-review.md` + emits a propose-then-confirm GitHub-issue plan) · `release` (cut a `v*` release) · `adversarial-review` (the Adversarial Review Gate as a one-command Workflow for a single spec/plan) · `new-migration` (User-only guided Room schema-change choreography).
+- **Subagents (`.claude/agents/`):** `concurrency-reviewer` (read-only thread-safety & atomic-economy reviewer — encodes the lock model + guarded-deduct economy) · `android-test-writer` (JVM-lane-default test writer). Plus the shared `.mcp.json` (context7 MCP for live API docs; key via `CONTEXT7_API_KEY`).
 - **Look-&-feel bundle docs (all shipped):** Bundle E (#164, v1.0.8) spec `docs/superpowers/specs/2026-06-15-look-and-feel-bundle-e-design.md` + plan `docs/superpowers/plans/2026-06-15-look-and-feel-bundle-e.md` (both review-passed) · #171 spec/plan `docs/superpowers/{specs,plans}/2026-06-15-battle-bottom-chrome-overlap*.md` · Bundle D (#163, v1.0.7) spec `docs/superpowers/specs/2026-06-14-look-and-feel-bundle-d-design.md` + plan `docs/superpowers/plans/2026-06-14-look-and-feel-bundle-d.md` · Bundle C (#162) shipped in v1.0.6.
 - **Plans:** `docs/plans/plan-FORWARD.md` (forward plan + Closed-Test Readiness Gate — start here) · `docs/plans/master-plan.md` (v1.0 completion record) · `docs/plans/plan-V1X-roadmap.md` (backlog of record). Completed v1.0 plan files archived under `docs/archive/completed-plans-v1.0/`.
 - **Reference docs:** `docs/steering/` (tech, structure, source-files, lib-*) · `docs/architecture.md` · `docs/database-schema.md` · `docs/battle-formulas.md`.

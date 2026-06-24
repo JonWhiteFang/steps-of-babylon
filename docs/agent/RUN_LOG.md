@@ -1,3 +1,52 @@
+## 2026-06-24 — Claude Code automations + CI docs/tooling fast-path (tooling only, `[Unreleased]`)
+
+- **Goal:** act on the `claude-automation-recommender` review of this repo's Claude Code setup — add the
+  high-value automations it surfaced, and stop tooling-only PRs from paying for the full CI gate + emulator.
+- **What shipped (2 PRs, both merged to `main` as merge commits):**
+  - **PR #345 (`ca239c2`) — Claude Code automations.** `.claude/agents/concurrency-reviewer.md` (read-only
+    thread-safety & atomic-economy reviewer — encodes the `entitiesLock`→`effectsLock` acyclic order, the
+    guarded-deduct/one-shot-claim economy, the #127 unique-index rule, the #190 game-loop crash guard, with a
+    SAFE/CONCERNS/BLOCK verdict format) · `.claude/agents/android-test-writer.md` (writes tests matching the
+    repo: JVM-lane-default, JUnit Jupiter vs Robolectric/JUnit-4 split, reuse `test/fakes/`, #253 Compose
+    lane) · `.claude/skills/adversarial-review/SKILL.md` (the CLAUDE.md Adversarial Review Gate as a
+    one-command 3-stage Workflow for a single spec/plan — sibling of `complete-app-review`) ·
+    `.claude/skills/new-migration/SKILL.md` (User-only guided Room schema-change choreography:
+    entity→version→migration→schema JSON→drift gate→`AtomicDaoConcurrencyTest`→docs) · a Tier-3 advisory in
+    `.claude/hooks/guard-sensitive-edits.sh` (nudge on `data/local/Migrations.kt` edits, complementing the
+    Tier-1 `app/schemas/**` ask) · a shared `.mcp.json` (context7 MCP for live API docs; key read from
+    `CONTEXT7_API_KEY`, **never committed** — README gained a "Claude Code (optional)" note).
+  - **PR #346 (`4b28b38`) — CI docs/tooling fast-path.** Widened the `changes` classifier regex in BOTH
+    `ci.yml` and `instrumented.yml` from `^docs/|\.md$` to `^docs/|\.md$|^\.claude/|^\.mcp\.json$`, so a diff
+    touching only `.claude/**` / root `.mcp.json` skips the build/lint/test gate AND the emulator suite.
+- **How the artifacts were grounded:** an 8-agent background `Workflow` (research→draft→adversarial-refute,
+  one lane per file) checked every codebase claim against real source before writing — **140 claims, 1
+  refuted + 3 partial, all corrected in the verified output**. Confirmed at HEAD: DB `version = 12`,
+  `MIGRATION_FLOOR = 7`, the CI step literally named "Room schema-drift guard", and the `complete-app-review`
+  finder severity scale (`critical/high/medium/low`) the adversarial-review skill mirrors.
+- **Verification (evidence):** all 4 new files parse (well-formed frontmatter; subagents carry `tools`+`model`,
+  skills carry `disable-model-invocation`). Hook smoke-tested across all 3 tiers — Tier-1 `ask` on
+  `app/schemas/**`, Tier-2 advisory on versionCode, Tier-3 advisory on the real `Migrations.kt` path,
+  silent on ordinary Kotlin files; `bash -n` clean. CI classifier verified with a path-classification harness
+  mirroring the workflow logic: real code / `.github/` / `app/schemas/` / gradle / `site/` non-md / mixed
+  diffs → CODE; tooling-only sets → SKIP; edge cases `app/.claude/x` + `app/evil.mcp.json` → CODE. Both PRs
+  passed the full PR gate on merge (PR #346 ran the full gate incl. emulator on itself, since it touches
+  `.github/`). **No app/Kotlin/schema/test change — 1277 JVM unchanged.**
+- **Repo settings (not code):** disabled squash + rebase merges (merge-commits only, so PR history is
+  preserved — answering the dev's "I don't like the squashing"); enabled auto-merge so PRs queue behind
+  branch protection. `.mcp.json` is additive — the dev's pre-existing private local-scoped context7 server
+  (with its own key) is untouched (local scope wins over project).
+- **Doc sync:** `structure.md` Root Layout gained `.claude/` + `.mcp.json` entries and a note on the CI
+  fast-path classifier; `CHANGELOG.md` `[Unreleased]` gained a Tooling section; `STATE.md` rotated the
+  current objective + refreshed the References Skills/Subagents lines. CLAUDE.md untouched (no test-count /
+  architecture / convention change; it documents the Review Gate as process, not a skill index).
+- **No ADR:** incremental work within existing ADR-0018 (CI) + ADR-0019 (Claude Code) territory — config and
+  tooling, not a new architecture decision.
+- **Next:** unchanged — the audit backlog's non-batchable items (#217 service tests, A24 clock-tamper, battle
+  game-loop perf, #306/ADR-0012 BattleViewModel decomposition), #34 i18n, remaining med/low #262/#128, and
+  the internal→closed promotion judgment call. The two new subagents are live and dispatchable now.
+
+---
+
 ## 2026-06-23 — CHECKPOINT: staged repo-wide ktlint format — EFFORT COMPLETE (6/6 merged) (`[Unreleased]`)
 
 Session-level wrap-up of the whole staged ktlint format (the 6 per-stage entries below hold the

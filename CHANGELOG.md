@@ -4,6 +4,30 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Tooling — Claude Code automations + CI docs/tooling fast-path (no app change)
+
+**Repo tooling only — no app/Kotlin/schema/test change, test count unchanged (1277 JVM).** Two merged
+PRs off the `claude-automation-recommender` review of this repo's Claude Code setup.
+
+- **Claude Code automations (PR #345).** Added two subagents (`.claude/agents/concurrency-reviewer.md`
+  — read-only thread-safety & atomic-economy reviewer encoding the `entitiesLock`→`effectsLock` order,
+  guarded-deduct economy, #127 unique-index rule, #190 loop guard; `.claude/agents/android-test-writer.md`
+  — JVM-lane-default test writer aware of the Jupiter vs Robolectric/JUnit-4 split and the `test/fakes/`),
+  two skills (`.claude/skills/adversarial-review/` — the CLAUDE.md Adversarial Review Gate as a one-command
+  3-stage Workflow for a single spec/plan; `.claude/skills/new-migration/` — User-only guided Room
+  migration choreography), a new Tier-3 advisory in `guard-sensitive-edits.sh` (nudge on edits to
+  `data/local/Migrations.kt`), and a shared `.mcp.json` wiring the context7 MCP server for live API docs
+  (key read from `CONTEXT7_API_KEY`, never committed; README documents it). Each artifact was code-grounded
+  and adversarially verified before authoring.
+- **CI docs/tooling fast-path (PR #346).** Widened the `changes` classifier in both `ci.yml` and
+  `instrumented.yml` so a diff touching only `.claude/**` or the root `.mcp.json` (alongside `docs/**` /
+  `*.md`) skips the build/lint/test gate **and** the emulator instrumented suite — none of which affects
+  the built app. Patterns are anchored (a nested `app/.claude/x` or `app/evil.mcp.json` still gates as
+  code); `.github/`, `app/schemas/`, gradle/config, and `site/` non-md remain code; the unknown-base
+  fail-safe is untouched.
+- **Repo merge policy.** Squash and rebase merges disabled (merge-commits only) so PR history is preserved;
+  auto-merge enabled. (GitHub repo setting, not a code change.)
+
 ## [1.0.12] — 2026-06-23 (versionCode 28)
 
 Shipped to the Play Console **internal** track (tag `v1.0.12`). Promotes everything accumulated since
