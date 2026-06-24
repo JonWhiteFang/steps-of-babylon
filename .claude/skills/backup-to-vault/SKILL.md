@@ -28,6 +28,8 @@ already on GitHub and is deliberately NOT copied.
   possible. Each block is otherwise a fresh shell, so variables don't survive between blocks: every
   block that needs `$VAULT` re-derives it (it's a constant), and `$STAGED_TAR` is persisted to a
   sidecar file (`/tmp/sob-staged-tar-path`) so later steps can read it back.
+  > If the vault ever moves, update the hardcoded VAULT path in EVERY block (it is re-derived per
+  > block by design, so there is no single definition).
 
 ## Step 1 — Preflight (refuse to run if any check fails)
 
@@ -112,6 +114,19 @@ done
 STAGED_TAR="$(mktemp -t sob-secrets)"
 chmod 600 "$STAGED_TAR"
 tar -cf "$STAGED_TAR" "${PRESENT[@]}"
+
+# Guard against a concurrent or crashed prior run clobbering the staged-tar pointer.
+if [ -e /tmp/sob-staged-tar-path ]; then
+  OLD="$(cat /tmp/sob-staged-tar-path 2>/dev/null)"
+  if [ -n "$OLD" ] && [ -e "$OLD" ]; then
+    echo "STOP: /tmp/sob-staged-tar-path already points at an existing tar ($OLD) — another /backup-to-vault run may be in progress. Resolve before continuing."
+    # do not overwrite; abort this step
+    return 1 2>/dev/null || exit 1
+  fi
+  echo "Removing stale staged-tar pointer (its tar no longer exists)."
+  rm -f /tmp/sob-staged-tar-path
+fi
+
 echo "$STAGED_TAR" > /tmp/sob-staged-tar-path   # persist for later steps (random mktemp suffix)
 echo "staged tar: $STAGED_TAR ($(wc -c < "$STAGED_TAR") bytes)"
 
