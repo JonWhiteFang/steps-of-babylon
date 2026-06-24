@@ -118,7 +118,7 @@ private fun SupplyDropCard(
                     color = Gold,
                 )
                 Text(
-                    text = formatTimeAgo(drop.createdAt),
+                    text = formatTimeAgo(drop.createdAt, justNowLabel = stringResource(R.string.time_just_now)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -161,11 +161,15 @@ internal fun formatSupplyReward(drop: SupplyDrop): String =
         }
     }
 
-private fun formatTimeAgo(timestampMs: Long): String {
+// i18n(#34): only the "Just now" early-return is localized (passed in); the m/h/d-ago duration units are deferred to the plurals pass.
+private fun formatTimeAgo(
+    timestampMs: Long,
+    justNowLabel: String,
+): String {
     val diff = System.currentTimeMillis() - timestampMs
     val minutes = diff / 60_000
     return when {
-        minutes < 1 -> "Just now"
+        minutes < 1 -> justNowLabel
         minutes < 60 -> "${minutes}m ago"
         minutes < 1440 -> "${minutes / 60}h ago"
         else -> "${minutes / 1440}d ago"

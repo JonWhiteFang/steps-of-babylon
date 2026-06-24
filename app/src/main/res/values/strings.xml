@@ -343,4 +343,24 @@
     <string name="battle_uw_ready">%1$s ready</string>
     <string name="battle_uw_cooldown">%1$s on cooldown, %2$d seconds remaining</string>
     <string name="battle_close">✕</string>
+
+    <!-- Non-composable helper returns (resolved at call site) -->
+    <string name="currency_label_steps">Steps</string>
+    <string name="currency_label_cash">Cash</string>
+    <string name="currency_label_gems">Gems</string>
+    <string name="currency_label_power_stones">Power Stones</string>
+    <string name="uw_path_damage">Damage</string>
+    <string name="uw_path_slow_factor">Slow factor</string>
+    <string name="uw_path_cash_multiplier">Cash multiplier</string>
+    <string name="uw_path_dot">DoT % MaxHP/sec</string>
+    <string name="uw_path_damage_dps">Damage DPS</string>
+    <string name="uw_path_chain_length">Chain length</string>
+    <string name="uw_path_radius">Radius</string>
+    <string name="uw_path_pull_strength">Pull strength</string>
+    <string name="uw_path_duration">Duration</string>
+    <string name="uw_path_area">Area</string>
+    <string name="uw_path_damage_multiplier">Damage multiplier</string>
+    <string name="uw_path_cooldown">Cooldown</string>
+    <string name="lab_time_done">Done!</string>
+    <string name="time_just_now">Just now</string>
 </resources>

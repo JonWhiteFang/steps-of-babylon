@@ -187,7 +187,10 @@ private fun ResearchCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(formatTime(info.remainingMs), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            formatTime(info.remainingMs, doneLabel = stringResource(R.string.lab_time_done)),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             if (freeRushAvailable) {
                                 OutlinedButton(onClick = onFreeRush) {
@@ -255,8 +258,12 @@ private fun ResearchCard(
 
 private fun formatName(type: ResearchType): String = type.name.toDisplayName()
 
-private fun formatTime(ms: Long): String {
-    if (ms <= 0) return "Done!"
+// i18n(#34): only the "Done!" early-return is localized (passed in); the h/m/s duration units are deferred to the plurals pass.
+private fun formatTime(
+    ms: Long,
+    doneLabel: String,
+): String {
+    if (ms <= 0) return doneLabel
     val totalSeconds = ms / 1000
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60

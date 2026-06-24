@@ -157,8 +157,8 @@
         <error line="102" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/CurrencyDisplay.kt">
-        <error line="72" column="5" source="standard:function-naming" />
-        <error line="87" column="5" source="standard:function-naming" />
+        <error line="76" column="5" source="standard:function-naming" />
+        <error line="91" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/EmptyState.kt">
         <error line="21" column="5" source="standard:function-naming" />
@@ -184,9 +184,9 @@
         <error line="26" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/weapons/UltimateWeaponScreen.kt">
-        <error line="46" column="5" source="standard:function-naming" />
-        <error line="99" column="13" source="standard:function-naming" />
-        <error line="200" column="13" source="standard:function-naming" />
+        <error line="47" column="5" source="standard:function-naming" />
+        <error line="100" column="13" source="standard:function-naming" />
+        <error line="201" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/weapons/UltimateWeaponViewModel.kt">
         <error line="69" column="21" source="standard:backing-property-naming" />

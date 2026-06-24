@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.weapons
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -211,7 +212,7 @@ private fun UWPathRow(
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                pathLabel(type, path),
+                stringResource(pathLabel(type, path)),
                 style = MaterialTheme.typography.labelMedium,
                 color = Color.White,
             )
@@ -249,34 +250,35 @@ private fun UWPathRow(
  * UI-side label for a UW's path (e.g. "Damage" / "Chain length" / "Cooldown"). Display
  * names are intentionally short so the row layout stays single-line on narrow screens.
  */
+@StringRes
 private fun pathLabel(
     type: UltimateWeaponType,
     path: UWPath,
-): String =
+): Int =
     when (path) {
         UWPath.DAMAGE -> {
             when (type) {
-                UltimateWeaponType.CHRONO_FIELD -> "Slow factor"
-                UltimateWeaponType.GOLDEN_ZIGGURAT -> "Cash multiplier"
-                UltimateWeaponType.POISON_SWAMP -> "DoT % MaxHP/sec"
-                UltimateWeaponType.BLACK_HOLE -> "Damage DPS"
-                else -> "Damage"
+                UltimateWeaponType.CHRONO_FIELD -> R.string.uw_path_slow_factor
+                UltimateWeaponType.GOLDEN_ZIGGURAT -> R.string.uw_path_cash_multiplier
+                UltimateWeaponType.POISON_SWAMP -> R.string.uw_path_dot
+                UltimateWeaponType.BLACK_HOLE -> R.string.uw_path_damage_dps
+                else -> R.string.uw_path_damage
             }
         }
 
         UWPath.SECONDARY -> {
             when (type) {
-                UltimateWeaponType.CHAIN_LIGHTNING -> "Chain length"
-                UltimateWeaponType.DEATH_WAVE -> "Radius"
-                UltimateWeaponType.BLACK_HOLE -> "Pull strength"
-                UltimateWeaponType.CHRONO_FIELD -> "Duration"
-                UltimateWeaponType.POISON_SWAMP -> "Area"
-                UltimateWeaponType.GOLDEN_ZIGGURAT -> "Damage multiplier"
+                UltimateWeaponType.CHAIN_LIGHTNING -> R.string.uw_path_chain_length
+                UltimateWeaponType.DEATH_WAVE -> R.string.uw_path_radius
+                UltimateWeaponType.BLACK_HOLE -> R.string.uw_path_pull_strength
+                UltimateWeaponType.CHRONO_FIELD -> R.string.uw_path_duration
+                UltimateWeaponType.POISON_SWAMP -> R.string.uw_path_area
+                UltimateWeaponType.GOLDEN_ZIGGURAT -> R.string.uw_path_damage_multiplier
             }
         }
 
         UWPath.COOLDOWN -> {
-            "Cooldown"
+            R.string.uw_path_cooldown
         }
     }
 
