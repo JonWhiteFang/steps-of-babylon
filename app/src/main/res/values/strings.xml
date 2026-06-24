@@ -292,4 +292,13 @@
     <string name="stats_row_current">Current</string>
     <string name="stats_row_earned">Earned</string>
     <string name="stats_row_spent">Spent</string>
+
+    <!-- Labs screen -->
+    <string name="labs_slots">Lab Slots: %1$d/%2$d</string>
+    <string name="labs_unlock_slot">"Unlock Slot "</string>
+    <string name="labs_level_progress">Lv %1$d/%2$d</string>
+    <string name="labs_free">Free</string>
+    <string name="labs_rush">"Rush "</string>
+    <string name="labs_start">"Start "</string>
+    <string name="labs_no_slot">No Slot Available</string>
 </resources>

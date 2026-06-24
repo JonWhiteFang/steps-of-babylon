@@ -90,8 +90,8 @@
         <error line="32" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/labs/LabsScreen.kt">
-        <error line="51" column="5" source="standard:function-naming" />
-        <error line="122" column="13" source="standard:function-naming" />
+        <error line="53" column="5" source="standard:function-naming" />
+        <error line="127" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/labs/LabsViewModel.kt">
         <error line="54" column="21" source="standard:backing-property-naming" />
