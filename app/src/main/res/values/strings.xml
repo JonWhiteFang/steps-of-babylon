@@ -310,4 +310,19 @@
     <string name="missions_reward_plus">+</string>
     <string name="missions_claim">Claim</string>
     <string name="missions_milestone_steps">%1$s steps</string>
+
+    <!-- Ultimate Weapons screen -->
+    <string name="uw_power_stones_balance">Power Stones: %1$d</string>
+    <string name="uw_equipped_full">Equipped: 3/3 — unequip one to swap</string>
+    <string name="uw_equipped_count">Equipped: %1$d/3</string>
+    <string name="uw_unlock_cost">Unlock (%1$d PS)</string>
+    <string name="uw_unequip">Unequip</string>
+    <string name="uw_equip">Equip</string>
+    <string name="uw_path_level_cost">L%1$d (%2$d PS)</string>
+
+    <!-- Unclaimed Supplies screen -->
+    <string name="supplies_claim_all">Claim All</string>
+    <string name="supplies_empty">No supply drops yet — keep walking!</string>
+    <string name="supplies_claim">Claim</string>
+    <string name="supplies_reward_card_copy">%1$s x1</string>
 </resources>

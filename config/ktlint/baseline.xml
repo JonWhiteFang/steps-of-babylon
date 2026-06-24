@@ -147,8 +147,8 @@
         <error line="46" column="21" source="standard:backing-property-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/supplies/UnclaimedSuppliesScreen.kt">
-        <error line="47" column="5" source="standard:function-naming" />
-        <error line="97" column="13" source="standard:function-naming" />
+        <error line="48" column="5" source="standard:function-naming" />
+        <error line="98" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/supplies/UnclaimedSuppliesViewModel.kt">
         <error line="41" column="21" source="standard:backing-property-naming" />
@@ -184,9 +184,9 @@
         <error line="26" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/weapons/UltimateWeaponScreen.kt">
-        <error line="45" column="5" source="standard:function-naming" />
-        <error line="98" column="13" source="standard:function-naming" />
-        <error line="191" column="13" source="standard:function-naming" />
+        <error line="46" column="5" source="standard:function-naming" />
+        <error line="99" column="13" source="standard:function-naming" />
+        <error line="200" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/weapons/UltimateWeaponViewModel.kt">
         <error line="69" column="21" source="standard:backing-property-naming" />
