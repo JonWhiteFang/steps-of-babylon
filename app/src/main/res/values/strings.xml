@@ -203,4 +203,21 @@
     <string name="settings_delete_final_body">All steps, upgrades, cards, weapons, and purchases will be lost forever. The app will restart.</string>
     <string name="settings_delete_confirm_final">Delete Everything</string>
     <string name="action_cancel">Cancel</string>
+
+    <!-- Cards screen -->
+    <string name="cards_owned_count">%1$d cards</string>
+    <string name="cards_equipped_count">Equipped: %1$d/3</string>
+    <string name="cards_equipped_full">Equipped: 3/3 — unequip one to swap</string>
+    <string name="cards_empty_title">No cards yet</string>
+    <string name="cards_empty_message">Open a pack above to start your collection. Equip up to 3 cards for per-round bonuses in battle.</string>
+    <string name="cards_free_pack_ad">Free Pack (Ad)</string>
+    <string name="cards_free_pack_used">Free pack used today</string>
+    <string name="cards_pack_opened_title">Pack Opened!</string>
+    <string name="cards_pack_new">New</string>
+    <string name="cards_pack_duplicate">Duplicate</string>
+    <string name="action_ok">OK</string>
+    <string name="cards_level_progress">Lv %1$d/%2$d</string>
+    <string name="cards_unequip">Unequip</string>
+    <string name="cards_equip">Equip</string>
+    <string name="cards_upgrade_progress">Upgrade (%1$d/%2$d)</string>
 </resources>

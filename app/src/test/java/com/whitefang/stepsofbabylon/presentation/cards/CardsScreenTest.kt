@@ -6,6 +6,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.SavedStateHandle
+import androidx.test.core.app.ApplicationProvider
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.domain.model.OwnedCard
 import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
@@ -75,7 +77,8 @@ class CardsScreenTest {
         composeRule.setContent { CardsScreen(viewModel = viewModel) }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("2 cards").assertExists()
+        val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
+        composeRule.onNodeWithText(ctx.getString(R.string.cards_owned_count, 2)).assertExists()
         composeRule.onNodeWithText("250").assertExists()
     }
 
@@ -93,7 +96,8 @@ class CardsScreenTest {
         composeRule.setContent { CardsScreen(viewModel = viewModel) }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Equipped: 3/3 — unequip one to swap").assertExists()
+        val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
+        composeRule.onNodeWithText(ctx.getString(R.string.cards_equipped_full)).assertExists()
     }
 
     @Test
