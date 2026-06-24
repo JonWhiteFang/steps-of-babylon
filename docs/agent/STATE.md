@@ -42,10 +42,21 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (nothing in flight — `main` clean).** Next candidate work selected: **#34 i18n string
-  externalization** (move hardcoded UI strings into `strings.xml`; medium, low-risk, no fragile-zone
-  touch). See "Top priorities" below for the rest of the audit-backlog non-batchable items + the
-  internal→closed promotion judgment call.
+- **CURRENT (nothing in flight — `main` clean; #34 implementation DEFERRED at developer request).**
+  **#34 i18n phase-2 spec + implementation plan AUTHORED, ADVERSARIALLY REVIEWED, and MERGED** (docs-only
+  PR #349, merge `52c1cec`). Both artifacts passed the multi-agent Adversarial Review Gate (ultracode):
+  spec 30 findings/25 surviving, plan 18/17. Artifacts live at
+  `docs/superpowers/specs/2026-06-24-i18n-compose-screen-extraction-design.md` +
+  `docs/superpowers/plans/2026-06-24-i18n-compose-screen-extraction.md` (**15 tasks across 2 impl PRs**;
+  PR3 Canvas/Activity is a separate deferred follow-up). **Scope:** extract hardcoded Compose
+  `Text`/`contentDescription` (+ dialogs, shared `presentation/ui`, two battle/ui Compose components,
+  nav `secondaryTitle` titles, and non-composable `@StringRes` string helpers) into `strings.xml`; no
+  behavior change; English-only. **Key gate corrections baked in:** `HardcodedText` lint is *already*
+  enabled + XML-only (no "flip later"); `UltimateWeaponBar` is pure Compose (not deferred Canvas); the
+  literal inventory was systematically undercounting helper-composable String args (now a Methodology
+  grep gate). **NEXT (when picked up):** execute PR1 (Tasks 1–5: store/settings/cards/onboarding), then
+  PR2 (Tasks 6–15). Developer-preferred execution mode leaned subagent-driven (confirm at start).
+  Otherwise unchanged: the audit-backlog non-batchable items + the internal→closed promotion call below.
 - **Previous objective (DONE — #217 service/boot-receiver test coverage MERGED to `main`; PR #348,
   commit `0d09ef2`; test-only, no app change).** Closed the 2026-06-17 audit's TEST-2 gap
   (`StepCounterService`/`BootReceiver` had zero test references). The skeptic scope-correction held: the
