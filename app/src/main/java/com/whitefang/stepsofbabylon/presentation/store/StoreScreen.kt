@@ -81,7 +81,13 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
             }
 
             // Gem Packs
-            item { Text("Gem Packs", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+            item {
+                Text(
+                    stringResource(R.string.store_section_gem_packs),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
             val gemPacks =
                 listOf(BillingProduct.GEM_PACK_SMALL, BillingProduct.GEM_PACK_MEDIUM, BillingProduct.GEM_PACK_LARGE)
             items(gemPacks) { product ->
@@ -111,7 +117,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                                 viewModel.purchaseGemPack(product)
                             },
                             modifier = Modifier.pulseScale(pulse),
-                        ) { Text("Buy") }
+                        ) { Text(stringResource(R.string.store_buy)) }
                     }
                 }
             }
@@ -119,7 +125,11 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
             // Ad Removal
             item {
                 Spacer(Modifier.height(8.dp))
-                Text("Premium", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.store_section_premium),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
             }
             item {
                 Card(
@@ -139,7 +149,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                 ) {
                     Row(Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
-                            Text("Ad Removal", fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.store_ad_removal), fontWeight = FontWeight.Bold)
                             if (state.adRemoved) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
@@ -149,7 +159,10 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                                         modifier = Modifier.size(18.dp),
                                     )
                                     Spacer(Modifier.width(4.dp))
-                                    Text("Purchased", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        stringResource(R.string.store_purchased),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
                                 }
                             } else {
                                 Text(
@@ -171,7 +184,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                                     viewModel.purchaseAdRemoval()
                                 },
                                 modifier = Modifier.pulseScale(adPulse),
-                            ) { Text("Buy") }
+                            ) { Text(stringResource(R.string.store_buy)) }
                         }
                     }
                 }
@@ -200,7 +213,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(4.dp))
-                                    Text("Season Pass", fontWeight = FontWeight.Bold)
+                                    Text(stringResource(R.string.store_season_pass), fontWeight = FontWeight.Bold)
                                 }
                                 if (state.seasonPassActive) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -240,19 +253,25 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                                         viewModel.purchaseSeasonPass()
                                     },
                                     modifier = Modifier.pulseScale(spPulse),
-                                ) { Text("Subscribe") }
+                                ) { Text(stringResource(R.string.store_subscribe)) }
                             }
                         }
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Free vs Season Pass:",
+                            stringResource(R.string.store_pass_comparison),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
                         Spacer(Modifier.height(4.dp))
-                        Text("• Daily Gems: 0 → 10/day", style = MaterialTheme.typography.bodySmall)
-                        Text("• Lab Rush: 50–200 Gems → 1 free/day", style = MaterialTheme.typography.bodySmall)
-                        Text("• Exclusive cosmetics unlocked", style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.store_pass_perk_gems), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            stringResource(R.string.store_pass_perk_lab_rush),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Text(
+                            stringResource(R.string.store_pass_perk_cosmetics),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                         if (state.seasonPassActive) {
                             Spacer(Modifier.height(8.dp))
                             val context = LocalContext.current
@@ -265,7 +284,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                                         ),
                                     )
                                 context.startActivity(intent)
-                            }) { Text("Manage subscription") }
+                            }) { Text(stringResource(R.string.store_manage_subscription)) }
                         }
                     }
                 }
@@ -274,9 +293,13 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
             // Cosmetics
             item {
                 Spacer(Modifier.height(8.dp))
-                Text("Cosmetics", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Text(
-                    "More cosmetic visuals are still being finalized. Jade and Obsidian Ziggurat skins are available now.",
+                    stringResource(R.string.store_section_cosmetics),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    stringResource(R.string.store_cosmetics_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -303,14 +326,14 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                                 OutlinedButton(onClick = {
                                     cosmeticHaptics.tap()
                                     viewModel.unequipCosmetic(cosmetic.cosmeticId)
-                                }) { Text("Unequip") }
+                                }) { Text(stringResource(R.string.store_unequip)) }
                             }
 
                             cosmetic.isOwned -> {
                                 Button(onClick = {
                                     cosmeticHaptics.tap()
                                     viewModel.equipCosmetic(cosmetic.cosmeticId)
-                                }) { Text("Equip") }
+                                }) { Text(stringResource(R.string.store_equip)) }
                             }
 
                             // C.2 PR 2 + V1X-14: only cosmetics whose renderer palette has shipped
@@ -332,7 +355,7 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                                 Button(
                                     onClick = { },
                                     enabled = false,
-                                ) { Text("Coming Soon") }
+                                ) { Text(stringResource(R.string.store_coming_soon)) }
                             }
                         }
                     }

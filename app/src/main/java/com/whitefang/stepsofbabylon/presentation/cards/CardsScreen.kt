@@ -86,19 +86,25 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 // Left: how many cards the player owns. Right: the gem balance they spend on packs.
                 // (Previously both slots printed the gem balance — "💎 1 / 💎 1 Gems" — a copy bug.)
-                Text("${state.ownedCards.size} cards", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.cards_owned_count, state.ownedCards.size),
+                    style = MaterialTheme.typography.titleMedium,
+                )
                 CurrencyValue(CurrencyType.GEMS, state.gems)
             }
             Spacer(Modifier.height(8.dp))
             if (state.equippedCount >= 3) {
                 Text(
-                    "Equipped: 3/3 — unequip one to swap",
+                    stringResource(R.string.cards_equipped_full),
                     style = MaterialTheme.typography.titleSmall,
                     color = StatusWarning,
                     fontWeight = FontWeight.Bold,
                 )
             } else {
-                Text("Equipped: ${state.equippedCount}/3", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    stringResource(R.string.cards_equipped_count, state.equippedCount),
+                    style = MaterialTheme.typography.titleSmall,
+                )
             }
             Spacer(Modifier.height(8.dp))
 
@@ -107,11 +113,15 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
                 OutlinedButton(onClick = { viewModel.watchFreePackAd() }, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Filled.Slideshow, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Free Pack (Ad)")
+                    Text(stringResource(R.string.cards_free_pack_ad))
                 }
                 Spacer(Modifier.height(4.dp))
             } else if (!state.adRemoved) {
-                Text("Free pack used today", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text(
+                    stringResource(R.string.cards_free_pack_used),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                )
                 Spacer(Modifier.height(4.dp))
             }
 
@@ -143,8 +153,8 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
             // Card collection
             if (state.ownedCards.isEmpty() && !state.isLoading) {
                 EmptyState(
-                    title = "No cards yet",
-                    message = "Open a pack above to start your collection. Equip up to 3 cards for per-round bonuses in battle.",
+                    title = stringResource(R.string.cards_empty_title),
+                    message = stringResource(R.string.cards_empty_message),
                 )
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -165,7 +175,7 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
         state.lastPackResult?.let { results ->
             AlertDialog(
                 onDismissRequest = { viewModel.dismissPackResult() },
-                title = { Text("Pack Opened!") },
+                title = { Text(stringResource(R.string.cards_pack_opened_title)) },
                 text = {
                     Column {
                         results.forEach { r ->
@@ -174,14 +184,14 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
                                 if (r.isNew) {
                                     Icon(
                                         Icons.Filled.FiberNew,
-                                        contentDescription = "New",
+                                        contentDescription = stringResource(R.string.cards_pack_new),
                                         tint = rowColor,
                                         modifier = Modifier.size(18.dp),
                                     )
                                 } else {
                                     Icon(
                                         Icons.Filled.Autorenew,
-                                        contentDescription = "Duplicate",
+                                        contentDescription = stringResource(R.string.cards_pack_duplicate),
                                         tint = rowColor,
                                         modifier = Modifier.size(18.dp),
                                     )
@@ -207,7 +217,9 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
                         }
                     }
                 },
-                confirmButton = { TextButton(onClick = { viewModel.dismissPackResult() }) { Text("OK") } },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.dismissPackResult() }) { Text(stringResource(R.string.action_ok)) }
+                },
             )
         }
     } // Scaffold
@@ -243,9 +255,16 @@ private fun CardItem(
                 if (card.isEquipped) {
                     EquippedChip()
                 } else if (card.isMaxLevel) {
-                    Text("MAX", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        stringResource(R.string.upgrade_max),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 } else {
-                    Text("Lv ${card.level}/${card.type.maxLevel}", style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        stringResource(R.string.cards_level_progress, card.level, card.type.maxLevel),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
                 }
             }
             Text(
@@ -263,12 +282,19 @@ private fun CardItem(
                     OutlinedButton(onClick = {
                         haptics.tap()
                         onUnequip()
-                    }, modifier = Modifier.weight(1f)) { Text("Unequip") }
+                    }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.cards_unequip)) }
                 } else {
-                    Button(onClick = {
-                        haptics.tap()
-                        onEquip()
-                    }, enabled = equippedCount < 3, modifier = Modifier.weight(1f)) { Text("Equip") }
+                    Button(
+                        onClick = {
+                            haptics.tap()
+                            onEquip()
+                        },
+                        enabled = equippedCount < 3,
+                        modifier =
+                            Modifier.weight(
+                                1f,
+                            ),
+                    ) { Text(stringResource(R.string.cards_equip)) }
                 }
                 if (!card.isMaxLevel) {
                     Button(
@@ -280,7 +306,7 @@ private fun CardItem(
                         enabled = card.canAffordUpgrade,
                         modifier = Modifier.weight(1f).pulseScale(upgradePulse),
                     ) {
-                        Text("Upgrade (${card.copyCount}/${card.copiesNeeded})")
+                        Text(stringResource(R.string.cards_upgrade_progress, card.copyCount, card.copiesNeeded))
                     }
                 }
             }

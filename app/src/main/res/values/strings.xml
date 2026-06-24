@@ -150,4 +150,88 @@
     <string name="reminder_channel_name">Smart Reminders</string>
     <string name="reminder_channel_desc">Upgrade proximity reminders</string>
     <string name="reminder_title">Almost there!</string>
+
+    <!-- Store screen -->
+    <string name="store_section_gem_packs">Gem Packs</string>
+    <string name="store_buy">Buy</string>
+    <string name="store_section_premium">Premium</string>
+    <string name="store_ad_removal">Ad Removal</string>
+    <string name="store_purchased">Purchased</string>
+    <string name="store_season_pass">Season Pass</string>
+    <string name="store_subscribe">Subscribe</string>
+    <string name="store_pass_perk_gems">• Daily Gems: 0 → 10/day</string>
+    <string name="store_pass_perk_lab_rush">• Lab Rush: 50–200 Gems → 1 free/day</string>
+    <string name="store_pass_perk_cosmetics">• Exclusive cosmetics unlocked</string>
+    <string name="store_manage_subscription">Manage subscription</string>
+    <string name="store_pass_comparison">Free vs Season Pass:</string>
+    <string name="store_cosmetics_note">More cosmetic visuals are still being finalized. Jade and Obsidian Ziggurat skins are available now.</string>
+    <string name="store_section_cosmetics">Cosmetics</string>
+    <string name="store_unequip">Unequip</string>
+    <string name="store_equip">Equip</string>
+    <string name="store_coming_soon">Coming Soon</string>
+
+    <!-- Settings screen -->
+    <string name="settings_sound_header">Sound</string>
+    <string name="settings_music_volume">Music Volume</string>
+    <string name="settings_mute_sound_header">Mute Sound Effects</string>
+    <string name="settings_mute_sound_subtitle">Silence all in-game sounds</string>
+    <string name="settings_mute_music_header">Mute Music</string>
+    <string name="settings_mute_music_subtitle">Silence background music</string>
+    <string name="settings_haptic_header">Haptic Feedback</string>
+    <string name="settings_haptic_subtitle">Vibrate on taps, claims, and rewards</string>
+    <string name="settings_live_steps_header">Live Step Updates</string>
+    <string name="settings_live_steps_subtitle">Update notification with live step count and balance. A minimal tracking notification is always shown while step counting is active.</string>
+    <string name="settings_supply_drops_header">Supply Drops</string>
+    <string name="settings_supply_drops_subtitle">Notifications for walking rewards</string>
+    <string name="settings_smart_reminders_header">Smart Reminders</string>
+    <string name="settings_smart_reminders_subtitle">Upgrade proximity reminders</string>
+    <string name="settings_milestone_alerts_header">Milestone Alerts</string>
+    <string name="settings_milestone_alerts_subtitle">Wave records and step milestones</string>
+    <string name="settings_help_header">Help</string>
+    <string name="settings_replay_tutorial">Replay tutorial</string>
+    <string name="settings_replay_tutorial_subtitle">See the first-launch walkthrough again</string>
+    <string name="settings_background_activity_header">Background activity</string>
+    <string name="settings_background_activity_subtitle">Allow step counting to keep running in the background</string>
+    <string name="settings_data_header">Data</string>
+    <string name="settings_privacy_policy">Privacy Policy</string>
+    <string name="settings_privacy_policy_subtitle">How your data is handled</string>
+    <string name="settings_delete_card_header">Delete All Data</string>
+    <string name="settings_delete_card_subtitle">Permanently erase all progress</string>
+    <string name="settings_delete_confirm_title">Delete All Data?</string>
+    <string name="settings_delete_confirm_body">This will permanently delete all your progress, steps history, upgrades, and currency. This cannot be undone.</string>
+    <string name="settings_delete_final_title">Are you absolutely sure?</string>
+    <string name="settings_delete_final_body">All steps, upgrades, cards, weapons, and purchases will be lost forever. The app will restart.</string>
+    <string name="settings_delete_confirm_final">Delete Everything</string>
+    <string name="action_cancel">Cancel</string>
+
+    <!-- Cards screen -->
+    <string name="cards_owned_count">%1$d cards</string>
+    <string name="cards_equipped_count">Equipped: %1$d/3</string>
+    <string name="cards_equipped_full">Equipped: 3/3 — unequip one to swap</string>
+    <string name="cards_empty_title">No cards yet</string>
+    <string name="cards_empty_message">Open a pack above to start your collection. Equip up to 3 cards for per-round bonuses in battle.</string>
+    <string name="cards_free_pack_ad">Free Pack (Ad)</string>
+    <string name="cards_free_pack_used">Free pack used today</string>
+    <string name="cards_pack_opened_title">Pack Opened!</string>
+    <string name="cards_pack_new">New</string>
+    <string name="cards_pack_duplicate">Duplicate</string>
+    <string name="action_ok">OK</string>
+    <string name="cards_level_progress">Lv %1$d/%2$d</string>
+    <string name="cards_unequip">Unequip</string>
+    <string name="cards_equip">Equip</string>
+    <string name="cards_upgrade_progress">Upgrade (%1$d/%2$d)</string>
+    <!-- Onboarding screen (buttons + final-slide body copy; slide-carousel content lives in OnboardingSlide via existing keys) -->
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_no_sensor_body">This device has no step-counter sensor. You can still earn Steps by connecting Health Connect in Settings — otherwise the game can\'t track your walking.</string>
+    <string name="onboarding_continue_anyway">Continue anyway</string>
+    <string name="onboarding_enabled_body">Step counting enabled</string>
+    <string name="onboarding_battery_primer_body">Some phones pause background apps to save battery, which stops step counting. Allow Steps of Babylon to run in the background so your walking always counts.</string>
+    <string name="onboarding_allow_background">Allow background activity</string>
+    <string name="onboarding_maybe_later">Maybe later</string>
+    <string name="onboarding_start_playing">Start playing</string>
+    <string name="onboarding_enable_step_counting">Enable step counting</string>
+    <string name="onboarding_denied_body">Step counting is off. You can enable it any time in Settings.</string>
+    <string name="onboarding_open_settings">Open Settings</string>
+    <string name="onboarding_continue_without">Continue without step counting</string>
 </resources>

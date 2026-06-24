@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -136,7 +137,7 @@ fun OnboardingScreen(
                 // Top bar: Skip (non-final slides only) jumps to the permission primer.
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     if (pagerState.currentPage < lastIndex) {
-                        TextButton(onClick = { goTo(lastIndex) }) { Text("Skip") }
+                        TextButton(onClick = { goTo(lastIndex) }) { Text(stringResource(R.string.onboarding_skip)) }
                     } else {
                         Spacer(Modifier.height(48.dp))
                     }
@@ -237,7 +238,7 @@ fun OnboardingScreen(
                     Button(
                         onClick = { goTo(pagerState.currentPage + 1) },
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Next") }
+                    ) { Text(stringResource(R.string.onboarding_next)) }
                 } else {
                     // Final (permission primer) slide.
                     // ORDER MATTERS: the no-sensor case is checked FIRST (#193) — on a device with no
@@ -252,9 +253,7 @@ fun OnboardingScreen(
                             // #193: hardware step-counter absent — never strand the player at a
                             // silent dead-end. Explain it and let them continue (HC can backfill).
                             Text(
-                                "This device has no step-counter sensor. You can still earn Steps " +
-                                    "by connecting Health Connect in Settings — otherwise the game " +
-                                    "can't track your walking.",
+                                stringResource(R.string.onboarding_no_sensor_body),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -264,7 +263,7 @@ fun OnboardingScreen(
                                 onClick = { finish() },
                                 modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
                             ) {
-                                Text("Continue anyway")
+                                Text(stringResource(R.string.onboarding_continue_anyway))
                             }
                         }
 
@@ -282,7 +281,7 @@ fun OnboardingScreen(
                                 )
                                 Spacer(Modifier.width(4.dp))
                                 Text(
-                                    "Step counting enabled",
+                                    stringResource(R.string.onboarding_enabled_body),
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.primary,
                                 )
@@ -293,9 +292,7 @@ fun OnboardingScreen(
                                 // "Start playing" shows next (the construction-time showBatteryPrimer is
                                 // stale after the grant, so the handled flag is what gates re-display).
                                 Text(
-                                    "Some phones pause background apps to save battery, which stops " +
-                                        "step counting. Allow Steps of Babylon to run in the background " +
-                                        "so your walking always counts.",
+                                    stringResource(R.string.onboarding_battery_primer_body),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -308,49 +305,49 @@ fun OnboardingScreen(
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                 ) {
-                                    Text("Allow background activity")
+                                    Text(stringResource(R.string.onboarding_allow_background))
                                 }
                                 Spacer(Modifier.height(8.dp))
                                 TextButton(
                                     onClick = { batteryPrimerHandled = true },
                                     modifier = Modifier.fillMaxWidth(),
                                 ) {
-                                    Text("Maybe later")
+                                    Text(stringResource(R.string.onboarding_maybe_later))
                                 }
                             } else {
                                 Button(
                                     onClick = { finish() },
                                     modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
                                 ) {
-                                    Text("Start playing")
+                                    Text(stringResource(R.string.onboarding_start_playing))
                                 }
                             }
                         }
 
                         !permissionAsked -> {
                             Button(onClick = onEnableStepCounting, modifier = Modifier.fillMaxWidth()) {
-                                Text("Enable step counting")
+                                Text(stringResource(R.string.onboarding_enable_step_counting))
                             }
                         }
 
                         else -> {
                             // Asked but denied — give an explicit recovery path, never strand the player.
                             Text(
-                                "Step counting is off. You can enable it any time in Settings.",
+                                stringResource(R.string.onboarding_denied_body),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                                 textAlign = TextAlign.Center,
                             )
                             Button(onClick = onOpenAppSettings, modifier = Modifier.fillMaxWidth()) {
-                                Text("Open Settings")
+                                Text(stringResource(R.string.onboarding_open_settings))
                             }
                             Spacer(Modifier.height(8.dp))
                             TextButton(
                                 onClick = { finish() },
                                 modifier = Modifier.fillMaxWidth().pulseScale(finishPulse),
                             ) {
-                                Text("Continue without step counting")
+                                Text(stringResource(R.string.onboarding_continue_without))
                             }
                         }
                     }
