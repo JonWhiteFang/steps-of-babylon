@@ -3,15 +3,15 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.12 (versionCode 28) release IN FLIGHT** — collateral-only release PR open (version bump
-27→28 / 1.0.11→1.0.12, CHANGELOG promote, release notes, pointer sync); on merge, the annotated `v1.0.12`
-tag triggers `release.yml` → signed AAB → Play internal. v1.0.12 promotes the body accumulated since
-v1.0.11 — the audit-triage **batches A–D** (docs-drift, dead-code, i18n locale-safety incl. a real
-Turkish-locale billing fix, CI/release hardening, Kover+OSV tooling) + two focused audit fixes (**#216**
-notification quiet-hours/cap, **#221** dead-cosmetic removal) + **#164** Bundle E closed. **No new mechanics,
-no schema change** (`app/schemas` byte-identical to v1.0.11). **Predecessor: v1.0.11 (vc 27) SHIPPED → Play
-internal** (tag `v1.0.11` release run `28018033566` `success`; PR #330 `3915fd1`), which promoted the large
-post-v1.0.10 polish/hardening body —
+**Headline:** **v1.0.12 (versionCode 28) SHIPPED → Play internal** (tag `v1.0.12` release run `28051957931`
+`success` end-to-end — every step green incl. `bundleRelease` [R8+sign], `jarsigner -verify`, Play-internal
+upload, GitHub Release `v1.0.12` w/ `app-release.aab` 15.29 MB; release PR #342 squash `8aa7c3e`). v1.0.12
+promotes the body accumulated since v1.0.11 — the audit-triage **batches A–D** (docs-drift, dead-code, i18n
+locale-safety incl. a real Turkish-locale billing fix, CI/release hardening, Kover+OSV tooling) + two
+focused audit fixes (**#216** notification quiet-hours/cap, **#221** dead-cosmetic removal) + **#164** Bundle
+E closed. **No new mechanics, no schema change** (`app/schemas` byte-identical to v1.0.11). **Predecessor:
+v1.0.11 (vc 27) SHIPPED → Play internal** (tag `v1.0.11` release run `28018033566` `success`; PR #330
+`3915fd1`), which promoted the large post-v1.0.10 polish/hardening body —
 player-facing: accessibility (#213/#214), i18n correctness (#225/#259/#260), Home zero-state (#224),
 perf-smoothness (#242/#243), offline step/purchase reliability (#251/#249), process-death survival (#234).
 Internal: detekt+ktlint gate + 6-stage format (#312/#311), Compose UI + DAO-contention tests (#253/#252),
@@ -39,14 +39,18 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (IN FLIGHT — v1.0.12 / versionCode 28 release).** Collateral-only release PR open (off
-  `release/v1.0.12`): version bump 27→28 / 1.0.11→1.0.12, CHANGELOG `[Unreleased]`→`[1.0.12]`, release
-  notes `docs/release/release-notes-v1.0.12.md`, version-pointer sweep (README/GDD/master-plan/plan-31).
-  **No production code** in the PR — promotes the post-v1.0.11 body already on `main` (audit-triage A–D +
-  #216 + #221, **no schema change**). Developer-approved "What's new" (quiet hours + supply-drop cap;
-  locale purchase fix; cleanup; 345 chars). Unit suite green (1277). **Next:** developer reviews/merges the
-  PR → then push the annotated `v1.0.12` tag (message = the "What's new") → `release.yml` builds vc 28 →
-  signed AAB → Play **internal**. Internal→closed promotion stays judgment-gated (#192 manual Data-Safety).
+- **CURRENT (DONE — v1.0.12 / versionCode 28 SHIPPED → Play internal; nothing in flight).** The
+  collateral-only release PR #342 (`8aa7c3e`) merged, the annotated `v1.0.12` tag was pushed, and
+  `release.yml` (run `28051957931`) fired green end-to-end → signed AAB uploaded to the Play **internal**
+  track + GitHub Release `v1.0.12` (`app-release.aab` 15.29 MB). Promoted the post-v1.0.11 body already on
+  `main` (audit-triage A–D + #216 + #221 + #164 closed; **no new mechanics, no schema change**; 1277 JVM).
+  The developer-approved "What's new" (quiet hours + supply-drop cap; locale purchase fix; cleanup) is now
+  the Play release note. **Next (no work in flight):** the audit backlog's **non-batchable items** — #217
+  service tests (test-only), A24 anti-cheat rate-limit clock-tamper (large/fragile), battle game-loop perf
+  L46-L51 (fragile), L12 BattleViewModel decomposition (large, #306/ADR-0012), billing-anti-fraud
+  L35/A25/A26/L41 (by-design, no fix); the #34 i18n-externalization push; remaining audit med/low. The
+  internal→closed promotion remains judgment-gated on the **manual Play Console Data-Safety action #192**
+  (`docs/release/data-safety-form.md`, a human step).
 - **Previous objective (DONE — audit single-issue fixes #216 + #221 MERGED to `main`).** Two
   focused audit issues shipped this session, each through the full spec→adversarial-review→plan→
   adversarial-review→TDD→PR→merge loop. **#221 FEAT-1** (PR #340, `705865f`) — removed the 4 seeded

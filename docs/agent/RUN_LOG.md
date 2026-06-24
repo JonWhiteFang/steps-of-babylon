@@ -10274,3 +10274,27 @@ After the fix, tests pass on first try and assembleDebug is clean.
   `git push origin v1.0.12` → triggers `release.yml` (builds the committed vc 28, R8+sign, `jarsigner
   -verify`, Play-internal upload). I stop at the PR per the skill — **do not self-merge a release**.
   Internal→closed promotion remains judgment-gated on #192 (manual Play Console Data-Safety action).
+
+## 2026-06-23 — Release v1.0.12 (versionCode 28) SHIPPED → Play internal
+
+- **Outcome:** developer authorized completing the release through merge + tag (internal track only). The
+  collateral-only release PR **#342** merged (squash `8aa7c3e`) after the full CI gate + instrumented lane
+  passed (build-and-test 8m45s, connected 7m7s, ktlint, changes — all green). Pushed the **annotated** tag
+  `v1.0.12` whose message IS the developer-approved "What's new" (345 chars; written via `-F` to preserve
+  the em-dash/bullets/newlines exactly — verified it round-trips via `git tag -l --format='%(contents)'`).
+- **Release lane:** `release.yml` run **`28051957931`** fired green **end-to-end** (~10 min, 19:37→19:47Z) —
+  every step success incl. Tag↔versionName guard, Unit test guard, `Build release bundle` (R8+sign),
+  `Verify signature + assert signing identity`, `Upload to Play internal track`, and `GitHub Release`.
+  Artifact: GitHub Release `v1.0.12` with `app-release.aab` (**15.29 MB**). (One transient `gh run watch`
+  network blip at the tail — not a run failure; re-polled `gh run view` confirmed `conclusion=success`.)
+- **What shipped:** the post-v1.0.11 body already on `main` — audit-triage batches A–D + **#216** (notification
+  quiet-hours/cap) + **#221** (dead-cosmetic removal) + **#164** closed. **No new mechanics, no schema change**
+  (`app/schemas` byte-identical to v1.0.11); 1256 → **1277 JVM**. Player-facing: overnight-quiet/capped
+  notifications + a Turkish/`az`-locale purchase fix.
+- **Post-release doc reconciliation (this entry):** STATE.md headline + CURRENT objective flipped from
+  "release IN FLIGHT" → "**SHIPPED**" (run id, AAB size, PR/commit recorded); version pointers (README/GDD/
+  master-plan/plan-31) + CHANGELOG `[1.0.12]` + `release-notes-v1.0.12.md` already landed in PR #342. No
+  ADR (release collateral).
+- **Next (nothing in flight):** the non-batchable audit items (#217 service tests, A24, L12/#306) or the #34
+  i18n-externalization push. The remaining internal→closed promotion prerequisite the repo can't satisfy is
+  the **manual Play Console Data-Safety action #192** (`docs/release/data-safety-form.md`).
