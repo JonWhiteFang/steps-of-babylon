@@ -11,15 +11,21 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34], application = android.app.Application::class)
 class ScreenSecondaryTitleTest {
     @Test
-    fun `secondaryTitle returns the explicit title for each of the 8 push-children`() {
-        assertEquals("Ultimate Weapons", Screen.secondaryTitle(Screen.Weapons.route))
-        assertEquals("Cards", Screen.secondaryTitle(Screen.Cards.route))
-        assertEquals("Unclaimed Supplies", Screen.secondaryTitle(Screen.Supplies.route))
-        assertEquals("Premium Currencies", Screen.secondaryTitle(Screen.Economy.route))
-        assertEquals("Missions", Screen.secondaryTitle(Screen.Missions.route))
-        assertEquals("Settings", Screen.secondaryTitle(Screen.Settings.route))
-        assertEquals("Store", Screen.secondaryTitle(Screen.Store.route))
-        assertEquals("Help", Screen.secondaryTitle(Screen.Help.route))
+    fun `secondaryTitle returns the explicit title res for each of the 8 push-children`() {
+        val ctx =
+            androidx.test.core.app.ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+
+        fun title(route: String?) = Screen.secondaryTitle(route)?.let { ctx.getString(it) }
+
+        assertEquals("Ultimate Weapons", title(Screen.Weapons.route))
+        assertEquals("Cards", title(Screen.Cards.route))
+        assertEquals("Unclaimed Supplies", title(Screen.Supplies.route))
+        assertEquals("Premium Currencies", title(Screen.Economy.route))
+        assertEquals("Missions", title(Screen.Missions.route))
+        assertEquals("Settings", title(Screen.Settings.route))
+        assertEquals("Store", title(Screen.Store.route))
+        assertEquals("Help", title(Screen.Help.route))
     }
 
     @Test

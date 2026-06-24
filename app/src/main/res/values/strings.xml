@@ -326,6 +326,16 @@
     <string name="supplies_claim">Claim</string>
     <string name="supplies_reward_card_copy">%1$s x1</string>
 
+    <!-- Secondary-screen TopAppBar titles (Screen.secondaryTitle) -->
+    <string name="screen_title_weapons">Ultimate Weapons</string>
+    <string name="screen_title_cards">Cards</string>
+    <string name="screen_title_supplies">Unclaimed Supplies</string>
+    <string name="screen_title_economy">Premium Currencies</string>
+    <string name="screen_title_missions">Missions</string>
+    <string name="screen_title_settings">Settings</string>
+    <string name="screen_title_store">Store</string>
+    <string name="screen_title_help">Help</string>
+
     <!-- Shared UI components -->
     <string name="action_retry">Retry</string>
     <string name="cd_back">Back</string>

@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.navigation
 
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.AttachMoney
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.whitefang.stepsofbabylon.R
 
 sealed class Screen(
     val route: String,
@@ -114,16 +116,17 @@ sealed class Screen(
          * derived from `label` (e.g. Supplies → "Unclaimed Supplies", Economy → "Premium Currencies"
          * read better as headers than their narrow tab labels).
          */
-        fun secondaryTitle(route: String?): String? =
+        @StringRes
+        fun secondaryTitle(route: String?): Int? =
             when (route) {
-                Weapons.route -> "Ultimate Weapons"
-                Cards.route -> "Cards"
-                Supplies.route -> "Unclaimed Supplies"
-                Economy.route -> "Premium Currencies"
-                Missions.route -> "Missions"
-                Settings.route -> "Settings"
-                Store.route -> "Store"
-                Help.route -> "Help"
+                Weapons.route -> R.string.screen_title_weapons
+                Cards.route -> R.string.screen_title_cards
+                Supplies.route -> R.string.screen_title_supplies
+                Economy.route -> R.string.screen_title_economy
+                Missions.route -> R.string.screen_title_missions
+                Settings.route -> R.string.screen_title_settings
+                Store.route -> R.string.screen_title_store
+                Help.route -> R.string.screen_title_help
                 else -> null
             }
     }
