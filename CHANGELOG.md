@@ -4,6 +4,25 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Tests — service/boot-receiver glue coverage (#217, TEST-2, no app change)
+
+**Test-only — no production code/schema change. 1277 → 1282 JVM tests (+5).** Closed the 2026-06-17
+audit's TEST-2 gap: `StepCounterService` and `BootReceiver` had zero test references. The skeptic
+scope-correction held — the catch-up *logic* and the crash-safety/notification seams were already
+covered (`StepSyncWorker.computeCatchUp`, `StartForegroundSafelyTest`, `StepBalanceDisplayTest`), so
+the genuinely-uncovered surface was only the thin Android glue.
+
+- **`BootReceiverTest`** (3 Robolectric/JUnit-4 tests) — `BootReceiver` is a plain `BroadcastReceiver`
+  (not `@AndroidEntryPoint`), so it's fully JVM-testable with no Hilt. Drives `onReceive` and asserts
+  via `ShadowApplication`: a non-`BOOT_COMPLETED` action starts no service; `BOOT_COMPLETED` with
+  `ACTIVITY_RECOGNITION` denied starts no service; `BOOT_COMPLETED` + granted dispatches a
+  service-start Intent targeting `StepCounterService`. Covers the action gate + permission gate +
+  service dispatch.
+- **`StepCounterServiceTest`** (2 Robolectric tests) — covers the injection-independent lifecycle
+  overrides on a directly-constructed instance: `onStartCommand` returns `START_STICKY`
+  (restart-after-kill contract); `onBind` returns `null` (started, not bound). The Hilt-injected
+  `onCreate` path stays on its pure seams + the instrumented lifecycle suite.
+
 ### Tooling — Claude Code automations + CI docs/tooling fast-path (no app change)
 
 **Repo tooling only — no app/Kotlin/schema/test change, test count unchanged (1277 JVM).** Two merged
