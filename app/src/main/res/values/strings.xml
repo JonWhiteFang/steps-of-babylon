@@ -301,4 +301,13 @@
     <string name="labs_rush">"Rush "</string>
     <string name="labs_start">"Start "</string>
     <string name="labs_no_slot">No Slot Available</string>
+
+    <!-- Missions screen -->
+    <string name="missions_daily">Daily Missions</string>
+    <string name="missions_resets_in">Resets in %1$dh %2$dm</string>
+    <string name="missions_milestones">Walking Milestones</string>
+    <string name="missions_cd_claimed">Claimed</string>
+    <string name="missions_reward_plus">+</string>
+    <string name="missions_claim">Claim</string>
+    <string name="missions_milestone_steps">%1$s steps</string>
 </resources>

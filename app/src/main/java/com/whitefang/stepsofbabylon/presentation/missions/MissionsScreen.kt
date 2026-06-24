@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -22,6 +23,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.model.MilestoneReward
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebration
@@ -83,9 +85,9 @@ fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
                 item {
                     val hours = (state.timeUntilMidnightMs / 3_600_000).toInt()
                     val minutes = ((state.timeUntilMidnightMs % 3_600_000) / 60_000).toInt()
-                    Text("Daily Missions", style = MaterialTheme.typography.headlineSmall)
+                    Text(stringResource(R.string.missions_daily), style = MaterialTheme.typography.headlineSmall)
                     Text(
-                        "Resets in ${hours}h ${minutes}m",
+                        stringResource(R.string.missions_resets_in, hours, minutes),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -99,7 +101,7 @@ fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
                 // Milestones header
                 item {
                     Spacer(Modifier.height(8.dp))
-                    Text("Walking Milestones", style = MaterialTheme.typography.headlineSmall)
+                    Text(stringResource(R.string.missions_milestones), style = MaterialTheme.typography.headlineSmall)
                 }
 
                 // Milestones
@@ -124,7 +126,7 @@ private fun MissionCard(
                 if (mission.claimed) {
                     Icon(
                         Icons.Filled.CheckCircle,
-                        contentDescription = "Claimed",
+                        contentDescription = stringResource(R.string.missions_cd_claimed),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -159,7 +161,10 @@ private fun MissionCard(
                     if (mission.rewardPowerStones > 0) {
                         if (mission.rewardGems > 0) {
                             Spacer(Modifier.width(6.dp))
-                            Text("+", style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                stringResource(R.string.missions_reward_plus),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
                             Spacer(Modifier.width(6.dp))
                         }
                         CurrencyValue(
@@ -173,7 +178,7 @@ private fun MissionCard(
             if (mission.completed && !mission.claimed) {
                 Spacer(Modifier.height(8.dp))
                 Button(onClick = onClaim, modifier = Modifier.align(Alignment.End)) {
-                    Text("Claim")
+                    Text(stringResource(R.string.missions_claim))
                 }
             }
         }
@@ -206,13 +211,13 @@ private fun MilestoneCard(
                 if (ms.isClaimed) {
                     Icon(
                         Icons.Filled.CheckCircle,
-                        contentDescription = "Claimed",
+                        contentDescription = stringResource(R.string.missions_cd_claimed),
                         tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
             Text(
-                "${formatCount(milestone.requiredSteps)} steps",
+                stringResource(R.string.missions_milestone_steps, formatCount(milestone.requiredSteps)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -250,7 +255,7 @@ private fun MilestoneCard(
             if (ms.isAchieved && !ms.isClaimed) {
                 Spacer(Modifier.height(8.dp))
                 Button(onClick = onClaim, modifier = Modifier.align(Alignment.End)) {
-                    Text("Claim")
+                    Text(stringResource(R.string.missions_claim))
                 }
             }
         }
