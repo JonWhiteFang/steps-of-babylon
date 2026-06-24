@@ -115,3 +115,32 @@ Write the manifest into the vault — **filenames only, never contents:**
   echo "Decrypt + restore: see SETUP.md."
 } > "$VAULT/secrets.manifest.md"
 ```
+
+## Step 4 — Encrypt (DEVELOPER runs this — Claude must NOT type the passphrase)
+
+The passphrase must never enter the transcript. Ask the developer to run this themselves using the
+`! ` prompt prefix (substitute the real `$STAGED_TAR` path printed in Step 3 and the real `$VAULT`):
+
+```
+! age -p -o "<VAULT>/secrets.enc" "<STAGED_TAR>"
+```
+
+`age -p` prompts interactively on the TTY for a passphrase. Tell the developer to store that
+passphrase somewhere safe and OUTSIDE the vault (e.g. a password manager) — it is required to
+restore, and the vault backup is useless without it.
+
+## Step 5 — Verify the bundle, then clean up the staged tar
+
+```bash
+if [ -s "$VAULT/secrets.enc" ]; then
+  echo "secrets.enc OK: $(wc -c < "$VAULT/secrets.enc") bytes"
+  rm "$STAGED_TAR"           # best-effort cleanup (NOT a secure wipe — see below)
+  echo "staged tar removed"
+else
+  echo "secrets.enc MISSING or EMPTY — keeping staged tar at $STAGED_TAR so you can retry. DO NOT delete it."
+fi
+```
+
+> **Why no secure wipe:** `rm -P` is a documented no-op on modern macOS and APFS gives no
+> secure-overwrite guarantee, so this skill does not claim one. The mitigation is the `0600` perms
+> and the short lifetime of the staged tar (it exists only between Step 3 and this cleanup).
