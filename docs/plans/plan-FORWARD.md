@@ -63,8 +63,9 @@ state — the checklist informs that call, it does not replace it.
   (#190), two reachable battle crashes (#191), privacy-policy/Data-Safety accuracy (#192). These reopen the
   "no known crashes" item in spirit — the fresh-install pass found no *observed* crash, but the audit found
   *reachable* ones the manual pass couldn't trigger. **All three §H code blockers (#190/#191/#192) and the
-  three soak majors (#193/#194/#195) are now MERGED and shipped in v1.0.10 (versionCode 26)** — the only
-  residual §H item is the manual Play Console Data-Safety form for #192 (external, pre-promotion; see §H ticks).
+  three soak majors (#193/#194/#195) are now MERGED and shipped in v1.0.10 (versionCode 26)** — and the
+  residual §H item, the manual Play Console Data-Safety form for #192, was **submitted 2026-06-24**, so
+  there is **no remaining repo-external §H blocker** (see §H ticks).
 
 ### E. Balance & progression feel
 - [ ] Early tiers (1–5) feel right; economy neither grindy nor trivial — *manual play assessment*
@@ -109,9 +110,10 @@ closed: gathering soak signal or exposing testers is the whole point of closed t
   AdMob is a "future" integration, but the live build ships AdMob + UMP + collects the advertising ID.
   Play-compliance accuracy on the path to the production-access application the soak feeds. Fix: present-tense
   policy rewrite (`HealthConnectPermissionActivity.kt` + `site/index.md`) + ad-ID
-  disclosure + reconcile the Console Data-Safety form (Console step **needs external verification**). Effort
-  **S** + Console. **In-repo code MERGED** (PR #205, `0019217`; shipped v1.0.10); **residual = the manual Play
-  Console Data-Safety form** per `docs/release/data-safety-form.md` (external, pre-promotion — not a repo change).
+  disclosure + reconcile the Console Data-Safety form. Effort
+  **S** + Console. **In-repo code MERGED** (PR #205, `0019217`; shipped v1.0.10); **the manual Play Console
+  Data-Safety form was submitted 2026-06-24** per `docs/release/data-safety-form.md` (external, not a repo
+  change) — this §H item is now fully done; no residual.
 
 **Soak hardening (`severity:major` — fix before/during soak):**
 - [x] **#193 — no-sensor silent dead-end (REL-3).** A device without `TYPE_STEP_COUNTER` accrues zero Steps

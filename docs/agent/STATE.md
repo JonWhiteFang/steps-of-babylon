@@ -23,12 +23,15 @@ dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependab
 green (the post-v1.0.11 body lands at 1277: audit-triage A–D → 1256, then #216 +19 → 1275, #221 +2 → 1277;
 per-wave detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
-text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) the **manual Play Console
-Data-Safety action** for #192 (documented in `docs/release/data-safety-form.md` — cannot be done from the
-repo); (b) the `severity:major` soak-hardening items are now ALL addressed — **#195 + #193 MERGED via
-#270; #194 (error states, UX-1) MERGED (PR #272, `1811617`)** — #194 had been
+text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) **DONE — the manual Play
+Console Data-Safety form for #192 was submitted 2026-06-24** (the four AdMob-SDK data types Collected+Shared
++ "Contains ads"=Yes + deletion URL, per `docs/release/data-safety-form.md`); the last repo-external
+pre-promotion prerequisite is now cleared; (b) the `severity:major` soak-hardening items are ALL addressed
+— **#195 + #193 MERGED via #270; #194 (error states, UX-1) MERGED (PR #272, `1811617`)** — #194 had been
 prematurely closed 2026-06-17 with no implementing commit, verified unfixed at HEAD + re-opened 2026-06-19;
-(c) the v1.0.12 release tag (current objective) ships the post-v1.0.11 `[Unreleased]` body to internal.
+(c) v1.0.12 (the latest internal release) ships the accumulated body. **The internal→closed promotion is
+now purely the developer's judgment call** (Closed-Test Readiness Gate, `plan-FORWARD.md`) — no remaining
+repo-external blocker.
 Latest audit
 (`docs/reviews/2026-06-18-complete-app-review.md`, supersedes 2026-06-17) verdict: **7/10 — continue
 building** (keep shipping internal, NOT public-ready); it filed **38 net-new Med+ issues #224–#261 + Low
@@ -48,9 +51,11 @@ the med/low backlog (#262) remain.
   the Play release note. **Next (no work in flight):** the audit backlog's **non-batchable items** — #217
   service tests (test-only), A24 anti-cheat rate-limit clock-tamper (large/fragile), battle game-loop perf
   L46-L51 (fragile), L12 BattleViewModel decomposition (large, #306/ADR-0012), billing-anti-fraud
-  L35/A25/A26/L41 (by-design, no fix); the #34 i18n-externalization push; remaining audit med/low. The
-  internal→closed promotion remains judgment-gated on the **manual Play Console Data-Safety action #192**
-  (`docs/release/data-safety-form.md`, a human step).
+  L35/A25/A26/L41 (by-design, no fix); the #34 i18n-externalization push; remaining audit med/low.
+  **Promotion status:** the **Play Console Data-Safety form (#192) was submitted 2026-06-24** — the last
+  repo-external pre-promotion prerequisite is cleared. The internal→closed promotion is now **purely the
+  developer's judgment call** (Closed-Test Readiness Gate, `plan-FORWARD.md`); once promoted, Google's
+  ≥12-tester / ≥14-day closed soak begins (Phase 2).
 - **Previous objective (DONE — audit single-issue fixes #216 + #221 MERGED to `main`).** Two
   focused audit issues shipped this session, each through the full spec→adversarial-review→plan→
   adversarial-review→TDD→PR→merge loop. **#221 FEAT-1** (PR #340, `705865f`) — removed the 4 seeded

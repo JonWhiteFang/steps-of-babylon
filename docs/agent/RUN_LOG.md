@@ -10298,3 +10298,20 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - **Next (nothing in flight):** the non-batchable audit items (#217 service tests, A24, L12/#306) or the #34
   i18n-externalization push. The remaining internal→closed promotion prerequisite the repo can't satisfy is
   the **manual Play Console Data-Safety action #192** (`docs/release/data-safety-form.md`).
+
+## 2026-06-24 — #192 Play Console Data-Safety form SUBMITTED (promotion prerequisite cleared)
+
+- **Action (developer, external):** the manual Play Console **Data safety** form was **submitted** per
+  `docs/release/data-safety-form.md` — declared the four AdMob/GMA-SDK data types (Device or other IDs incl.
+  advertising ID; App activity → App interactions; App info & performance → Diagnostics; Location →
+  Approximate location), each **Collected + Shared** for Advertising/Analytics/Fraud-prevention, ad-ID marked
+  Optional; app's own on-device data (Steps/Health Connect/progress/purchases) NOT declared; "Contains ads" =
+  Yes; data-deletion = Yes with the `#delete-data` URL; privacy-policy URL set to the hosted Pages site.
+- **Significance:** this was the **last repo-external pre-promotion prerequisite** (audit Gate H residual,
+  #192 PRIV-1/SEC-1 — the in-repo code half shipped in v1.0.10 via PR #205). With it submitted, the
+  **internal → closed promotion is now purely the developer's judgment call** (Closed-Test Readiness Gate,
+  `plan-FORWARD.md`); Google's ≥12-tester / ≥14-day closed soak begins only after promotion (Phase 2).
+- **Doc reconciliation (this entry):** flipped the lingering "STILL requires / needs external verification"
+  framing → submitted/cleared across `STATE.md` (headline §H + CURRENT promotion-status), `plan-FORWARD.md`
+  (§H summary + the #192 gate item), and `docs/release/data-safety-form.md` (status line + acceptance
+  checklist all ticked, dated 2026-06-24). Docs-only; no code; no ADR.
