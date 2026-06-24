@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +48,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.battle.biome.BiomeTheme
 import com.whitefang.stepsofbabylon.presentation.ui.EmptyState
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
@@ -118,7 +120,11 @@ fun HomeScreen(
                 Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     // LapisLight (not deep LapisLazuli) for legible text on the dark card —
                     // deep lapis was ~1.45:1 on this background (WCAG fail).
-                    Text("Today", style = MaterialTheme.typography.labelLarge, color = LapisLight)
+                    Text(
+                        stringResource(R.string.home_today),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = LapisLight,
+                    )
                     Text(
                         "${formatCount(state.todaySteps)} steps",
                         style = MaterialTheme.typography.headlineLarge,
@@ -133,9 +139,9 @@ fun HomeScreen(
                 Modifier.fillMaxWidth().clickable { onEconomyClick() },
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                CurrencyItem("Steps", state.stepBalance)
-                CurrencyItem("Gems", state.gems)
-                CurrencyItem("Power Stones", state.powerStones)
+                CurrencyItem(stringResource(R.string.home_currency_steps), state.stepBalance)
+                CurrencyItem(stringResource(R.string.home_currency_gems), state.gems)
+                CurrencyItem(stringResource(R.string.home_currency_power_stones), state.powerStones)
             }
 
             // #224: first-walk teaching prompt. Right after onboarding the player lands on a screen of
@@ -143,43 +149,56 @@ fun HomeScreen(
             // otherwise invisible. Shown only at that kickoff moment (see HomeUiState.showFirstWalkPrompt).
             if (state.showFirstWalkPrompt) {
                 EmptyState(
-                    title = "Earn your first Steps",
-                    message = "Go for a walk — every step powers up your ziggurat. Your Steps will appear here.",
+                    title = stringResource(R.string.home_empty_title),
+                    message = stringResource(R.string.home_empty_message),
                 )
             }
 
             Text(
-                "Best Wave: ${state.bestWave}",
+                stringResource(R.string.home_best_wave, state.bestWave),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
 
             if (state.unclaimedDropCount > 0) {
+                val unclaimedSuppliesCd =
+                    stringResource(R.string.home_unclaimed_supplies_cd, state.unclaimedDropCount)
                 OutlinedButton(
                     onClick = onSuppliesClick,
                     modifier =
                         Modifier.fillMaxWidth().semantics {
-                            contentDescription =
-                                "Unclaimed supplies, ${state.unclaimedDropCount} available"
+                            contentDescription = unclaimedSuppliesCd
                         },
                 ) {
                     BadgedBox(badge = { Badge { Text("${state.unclaimedDropCount}") } }) {
                         Icon(Icons.Default.Inbox, contentDescription = null)
                     }
                     Spacer(Modifier.size(12.dp))
-                    Text("Unclaimed Supplies", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.home_unclaimed_supplies), fontWeight = FontWeight.Bold)
                 }
             }
 
             MenuButton(
                 icon = Icons.Default.Flag,
-                label = "Missions",
+                label = stringResource(R.string.home_menu_missions),
                 badgeCount = state.claimableMissionCount,
                 onClick = onMissionsClick,
             )
-            MenuButton(icon = Icons.Default.Settings, label = "Settings", onClick = onSettingsClick)
-            MenuButton(icon = Icons.AutoMirrored.Filled.HelpOutline, label = "Help", onClick = onHelpClick)
-            MenuButton(icon = Icons.Default.ShoppingCart, label = "Store", onClick = onStoreClick)
+            MenuButton(
+                icon = Icons.Default.Settings,
+                label = stringResource(R.string.home_menu_settings),
+                onClick = onSettingsClick,
+            )
+            MenuButton(
+                icon = Icons.AutoMirrored.Filled.HelpOutline,
+                label = stringResource(R.string.home_menu_help),
+                onClick = onHelpClick,
+            )
+            MenuButton(
+                icon = Icons.Default.ShoppingCart,
+                label = stringResource(R.string.home_menu_store),
+                onClick = onStoreClick,
+            )
 
             if (state.seasonPassActive) {
                 Row(
@@ -192,7 +211,11 @@ fun HomeScreen(
                         tint = StatusWarning,
                         modifier = Modifier.size(16.dp),
                     )
-                    Text("Season Pass Active", style = MaterialTheme.typography.labelMedium, color = StatusWarning)
+                    Text(
+                        stringResource(R.string.home_season_pass_active),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = StatusWarning,
+                    )
                 }
             }
 
@@ -210,7 +233,11 @@ fun HomeScreen(
                     ),
                 colors = ButtonDefaults.buttonColors(containerColor = Gold),
             ) {
-                Text("BATTLE", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.home_battle),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
             }
         }
     }
