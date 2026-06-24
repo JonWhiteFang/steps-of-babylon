@@ -251,4 +251,23 @@
     <string name="home_menu_help">Help</string>
     <string name="home_menu_store">Store</string>
     <string name="tier_selector_header">Tier %1$d — %2$s</string>
+
+    <!-- Premium Currencies (economy) screen -->
+    <string name="economy_store">Store</string>
+    <string name="economy_balance_gems">Gems</string>
+    <string name="economy_balance_power_stones">Power Stones</string>
+    <string name="economy_weekly_challenge">Weekly Step Challenge</string>
+    <string name="economy_weekly_progress">%1$s / 100,000 steps</string>
+    <string name="economy_past_weeks">Past Weeks</string>
+    <string name="economy_login_streak">Login Streak</string>
+    <string name="economy_gems_claimed_today">Today\'s Gems claimed</string>
+    <string name="economy_open_daily">Open the app daily for Gems!</string>
+    <string name="economy_daily_power_stone">Daily Power Stone</string>
+    <string name="economy_earned_today">Earned today (walked 1,000+ steps)</string>
+    <string name="economy_walk_for_ps">Walk 1,000 steps today for 1 Power Stone</string>
+    <string name="economy_steps_to_ps">%1$s steps → %2$d PS</string>
+    <string name="economy_ready">Ready!</string>
+    <string name="economy_claimed">Claimed</string>
+    <string name="economy_cd_goal_met">Goal met</string>
+    <string name="economy_cd_goal_missed">Goal missed</string>
 </resources>

@@ -29,10 +29,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.formatCount
@@ -68,14 +70,14 @@ fun CurrencyDashboardScreen(
             androidx.compose.material3.TextButton(onClick = onStoreClick) {
                 Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.size(6.dp))
-                Text("Store")
+                Text(stringResource(R.string.economy_store))
             }
         }
 
         // Balances — palette-aligned currency colours (were raw Material green/purple).
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            BalanceCard("Gems", state.gems, GemColor)
-            BalanceCard("Power Stones", state.powerStones, PowerStoneColor)
+            BalanceCard(stringResource(R.string.economy_balance_gems), state.gems, GemColor)
+            BalanceCard(stringResource(R.string.economy_balance_power_stones), state.powerStones, PowerStoneColor)
         }
 
         // Weekly Challenge
@@ -90,7 +92,7 @@ fun CurrencyDashboardScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "Weekly Step Challenge",
+                        stringResource(R.string.economy_weekly_challenge),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
@@ -112,7 +114,10 @@ fun CurrencyDashboardScreen(
                     }
                 }
                 Spacer(Modifier.height(8.dp))
-                Text("${formatCount(state.weeklySteps)} / 100,000 steps", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    stringResource(R.string.economy_weekly_progress, formatCount(state.weeklySteps)),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
                 Spacer(Modifier.height(4.dp))
                 LinearProgressIndicator(
                     progress = { (state.weeklySteps / 100_000f).coerceAtMost(1f) },
@@ -126,7 +131,7 @@ fun CurrencyDashboardScreen(
                 if (state.weeklyHistory.isNotEmpty()) {
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        "Past Weeks",
+                        stringResource(R.string.economy_past_weeks),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -145,7 +150,11 @@ fun CurrencyDashboardScreen(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         ) {
             Column(Modifier.padding(16.dp)) {
-                Text("Login Streak", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.economy_login_streak),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     for (day in 1..7) {
@@ -179,14 +188,14 @@ fun CurrencyDashboardScreen(
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            "Today's Gems claimed",
+                            stringResource(R.string.economy_gems_claimed_today),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 } else {
                     Text(
-                        "Open the app daily for Gems!",
+                        stringResource(R.string.economy_open_daily),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -200,7 +209,11 @@ fun CurrencyDashboardScreen(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         ) {
             Column(Modifier.padding(16.dp)) {
-                Text("Daily Power Stone", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    stringResource(R.string.economy_daily_power_stone),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
                 Spacer(Modifier.height(4.dp))
                 if (state.todayPsClaimed) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -211,10 +224,10 @@ fun CurrencyDashboardScreen(
                             modifier = Modifier.size(16.dp),
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text("Earned today (walked 1,000+ steps)", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.economy_earned_today), style = MaterialTheme.typography.bodyMedium)
                     }
                 } else {
-                    Text("Walk 1,000 steps today for 1 Power Stone", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.economy_walk_for_ps), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
@@ -248,7 +261,7 @@ private fun ThresholdRow(
     reached: Boolean,
 ) {
     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text("$steps steps → $ps PS", style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.economy_steps_to_ps, steps, ps), style = MaterialTheme.typography.bodySmall)
         if (claimed) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
@@ -258,11 +271,15 @@ private fun ThresholdRow(
                     modifier = Modifier.size(16.dp),
                 )
                 Spacer(Modifier.width(4.dp))
-                Text("Claimed", style = MaterialTheme.typography.bodySmall, color = StatusSuccess)
+                Text(
+                    stringResource(R.string.economy_claimed),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = StatusSuccess,
+                )
             }
         } else {
             Text(
-                if (reached) "Ready!" else "—",
+                if (reached) stringResource(R.string.economy_ready) else "—",
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = if (reached) FontWeight.Bold else FontWeight.Normal,
                 color = if (reached) Gold else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -283,7 +300,14 @@ private fun HistoryRow(week: WeeklyResult) {
         Row {
             Icon(
                 if (met) Icons.Default.Check else Icons.Default.Close,
-                contentDescription = if (met) "Goal met" else "Goal missed",
+                contentDescription =
+                    if (met) {
+                        stringResource(
+                            R.string.economy_cd_goal_met,
+                        )
+                    } else {
+                        stringResource(R.string.economy_cd_goal_missed)
+                    },
                 tint = if (met) StatusSuccess else StatusDanger,
                 modifier = Modifier.size(16.dp),
             )
