@@ -20,8 +20,9 @@ already on GitHub and is deliberately NOT copied.
   The vault holds only ciphertext + a manifest of filenames (never values).
 - **Docs** are rsync-mirrored (`--delete`, so the vault tracks the repo exactly).
 - **Passphrase isolation:** Claude must NEVER see or type the passphrase — the transcript itself may
-  sync. The developer runs the `age` step via the `! ` prompt prefix. Claude only stages, verifies,
-  and cleans up.
+  sync. The developer runs the `age` step **in a real terminal window (Terminal.app / iTerm)**, NOT
+  via the `! ` prompt prefix — `age -p` reads the passphrase from `/dev/tty`, and the `! ` prefix has
+  no TTY (it fails with "standard input is not a terminal"). Claude only stages, verifies, and cleans up.
 - **Re-run behavior:** mirror mode — each run refreshes docs and regenerates the bundle + generated
   docs. No timestamped snapshots, no cron, not part of the PR doc-sweep.
 - **Shell-session persistence:** run the skill's bash blocks within a single shell session where
@@ -130,7 +131,7 @@ fi
 echo "$STAGED_TAR" > /tmp/sob-staged-tar-path   # persist for later steps (random mktemp suffix)
 echo "staged tar: $STAGED_TAR ($(wc -c < "$STAGED_TAR") bytes)"
 
-# Resolved paths the developer pastes into the Step 4 `! age` command:
+# Resolved paths the developer pastes into the Step 4 `age` command (run in a real terminal):
 echo "VAULT=$VAULT"
 echo "STAGED_TAR=$STAGED_TAR"
 ```
@@ -153,11 +154,13 @@ VAULT="/Users/jpawhite/Documents/kn0ck3r-vault/Claude/steps-of-babylon"
 
 ## Step 4 — Encrypt (DEVELOPER runs this — Claude must NOT type the passphrase)
 
-The passphrase must never enter the transcript. Ask the developer to run this themselves using the
-`! ` prompt prefix (substitute the `VAULT=` and `STAGED_TAR=` values printed at the end of Step 3):
+The passphrase must never enter the transcript. Ask the developer to run this themselves **in a real
+terminal window** (Terminal.app / iTerm), on a SINGLE line, substituting the `VAULT=` and `STAGED_TAR=`
+values printed at the end of Step 3. Do NOT use the `! ` prompt prefix — `age -p` needs a TTY and the
+`! ` prefix has none (it fails with "standard input is not a terminal, and /dev/tty is not available").
 
 ```
-! age -p -o "<VAULT>/secrets.enc" "<STAGED_TAR>"
+age -p -o "<VAULT>/secrets.enc" "<STAGED_TAR>"
 ```
 
 `age -p` prompts interactively on the TTY for a passphrase. Tell the developer to store that
@@ -206,7 +209,7 @@ cd steps-of-babylon
 
 ## 2. Restore the gitignored secrets
 The release keystore, signing passwords, AdMob IDs, and run-gradle.sh are NOT in git — they live in
-\`secrets.enc\` in this vault. Restore them from the repo root:
+\`secrets.enc\` in this vault. Restore them from the repo root (run in a REAL terminal — \`age -p\`/\`age -d\` need a TTY):
 \`\`\`sh
 age -d -o secrets.tar /path/to/this-vault/secrets.enc   # prompts for the passphrase you set
 tar xf secrets.tar                                       # extracts to repo-relative paths
