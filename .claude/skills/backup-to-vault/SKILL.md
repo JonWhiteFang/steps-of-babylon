@@ -211,3 +211,19 @@ echo "wrote $VAULT/SETUP.md"
 } > "$VAULT/ENV-SNAPSHOT.md"
 echo "wrote $VAULT/ENV-SNAPSHOT.md"
 ```
+
+## Step 8 — Print the run summary
+
+Report to the developer:
+- Number of doc files mirrored (from Step 2's `find … | wc -l`).
+- Which secret files were packed vs skipped (from Step 3's PRESENT/ABSENT list).
+- `secrets.enc` size, or the failure + retained-tar path if encryption failed.
+- That SETUP.md + ENV-SNAPSHOT.md + secrets.manifest.md were regenerated.
+- Reminder: the passphrase is required to restore and is NOT stored in the vault.
+
+## Notes
+- This skill is a personal backup utility. It does NOT update STATE.md / RUN_LOG.md / CHANGELOG.md
+  and is NOT part of the PR doc-sweep convention.
+- It never copies tracked source code (GitHub has it) and never copies `.git/`, `build/`,
+  `.gradle/`, `.idea/`, or `*.log`.
+- Mirror mode: re-running refreshes everything to match the current repo state.
