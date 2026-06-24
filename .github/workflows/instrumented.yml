@@ -5,11 +5,12 @@
 # locally on a benchmark variant only — their connected tests refuse a debuggable build
 # (EMULATOR DEBUGGABLE) and must NOT run in this debug-app lane.
 #
-# Docs-only fast path: the `changes` job classifies the diff; `connected` ALWAYS runs (so the
-# required status check always reports), but its heavy emulator steps are gated on
-# `needs.changes.outputs.code == 'true'`. A docs-only PR skips the emulator entirely (green in
-# seconds). The nightly schedule + manual dispatch have no PR base, so the classifier defaults to
-# code=true (full canary always runs). Keep the classifier in sync with ci.yml.
+# Docs/tooling-only fast path: the `changes` job classifies the diff; `connected` ALWAYS runs (so
+# the required status check always reports), but its heavy emulator steps are gated on
+# `needs.changes.outputs.code == 'true'`. A docs/tooling-only PR (only `docs/**`, `*.md`,
+# `.claude/**`, or the root `.mcp.json`) skips the emulator entirely (green in seconds). The nightly
+# schedule + manual dispatch have no PR base, so the classifier defaults to code=true (full canary
+# always runs). Keep the classifier in sync with ci.yml.
 name: Instrumented Tests
 
 on:
@@ -27,7 +28,8 @@ permissions:
   contents: read
 
 jobs:
-  # Fast classifier: outputs code=true unless EVERY changed path is docs (`docs/**` or `*.md`).
+  # Fast classifier: outputs code=true unless EVERY changed path is docs/tooling
+  # (`docs/**`, `*.md`, `.claude/**`, or the root `.mcp.json`).
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -47,10 +49,13 @@ jobs:
           if [ "$EVENT" = "pull_request" ]; then
             files="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
             echo "Changed files:"; echo "$files"
-            non_docs="$(printf '%s\n' "$files" | grep -vE '^$' | grep -vE '^docs/|\.md$' || true)"
+            # Non-code = anything NOT docs/tooling. Docs/tooling = under docs/, a .md file, under
+            # .claude/ (agents/skills/hooks/settings — never built or shipped), or the root .mcp.json.
+            # Conservative: anything else (incl. .github/, app/schemas/, gradle, site/ non-md) is code.
+            non_docs="$(printf '%s\n' "$files" | grep -vE '^$' | grep -vE '^docs/|\.md$|^\.claude/|^\.mcp\.json$' || true)"
             if [ -z "$non_docs" ]; then
               echo "code=false" >> "$GITHUB_OUTPUT"
-              echo "Verdict: docs-only → skipping the emulator suite."
+              echo "Verdict: docs/tooling-only → skipping the emulator suite."
             else
               echo "code=true" >> "$GITHUB_OUTPUT"
               echo "Verdict: code change → full instrumented gate (first non-docs path: $(printf '%s' "$non_docs" | head -1))."

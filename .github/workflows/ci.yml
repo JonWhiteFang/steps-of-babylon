@@ -2,13 +2,14 @@
 # keystore and AdMob falls back to Google test IDs (see app/build.gradle.kts).
 # Actions are SHA-pinned (decision #5); Dependabot maintains the pins.
 #
-# Docs-only fast path: the `changes` job classifies the diff; `build-and-test` ALWAYS runs
+# Docs/tooling-only fast path: the `changes` job classifies the diff; `build-and-test` ALWAYS runs
 # (so the required status check always reports), but its heavy steps are gated on
-# `needs.changes.outputs.code == 'true'`. A docs-only change (only `docs/**` / `*.md`) skips the
-# build/lint/test entirely and the check goes green in seconds — no PR/CI overhead for checkpoint
-# doc syncs. Anything else (app code, `.github/`, `app/schemas/`, gradle/config, `site/` non-md)
-# is treated as code and runs the full gate. Fail-safe: when the diff base is unknown the verdict
-# defaults to code (full gate). Keep the classifier in sync with instrumented.yml.
+# `needs.changes.outputs.code == 'true'`. A docs/tooling-only change (only `docs/**` / `*.md` /
+# `.claude/**` / `.mcp.json`) skips the build/lint/test entirely and the check goes green in seconds
+# — no PR/CI overhead for checkpoint doc syncs or Claude Code agent/skill/hook/MCP edits (none of
+# which affects the built app). Anything else (app code, `.github/`, `app/schemas/`, gradle/config,
+# `site/` non-md) is treated as code and runs the full gate. Fail-safe: when the diff base is unknown
+# the verdict defaults to code (full gate). Keep the classifier in sync with instrumented.yml.
 name: CI
 
 on:
@@ -24,7 +25,8 @@ permissions:
   contents: read
 
 jobs:
-  # Fast classifier: outputs code=true unless EVERY changed path is docs (`docs/**` or `*.md`).
+  # Fast classifier: outputs code=true unless EVERY changed path is docs/tooling
+  # (`docs/**`, `*.md`, `.claude/**`, or the root `.mcp.json`).
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -56,11 +58,14 @@ jobs:
           fi
           files="$(git diff --name-only "$base" "$head")"
           echo "Changed files:"; echo "$files"
-          # Non-docs = anything NOT under docs/ and NOT a .md file. Conservative: unknown → code.
-          non_docs="$(printf '%s\n' "$files" | grep -vE '^$' | grep -vE '^docs/|\.md$' || true)"
+          # Non-code = anything NOT docs/tooling. Docs/tooling = under docs/, a .md file, under
+          # .claude/ (agents/skills/hooks/settings — never built or shipped), or the root .mcp.json.
+          # Conservative: anything not matched (incl. .github/, app/schemas/, gradle, site/ non-md)
+          # is code → full gate.
+          non_docs="$(printf '%s\n' "$files" | grep -vE '^$' | grep -vE '^docs/|\.md$|^\.claude/|^\.mcp\.json$' || true)"
           if [ -z "$non_docs" ]; then
             echo "code=false" >> "$GITHUB_OUTPUT"
-            echo "Verdict: docs-only → skipping the heavy build/lint/test steps."
+            echo "Verdict: docs/tooling-only → skipping the heavy build/lint/test steps."
           else
             echo "code=true" >> "$GITHUB_OUTPUT"
             echo "Verdict: code change → full gate (first non-docs path: $(printf '%s' "$non_docs" | head -1))."
