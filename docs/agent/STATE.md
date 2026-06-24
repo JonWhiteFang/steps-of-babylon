@@ -42,21 +42,24 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (nothing in flight — `main` clean; #34 implementation DEFERRED at developer request).**
-  **#34 i18n phase-2 spec + implementation plan AUTHORED, ADVERSARIALLY REVIEWED, and MERGED** (docs-only
-  PR #349, merge `52c1cec`). Both artifacts passed the multi-agent Adversarial Review Gate (ultracode):
-  spec 30 findings/25 surviving, plan 18/17. Artifacts live at
-  `docs/superpowers/specs/2026-06-24-i18n-compose-screen-extraction-design.md` +
-  `docs/superpowers/plans/2026-06-24-i18n-compose-screen-extraction.md` (**15 tasks across 2 impl PRs**;
-  PR3 Canvas/Activity is a separate deferred follow-up). **Scope:** extract hardcoded Compose
-  `Text`/`contentDescription` (+ dialogs, shared `presentation/ui`, two battle/ui Compose components,
-  nav `secondaryTitle` titles, and non-composable `@StringRes` string helpers) into `strings.xml`; no
-  behavior change; English-only. **Key gate corrections baked in:** `HardcodedText` lint is *already*
-  enabled + XML-only (no "flip later"); `UltimateWeaponBar` is pure Compose (not deferred Canvas); the
-  literal inventory was systematically undercounting helper-composable String args (now a Methodology
-  grep gate). **NEXT (when picked up):** execute PR1 (Tasks 1–5: store/settings/cards/onboarding), then
-  PR2 (Tasks 6–15). Developer-preferred execution mode leaned subagent-driven (confirm at start).
-  Otherwise unchanged: the audit-backlog non-batchable items + the internal→closed promotion call below.
+- **CURRENT (`/backup-to-vault` skill built + reviewed; PR open).** New personal, user-invoked skill
+  `.claude/skills/backup-to-vault/SKILL.md` that backs up the repo's gitignored essentials
+  (`age`-encrypted: upload keystore + signing passwords + AdMob prod IDs + `run-gradle.sh`) and a full
+  `docs/` mirror to the developer's Obsidian vault — for disaster recovery + fresh-machine bootstrap.
+  Tooling-only (no app/Kotlin/schema/test/CI change). Spec+plan at
+  `docs/superpowers/{specs,plans}/2026-06-24-backup-to-vault-skill*`. Reviews: lighter inline (ultracode
+  off); code-quality found+fixed a Critical (fresh-shell-per-block → re-derive `$VAULT` + sidecar
+  `$STAGED_TAR`). All steps dry-run-verified into scratch; **the live first backup (Task 8: `brew install
+  age` + developer passphrase) is NOT yet run.** **NEXT:** merge the PR, then run the live backup.
+- **Previous objective (DONE — `main` clean; #34 i18n phase-2 spec+plan MERGED, impl DEFERRED).**
+  Docs-only PR #349 (merge `52c1cec`); both artifacts passed the multi-agent Adversarial Review Gate
+  (ultracode; spec 30/25, plan 18/17). Plan = **15 tasks across 2 impl PRs** (PR3 Canvas/Activity is a
+  deferred follow-up) at `docs/superpowers/{specs,plans}/2026-06-24-i18n-compose-screen-extraction*`.
+  Scope: extract hardcoded Compose `Text`/`contentDescription` (+ dialogs, shared `presentation/ui`, two
+  battle/ui Compose components, nav titles, non-composable `@StringRes` helpers) → `strings.xml`; no
+  behavior change; English-only. Gate corrections baked in (`HardcodedText` already enabled+XML-only;
+  `UltimateWeaponBar` pure Compose; Methodology grep gate for undercounted helper-composable args).
+  **When picked up:** execute PR1 (Tasks 1–5), then PR2 (Tasks 6–15); subagent-driven preferred.
 - **Previous objective (DONE — #217 service/boot-receiver test coverage MERGED to `main`; PR #348,
   commit `0d09ef2`; test-only, no app change).** Closed the 2026-06-17 audit's TEST-2 gap
   (`StepCounterService`/`BootReceiver` had zero test references). The skeptic scope-correction held: the
