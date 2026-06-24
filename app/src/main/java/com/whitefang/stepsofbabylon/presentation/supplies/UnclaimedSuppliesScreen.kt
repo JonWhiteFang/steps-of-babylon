@@ -161,7 +161,8 @@ internal fun formatSupplyReward(drop: SupplyDrop): String =
         }
     }
 
-// i18n(#34): only the "Just now" early-return is localized (passed in); the m/h/d-ago duration units are deferred to the plurals pass.
+// i18n(#34): only the "Just now" early-return is localized (passed in); the m/h/d-ago
+// duration units are deferred to the plurals pass.
 private fun formatTimeAgo(
     timestampMs: Long,
     justNowLabel: String,

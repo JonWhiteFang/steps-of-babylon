@@ -258,7 +258,8 @@ private fun ResearchCard(
 
 private fun formatName(type: ResearchType): String = type.name.toDisplayName()
 
-// i18n(#34): only the "Done!" early-return is localized (passed in); the h/m/s duration units are deferred to the plurals pass.
+// i18n(#34): only the "Done!" early-return is localized (passed in); the h/m/s
+// duration units are deferred to the plurals pass.
 private fun formatTime(
     ms: Long,
     doneLabel: String,
