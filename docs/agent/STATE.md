@@ -19,9 +19,9 @@ dependency-verification (#256), clock-tamper (#211), GameEngine decomposition (#
 dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependabot wave, CI/supply-chain
 (#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
 (CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
-#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1277 JVM + 9 instrumented tests**
+#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1282 JVM + 9 instrumented tests**
 green (the post-v1.0.11 body lands at 1277: audit-triage A–D → 1256, then #216 +19 → 1275, #221 +2 → 1277;
-per-wave detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
+then #217 service/boot-receiver tests +5 → 1282; per-wave detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) **DONE — the manual Play
 Console Data-Safety form for #192 was submitted 2026-06-24** (the four AdMob-SDK data types Collected+Shared
@@ -42,18 +42,21 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (IN FLIGHT — #217 service/boot-receiver test coverage on branch
-  `test/217-service-bootreceiver-coverage`; test-only, no app change).** Closed the 2026-06-17 audit's
-  TEST-2 gap (`StepCounterService`/`BootReceiver` had zero test references). The skeptic scope-correction
-  held: the catch-up logic + crash-safety/notification seams were already covered, so the only
-  uncovered surface was thin Android glue. Added **`BootReceiverTest`** (3 Robolectric/JUnit-4 tests —
-  action gate, ACTIVITY_RECOGNITION permission gate, `StepCounterService` dispatch; `BootReceiver` is
-  not `@AndroidEntryPoint` so no Hilt) + **`StepCounterServiceTest`** (2 Robolectric tests — the
+- **CURRENT (nothing in flight — `main` clean).** Next candidate work selected: **#34 i18n string
+  externalization** (move hardcoded UI strings into `strings.xml`; medium, low-risk, no fragile-zone
+  touch). See "Top priorities" below for the rest of the audit-backlog non-batchable items + the
+  internal→closed promotion judgment call.
+- **Previous objective (DONE — #217 service/boot-receiver test coverage MERGED to `main`; PR #348,
+  commit `0d09ef2`; test-only, no app change).** Closed the 2026-06-17 audit's TEST-2 gap
+  (`StepCounterService`/`BootReceiver` had zero test references). The skeptic scope-correction held: the
+  catch-up logic + crash-safety/notification seams were already covered, so the only uncovered surface
+  was thin Android glue. Added **`BootReceiverTest`** (3 Robolectric/JUnit-4 tests — action gate,
+  ACTIVITY_RECOGNITION permission gate, `StepCounterService` dispatch; `BootReceiver` is not
+  `@AndroidEntryPoint` so no Hilt) + **`StepCounterServiceTest`** (2 Robolectric tests — the
   injection-independent lifecycle: `onStartCommand`→`START_STICKY`, `onBind`→`null`, on a
   directly-constructed instance; the Hilt-injected `onCreate` stays on its pure seams + the instrumented
   suite). Authored via the `android-test-writer` subagent; full suite green at **1277 → 1282 JVM (+5)**,
-  0 failures. **No production-code/schema change.** **Next:** commit + open PR; then the audit backlog's
-  remaining non-batchable items (below).
+  0 failures. **No production-code/schema change.**
 - **Previous objective (DONE — Claude Code tooling + CI fast-path MERGED to `main`; nothing in flight, no app change).**
   Acted on the `claude-automation-recommender` review of this repo's Claude Code setup. **PR #345**
   (`ca239c2`) added two subagents (`concurrency-reviewer`, `android-test-writer`), two skills
