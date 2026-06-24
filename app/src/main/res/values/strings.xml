@@ -270,4 +270,26 @@
     <string name="economy_claimed">Claimed</string>
     <string name="economy_cd_goal_met">Goal met</string>
     <string name="economy_cd_goal_missed">Goal missed</string>
+
+    <!-- Stats screen -->
+    <string name="stats_walking_history">Walking History</string>
+    <string name="stats_today">Today</string>
+    <string name="stats_battle_stats">Battle Stats</string>
+    <string name="stats_all_time">All-Time Stats</string>
+    <string name="stats_gems">Gems</string>
+    <string name="stats_power_stones">Power Stones</string>
+    <!-- StatRow labels (passed as String args to StatRow(label, value)) -->
+    <string name="stats_row_steps">Steps</string>
+    <string name="stats_row_activity_equiv">Activity Step-Equivalents</string>
+    <string name="stats_row_tier_best_wave">Tier %1$d Best Wave</string>
+    <string name="stats_row_rounds_played">Rounds Played</string>
+    <string name="stats_row_enemies_killed">Enemies Killed</string>
+    <string name="stats_row_total_cash">Total Cash Earned</string>
+    <string name="stats_row_lifetime_steps">Lifetime Steps</string>
+    <string name="stats_row_days_active">Days Active</string>
+    <string name="stats_row_avg_daily_steps">Avg Daily Steps</string>
+    <string name="stats_row_workshop_levels">Workshop Levels</string>
+    <string name="stats_row_current">Current</string>
+    <string name="stats_row_earned">Earned</string>
+    <string name="stats_row_spent">Spent</string>
 </resources>

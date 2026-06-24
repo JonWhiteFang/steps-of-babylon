@@ -124,8 +124,8 @@
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/stats/StatsScreen.kt">
         <error line="3" column="1" source="standard:no-wildcard-imports" />
         <error line="5" column="1" source="standard:no-wildcard-imports" />
-        <error line="23" column="5" source="standard:function-naming" />
-        <error line="129" column="13" source="standard:function-naming" />
+        <error line="25" column="5" source="standard:function-naming" />
+        <error line="158" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/stats/StatsViewModel.kt">
         <error line="41" column="21" source="standard:backing-property-naming" />
