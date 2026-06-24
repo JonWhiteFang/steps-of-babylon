@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -67,7 +68,7 @@ fun UnclaimedSuppliesScreen(viewModel: UnclaimedSuppliesViewModel = hiltViewMode
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Button(onClick = viewModel::claimAll, colors = ButtonDefaults.buttonColors(containerColor = Gold)) {
-                        Text("Claim All")
+                        Text(stringResource(R.string.supplies_claim_all))
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -76,7 +77,7 @@ fun UnclaimedSuppliesScreen(viewModel: UnclaimedSuppliesViewModel = hiltViewMode
             if (state.drops.isEmpty() && !state.isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        "No supply drops yet — keep walking!",
+                        stringResource(R.string.supplies_empty),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -117,13 +118,13 @@ private fun SupplyDropCard(
                     color = Gold,
                 )
                 Text(
-                    text = formatTimeAgo(drop.createdAt),
+                    text = formatTimeAgo(drop.createdAt, justNowLabel = stringResource(R.string.time_just_now)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Button(onClick = onClaim, colors = ButtonDefaults.buttonColors(containerColor = Gold)) {
-                Text("Claim")
+                Text(stringResource(R.string.supplies_claim))
             }
         }
     }
@@ -156,15 +157,20 @@ internal fun formatSupplyReward(drop: SupplyDrop): String =
         SupplyDropReward.CARD_COPY -> {
             // #20: rewardAmount is a card-TYPE index, NOT a quantity — resolve the card name + "x1".
             val cardType = CardType.entries[drop.rewardAmount % CardType.entries.size]
-            "${cardType.name.toDisplayName()} x1"
+            stringResource(R.string.supplies_reward_card_copy, cardType.name.toDisplayName())
         }
     }
 
-private fun formatTimeAgo(timestampMs: Long): String {
+// i18n(#34): only the "Just now" early-return is localized (passed in); the m/h/d-ago
+// duration units are deferred to the plurals pass.
+private fun formatTimeAgo(
+    timestampMs: Long,
+    justNowLabel: String,
+): String {
     val diff = System.currentTimeMillis() - timestampMs
     val minutes = diff / 60_000
     return when {
-        minutes < 1 -> "Just now"
+        minutes < 1 -> justNowLabel
         minutes < 60 -> "${minutes}m ago"
         minutes < 1440 -> "${minutes / 60}h ago"
         else -> "${minutes / 1440}d ago"

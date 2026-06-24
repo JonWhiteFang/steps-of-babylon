@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
@@ -17,8 +18,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.ui.theme.GemColor
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
 import com.whitefang.stepsofbabylon.presentation.ui.theme.PowerStoneColor
@@ -52,12 +55,13 @@ fun CurrencyType.tint(): Color =
     }
 
 /** Plural-noun form for standalone a11y `contentDescription`. No quantity inflection. */
-fun CurrencyType.label(): String =
+@StringRes
+fun CurrencyType.label(): Int =
     when (this) {
-        CurrencyType.STEPS -> "Steps"
-        CurrencyType.CASH -> "Cash"
-        CurrencyType.GEMS -> "Gems"
-        CurrencyType.POWER_STONES -> "Power Stones"
+        CurrencyType.STEPS -> R.string.currency_label_steps
+        CurrencyType.CASH -> R.string.currency_label_cash
+        CurrencyType.GEMS -> R.string.currency_label_gems
+        CurrencyType.POWER_STONES -> R.string.currency_label_power_stones
     }
 
 /** Thousands-grouped amount (US grouping for determinism). Centralizes the review's separator fix. */
@@ -90,7 +94,7 @@ fun CurrencyCost(
     modifier: Modifier = Modifier,
 ) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        Icon(type.icon(), contentDescription = type.label(), modifier = Modifier.size(16.dp))
+        Icon(type.icon(), contentDescription = stringResource(type.label()), modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(4.dp))
         Text(formatCurrency(amount))
     }

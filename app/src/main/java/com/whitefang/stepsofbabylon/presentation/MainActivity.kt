@@ -240,9 +240,9 @@ class MainActivity : ComponentActivity() {
                         // backStackEntry); named distinctly to avoid shadowing across the two slot lambdas.
                         val topBarEntry by navController.currentBackStackEntryAsState()
                         val topBarRoute = topBarEntry?.destination?.route
-                        Screen.secondaryTitle(topBarRoute)?.let { title ->
+                        Screen.secondaryTitle(topBarRoute)?.let { titleRes ->
                             SobTopAppBar(
-                                title = title,
+                                title = stringResource(titleRes),
                                 onNavigateBack = { navController.navigateUp() },
                             )
                         }

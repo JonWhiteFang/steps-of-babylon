@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.weapons
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.UWPath
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.presentation.ui.EquippedChip
@@ -55,14 +57,14 @@ fun UltimateWeaponScreen(viewModel: UltimateWeaponViewModel = hiltViewModel()) {
 
     Column(Modifier.fillMaxSize()) {
         Text(
-            "Power Stones: ${state.powerStones}",
+            stringResource(R.string.uw_power_stones_balance, state.powerStones),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(16.dp),
         )
         if (state.equippedCount >= 3) {
             Text(
-                "Equipped: 3/3 — unequip one to swap",
+                stringResource(R.string.uw_equipped_full),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(horizontal = 16.dp),
                 color = StatusWarning,
@@ -70,7 +72,7 @@ fun UltimateWeaponScreen(viewModel: UltimateWeaponViewModel = hiltViewModel()) {
             )
         } else {
             Text(
-                "Equipped: ${state.equippedCount}/3",
+                stringResource(R.string.uw_equipped_count, state.equippedCount),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(horizontal = 16.dp),
                 color = Color.Gray,
@@ -154,7 +156,7 @@ private fun UWCard(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A5ACD)),
                         modifier = Modifier.pulseScale(unlockPulse),
                     ) {
-                        Text("Unlock (${info.type.unlockCost} PS)")
+                        Text(stringResource(R.string.uw_unlock_cost, info.type.unlockCost))
                     }
                 }
             } else {
@@ -179,7 +181,15 @@ private fun UWCard(
                         },
                         enabled = info.isEquipped || canEquipMore,
                     ) {
-                        Text(if (info.isEquipped) "Unequip" else "Equip")
+                        Text(
+                            if (info.isEquipped) {
+                                stringResource(
+                                    R.string.uw_unequip,
+                                )
+                            } else {
+                                stringResource(R.string.uw_equip)
+                            },
+                        )
                     }
                 }
             }
@@ -202,7 +212,7 @@ private fun UWPathRow(
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                pathLabel(type, path),
+                stringResource(pathLabel(type, path)),
                 style = MaterialTheme.typography.labelMedium,
                 color = Color.White,
             )
@@ -230,7 +240,7 @@ private fun UWPathRow(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A5ACD)),
                 modifier = Modifier.pulseScale(pulse),
             ) {
-                Text("L${pathInfo.level + 1} (${pathInfo.cost} PS)")
+                Text(stringResource(R.string.uw_path_level_cost, pathInfo.level + 1, pathInfo.cost))
             }
         }
     }
@@ -240,34 +250,35 @@ private fun UWPathRow(
  * UI-side label for a UW's path (e.g. "Damage" / "Chain length" / "Cooldown"). Display
  * names are intentionally short so the row layout stays single-line on narrow screens.
  */
+@StringRes
 private fun pathLabel(
     type: UltimateWeaponType,
     path: UWPath,
-): String =
+): Int =
     when (path) {
         UWPath.DAMAGE -> {
             when (type) {
-                UltimateWeaponType.CHRONO_FIELD -> "Slow factor"
-                UltimateWeaponType.GOLDEN_ZIGGURAT -> "Cash multiplier"
-                UltimateWeaponType.POISON_SWAMP -> "DoT % MaxHP/sec"
-                UltimateWeaponType.BLACK_HOLE -> "Damage DPS"
-                else -> "Damage"
+                UltimateWeaponType.CHRONO_FIELD -> R.string.uw_path_slow_factor
+                UltimateWeaponType.GOLDEN_ZIGGURAT -> R.string.uw_path_cash_multiplier
+                UltimateWeaponType.POISON_SWAMP -> R.string.uw_path_dot
+                UltimateWeaponType.BLACK_HOLE -> R.string.uw_path_damage_dps
+                else -> R.string.uw_path_damage
             }
         }
 
         UWPath.SECONDARY -> {
             when (type) {
-                UltimateWeaponType.CHAIN_LIGHTNING -> "Chain length"
-                UltimateWeaponType.DEATH_WAVE -> "Radius"
-                UltimateWeaponType.BLACK_HOLE -> "Pull strength"
-                UltimateWeaponType.CHRONO_FIELD -> "Duration"
-                UltimateWeaponType.POISON_SWAMP -> "Area"
-                UltimateWeaponType.GOLDEN_ZIGGURAT -> "Damage multiplier"
+                UltimateWeaponType.CHAIN_LIGHTNING -> R.string.uw_path_chain_length
+                UltimateWeaponType.DEATH_WAVE -> R.string.uw_path_radius
+                UltimateWeaponType.BLACK_HOLE -> R.string.uw_path_pull_strength
+                UltimateWeaponType.CHRONO_FIELD -> R.string.uw_path_duration
+                UltimateWeaponType.POISON_SWAMP -> R.string.uw_path_area
+                UltimateWeaponType.GOLDEN_ZIGGURAT -> R.string.uw_path_damage_multiplier
             }
         }
 
         UWPath.COOLDOWN -> {
-            "Cooldown"
+            R.string.uw_path_cooldown
         }
     }
 

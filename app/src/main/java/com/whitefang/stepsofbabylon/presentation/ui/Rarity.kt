@@ -12,6 +12,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -111,7 +112,7 @@ fun RarityBadge(
 @Composable
 fun EquippedChip() {
     Text(
-        text = "✓ EQUIPPED",
+        text = stringResource(R.string.equipped_chip),
         color = Color(0xFF10300A),
         fontWeight = FontWeight.Bold,
         fontSize = PILL_FONT_SIZE,

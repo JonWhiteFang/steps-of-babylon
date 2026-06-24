@@ -234,4 +234,139 @@
     <string name="onboarding_denied_body">Step counting is off. You can enable it any time in Settings.</string>
     <string name="onboarding_open_settings">Open Settings</string>
     <string name="onboarding_continue_without">Continue without step counting</string>
+    <!-- Home screen -->
+    <string name="home_today">Today</string>
+    <string name="home_today_steps">%1$s steps</string>
+    <string name="home_currency_steps">Steps</string>
+    <string name="home_currency_gems">Gems</string>
+    <string name="home_currency_power_stones">Power Stones</string>
+    <string name="home_empty_title">Earn your first Steps</string>
+    <string name="home_empty_message">Go for a walk — every step powers up your ziggurat. Your Steps will appear here.</string>
+    <string name="home_best_wave">Best Wave: %1$d</string>
+    <string name="home_unclaimed_supplies_cd">Unclaimed supplies, %1$d available</string>
+    <string name="home_unclaimed_supplies">Unclaimed Supplies</string>
+    <string name="home_season_pass_active">Season Pass Active</string>
+    <string name="home_battle">BATTLE</string>
+    <string name="home_menu_missions">Missions</string>
+    <string name="home_menu_settings">Settings</string>
+    <string name="home_menu_help">Help</string>
+    <string name="home_menu_store">Store</string>
+    <string name="tier_selector_header">Tier %1$d — %2$s</string>
+
+    <!-- Premium Currencies (economy) screen -->
+    <string name="economy_store">Store</string>
+    <string name="economy_balance_gems">Gems</string>
+    <string name="economy_balance_power_stones">Power Stones</string>
+    <string name="economy_weekly_challenge">Weekly Step Challenge</string>
+    <string name="economy_weekly_progress">%1$s / 100,000 steps</string>
+    <string name="economy_past_weeks">Past Weeks</string>
+    <string name="economy_login_streak">Login Streak</string>
+    <string name="economy_gems_claimed_today">Today\'s Gems claimed</string>
+    <string name="economy_open_daily">Open the app daily for Gems!</string>
+    <string name="economy_daily_power_stone">Daily Power Stone</string>
+    <string name="economy_earned_today">Earned today (walked 1,000+ steps)</string>
+    <string name="economy_walk_for_ps">Walk 1,000 steps today for 1 Power Stone</string>
+    <string name="economy_steps_to_ps">%1$s steps → %2$d PS</string>
+    <string name="economy_ready">Ready!</string>
+    <string name="economy_claimed">Claimed</string>
+    <string name="economy_cd_goal_met">Goal met</string>
+    <string name="economy_cd_goal_missed">Goal missed</string>
+    <string name="economy_week_ps_earned">%1$d PS</string>
+
+    <!-- Stats screen -->
+    <string name="stats_walking_history">Walking History</string>
+    <string name="stats_today">Today</string>
+    <string name="stats_battle_stats">Battle Stats</string>
+    <string name="stats_all_time">All-Time Stats</string>
+    <string name="stats_gems">Gems</string>
+    <string name="stats_power_stones">Power Stones</string>
+    <!-- StatRow labels (passed as String args to StatRow(label, value)) -->
+    <string name="stats_row_steps">Steps</string>
+    <string name="stats_row_activity_equiv">Activity Step-Equivalents</string>
+    <string name="stats_row_tier_best_wave">Tier %1$d Best Wave</string>
+    <string name="stats_row_rounds_played">Rounds Played</string>
+    <string name="stats_row_enemies_killed">Enemies Killed</string>
+    <string name="stats_row_total_cash">Total Cash Earned</string>
+    <string name="stats_row_lifetime_steps">Lifetime Steps</string>
+    <string name="stats_row_days_active">Days Active</string>
+    <string name="stats_row_avg_daily_steps">Avg Daily Steps</string>
+    <string name="stats_row_workshop_levels">Workshop Levels</string>
+    <string name="stats_row_current">Current</string>
+    <string name="stats_row_earned">Earned</string>
+    <string name="stats_row_spent">Spent</string>
+
+    <!-- Walking history chart -->
+    <string name="chart_legend_steps">Steps</string>
+    <string name="chart_legend_activity_steps">Activity Steps</string>
+
+    <!-- Labs screen -->
+    <string name="labs_slots">Lab Slots: %1$d/%2$d</string>
+    <string name="labs_unlock_slot">"Unlock Slot "</string>
+    <string name="labs_level_progress">Lv %1$d/%2$d</string>
+    <string name="labs_free">Free</string>
+    <string name="labs_rush">"Rush "</string>
+    <string name="labs_start">"Start "</string>
+    <string name="labs_no_slot">No Slot Available</string>
+
+    <!-- Missions screen -->
+    <string name="missions_daily">Daily Missions</string>
+    <string name="missions_resets_in">Resets in %1$dh %2$dm</string>
+    <string name="missions_milestones">Walking Milestones</string>
+    <string name="missions_cd_claimed">Claimed</string>
+    <string name="missions_reward_plus">+</string>
+    <string name="missions_claim">Claim</string>
+    <string name="missions_milestone_steps">%1$s steps</string>
+
+    <!-- Ultimate Weapons screen -->
+    <string name="uw_power_stones_balance">Power Stones: %1$d</string>
+    <string name="uw_equipped_full">Equipped: 3/3 — unequip one to swap</string>
+    <string name="uw_equipped_count">Equipped: %1$d/3</string>
+    <string name="uw_unlock_cost">Unlock (%1$d PS)</string>
+    <string name="uw_unequip">Unequip</string>
+    <string name="uw_equip">Equip</string>
+    <string name="uw_path_level_cost">L%1$d (%2$d PS)</string>
+
+    <!-- Unclaimed Supplies screen -->
+    <string name="supplies_claim_all">Claim All</string>
+    <string name="supplies_empty">No supply drops yet — keep walking!</string>
+    <string name="supplies_claim">Claim</string>
+    <string name="supplies_reward_card_copy">%1$s x1</string>
+
+    <!-- Secondary-screen TopAppBar titles (Screen.secondaryTitle) -->
+    <string name="screen_title_weapons">Ultimate Weapons</string>
+    <string name="screen_title_cards">Cards</string>
+    <string name="screen_title_supplies">Unclaimed Supplies</string>
+    <string name="screen_title_economy">Premium Currencies</string>
+    <string name="screen_title_missions">Missions</string>
+    <string name="screen_title_settings">Settings</string>
+    <string name="screen_title_store">Store</string>
+    <string name="screen_title_help">Help</string>
+
+    <!-- Shared UI components -->
+    <string name="action_retry">Retry</string>
+    <string name="cd_back">Back</string>
+    <string name="equipped_chip">✓ EQUIPPED</string>
+    <string name="battle_uw_ready">%1$s ready</string>
+    <string name="battle_uw_cooldown">%1$s on cooldown, %2$d seconds remaining</string>
+    <string name="battle_close">✕</string>
+
+    <!-- Non-composable helper returns (resolved at call site) -->
+    <string name="currency_label_steps">Steps</string>
+    <string name="currency_label_cash">Cash</string>
+    <string name="currency_label_gems">Gems</string>
+    <string name="currency_label_power_stones">Power Stones</string>
+    <string name="uw_path_damage">Damage</string>
+    <string name="uw_path_slow_factor">Slow factor</string>
+    <string name="uw_path_cash_multiplier">Cash multiplier</string>
+    <string name="uw_path_dot">DoT % MaxHP/sec</string>
+    <string name="uw_path_damage_dps">Damage DPS</string>
+    <string name="uw_path_chain_length">Chain length</string>
+    <string name="uw_path_radius">Radius</string>
+    <string name="uw_path_pull_strength">Pull strength</string>
+    <string name="uw_path_duration">Duration</string>
+    <string name="uw_path_area">Area</string>
+    <string name="uw_path_damage_multiplier">Damage multiplier</string>
+    <string name="uw_path_cooldown">Cooldown</string>
+    <string name="lab_time_done">Done!</string>
+    <string name="time_just_now">Just now</string>
 </resources>

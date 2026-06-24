@@ -8,6 +8,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.whitefang.stepsofbabylon.R
 
 /**
  * The single shared back-affordance app bar for the 8 secondary (push-navigated) screens
@@ -35,7 +37,7 @@ fun SobTopAppBar(
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.cd_back),
                 )
             }
         },

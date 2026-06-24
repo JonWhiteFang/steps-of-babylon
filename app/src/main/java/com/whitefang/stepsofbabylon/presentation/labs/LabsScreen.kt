@@ -32,9 +32,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.ResearchType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyCost
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
@@ -80,7 +82,10 @@ fun LabsScreen(viewModel: LabsViewModel = hiltViewModel()) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text("Lab Slots: ${state.activeSlots}/${state.totalSlots}", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    stringResource(R.string.labs_slots, state.activeSlots, state.totalSlots),
+                    style = MaterialTheme.typography.titleSmall,
+                )
                 if (state.totalSlots < 4) {
                     val slotPulse = rememberPulse()
                     val slotHaptics = rememberHaptics()
@@ -94,7 +99,7 @@ fun LabsScreen(viewModel: LabsViewModel = hiltViewModel()) {
                         modifier = Modifier.pulseScale(slotPulse),
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Unlock Slot ")
+                            Text(stringResource(R.string.labs_unlock_slot))
                             CurrencyCost(CurrencyType.GEMS, state.slotUnlockCostGems)
                         }
                     }
@@ -152,7 +157,10 @@ private fun ResearchCard(
                     }
 
                     else -> {
-                        Text("Lv ${info.level}/${info.type.maxLevel}", style = MaterialTheme.typography.labelMedium)
+                        Text(
+                            stringResource(R.string.labs_level_progress, info.level, info.type.maxLevel),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
                     }
                 }
             }
@@ -179,13 +187,16 @@ private fun ResearchCard(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(formatTime(info.remainingMs), style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            formatTime(info.remainingMs, doneLabel = stringResource(R.string.lab_time_done)),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             if (freeRushAvailable) {
                                 OutlinedButton(onClick = onFreeRush) {
                                     Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(Modifier.width(4.dp))
-                                    Text("Free")
+                                    Text(stringResource(R.string.labs_free))
                                 }
                             }
                             Button(
@@ -197,7 +208,7 @@ private fun ResearchCard(
                                 enabled = info.canAffordRush,
                                 modifier = Modifier.pulseScale(rushPulse),
                             ) {
-                                Text("Rush ")
+                                Text(stringResource(R.string.labs_rush))
                                 CurrencyCost(CurrencyType.GEMS, info.rushCostGems)
                             }
                         }
@@ -206,7 +217,7 @@ private fun ResearchCard(
 
                 !slotAvailable -> {
                     Text(
-                        "No Slot Available",
+                        stringResource(R.string.labs_no_slot),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                     )
@@ -235,7 +246,7 @@ private fun ResearchCard(
                             enabled = info.canAffordStart,
                             modifier = Modifier.pulseScale(startPulse),
                         ) {
-                            Text("Start ")
+                            Text(stringResource(R.string.labs_start))
                             CurrencyCost(CurrencyType.STEPS, info.costToStart)
                         }
                     }
@@ -247,8 +258,13 @@ private fun ResearchCard(
 
 private fun formatName(type: ResearchType): String = type.name.toDisplayName()
 
-private fun formatTime(ms: Long): String {
-    if (ms <= 0) return "Done!"
+// i18n(#34): only the "Done!" early-return is localized (passed in); the h/m/s
+// duration units are deferred to the plurals pass.
+private fun formatTime(
+    ms: Long,
+    doneLabel: String,
+): String {
+    if (ms <= 0) return doneLabel
     val totalSeconds = ms / 1000
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60

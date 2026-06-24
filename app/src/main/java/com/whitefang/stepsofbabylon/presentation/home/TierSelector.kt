@@ -18,10 +18,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.domain.model.TierConfig
 import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
@@ -35,7 +37,12 @@ fun TierSelector(
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "Tier $currentTier — ${Biome.forTier(currentTier).name.toDisplayName()}",
+            text =
+                stringResource(
+                    R.string.tier_selector_header,
+                    currentTier,
+                    Biome.forTier(currentTier).name.toDisplayName(),
+                ),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFD4A843),

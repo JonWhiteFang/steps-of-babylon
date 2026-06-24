@@ -13,7 +13,7 @@
     <ID>CyclomaticComplexMethod:StoreScreen.kt:@Composable fun StoreScreen</ID>
     <ID>CyclomaticComplexMethod:UWController.kt:UWController$fun activateUW</ID>
     <ID>CyclomaticComplexMethod:UWController.kt:UWController$fun update</ID>
-    <ID>CyclomaticComplexMethod:UltimateWeaponScreen.kt:private fun pathLabel: String</ID>
+    <ID>CyclomaticComplexMethod:UltimateWeaponScreen.kt:@StringRes private fun pathLabel: Int</ID>
     <ID>CyclomaticComplexMethod:UltimateWeaponScreen.kt:private fun pathValueAtNext: String</ID>
     <ID>CyclomaticComplexMethod:UpgradeCard.kt:@Composable fun UpgradeCard</ID>
     <ID>CyclomaticComplexMethod:WalkingHistoryChart.kt:@Composable fun WalkingHistoryChart</ID>
