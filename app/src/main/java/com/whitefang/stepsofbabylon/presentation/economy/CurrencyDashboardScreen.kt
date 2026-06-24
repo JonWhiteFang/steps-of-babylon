@@ -313,7 +313,7 @@ private fun HistoryRow(week: WeeklyResult) {
             )
             Spacer(Modifier.size(8.dp))
             Text(
-                if (met) "${week.powerStonesEarned} PS" else "—",
+                if (met) stringResource(R.string.economy_week_ps_earned, week.powerStonesEarned) else "—",
                 style = MaterialTheme.typography.bodySmall,
                 color = if (met) Gold else MaterialTheme.colorScheme.onSurfaceVariant,
             )

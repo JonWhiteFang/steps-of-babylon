@@ -236,6 +236,7 @@
     <string name="onboarding_continue_without">Continue without step counting</string>
     <!-- Home screen -->
     <string name="home_today">Today</string>
+    <string name="home_today_steps">%1$s steps</string>
     <string name="home_currency_steps">Steps</string>
     <string name="home_currency_gems">Gems</string>
     <string name="home_currency_power_stones">Power Stones</string>
@@ -270,6 +271,7 @@
     <string name="economy_claimed">Claimed</string>
     <string name="economy_cd_goal_met">Goal met</string>
     <string name="economy_cd_goal_missed">Goal missed</string>
+    <string name="economy_week_ps_earned">%1$d PS</string>
 
     <!-- Stats screen -->
     <string name="stats_walking_history">Walking History</string>
@@ -292,6 +294,10 @@
     <string name="stats_row_current">Current</string>
     <string name="stats_row_earned">Earned</string>
     <string name="stats_row_spent">Spent</string>
+
+    <!-- Walking history chart -->
+    <string name="chart_legend_steps">Steps</string>
+    <string name="chart_legend_activity_steps">Activity Steps</string>
 
     <!-- Labs screen -->
     <string name="labs_slots">Lab Slots: %1$d/%2$d</string>

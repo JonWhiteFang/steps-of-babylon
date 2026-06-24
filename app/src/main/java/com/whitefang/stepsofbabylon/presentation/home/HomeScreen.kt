@@ -126,7 +126,7 @@ fun HomeScreen(
                         color = LapisLight,
                     )
                     Text(
-                        "${formatCount(state.todaySteps)} steps",
+                        stringResource(R.string.home_today_steps, formatCount(state.todaySteps)),
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = Gold,

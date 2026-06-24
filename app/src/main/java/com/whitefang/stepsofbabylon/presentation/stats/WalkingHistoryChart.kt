@@ -11,8 +11,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.whitefang.stepsofbabylon.R
 
 private const val DAILY_CEILING = 50_000L
 
@@ -119,10 +121,10 @@ fun WalkingHistoryChart(
 
         // Legend
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            LegendDot(primaryColor, "Steps")
+            LegendDot(primaryColor, stringResource(R.string.chart_legend_steps))
             // The tertiary series plots activity-derived step-equivalents (cycling, etc.), NOT
             // raw minutes — the old "Activity Minutes" label contradicted the data.
-            LegendDot(secondaryColor, "Activity Steps")
+            LegendDot(secondaryColor, stringResource(R.string.chart_legend_activity_steps))
         }
     }
 }
