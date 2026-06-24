@@ -35,8 +35,9 @@ listing the *filenames* in the bundle (never their contents).
 
 **Passphrase isolation:** Claude must never see or type the passphrase, because the transcript may
 itself sync. The encrypt/decrypt step is therefore run **by the developer** via the `! ` prompt
-prefix; `age -p` prompts interactively on the TTY. Claude only stages the tar, verifies the
-resulting `secrets.enc` exists and is non-empty, then shreds the staged plaintext tar.
+prefix; `age -p` prompts interactively on the TTY. Claude only stages the tar (as a `0600`
+temp file), verifies the resulting `secrets.enc` exists and is non-empty, then removes the staged
+plaintext tar.
 
 ## Form
 
@@ -50,8 +51,8 @@ touch `docs/agent/STATE.md` / `RUN_LOG.md`.
 ## Prerequisites
 
 - `age` must be installed (`command -v age`). If missing, the skill stops and instructs the
-  developer to `brew install age`. (`openssl` is present as a documented fallback but `age` is the
-  chosen tool.)
+  developer to `brew install age`. (Verified absent on this machine at design time — the preflight
+  will catch it.)
 - `rsync` (present at `/usr/bin/rsync`).
 
 ## Vault layout (mirror mode)
@@ -111,15 +112,18 @@ No timestamped snapshots, no additive-only accumulation, no scheduling/cron — 
    against path typos creating junk directories). Create the target dir if the parent is valid.
 2. **Mirror docs:** `rsync -a --delete` the documentation set into `<vault>/docs/`, excluding
    `.git/`, `build/`, `.gradle/`, `.idea/`, `*.log`.
-3. **Stage secrets tar:** tar the bundle file list (skipping any not present) to a temp path
-   outside the vault, e.g. `/tmp/sob-secrets-<pid>.tar`. Write `secrets.manifest.md` listing the
-   included filenames.
+3. **Stage secrets tar:** create a `0600` temp file outside the vault via
+   `mktemp -t sob-secrets` (so the plaintext tar is owner-only readable while it briefly exists),
+   tar the bundle file list into it (skipping any file not present). Write `secrets.manifest.md`
+   listing the included filenames.
 4. **Developer-run encryption:** instruct the developer to run, via `! `:
-   `age -p -o "<vault>/secrets.enc" /tmp/sob-secrets-<pid>.tar`
+   `age -p -o "<vault>/secrets.enc" <staged-tar>`
    (prompts for passphrase; Claude never sees it).
-5. **Verify + shred:** confirm `<vault>/secrets.enc` exists and is non-empty; then securely remove
-   the staged temp tar (`rm -P` / `rm`). If `secrets.enc` is missing/empty, do NOT delete the tar —
-   report the failure.
+5. **Verify + clean up:** confirm `<vault>/secrets.enc` exists and is non-empty; then `rm` the
+   staged temp tar. Note: this is best-effort cleanup, not a secure wipe — `rm -P` is a documented
+   no-op on modern macOS and APFS provides no secure-overwrite guarantee, so the spec does not claim
+   one; the `0600` perms + short lifetime are the mitigation. If `secrets.enc` is missing/empty, do
+   NOT delete the tar — report the failure so the developer can retry.
 6. **Generate SETUP.md + ENV-SNAPSHOT.md** with current clone URL, toolchain versions, restore
    steps, and the decrypt commands.
 7. **Summary:** print what was copied, what was deleted by the mirror, bundle size, and a reminder
