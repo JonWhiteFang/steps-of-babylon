@@ -1,3 +1,42 @@
+## 2026-06-24 — `/backup-to-vault` skill: encrypted secrets + docs mirror to Obsidian (tooling-only)
+
+- **Goal:** build a personal, user-invoked skill that backs up the repo's gitignored essentials and a
+  full documentation snapshot to the developer's cloud-synced Obsidian vault
+  (`/Users/jpawhite/Documents/kn0ck3r-vault/Claude/steps-of-babylon`) — for disaster recovery
+  (the irreplaceable Play **upload keystore** + signing passwords + AdMob prod IDs) and fresh-machine
+  bootstrap. Followed brainstorming → spec → review → plan → review → subagent-driven implementation.
+- **What changed (tooling-only — no app/Kotlin/schema/test/CI change):**
+  - New skill `.claude/skills/backup-to-vault/SKILL.md` (~270 lines). Checklist-style (like `/release`,
+    `disable-model-invocation: true`). Preflight guards (`age`/`rsync`/vault-parent/repo-root) → docs
+    mirror (`rsync --delete`: `CLAUDE.md`+`README.md`+full `docs/` tree) → stage secrets tar
+    (`mktemp 0600`, skip-if-absent) → **developer-run** `age -p` encrypt (passphrase never enters the
+    transcript) → verify/cleanup → generate `SETUP.md`+`ENV-SNAPSHOT.md`+`secrets.manifest.md` → summary.
+    Mirror-mode on re-run; explicitly NOT part of the PR doc-sweep.
+  - Spec `docs/superpowers/specs/2026-06-24-backup-to-vault-skill-design.md` + plan
+    `docs/superpowers/plans/2026-06-24-backup-to-vault-skill.md` (8 tasks).
+- **Design decisions (developer-chosen):** vault is cloud-synced but the developer wants secrets backed
+  up → secrets go into ONE `age`-encrypted bundle (`age` chosen over `openssl`; passphrase isolation =
+  developer runs `! age -p`, Claude never sees it); full `docs/` tree mirrored incl. archives; mirror
+  mode (not timestamped snapshots); `run-gradle.sh` (gitignored) included in the bundle.
+- **Reviews (ultracode OFF → lighter inline reviews, developer-approved):** spec review — 2 findings
+  applied (dropped a false `rm -P`/"secure wipe" claim — verified no-op on macOS/APFS; trimmed dead
+  "openssl fallback" language). Implementation via subagent-driven-development: spec-compliance review
+  ✅; code-quality review found **Critical C1** (skill bash blocks run in fresh shells → `$VAULT`/
+  `$STAGED_TAR` don't persist → empty `$VAULT` would make `rsync --delete` target `/docs/docs/` and
+  `rm ""`). Fixed by re-deriving the constant `$VAULT` + `: "${VAULT:?}"` guard per block and persisting
+  `$STAGED_TAR` to a sidecar file; re-review ✅ Approved-with-minor; the 2 optional minors (concurrent-run
+  sidecar guard, vault-path maintenance note) also applied.
+- **Verification:** tooling-only — no build/test run needed (CI `.claude/` docs/tooling fast-path skips
+  the gate). All skill steps dry-run-verified against the real repo into scratch dirs (241 docs mirrored;
+  tar stages 5 present secrets at `0600`; sidecar success/failure/missing-guard branches all correct);
+  the real vault was never written and real `age` never run during dev. **Task 8 (the live first backup,
+  needs `brew install age` + developer passphrase) is NOT yet run** — it's the acceptance test, deferred
+  to the developer.
+- **Doc sync:** STATE.md current objective rotated. No other current-state doc invalidated (tooling-only,
+  no code/schema/dep/test/CLAUDE-convention change). No new ADR (no architecture decision; the design
+  rationale lives in the spec).
+- **What remains / next:** run the live backup (Task 8) once `age` is installed. PR opening this entry.
+
 ## 2026-06-24 — #34 i18n phase-2 spec + plan authored & reviewed (docs-only, MERGED; impl deferred)
 
 - **Goal:** pick up the next backlog item after the #217 merge. Chose **#34 i18n string
