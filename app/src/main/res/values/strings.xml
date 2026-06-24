@@ -150,4 +150,23 @@
     <string name="reminder_channel_name">Smart Reminders</string>
     <string name="reminder_channel_desc">Upgrade proximity reminders</string>
     <string name="reminder_title">Almost there!</string>
+
+    <!-- Store screen -->
+    <string name="store_section_gem_packs">Gem Packs</string>
+    <string name="store_buy">Buy</string>
+    <string name="store_section_premium">Premium</string>
+    <string name="store_ad_removal">Ad Removal</string>
+    <string name="store_purchased">Purchased</string>
+    <string name="store_season_pass">Season Pass</string>
+    <string name="store_subscribe">Subscribe</string>
+    <string name="store_pass_perk_gems">• Daily Gems: 0 → 10/day</string>
+    <string name="store_pass_perk_lab_rush">• Lab Rush: 50–200 Gems → 1 free/day</string>
+    <string name="store_pass_perk_cosmetics">• Exclusive cosmetics unlocked</string>
+    <string name="store_manage_subscription">Manage subscription</string>
+    <string name="store_pass_comparison">Free vs Season Pass:</string>
+    <string name="store_cosmetics_note">More cosmetic visuals are still being finalized. Jade and Obsidian Ziggurat skins are available now.</string>
+    <string name="store_section_cosmetics">Cosmetics</string>
+    <string name="store_unequip">Unequip</string>
+    <string name="store_equip">Equip</string>
+    <string name="store_coming_soon">Coming Soon</string>
 </resources>
