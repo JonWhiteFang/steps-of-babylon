@@ -325,4 +325,12 @@
     <string name="supplies_empty">No supply drops yet — keep walking!</string>
     <string name="supplies_claim">Claim</string>
     <string name="supplies_reward_card_copy">%1$s x1</string>
+
+    <!-- Shared UI components -->
+    <string name="action_retry">Retry</string>
+    <string name="cd_back">Back</string>
+    <string name="equipped_chip">✓ EQUIPPED</string>
+    <string name="battle_uw_ready">%1$s ready</string>
+    <string name="battle_uw_cooldown">%1$s on cooldown, %2$d seconds remaining</string>
+    <string name="battle_close">✕</string>
 </resources>

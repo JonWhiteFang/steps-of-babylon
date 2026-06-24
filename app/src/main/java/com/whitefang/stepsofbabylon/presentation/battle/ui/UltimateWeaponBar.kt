@@ -14,11 +14,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.battle.UWSlotInfo
 
 /**
@@ -40,6 +42,13 @@ fun UltimateWeaponBar(slots: List<UWSlotInfo>) {
     if (slots.isEmpty()) return
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         slots.forEach { slot ->
+            val readyDesc = stringResource(R.string.battle_uw_ready, slot.typeName)
+            val cooldownDesc =
+                stringResource(
+                    R.string.battle_uw_cooldown,
+                    slot.typeName,
+                    slot.cooldownRemaining.toInt(),
+                )
             Box(
                 modifier =
                     Modifier
@@ -47,12 +56,7 @@ fun UltimateWeaponBar(slots: List<UWSlotInfo>) {
                         .clip(RoundedCornerShape(8.dp))
                         .background(if (slot.isReady) Color(0xFF6A5ACD) else Color(0xFF2A2A3E))
                         .semantics {
-                            contentDescription =
-                                if (slot.isReady) {
-                                    "${slot.typeName} ready"
-                                } else {
-                                    "${slot.typeName} on cooldown, ${slot.cooldownRemaining.toInt()} seconds remaining"
-                                }
+                            contentDescription = if (slot.isReady) readyDesc else cooldownDesc
                         },
                 contentAlignment = Alignment.Center,
             ) {

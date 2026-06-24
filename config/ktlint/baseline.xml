@@ -48,7 +48,7 @@
         <error line="243" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/ui/UltimateWeaponBar.kt">
-        <error line="39" column="5" source="standard:function-naming" />
+        <error line="41" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/cards/CardsScreen.kt">
         <error line="65" column="5" source="standard:function-naming" />
@@ -164,17 +164,17 @@
         <error line="21" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/ErrorState.kt">
-        <error line="27" column="5" source="standard:function-naming" />
+        <error line="29" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/LoadingBox.kt">
         <error line="12" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/Rarity.kt">
-        <error line="92" column="5" source="standard:function-naming" />
-        <error line="112" column="5" source="standard:function-naming" />
+        <error line="93" column="5" source="standard:function-naming" />
+        <error line="113" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/SobTopAppBar.kt">
-        <error line="28" column="5" source="standard:function-naming" />
+        <error line="30" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/theme/Color.kt">
         <error line="9" column="11" source="standard:property-naming" />

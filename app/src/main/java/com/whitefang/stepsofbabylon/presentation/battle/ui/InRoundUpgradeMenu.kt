@@ -106,7 +106,9 @@ fun InRoundUpgradeMenu(
                     )
                 }
             }
-            TextButton(onClick = onDismiss) { Text("✕", color = Color.White, fontSize = 18.sp) }
+            TextButton(
+                onClick = onDismiss,
+            ) { Text(stringResource(R.string.battle_close), color = Color.White, fontSize = 18.sp) }
         }
 
         // Tabs
