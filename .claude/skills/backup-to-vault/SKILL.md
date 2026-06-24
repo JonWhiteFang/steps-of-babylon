@@ -73,3 +73,45 @@ After mirroring, capture a count for the summary:
 ```bash
 find "$VAULT/docs" -type f | wc -l
 ```
+
+## Step 3 — Stage the secrets tar (Claude does this; passphrase NOT involved yet)
+
+Build the list of secret files, skipping any that are absent (e.g. `adi-registration.properties` may
+not exist). Tar them — with repo-relative paths — into a `0600` temp file OUTSIDE the vault.
+
+```bash
+# Candidate secret files (repo-relative). adi-registration is optional.
+CANDIDATES=(
+  local.properties
+  keystore.properties
+  release/upload-keystore.jks
+  release/upload-cert.pem
+  run-gradle.sh
+  app/src/main/assets/adi-registration.properties
+)
+
+PRESENT=()
+for f in "${CANDIDATES[@]}"; do
+  if [ -e "$f" ]; then PRESENT+=("$f"); echo "PRESENT: $f"; else echo "ABSENT (skipped): $f"; fi
+done
+
+# 0600 temp file so the plaintext tar is owner-only while it briefly exists
+STAGED_TAR="$(mktemp -t sob-secrets)"
+chmod 600 "$STAGED_TAR"
+tar -cf "$STAGED_TAR" "${PRESENT[@]}"
+echo "staged tar: $STAGED_TAR ($(wc -c < "$STAGED_TAR") bytes)"
+```
+
+Write the manifest into the vault — **filenames only, never contents:**
+
+```bash
+{
+  echo "# Secrets bundle manifest"
+  echo
+  echo "Files packed into \`secrets.enc\` at last backup (paths are repo-relative):"
+  echo
+  for f in "${PRESENT[@]}"; do echo "- \`$f\`"; done
+  echo
+  echo "Decrypt + restore: see SETUP.md."
+} > "$VAULT/secrets.manifest.md"
+```
