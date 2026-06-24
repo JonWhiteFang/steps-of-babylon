@@ -119,8 +119,8 @@
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/settings/SettingsScreen.kt">
         <error line="4" column="1" source="standard:no-wildcard-imports" />
         <error line="9" column="1" source="standard:no-wildcard-imports" />
-        <error line="23" column="5" source="standard:function-naming" />
-        <error line="192" column="13" source="standard:function-naming" />
+        <error line="25" column="5" source="standard:function-naming" />
+        <error line="249" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/stats/StatsScreen.kt">
         <error line="3" column="1" source="standard:no-wildcard-imports" />

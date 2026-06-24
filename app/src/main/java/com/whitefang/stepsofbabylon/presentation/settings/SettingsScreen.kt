@@ -14,10 +14,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.whitefang.stepsofbabylon.R
 
 @Composable
 fun SettingsScreen(
@@ -36,27 +38,55 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         ToggleRow(
-            "Live Step Updates",
-            "Update notification with live step count and balance. A minimal tracking notification is always shown while step counting is active.",
+            stringResource(R.string.settings_live_steps_header),
+            stringResource(R.string.settings_live_steps_subtitle),
             state.persistentSteps,
             viewModel::setPersistent,
         )
-        ToggleRow("Supply Drops", "Notifications for walking rewards", state.supplyDrops, viewModel::setSupplyDrops)
-        ToggleRow("Smart Reminders", "Upgrade proximity reminders", state.smartReminders, viewModel::setSmartReminders)
         ToggleRow(
-            "Milestone Alerts",
-            "Wave records and step milestones",
+            stringResource(R.string.settings_supply_drops_header),
+            stringResource(R.string.settings_supply_drops_subtitle),
+            state.supplyDrops,
+            viewModel::setSupplyDrops,
+        )
+        ToggleRow(
+            stringResource(R.string.settings_smart_reminders_header),
+            stringResource(R.string.settings_smart_reminders_subtitle),
+            state.smartReminders,
+            viewModel::setSmartReminders,
+        )
+        ToggleRow(
+            stringResource(R.string.settings_milestone_alerts_header),
+            stringResource(R.string.settings_milestone_alerts_subtitle),
             state.milestoneAlerts,
             viewModel::setMilestoneAlerts,
         )
         Spacer(Modifier.height(16.dp))
-        Text("Sound", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text(
+            stringResource(R.string.settings_sound_header),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+        )
         Spacer(Modifier.height(8.dp))
-        ToggleRow("Mute Sound Effects", "Silence all in-game sounds", state.soundMuted, viewModel::setSoundMuted)
-        ToggleRow("Mute Music", "Silence background music", state.musicMuted, viewModel::setMusicMuted)
+        ToggleRow(
+            stringResource(R.string.settings_mute_sound_header),
+            stringResource(R.string.settings_mute_sound_subtitle),
+            state.soundMuted,
+            viewModel::setSoundMuted,
+        )
+        ToggleRow(
+            stringResource(R.string.settings_mute_music_header),
+            stringResource(R.string.settings_mute_music_subtitle),
+            state.musicMuted,
+            viewModel::setMusicMuted,
+        )
         if (!state.musicMuted) {
             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Music Volume", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(0.4f))
+                Text(
+                    stringResource(R.string.settings_music_volume),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(0.4f),
+                )
                 Slider(
                     value = state.musicVolume,
                     onValueChange = { viewModel.setMusicVolume(it) },
@@ -65,20 +95,28 @@ fun SettingsScreen(
             }
         }
         ToggleRow(
-            "Haptic Feedback",
-            "Vibrate on taps, claims, and rewards",
+            stringResource(R.string.settings_haptic_header),
+            stringResource(R.string.settings_haptic_subtitle),
             state.hapticsEnabled,
             viewModel::setHapticsEnabled,
         )
         Spacer(Modifier.height(16.dp))
-        Text("Help", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text(
+            stringResource(R.string.settings_help_header),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+        )
         Spacer(Modifier.height(8.dp))
         OutlinedCard(onClick = onReplayTutorial, modifier = Modifier.fillMaxWidth()) {
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column {
-                    Text("Replay tutorial", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                     Text(
-                        "See the first-launch walkthrough again",
+                        stringResource(R.string.settings_replay_tutorial),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    Text(
+                        stringResource(R.string.settings_replay_tutorial_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -93,12 +131,12 @@ fun SettingsScreen(
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column {
                     Text(
-                        "Background activity",
+                        stringResource(R.string.settings_background_activity_header),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
                     )
                     Text(
-                        "Allow step counting to keep running in the background",
+                        stringResource(R.string.settings_background_activity_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -106,7 +144,11 @@ fun SettingsScreen(
             }
         }
         Spacer(Modifier.height(24.dp))
-        Text("Data", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text(
+            stringResource(R.string.settings_data_header),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+        )
         Spacer(Modifier.height(8.dp))
         // #240: in-app entry point to the hosted privacy policy. Play's User Data policy expects an
         // easily accessible in-app link, not only the store listing; previously the only in-app path
@@ -114,9 +156,13 @@ fun SettingsScreen(
         OutlinedCard(onClick = onOpenPrivacyPolicy, modifier = Modifier.fillMaxWidth()) {
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column {
-                    Text("Privacy Policy", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
                     Text(
-                        "How your data is handled",
+                        stringResource(R.string.settings_privacy_policy),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    Text(
+                        stringResource(R.string.settings_privacy_policy_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -137,13 +183,13 @@ fun SettingsScreen(
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(
-                        "Delete All Data",
+                        stringResource(R.string.settings_delete_card_header),
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.error,
                     )
                     Text(
-                        "Permanently erase all progress",
+                        stringResource(R.string.settings_delete_card_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -155,35 +201,46 @@ fun SettingsScreen(
     if (deleteStep == 1) {
         AlertDialog(
             onDismissRequest = { deleteStep = 0 },
-            title = { Text("Delete All Data?") },
+            title = { Text(stringResource(R.string.settings_delete_confirm_title)) },
             text = {
-                Text(
-                    "This will permanently delete all your progress, steps history, upgrades, and currency. This cannot be undone.",
-                )
+                Text(stringResource(R.string.settings_delete_confirm_body))
             },
             confirmButton = {
-                TextButton(onClick = { deleteStep = 2 }) { Text("Continue", color = MaterialTheme.colorScheme.error) }
+                TextButton(onClick = { deleteStep = 2 }) {
+                    Text(stringResource(R.string.action_continue), color = MaterialTheme.colorScheme.error)
+                }
             },
-            dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(
+                    onClick = { deleteStep = 0 },
+                ) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 
     if (deleteStep == 2) {
         AlertDialog(
             onDismissRequest = { deleteStep = 0 },
-            title = { Text("Are you absolutely sure?") },
+            title = { Text(stringResource(R.string.settings_delete_final_title)) },
             text = {
-                Text(
-                    "All steps, upgrades, cards, weapons, and purchases will be lost forever. The app will restart.",
-                )
+                Text(stringResource(R.string.settings_delete_final_body))
             },
             confirmButton = {
                 TextButton(onClick = {
                     deleteStep = 0
                     activity?.let { viewModel.deleteAllData(it) }
-                }) { Text("Delete Everything", color = MaterialTheme.colorScheme.error) }
+                }) {
+                    Text(
+                        stringResource(R.string.settings_delete_confirm_final),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             },
-            dismissButton = { TextButton(onClick = { deleteStep = 0 }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(
+                    onClick = { deleteStep = 0 },
+                ) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 }

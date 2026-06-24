@@ -169,4 +169,38 @@
     <string name="store_unequip">Unequip</string>
     <string name="store_equip">Equip</string>
     <string name="store_coming_soon">Coming Soon</string>
+
+    <!-- Settings screen -->
+    <string name="settings_sound_header">Sound</string>
+    <string name="settings_music_volume">Music Volume</string>
+    <string name="settings_mute_sound_header">Mute Sound Effects</string>
+    <string name="settings_mute_sound_subtitle">Silence all in-game sounds</string>
+    <string name="settings_mute_music_header">Mute Music</string>
+    <string name="settings_mute_music_subtitle">Silence background music</string>
+    <string name="settings_haptic_header">Haptic Feedback</string>
+    <string name="settings_haptic_subtitle">Vibrate on taps, claims, and rewards</string>
+    <string name="settings_live_steps_header">Live Step Updates</string>
+    <string name="settings_live_steps_subtitle">Update notification with live step count and balance. A minimal tracking notification is always shown while step counting is active.</string>
+    <string name="settings_supply_drops_header">Supply Drops</string>
+    <string name="settings_supply_drops_subtitle">Notifications for walking rewards</string>
+    <string name="settings_smart_reminders_header">Smart Reminders</string>
+    <string name="settings_smart_reminders_subtitle">Upgrade proximity reminders</string>
+    <string name="settings_milestone_alerts_header">Milestone Alerts</string>
+    <string name="settings_milestone_alerts_subtitle">Wave records and step milestones</string>
+    <string name="settings_help_header">Help</string>
+    <string name="settings_replay_tutorial">Replay tutorial</string>
+    <string name="settings_replay_tutorial_subtitle">See the first-launch walkthrough again</string>
+    <string name="settings_background_activity_header">Background activity</string>
+    <string name="settings_background_activity_subtitle">Allow step counting to keep running in the background</string>
+    <string name="settings_data_header">Data</string>
+    <string name="settings_privacy_policy">Privacy Policy</string>
+    <string name="settings_privacy_policy_subtitle">How your data is handled</string>
+    <string name="settings_delete_card_header">Delete All Data</string>
+    <string name="settings_delete_card_subtitle">Permanently erase all progress</string>
+    <string name="settings_delete_confirm_title">Delete All Data?</string>
+    <string name="settings_delete_confirm_body">This will permanently delete all your progress, steps history, upgrades, and currency. This cannot be undone.</string>
+    <string name="settings_delete_final_title">Are you absolutely sure?</string>
+    <string name="settings_delete_final_body">All steps, upgrades, cards, weapons, and purchases will be lost forever. The app will restart.</string>
+    <string name="settings_delete_confirm_final">Delete Everything</string>
+    <string name="action_cancel">Cancel</string>
 </resources>
