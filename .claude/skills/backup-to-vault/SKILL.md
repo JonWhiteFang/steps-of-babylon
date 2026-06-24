@@ -24,6 +24,10 @@ already on GitHub and is deliberately NOT copied.
   and cleans up.
 - **Re-run behavior:** mirror mode — each run refreshes docs and regenerates the bundle + generated
   docs. No timestamped snapshots, no cron, not part of the PR doc-sweep.
+- **Shell-session persistence:** run the skill's bash blocks within a single shell session where
+  possible. Each block is otherwise a fresh shell, so variables don't survive between blocks: every
+  block that needs `$VAULT` re-derives it (it's a constant), and `$STAGED_TAR` is persisted to a
+  sidecar file (`/tmp/sob-staged-tar-path`) so later steps can read it back.
 
 ## Step 1 — Preflight (refuse to run if any check fails)
 
@@ -55,6 +59,10 @@ Mirror the full docs set so the vault tracks the repo exactly (files deleted fro
 removed from the vault copy). Copy the two root guides individually, then the whole `docs/` tree.
 
 ```bash
+VAULT="/Users/jpawhite/Documents/kn0ck3r-vault/Claude/steps-of-babylon"
+: "${VAULT:?}"   # guard
+mkdir -p "$VAULT/docs"
+
 # Root guides
 rsync -a CLAUDE.md README.md "$VAULT/docs/"
 
@@ -71,6 +79,8 @@ Note the nested `docs/docs/` is intentional: `$VAULT/docs/` holds the two root g
 After mirroring, capture a count for the summary:
 
 ```bash
+VAULT="/Users/jpawhite/Documents/kn0ck3r-vault/Claude/steps-of-babylon"
+: "${VAULT:?}"   # guard
 find "$VAULT/docs" -type f | wc -l
 ```
 
@@ -80,6 +90,9 @@ Build the list of secret files, skipping any that are absent (e.g. `adi-registra
 not exist). Tar them — with repo-relative paths — into a `0600` temp file OUTSIDE the vault.
 
 ```bash
+VAULT="/Users/jpawhite/Documents/kn0ck3r-vault/Claude/steps-of-babylon"
+: "${VAULT:?}"   # guard
+
 # Candidate secret files (repo-relative). adi-registration is optional.
 CANDIDATES=(
   local.properties
@@ -99,12 +112,19 @@ done
 STAGED_TAR="$(mktemp -t sob-secrets)"
 chmod 600 "$STAGED_TAR"
 tar -cf "$STAGED_TAR" "${PRESENT[@]}"
+echo "$STAGED_TAR" > /tmp/sob-staged-tar-path   # persist for later steps (random mktemp suffix)
 echo "staged tar: $STAGED_TAR ($(wc -c < "$STAGED_TAR") bytes)"
+
+# Resolved paths the developer pastes into the Step 4 `! age` command:
+echo "VAULT=$VAULT"
+echo "STAGED_TAR=$STAGED_TAR"
 ```
 
 Write the manifest into the vault — **filenames only, never contents:**
 
 ```bash
+VAULT="/Users/jpawhite/Documents/kn0ck3r-vault/Claude/steps-of-babylon"
+: "${VAULT:?}"   # guard
 {
   echo "# Secrets bundle manifest"
   echo
@@ -119,7 +139,7 @@ Write the manifest into the vault — **filenames only, never contents:**
 ## Step 4 — Encrypt (DEVELOPER runs this — Claude must NOT type the passphrase)
 
 The passphrase must never enter the transcript. Ask the developer to run this themselves using the
-`! ` prompt prefix (substitute the real `$STAGED_TAR` path printed in Step 3 and the real `$VAULT`):
+`! ` prompt prefix (substitute the `VAULT=` and `STAGED_TAR=` values printed at the end of Step 3):
 
 ```
 ! age -p -o "<VAULT>/secrets.enc" "<STAGED_TAR>"
@@ -132,9 +152,15 @@ restore, and the vault backup is useless without it.
 ## Step 5 — Verify the bundle, then clean up the staged tar
 
 ```bash
+VAULT="/Users/jpawhite/Documents/kn0ck3r-vault/Claude/steps-of-babylon"
+: "${VAULT:?}"   # guard
+STAGED_TAR="$(cat /tmp/sob-staged-tar-path 2>/dev/null)"
+: "${STAGED_TAR:?STAGED_TAR not found — re-run Step 3 in this shell}"
+
 if [ -s "$VAULT/secrets.enc" ]; then
   echo "secrets.enc OK: $(wc -c < "$VAULT/secrets.enc") bytes"
   rm "$STAGED_TAR"           # best-effort cleanup (NOT a secure wipe — see below)
+  rm -f /tmp/sob-staged-tar-path   # clean the sidecar pointer
   echo "staged tar removed"
 else
   echo "secrets.enc MISSING or EMPTY — keeping staged tar at $STAGED_TAR so you can retry. DO NOT delete it."
@@ -151,6 +177,8 @@ Write `$VAULT/SETUP.md` with the fresh-machine restore steps. Capture the live c
 hardcoding it:
 
 ```bash
+VAULT="/Users/jpawhite/Documents/kn0ck3r-vault/Claude/steps-of-babylon"
+: "${VAULT:?}"   # guard
 CLONE_URL="$(git remote get-url origin)"
 cat > "$VAULT/SETUP.md" <<EOF
 # Steps of Babylon — fresh-machine setup & restore
@@ -196,13 +224,15 @@ echo "wrote $VAULT/SETUP.md"
 ## Step 7 — Generate ENV-SNAPSHOT.md (version reference manifest)
 
 ```bash
+VAULT="/Users/jpawhite/Documents/kn0ck3r-vault/Claude/steps-of-babylon"
+: "${VAULT:?}"   # guard
 {
   echo "# Environment snapshot (at last backup)"
   echo
   echo '```'
   echo "OS:    $(sw_vers -productName) $(sw_vers -productVersion)"
   echo "Java:  $(java -version 2>&1 | head -1)"
-  echo "Gradle:$(./gradlew --version 2>/dev/null | grep -i '^Gradle' | head -1)"
+  echo "Gradle: $(./run-gradle.sh --version 2>/dev/null | grep -i '^Gradle' | head -1)"
   echo "age:   $(age --version 2>/dev/null)"
   echo "fd:    $(fd --version 2>/dev/null)"
   echo "sg:    $(sg --version 2>/dev/null)"
