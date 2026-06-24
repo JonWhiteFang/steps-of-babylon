@@ -4,6 +4,37 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### i18n — Compose-screen string extraction, phase 2 (#34, ADR-0014; no behavior change)
+
+**Mechanical string externalization — no behavior change, 1282 JVM tests unchanged** (assertions
+updated in place, none added/removed). Phase 2 of ADR-0014: the hardcoded English UI strings across the
+standard Compose screens (+ their dialogs, shared `presentation/ui/`, two `battle/ui` components, the
+navigation `secondaryTitle` titles, and four non-composable `@StringRes` helpers) move into
+`res/values/strings.xml`, referenced via `stringResource`. Shipped as two stacked PRs.
+
+- **PR1 (#354) — heavy screens.** StoreScreen, SettingsScreen (incl. both delete-confirmation
+  `AlertDialog`s + all `ToggleRow`/card argument strings), CardsScreen (+ pack dialog + `contentDescription`s;
+  `CardsScreenTest` assertions pinned to resources), OnboardingScreen (buttons + three concatenated body
+  strings collapsed into single resources — `can't` byte-fidelity preserved; `OnboardingScreenTest` pinned).
+- **PR2 (#355) — remaining screens + shared/nav surfaces.** Home (+ TierSelector header),
+  CurrencyDashboard (economy), Stats, Labs, Missions, UltimateWeapon + UnclaimedSupplies; shared
+  `presentation/ui/` (ErrorState/SobTopAppBar/Rarity) + `battle/ui/` (UltimateWeaponBar per-slot a11y
+  `contentDescription` hoisted out of the non-composable `semantics{}` lambda, InRoundUpgradeMenu).
+  **Structural:** `Screen.secondaryTitle(route)` now returns `@StringRes Int?` (resolved at the
+  MainActivity call site), keeping `Screen` Android-light — the `by lazy` route lists / deep-link set are
+  untouched (DeepLinkRoutingTest green); `ScreenSecondaryTitleTest` updated. **Non-composable helpers:**
+  `CurrencyType.label()` + `pathLabel()` → `@StringRes Int`; `formatTime()`/`formatTimeAgo()` take a
+  call-site-resolved `String` param for their pure-literal early-return (`Done!`/`Just now`), duration-unit
+  branches deferred to a plurals pass. `CurrencyDisplayTest` migrated to Robolectric `ctx.getString`.
+- **Completeness method:** a final interpolation-aware sweep caught literals the per-task `Text("…")` grep
+  masked (the `"${…} word"` shape — e.g. `"<count> steps"`, `"Tier …"`, `" x1"`, chart legends, `"PS"`) —
+  all extracted. detekt + ktlint green; baseline edits were line-drift / signature re-keys only (no new
+  suppressions).
+- **Deferred to a follow-up (PR3), by design:** ViewModel `_userMessage` strings (Labs/Missions/economy —
+  not `@Composable`, need a resource-ID-emission pattern), `Screen.kt` bottom-nav `label`s (fragile zone),
+  the `SCREEN_LOAD_ERROR` const, the duration-unit suffixes (h/m/s, m/h/d-ago — need plurals), and the
+  `pathValueAtNext`/Canvas/Activity literals.
+
 ### Tests — service/boot-receiver glue coverage (#217, TEST-2, no app change)
 
 **Test-only — no production code/schema change. 1277 → 1282 JVM tests (+5).** Closed the 2026-06-17

@@ -42,7 +42,19 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (`/backup-to-vault` skill built + reviewed; PR open).** New personal, user-invoked skill
+- **CURRENT (#34 i18n Compose-screen extraction phase 2 — BOTH PRs MERGED to `main`).** Executed the
+  reviewed 15-task plan via subagent-driven development: PR1 #354 (heavy screens store/settings/cards/
+  onboarding; merge-commit on `main`) + PR2 #355 (the rest + shared `presentation/ui` + two `battle/ui`
+  components + nav `secondaryTitle` + non-composable `@StringRes` helpers; merged `2b6813d`). Mechanical
+  string externalization to `strings.xml` via `stringResource`, **no behavior change, 1282 JVM unchanged**,
+  detekt + ktlint green. Each task passed a two-stage subagent review (spec → code quality); a final
+  interpolation-aware sweep caught `"${…} word"` literals the per-task grep masked (all extracted).
+  Structural: `Screen.secondaryTitle` → `@StringRes Int?` (fragile-zone `by lazy` lists untouched,
+  DeepLinkRoutingTest green). ADR-0014 amended with the phase-2 note + the `HardcodedText`-is-XML-only
+  correction. **NEXT (PR3 follow-up, by design):** ViewModel `_userMessage` strings (need a resource-ID-
+  emission pattern), `Screen.kt` bottom-nav labels (fragile zone), `SCREEN_LOAD_ERROR` const, duration-unit
+  suffixes (need plurals), `pathValueAtNext`/Canvas/Activity literals; then the first real non-English locale.
+- **Previous objective (DONE — `/backup-to-vault` skill built + reviewed; PR open).** New personal, user-invoked skill
   `.claude/skills/backup-to-vault/SKILL.md` that backs up the repo's gitignored essentials
   (`age`-encrypted: upload keystore + signing passwords + AdMob prod IDs + `run-gradle.sh`) and a full
   `docs/` mirror to the developer's Obsidian vault — for disaster recovery + fresh-machine bootstrap.
@@ -241,7 +253,9 @@ Phase 1 (work down the Readiness Gate so the developer can decide to promote —
 Phase 2 (only AFTER the developer promotes internal → closed):
 6. **(External)** Recruit ≥12 testers; ≥14-day closed soak; apply for production access; staged rollout; tag `v1.0.0`.
 
-Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud save #36, i18n #34, telemetry #23, etc.).
+Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud save #36, telemetry #23, etc.).
+i18n #34: phase 1 (V1X-13) + phase 2 (Compose screens, 2026-06-24) shipped; PR3 (ViewModel messages,
+nav labels, plurals, Canvas/Activity) + the first real non-English locale remain.
 
 ## Do-not-touch / fragile zones
 
@@ -313,8 +327,9 @@ Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud
 - **Onboarding gating + flag location (#24, ADR-0021)** — the first-launch flag is device-local SharedPreferences (`OnboardingPreferences`), intentionally NOT Room (must not sync; reinstall re-shows). In `MainActivity`, `startDestination` reads it **synchronously** via pure `Screen.startDestination()`; **only** the cold-permission request branch is gated behind `onboardingComplete` (service-start/HC-chaining stay ungated — don't widen the gate or step counting breaks for granted users); the deep-link collector gates on live nav state (current route == Onboarding). `Screen.Onboarding` is deliberately **out of** `allScreens`/`argumentFreeRoutes`/`items` (not a public deep-link target) — keep it out (`DeepLinkRoutingTest` pins the exact-13 set). Onboarding is **explain-only — never grant Steps** (preserves the hard invariant). Guarded by `OnboardingRoutingTest` + `OnboardingPreferencesTest` + `OnboardingContentTest` + `OnboardingViewModelTest` + `DeepLinkRoutingTest` navigate_to guards.
 - **Top-bar back affordance is centralized (#161, PR-B1)** — the back/up bar renders via ONE
   `presentation/ui/SobTopAppBar.kt` in MainActivity's **outer** Scaffold `topBar`, gated by the pure
-  `Screen.secondaryTitle(route)` helper (returns the title for the 8 push-nav secondary screens, null
-  for tabs/Battle/Onboarding/unknown). Don't reintroduce per-screen bars or thread an `onNavigateBack`
+  `Screen.secondaryTitle(route)` helper (returns a `@StringRes Int?` bar-title resource for the 8 push-nav
+  secondary screens, null for tabs/Battle/Onboarding/unknown — resolved with `stringResource` at the
+  MainActivity call site since i18n #34/ADR-0014 phase 2). Don't reintroduce per-screen bars or thread an `onNavigateBack`
   param into screens; add/remove a screen's bar by editing `secondaryTitle` in ONE place (pinned by
   `ScreenSecondaryTitleTest`). The bar uses the **default** `TopAppBarDefaults.windowInsets` — the
   topBar self-pads the status bar; do **NOT** set `windowInsets = WindowInsets(0)` (that draws the
