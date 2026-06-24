@@ -1,3 +1,44 @@
+## 2026-06-24 — #34 i18n Compose-screen string extraction, phase 2 (both PRs merged; no behavior change)
+
+- **Goal:** execute the reviewed 15-task plan (`docs/superpowers/plans/2026-06-24-i18n-compose-screen-extraction.md`)
+  to externalize the hardcoded English Compose-screen UI strings into `res/values/strings.xml` via
+  `stringResource`. Phase 2 of ADR-0014; English-only, no behavior change. Run via subagent-driven
+  development (fresh implementer per task + two review gates: spec compliance → code quality).
+- **What changed (28 files, +777/−277; no schema/economy/engine change):**
+  - **PR1 #354 (Tasks 1–5, merge-commit on `main`):** StoreScreen, SettingsScreen (both delete-confirmation
+    `AlertDialog`s + all `ToggleRow`/card arg strings), CardsScreen (+ pack dialog + `contentDescription`s,
+    `CardsScreenTest` pinned to resources), OnboardingScreen (buttons + three concatenated body strings
+    collapsed to single resources, `CardsScreenTest`/`OnboardingScreenTest` pinned).
+  - **PR2 #355 (Tasks 6–15, merge `2b6813d`):** Home (+ TierSelector header), CurrencyDashboard (economy),
+    Stats, Labs, Missions, UltimateWeapon + UnclaimedSupplies; shared `presentation/ui/`
+    (ErrorState/SobTopAppBar/Rarity) + `battle/ui/` (UltimateWeaponBar per-slot a11y `contentDescription`
+    hoisted out of the non-composable `semantics{}` lambda, InRoundUpgradeMenu). **Structural:**
+    `Screen.secondaryTitle` → `@StringRes Int?` resolved at the MainActivity call site (fragile-zone
+    `by lazy` route lists untouched). **Non-composable helpers:** `CurrencyType.label()`/`pathLabel()` →
+    `@StringRes Int`; `formatTime`/`formatTimeAgo` take a call-site-resolved param for their `Done!`/`Just now`
+    early-return. `ScreenSecondaryTitleTest` + `CurrencyDisplayTest` migrated to Robolectric `ctx.getString`.
+- **Process findings (what the review gates caught beyond the plan tables):** the plan's per-task
+  `Text("…")` grep undercounts — it can't match a literal starting with `${` (the `"${…} word"` shape).
+  A final interpolation-aware sweep + per-task spec reviews surfaced and fixed: HomeScreen/Missions
+  `"<count> steps"`, TierSelector `"Tier …"`, supplies `" x1"`, chart legends, economy `"PS"`. Also caught
+  a **detekt MaxLineLength failure** introduced by my own Task-14 deferral-comment request (the comment-amend
+  only re-ran ktlint, not detekt) — fixed by wrapping the comments, re-verified detekt green before PR2.
+  Correctness saves: economy `%2$d` (Int) vs `%2$s` verified; Onboarding `can't` vs the plan's stale `won't`
+  draft (used the real source); all baseline edits confirmed line-drift / signature-rekey only (detekt
+  baseline 256→256, no masking); `Screen` fragile zone byte-identical (DeepLinkRoutingTest 23/0).
+- **Verification:** full JVM suite green **1282 tests, 0 failures** (unchanged — assertions updated in place);
+  `:app:detekt` + `ktlint` exit 0; instrumented `connected` suite green on PR2's CI re-run. Each of the 15
+  tasks + the 2 follow-up commits passed both review gates.
+- **Doc sync (this checkpoint):** CHANGELOG `[Unreleased]` i18n phase-2 section; `source-files.md`
+  (`Screen.secondaryTitle` `@StringRes Int?`, SobTopAppBar `cd_back`); ADR-0014 phase-2 note +
+  `HardcodedText`-is-XML-only correction; STATE.md objective rotated + #161 fragile-zone note updated.
+  CLAUDE.md untouched (test count 1282 unchanged; no stable convention/architecture shift documented there).
+- **What remains / next (PR3 follow-up, by design):** ViewModel `_userMessage` strings (Labs/Missions/economy
+  — not `@Composable`, need a resource-ID-emission pattern), `Screen.kt` bottom-nav `label`s (fragile zone),
+  the `SCREEN_LOAD_ERROR` const, the duration-unit suffixes (h/m/s, m/h/d-ago — need plurals), and the
+  `pathValueAtNext`/Canvas/Activity literals. Then the first real non-English locale (later V1X). All
+  `[Unreleased]` — ships on the next `v*` tag.
+
 ## 2026-06-24 — `/backup-to-vault` skill: encrypted secrets + docs mirror to Obsidian (tooling-only)
 
 - **Goal:** build a personal, user-invoked skill that backs up the repo's gitignored essentials and a
