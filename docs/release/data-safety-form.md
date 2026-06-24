@@ -1,8 +1,11 @@
 # Play Console — Data Safety form (Steps of Babylon)
 
-**Status:** authored 2026-06-18 for #192 (PRIV-1/SEC-1). This is the **manual Play Console action** that
-must accompany the in-app + hosted privacy-policy rewrite. The repo cannot inspect or set the live form —
-a human must apply this in **Play Console → App content → Data safety** and confirm it matches.
+**Status:** authored 2026-06-18 for #192 (PRIV-1/SEC-1); **SUBMITTED in Play Console 2026-06-24.** This was
+the **manual Play Console action** accompanying the in-app + hosted privacy-policy rewrite. The repo cannot
+inspect or set the live form — it was applied by the developer in **Play Console → App content → Data
+safety** (the four AdMob-SDK data types Collected+Shared + "Contains ads"=Yes + deletion URL). This doc is
+retained as the authoritative record of what was declared; re-verify against the live AdMob disclosure page
+if the SDK version changes before the next submission edit.
 
 > **Why this exists:** the v1.0.8 release ships **Google AdMob v25 + UMP v4** (reward ads) and **Google
 > Play Billing v8**. The AdMob SDK auto-merges `com.google.android.gms.permission.AD_ID` +
@@ -70,17 +73,17 @@ the top-level `site/` folder ONLY, so the internal `docs/` tree is never publish
 ### Ads declaration (separate Console question, "App content → Ads")
 - **Does your app contain ads?** **Yes** (reward ads).
 
-## Acceptance checklist (do before promoting internal → closed)
-- [ ] Cross-checked the four declared types against the **live** AdMob Play-Data-Safety page (the published
+## Acceptance checklist (completed at submission, 2026-06-24)
+- [x] Cross-checked the four declared types against the **live** AdMob Play-Data-Safety page (the published
       set can change with the SDK version) — see the link above.
-- [ ] Data Safety form declares all four AdMob SDK types Collected + Shared (Device/other IDs incl. ad ID;
+- [x] Data Safety form declares all four AdMob SDK types Collected + Shared (Device/other IDs incl. ad ID;
       App interactions; Diagnostics; Approximate location), advertising/analytics/fraud purposes; ad-ID
       collection marked Optional.
-- [ ] App's own on-device data (Steps, Health Connect, progress, purchases) NOT declared as collected.
-- [ ] "Contains ads" set to Yes.
-- [ ] Privacy-policy URL points to the hosted page and the page shows the **June 20, 2026** effective date
+- [x] App's own on-device data (Steps, Health Connect, progress, purchases) NOT declared as collected.
+- [x] "Contains ads" set to Yes.
+- [x] Privacy-policy URL points to the hosted page and the page shows the **June 20, 2026** effective date
       with the AdMob/advertising-ID disclosure — incl. the four declared categories (Device/other IDs,
       Approximate location, App interactions, Diagnostics) (GitHub Pages may cache — confirm the live page updated).
-- [ ] Data-deletion question answered Yes with the deletion URL.
-- [ ] Re-read the live hosted policy + the in-app Health Connect rationale on a device against this form —
+- [x] Data-deletion question answered Yes with the deletion URL.
+- [x] Re-read the live hosted policy + the in-app Health Connect rationale on a device against this form —
       no "future versions" / "never shared" wording remains.
