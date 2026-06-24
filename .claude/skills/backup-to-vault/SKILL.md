@@ -48,3 +48,28 @@ VAULT="$VAULT_PARENT/steps-of-babylon"
 - If `age` is missing: STOP and tell the developer to `brew install age`, then re-run.
 - If the vault parent or repo-root check fails: STOP — do not create anything.
 - Only if every check passes: `mkdir -p "$VAULT"` and continue.
+
+## Step 2 — Mirror documentation into the vault
+
+Mirror the full docs set so the vault tracks the repo exactly (files deleted from the repo are
+removed from the vault copy). Copy the two root guides individually, then the whole `docs/` tree.
+
+```bash
+# Root guides
+rsync -a CLAUDE.md README.md "$VAULT/docs/"
+
+# Full docs tree (excludes transient/VCS noise; docs/ has none normally, but be defensive)
+rsync -a --delete \
+  --exclude '.git/' --exclude 'build/' --exclude '.gradle/' \
+  --exclude '.idea/' --exclude '*.log' \
+  docs/ "$VAULT/docs/docs/"
+```
+
+Note the nested `docs/docs/` is intentional: `$VAULT/docs/` holds the two root guides + the mirrored
+`docs/` subtree, keeping the repo's `docs/`-relative paths intact under `$VAULT/docs/docs/`.
+
+After mirroring, capture a count for the summary:
+
+```bash
+find "$VAULT/docs" -type f | wc -l
+```
