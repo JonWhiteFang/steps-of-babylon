@@ -24,3 +24,27 @@ already on GitHub and is deliberately NOT copied.
   and cleans up.
 - **Re-run behavior:** mirror mode — each run refreshes docs and regenerates the bundle + generated
   docs. No timestamped snapshots, no cron, not part of the PR doc-sweep.
+
+## Step 1 — Preflight (refuse to run if any check fails)
+
+Create a TodoWrite item per numbered step below and work them in order.
+
+Run these checks and STOP with a clear message if any fails:
+
+```bash
+# Tooling
+command -v age   || echo "MISSING age — install with: brew install age"
+command -v rsync || echo "MISSING rsync"
+
+# Vault parent must already exist (guards against path typos creating junk dirs)
+VAULT_PARENT="/Users/jpawhite/Documents/kn0ck3r-vault/Claude"
+VAULT="$VAULT_PARENT/steps-of-babylon"
+[ -d "$VAULT_PARENT" ] && echo "vault parent OK: $VAULT_PARENT" || echo "MISSING vault parent: $VAULT_PARENT — STOP"
+
+# Must be run from the repo root (where CLAUDE.md + docs/ live)
+[ -f CLAUDE.md ] && [ -d docs ] && echo "repo root OK" || echo "NOT at repo root — STOP"
+```
+
+- If `age` is missing: STOP and tell the developer to `brew install age`, then re-run.
+- If the vault parent or repo-root check fails: STOP — do not create anything.
+- Only if every check passes: `mkdir -p "$VAULT"` and continue.
