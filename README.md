@@ -39,6 +39,10 @@ The app does NOT request location permissions; GPS / Exploration Mode was droppe
 
 A debug build needs no extra config. **Release builds (`assembleRelease` / `bundleRelease`) require a signing keystore at `release/upload-keystore.jks` plus `keystore.properties` at the project root** — both gitignored. See [docs/release/plan-31-walkthrough.md](docs/release/plan-31-walkthrough.md) for the keystore setup.
 
+### Claude Code (optional)
+
+The repo ships a shared [`.mcp.json`](.mcp.json) that wires up the [context7](https://context7.com) MCP server for live documentation lookup of our version-pinned APIs (Compose, Health Connect, Play Billing, AdMob). The API key is **not** committed — it is read from the `CONTEXT7_API_KEY` env var; `export` it in your shell profile (context7 also works key-less at a lower rate limit, so an unset var degrades gracefully). Claude Code prompts before activating project-scoped MCP servers. The rest of the Claude Code setup (hooks, skills, the memory spine under `docs/agent/`) is documented in [`CLAUDE.md`](CLAUDE.md).
+
 ## Build & Run
 
 ```bash

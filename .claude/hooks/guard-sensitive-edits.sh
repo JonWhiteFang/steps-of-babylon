@@ -13,8 +13,13 @@
 #      Injects a reminder via additionalContext but lets the edit proceed (matches the house style
 #      of prefer-structural-tools.sh).
 #
+#   3. data/local/Migrations.kt → advisory only. The hand-written companion to the app/schemas/**
+#      JSON (tier 1): a Room version bump needs a Migration(N-1, N) here AND a regenerated schema
+#      file, and editing one without the other is the classic schema-drift gate failure. Nudges
+#      toward the /new-migration skill (the full choreography) but lets the edit proceed.
+#
 # Output contract: PreToolUse JSON. For tier 1 we emit permissionDecision=ask with a reason. For
-# tier 2 we emit additionalContext. Everything else prints nothing and exits 0.
+# tiers 2 and 3 we emit additionalContext. Everything else prints nothing and exits 0.
 set -uo pipefail
 
 input="$(cat 2>/dev/null || true)"
@@ -40,6 +45,15 @@ case "$file" in
       jq -cn --arg ctx "Advisory (CLAUDE.md release process): this edits versionCode/versionName in app/build.gradle.kts. Version bumps follow the strict release checklist — prefer the /release skill, which bumps the version, promotes the CHANGELOG, writes release notes, syncs version pointers, and tags v* to trigger release.yml. The edit still proceeds; reconsider if this isn't part of a release." \
         '{hookSpecificOutput:{hookEventName:"PreToolUse",additionalContext:$ctx}}' 2>/dev/null || true
     fi
+    exit 0
+    ;;
+esac
+
+# --- Tier 3: Room migrations (data/local/Migrations.kt) → advisory -----------------------------
+case "$file" in
+  */data/local/Migrations.kt|data/local/Migrations.kt)
+    jq -cn --arg ctx "Advisory (CLAUDE.md fragile zone): this edits the Room Migrations.kt. A migration is a multi-step, schema-drift-gated change — the hand-written Migration(N-1, N) here must land WITH a bumped AppDatabase version and a regenerated app/schemas/N.json, or CI's schema-drift gate fails. Prefer the /new-migration skill, which walks the full ordered choreography (edit @Entity → bump version → author + register the migration → rebuild to regenerate the schema JSON → run the drift gate → extend AtomicDaoConcurrencyTest if a guarded DAO changed → update docs/database-schema.md). The edit still proceeds." \
+      '{hookSpecificOutput:{hookEventName:"PreToolUse",additionalContext:$ctx}}' 2>/dev/null || true
     exit 0
     ;;
 esac
