@@ -1,3 +1,47 @@
+## 2026-06-24 — #34 i18n phase-2 spec + plan authored & reviewed (docs-only, MERGED; impl deferred)
+
+- **Goal:** pick up the next backlog item after the #217 merge. Chose **#34 i18n string
+  externalization**. Per CLAUDE.md (feature-shaped work), ran brainstorming → spec → Adversarial Review
+  Gate → plan → Adversarial Review Gate. Developer chose: multi-PR-by-cluster shape, ultracode ON for the
+  reviews, Compose-screens-only scope (defer Canvas/Activity to a PR3 follow-up), migrate non-composable
+  string helpers via `@StringRes` now. Then: **push + merge the reviewed artifacts; implement later.**
+- **Pre-work — STATE reconcile:** #217 (PR #348, `0d09ef2`) had merged but STATE.md still marked it
+  IN FLIGHT. Reconciled STATE to 1282 JVM + demoted #217 to done (commit `a5b49fd`). CHANGELOG/RUN_LOG
+  already carried #217; CLAUDE.md already read 1282.
+- **What changed (docs-only — no app/Kotlin/schema/test change):**
+  - **Spec** `docs/superpowers/specs/2026-06-24-i18n-compose-screen-extraction-design.md` — phase 2 of
+    ADR-0014. Scope: hardcoded Compose `Text`/`contentDescription` (+ dialogs, shared `presentation/ui`,
+    `UltimateWeaponBar`/`InRoundUpgradeMenu` Compose components, nav `secondaryTitle` titles). Defers
+    `BattleRenderer`/`WaveAnnouncement` Canvas text + `HealthConnectPermissionActivity` to PR3.
+  - **Plan** `docs/superpowers/plans/2026-06-24-i18n-compose-screen-extraction.md` — **15 tasks, 2 impl
+    PRs** (PR1 Tasks 1–5; PR2 Tasks 6–15, incl. Task 14 non-composable `@StringRes` helper conversions,
+    Task 15 verify+PR). Per-file `stringResource` replacement tables + exact `strings.xml` keys + a
+    Methodology grep gate.
+- **Adversarial Review Gate (multi-agent `Workflow`, ultracode):**
+  - **Spec:** 30 findings, 25 surviving, 5 refuted. Two criticals corrected: (a) `HardcodedText` lint is
+    **already enabled** (`build.gradle.kts:225`) and **XML-only** — the original "defer the flip" premise
+    was false on both counts; (b) `UltimateWeaponBar.kt` is **pure Compose** (no Canvas) — wrongly
+    deferred. Also surfaced the missed `Screen.secondaryTitle` 8 TopAppBar titles + dialog labels +
+    format-arg rule. Amended (`babb1e1`).
+  - **Plan:** 18 findings, 17 surviving, 1 refuted. **CRITICAL** `economy_steps_to_ps` format-arg
+    (`%2$d` not `%2$s` — `ps` is `Int`). **Systemic:** the literal inventory grepped only `Text("…")` and
+    undercounted ~40 strings passed as helper-composable args (`ToggleRow`/`CurrencyItem`/`BalanceCard`/
+    `StatRow`/`MenuButton`/`EmptyState`), dialog bodies, conditional/empty-state text → added a
+    Methodology section (comprehensive per-file grep is the completeness gate) + expanded every task
+    table + new Task 14. UltimateWeaponBar `val` hoist clarified (inside the `forEach`, per-slot).
+    Amended (`e1d141c`).
+- **Verification:** docs-only — no build/test run needed. **PR #349** merged to `main` (merge `52c1cec`);
+  CI docs/tooling fast-path correctly skipped the build gate (the `changes` classifier ran green). Branch
+  deleted. 1282 JVM unchanged.
+- **Doc sync:** STATE.md (current objective rotated to "#34 spec+plan merged, impl deferred"). No other
+  current-state doc invalidated (no code/schema/dep/test change → CLAUDE.md/CHANGELOG/source-files/
+  structure/schema/README untouched). No new ADR (the i18n decisions live in ADR-0014; the plan records
+  the gate corrections).
+- **What remains / next:** **execute the plan when picked up** — PR1 (Tasks 1–5), then PR2 (Tasks 6–15);
+  then a PR3 follow-up for the deferred Canvas/Activity surfaces closes #34. Confirm execution mode
+  (subagent-driven vs inline) at start. Untracked `docs/superpowers/specs/2026-06-24-backup-to-vault-skill-design.md`
+  is unrelated to this work and was intentionally NOT included.
+
 ## 2026-06-24 — #217 service/boot-receiver test coverage (TEST-2; test-only, `[Unreleased]`)
 
 - **Goal:** close the 2026-06-17 complete-app-review's TEST-2 finding — `StepCounterService` and
