@@ -7,6 +7,8 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.core.app.ApplicationProvider
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.data.onboarding.OnboardingPreferences
 import com.whitefang.stepsofbabylon.data.sensor.BatteryOptimizationStatus
 import com.whitefang.stepsofbabylon.data.sensor.StepSensorDataSource
@@ -40,6 +42,7 @@ class OnboardingScreenTest {
     @get:Rule
     val composeRule = createComposeRule()
 
+    private val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
     private val prefs = mock<OnboardingPreferences>()
     private val sensor = mock<StepSensorDataSource>()
     private val battery = mock<BatteryOptimizationStatus>()
@@ -90,7 +93,7 @@ class OnboardingScreenTest {
         }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("Skip").performClick()
+        composeRule.onNodeWithText(ctx.getString(R.string.onboarding_skip)).performClick()
         composeRule.waitForIdle()
 
         // Skip navigates to the last slide → the dots row now reports the final page; onFinished untouched.
@@ -115,12 +118,17 @@ class OnboardingScreenTest {
             )
         }
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Skip").performClick() // jump to the final (permission) slide
+        // jump to the final (permission) slide
+        composeRule.onNodeWithText(ctx.getString(R.string.onboarding_skip)).performClick()
         composeRule.waitForIdle()
 
         // A Button merges its child Text, so the label matches both the button node and the text node;
         // assert the first match is displayed.
-        composeRule.onAllNodesWithText("Enable step counting").onFirst().assertIsDisplayed()
+        composeRule
+            .onAllNodesWithText(
+                ctx.getString(R.string.onboarding_enable_step_counting),
+            ).onFirst()
+            .assertIsDisplayed()
     }
 
     @Test
@@ -141,9 +149,9 @@ class OnboardingScreenTest {
             )
         }
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Skip").performClick()
+        composeRule.onNodeWithText(ctx.getString(R.string.onboarding_skip)).performClick()
         composeRule.waitForIdle()
 
-        composeRule.onAllNodesWithText("Start playing").onFirst().assertIsDisplayed()
+        composeRule.onAllNodesWithText(ctx.getString(R.string.onboarding_start_playing)).onFirst().assertIsDisplayed()
     }
 }
