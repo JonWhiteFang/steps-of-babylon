@@ -5,9 +5,9 @@ agp = "9.2.1"
 # AND KSP #2964 (Kotlin 2.4's module-name change breaks code-gen, no fix released). Note: the
 # `kotlin-compose` plugin (org.jetbrains.kotlin.plugin.compose) tracks this ref, so it stays 2.3.0 too.
 # Revisit when a Dagger release > 2.59.2 ships AND KSP #2964 is fixed+released. (Dependabot #290 wave.)
-kotlin = "2.3.0"
+kotlin = "2.4.0"
 ksp = "2.3.9"
-hilt = "2.59.2"
+hilt = "2.60"
 room = "2.8.4"
 composeBom = "2026.06.00"
 lifecycle = "2.11.0"
@@ -30,7 +30,7 @@ healthConnect = "1.1.0"
 billingPlay = "9.1.0"
 playServicesAds = "25.4.0"
 userMessagingPlatform = "4.0.0"
-junit5 = "6.1.0"
+junit5 = "6.1.1"
 # #257: pins the coroutines RUNTIME (was floating transitively at 1.9.0 via Room-ktx/Lifecycle/Hilt
 # while tests ran 1.10.1 — a real runtime/test skew). One version ref aligns -android (runtime) and
 # -test so a bump moves both together. Keeps the version-catalog-as-single-source convention.
