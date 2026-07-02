@@ -2,6 +2,7 @@ package com.whitefang.stepsofbabylon.data.billing
 
 import android.content.Context
 import android.util.Log
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.data.billing.internal.ActivityProvider
 import com.whitefang.stepsofbabylon.data.billing.internal.BillingClientAdapter
 import com.whitefang.stepsofbabylon.data.billing.internal.PurchaseVerifier
@@ -94,7 +95,9 @@ internal class BillingManagerImpl
 
                 val activity =
                     activityProvider.current()
-                        ?: return@withLock PurchaseResult.Error("No activity available for purchase")
+                        ?: return@withLock PurchaseResult.Error(
+                            context.getString(R.string.billing_error_no_activity),
+                        )
 
                 val productType = product.sdkProductType()
 
@@ -105,8 +108,10 @@ internal class BillingManagerImpl
                         is QueryProductDetailsResult.Success -> {
                             detailsResult.products.firstOrNull()
                                 ?: return@withLock PurchaseResult.Error(
-                                    "Product ${product.skuId()} not available. " +
-                                        "(Play Console SKU may be missing or not yet released.)",
+                                    context.getString(
+                                        R.string.billing_error_product_unavailable,
+                                        product.skuId(),
+                                    ),
                                 )
                         }
 
@@ -129,8 +134,13 @@ internal class BillingManagerImpl
 
                     is StartPurchaseResult.NotCompleted -> {
                         when (launch.result) {
-                            is SdkBillingResult.UserCanceled -> PurchaseResult.Error("Purchase cancelled")
-                            else -> PurchaseResult.Error(launch.result.toUserMessage())
+                            is SdkBillingResult.UserCanceled -> {
+                                PurchaseResult.Error(context.getString(R.string.billing_error_cancelled))
+                            }
+
+                            else -> {
+                                PurchaseResult.Error(launch.result.toUserMessage())
+                            }
                         }
                     }
                 }
@@ -209,7 +219,7 @@ internal class BillingManagerImpl
                         granted = false,
                     ),
                 )
-                return PurchaseResult.Error("Purchase pending — complete payment to receive your items")
+                return PurchaseResult.Error(context.getString(R.string.billing_error_pending))
             }
 
             // #124: verify Google's RSA signature over the purchase payload AND that the signed
@@ -225,7 +235,7 @@ internal class BillingManagerImpl
                 )
             ) {
                 Log.w(TAG, "Rejecting purchase ${purchase.purchaseToken}: signature verification failed.")
-                return PurchaseResult.Error("Purchase could not be verified")
+                return PurchaseResult.Error(context.getString(R.string.billing_error_unverified))
             }
 
             // PURCHASED or UNSPECIFIED: grant atomically (upsert + wallet credit + granted flag).
@@ -439,16 +449,16 @@ internal class BillingManagerImpl
 
         private fun SdkBillingResult.toUserMessage(): String =
             when (this) {
-                is SdkBillingResult.Ok -> "OK"
-                is SdkBillingResult.UserCanceled -> "Purchase cancelled"
-                is SdkBillingResult.ServiceDisconnected -> "Billing service unavailable. Try again shortly."
-                is SdkBillingResult.ServiceUnavailable -> "Billing service unavailable. Try again shortly."
-                is SdkBillingResult.BillingUnavailable -> "Google Play billing is not available on this device."
-                is SdkBillingResult.ItemUnavailable -> "This product is not available right now."
-                is SdkBillingResult.ItemAlreadyOwned -> "You already own this item."
-                is SdkBillingResult.DeveloperError -> "Purchase failed (configuration error)."
-                is SdkBillingResult.NetworkError -> "Network error. Check your connection and try again."
-                is SdkBillingResult.Other -> "Purchase failed (code $responseCode)."
+                is SdkBillingResult.Ok -> context.getString(R.string.billing_error_ok)
+                is SdkBillingResult.UserCanceled -> context.getString(R.string.billing_error_cancelled)
+                is SdkBillingResult.ServiceDisconnected -> context.getString(R.string.billing_error_service_unavailable)
+                is SdkBillingResult.ServiceUnavailable -> context.getString(R.string.billing_error_service_unavailable)
+                is SdkBillingResult.BillingUnavailable -> context.getString(R.string.billing_error_billing_unavailable)
+                is SdkBillingResult.ItemUnavailable -> context.getString(R.string.billing_error_item_unavailable)
+                is SdkBillingResult.ItemAlreadyOwned -> context.getString(R.string.billing_error_item_owned)
+                is SdkBillingResult.DeveloperError -> context.getString(R.string.billing_error_developer)
+                is SdkBillingResult.NetworkError -> context.getString(R.string.billing_error_network)
+                is SdkBillingResult.Other -> context.getString(R.string.billing_error_other, responseCode)
             }
 
         companion object {

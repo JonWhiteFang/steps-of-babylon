@@ -389,4 +389,19 @@
     <string name="msg_reward_unavailable">Reward temporarily unavailable (cosmetic “%1$s” is being finalised). Try again after the next update.</string>
     <string name="msg_ad_cancelled">Ad cancelled. Try again.</string>
     <string name="msg_ad_failed">Ad failed to load. Try again later.</string>
+
+    <!-- i18n #34 phase 3: billing error messages (category A′) -->
+    <string name="billing_error_no_activity">No activity available for purchase</string>
+    <string name="billing_error_product_unavailable">Product %1$s not available. (Play Console SKU may be missing or not yet released.)</string>
+    <string name="billing_error_cancelled">Purchase cancelled</string>
+    <string name="billing_error_pending">Purchase pending — complete payment to receive your items</string>
+    <string name="billing_error_unverified">Purchase could not be verified</string>
+    <string name="billing_error_service_unavailable">Billing service unavailable. Try again shortly.</string>
+    <string name="billing_error_billing_unavailable">Google Play billing is not available on this device.</string>
+    <string name="billing_error_item_unavailable">This product is not available right now.</string>
+    <string name="billing_error_item_owned">You already own this item.</string>
+    <string name="billing_error_developer">Purchase failed (configuration error).</string>
+    <string name="billing_error_network">Network error. Check your connection and try again.</string>
+    <string name="billing_error_other">Purchase failed (code %1$d).</string>
+    <string name="billing_error_ok">OK</string>
 </resources>
