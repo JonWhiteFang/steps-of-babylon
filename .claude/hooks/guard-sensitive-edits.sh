@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse(Edit|Write) — guard documented fragile/process-controlled files.
 #
-# Two tiers, both fail-open (a hook error never blocks a legit edit; jq missing → no-op exit 0):
+# Four tiers, all fail-open (a hook error never blocks a legit edit; jq missing → no-op exit 0):
 #
 #   1. app/schemas/**  → permissionDecision "ask".  Room schema JSON is CI schema-drift-gated and
 #      migrations are a documented fragile zone. Schema files SHOULD only change via a real Room
@@ -18,8 +18,13 @@
 #      file, and editing one without the other is the classic schema-drift gate failure. Nudges
 #      toward the /new-migration skill (the full choreography) but lets the edit proceed.
 #
+#   4. presentation/battle/engine|effects/**, data/local/*Dao.kt, data/repository/PlayerRepositoryImpl.kt
+#      → advisory only (#372, ai-2). The lock-order / collaborators-hold-no-monitor invariant and the
+#      currency-move surface are the #118/#191 bug classes; the concurrency-reviewer subagent is a
+#      MANDATORY review lane on these diffs (CLAUDE.md Adversarial Review Gate). Nudges but proceeds.
+#
 # Output contract: PreToolUse JSON. For tier 1 we emit permissionDecision=ask with a reason. For
-# tiers 2 and 3 we emit additionalContext. Everything else prints nothing and exits 0.
+# tiers 2, 3 and 4 we emit additionalContext. Everything else prints nothing and exits 0.
 set -uo pipefail
 
 input="$(cat 2>/dev/null || true)"
@@ -53,6 +58,20 @@ esac
 case "$file" in
   */data/local/Migrations.kt|data/local/Migrations.kt)
     jq -cn --arg ctx "Advisory (CLAUDE.md fragile zone): this edits the Room Migrations.kt. A migration is a multi-step, schema-drift-gated change — the hand-written Migration(N-1, N) here must land WITH a bumped AppDatabase version and a regenerated app/schemas/N.json, or CI's schema-drift gate fails. Prefer the /new-migration skill, which walks the full ordered choreography (edit @Entity → bump version → author + register the migration → rebuild to regenerate the schema JSON → run the drift gate → extend AtomicDaoConcurrencyTest if a guarded DAO changed → update docs/database-schema.md). The edit still proceeds." \
+      '{hookSpecificOutput:{hookEventName:"PreToolUse",additionalContext:$ctx}}' 2>/dev/null || true
+    exit 0
+    ;;
+esac
+
+# --- Tier 4: battle-engine / effects / DAO / currency surface → advisory (#372, ai-2) ----------
+# The lock-order invariant (entitiesLock → effectsLock; collaborators hold no monitor) and the
+# currency-move surface are the two bug classes the project was burned by (#118/#191) and the
+# ones an agent is most likely to trip. The concurrency-reviewer subagent is MANDATORY on these
+# diffs (CLAUDE.md Adversarial Review Gate). Advisory nudge (matches Tiers 2/3 house style) — the
+# edit proceeds, but flags that the mandatory concurrency-review lane applies.
+case "$file" in
+  */presentation/battle/engine/*|*/presentation/battle/effects/*|*/data/local/*Dao.kt|*/data/repository/PlayerRepositoryImpl.kt)
+    jq -cn --arg ctx "Advisory (#372 / CLAUDE.md Adversarial Review Gate): this edits the battle-engine/effects, a Room DAO, or the currency-moving PlayerRepositoryImpl. The concurrency-reviewer subagent is a MANDATORY review lane for this diff (thread-safety: entitiesLock→effectsLock order, collaborators hold no monitor; atomic guarded-deduct economy). Run it before committing. The edit proceeds." \
       '{hookSpecificOutput:{hookEventName:"PreToolUse",additionalContext:$ctx}}' 2>/dev/null || true
     exit 0
     ;;

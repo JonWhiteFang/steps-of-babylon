@@ -4,6 +4,20 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Testing / AI-safety — invariant tripwires (#371, #372) — Phase-1 tooling PR-B
+
+- **#371 (ai-3).** New `architecture/StepCreditAllowlistTest` machine-enforces "Steps are never generated
+  in-game" (ADR-0003) across the FULL `PlayerProfileDao` `currentStepBalance` write surface: `.addSteps(`
+  callers, positive `.adjustStepBalance(` sites, the zero-caller absolute `updateStepBalance` setter,
+  `PlayerProfileEntity` construction, and a DAO write-surface count pin — plus a baked negative fixture
+  proving the matchers go red on a rogue site. (+6 tests.)
+- **#372 (ai-2).** New `architecture/BattleEngineLockScanTest` asserts battle-engine collaborators
+  ({UWController, CombatResolver, BuffTickers, BattleRenderer}) hold no monitor of their own
+  (comment-stripped, excludes `GameEngine`/`BattleHosts`). (+1 test.) Made the `concurrency-reviewer`
+  lane mandatory via a `guard-sensitive-edits.sh` tier-4 PreToolUse advisory (deterministic, fires
+  regardless of ultracode state) + CLAUDE.md Adversarial-Review-Gate wiring; the detekt nested-lock rule
+  is deferred (ADR-0038). **Headline count 1294 → 1301 JVM tests** (full suite green, 0 failures).
+
 ### CI/CD — release-variant build + secret scanning (#370, #376) — Phase-1 tooling PR-A
 
 - **#370 (cicd-1, severity:major).** The minified `release`/R8 variant is now assembled in the PR

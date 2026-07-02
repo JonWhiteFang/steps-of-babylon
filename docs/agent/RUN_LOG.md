@@ -10723,3 +10723,32 @@ After the fix, tests pass on first try and assembleDebug is clean.
 - **Remaining:** push PR-A + open the PR + tick #370/#376 on #389; then PR-B (#371/#372, incl. ADR-0038)
   and PR-C (#374/#380). Test-count math for PR-B: StepCreditAllowlistTest = 6 @Tests + BattleEngineLockScanTest
   = 1 → +7 (headline 1294 → 1301); PR-C CrashReportIntentTest → 1302.
+
+## 2026-07-02 — Phase-1 tooling PR-A MERGED + PR-B implemented (AI-safety tripwires)
+
+- **PR-A (#370 + #376) MERGED** — PR #393 (merge `7fe241f`). CI green incl. the new `assembleRelease`
+  step (R8 ran in CI, proving #370) + the fixed gitleaks gate. Two mid-PR corrections worth recording:
+  - **gitleaks false positive:** the `play-license-key`/keystore-password rules fired on `CHANGELOG.md`
+    prose that merely NAMES `play.licenseKey=` (the #370 description) → CI gitleaks job failed. Fixed by
+    path-scoping the two text rules to `.*\.properties$` + allowlisting CHANGELOG/README; verified with
+    gitleaks 8.30.1 against positive (`.properties` secret + keystore still caught) and negative
+    (CHANGELOG/README clean) fixtures + the CI-equivalent git-history scan. `keystore.properties` +
+    `release/upload-keystore.jks` confirmed gitignored (never in history).
+  - **A5 (`secret_scanning_non_provider_patterns`):** the `gh api PATCH` is a **silent no-op** on this
+    personal-account repo (200, value stays `disabled`). Recorded in `security-model.md` as a manual
+    Settings step; the initial A6 doc wrongly claimed it enabled — corrected before the PR (reviewing the
+    subagent's output against reality caught it).
+  - Merge required resolving 2 stale gitleaks review-threads (repo has `required_conversation_resolution`).
+- **PR-B (#371 + #372) implemented** (branch `test/phase1-ai-safety-tripwires`, subagent-driven):
+  - **#371** `architecture/StepCreditAllowlistTest` (6 @Test) — pins the full `PlayerProfileDao`
+    `currentStepBalance` write surface (`.addSteps(`, positive `.adjustStepBalance(`, zero-caller
+    `updateStepBalance`, `PlayerProfileEntity(` construction, DAO write-count==3) + a baked negative
+    fixture. All enforced sets verified == HEAD before committing. Anti-vacuity: the negative fixture
+    proves each matcher fires on a rogue site (a live-tree rogue injection instead broke compilation —
+    inconclusive that way, but the fixture is the real guarantee).
+  - **#372** `architecture/BattleEngineLockScanTest` (1 @Test) — collaborators hold no monitor;
+    comment-stripped, excludes GameEngine/BattleHosts. Plus `guard-sensitive-edits.sh` tier-4 advisory
+    (deterministic, ultracode-independent), CLAUDE.md mandatory-lane wiring, ADR-0038 (3-layer enforcement;
+    detekt nested-lock rule deferred). Fixed the hook's stale "Two tiers" header → four.
+  - Full JVM suite = **1301 tests, 0 failures** (= plan's +7 prediction; CLAUDE.md headline bumped).
+- **Remaining:** push+PR+merge PR-B (tick #371/#372 on #389), then PR-C (#374 crash-report + #380 runbook).
