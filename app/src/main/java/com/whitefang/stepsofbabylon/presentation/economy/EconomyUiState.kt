@@ -12,9 +12,14 @@ data class EconomyUiState(
     val todayGemsClaimed: Boolean = false,
     val isLoading: Boolean = true,
     @StringRes val error: Int? = null,
-    /** V1X-16 / i18n #34: raw time remaining in current week (composed at the UI boundary, e.g. "3d 14h"). */
-    val weeklyResetDays: Int = 0,
-    val weeklyResetHours: Int = 0,
+    /**
+     * V1X-16 / i18n #34: raw time remaining in current week (composed at the UI boundary, e.g. "3d 14h").
+     * `null` until the first refresh computes it — the row is hidden while null, matching the pre-i18n
+     * behaviour that hid on a blank formatted string. A computed `0d 0h` (final hour before reset) is
+     * non-null, so it still renders — do NOT collapse this back to a `> 0` guard (would hide a real 0d 0h).
+     */
+    val weeklyResetDays: Int? = null,
+    val weeklyResetHours: Int? = null,
     /** V1X-16: last 4 weeks history, newest first. Empty if no past data. */
     val weeklyHistory: List<WeeklyResult> = emptyList(),
 )

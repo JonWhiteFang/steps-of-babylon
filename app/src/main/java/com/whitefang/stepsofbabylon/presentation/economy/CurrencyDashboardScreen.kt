@@ -96,9 +96,14 @@ fun CurrencyDashboardScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
-                    // i18n #34: was guarded on a non-blank formatted string; the raw-int equivalent
-                    // hides the row only in the unpopulated (pre-refresh) state, same as before.
-                    if (state.weeklyResetDays > 0 || state.weeklyResetHours > 0) {
+                    // i18n #34: was guarded on a non-blank formatted string, which hid the row ONLY in
+                    // the unpopulated (pre-refresh) state — a computed "0d 0h" (final hour before reset)
+                    // still showed. The raw-int fields are null until computed, so a null-guard is the
+                    // exact equivalent: shown once populated, even at 0d 0h. (A `> 0` guard would wrongly
+                    // hide the legitimate 0d 0h row — see review.)
+                    val resetDays = state.weeklyResetDays
+                    val resetHours = state.weeklyResetHours
+                    if (resetDays != null && resetHours != null) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.Schedule,
@@ -110,8 +115,8 @@ fun CurrencyDashboardScreen(
                             Text(
                                 stringResource(
                                     R.string.economy_time_remaining,
-                                    state.weeklyResetDays,
-                                    state.weeklyResetHours,
+                                    resetDays,
+                                    resetHours,
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,

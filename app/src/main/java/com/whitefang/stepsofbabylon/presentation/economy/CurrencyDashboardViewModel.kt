@@ -39,8 +39,8 @@ class CurrencyDashboardViewModel
             val weeklyClaimedTier: Int = 0,
             val todayPsClaimed: Boolean = false,
             val todayGemsClaimed: Boolean = false,
-            val weeklyResetDays: Int = 0,
-            val weeklyResetHours: Int = 0,
+            val weeklyResetDays: Int? = null,
+            val weeklyResetHours: Int? = null,
             val weeklyHistory: List<WeeklyResult> = emptyList(),
         )
 
