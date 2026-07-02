@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.labs
 
 import com.whitefang.stepsofbabylon.domain.model.ResearchType
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 
 data class ResearchDisplayInfo(
     val type: ResearchType,
@@ -27,5 +28,5 @@ data class LabsUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val isProcessing: Boolean = false,
-    val userMessage: String? = null,
+    val userMessage: UiMessage? = null,
 )

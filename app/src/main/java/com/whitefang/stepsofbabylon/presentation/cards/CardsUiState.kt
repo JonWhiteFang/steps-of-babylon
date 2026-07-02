@@ -3,6 +3,7 @@ package com.whitefang.stepsofbabylon.presentation.cards
 import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.domain.usecase.CardResult
 import com.whitefang.stepsofbabylon.domain.usecase.PackTier
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 
 data class CardDisplayInfo(
     val id: Int,
@@ -27,7 +28,7 @@ data class CardsUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val isProcessing: Boolean = false,
-    val userMessage: String? = null,
+    val userMessage: UiMessage? = null,
 )
 
 data class PackOption(

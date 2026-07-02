@@ -8,6 +8,7 @@ import com.whitefang.stepsofbabylon.domain.repository.BillingManager
 import com.whitefang.stepsofbabylon.domain.repository.CosmeticRepository
 import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +31,7 @@ class StoreViewModel
         private val cosmeticRepository: CosmeticRepository,
     ) : ViewModel() {
         private val _purchasing = MutableStateFlow(false)
-        private val _userMessage = MutableStateFlow<String?>(null)
+        private val _userMessage = MutableStateFlow<UiMessage?>(null)
 
         /**
          * Live formatted prices from Play Billing's `ProductDetails.priceDisplay`. Populated
@@ -132,7 +133,7 @@ class StoreViewModel
                 _purchasing.value = true
                 try {
                     val result = billingManager.purchase(product)
-                    if (result is PurchaseResult.Error) _userMessage.value = result.message
+                    if (result is PurchaseResult.Error) _userMessage.value = UiMessage.Raw(result.message)
                 } finally {
                     _purchasing.value = false
                 }
@@ -150,7 +151,7 @@ class StoreViewModel
                     if (playerRepository.spendGems(cosmetic.priceGems)) {
                         cosmeticRepository.purchase(cosmeticId)
                     } else {
-                        _userMessage.value = "Not enough Gems"
+                        _userMessage.value = UiMessage.NotEnoughGems
                     }
                 } finally {
                     _purchasing.value = false

@@ -17,6 +17,7 @@ import com.whitefang.stepsofbabylon.domain.usecase.PurchaseUpgrade
 import com.whitefang.stepsofbabylon.domain.usecase.QuickInvest
 import com.whitefang.stepsofbabylon.domain.usecase.ResolveStats
 import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,7 +53,7 @@ class WorkshopViewModel
         private val selectedCategory: StateFlow<UpgradeCategory> =
             savedStateHandle.getStateFlow(KEY_SELECTED_CATEGORY, UpgradeCategory.ATTACK)
         private val _processing = MutableStateFlow(false)
-        private val _userMessage = MutableStateFlow<String?>(null)
+        private val _userMessage = MutableStateFlow<UiMessage?>(null)
 
         // #194: bump to re-subscribe the data flow after a load error (retry).
         private val _retry = MutableStateFlow(0)
@@ -134,7 +135,7 @@ class WorkshopViewModel
                     val level = allUpgrades[type] ?: 0
                     val maxLevel = type.config.maxLevel
                     if (maxLevel != null && level >= maxLevel) {
-                        _userMessage.value = "Already at max level"
+                        _userMessage.value = UiMessage.AlreadyMaxLevel
                         return@launch
                     }
                     val wallet = playerRepository.observeWallet().first()
@@ -156,7 +157,7 @@ class WorkshopViewModel
                         } catch (_: Exception) {
                         }
                     } else {
-                        _userMessage.value = "Not enough Steps"
+                        _userMessage.value = UiMessage.NotEnoughSteps
                     }
                 } finally {
                     _processing.value = false
@@ -172,7 +173,7 @@ class WorkshopViewModel
                     val wallet = playerRepository.observeWallet().first()
                     val target = quickInvest(allUpgrades, wallet)
                     if (target == null) {
-                        _userMessage.value = "No affordable upgrades"
+                        _userMessage.value = UiMessage.NoAffordableUpgrades
                         return@launch
                     }
                     val level = allUpgrades[target] ?: 0

@@ -4,6 +4,7 @@ import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.usecase.UpgradeEffectReadout
 import com.whitefang.stepsofbabylon.domain.usecase.UpgradeValue
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 
 data class UpgradeDisplayInfo(
     val type: UpgradeType,
@@ -27,5 +28,5 @@ data class WorkshopUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val isProcessing: Boolean = false,
-    val userMessage: String? = null,
+    val userMessage: UiMessage? = null,
 )

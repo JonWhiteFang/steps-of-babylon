@@ -2,6 +2,7 @@ package com.whitefang.stepsofbabylon.presentation.store
 
 import com.whitefang.stepsofbabylon.domain.model.BillingProduct
 import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 
 data class StoreUiState(
     val gems: Long = 0,
@@ -13,7 +14,7 @@ data class StoreUiState(
     val isPurchasing: Boolean = false,
     val isLoading: Boolean = true,
     val error: String? = null,
-    val userMessage: String? = null,
+    val userMessage: UiMessage? = null,
     /**
      * Live formatted prices from Play Billing per SKU (e.g. `BillingProduct.GEM_PACK_SMALL
      * → "$0.99"`, locale-formatted by Play Billing). Populated by [StoreViewModel.refreshPriceDisplays].
