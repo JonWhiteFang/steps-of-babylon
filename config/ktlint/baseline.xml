@@ -187,17 +187,17 @@
         <error line="70" column="21" source="standard:backing-property-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop/UpgradeCard.kt">
-        <error line="36" column="5" source="standard:function-naming" />
-        <error line="163" column="13" source="standard:function-naming" />
-        <error line="196" column="13" source="standard:function-naming" />
+        <error line="38" column="5" source="standard:function-naming" />
+        <error line="264" column="13" source="standard:function-naming" />
+        <error line="297" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop/WorkshopScreen.kt">
         <error line="41" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop/WorkshopViewModel.kt">
-        <error line="55" column="21" source="standard:backing-property-naming" />
-        <error line="56" column="21" source="standard:backing-property-naming" />
-        <error line="59" column="21" source="standard:backing-property-naming" />
+        <error line="53" column="21" source="standard:backing-property-naming" />
+        <error line="54" column="21" source="standard:backing-property-naming" />
+        <error line="57" column="21" source="standard:backing-property-naming" />
     </file>
     <file name="app/src/test/java/com/whitefang/stepsofbabylon/balance/CardBalanceTest.kt">
         <error line="8" column="1" source="standard:no-wildcard-imports" />

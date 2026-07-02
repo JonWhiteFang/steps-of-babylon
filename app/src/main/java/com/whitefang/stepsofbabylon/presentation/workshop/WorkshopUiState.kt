@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.workshop
 
 import androidx.annotation.StringRes
+import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.usecase.UpgradeEffectReadout
@@ -13,7 +14,10 @@ data class UpgradeDisplayInfo(
     val cost: Long,
     val isMaxed: Boolean,
     val canAfford: Boolean,
-    val statValue: String = "",
+    // i18n #34 phase 3 (D-workshop): carry the pure-domain ResolvedStats so the per-type stat-value
+    // unit label is resolved via @StringRes at the UpgradeCard render boundary (statValueLabel),
+    // mirroring the UW pathValueAtNext extraction. Was `statValue: String` (hardcoded English units).
+    val stats: ResolvedStats,
     // #29 decision support. `nowNext` = workshop-dimension Now→Next preview (null only if it could not
     // be computed). `value` = combat-power value/Best-Buy data; null for non-combat upgrades (Δpower ≤ 0)
     // → the card renders no bar/badge for them.

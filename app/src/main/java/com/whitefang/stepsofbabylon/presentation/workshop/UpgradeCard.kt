@@ -22,6 +22,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whitefang.stepsofbabylon.R
+import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
+import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.presentation.ui.descriptionRes
 import com.whitefang.stepsofbabylon.presentation.ui.nameRes
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
@@ -127,8 +129,12 @@ fun UpgradeCard(
                         fontWeight = FontWeight.Bold,
                         color = if (info.isMaxed) Gold else MaterialTheme.colorScheme.onSurface,
                     )
-                    if (info.statValue.isNotEmpty()) {
-                        Text(text = info.statValue, style = MaterialTheme.typography.labelSmall, color = Gold)
+                    // i18n #34 phase 3: resolve the per-type stat-value unit label via @StringRes here at
+                    // the render boundary (statValueLabel is @Composable). Resolve first, then guard on empty
+                    // (the `else -> ""` types render no readout, same as the old statValue.isNotEmpty() gate).
+                    val statLabel = statValueLabel(info.type, info.stats)
+                    if (statLabel.isNotEmpty()) {
+                        Text(text = statLabel, style = MaterialTheme.typography.labelSmall, color = Gold)
                     }
                     if (!info.isMaxed) {
                         Text(
@@ -155,6 +161,101 @@ fun UpgradeCard(
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
+        }
+    }
+}
+
+/**
+ * i18n #34 phase 3 (D-workshop): resolves the per-UpgradeType stat-value unit label from @StringRes,
+ * mirroring the UW `pathValueAtNext` extraction (PR3c). Keeps ROOT-locale numeric formatting so the
+ * exact value the old `statValueFor`'s `String.format(Locale.ROOT, "%.0f"/"%.1f"/"%.2f", …)` received is
+ * reproduced byte-for-byte — only the unit WORD/suffix moved to the translatable resource. The `*100`
+ * multipliers and the f0/f1/f2 decimal choice per branch MUST match the old `statValueFor`.
+ */
+@Composable
+private fun statValueLabel(
+    type: UpgradeType,
+    s: ResolvedStats,
+): String {
+    // Params are Number (ResolvedStats mixes Double and Float — e.g. range/knockbackForce are Float)
+    // so the exact value the old statValueFor's `String.format(Locale.ROOT, …, value: Number)` received
+    // is preserved with no narrowing — byte-identical formatting.
+    fun f1(v: Number) = String.format(java.util.Locale.ROOT, "%.1f", v)
+
+    fun f2(v: Number) = String.format(java.util.Locale.ROOT, "%.2f", v)
+
+    fun f0(v: Number) = String.format(java.util.Locale.ROOT, "%.0f", v)
+    return when (type) {
+        UpgradeType.DAMAGE -> {
+            stringResource(R.string.stat_dmg, f1(s.damage))
+        }
+
+        UpgradeType.ATTACK_SPEED -> {
+            stringResource(R.string.stat_per_sec, f2(s.attackSpeed))
+        }
+
+        UpgradeType.CRITICAL_CHANCE -> {
+            stringResource(R.string.stat_percent, f1(s.critChance * 100))
+        }
+
+        UpgradeType.CRITICAL_FACTOR -> {
+            stringResource(R.string.stat_multiplier, f1(s.critMultiplier))
+        }
+
+        UpgradeType.RANGE -> {
+            stringResource(R.string.stat_range, f0(s.range))
+        }
+
+        UpgradeType.HEALTH -> {
+            stringResource(R.string.stat_hp, f0(s.maxHealth))
+        }
+
+        UpgradeType.HEALTH_REGEN -> {
+            stringResource(R.string.stat_per_sec, f1(s.healthRegen))
+        }
+
+        UpgradeType.DEFENSE_PERCENT -> {
+            stringResource(R.string.stat_percent, f1(s.defensePercent * 100))
+        }
+
+        UpgradeType.DEFENSE_ABSOLUTE -> {
+            stringResource(R.string.stat_block, f0(s.defenseAbsolute))
+        }
+
+        UpgradeType.KNOCKBACK -> {
+            stringResource(R.string.stat_force, f1(s.knockbackForce))
+        }
+
+        UpgradeType.THORN_DAMAGE -> {
+            stringResource(R.string.stat_percent, f0(s.thornPercent * 100))
+        }
+
+        UpgradeType.LIFESTEAL -> {
+            stringResource(R.string.stat_percent, f1(s.lifestealPercent * 100))
+        }
+
+        UpgradeType.DAMAGE_PER_METER -> {
+            stringResource(R.string.stat_percent_per_m, f0(s.damagePerMeterBonus * 100))
+        }
+
+        UpgradeType.DEATH_DEFY -> {
+            stringResource(R.string.stat_percent, f0(s.deathDefyChance * 100))
+        }
+
+        UpgradeType.MULTISHOT -> {
+            stringResource(R.string.stat_targets, s.multishotTargets)
+        }
+
+        UpgradeType.BOUNCE_SHOT -> {
+            stringResource(R.string.stat_bounces, s.bounceCount)
+        }
+
+        UpgradeType.ORBS -> {
+            stringResource(R.string.stat_orbs, s.orbCount)
+        }
+
+        else -> {
+            ""
         }
     }
 }

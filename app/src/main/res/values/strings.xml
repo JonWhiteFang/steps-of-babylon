@@ -457,6 +457,19 @@
     <string name="help_fairplay_body">Steps of Babylon uses anti-cheat to keep the game fair:\n• 200 steps/minute rate limit (prevents shaker exploits).\n• 50,000 steps/day ceiling.\n• Health Connect cross-validation verifies step counts against your device\'s health data.\n• Activity Minute Parity converts exercise sessions to step-equivalents for indoor workouts.</string>
     <!-- i18n #34 phase 3: Workshop empty-state (category Z) -->
     <string name="workshop_empty">No upgrades in this category yet.</string>
+    <!-- i18n #34 phase 3: Workshop stat-value units (category G / D-workshop) -->
+    <string name="stat_dmg">%1$s dmg</string>
+    <string name="stat_per_sec">%1$s/s</string>
+    <string name="stat_percent">%1$s%%</string>
+    <string name="stat_multiplier">%1$sx</string>
+    <string name="stat_range">%1$s range</string>
+    <string name="stat_hp">%1$s HP</string>
+    <string name="stat_block">%1$s block</string>
+    <string name="stat_force">%1$s force</string>
+    <string name="stat_percent_per_m">%1$s%%/m</string>
+    <string name="stat_targets">%1$d targets</string>
+    <string name="stat_bounces">%1$d bounces</string>
+    <string name="stat_orbs">%1$d orbs</string>
     <!-- i18n #34 phase 3: bottom-nav labels (category B) -->
     <string name="nav_home">Home</string>
     <string name="nav_workshop">Workshop</string>

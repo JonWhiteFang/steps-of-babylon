@@ -18,9 +18,9 @@
     <ID>CyclomaticComplexMethod:UltimateWeaponScreen.kt:@StringRes private fun pathLabel: Int</ID>
     <ID>CyclomaticComplexMethod:UltimateWeaponScreen.kt:@Composable private fun pathValueAtNext: String</ID>
     <ID>CyclomaticComplexMethod:UpgradeCard.kt:@Composable fun UpgradeCard</ID>
+    <ID>CyclomaticComplexMethod:UpgradeCard.kt:@Composable private fun statValueLabel: String</ID>
     <ID>CyclomaticComplexMethod:WalkingHistoryChart.kt:@Composable fun WalkingHistoryChart</ID>
     <ID>CyclomaticComplexMethod:WaveSpawner.kt:WaveSpawner$private fun pickType: EnemyType</ID>
-    <ID>CyclomaticComplexMethod:WorkshopViewModel.kt:WorkshopViewModel$private fun statValueFor: String</ID>
     <ID>EmptyFunctionBlock:CombatResolverTest.kt:CombatResolverTest.FakeCombatHost${}</ID>
     <ID>EmptyFunctionBlock:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository${}</ID>
     <ID>EmptyFunctionBlock:DataTransformMigrationsTest.kt:DataTransformMigrationsTest.&lt;no name provided&gt;${}</ID>
