@@ -370,6 +370,15 @@
     <string name="lab_time_done">Done!</string>
     <string name="time_just_now">Just now</string>
 
+    <!-- i18n #34 phase 3: compound duration units (category D). -->
+    <string name="duration_hms">%1$dh %2$dm %3$ds</string>
+    <string name="duration_ms">%1$dm %2$ds</string>
+    <string name="duration_s">%1$ds</string>
+    <!-- i18n #34 phase 3: stats activity minutes (category D). -->
+    <string name="stats_activity_minutes">%1$d min</string>
+    <!-- i18n #34 phase 3: economy weekly-reset countdown (category D). -->
+    <string name="economy_time_remaining">%1$dd %2$dh</string>
+
     <!-- i18n #34 phase 3: ViewModel user messages (category A) -->
     <string name="msg_not_enough_gems">Not enough Gems</string>
     <string name="msg_not_enough_steps">Not enough Steps</string>
@@ -448,4 +457,31 @@
     <string name="help_fairplay_body">Steps of Babylon uses anti-cheat to keep the game fair:\n• 200 steps/minute rate limit (prevents shaker exploits).\n• 50,000 steps/day ceiling.\n• Health Connect cross-validation verifies step counts against your device\'s health data.\n• Activity Minute Parity converts exercise sessions to step-equivalents for indoor workouts.</string>
     <!-- i18n #34 phase 3: Workshop empty-state (category Z) -->
     <string name="workshop_empty">No upgrades in this category yet.</string>
+    <!-- i18n #34 phase 3: bottom-nav labels (category B) -->
+    <string name="nav_home">Home</string>
+    <string name="nav_workshop">Workshop</string>
+    <string name="nav_battle">Battle</string>
+    <string name="nav_labs">Labs</string>
+    <string name="nav_stats">Stats</string>
+    <string name="nav_weapons">Weapons</string>
+    <string name="nav_cards">Cards</string>
+    <string name="nav_supplies">Supplies</string>
+    <string name="nav_economy">Economy</string>
+    <string name="nav_missions">Missions</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_store">Store</string>
+    <string name="nav_help">Help</string>
+    <string name="nav_onboarding">Onboarding</string>
+    <!-- i18n #34 phase 3: UW path-value units (category D) — spacing byte-identical to source -->
+    <string name="uw_value_seconds">%1$ds</string>
+    <string name="uw_value_seconds_f">%1$ss</string>
+    <string name="uw_value_dps">%1$d DPS</string>
+    <string name="uw_value_dmg">%1$d dmg</string>
+    <string name="uw_value_enemies">%1$d enemies</string>
+    <string name="uw_value_pxs">%1$d px/s</string>
+    <string name="uw_value_percent">%1$s%%</string>
+    <string name="uw_value_multiplier">%1$s×</string>
+    <string name="uw_value_percent_screen">%1$s%% screen</string>
+    <string name="uw_value_percent_area">%1$s%% area</string>
+    <string name="uw_value_multiplier_dmg">%1$s× dmg</string>
 </resources>

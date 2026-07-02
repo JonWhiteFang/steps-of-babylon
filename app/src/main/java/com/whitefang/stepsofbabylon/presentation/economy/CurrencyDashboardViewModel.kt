@@ -39,7 +39,8 @@ class CurrencyDashboardViewModel
             val weeklyClaimedTier: Int = 0,
             val todayPsClaimed: Boolean = false,
             val todayGemsClaimed: Boolean = false,
-            val weeklyTimeRemaining: String = "",
+            val weeklyResetDays: Int? = null,
+            val weeklyResetHours: Int? = null,
             val weeklyHistory: List<WeeklyResult> = emptyList(),
         )
 
@@ -68,7 +69,8 @@ class CurrencyDashboardViewModel
                             todayPsClaimed = snap.todayPsClaimed,
                             todayGemsClaimed = snap.todayGemsClaimed,
                             isLoading = false,
-                            weeklyTimeRemaining = snap.weeklyTimeRemaining,
+                            weeklyResetDays = snap.weeklyResetDays,
+                            weeklyResetHours = snap.weeklyResetHours,
                             weeklyHistory = snap.weeklyHistory,
                         )
                     }
@@ -112,7 +114,8 @@ class CurrencyDashboardViewModel
                             )
                         }
 
-                // V1X-16: time remaining until Sunday 23:59 (week end). Format "Nd Hh".
+                // V1X-16: time remaining until Sunday 23:59 (week end). Raw days/hours are carried to
+                // the UI state and composed at the presentation boundary (i18n #34, "Nd Hh").
                 val nextMonday = monday.plusDays(7)
                 val nowMillis = System.currentTimeMillis()
                 val nextResetMillis =
@@ -125,7 +128,6 @@ class CurrencyDashboardViewModel
                 val deltaHours = deltaMillis / (1000L * 60 * 60)
                 val days = deltaHours / 24
                 val hours = deltaHours % 24
-                val timeRemaining = "${days}d ${hours}h"
 
                 snapshot.value =
                     SnapshotData(
@@ -133,7 +135,8 @@ class CurrencyDashboardViewModel
                         weeklyClaimedTier = weekly.claimedTier,
                         todayPsClaimed = login?.powerStoneClaimed ?: false,
                         todayGemsClaimed = login?.gemsClaimed ?: false,
-                        weeklyTimeRemaining = timeRemaining,
+                        weeklyResetDays = days.toInt(),
+                        weeklyResetHours = hours.toInt(),
                         weeklyHistory = historyRows,
                     )
             }

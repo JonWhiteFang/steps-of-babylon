@@ -132,14 +132,18 @@ class CurrencyDashboardViewModelTest {
         }
 
     @Test
-    fun `V1X16 - weeklyTimeRemaining is populated and formatted`() =
+    fun `V1X16 - weekly reset countdown is populated as raw days and hours`() =
         runTest(dispatcher) {
             val vm = createVm()
             backgroundScope.launch { vm.uiState.collect {} }
             advanceUntilIdle()
 
-            val tr = vm.uiState.value.weeklyTimeRemaining
-            assertTrue(tr.isNotBlank(), "weeklyTimeRemaining should be populated")
-            assertTrue(tr.matches(Regex("\\d+d \\d+h")), "expected 'Nd Hh' format, got '$tr'")
+            val state = vm.uiState.value
+            // i18n #34: the reset countdown is now carried as raw ints (null until computed) and
+            // composed at the UI boundary. After a refresh both are non-null and in range.
+            assertNotNull(state.weeklyResetDays, "weeklyResetDays should be populated after refresh")
+            assertNotNull(state.weeklyResetHours, "weeklyResetHours should be populated after refresh")
+            assertTrue(state.weeklyResetDays!! >= 0, "weeklyResetDays should be non-negative")
+            assertTrue(state.weeklyResetHours!! in 0..23, "weeklyResetHours should be in 0..23")
         }
 }

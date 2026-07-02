@@ -287,6 +287,7 @@ private fun pathLabel(
  * UI-friendly string with the appropriate unit suffix per UW × path. Used by the
  * per-path row's "L0 → 666 dmg" preview line.
  */
+@Composable
 private fun pathValueAtNext(
     type: UltimateWeaponType,
     path: UWPath,
@@ -296,28 +297,35 @@ private fun pathValueAtNext(
     val v = type.valueAtLevel(path, next)
     return when (path) {
         UWPath.COOLDOWN -> {
-            "${v.toInt()}s"
+            stringResource(R.string.uw_value_seconds, v.toInt())
         }
 
         UWPath.DAMAGE -> {
             when (type) {
-                UltimateWeaponType.CHRONO_FIELD -> String.format(java.util.Locale.ROOT, "%.0f%%", v * 100)
-                UltimateWeaponType.GOLDEN_ZIGGURAT -> String.format(java.util.Locale.ROOT, "%.1f×", v)
-                UltimateWeaponType.POISON_SWAMP -> String.format(java.util.Locale.ROOT, "%.1f%%", v * 100)
-                UltimateWeaponType.BLACK_HOLE -> "${v.toInt()} DPS"
-                else -> "${v.toInt()} dmg"
+                UltimateWeaponType.CHRONO_FIELD -> stringResource(R.string.uw_value_percent, fmt0(v * 100))
+                UltimateWeaponType.GOLDEN_ZIGGURAT -> stringResource(R.string.uw_value_multiplier, fmt1(v))
+                UltimateWeaponType.POISON_SWAMP -> stringResource(R.string.uw_value_percent, fmt1(v * 100))
+                UltimateWeaponType.BLACK_HOLE -> stringResource(R.string.uw_value_dps, v.toInt())
+                else -> stringResource(R.string.uw_value_dmg, v.toInt())
             }
         }
 
         UWPath.SECONDARY -> {
             when (type) {
-                UltimateWeaponType.CHAIN_LIGHTNING -> "${v.toInt()} enemies"
-                UltimateWeaponType.DEATH_WAVE -> String.format(java.util.Locale.ROOT, "%.0f%% screen", v * 100)
-                UltimateWeaponType.BLACK_HOLE -> "${v.toInt()} px/s"
-                UltimateWeaponType.CHRONO_FIELD -> String.format(java.util.Locale.ROOT, "%.0fs", v)
-                UltimateWeaponType.POISON_SWAMP -> String.format(java.util.Locale.ROOT, "%.0f%% area", v * 100)
-                UltimateWeaponType.GOLDEN_ZIGGURAT -> String.format(java.util.Locale.ROOT, "%.1f× dmg", v)
+                UltimateWeaponType.CHAIN_LIGHTNING -> stringResource(R.string.uw_value_enemies, v.toInt())
+                UltimateWeaponType.DEATH_WAVE -> stringResource(R.string.uw_value_percent_screen, fmt0(v * 100))
+                UltimateWeaponType.BLACK_HOLE -> stringResource(R.string.uw_value_pxs, v.toInt())
+                UltimateWeaponType.CHRONO_FIELD -> stringResource(R.string.uw_value_seconds_f, fmt0(v))
+                UltimateWeaponType.POISON_SWAMP -> stringResource(R.string.uw_value_percent_area, fmt0(v * 100))
+                UltimateWeaponType.GOLDEN_ZIGGURAT -> stringResource(R.string.uw_value_multiplier_dmg, fmt1(v))
             }
         }
     }
 }
+
+// keep ROOT-locale numeric formatting; percent/multiplier/seconds_f take a pre-formatted %1$s.
+// Params are Double (UltimateWeaponType.valueAtLevel returns Double) so the exact value the old
+// String.format(Locale.ROOT, "%.0f"/"%.1f", …) received is preserved — no Float narrowing.
+private fun fmt0(x: Double) = String.format(java.util.Locale.ROOT, "%.0f", x)
+
+private fun fmt1(x: Double) = String.format(java.util.Locale.ROOT, "%.1f", x)

@@ -161,18 +161,20 @@ internal fun formatSupplyReward(drop: SupplyDrop): String =
         }
     }
 
-// i18n(#34): only the "Just now" early-return is localized (passed in); the m/h/d-ago
-// duration units are deferred to the plurals pass.
+// i18n(#34): "Just now" early-return + the m/h/d-ago units are localized via plurals. The English
+// one/other forms are identical, so rendered output is unchanged. .toInt() is safe — supply drops
+// are recent (the display buckets top out at days).
+@Composable
 private fun formatTimeAgo(
     timestampMs: Long,
     justNowLabel: String,
 ): String {
     val diff = System.currentTimeMillis() - timestampMs
-    val minutes = diff / 60_000
+    val minutes = (diff / 60_000).toInt()
     return when {
         minutes < 1 -> justNowLabel
-        minutes < 60 -> "${minutes}m ago"
-        minutes < 1440 -> "${minutes / 60}h ago"
-        else -> "${minutes / 1440}d ago"
+        minutes < 60 -> pluralStringResource(R.plurals.time_ago_minutes, minutes, minutes)
+        minutes < 1440 -> (minutes / 60).let { pluralStringResource(R.plurals.time_ago_hours, it, it) }
+        else -> (minutes / 1440).let { pluralStringResource(R.plurals.time_ago_days, it, it) }
     }
 }
