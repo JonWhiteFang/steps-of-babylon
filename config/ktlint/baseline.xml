@@ -308,7 +308,7 @@
     <file name="app/src/test/java/com/whitefang/stepsofbabylon/presentation/battle/BattleViewModelTest.kt">
         <error line="5" column="1" source="standard:no-wildcard-imports" />
         <error line="7" column="1" source="standard:no-wildcard-imports" />
-        <error line="20" column="1" source="standard:no-wildcard-imports" />
+        <error line="21" column="1" source="standard:no-wildcard-imports" />
     </file>
     <file name="app/src/test/java/com/whitefang/stepsofbabylon/presentation/battle/effects/DeathEffectTest.kt">
         <error line="4" column="1" source="standard:no-wildcard-imports" />
@@ -323,7 +323,7 @@
         <error line="834" column="121" source="standard:max-line-length" />
     </file>
     <file name="app/src/test/java/com/whitefang/stepsofbabylon/presentation/cards/CardsViewModelTest.kt">
-        <error line="20" column="1" source="standard:no-wildcard-imports" />
+        <error line="21" column="1" source="standard:no-wildcard-imports" />
     </file>
     <file name="app/src/test/java/com/whitefang/stepsofbabylon/presentation/economy/CurrencyDashboardViewModelTest.kt">
         <error line="20" column="1" source="standard:no-wildcard-imports" />
@@ -342,7 +342,7 @@
         <error line="21" column="1" source="standard:no-wildcard-imports" />
     </file>
     <file name="app/src/test/java/com/whitefang/stepsofbabylon/presentation/store/StoreViewModelTest.kt">
-        <error line="20" column="1" source="standard:no-wildcard-imports" />
+        <error line="21" column="1" source="standard:no-wildcard-imports" />
     </file>
     <file name="app/src/test/java/com/whitefang/stepsofbabylon/presentation/supplies/UnclaimedSuppliesViewModelTest.kt">
         <error line="21" column="1" source="standard:no-wildcard-imports" />

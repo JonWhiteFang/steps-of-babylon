@@ -8,6 +8,7 @@ import com.whitefang.stepsofbabylon.domain.model.PurchaseResult
 import com.whitefang.stepsofbabylon.fakes.FakeBillingManager
 import com.whitefang.stepsofbabylon.fakes.FakeCosmeticRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -250,7 +251,7 @@ class StoreViewModelTest {
             vm.purchaseGemPack(BillingProduct.GEM_PACK_SMALL)
             advanceUntilIdle()
 
-            assertEquals("Network error", vm.uiState.value.userMessage)
+            assertEquals(UiMessage.Raw("Network error"), vm.uiState.value.userMessage)
         }
 
     @Test
@@ -266,7 +267,7 @@ class StoreViewModelTest {
             advanceUntilIdle()
 
             assertEquals(
-                "Purchase pending — complete payment to receive your items",
+                UiMessage.Raw("Purchase pending — complete payment to receive your items"),
                 vm.uiState.value.userMessage,
             )
         }

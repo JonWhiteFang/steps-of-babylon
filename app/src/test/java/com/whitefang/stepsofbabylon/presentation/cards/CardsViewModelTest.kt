@@ -8,6 +8,7 @@ import com.whitefang.stepsofbabylon.domain.usecase.PackTier
 import com.whitefang.stepsofbabylon.fakes.FakeCardRepository
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeRewardAdManager
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -207,7 +208,7 @@ class CardsViewModelTest {
             )
             assertNull(vm.uiState.value.lastPackResult, "no pack result on Cancelled")
             assertEquals(
-                "Ad cancelled. Try again.",
+                UiMessage.AdCancelled,
                 vm.uiState.value.userMessage,
                 "user-visible snackbar message on Cancelled (PR A: ad-error UX)",
             )
@@ -233,7 +234,7 @@ class CardsViewModelTest {
             )
             assertNull(vm.uiState.value.lastPackResult, "no pack result on Error")
             assertEquals(
-                "load failed",
+                UiMessage.Raw("load failed"),
                 vm.uiState.value.userMessage,
                 "AdResult.Error.message surfaces verbatim when non-blank (PR A: ad-error UX)",
             )
@@ -253,7 +254,7 @@ class CardsViewModelTest {
             advanceUntilIdle()
 
             assertEquals(
-                "Ad failed to load. Try again later.",
+                UiMessage.AdFailed,
                 vm.uiState.value.userMessage,
                 "blank Error.message must not surface as an empty snackbar (PR A: ad-error UX)",
             )
