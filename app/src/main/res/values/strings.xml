@@ -369,4 +369,24 @@
     <string name="uw_path_cooldown">Cooldown</string>
     <string name="lab_time_done">Done!</string>
     <string name="time_just_now">Just now</string>
+
+    <!-- i18n #34 phase 3: ViewModel user messages (category A) -->
+    <string name="msg_not_enough_gems">Not enough Gems</string>
+    <string name="msg_not_enough_steps">Not enough Steps</string>
+    <string name="msg_already_max_level">Already at max level</string>
+    <string name="msg_no_affordable_upgrades">No affordable upgrades</string>
+    <string name="msg_card_at_max_level">Card already at max level</string>
+    <string name="msg_not_enough_copies">Not enough copies</string>
+    <string name="msg_research_coming_soon">Coming soon — reserved for v1.x</string>
+    <string name="msg_no_research_slot">No research slot available</string>
+    <string name="msg_already_researching">Already researching</string>
+    <string name="msg_season_pass_required">Season Pass required</string>
+    <string name="msg_free_rush_used">Free rush already used today</string>
+    <string name="msg_no_active_research">No active research to rush</string>
+    <string name="msg_not_enough_gems_or_max_slots">Not enough Gems or max slots reached</string>
+    <string name="msg_mission_not_enough_steps">You haven\'t walked enough steps yet.</string>
+    <string name="msg_milestone_already_claimed">Milestone already claimed.</string>
+    <string name="msg_reward_unavailable">Reward temporarily unavailable (cosmetic “%1$s” is being finalised). Try again after the next update.</string>
+    <string name="msg_ad_cancelled">Ad cancelled. Try again.</string>
+    <string name="msg_ad_failed">Ad failed to load. Try again later.</string>
 </resources>
