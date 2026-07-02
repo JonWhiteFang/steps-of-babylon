@@ -154,7 +154,7 @@ fun Milestone.displayNameRes(): Int =
  * #34 phase 3 (G): domain-model display-name resolvers. These replace the `.toDisplayName()`
  * title-cased CONSTANT_CASE render at each UI site, so a non-English locale can localize the enum
  * names. Values are BYTE-IDENTICAL to the old `String.toDisplayName()` output — including the
- * pre-existing quirks `UW_COOLDOWN` → "U W Cooldown" and `UNDERWORLD_OF_KUR` → "Underworld Of Kur"
+ * pre-existing quirks `UW_COOLDOWN` → "Uw Cooldown" and `UNDERWORLD_OF_KUR` → "Underworld Of Kur"
  * (this is extraction, not a copy fix). Exhaustive `when` (no `else`) so a new enum member that
  * forgets its name string fails to compile.
  */
