@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -53,4 +54,5 @@ fun ErrorState(
 }
 
 /** Shared generic load-failure message — kept identical across screens (no per-screen detail). */
-const val SCREEN_LOAD_ERROR = "Couldn't load this screen. Check your connection and try again."
+@StringRes
+val SCREEN_LOAD_ERROR: Int = R.string.screen_load_error

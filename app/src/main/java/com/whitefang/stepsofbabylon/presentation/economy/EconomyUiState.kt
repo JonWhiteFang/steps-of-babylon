@@ -1,5 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.economy
 
+import androidx.annotation.StringRes
+
 data class EconomyUiState(
     val gems: Long = 0,
     val powerStones: Long = 0,
@@ -9,7 +11,7 @@ data class EconomyUiState(
     val todayPsClaimed: Boolean = false,
     val todayGemsClaimed: Boolean = false,
     val isLoading: Boolean = true,
-    val error: String? = null,
+    @StringRes val error: Int? = null,
     /** V1X-16: time remaining in current week (formatted, e.g. "3d 14h"). */
     val weeklyTimeRemaining: String = "",
     /** V1X-16: last 4 weeks history, newest first. Empty if no past data. */

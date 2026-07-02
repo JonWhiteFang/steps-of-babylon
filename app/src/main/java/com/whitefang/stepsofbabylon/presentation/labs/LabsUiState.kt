@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.labs
 
+import androidx.annotation.StringRes
 import com.whitefang.stepsofbabylon.domain.model.ResearchType
 import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 
@@ -26,7 +27,7 @@ data class LabsUiState(
     val canAffordSlotUnlock: Boolean = false,
     val seasonPassFreeRushAvailable: Boolean = false,
     val isLoading: Boolean = true,
-    val error: String? = null,
+    @StringRes val error: Int? = null,
     val isProcessing: Boolean = false,
     val userMessage: UiMessage? = null,
 )

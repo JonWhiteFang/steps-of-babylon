@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.workshop
 
+import androidx.annotation.StringRes
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.usecase.UpgradeEffectReadout
@@ -26,7 +27,7 @@ data class WorkshopUiState(
     val stepBalance: Long = 0,
     val selectedCategory: UpgradeCategory = UpgradeCategory.ATTACK,
     val isLoading: Boolean = true,
-    val error: String? = null,
+    @StringRes val error: Int? = null,
     val isProcessing: Boolean = false,
     val userMessage: UiMessage? = null,
 )

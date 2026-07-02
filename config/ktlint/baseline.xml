@@ -164,7 +164,7 @@
         <error line="21" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/ErrorState.kt">
-        <error line="29" column="5" source="standard:function-naming" />
+        <error line="30" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/ui/LoadingBox.kt">
         <error line="12" column="5" source="standard:function-naming" />
@@ -189,7 +189,7 @@
         <error line="201" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/weapons/UltimateWeaponViewModel.kt">
-        <error line="69" column="21" source="standard:backing-property-naming" />
+        <error line="70" column="21" source="standard:backing-property-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop/UpgradeCard.kt">
         <error line="35" column="5" source="standard:function-naming" />

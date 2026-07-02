@@ -417,4 +417,7 @@
     <string name="ad_error_show_not_ready">Ad isn\'t ready to show.</string>
     <string name="ad_error_show_foreground">Ad couldn\'t play. (App not in foreground.)</string>
     <string name="ad_error_show_other">Couldn\'t show ad. (code %1$d)</string>
+
+    <!-- i18n #34 phase 3: shared screen load-error (category C) -->
+    <string name="screen_load_error">Couldn\'t load this screen. Check your connection and try again.</string>
 </resources>

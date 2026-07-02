@@ -31,6 +31,7 @@ class HomeFirstWalkPromptTest {
     @Test
     fun `prompt never shows while loading or in an error state`() {
         assertFalse(HomeUiState(todaySteps = 0, stepBalance = 0, isLoading = true).showFirstWalkPrompt)
-        assertFalse(HomeUiState(todaySteps = 0, stepBalance = 0, isLoading = false, error = "boom").showFirstWalkPrompt)
+        // error is now a @StringRes Int?; the predicate only checks non-null, so any resource id works.
+        assertFalse(HomeUiState(todaySteps = 0, stepBalance = 0, isLoading = false, error = 1).showFirstWalkPrompt)
     }
 }
