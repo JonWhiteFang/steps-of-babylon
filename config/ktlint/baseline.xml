@@ -61,9 +61,9 @@
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/economy/CurrencyDashboardScreen.kt">
         <error line="48" column="5" source="standard:function-naming" />
-        <error line="244" column="13" source="standard:function-naming" />
-        <error line="263" column="13" source="standard:function-naming" />
-        <error line="298" column="13" source="standard:function-naming" />
+        <error line="249" column="13" source="standard:function-naming" />
+        <error line="268" column="13" source="standard:function-naming" />
+        <error line="303" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/economy/CurrencyDashboardViewModel.kt">
         <error line="50" column="21" source="standard:backing-property-naming" />
