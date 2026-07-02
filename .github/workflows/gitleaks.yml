@@ -1,0 +1,31 @@
+# #376 (sectooling-1): scan diffs + history for committed secrets. Complements GitHub-native
+# secret-scanning + push-protection (already enabled) with a repo-committed gate that catches
+# what the native patterns miss (binary keystores, .properties password lines) via .gitleaks.toml.
+# SHA-pinned per repo convention (Dependabot maintains the pin).
+name: gitleaks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write # gitleaks-action posts a PR summary/comment on pull_request runs
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0 # full history so the scan sees every commit on the PR/branch
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # v3 uses it for the PR summary + license check
+          GITLEAKS_CONFIG: .gitleaks.toml
+          # NB: gitleaks-action v3 is free for personal/public repos; no GITLEAKS_LICENSE needed
+          # (only orgs require one). If a license error appears, this repo is a personal account so
+          # it should not — re-check the account type before adding a license secret.
