@@ -25,6 +25,19 @@
     -->
     <uses-permission android:name="com.android.vending.BILLING" />
 
+    <!--
+        #374: package-visibility declaration so the crash-report "Report" action can resolve a mail
+        app via ACTION_SENDTO (mailto:). Under targetSdk 30+ package filtering, resolveActivity()
+        for a SENDTO/mailto intent returns null WITHOUT this <queries> entry even when a mail client
+        is installed (unlike ACTION_VIEW http, which is auto-visible). See buildCrashReportIntent.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
+    </queries>
+
     <application
         android:name=".StepsOfBabylonApp"
         android:allowBackup="false"
