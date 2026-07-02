@@ -47,7 +47,7 @@ import com.whitefang.stepsofbabylon.presentation.ui.uwRarityTier
 fun UltimateWeaponScreen(viewModel: UltimateWeaponViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     if (state.error != null) {
-        ErrorState(state.error!!, onRetry = viewModel::retry)
+        ErrorState(stringResource(state.error!!), onRetry = viewModel::retry)
         return
     }
     if (state.isLoading) {

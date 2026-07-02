@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.home
 
+import androidx.annotation.StringRes
 import com.whitefang.stepsofbabylon.domain.model.Biome
 
 data class HomeUiState(
@@ -16,7 +17,7 @@ data class HomeUiState(
     val claimableMissionCount: Int = 0,
     val seasonPassActive: Boolean = false,
     val isLoading: Boolean = true,
-    val error: String? = null,
+    @StringRes val error: Int? = null,
 ) {
     /**
      * #224: gates the Home first-walk teaching prompt. Shown only at the genuine core-loop kickoff

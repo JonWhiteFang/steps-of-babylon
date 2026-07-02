@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.cards
 
+import androidx.annotation.StringRes
 import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.domain.usecase.CardResult
 import com.whitefang.stepsofbabylon.domain.usecase.PackTier
@@ -26,7 +27,7 @@ data class CardsUiState(
     val freePackAvailable: Boolean = false,
     val adRemoved: Boolean = false,
     val isLoading: Boolean = true,
-    val error: String? = null,
+    @StringRes val error: Int? = null,
     val isProcessing: Boolean = false,
     val userMessage: UiMessage? = null,
 )

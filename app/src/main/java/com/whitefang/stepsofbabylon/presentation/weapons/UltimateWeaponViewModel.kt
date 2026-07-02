@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.weapons
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.domain.model.OwnedWeapon
@@ -50,7 +51,7 @@ data class UltimateWeaponUiState(
     val powerStones: Long = 0,
     val equippedCount: Int = 0,
     val isLoading: Boolean = true,
-    val error: String? = null,
+    @StringRes val error: Int? = null,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)

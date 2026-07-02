@@ -281,12 +281,16 @@ class MainActivity : ComponentActivity() {
                             crashBreadcrumbStore.clear()
                         }
                     }
+                    // Resolve OUTSIDE the effect (same pattern as crashNotice above): the effect
+                    // body is a coroutine, not @Composable, so it can't call stringResource.
+                    val stepHint = stringResource(R.string.step_permission_hint)
+                    val stepAction = stringResource(R.string.step_permission_action)
                     LaunchedEffect(showStepPermissionSettingsHint) {
                         if (showStepPermissionSettingsHint) {
                             val result =
                                 snackbarHostState.showSnackbar(
-                                    message = "Step counting is off — enable it in Settings",
-                                    actionLabel = "Settings",
+                                    message = stepHint,
+                                    actionLabel = stepAction,
                                 )
                             if (result == SnackbarResult.ActionPerformed) {
                                 context.startActivity(

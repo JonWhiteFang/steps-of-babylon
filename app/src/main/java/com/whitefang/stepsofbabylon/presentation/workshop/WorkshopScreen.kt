@@ -45,7 +45,7 @@ fun WorkshopScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     if (state.error != null) {
-        ErrorState(state.error!!, onRetry = viewModel::retry)
+        ErrorState(stringResource(state.error!!), onRetry = viewModel::retry)
         return
     }
     if (state.isLoading) {
@@ -104,7 +104,7 @@ fun WorkshopScreen(
                 // emitting before ensureUpgradesExist lands); every seeded category otherwise has ≥4
                 // Workshop-visible upgrades.
                 if (state.upgrades.isEmpty()) {
-                    EmptyState(message = "No upgrades in this category yet.")
+                    EmptyState(message = stringResource(R.string.workshop_empty))
                 } else {
                     LazyColumn(
                         contentPadding = PaddingValues(16.dp),

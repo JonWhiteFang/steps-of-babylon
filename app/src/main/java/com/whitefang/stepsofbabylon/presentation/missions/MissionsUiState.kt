@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.missions
 
+import androidx.annotation.StringRes
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 
@@ -26,7 +27,7 @@ data class MissionsUiState(
     val milestones: List<MilestoneDisplayInfo> = emptyList(),
     val timeUntilMidnightMs: Long = 0,
     val isLoading: Boolean = true,
-    val error: String? = null,
+    @StringRes val error: Int? = null,
     /**
      * Transient user-visible feedback (snackbar), cleared by the screen after display
      * via [MissionsViewModel.clearMessage]. Set by the VM when a milestone claim

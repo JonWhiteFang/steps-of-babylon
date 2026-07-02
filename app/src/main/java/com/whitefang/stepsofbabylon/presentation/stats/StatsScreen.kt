@@ -25,7 +25,7 @@ import java.util.Locale
 fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     if (state.error != null) {
-        ErrorState(state.error!!, onRetry = viewModel::retry)
+        ErrorState(stringResource(state.error!!), onRetry = viewModel::retry)
         return
     }
     if (state.isLoading) {

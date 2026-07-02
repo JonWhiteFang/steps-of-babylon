@@ -48,7 +48,7 @@ import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 fun UnclaimedSuppliesScreen(viewModel: UnclaimedSuppliesViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     if (state.error != null) {
-        ErrorState(state.error!!, onRetry = viewModel::retry)
+        ErrorState(stringResource(state.error!!), onRetry = viewModel::retry)
         return
     }
     if (state.isLoading) {

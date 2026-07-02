@@ -55,7 +55,7 @@ import java.util.Locale
 fun LabsScreen(viewModel: LabsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     if (state.error != null) {
-        ErrorState(state.error!!, onRetry = viewModel::retry)
+        ErrorState(stringResource(state.error!!), onRetry = viewModel::retry)
         return
     }
     if (state.isLoading) {
