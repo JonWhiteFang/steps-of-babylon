@@ -14,6 +14,7 @@ import com.whitefang.stepsofbabylon.domain.repository.PlayerRepository
 import com.whitefang.stepsofbabylon.domain.repository.WorkshopRepository
 import com.whitefang.stepsofbabylon.domain.usecase.CalculateUpgradeCost
 import com.whitefang.stepsofbabylon.presentation.MainActivity
+import com.whitefang.stepsofbabylon.presentation.ui.descriptionRes
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
@@ -71,7 +72,7 @@ class SmartReminderManager
 
             val upgrades = workshopRepository.observeAllUpgrades().first()
             var bestGap = Long.MAX_VALUE
-            var bestName = ""
+            var bestType: UpgradeType? = null
             for ((type, level) in upgrades) {
                 val maxLevel = type.config.maxLevel
                 if (maxLevel != null && level >= maxLevel) continue
@@ -79,10 +80,13 @@ class SmartReminderManager
                 val gap = cost - profile.stepBalance
                 if (gap in 1..MAX_GAP && gap < bestGap) {
                     bestGap = gap
-                    bestName = type.config.description
+                    bestType = type
                 }
             }
-            if (bestName.isEmpty()) return
+            // i18n #34: resolve the upgrade description via the localized @StringRes resolver
+            // (byte-identical to the old type.config.description). Service already imports
+            // presentation (MainActivity), so reusing the presentation-layer resolver is clean.
+            val bestName = bestType?.let { context.getString(it.descriptionRes()) } ?: return
 
             val intent =
                 PendingIntent.getActivity(
