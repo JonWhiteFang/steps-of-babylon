@@ -9,6 +9,8 @@ class WaveAnnouncement(
     private val screenWidth: Float,
     private val screenHeight: Float,
     private val reducedMotion: Boolean = false,
+    private val bossLabel: String = "⚠ BOSS INCOMING",
+    private val waveLabel: String = "Wave $wave",
 ) : Effect {
     private var age = 0f
     private val holdDuration = 1f
@@ -50,15 +52,16 @@ class WaveAnnouncement(
         val baseY = screenHeight * 0.3f + yOffset
         if (isBossWave) {
             bossTextPaint.alpha = alpha
-            canvas.drawText("⚠ BOSS INCOMING", screenWidth / 2f, baseY - 50f, bossTextPaint)
+            canvas.drawText(bossLabel, screenWidth / 2f, baseY - 50f, bossTextPaint)
         }
-        canvas.drawText("Wave $wave", screenWidth / 2f, baseY, textPaint)
+        canvas.drawText(waveLabel, screenWidth / 2f, baseY, textPaint)
     }
 }
 
 class WaveCooldownText(
     private val screenWidth: Float,
     private val nextWaveComposition: String? = null,
+    private val nextWaveLabeler: ((Int) -> String)? = null,
     private val getTimeRemaining: () -> Float,
 ) : Effect {
     private val paint =
@@ -81,7 +84,8 @@ class WaveCooldownText(
     override fun render(canvas: Canvas) {
         val t = getTimeRemaining()
         if (t > 0f) {
-            canvas.drawText("Next Wave: ${t.toInt()}s", screenWidth / 2f, 60f, paint)
+            val label = nextWaveLabeler?.invoke(t.toInt()) ?: "Next Wave: ${t.toInt()}s"
+            canvas.drawText(label, screenWidth / 2f, 60f, paint)
             // V1X-15b: ENEMY_INTEL L1+ next-wave composition line, drawn just below the timer.
             nextWaveComposition?.let { canvas.drawText(it, screenWidth / 2f, 90f, compositionPaint) }
         }

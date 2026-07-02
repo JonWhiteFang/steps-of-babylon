@@ -33,4 +33,13 @@ interface Strings {
 
     /** Plural-correct boss countdown, e.g. "Boss next wave" / "Boss in 2 waves". */
     fun bossCountdown(waves: Int): String
+
+    /** Boss-wave banner, e.g. "⚠ BOSS INCOMING". */
+    fun bossIncoming(): String
+
+    /** Wave-announcement header, e.g. "Wave 7". */
+    fun waveHeader(wave: Int): String
+
+    /** Cooldown countdown line, e.g. "Next Wave: 5s". */
+    fun nextWaveIn(seconds: Int): String
 }

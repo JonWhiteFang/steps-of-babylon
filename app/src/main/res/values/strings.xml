@@ -484,4 +484,8 @@
     <string name="uw_value_percent_screen">%1$s%% screen</string>
     <string name="uw_value_percent_area">%1$s%% area</string>
     <string name="uw_value_multiplier_dmg">%1$s× dmg</string>
+    <!-- i18n #34 phase 3: battle Canvas text (category E) -->
+    <string name="fx_boss_incoming">⚠ BOSS INCOMING</string>
+    <string name="fx_wave_header">Wave %1$d</string>
+    <string name="fx_next_wave">Next Wave: %1$ds</string>
 </resources>
