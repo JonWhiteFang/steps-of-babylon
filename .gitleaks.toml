@@ -1,0 +1,34 @@
+# gitleaks config (#376 / sectooling-1). Extends the built-in default ruleset (which misses
+# binary keystores and .properties password lines) with app-specific rules. The CI
+# non-publishing placeholder and any test/dummy values are allowlisted so the gate isn't
+# self-tripping.
+title = "Steps of Babylon gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "android-keystore-file"
+description = "Committed Android keystore (binary signing material)"
+# Binary keystores have no reliable text signature — match by path/extension.
+path = '''.*\.(jks|keystore)$'''
+
+[[rules]]
+id = "keystore-properties-password"
+description = "Signing/keystore password in a .properties file"
+regex = '''(?i)(storePassword|keyPassword)\s*=\s*.+'''
+
+[[rules]]
+id = "play-license-key"
+description = "Play licensing RSA public key committed to source"
+regex = '''(?i)play\.licenseKey\s*=\s*.+'''
+
+[allowlist]
+description = "Non-secret placeholders and test fixtures"
+regexes = [
+  '''play\.licenseKey\s*=\s*ci-nonpublishing-placeholder''',
+]
+paths = [
+  '''\.gitleaks\.toml''',
+  '''docs/.*''',
+]
