@@ -15,8 +15,11 @@ All notable changes to Steps of Babylon are documented here.
   `minifyReleaseWithR8` ran, APK produced (the `ndk debugSymbolLevel=FULL` does not block the APK
   assemble). Verify keys on the R8 task + a `*.apk` glob (name is AGP/signing-dependent).
 - **#376 (sectooling-1).** Added a SHA-pinned gitleaks workflow (`gitleaks.yml` + `.gitleaks.toml`)
-  with custom rules for `*.jks`/`*.keystore` and `storePassword=`/`keyPassword=`/`play.licenseKey=`
-  `.properties` lines (built-ins miss these); allowlists the CI placeholder + docs. GitHub-native
+  with custom rules for `*.jks`/`*.keystore` and `storePassword`/`keyPassword`/`play.licenseKey`
+  password lines (built-ins miss these). The password/license rules are **path-scoped to
+  `.properties`** so they catch real secrets but not prose in Markdown/Kotlin that merely names the
+  keys (verified against a fixture + the real tree with gitleaks 8.30.1); allowlists the CI
+  placeholder + CHANGELOG/README/docs. GitHub-native
   secret scanning + push protection were already on. **Caveat:** the `secret_scanning_non_provider_patterns`
   toggle is a silent REST-API no-op on this personal-account repo — documented in `security-model.md`
   as a manual Settings step (gitleaks already covers the custom patterns, so it is incremental).
