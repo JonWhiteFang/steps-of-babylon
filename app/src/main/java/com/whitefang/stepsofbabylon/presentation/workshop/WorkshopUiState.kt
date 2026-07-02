@@ -13,7 +13,6 @@ data class UpgradeDisplayInfo(
     val cost: Long,
     val isMaxed: Boolean,
     val canAfford: Boolean,
-    val description: String,
     val statValue: String = "",
     // #29 decision support. `nowNext` = workshop-dimension Now→Next preview (null only if it could not
     // be computed). `value` = combat-power value/Best-Buy data; null for non-combat upgrades (Δpower ≤ 0)

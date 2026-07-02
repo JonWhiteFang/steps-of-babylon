@@ -34,6 +34,7 @@ import com.whitefang.stepsofbabylon.presentation.ui.EquippedChip
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.RarityBadge
+import com.whitefang.stepsofbabylon.presentation.ui.descriptionRes
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rarityBorder
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
@@ -131,7 +132,7 @@ private fun UWCard(
                         )
                     }
                     Text(
-                        info.type.description,
+                        stringResource(info.type.descriptionRes()),
                         style = MaterialTheme.typography.bodySmall,
                         color = if (info.isUnlocked) Color.White.copy(alpha = 0.7f) else Color.Gray.copy(alpha = 0.5f),
                     )

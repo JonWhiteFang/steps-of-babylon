@@ -1,12 +1,13 @@
 package com.whitefang.stepsofbabylon.presentation.missions
 
 import androidx.annotation.StringRes
+import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 
 data class MissionDisplayInfo(
     val id: Int,
-    val description: String,
+    val type: DailyMissionType,
     val target: Int,
     val progress: Int,
     val rewardGems: Int,

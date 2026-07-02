@@ -38,7 +38,7 @@
         <error line="34" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/ui/InRoundUpgradeMenu.kt">
-        <error line="54" column="5" source="standard:function-naming" />
+        <error line="55" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/ui/PauseOverlay.kt">
         <error line="29" column="5" source="standard:function-naming" />
@@ -85,8 +85,8 @@
         <error line="32" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/labs/LabsScreen.kt">
-        <error line="55" column="5" source="standard:function-naming" />
-        <error line="130" column="13" source="standard:function-naming" />
+        <error line="56" column="5" source="standard:function-naming" />
+        <error line="131" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/labs/LabsViewModel.kt">
         <error line="55" column="21" source="standard:backing-property-naming" />
@@ -96,9 +96,9 @@
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/missions/MissionsScreen.kt">
         <error line="3" column="1" source="standard:no-wildcard-imports" />
         <error line="8" column="1" source="standard:no-wildcard-imports" />
-        <error line="43" column="5" source="standard:function-naming" />
-        <error line="121" column="13" source="standard:function-naming" />
-        <error line="192" column="13" source="standard:function-naming" />
+        <error line="44" column="5" source="standard:function-naming" />
+        <error line="122" column="13" source="standard:function-naming" />
+        <error line="197" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/missions/MissionsViewModel.kt">
         <error line="68" column="21" source="standard:backing-property-naming" />
@@ -179,17 +179,17 @@
         <error line="26" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/weapons/UltimateWeaponScreen.kt">
-        <error line="47" column="5" source="standard:function-naming" />
-        <error line="100" column="13" source="standard:function-naming" />
-        <error line="201" column="13" source="standard:function-naming" />
+        <error line="48" column="5" source="standard:function-naming" />
+        <error line="101" column="13" source="standard:function-naming" />
+        <error line="202" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/weapons/UltimateWeaponViewModel.kt">
         <error line="70" column="21" source="standard:backing-property-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop/UpgradeCard.kt">
-        <error line="35" column="5" source="standard:function-naming" />
-        <error line="162" column="13" source="standard:function-naming" />
-        <error line="195" column="13" source="standard:function-naming" />
+        <error line="36" column="5" source="standard:function-naming" />
+        <error line="163" column="13" source="standard:function-naming" />
+        <error line="196" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop/WorkshopScreen.kt">
         <error line="41" column="5" source="standard:function-naming" />

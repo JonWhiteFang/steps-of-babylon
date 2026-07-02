@@ -99,7 +99,6 @@ class WorkshopViewModel
                                         cost = cost,
                                         isMaxed = isMaxed,
                                         canAfford = !isMaxed && wallet.stepBalance >= cost,
-                                        description = type.config.description,
                                         statValue = statValueFor(type, stats),
                                         // Per-row workshop-dimension Now→Next preview (intentional fan-out; pure + small N).
                                         nowNext = describeUpgradeEffect.workshopPreview(upgrades, type),

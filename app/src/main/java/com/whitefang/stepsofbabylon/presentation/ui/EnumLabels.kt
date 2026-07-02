@@ -4,7 +4,11 @@ import androidx.annotation.StringRes
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.CardRarity
 import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
+import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
+import com.whitefang.stepsofbabylon.domain.model.ResearchType
+import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
+import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.usecase.PackTier
 
 /**
@@ -48,4 +52,78 @@ import com.whitefang.stepsofbabylon.domain.usecase.PackTier
         "SPAWNING" -> R.string.wave_phase_spawning
         "COOLDOWN" -> R.string.wave_phase_cooldown
         else -> null
+    }
+
+/**
+ * #34 phase 3 (G): domain-model description resolvers. The four enums carry hardcoded English
+ * `description` strings (kept on the enum so `domain/` stays Android-free); these map each entry to
+ * a @StringRes so the render sites resolve via stringResource. Exhaustive `when` (no `else`) so the
+ * compiler flags any new enum member that forgets a description string.
+ */
+@StringRes
+fun UpgradeType.descriptionRes(): Int =
+    when (this) {
+        UpgradeType.DAMAGE -> R.string.upgrade_desc_damage
+        UpgradeType.ATTACK_SPEED -> R.string.upgrade_desc_attack_speed
+        UpgradeType.CRITICAL_CHANCE -> R.string.upgrade_desc_critical_chance
+        UpgradeType.CRITICAL_FACTOR -> R.string.upgrade_desc_critical_factor
+        UpgradeType.RANGE -> R.string.upgrade_desc_range
+        UpgradeType.MULTISHOT -> R.string.upgrade_desc_multishot
+        UpgradeType.BOUNCE_SHOT -> R.string.upgrade_desc_bounce_shot
+        UpgradeType.DAMAGE_PER_METER -> R.string.upgrade_desc_damage_per_meter
+        UpgradeType.RAPID_FIRE -> R.string.upgrade_desc_rapid_fire
+        UpgradeType.HEALTH -> R.string.upgrade_desc_health
+        UpgradeType.HEALTH_REGEN -> R.string.upgrade_desc_health_regen
+        UpgradeType.DEFENSE_PERCENT -> R.string.upgrade_desc_defense_percent
+        UpgradeType.DEFENSE_ABSOLUTE -> R.string.upgrade_desc_defense_absolute
+        UpgradeType.KNOCKBACK -> R.string.upgrade_desc_knockback
+        UpgradeType.THORN_DAMAGE -> R.string.upgrade_desc_thorn_damage
+        UpgradeType.ORBS -> R.string.upgrade_desc_orbs
+        UpgradeType.LIFESTEAL -> R.string.upgrade_desc_lifesteal
+        UpgradeType.DEATH_DEFY -> R.string.upgrade_desc_death_defy
+        UpgradeType.CASH_BONUS -> R.string.upgrade_desc_cash_bonus
+        UpgradeType.CASH_PER_WAVE -> R.string.upgrade_desc_cash_per_wave
+        UpgradeType.INTEREST -> R.string.upgrade_desc_interest
+        UpgradeType.FREE_UPGRADES -> R.string.upgrade_desc_free_upgrades
+        UpgradeType.RECOVERY_PACKAGES -> R.string.upgrade_desc_recovery_packages
+        UpgradeType.STEP_MULTIPLIER -> R.string.upgrade_desc_step_multiplier
+    }
+
+@StringRes
+fun ResearchType.descriptionRes(): Int =
+    when (this) {
+        ResearchType.DAMAGE_RESEARCH -> R.string.research_desc_damage_research
+        ResearchType.HEALTH_RESEARCH -> R.string.research_desc_health_research
+        ResearchType.CASH_RESEARCH -> R.string.research_desc_cash_research
+        ResearchType.STEP_EFFICIENCY -> R.string.research_desc_step_efficiency
+        ResearchType.WAVE_SKIP -> R.string.research_desc_wave_skip
+        ResearchType.AUTO_UPGRADE_AI -> R.string.research_desc_auto_upgrade_ai
+        ResearchType.UW_COOLDOWN -> R.string.research_desc_uw_cooldown
+        ResearchType.CRITICAL_RESEARCH -> R.string.research_desc_critical_research
+        ResearchType.REGEN_RESEARCH -> R.string.research_desc_regen_research
+        ResearchType.ENEMY_INTEL -> R.string.research_desc_enemy_intel
+        ResearchType.MULTISHOT_RESEARCH -> R.string.research_desc_multishot_research
+        ResearchType.BOUNCE_RESEARCH -> R.string.research_desc_bounce_research
+    }
+
+@StringRes
+fun DailyMissionType.descriptionRes(): Int =
+    when (this) {
+        DailyMissionType.WALK_5000 -> R.string.mission_desc_walk_5000
+        DailyMissionType.WALK_12000 -> R.string.mission_desc_walk_12000
+        DailyMissionType.REACH_WAVE_30 -> R.string.mission_desc_reach_wave_30
+        DailyMissionType.KILL_500_ENEMIES -> R.string.mission_desc_kill_500_enemies
+        DailyMissionType.SPEND_5000_WORKSHOP -> R.string.mission_desc_spend_5000_workshop
+        DailyMissionType.COMPLETE_RESEARCH -> R.string.mission_desc_complete_research
+    }
+
+@StringRes
+fun UltimateWeaponType.descriptionRes(): Int =
+    when (this) {
+        UltimateWeaponType.DEATH_WAVE -> R.string.uw_desc_death_wave
+        UltimateWeaponType.CHAIN_LIGHTNING -> R.string.uw_desc_chain_lightning
+        UltimateWeaponType.BLACK_HOLE -> R.string.uw_desc_black_hole
+        UltimateWeaponType.CHRONO_FIELD -> R.string.uw_desc_chrono_field
+        UltimateWeaponType.POISON_SWAMP -> R.string.uw_desc_poison_swamp
+        UltimateWeaponType.GOLDEN_ZIGGURAT -> R.string.uw_desc_golden_ziggurat
     }

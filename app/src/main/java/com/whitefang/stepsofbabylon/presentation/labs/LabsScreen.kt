@@ -44,6 +44,7 @@ import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.descriptionRes
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
@@ -168,7 +169,7 @@ private fun ResearchCard(
                 }
             }
             Text(
-                info.type.description,
+                stringResource(info.type.descriptionRes()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

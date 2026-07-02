@@ -32,6 +32,7 @@ import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.usecase.UpgradeEffectReadout
+import com.whitefang.stepsofbabylon.presentation.ui.descriptionRes
 import com.whitefang.stepsofbabylon.presentation.ui.labelRes
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
@@ -140,7 +141,7 @@ fun InRoundUpgradeMenu(
                     Column(Modifier.weight(1f)) {
                         Text(type.name.toDisplayName(), color = Color.White, fontSize = 13.sp)
                         Text(
-                            stringResource(R.string.inround_level_desc, level, type.config.description),
+                            stringResource(R.string.inround_level_desc, level, stringResource(type.descriptionRes())),
                             color = Color.White.copy(alpha = 0.5f),
                             fontSize = 10.sp,
                         )

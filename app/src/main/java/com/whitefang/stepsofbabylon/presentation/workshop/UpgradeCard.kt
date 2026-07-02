@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whitefang.stepsofbabylon.R
+import com.whitefang.stepsofbabylon.presentation.ui.descriptionRes
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
@@ -96,7 +97,7 @@ fun UpgradeCard(
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
-                        text = info.description,
+                        text = stringResource(info.type.descriptionRes()),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
