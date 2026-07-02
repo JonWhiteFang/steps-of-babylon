@@ -6,7 +6,9 @@
 - Primary goal: v1.0 release on Google Play Store.
 
 ## Non-negotiable constraints
-- Steps can NEVER be generated passively in-game or purchased with real money.
+- Steps can NEVER be generated passively in-game or purchased with real money. **One** bounded exception
+  to passive-generation: the battle-step reward (flat per-kill, 2,000/day cap — `AwardBattleSteps.DAILY_BATTLE_STEP_CAP`,
+  ADR-0003), which is active play. Purchase-with-money has **no** exception.
 - Domain layer (`domain/`) must have zero Android imports — pure Kotlin only.
 - Room database is the single source of truth for all game state.
 - Anti-cheat: 200 steps/min rate limit, 50,000 steps/day ceiling, Health Connect cross-validation.

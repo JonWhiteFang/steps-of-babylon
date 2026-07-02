@@ -62,6 +62,7 @@ The foreground service and WorkManager worker share step ingestion responsibilit
 | Health Connect cross-validation | >20% discrepancy, graduated by offense count | Level 0: escrow; Level 1: faster discard; Level 2: cap at HC; Level 3: cap at HC −10% |
 | Activity minute validation | >4hr sessions, <2min micro-sessions, >5 types/day | Truncate, discard, or reject |
 | Overlap deduction | Sensor <50 steps/min → credit the activity minute; ≥50 steps/min → skip it (sensor already captured the motion) | Per-minute overlap check in `ActivityMinuteConverter` |
+| Battle-step cap | 2,000 Steps/day (`AwardBattleSteps.DAILY_BATTLE_STEP_CAP`) | The one in-game Step source (flat per-kill, active play only); separate counter, never additive to the 50k ceiling, never multiplied by in-round modifiers. Atomic per-day credit (`creditBattleStepsAtomic`), resets at local midnight. ADR-0003 |
 
 ### Rate Limiting Implementation
 

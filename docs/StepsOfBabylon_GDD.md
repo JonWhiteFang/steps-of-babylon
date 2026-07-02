@@ -22,13 +22,13 @@ Beyond the core loop, Steps of Babylon deepens the connection between walking an
 - **Activity Minute Parity** — credits indoor workouts like cycling and rowing alongside traditional steps
 - **Walking Encounters** — delivers real-time Supply Drop rewards during physical activity via push notifications
 
-**Design Philosophy:** Steps are never generated passively in-game. Every upgrade, every advancement, every unlock traces back to real physical movement. The game respects the player's effort by making every step count — literally.
+**Design Philosophy:** Steps are never generated *passively* in-game. Nearly every upgrade, advancement, and unlock traces back to real physical movement. The game respects the player's effort by making every step count — literally. The sole in-game Step source is a small, daily-capped **battle-step reward** for actively playing rounds (see §3.2), a deliberate supplement that never displaces walking as the primary path.
 
 ### 1.1 Design Pillars
 
 | Pillar | Description |
 |---|---|
-| Walk to Power | Steps are the sole permanent currency. No pay-to-win, no idle step generation. Your ziggurat reflects your physical effort. |
+| Walk to Power | Steps are the sole permanent currency. No pay-to-win, no *idle*/passive step generation (the only in-game source is a daily-capped battle-step reward for active play — §3.2). Your ziggurat reflects your physical effort. |
 | Satisfying Depth | The Tower's layered upgrade systems (Workshop, Labs, Ultimate Weapons, Cards) adapted for step-based progression. |
 | One More Walk | Escalating costs and tantalizing unlocks create motivation to walk further, mirroring The Tower's "one more run" compulsion. |
 | Journey of Discovery | Tier progression is mapped to narrative biomes, giving players a visual sense of traveling through a world powered by their real-world footsteps. |
@@ -63,7 +63,7 @@ Battles are real-time, wave-based tower defense sequences. The player's ziggurat
 5. Enemies scale in difficulty. The round ends when the ziggurat's health reaches zero.
 6. Post-round: the player sees their wave record, earns milestone rewards, and returns to the Workshop to invest steps.
 
-**Key distinction from The Tower:** The permanent currency (Steps) comes exclusively from walking. Cash (temporary, in-round currency) still comes from gameplay, preserving the in-round upgrade decisions.
+**Key distinction from The Tower:** The permanent currency (Steps) comes almost entirely from walking — the one in-game source is the small, daily-capped battle-step reward (§3.2). Cash (temporary, in-round currency) still comes from gameplay, preserving the in-round upgrade decisions.
 
 ### 2.3 Walking Encounters (Supply Drops)
 
@@ -87,7 +87,7 @@ Walking Encounters transform the real-world activity into a loot-driven experien
 
 | Currency | Source | Persistence | Used For |
 |---|---|---|---|
-| **Steps** | Real-world walking (pedometer) | Permanent | Workshop upgrades, Lab research, UW unlocks, Card purchases |
+| **Steps** | Real-world walking (pedometer); + a small daily-capped battle-step reward for active play (§3.2) | Permanent | Workshop upgrades, Lab research, UW unlocks, Card purchases |
 | **Cash** | Killing enemies + wave completion bonuses | Temporary (resets each round) | In-round upgrades |
 | **Gems** | Daily login streaks, milestones, long-distance walking bonuses | Permanent | Card packs, Lab slot unlocks, Lab rush timers, cosmetics |
 | **Power Stones** | Weekly walking challenges, wave milestones | Permanent | Unlocking and upgrading Ultimate Weapons |
@@ -103,6 +103,14 @@ Walking Encounters transform the real-world activity into a loot-driven experien
 | Marathon Runner | 25,000+ | Deep investment into expensive upgrades |
 
 **Tuning principle:** A casual walker (5k steps/day) should make meaningful progress every day. An active walker should feel proportionally rewarded through access to higher-tier upgrades.
+
+### 3.2 Battle-Step Reward — the one in-game Step source
+
+The **hard invariant is that Steps are never generated *passively*** (idle, timers, or purchase). The single deliberate exception is a small reward for *actively* playing battle rounds: each enemy kill grants a flat, per-type Step trickle (Basic/Fast/Scatter = 1, Ranged = 2, Tank = 3, Boss = 10), credited immediately on kill.
+
+- **Daily cap: 2,000 Steps/day** (`AwardBattleSteps.DAILY_BATTLE_STEP_CAP`) — ~4% of the 50,000-step anti-cheat ceiling, so it can never rival walking as the primary source. It is a **separate** counter, never additive to (and never able to raise) the 50k walking ceiling.
+- **Flat, never multiplied** — battle Steps ignore all in-round modifiers (Cash Bonus, Golden Ziggurat, cards, Lab multipliers) so the yield stays predictable for the cap logic and the anti-cheat audit trail.
+- **Rationale:** rewards showing up and playing without letting battle farming displace or mask real walking. Full mechanics and enforcement (atomic per-day crediting, rollover, race safety) are in **ADR-0003** and `docs/steering/security-model.md` §3.
 
 ---
 

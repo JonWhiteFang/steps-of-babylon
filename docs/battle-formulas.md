@@ -161,6 +161,28 @@ freeUpgradeChance = min(freeUpgradeLevel × 0.01, 0.25)             // cap 25%
 | 9 | 8.5× |
 | 10 | 10.0× |
 
+## Battle Step Rewards (the one in-game Step source)
+
+Steps (the permanent walking currency) are never generated passively — the **sole** in-game source is a
+flat, per-enemy-type reward for kills, credited immediately on death. Unlike Cash, it is **not** scaled by
+wave, tier, or any in-round modifier (Cash Bonus / Golden Ziggurat / cards / Lab multipliers do **not**
+apply), which keeps the yield predictable for the daily cap and the anti-cheat audit trail.
+
+```
+stepRewardPerKill = flat by enemy type (EnemyScaler.stepReward):
+  BASIC / FAST / SCATTER = 1     RANGED = 2     TANK = 3     BOSS = 10
+```
+
+| Rule | Value |
+|---|---|
+| Per-kill reward | Flat per type (1 / 2 / 3 / 10 above) — never multiplied |
+| Daily cap | **2,000 Steps/day** (`AwardBattleSteps.DAILY_BATTLE_STEP_CAP`) |
+| Relation to walking ceiling | Separate counter; never additive to the 50,000/day walking ceiling |
+| Crediting | Atomic per-day (`DailyStepDao.creditBattleStepsAtomic`): partial credit when headroom < requested, 0 when the cap is hit; resets at local midnight |
+| Trigger | Per kill in `CombatResolver`; awarded on `applicationScope` so a mid-round nav-away doesn't drop it |
+
+Rationale, cap tuning, and race-safety details: **ADR-0003** · anti-cheat framing: `docs/steering/security-model.md` §3.
+
 ## Wave Timing
 
 ```

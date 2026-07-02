@@ -30,7 +30,9 @@ Walk → Earn Steps → Spend Steps on Workshop upgrades → Fight battles → R
 
 ## Hard Design Rules
 
-- Steps can **never** be generated passively in-game or purchased with real money
+- Steps can **never** be generated passively in-game or purchased with real money — the **one** exception
+  to passive-generation is the daily-capped battle-step reward for active play (2,000/day,
+  `AwardBattleSteps.DAILY_BATTLE_STEP_CAP`, ADR-0003); purchase-with-money has no exception
 - Anti-cheat: 200 steps/min rate limit, 50,000 steps/day ceiling, Health Connect cross-validation
 - Solo experience — no multiplayer, no server backend required for v1.0
 - Monetization is cosmetic/convenience only (ads, IAP for Gems/cosmetics, Season Pass)

@@ -219,7 +219,10 @@ Key reference documents:
 
 ## Key Domain Concepts
 
-- **Steps** — primary permanent currency, earned only from real-world walking/activity. Never generated in-game.
+- **Steps** — primary permanent currency, earned only from real-world walking/activity. Never generated
+  passively in-game — the **one** sanctioned exception is the **battle-step reward** (a flat per-kill Step
+  trickle from playing a round, capped at 2,000/day via `AwardBattleSteps.DAILY_BATTLE_STEP_CAP`, separate
+  from the 50k walking ceiling; ADR-0003). Never purchasable with real money (no exception).
 - **Cash** — temporary in-round currency from killing enemies. Resets each round.
 - **Gems** — permanent premium currency from milestones and daily logins.
 - **Power Stones** — permanent currency for Ultimate Weapons, from weekly challenges and boss drops.
@@ -247,7 +250,9 @@ Key reference documents:
 - Room is the single source of truth for game state.
 - All upgrade cost formulas follow: `baseCost * (scaling ^ level)`.
 - Step counting must work reliably when the app is backgrounded or killed.
-- Steps can **never** be generated passively in-game — this is a hard design rule.
+- Steps can **never** be generated passively in-game — this is a hard design rule. The **only** exception
+  is the bounded battle-step reward (flat per-kill, 2,000/day cap; `AwardBattleSteps.DAILY_BATTLE_STEP_CAP`,
+  ADR-0003) — active play, not passive generation, and never additive to the 50k walking ceiling.
 - Anti-cheat: rate-limit at 200 steps/min, step velocity analysis (shaker/spoof detection), daily
   ceiling of 50,000 steps, graduated Health Connect cross-validation (4 offense levels), activity
   minute validation, per-minute overlap deduction.
