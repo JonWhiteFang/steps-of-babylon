@@ -45,6 +45,8 @@ import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.cosmeticDescRes
+import com.whitefang.stepsofbabylon.presentation.ui.cosmeticNameRes
 import com.whitefang.stepsofbabylon.presentation.ui.labelRes
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
@@ -312,9 +314,20 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
                 Card(Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column(Modifier.weight(1f)) {
-                            Text(cosmetic.name, fontWeight = FontWeight.Bold)
                             Text(
-                                cosmetic.description,
+                                if (cosmeticNameRes(cosmetic.cosmeticId) != 0) {
+                                    stringResource(cosmeticNameRes(cosmetic.cosmeticId))
+                                } else {
+                                    cosmetic.name
+                                },
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                if (cosmeticDescRes(cosmetic.cosmeticId) != 0) {
+                                    stringResource(cosmeticDescRes(cosmetic.cosmeticId))
+                                } else {
+                                    cosmetic.description
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

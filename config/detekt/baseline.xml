@@ -242,6 +242,7 @@
     <ID>TooManyFunctions:CardRepositoryImpl.kt:CardRepositoryImpl : CardRepository</ID>
     <ID>TooManyFunctions:DailyStepDao.kt:DailyStepDao</ID>
     <ID>TooManyFunctions:DatabaseModule.kt:DatabaseModule</ID>
+    <ID>TooManyFunctions:EnumLabels.kt:com.whitefang.stepsofbabylon.presentation.ui.EnumLabels.kt</ID>
     <ID>TooManyFunctions:GameEngine.kt:GameEngine : UWHostBuffHostCombatHost</ID>
     <ID>TooManyFunctions:MusicManager.kt:MusicManager : OnAudioFocusChangeListener</ID>
     <ID>TooManyFunctions:PlayerProfileDao.kt:PlayerProfileDao</ID>
