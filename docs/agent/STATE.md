@@ -55,6 +55,10 @@ the med/low backlog (#262) remain.
   table: the first real non-English `values-xx` locale (#34 payoff); the internal→closed promotion judgment
   call; #233 clean Simulation-hoist (ADR-0012) / #306 EntityProtocol; A24 clock-tamper, L12 BattleViewModel
   decomposition, battle perf L46-51.
+- *Side research (DONE, 2026-07-02) — UX/UI design skills/plugins assessment →
+  `docs/reviews/ux-ui-design-resources.md` (recommends `material-3-skill` + `compose-skill` baseline,
+  `ux-ui-mastery` optional; report only, nothing installed — adoption phasing awaits the developer's
+  pick). Detail in RUN_LOG.*
 - *Previous objective (DONE, 2026-07-02) — docs hardening: **#367** ran the tooling-gap audit (multi-agent,
   25 raised/24 survived/1 refuted → `docs/reviews/tooling-gap-assessment.md`, maturity High) + applied the
   pure-doc-hygiene survivors (README + STATE.md trim 491→403); **#368** documented the battle-step reward as

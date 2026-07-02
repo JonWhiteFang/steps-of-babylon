@@ -4,6 +4,19 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Docs — UX/UI design skills/plugins assessment (docs-only; no app/test/schema change)
+
+- **UX/UI design resources report.** Researched which Claude Code skills/plugins would strengthen
+  UX/UI design work in this repo → `docs/reviews/ux-ui-design-resources.md`. Recommends a 2-skill
+  baseline (`hamen/material-3-skill` — MD3 tokens/components/theming + compliance audit,
+  Compose-primary; `aldefy/compose-skill` — androidx-source-grounded Compose build guidance), with
+  `phazurlabs/ux-ui-mastery` optional (UX-audit/critique/accessibility commands) and Anthropic's
+  official web-oriented `example-skills` situational (`site/` page + HTML mockups only). Captures
+  the adoption constraint (ephemeral remote containers → skills must be repo-committed via
+  `.claude/skills/` or `.claude/settings.json`) and pre-adoption checks (license, content review,
+  token cost, version drift). **Report only — nothing installed, no configuration changed;**
+  adoption phasing is proposed in the report and awaits the developer's pick.
+
 ### Docs — tooling-gap audit + "Steps never generated" invariant accuracy (docs-only; no app/test/schema change)
 
 Two docs-only PRs, each merged via the CI docs/tooling fast-path.

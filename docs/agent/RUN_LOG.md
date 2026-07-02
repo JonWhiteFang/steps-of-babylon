@@ -1,3 +1,28 @@
+## 2026-07-02 — UX/UI design skills/plugins research report (docs-only; no app/test/schema change)
+
+- **Goal:** developer asked which Claude Code skills/plugins would help this project's UX/UI design
+  work; researched the ecosystem and committed the findings as a report.
+- **Method:** ecosystem sweep (official `anthropics/skills` marketplace manifest + community
+  directories + targeted Android/Compose search), then per-candidate verification against each source
+  repo (scope, install path, maintenance signals). Report only — **nothing installed, no config
+  changed**; the local `claude plugin` CLI was confirmed working but has no marketplaces configured.
+- **Deliverable:** `docs/reviews/ux-ui-design-resources.md`. Recommends a 2-skill baseline —
+  **`hamen/material-3-skill`** (MD3 tokens/components/theming + compliance audit; Compose-primary;
+  v1.1.1 2026-06-29, ~1.1k★) + **`aldefy/compose-skill`** (androidx-source-grounded Compose guidance:
+  state/recomposition-perf/nav/M3 motion; v2.3.1 May 2026, ~526★) — with **`phazurlabs/ux-ui-mastery`**
+  optional (UX-audit/design-critique/accessibility-check commands; deep but young + iOS-leaning) and
+  Anthropic's official `example-skills` situational (web-oriented; only for `site/` + HTML mockups).
+  No skill found covers the custom `SurfaceView` battle renderer — out of scope for all candidates.
+- **Key adoption constraint captured:** remote sessions are ephemeral containers with no marketplaces
+  configured, so adopted skills must be repo-committed (vendored `.claude/skills/` or
+  `extraKnownMarketplaces`/`enabledPlugins` in `.claude/settings.json`). Pre-adoption checks listed
+  (license before vendoring, content review — third-party skill text is an injection surface, token
+  cost via `claude plugin details`, version pinning/drift).
+- **Docs synced:** CHANGELOG `[Unreleased]` section added; STATE.md one-line side-research note; this
+  entry. No ADR (research report, no decision executed — adoption is the developer's call).
+- **Next:** developer picks the adoption phase (report §"Adoption path"); if approved, a follow-up PR
+  wires the chosen skills into repo config.
+
 ## 2026-07-02 — Tooling-gap findings filed as GitHub issues (#370–#389; GitHub-only, no repo change)
 
 - **Goal:** ensure the 24 surviving findings from the #367 tooling-gap audit
