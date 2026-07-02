@@ -4,6 +4,32 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Docs — tooling-gap audit + "Steps never generated" invariant accuracy (docs-only; no app/test/schema change)
+
+Two docs-only PRs, each merged via the CI docs/tooling fast-path.
+
+- **Tooling-gap assessment (#367).** Ran the reusable audit prompt (`docs/reviews/tooling-gap-assessment-prompt.md`)
+  as a multi-agent ultracode audit: 15-facet fan-out → adversarial refute-verify (default-to-refuted) →
+  synthesis. **25 findings raised · 24 survived · 1 refuted.** Report written to
+  `docs/reviews/tooling-gap-assessment.md` (overall maturity High; top real gaps: release-variant/R8 not
+  built in CI before auto-publish `cicd-1`, no production crash-visibility exit path `obs-2`/`obs-1`, two
+  safety-critical invariants prose-only `ai-2`/`ai-3`, no coverage ratchet on fragile zones `testing-1`).
+  Also applied the audit's pure-doc-hygiene survivors: README dropped the stale `1277`→pointer test count
+  (canonical 1294), added the four missing `data/` packages + a `structure.md` link + a non-TTY
+  `run-gradle.sh` cross-ref; **STATE.md trimmed 491 → 403 lines** toward its one-page rule (stacked
+  "Previous objective" narrative + test-count ladder relocated — both preserved in RUN_LOG/CHANGELOG).
+  The audit's code/config findings were NOT implemented (scoped follow-ups per the report roadmap).
+- **"Steps never generated in-game" — sole exception documented (#368).** The invariant was stated as an
+  absolute across ~8 canonical docs, but the code has always had one bounded exception: the **battle-step
+  reward** (flat per-enemy-kill, 2,000/day cap via `AwardBattleSteps.DAILY_BATTLE_STEP_CAP`, separate from
+  the 50k walking ceiling, never multiplied by in-round modifiers — ADR-0003). Made the invariant accurate
+  everywhere, keeping "never generated *passively*" (now names the exception) distinct from "never
+  purchasable with real money" (stays absolute — battle Steps are earned, not bought). Updated CLAUDE.md,
+  START_HERE.md, CONSTRAINTS.md (invariant + a "Never do" carve-out), the GDD (§1/§2.2/§3), product.md,
+  security-model.md §3, ADR-0021. Also *positively defined* the mechanic where it was only referenced: new
+  GDD §3.2, a new "Battle Step Rewards" section in battle-formulas.md (closed a dangling reference), and a
+  battle-step-cap row in step-tracking.md's anti-cheat table.
+
 ### i18n — locale-readiness, phase 3 / final (#34, ADR-0014; no behavior change)
 
 **Full string-extraction pass — the app is now 100% locale-ready** (a `res/values-<locale>/strings.xml`

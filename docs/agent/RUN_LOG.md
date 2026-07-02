@@ -1,3 +1,54 @@
+## 2026-07-02 — Docs hardening: tooling-gap audit + "Steps never generated" invariant accuracy (2 docs-only PRs #367/#368 merged; no app/test/schema change)
+
+- **Goal:** (a) run the reusable tooling-gap audit prompt the developer left in `docs/reviews/`, and
+  (b) document the long-standing inaccuracy that the "Steps are never generated in-game" invariant is
+  stated as an absolute across the docs while the code has always had one bounded exception (the
+  battle-step reward). Both landed as docs-only PRs via the CI docs/tooling fast-path (`main` is
+  branch-protected — no direct pushes).
+- **PR #367 — tooling-gap assessment + doc-hygiene (merge `f07b0ff`).** Ran `docs/reviews/tooling-gap-assessment-prompt.md`
+  as a multi-agent ultracode audit: **39 agents** (15-facet fan-out, one reviewer per facet citing real
+  `file:line`) → adversarial refute-verify per finding (default-to-refuted) → synthesis. **25 findings
+  raised · 24 survived (12 confirmed / 12 partial) · 1 refuted** (`cicd-2` branch-protection — already
+  recorded in ADR-0018's 2026-06-16 amendment). Report → `docs/reviews/tooling-gap-assessment.md`. Overall
+  maturity **High**. Top real gaps surfaced (NOT fixed — scoped follow-ups): `cicd-1` release-variant/R8
+  never built in CI before the `v*` tag auto-publishes to Play internal; `obs-2`/`obs-1` no
+  production-crash exit path / monitoring runbook; `ai-2`/`ai-3` the lock-order + "Steps never generated"
+  invariants are prose-only not build-gated; `testing-1` no coverage ratchet on the fragile
+  concurrency/economy zones; `perf-3` no LeakCanary; `sectooling-1` no secret scanning. Applied the
+  **pure-doc-hygiene survivors** in the same PR: README dropped the stale `1277`→pointer (canonical 1294),
+  added the four missing `data/` packages (`anticheat`/`onboarding`/`diagnostics`/`time`) + a `structure.md`
+  link + a non-TTY `run-gradle.sh` cross-ref; **STATE.md trimmed 491 → 403 lines** toward its one-page rule
+  (stacked "Previous objective" narrative + test-count ladder relocated — verified every anchor is preserved
+  in the append-only RUN_LOG/CHANGELOG first, so deduplication not data loss).
+- **PR #368 — "Steps never generated in-game" sole exception documented (merge `cff79f1`).** Two read-only
+  Explore agents first *grounded the exception in code* (confirmed the developer's "2000/day" exactly:
+  `AwardBattleSteps.DAILY_BATTLE_STEP_CAP = 2_000L` at `AwardBattleSteps.kt:45`; flat per-kill via
+  `EnemyScaler.stepReward` = 1/2/3/10 by type; atomic per-day `DailyStepDao.creditBattleStepsAtomic`;
+  separate from the 50k ceiling; never multiplied by in-round modifiers; ADR-0003). Then updated **9 files**,
+  carefully keeping two clauses distinct: **"never generated *passively*"** now names the one exception
+  (CLAUDE.md ×2, START_HERE, CONSTRAINTS invariant + a "Never do" carve-out, GDD §1/§2.2/§3, product.md,
+  security-model.md §3, ADR-0021) while **"never purchasable with real money" stays absolute** (battle
+  Steps are earned, not bought — CLAUDE.md monetization note + GDD §13 left unchanged). Also *positively
+  defined* the mechanic where it was only referenced: new GDD **§3.2**, a new **Battle Step Rewards**
+  section in `battle-formulas.md` (closed a dangling reference the doc used but never defined), and a
+  battle-step-cap row in `step-tracking.md`'s anti-cheat table. Constant name + 2,000 cap verified
+  consistent across all 8 files; every `§3.2`/ADR-0003 cross-ref resolves.
+- **Verification:** both PRs green on the CI docs/tooling fast-path (`build-and-test` + `connected`
+  required checks + `ktlint`, all in seconds — heavy build/emulator steps correctly skipped). No app code,
+  test, schema, dependency, or CI-config change in either. No new ADR — #368 *documents* the existing
+  ADR-0003 decision rather than making a new one.
+- **Doc sync (this checkpoint):** CHANGELOG `[Unreleased]` new "Docs — tooling-gap audit + invariant
+  accuracy" section; STATE.md objective rotated + a new "Steps never generated in-game — one sanctioned
+  exception" fragile-zone entry added (ties to the `ai-3` follow-up); this RUN_LOG entry. CLAUDE.md/README
+  were synced inside the merged PRs themselves; no other steering doc affected.
+- **What remains / next (no work in flight):** the tooling-audit's higher-priority **code/config**
+  follow-ups if the developer opts in — `cicd-1` (add `assembleRelease` to the PR gate), `ai-3`/`ai-2`
+  (invariant tripwire test + wire the `concurrency-reviewer` as a mandatory engine/effects lane), `obs-2`
+  (crash breadcrumb exit path), `perf-3` (LeakCanary debugImplementation), `testing-1` (scoped Kover
+  verify), `sectooling-1` (GitHub secret scanning + gitleaks). Plus the standing backlog: first real
+  non-English `values-xx` locale (#34 payoff), internal→closed promotion judgment call, A24 clock-tamper,
+  L12 BattleViewModel decomposition, battle perf L46-51.
+
 ## 2026-07-02 — #34 i18n phase 3 / locale-readiness (6 PRs #360–#365 merged; app now 100% locale-ready; no behavior change)
 
 - **Goal:** extract every remaining user-facing English literal so a `res/values-<locale>/strings.xml` fully

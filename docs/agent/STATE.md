@@ -41,32 +41,31 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (#34 i18n phase 3 / locale-readiness — ALL 6 PRs MERGED to `main`; the app is now 100%
-  locale-ready).** A `res/values-<locale>/strings.xml` now fully translates the UI — no user-facing English
-  leaks. Fresh spec + plan (both passed the multi-agent Adversarial Review Gate — spec 37 findings/26
-  surviving, plan 41/24) reframed the "PR3 = Canvas/Activity" shorthand into **11 categories** and **6
-  sequential PRs** (each merged + CI-verified before the next), executed subagent-driven with a two-stage
-  review per task: **PR3a #360** (sealed `UiMessage` for VM messages + billing/ad data-layer error
-  localization), **PR3b #361** (`SCREEN_LOAD_ERROR`→`@StringRes` across 10 VMs + Activities + HelpScreen),
-  **PR3c #362** (nav labels #161 + duration/plurals + `pathValueAtNext`), **PR3d #363** (battle Canvas via
-  the `domain/Strings` seam), **PR3e #364** (domain-model descriptions + enum names + Workshop stat units,
-  the biggest — via `@StringRes` resolvers in `EnumLabels.kt`, domain stays Android-free), **PR3f #365**
-  (onboarding carousel content). **No behavior change, rendered English byte-identical; 1282 → 1294 JVM**
-  (+12 `CardEffectDescriptionTest`); Android lint (debug+release) + detekt + ktlint green. Review caught
-  real defects inline: a compile-breaking test the plan missed (`UserFeedbackTest`/`HomeFirstWalkPromptTest`),
-  a byte-identity quirk (`Uw Cooldown` not "U W Cooldown" — `toDisplayName` splits only on `_`), an economy
-  row-visibility regression (fixed via nullable fields), a `lintRelease` `formatted="false"` fix on bare-`%`
-  strings, and a SmartReminder notification leak the completeness sweep found. ADR-0014 amended with the
-  phase-3 note. Documented residuals (by design): `SupplyDropTrigger.message`, `BillingProduct.priceDisplay`,
-  seed cosmetic DB-fallback. **NEXT:** ship the first real non-English `values-xx` locale (the payoff — a
-  separate effort). Also unchanged: the internal→closed promotion judgment call + the audit backlog's
-  remaining non-batchable items (#217 done; A24 clock-tamper, L12 BattleViewModel decomposition, battle
-  perf L46-51 remain).
-- *Prior objectives (all DONE) — the recently-completed arc (i18n phase 2 #354/#355, `/backup-to-vault`
-  skill, #217 service tests, Claude-tooling PRs #345/#346, the **v1.0.12 release** vc 28 → Play internal,
-  audit fixes #216/#221, audit-triage batches A–D, and the **v1.0.11 release** vc 27 and everything before
-  it) — are recorded per-PR in `docs/agent/RUN_LOG.md` + `CHANGELOG.md` and summarized under "Recently
-  shipped" below; not duplicated here (per the one-page rule — CLAUDE.md "Always-on memory rules").*
+- **CURRENT (docs hardening — tooling-gap audit + "Steps never generated" invariant accuracy; 2 docs-only
+  PRs #367/#368 MERGED to `main`; no app/test/schema change).** (1) **#367** ran the reusable tooling-audit
+  prompt as a multi-agent ultracode audit (15-facet fan-out → adversarial refute-verify → synthesis; **25
+  raised / 24 survived / 1 refuted**) → `docs/reviews/tooling-gap-assessment.md` (maturity **High**; top
+  real gaps: release-variant/R8 not built in CI before auto-publish `cicd-1`, no production crash-visibility
+  exit path `obs-2`/`obs-1`, safety-critical invariants prose-only `ai-2`/`ai-3`, no coverage ratchet
+  `testing-1`). Applied the pure-doc-hygiene survivors (README stale test-count→pointer, +4 `data/`
+  packages, non-TTY cross-ref; **STATE.md trimmed 491→403 lines**). Audit's code/config findings NOT
+  implemented — scoped follow-ups per the report. (2) **#368** documented the **battle-step reward** as the
+  sole exception to "Steps never generated in-game" (flat per-kill, 2,000/day cap `AwardBattleSteps.DAILY_BATTLE_STEP_CAP`,
+  separate from the 50k ceiling, never multiplied — ADR-0003) across ~8 canonical docs, keeping "never
+  generated *passively*" (has the exception) distinct from "never purchasable with real money" (stays
+  absolute); positively defined the mechanic in GDD §3.2 + a new battle-formulas.md section +
+  step-tracking.md anti-cheat row. **NEXT (no work in flight):** the tooling-audit backlog's higher-priority
+  code/config findings if the developer opts in (`cicd-1` release-variant CI, `ai-3`/`ai-2` invariant
+  tripwires + wiring the concurrency-reviewer, `obs-2` crash exit path, `perf-3` LeakCanary, `testing-1`
+  scoped Kover ratchet, `sectooling-1` secret scanning); the first real non-English `values-xx` locale
+  (#34 payoff); the internal→closed promotion judgment call; A24 clock-tamper, L12 BattleViewModel
+  decomposition, battle perf L46-51.
+- *Prior objectives (all DONE) — the recently-completed arc (#34 i18n phase 3 locale-readiness [6 PRs
+  #360–#365, app 100% locale-ready, 1294 JVM], i18n phase 2 #354/#355, `/backup-to-vault` skill, #217
+  service tests, Claude-tooling PRs #345/#346, the **v1.0.12 release** vc 28 → Play internal, audit fixes
+  #216/#221, audit-triage batches A–D, and the **v1.0.11 release** vc 27 and everything before it) — are
+  recorded per-PR in `docs/agent/RUN_LOG.md` + `CHANGELOG.md` and summarized under "Recently shipped"
+  below; not duplicated here (per the one-page rule — CLAUDE.md "Always-on memory rules").*
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
@@ -208,6 +207,15 @@ i18n #34: phase 1 (V1X-13) + phase 2 (Compose screens) + phase 3 (locale-readine
 - **Background billing reconcile is time-bounded + best-effort (#250, ADR-0028)** — `MainActivity.onResume` (foreground) and `StepSyncWorker.doWork` (background, 15-min) both call the shared top-level `service.reconcileBillingSafely(billingManager)` = `withTimeoutOrNull(20s)` + catch-all. The timeout is load-bearing: `BillingManagerImpl.connect()` has NO internal timeout (its disconnect callback never resumes), so an offline/stalled device would otherwise hang the worker / leak a coroutine on resume. `reconcilePendingPurchases()` is idempotent + mutex-serialised + connect-guarded + Activity-independent (BillingClient from `@ApplicationContext`). Don't inline the call without the timeout, and don't drop either trigger (Store-open alone misses the 3-day Play auto-refund window). Guarded by `ReconcileBillingSafelyTest`.
 - **Battery-exemption primer gating (#261, ADR-0029)** — `OnboardingViewModel.shouldOfferBatteryExemption` = `!BatteryOptimizationStatus.isIgnoring()` is read ONCE at construction → it's STALE after the user grants the exemption. The onboarding granted-branch primer therefore gates re-display on a session-local `batteryPrimerHandled` flag that **BOTH** buttons ("Allow background activity" AND "Maybe later") set — setting it only on "Maybe later" re-shows the primer after the user just allowed. Never block the flow (both paths reach `finish()`). The durable re-offer is the Settings "Background activity" row (onboarding is one-shot). `MainActivity.requestBatteryExemption` fires `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (falls back to the settings list); manifest must keep `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (Play-eligible only via the FGS-health step service). Guarded by `OnboardingViewModelTest`.
 - **Battle is portrait-locked (#233, ADR-0029)** — `BattleScreen` sets `activity.requestedOrientation = PORTRAIT` in a `DisposableEffect` (via `LocalActivity`), restored to `UNSPECIFIED` on dispose. This makes the config-change engine/VM desync (fresh `remember`ed `GameSurfaceView`/engine vs. surviving `BattleViewModel`) UNREACHABLE by preventing mid-round rotation. The lock is per-screen (battle is a Compose destination in the single MainActivity — a manifest `screenOrientation` would lock the whole app). An entry-time recreate (device was landscape) is harmless: the round starts only after `configure`/`startPollingEngine`, strictly after `isLoading` flips false. Don't remove the lock without restoring orientation on dispose, and don't move it to the manifest (would lock the whole app). The clean fix (hoist `Simulation` to the VM, ADR-0012) is the deferred larger effort.
+- **"Steps never generated in-game" — one sanctioned exception (ADR-0003; invariant docs synced 2026-07-02)** —
+  the battle-step reward is the ONLY in-game Step-credit path outside real-world walking: flat per enemy
+  kill (`EnemyScaler.stepReward`), atomic per-day via `DailyStepDao.creditBattleStepsAtomic`, capped at
+  2,000/day (`AwardBattleSteps.DAILY_BATTLE_STEP_CAP`), a SEPARATE counter never additive to the 50k walking
+  ceiling, and NEVER multiplied by any in-round modifier. Do **not** add a *new* in-game Step-credit path
+  and do **not** treat this one as a violation to remove. The rule is prose-only, NOT build-gated — the
+  `ai-3` tooling-audit finding proposes a `DomainPurityTest`-style step-credit-allowlist tripwire (open
+  follow-up). Legit credit callers today: `DailyStepManager` (sensor), `StepCrossValidator` (HC escrow),
+  `ClaimSupplyDrop` (walking encounter), `AwardBattleSteps` (this cap). Guarded by `AwardBattleStepsTest`.
 - **`DailyStepManager` Mutex (#120)** — credit read-check-write under a non-reentrant `Mutex`; don't add an un-locked counter mutation.
 - **Trusted gap-fill credit path (#251)** — `DailyStepManager.recordTrustedSteps` is the ONLY credit path that
   bypasses the rate limiter + velocity analyzer; it exists for HC-verified offline-recovery gaps
