@@ -123,7 +123,12 @@ sealed interface UiMessage {
         override val resId = R.string.msg_milestone_already_claimed
     }
 
-    /** Missions UnknownCosmetic — %1$s = the cosmetic id being finalised. */
+    /**
+     * Missions UnknownCosmetic — %1$s = the cosmetic id being finalised.
+     * (This is the concrete realization of the spec §4 generic `WithArgs(resId, args)` arg-case;
+     * a named case is preferred over a generic (resId,args) pair for type-safety — intentional
+     * divergence from the spec's illustrative `WithArgs`, per review finding F6.)
+     */
     data class RewardUnavailable(val cosmeticId: String) : UiMessage {
         override val resId = R.string.msg_reward_unavailable
         override val args = listOf<Any>(cosmeticId)
@@ -446,9 +451,16 @@ git commit -m "i18n(#34): inject @ApplicationContext + localize RewardAdManagerI
 ### Task A6: Update tests + add `UiMessageTest`
 
 **Files:**
-- `store/StoreViewModelTest.kt:253,270` · `cards/CardsViewModelTest.kt:210,236,257` · `battle/BattleViewModelTest.kt:290,311,358`.
+- `store/StoreViewModelTest.kt:253,270` · `cards/CardsViewModelTest.kt:210,236,257` · `battle/BattleViewModelTest.kt:290,311,337,358`.
+- **`data/billing/BillingManagerImplTest.kt:242,264-265,281,315`** (review F3 — asserts exact English `.message`; A4 localizes those).
+- **`data/ads/RewardAdManagerImplTest.kt:56,105,147`** (review F2/TS-01 — manually constructs the impl with 3 args on the plain-JVM lane + asserts exact English; A5 adds a Context param + `context.getString`).
 - Create `presentation/ui/UiMessageTest.kt`.
 - (Workshop/Labs/Missions VM tests have NO userMessage assertions — verified; no change.)
+
+> ⚠️ **These two data-layer test reconciliations (F3, F2/TS-01) are load-bearing:** without them PR3a's
+> A7 merge gate (`:app:testDebugUnitTest`) fails to COMPILE (RewardAdManagerImplTest's 3-arg ctor call)
+> or fails assertions (`context.getString` returns empty on a non-Robolectric Context), blocking the
+> entire sequential 6-PR chain at the first gate. Do them as Steps 4a/4b below.
 
 - [ ] **Step 1: Update StoreViewModelTest**
 
@@ -466,10 +478,12 @@ Wait — the billing fake returns `PurchaseResult.Error("Network error")` verbat
 - `:236` `assertEquals("load failed", …)` (non-blank ad error, forwarded) → `assertEquals(UiMessage.Raw("load failed"), vm.uiState.value.userMessage)`.
 - `:257` `assertEquals("Ad failed to load. Try again later.", …)` (blank branch fallback) → `assertEquals(UiMessage.AdFailed, vm.uiState.value.userMessage)`.
 
-- [ ] **Step 3: Update BattleViewModelTest**
+- [ ] **Step 3: Update BattleViewModelTest** (mapping corrected per review TS-03 — `:311` is a FORWARDED non-blank ad error, NOT AdCancelled; the 2nd AdCancelled is `:337`)
 
-- `:290` and `:311` `assertEquals("Ad cancelled. Try again.", …)` → `assertEquals(UiMessage.AdCancelled, …)`.
-- `:358` `assertEquals("Ad failed to load. Try again later.", …)` → `assertEquals(UiMessage.AdFailed, …)`.
+- `:290` `assertEquals("Ad cancelled. Try again.", …)` (watchGemAd Cancelled) → `assertEquals(UiMessage.AdCancelled, …)`.
+- `:311` `assertEquals("No ad available", …)` (watchGemAd Error — forwarded non-blank `result.message`) → `assertEquals(UiMessage.Raw("No ad available"), …)`. **Verify the exact forwarded string the test's fake ad manager returns and use it in `Raw(...)`.**
+- `:337` `assertEquals("Ad cancelled. Try again.", …)` (watchPsAd Cancelled) → `assertEquals(UiMessage.AdCancelled, …)`.
+- `:358` `assertEquals("Ad failed to load. Try again later.", …)` (watchPsAd blank fallback) → `assertEquals(UiMessage.AdFailed, …)`.
 
 - [ ] **Step 4: Write `UiMessageTest` (Robolectric JVM lane)**
 
@@ -478,14 +492,18 @@ package com.whitefang.stepsofbabylon.presentation.ui
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+// Config MUST match the repo's Robolectric JVM lane — mirror CardsScreenTest exactly (review TS-04):
+// @RunWith(RobolectricTestRunner::class) + @Config(sdk = [34], application = android.app.Application::class).
+// Do NOT use @Config(manifest = Config.NONE) (non-standard here). Import BOTH assertEquals + assertTrue.
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE)
+@Config(sdk = [34], application = android.app.Application::class)
 class UiMessageTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
@@ -520,16 +538,34 @@ class UiMessageTest {
 ```
 (Match the repo's existing Robolectric config — check `CardsScreenTest` for the exact `@RunWith`/`@Config`/`@GraphicsMode` annotations and mirror them; adjust imports if the repo uses JUnit Jupiter vs JUnit4 on the Robolectric lane — `CardsScreenTest` is the reference.)
 
+- [ ] **Step 4a: Reconcile `BillingManagerImplTest` (review F3 — REQUIRED, breaks the gate otherwise)**
+
+`BillingManagerImplTest` runs on the plain JVM lane (`org.junit.Assert`, no Robolectric) and asserts the exact English `.message` that Task A4 now resolves via `context.getString`. Open it and reconcile the ~4 assertions:
+- `:242` `assertEquals("Purchase cancelled", (result as PurchaseResult.Error).message)`
+- `:264-265` `.message.contains("gem_pack_small")` (the product-unavailable arg case)
+- `:281` `assertEquals("No activity available for purchase", …)`
+- `:315` `assertTrue(...message.contains("pending"))`
+
+Because A4 makes `.message` come from `context.getString(R.string.billing_error_*)`, on a plain JVM Context those return empty/throw. **Move the class to the Robolectric JVM lane** (`@RunWith(RobolectricTestRunner::class)` + `@Config(sdk = [34], application = android.app.Application::class)`, mirroring `CardsScreenTest`) and keep the English assertions — under the default locale `context.getString` resolves to the same English, so the assertions pass byte-identically. (Alternative: assert the `PurchaseResult.Error` *shape* + the arg, if converting the lane is too invasive — but the resource-resolved-English route keeps the strongest coverage.) Confirm the test builds the `BillingManagerImpl` with a resource-backed Context. Verify the exact assertion lines by symbol (line numbers may drift).
+
+- [ ] **Step 4b: Reconcile `RewardAdManagerImplTest` (review F2/TS-01 — REQUIRED, breaks compile otherwise)**
+
+`RewardAdManagerImplTest` (a) manually constructs `RewardAdManagerImpl(adapter, consentManager, activityProvider)` at `:56` — Task A5's 4th ctor param (`context`) breaks this compile; and (b) runs on the plain-JVM lane (class doc says "No Robolectric required") asserting exact English at `:105`/`:147` that A5 now resolves via `context.getString`. Fix both:
+- Convert the class to the Robolectric lane (`@RunWith(RobolectricTestRunner::class)` + `@Config(sdk = [34], application = android.app.Application::class)`).
+- Pass a Context to the ctor: `RewardAdManagerImpl(adapter, consentManager, activityProvider, ApplicationProvider.getApplicationContext())`.
+- Keep the English assertions (`context.getString(R.string.ad_error_*)` resolves to the same English under the default locale) — they pass byte-identically. Verify lines by symbol.
+
 - [ ] **Step 5: Run the affected tests**
 
-Run: `./run-gradle.sh :app:testDebugUnitTest --tests "*UiMessageTest" --tests "*StoreViewModelTest" --tests "*CardsViewModelTest" --tests "*BattleViewModelTest" > /tmp/t.log 2>&1 && tail -n 25 /tmp/t.log` → `BUILD SUCCESSFUL`.
+Run: `./run-gradle.sh :app:testDebugUnitTest --tests "*UiMessageTest" --tests "*StoreViewModelTest" --tests "*CardsViewModelTest" --tests "*BattleViewModelTest" --tests "*BillingManagerImplTest" --tests "*RewardAdManagerImplTest" > /tmp/t.log 2>&1 && tail -n 25 /tmp/t.log` → `BUILD SUCCESSFUL`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add app/src/test/java/com/whitefang/stepsofbabylon/presentation/ui/UiMessageTest.kt \
-  app/src/test/java/com/whitefang/stepsofbabylon/presentation/{store,cards,battle}
-git commit -m "i18n(#34): pin VM tests to UiMessage type + add UiMessageTest (phase 3 A)"
+  app/src/test/java/com/whitefang/stepsofbabylon/presentation/{store,cards,battle} \
+  app/src/test/java/com/whitefang/stepsofbabylon/data/{billing,ads}
+git commit -m "i18n(#34): pin VM + data-layer tests to UiMessage/resource + add UiMessageTest (phase 3 A)"
 ```
 
 ---
@@ -577,7 +613,7 @@ Confirm the merge commit is present on `main` before cutting PR3b. If CI is red,
 
 **Files:**
 - `presentation/ui/ErrorState.kt:56` (const) + `:29-33` (composable sig).
-- 10 UiStates: `stats/StatsUiState.kt:40`, `store/StoreUiState.kt:15`, `supplies/SuppliesUiState.kt:8`, `weapons/UltimateWeaponUiState.kt:53`, `cards/CardsUiState.kt:28`, `economy/EconomyUiState.kt:12`, `home/HomeUiState.kt:19`, `workshop/WorkshopUiState.kt:28`, `labs/LabsUiState.kt:28`, `missions/MissionsUiState.kt:28`.
+- 10 UiStates: `stats/StatsUiState.kt:40`, `store/StoreUiState.kt:15`, `supplies/SuppliesUiState.kt:8`, **`weapons/UltimateWeaponViewModel.kt:53`** (the `UltimateWeaponUiState` is defined INLINE in the VM file — there is NO separate `UltimateWeaponUiState.kt`; review CG-05), `cards/CardsUiState.kt:28`, `economy/EconomyUiState.kt:12`, `home/HomeUiState.kt:19`, `workshop/WorkshopUiState.kt:28`, `labs/LabsUiState.kt:28`, `missions/MissionsUiState.kt:28`.
 - 10 VMs `.catch` emit sites (same files, the `error = SCREEN_LOAD_ERROR` lines).
 - Each screen's early-return that reads `state.error` (e.g. `stats/StatsScreen.kt:27`).
 
@@ -847,10 +883,11 @@ git commit -m "i18n(#34): Screen.label -> @StringRes labelRes (phase 3 B, #161-s
 
 - [ ] **Step 1: Add unit resources**
 
-The unit words are the translatable part (`s`, `DPS`, `dmg`, `enemies`, `px/s`, `screen`, `area`, `× dmg`). The numeric formatting (`%.0f`/`%.1f`) stays. Add format-arg resources:
+The unit words are the translatable part (`s`, `DPS`, `dmg`, `enemies`, `px/s`, `screen`, `area`, `× dmg`). The numeric formatting (`%.0f`/`%.1f`) stays. **Spacing is byte-identical to the current source** (verified from ground truth): `"${v.toInt()}s"` is spaceless → `%1$ds`; `"${v.toInt()} DPS"` has a space → `%1$d DPS`; the CHRONO_FIELD SECONDARY branch is the rounded FLOAT `"%.0fs"` (spaceless, HALF_UP-rounded — NOT truncated), so it needs its own `%1$ss`-with-`fmt0` resource (review F4). Add:
 ```xml
-    <!-- i18n #34 phase 3: UW path-value units (category D) -->
-    <string name="uw_value_seconds">%1$d s</string>
+    <!-- i18n #34 phase 3: UW path-value units (category D) — spacing byte-identical to source -->
+    <string name="uw_value_seconds">%1$ds</string>          <!-- COOLDOWN: "${v.toInt()}s" (int, spaceless) -->
+    <string name="uw_value_seconds_f">%1$ss</string>        <!-- CHRONO_FIELD SECONDARY: "%.0fs" (rounded float, spaceless) — review F4 -->
     <string name="uw_value_dps">%1$d DPS</string>
     <string name="uw_value_dmg">%1$d dmg</string>
     <string name="uw_value_enemies">%1$d enemies</string>
@@ -861,7 +898,6 @@ The unit words are the translatable part (`s`, `DPS`, `dmg`, `enemies`, `px/s`, 
     <string name="uw_value_percent_area">%1$s%% area</string>
     <string name="uw_value_multiplier_dmg">%1$s× dmg</string>
 ```
-(Note: today's `"${v.toInt()}s"` has no space — decide whether to keep it spaceless as `%1$ds` or introduce a space. To preserve byte-identical output, use `%1$ds` etc. with NO space; the examples above added a space for readability — **match the current output**: `"${v.toInt()}s"` → `%1$ds`, `"${v.toInt()} DPS"` → `%1$d DPS`. Adjust each resource to the exact current spacing.)
 
 - [ ] **Step 2: Lift `pathValueAtNext` into a `@Composable`**
 
@@ -893,18 +929,18 @@ private fun pathValueAtNext(
                 UltimateWeaponType.CHAIN_LIGHTNING -> stringResource(R.string.uw_value_enemies, v.toInt())
                 UltimateWeaponType.DEATH_WAVE -> stringResource(R.string.uw_value_percent_screen, fmt0(v * 100))
                 UltimateWeaponType.BLACK_HOLE -> stringResource(R.string.uw_value_pxs, v.toInt())
-                UltimateWeaponType.CHRONO_FIELD -> stringResource(R.string.uw_value_seconds, v.toInt())
+                UltimateWeaponType.CHRONO_FIELD -> stringResource(R.string.uw_value_seconds_f, fmt0(v))  // rounded float, review F4
                 UltimateWeaponType.POISON_SWAMP -> stringResource(R.string.uw_value_percent_area, fmt0(v * 100))
                 UltimateWeaponType.GOLDEN_ZIGGURAT -> stringResource(R.string.uw_value_multiplier_dmg, fmt1(v))
             }
     }
 }
 
-// helpers keep the ROOT-locale numeric formatting (percent/multiplier take a pre-formatted %1$s):
+// helpers keep the ROOT-locale numeric formatting (percent/multiplier/seconds_f take a pre-formatted %1$s):
 private fun fmt0(x: Float) = String.format(java.util.Locale.ROOT, "%.0f", x)
 private fun fmt1(x: Float) = String.format(java.util.Locale.ROOT, "%.1f", x)
 ```
-Note the CHRONO_FIELD SECONDARY branch was `"%.0fs"` (a float with `s`) — that maps to `uw_value_seconds` with `v.toInt()` only if the value is whole; **verify** whether it should stay a float. If the original used `%.0f` (rounded float) vs `toInt()`, preserve the exact rounding — use a dedicated `uw_value_seconds_f` (`%1$s s` with `fmt0`) if needed. The caller `:220` is unchanged (it already calls `pathValueAtNext(...)` in a Composable). Add `import androidx.compose.ui.res.stringResource`.
+The CHRONO_FIELD SECONDARY branch keeps the rounded-float path (`uw_value_seconds_f` + `fmt0(v)`) so `v=2.6` still renders `3s` (HALF_UP), NOT `2s` — byte-identical to the current `String.format("%.0fs", v)` (review F4). The COOLDOWN branch stays the truncating int path (`uw_value_seconds` + `v.toInt()`), matching the current `"${v.toInt()}s"`. The caller `:220` is unchanged (it already calls `pathValueAtNext(...)` in a Composable). Add `import androidx.compose.ui.res.stringResource`.
 
 - [ ] **Step 3: Build + commit**
 
@@ -987,7 +1023,7 @@ Add `<string name="economy_time_remaining">%1$dd %2$dh</string>`. Change the pip
 - `EconomyUiState.kt:14`: `val weeklyTimeRemaining: String = ""` → `val weeklyResetDays: Int = 0, val weeklyResetHours: Int = 0`.
 - `CurrencyDashboardViewModel.kt:128`: replace `val timeRemaining = "${days}d ${hours}h"` — instead assign `days`/`hours` (both `Long` → `.toInt()`) into the snapshot fields; the combine at `:71` maps them into `EconomyUiState` (`weeklyResetDays`/`weeklyResetHours`).
 - In `CurrencyDashboardScreen.kt`, wherever `weeklyTimeRemaining` was shown, resolve: `stringResource(R.string.economy_time_remaining, state.weeklyResetDays, state.weeklyResetHours)`. (Grep for `weeklyTimeRemaining` render site.)
-- If any `EconomyUiState`-shape test asserts the formatted `weeklyTimeRemaining` string, update it to assert the two int fields. (Grep `CurrencyDashboardViewModelTest` / `EconomyUiState` usages.)
+- **REQUIRED (not conditional — review CG-04/TS-06):** `CurrencyDashboardViewModelTest.kt` has a test `V1X16 - weeklyTimeRemaining is populated and formatted` that reads `vm.uiState.value.weeklyTimeRemaining` (~:141) and asserts `.isNotBlank()` (~:142). Renaming the field DELETES what it reads → compile failure at the C4 gate. Update that test to assert the two int fields instead (e.g. `assertTrue(state.weeklyResetDays >= 0)` + `assertTrue(state.weeklyResetHours in 0..23)`), and add `.../economy` to the C3 `git add` list (already tentatively included). Verify the test name/lines by symbol.
 
 - [ ] **Step 5: Build + test + commit**
 
@@ -1237,8 +1273,9 @@ fun UltimateWeaponType.descriptionRes(): Int = when (this) { /* all 6 */ }
 
 - `workshop/UpgradeCard.kt` + `InRoundUpgradeMenu.kt:143`: today `stringResource(R.string.inround_level_desc, level, type.config.description)`. The template embeds the description as `%2$s`. Change to resolve the description first: `stringResource(R.string.inround_level_desc, level, stringResource(type.descriptionRes()))`. (Nested `stringResource` is fine in Compose.)
 - `labs/LabsScreen.kt:168` `Text(info.type.description, …)` → `Text(stringResource(info.type.descriptionRes()), …)`.
-- `missions/MissionsScreen.kt:125` `Text(mission.description, …)` → `Text(stringResource(mission.descriptionRes()), …)`. (`mission` is a `DailyMissionType` or wraps one — grep to confirm the receiver; if it's a domain model holding a `DailyMissionType`, resolve off that.)
-- `weapons/UltimateWeaponScreen.kt:134` `Text(info.type.description, …)` → `Text(stringResource(info.type.descriptionRes()), …)`.
+- **`missions/MissionsScreen.kt:125` — NEEDS DTO SURGERY (review CG-02/F1/SCOPE-2):** the render receiver `mission` is a **`MissionDisplayInfo`** UiState DTO (`MissionsUiState.kt:5-14`) that stores a pre-computed **`description: String`** — it does NOT carry the `DailyMissionType`, and `MissionsViewModel.kt:115` pre-resolves `m.type.description` into that String OFF the Composable path. So `mission.descriptionRes()` cannot compile. Do the surgery: (1) add `val type: DailyMissionType` to `MissionDisplayInfo` and DROP the `description: String` field; (2) in `MissionsViewModel.kt:113-122` pass `m.type` (the `DailyMission` domain model exposes `.type: DailyMissionType`) instead of `m.type.description`; (3) render `Text(stringResource(mission.type.descriptionRes()), …)` at `:125`; (4) reconcile any `MissionDisplayInfo`-shape test. (`MilestoneDisplayInfo` already carries `milestone: Milestone`, so E2 needs no such surgery.)
+- `weapons/UltimateWeaponScreen.kt:134` `Text(info.type.description, …)` → `Text(stringResource(info.type.descriptionRes()), …)`. (`info.type` IS a `UltimateWeaponType` enum — confirmed; no surgery.)
+- `labs/LabsScreen.kt:168` `Text(info.type.description, …)` → `Text(stringResource(info.type.descriptionRes()), …)`. (`info.type` IS a `ResearchType` enum — confirmed; no surgery.)
 
 **Do NOT delete the `description` fields from the domain enums** — leaving them avoids churning domain + its tests, and `DomainPurityTest` stays green (no Android in domain). The UI simply stops reading them. (Optionally the plan could remove the now-unused fields in a later cleanup, but that risks touching balance/other consumers — leave them.)
 
@@ -1320,9 +1357,9 @@ fun cosmeticNameRes(id: String): Int = when (id) {
 @StringRes
 fun cosmeticDescRes(id: String): Int = when (id) { /* … */ else -> 0 }
 ```
-At `StoreScreen.kt:313/315`, resolve: `Text(if (cosmeticNameRes(cosmetic.id) != 0) stringResource(cosmeticNameRes(cosmetic.id)) else cosmetic.name, …)` (falls back to the stored name for an unknown/future id — resilient, mirrors the `CosmeticRepositoryImpl.toDomainOrNull` defensive pattern #221). Same for description.
+At `StoreScreen.kt:313/315`, resolve (the DTO field is **`cosmeticId`**, NOT `id` — review CG-06/SCOPE-4; `CosmeticDisplayInfo.cosmeticId` at `StoreUiState.kt:28`): `Text(if (cosmeticNameRes(cosmetic.cosmeticId) != 0) stringResource(cosmeticNameRes(cosmetic.cosmeticId)) else cosmetic.name, …)` (falls back to the stored name for an unknown/future id — resilient, mirrors the `CosmeticRepositoryImpl.toDomainOrNull` defensive pattern #221). Same for description with `cosmeticDescRes(cosmetic.cosmeticId)` / `cosmetic.description`. The `when(id)` keys are the 7 seed ids: `zig_jade`, `lapis_lazuli_skin`, `garden_ziggurat_skin`, `sandals_of_gilgamesh`, `zig_obsidian`, `zig_crystal`, `zig_golden` (verify against `CosmeticRepositoryImpl` SEED_COSMETICS).
 
-**Leave the seed `name`/`description` in `CosmeticRepositoryImpl` as-is** (the DB fallback + no migration). Confirm `cosmetic.id` is the field name (grep the Cosmetic domain model).
+**Leave the seed `name`/`description` in `CosmeticRepositoryImpl` as-is** (the DB fallback + no migration).
 
 - [ ] **Step 2: Build + commit**
 
@@ -1338,27 +1375,20 @@ git commit -m "i18n(#34): cosmetic name/desc resolved by id at Store render (pha
 ### Task E4: CardType effect descriptions (the numeric-split — hardest sub-item)
 
 **Files:**
-- `domain/model/CardType.kt` (`effectLv1`/`effectLv7` + `effectDescriptionAtLevel(level)` `:68-91`).
-- `presentation/ui/EnumLabels.kt` (new resolver) · `cards/CardsScreen.kt` render · `strings.xml`.
-- `domain/model/CardTypeTest.kt` (~54 string assertions).
+- `domain/model/CardType.kt` — **already exposes public `effectAtLevel(level)` (`:36`) + `secondaryAtLevel(level)` (`:42`)** (the numeric lerp); the string builder is `effectDescriptionAtLevel(level)` (`:68-91`). (Review SCOPE-3: do NOT add new `effectValueAtLevel`/`secondaryValueAtLevel` — reuse the existing accessors.)
+- `presentation/ui/EnumLabels.kt` (new `@Composable` resolver) · `cards/CardsUiState.kt:16` (`CardDisplayInfo.effectDescription: String`) · `cards/CardsViewModel.kt:80` (pre-computes it) · `cards/CardsScreen.kt:271` (renders it) · `strings.xml`.
+- `domain/model/CardTypeTest.kt` (**~27–31 string-pinning `assertEquals` on `effectDescriptionAtLevel`** — review CG-07 corrected the "~54" figure; count by symbol).
 
-**Problem:** `effectDescriptionAtLevel(level)` interpolates a numeric value between `valueLv1`/`valueLv7` into a unit-bearing English string (e.g. `"+10 Defense Absolute"` → `"+42 Defense Absolute"`; `"+50% Health, -20% Attack Speed"`). The number is computed in domain; the *template* (label + unit) is what must localize. Domain must stay Android-free.
+**Problem (two parts):** (1) `effectDescriptionAtLevel(level)` interpolates a numeric value (from `effectAtLevel`/`secondaryAtLevel`) into a unit-bearing English string — the *template* (label + unit) must localize while the number stays domain-computed. (2) **DTO surgery (review CG-01/SCOPE-3):** the string is pre-computed in the ViewModel (`CardsViewModel.kt:80` `effectDescription = card.type.effectDescriptionAtLevel(card.level)`) and stored as a plain `String` on `CardDisplayInfo` (`CardsUiState.kt:16`); `CardsScreen.kt:271` only reads `card.effectDescription`. A `@Composable`/`stringResource` resolver CANNOT be called from the non-Composable VM — so the DTO must carry the raw inputs and resolution must move to the Composable.
 
-- [ ] **Step 1: Expose the numeric value(s) from domain (no strings)**
+- [ ] **Step 1: DTO surgery — carry `type` + `level`, drop the pre-computed String**
 
-Add to `CardType` a pure numeric accessor that the presentation layer formats — WITHOUT moving strings into domain. If `effectDescriptionAtLevel` already computes a `value` (and a `secondary` for debuff cards), expose them:
-```kotlin
-/** Primary effect value at [level] (the number the description interpolates). Pure — no strings. */
-fun effectValueAtLevel(level: Int): Double { /* the numeric lerp already inside effectDescriptionAtLevel */ }
+- `CardsUiState.kt:16`: drop `val effectDescription: String`; add `val type: CardType` and `val level: Int` to `CardDisplayInfo` (if not already present — grep; `card.type`/`card.level` are used at `:80`, so the VM has them).
+- `CardsViewModel.kt:80`: stop computing `effectDescription = card.type.effectDescriptionAtLevel(card.level)`; instead pass `type = card.type, level = card.level` into `CardDisplayInfo`.
 
-/** Secondary value for debuff cards (WALKING_FORTRESS/GLASS_CANNON), or null. */
-fun secondaryValueAtLevel(level: Int): Double? { /* … */ }
-```
-(Refactor: extract the numeric computation out of `effectDescriptionAtLevel` into `effectValueAtLevel`; `effectDescriptionAtLevel` can keep calling it and remain for domain-level tests, OR be deleted from the UI path — see Step 4.)
+- [ ] **Step 2: Add per-card format-arg resources (byte-identical to today's output)**
 
-- [ ] **Step 2: Add per-card format-arg resources**
-
-One template per card, with the value(s) as args, byte-identical to today's rendered text. Examples:
+One template per card. Verify each against the CURRENT `effectDescriptionAtLevel` output (ground truth lists `effectLv1`/`effectLv7`; the live string interpolates the lerped value). Examples:
 ```xml
     <string name="card_effect_iron_skin">+%1$d Defense Absolute</string>
     <string name="card_effect_sharp_shooter">+%1$d%% Critical Chance</string>
@@ -1366,15 +1396,15 @@ One template per card, with the value(s) as args, byte-identical to today's rend
     <string name="card_effect_step_surge">Earn %1$sx Gems this round</string>
     <!-- … all 9 … -->
 ```
-(Match the exact unit formatting: IRON_SKIN is a flat int, SHARP_SHOOTER a percent, WALKING_FORTRESS/GLASS_CANNON have two args, STEP_SURGE uses the multiplier `formatMultiplier` — pre-format that to `%1$s`.)
+(Match exact unit formatting: IRON_SKIN flat int, SHARP_SHOOTER percent, WALKING_FORTRESS/GLASS_CANNON two args, STEP_SURGE uses `formatMultiplier` pre-formatted to `%1$s`. Reproduce the exact rounding each card uses today — `.toInt()` vs a formatter — per `effectDescriptionAtLevel`'s current code.)
 
-- [ ] **Step 3: Presentation resolver that formats value+template**
+- [ ] **Step 3: `@Composable` resolver reusing the existing accessors**
 
 ```kotlin
 @Composable
 fun CardType.effectDescription(level: Int): String {
-    val v = effectValueAtLevel(level)
-    val s = secondaryValueAtLevel(level)
+    val v = effectAtLevel(level)          // EXISTING public accessor (CardType.kt:36)
+    val s = secondaryAtLevel(level)       // EXISTING (CardType.kt:42), null for non-debuff cards
     return when (this) {
         CardType.IRON_SKIN -> stringResource(R.string.card_effect_iron_skin, v.toInt())
         CardType.SHARP_SHOOTER -> stringResource(R.string.card_effect_sharp_shooter, v.toInt())
@@ -1384,17 +1414,17 @@ fun CardType.effectDescription(level: Int): String {
     }
 }
 ```
-Update the CardsScreen render site (grep for `effectDescriptionAtLevel`) to call `type.effectDescription(level)`.
+(Confirm the exact signatures/return types of `effectAtLevel`/`secondaryAtLevel` by opening `CardType.kt:36,42` — match arg types to `stringResource`.) Render at `CardsScreen.kt:271`: `Text(card.type.effectDescription(card.level), …)` (both fields now on the DTO).
 
-- [ ] **Step 4: Reconcile `CardTypeTest` (~54 assertions)**
+- [ ] **Step 4: Reconcile `CardTypeTest` (~27–31 assertions — count corrected per CG-07)**
 
-`CardTypeTest` asserts `effectDescriptionAtLevel(n)` returns exact English. Two choices: (a) keep `effectDescriptionAtLevel` in domain (still English, still tested) and add the presentation resolver as the UI path — the domain test stays green, but now there are TWO sources of the string (drift risk); or (b) delete `effectDescriptionAtLevel`, move its 54 assertions to a new presentation-lane `CardEffectDescriptionTest` (Robolectric) that asserts `type.effectDescription(level)` resolves to the same English. **Choose (b)** for a single source of truth: migrate the 54 assertions to assert on the Robolectric-resolved string (same expected text). This is a sizable but mechanical test move. Verify the numeric lerp (`effectValueAtLevel`) is separately unit-tested (a pure JVM test asserting the value at L1/L4/L7).
+`CardTypeTest` asserts `effectDescriptionAtLevel(n)` returns exact English (Lv1/Lv4/Lv7 triads across 9 cards + a couple of `effectLv1`/`effectLv7` self-checks). Keep a single source of truth: **delete `effectDescriptionAtLevel` from the domain** (its only caller was the VM, now removed) and move its string-pinning assertions to a new **Robolectric-lane** `CardEffectDescriptionTest` that asserts `type.effectDescription(level)` resolves to the SAME English (default locale). The numeric lerp stays covered by whatever pins `effectAtLevel`/`secondaryAtLevel` today (verify a value test exists at L1/L4/L7; add one if `effectDescriptionAtLevel`'s deletion removes the only value coverage). If deleting `effectDescriptionAtLevel` risks other callers, grep first (`sg -l kotlin -p '$X.effectDescriptionAtLevel($$$)'`) — the review found only the VM.
 
 - [ ] **Step 5: Build + test + commit**
 
 ```bash
 ./run-gradle.sh :app:assembleDebug > /tmp/b.log 2>&1 && tail -n 20 /tmp/b.log
-./run-gradle.sh :app:testDebugUnitTest --tests "*CardType*" --tests "*CardEffect*" > /tmp/t.log 2>&1 && tail -n 20 /tmp/t.log
+./run-gradle.sh :app:testDebugUnitTest --tests "*CardType*" --tests "*CardEffect*" --tests "*CardsViewModelTest" > /tmp/t.log 2>&1 && tail -n 20 /tmp/t.log
 ```
 Both `BUILD SUCCESSFUL`.
 ```bash
@@ -1402,7 +1432,7 @@ git add app/src/main/java/com/whitefang/stepsofbabylon/domain/model/CardType.kt 
   app/src/main/java/com/whitefang/stepsofbabylon/presentation \
   app/src/test/java/com/whitefang/stepsofbabylon \
   app/src/main/res/values/strings.xml
-git commit -m "i18n(#34): CardType effect descriptions via value+@StringRes split (phase 3 G)"
+git commit -m "i18n(#34): CardType effect descriptions via DTO type+level + @StringRes resolver (phase 3 G)"
 ```
 
 ---
