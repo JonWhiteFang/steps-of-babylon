@@ -25,8 +25,8 @@ class OnboardingContentTest {
     @Test
     fun `every slide has a title and body`() {
         OnboardingContent.slides.forEach { slide ->
-            assertTrue(slide.title.isNotBlank(), "slide title must not be blank")
-            assertTrue(slide.body.isNotBlank(), "slide body must not be blank")
+            assertTrue(slide.titleRes != 0, "slide title resource must be set")
+            assertTrue(slide.bodyRes != 0, "slide body resource must be set")
         }
     }
 

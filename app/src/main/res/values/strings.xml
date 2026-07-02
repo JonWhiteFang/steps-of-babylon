@@ -650,4 +650,13 @@
     <string name="battle_condition_more_bosses">More Bosses</string>
     <string name="battle_condition_enemy_speed">Enemy Speed</string>
     <string name="battle_condition_enemy_attack_speed">Enemy Attack Speed</string>
+    <!-- i18n #34 phase 3: onboarding carousel content (category I) -->
+    <string name="onboarding_slide1_title">Walk to power your ziggurat</string>
+    <string name="onboarding_slide1_body">Every real step you take earns Steps — the permanent currency that fuels everything. Steps are earned only by walking.</string>
+    <string name="onboarding_slide2_title">Spend Steps in the Workshop</string>
+    <string name="onboarding_slide2_body">Permanent upgrades make your tower stronger across three categories: Attack, Defense, and Utility.</string>
+    <string name="onboarding_slide3_title">Send it into battle</string>
+    <string name="onboarding_slide3_body">Your ziggurat auto-battles waves of enemies. Survive, climb tiers, and unlock new biomes.</string>
+    <string name="onboarding_slide4_title">Enable step counting</string>
+    <string name="onboarding_slide4_body">To turn your real-world steps into Steps, we need activity-recognition permission. Notifications are optional. Then go for a walk to earn your first Steps!</string>
 </resources>

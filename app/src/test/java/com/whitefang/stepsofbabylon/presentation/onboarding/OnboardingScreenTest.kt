@@ -68,7 +68,7 @@ class OnboardingScreenTest {
         }
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText(slides.first().title).assertIsDisplayed()
+        composeRule.onNodeWithText(ctx.getString(slides.first().titleRes)).assertIsDisplayed()
         // a11y: the page-dots row carries the only explicit semantics label (HorizontalPager is silent).
         composeRule.onNodeWithContentDescription("Page 1 of ${slides.size}").assertExists()
     }

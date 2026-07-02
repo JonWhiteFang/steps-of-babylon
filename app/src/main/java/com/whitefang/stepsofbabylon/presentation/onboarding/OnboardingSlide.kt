@@ -1,5 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.onboarding
 
+import androidx.annotation.StringRes
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.Biome
 
 /** Decorative art slot for a slide (Bundle E, #164). Pure marker — OnboardingScreen maps it to an
@@ -16,8 +18,8 @@ enum class OnboardingArt { ZIGGURAT, }
  */
 data class OnboardingSlide(
     val icon: String,
-    val title: String,
-    val body: String,
+    @StringRes val titleRes: Int,
+    @StringRes val bodyRes: Int,
     val isPermissionPrimer: Boolean = false,
     val biome: Biome? = null,
     val art: OnboardingArt? = null,
@@ -29,35 +31,27 @@ object OnboardingContent {
         listOf(
             OnboardingSlide(
                 icon = "🏛️",
-                title = "Walk to power your ziggurat",
-                body =
-                    "Every real step you take earns Steps — the permanent currency that " +
-                        "fuels everything. Steps are earned only by walking.",
+                titleRes = R.string.onboarding_slide1_title,
+                bodyRes = R.string.onboarding_slide1_body,
                 biome = Biome.HANGING_GARDENS,
                 art = OnboardingArt.ZIGGURAT,
             ),
             OnboardingSlide(
                 icon = "🔨",
-                title = "Spend Steps in the Workshop",
-                body =
-                    "Permanent upgrades make your tower stronger across three categories: " +
-                        "Attack, Defense, and Utility.",
+                titleRes = R.string.onboarding_slide2_title,
+                bodyRes = R.string.onboarding_slide2_body,
                 biome = Biome.BURNING_SANDS,
             ),
             OnboardingSlide(
                 icon = "⚔️",
-                title = "Send it into battle",
-                body =
-                    "Your ziggurat auto-battles waves of enemies. Survive, climb tiers, and " +
-                        "unlock new biomes.",
+                titleRes = R.string.onboarding_slide3_title,
+                bodyRes = R.string.onboarding_slide3_body,
                 biome = Biome.FROZEN_ZIGGURATS,
             ),
             OnboardingSlide(
                 icon = "👣",
-                title = "Enable step counting",
-                body =
-                    "To turn your real-world steps into Steps, we need activity-recognition " +
-                        "permission. Notifications are optional. Then go for a walk to earn your first Steps!",
+                titleRes = R.string.onboarding_slide4_title,
+                bodyRes = R.string.onboarding_slide4_body,
                 isPermissionPrimer = true,
                 biome = Biome.CELESTIAL_GATE,
             ),
