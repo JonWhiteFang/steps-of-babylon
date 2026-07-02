@@ -563,4 +563,14 @@
     <string name="cosmetic_desc_zig_crystal">Translucent crystal layers</string>
     <string name="cosmetic_name_zig_golden">Golden Ziggurat</string>
     <string name="cosmetic_desc_zig_golden">Pure gold plating</string>
+    <!-- i18n #34 phase 3: card effect descriptions (category G) -->
+    <string name="card_effect_iron_skin">+%1$d Defense Absolute</string>
+    <string name="card_effect_sharp_shooter">+%1$d%% Critical Chance</string>
+    <string name="card_effect_cash_grab">+%1$d%% Cash from kills</string>
+    <string name="card_effect_vampiric_touch">+%1$d%% Lifesteal</string>
+    <string name="card_effect_chain_reaction">+%1$d Bounce Shot targets</string>
+    <string name="card_effect_second_wind">Revive once at %1$d%% HP</string>
+    <string name="card_effect_walking_fortress">+%1$d%% Health, -%2$d%% Attack Speed</string>
+    <string name="card_effect_glass_cannon">+%1$d%% Damage, -%2$d%% Health</string>
+    <string name="card_effect_step_surge">Earn %1$sx Gems this round</string>
 </resources>

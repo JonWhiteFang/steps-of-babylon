@@ -1,8 +1,11 @@
 package com.whitefang.stepsofbabylon.presentation.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.CardRarity
+import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
 import com.whitefang.stepsofbabylon.domain.model.Milestone
@@ -176,3 +179,67 @@ fun cosmeticDescRes(id: String): Int =
         "zig_golden" -> R.string.cosmetic_desc_zig_golden
         else -> 0
     }
+
+/**
+ * #34 phase 3 (G): level-aware Card effect description resolver. Moved out of the domain
+ * ([CardType]) so `domain/` stays Android-free — the numeric lerp ([CardType.effectAtLevel] /
+ * [CardType.secondaryAtLevel]) stays on the enum (gameplay uses it), while the user-facing string
+ * is built here via @StringRes templates. Byte-identical to the old `effectDescriptionAtLevel`:
+ * same `.toInt()` truncation on the primary/secondary values + the same STEP_SURGE
+ * [formatMultiplier] one-decimal formatting (trailing `.0` stripped, [java.util.Locale.ROOT]).
+ * Exhaustive `when` (no `else`) so a new card that forgets its template fails to compile.
+ */
+@Composable
+fun CardType.effectDescription(level: Int): String {
+    val v = effectAtLevel(level).toInt()
+    val sv = secondaryAtLevel(level).toInt()
+    return when (this) {
+        CardType.IRON_SKIN -> {
+            stringResource(R.string.card_effect_iron_skin, v)
+        }
+
+        CardType.SHARP_SHOOTER -> {
+            stringResource(R.string.card_effect_sharp_shooter, v)
+        }
+
+        CardType.CASH_GRAB -> {
+            stringResource(R.string.card_effect_cash_grab, v)
+        }
+
+        CardType.VAMPIRIC_TOUCH -> {
+            stringResource(R.string.card_effect_vampiric_touch, v)
+        }
+
+        CardType.CHAIN_REACTION -> {
+            stringResource(R.string.card_effect_chain_reaction, v)
+        }
+
+        CardType.SECOND_WIND -> {
+            stringResource(R.string.card_effect_second_wind, v)
+        }
+
+        CardType.WALKING_FORTRESS -> {
+            stringResource(R.string.card_effect_walking_fortress, v, sv)
+        }
+
+        CardType.GLASS_CANNON -> {
+            stringResource(R.string.card_effect_glass_cannon, v, sv)
+        }
+
+        CardType.STEP_SURGE -> {
+            stringResource(R.string.card_effect_step_surge, formatMultiplier(effectAtLevel(level)))
+        }
+    }
+}
+
+/**
+ * Formats a multiplier with a single decimal place, stripping a trailing `.0` so integer values
+ * render as "2" instead of "2.0". Used by STEP_SURGE's [CardType.effectDescription] so its text
+ * matches [CardType.effectLv1] / [CardType.effectLv7] verbatim at the endpoints while still showing
+ * fractional progress mid-curve (e.g. Lv4 → 3.5). Pinned to [java.util.Locale.ROOT] so the decimal
+ * separator stays `.` regardless of device locale. Moved from `CardType`'s private companion (#34).
+ */
+private fun formatMultiplier(value: Double): String {
+    val s = String.format(java.util.Locale.ROOT, "%.1f", value)
+    return if (s.endsWith(".0")) s.dropLast(2) else s
+}

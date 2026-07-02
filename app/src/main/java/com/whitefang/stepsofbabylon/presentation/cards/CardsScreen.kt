@@ -54,6 +54,7 @@ import com.whitefang.stepsofbabylon.presentation.ui.RarityBadge
 import com.whitefang.stepsofbabylon.presentation.ui.cardRarityLabelRes
 import com.whitefang.stepsofbabylon.presentation.ui.cardRarityTier
 import com.whitefang.stepsofbabylon.presentation.ui.color
+import com.whitefang.stepsofbabylon.presentation.ui.effectDescription
 import com.whitefang.stepsofbabylon.presentation.ui.labelRes
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rarityBorder
@@ -271,7 +272,7 @@ private fun CardItem(
                 }
             }
             Text(
-                card.effectDescription,
+                card.type.effectDescription(card.level),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

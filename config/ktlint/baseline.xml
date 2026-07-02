@@ -51,8 +51,8 @@
         <error line="41" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/cards/CardsScreen.kt">
-        <error line="67" column="5" source="standard:function-naming" />
-        <error line="232" column="13" source="standard:function-naming" />
+        <error line="68" column="5" source="standard:function-naming" />
+        <error line="233" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/cards/CardsViewModel.kt">
         <error line="48" column="21" source="standard:backing-property-naming" />
