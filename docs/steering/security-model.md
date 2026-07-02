@@ -103,8 +103,12 @@ Client-side Play purchase signature verification (#124, **ADR-0005 amendment**).
 Committed-secret defense is layered:
 
 - **GitHub-native secret scanning + push protection** — enabled at the repo level (public repo).
-  Push protection blocks a push that introduces a recognized secret; non-provider patterns are
-  also enabled. Alerts: `gh api repos/JonWhiteFang/steps-of-babylon/secret-scanning/alerts`.
+  Push protection blocks a push that introduces a recognized secret. Alerts:
+  `gh api repos/JonWhiteFang/steps-of-babylon/secret-scanning/alerts`. **Non-provider patterns are
+  NOT yet enabled** — the REST API PATCH is a silent no-op for this toggle on a personal-account
+  repo; flip it manually in **Settings → Code security → Secret scanning → Non-provider patterns**.
+  (The gitleaks gate below already covers the custom keystore/password patterns, so this is
+  incremental, not a coverage gap.)
 - **gitleaks CI gate** (`.github/workflows/gitleaks.yml` + `.gitleaks.toml`) — repo-committed,
   runs on every PR and push to `main` over full history. Extends the default ruleset with rules
   the built-ins miss: binary `*.jks`/`*.keystore` files and `storePassword=`/`keyPassword=`/
