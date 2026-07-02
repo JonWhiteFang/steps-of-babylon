@@ -69,13 +69,8 @@
         <error line="49" column="21" source="standard:backing-property-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/help/HelpScreen.kt">
-        <error line="19" column="5" source="standard:function-naming" />
-        <error line="31" column="121" source="standard:max-line-length" />
-        <error line="32" column="121" source="standard:max-line-length" />
-        <error line="38" column="121" source="standard:max-line-length" />
-        <error line="47" column="121" source="standard:max-line-length" />
-        <error line="71" column="121" source="standard:max-line-length" />
-        <error line="105" column="13" source="standard:function-naming" />
+        <error line="21" column="5" source="standard:function-naming" />
+        <error line="80" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/home/HomeScreen.kt">
         <error line="64" column="5" source="standard:function-naming" />
