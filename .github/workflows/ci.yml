@@ -102,6 +102,23 @@ jobs:
         if: needs.changes.outputs.code == 'true'
         run: ./gradlew testDebugUnitTest lintDebug lintRelease assembleDebug --stacktrace
 
+      # #370 (cicd-1): build the MINIFIED release variant so an R8/shrink keep-rule regression fails
+      # HERE, on every code PR, instead of reaching Play internal when a v* tag auto-publishes.
+      # The play.licenseKey guard (app/build.gradle.kts whenReady) hard-fails a blank key on any
+      # *Release assemble/bundle, so inject a THROWAWAY non-publishing placeholder into local.properties
+      # FIRST (separate step — local.properties is read at Gradle configuration time). This is NOT a
+      # real key: assembleRelease produces an UNSIGNED APK (release signingConfig is applied only
+      # `if (keystorePropertiesFile.exists())`, which is false in the secret-free PR gate), so no
+      # signing/publishing can occur. The real release.yml publish lane still injects the real key
+      # and keeps the guard fail-closed.
+      - name: Seed non-publishing release license key
+        if: needs.changes.outputs.code == 'true'
+        run: echo 'play.licenseKey=ci-nonpublishing-placeholder' >> local.properties
+
+      - name: Assemble release variant (R8/shrink guard; unsigned, non-publishing)
+        if: needs.changes.outputs.code == 'true'
+        run: ./gradlew assembleRelease --stacktrace
+
       # #218: informational coverage of the JVM unit suite. NON-GATING — no threshold; the report is
       # uploaded as an artifact so future work can see which surfaces (Compose/service/worker) are
       # uncovered. :app:-prefixed to stay scoped to the shipping module (the com.android.test benchmark
@@ -150,6 +167,10 @@ jobs:
       - name: Docs-only — heavy gate skipped
         if: needs.changes.outputs.code != 'true'
         run: echo "Docs-only change — build/lint/test skipped; required check satisfied."
+
+      - name: Clean up seeded license key
+        if: always() && needs.changes.outputs.code == 'true'
+        run: rm -f local.properties
 
   # #262 (CI speed): ktlint runs in its OWN job, parallel to build-and-test. ktlint is a standalone
   # SHA-pinned binary linting source files — it needs NO JDK / Android SDK / Gradle setup and does NOT

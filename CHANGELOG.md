@@ -4,6 +4,28 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### CI/CD — release-variant build + secret scanning (#370, #376) — Phase-1 tooling PR-A
+
+- **#370 (cicd-1, severity:major).** The minified `release`/R8 variant is now assembled in the PR
+  gate (`ci.yml` `build-and-test`), so an R8/shrink keep-rule regression fails on every code PR
+  instead of reaching Play internal when a `v*` tag auto-publishes. A throwaway non-publishing
+  `play.licenseKey` is seeded (separate step, before Gradle config) so the fail-closed guard
+  tolerates the build; the build is unsigned (no keystore in the PR gate) so nothing can publish.
+  Seeded key is cleaned up after the job. Validated locally: `assembleRelease` → BUILD SUCCESSFUL,
+  `minifyReleaseWithR8` ran, APK produced (the `ndk debugSymbolLevel=FULL` does not block the APK
+  assemble). Verify keys on the R8 task + a `*.apk` glob (name is AGP/signing-dependent).
+- **#376 (sectooling-1).** Added a SHA-pinned gitleaks workflow (`gitleaks.yml` + `.gitleaks.toml`)
+  with custom rules for `*.jks`/`*.keystore` and `storePassword`/`keyPassword`/`play.licenseKey`
+  password lines (built-ins miss these). The password/license rules are **path-scoped to
+  `.properties`** so they catch real secrets but not prose in Markdown/Kotlin that merely names the
+  keys (verified against a fixture + the real tree with gitleaks 8.30.1); allowlists the CI
+  placeholder + CHANGELOG/README/docs. GitHub-native
+  secret scanning + push protection were already on. **Caveat:** the `secret_scanning_non_provider_patterns`
+  toggle is a silent REST-API no-op on this personal-account repo — documented in `security-model.md`
+  as a manual Settings step (gitleaks already covers the custom patterns, so it is incremental).
+- Provenance: `docs/superpowers/specs|plans/2026-07-02-phase1-tooling-gap*` (both passed the
+  Adversarial Review Gate). Tracker: #389.
+
 ### Docs — UX/UI design skills/plugins assessment (docs-only; no app/test/schema change)
 
 - **UX/UI design resources report.** Researched which Claude Code skills/plugins would strengthen

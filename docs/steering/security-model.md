@@ -98,6 +98,24 @@ Client-side Play purchase signature verification (#124, **ADR-0005 amendment**).
 
 - Release AABs are signed with the production upload keystore (`release/upload-keystore.jks`, gitignored, Play App-Signing-enrolled). The CI release lane runs `jarsigner -verify` on the built AAB. See `docs/plans/plan-32-ci.md` + ADR-0018.
 
+## 7. Secret scanning (#376)
+
+Committed-secret defense is layered:
+
+- **GitHub-native secret scanning + push protection** — enabled at the repo level (public repo).
+  Push protection blocks a push that introduces a recognized secret. Alerts:
+  `gh api repos/JonWhiteFang/steps-of-babylon/secret-scanning/alerts`. **Non-provider patterns are
+  NOT yet enabled** — the REST API PATCH is a silent no-op for this toggle on a personal-account
+  repo; flip it manually in **Settings → Code security → Secret scanning → Non-provider patterns**.
+  (The gitleaks gate below already covers the custom keystore/password patterns, so this is
+  incremental, not a coverage gap.)
+- **gitleaks CI gate** (`.github/workflows/gitleaks.yml` + `.gitleaks.toml`) — repo-committed,
+  runs on every PR and push to `main` over full history. Extends the default ruleset with rules
+  the built-ins miss: binary `*.jks`/`*.keystore` files and `storePassword=`/`keyPassword=`/
+  `play.licenseKey=` `.properties` lines. The CI non-publishing placeholder is allowlisted.
+- **`.gitignore`** — the first line of defense (keystore.properties/local.properties/keystores),
+  now backstopped by the two scanners above rather than being the only guard.
+
 ---
 
 **Related ADRs:** ADR-0003 (battle-step rewards), ADR-0005 (billing SDK + #124 verification amendment),

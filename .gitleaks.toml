@@ -1,0 +1,41 @@
+# gitleaks config (#376 / sectooling-1). Extends the built-in default ruleset (which misses
+# binary keystores and .properties password lines) with app-specific rules. Real secrets in this
+# repo only ever live in .properties files (local.properties / keystore.properties) or binary
+# keystores — NEVER in Markdown/Kotlin — so the password/license rules are PATH-SCOPED to
+# `.properties` to avoid firing on prose that merely MENTIONS `play.licenseKey=` etc. (e.g. this
+# CHANGELOG/README/docs). The CI non-publishing placeholder is allowlisted.
+title = "Steps of Babylon gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "android-keystore-file"
+description = "Committed Android keystore (binary signing material)"
+# Binary keystores have no reliable text signature — match by path/extension.
+path = '''.*\.(jks|keystore)$'''
+
+[[rules]]
+id = "keystore-properties-password"
+description = "Signing/keystore password in a .properties file"
+regex = '''(?i)(storePassword|keyPassword)\s*=\s*.+'''
+# Only a .properties file holds a real password; prose in .md/.kts merely names the key.
+path = '''.*\.properties$'''
+
+[[rules]]
+id = "play-license-key"
+description = "Play licensing RSA public key in a .properties file"
+regex = '''(?i)play\.licenseKey\s*=\s*.+'''
+path = '''.*\.properties$'''
+
+[allowlist]
+description = "Non-secret placeholders and prose that names the secret keys"
+regexes = [
+  '''play\.licenseKey\s*=\s*ci-nonpublishing-placeholder''',
+]
+paths = [
+  '''\.gitleaks\.toml''',
+  '''(^|/)CHANGELOG\.md$''',
+  '''(^|/)README\.md$''',
+  '''docs/.*''',
+]

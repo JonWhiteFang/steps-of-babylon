@@ -41,20 +41,18 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (tooling-gap backlog filed as GitHub issues; no repo change — GitHub-only).** The 24 surviving
-  findings from `docs/reviews/tooling-gap-assessment.md` (the #367 audit) were filed as **19 finding issues
-  #370–#388 + umbrella tracker #389**, all under a NEW **`tooling`** label (`gh issue list --label tooling`
-  groups them; `cicd-1`=`severity:major`, rest `severity:minor` + topical labels). Deduped against the full
-  open+closed history — **not filed:** `structure-1`/`structure-2`/`devenv-2` (README hygiene, already applied
-  in #367), `cicd-2` (refuted, ADR-0018). The tracker (#389) carries the 4-phase roadmap + the audit's
-  "deliberately N/A" list. Highest-leverage children (Phase 1, "ships-green-today" paths): **#370 `cicd-1`**
-  (release/R8 variant in CI before auto-publish), **#371 `ai-3`** (step-credit allowlist test), **#372 `ai-2`**
-  (mandatory concurrency-reviewer on engine/effects), **#376 `sectooling-1`** (secret scanning). **NEXT (no
-  work in flight):** the developer picked **Phase-1 tooling safety baseline** as the next work track (spec +
-  Adversarial Review Gate per finding before implementing) — start with #370/#371/#372. Alternatives on the
-  table: the first real non-English `values-xx` locale (#34 payoff); the internal→closed promotion judgment
-  call; #233 clean Simulation-hoist (ADR-0012) / #306 EntityProtocol; A24 clock-tamper, L12 BattleViewModel
-  decomposition, battle perf L46-51.
+- **CURRENT (Phase-1 tooling safety baseline — IN FLIGHT, 3 PRs; spec+plan both passed the Adversarial
+  Review Gate).** Design → plan for the 6 Phase-1 findings under `docs/superpowers/{specs,plans}/2026-07-02-phase1-tooling-gap*`
+  (spec gate: 19 raised/15 applied/4 refuted; plan gate: 20/19/1→6 defects fixed). Grouped into 3 PRs:
+  **PR-A (CI/supply-chain, #370+#376) — implementation DONE on branch `ci/phase1-release-variant-and-gitleaks`**
+  (assembleRelease in the PR gate w/ throwaway license key — validated locally, R8 ran, APK built; gitleaks
+  workflow+`.gitleaks.toml`; security-model doc). **A5 caveat:** the `secret_scanning_non_provider_patterns`
+  GitHub toggle is a **silent API no-op** on this personal repo — documented as a manual Settings step (gitleaks
+  already covers the custom patterns). PR-A pending push+PR. **PR-B (#371 step-credit allowlist test + #372
+  concurrency-reviewer hook/CLAUDE.md + ADR-0038)** and **PR-C (#374 crash-report exit path + #380 monitoring
+  runbook)** are next, per the plan. Tracker **#389** (4-phase roadmap). **NEXT:** finish PR-A (push+PR+tick #389),
+  then PR-B, then PR-C. Alternatives still on the table: first non-English `values-xx` locale (#34); internal→closed
+  promotion judgment call; #233 clean Simulation-hoist (ADR-0012) / #306 EntityProtocol; A24 clock-tamper.
 - *Side research (DONE, 2026-07-02) — UX/UI design skills/plugins assessment →
   `docs/reviews/ux-ui-design-resources.md` (recommends `material-3-skill` + `compose-skill` baseline,
   `ux-ui-mastery` optional; report only, nothing installed — adoption phasing awaits the developer's
