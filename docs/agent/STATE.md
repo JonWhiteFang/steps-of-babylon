@@ -20,8 +20,7 @@ dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependab
 (#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
 (CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
 #311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1294 JVM + 9 instrumented tests**
-green (post-v1.0.11 body: audit-triage A–D → 1256, #216 +19 → 1275, #221 +2 → 1277, #217 +5 → 1282, then
-#34 i18n phase 3 +12 → 1294; per-wave detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
+green (per-wave test-count detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) **DONE — the manual Play
 Console Data-Safety form for #192 was submitted 2026-06-24** (the four AdMob-SDK data types Collected+Shared
@@ -63,97 +62,11 @@ the med/low backlog (#262) remain.
   separate effort). Also unchanged: the internal→closed promotion judgment call + the audit backlog's
   remaining non-batchable items (#217 done; A24 clock-tamper, L12 BattleViewModel decomposition, battle
   perf L46-51 remain).
-- **Previous objective (DONE — #34 i18n Compose-screen extraction phase 2, BOTH PRs #354/#355 MERGED).**
-  Mechanical `stringResource` externalization of the standard Compose screens (+ dialogs, shared
-  `presentation/ui`, two `battle/ui` components, nav `secondaryTitle`→`@StringRes Int?`, non-composable
-  `@StringRes` helpers); no behavior change, 1282 JVM unchanged. ADR-0014 amended (phase-2 note +
-  `HardcodedText`-is-XML-only correction). Detail in `CHANGELOG.md` / `RUN_LOG.md`.
-- **Previous objective (DONE — `/backup-to-vault` skill built + reviewed; PR open).** New personal, user-invoked skill
-  `.claude/skills/backup-to-vault/SKILL.md` that backs up the repo's gitignored essentials
-  (`age`-encrypted: upload keystore + signing passwords + AdMob prod IDs + `run-gradle.sh`) and a full
-  `docs/` mirror to the developer's Obsidian vault — for disaster recovery + fresh-machine bootstrap.
-  Tooling-only (no app/Kotlin/schema/test/CI change). Spec+plan at
-  `docs/superpowers/{specs,plans}/2026-06-24-backup-to-vault-skill*`. Reviews: lighter inline (ultracode
-  off); code-quality found+fixed a Critical (fresh-shell-per-block → re-derive `$VAULT` + sidecar
-  `$STAGED_TAR`). All steps dry-run-verified into scratch; **the live first backup (Task 8: `brew install
-  age` + developer passphrase) is NOT yet run.** **NEXT:** merge the PR, then run the live backup.
-- **Previous objective (DONE — `main` clean; #34 i18n phase-2 spec+plan MERGED, impl DEFERRED).**
-  Docs-only PR #349 (merge `52c1cec`); both artifacts passed the multi-agent Adversarial Review Gate
-  (ultracode; spec 30/25, plan 18/17). Plan = **15 tasks across 2 impl PRs** (PR3 Canvas/Activity is a
-  deferred follow-up) at `docs/superpowers/{specs,plans}/2026-06-24-i18n-compose-screen-extraction*`.
-  Scope: extract hardcoded Compose `Text`/`contentDescription` (+ dialogs, shared `presentation/ui`, two
-  battle/ui Compose components, nav titles, non-composable `@StringRes` helpers) → `strings.xml`; no
-  behavior change; English-only. Gate corrections baked in (`HardcodedText` already enabled+XML-only;
-  `UltimateWeaponBar` pure Compose; Methodology grep gate for undercounted helper-composable args).
-  **When picked up:** execute PR1 (Tasks 1–5), then PR2 (Tasks 6–15); subagent-driven preferred.
-- **Previous objective (DONE — #217 service/boot-receiver test coverage MERGED to `main`; PR #348,
-  commit `0d09ef2`; test-only, no app change).** Closed the 2026-06-17 audit's TEST-2 gap
-  (`StepCounterService`/`BootReceiver` had zero test references). The skeptic scope-correction held: the
-  catch-up logic + crash-safety/notification seams were already covered, so the only uncovered surface
-  was thin Android glue. Added **`BootReceiverTest`** (3 Robolectric/JUnit-4 tests — action gate,
-  ACTIVITY_RECOGNITION permission gate, `StepCounterService` dispatch; `BootReceiver` is not
-  `@AndroidEntryPoint` so no Hilt) + **`StepCounterServiceTest`** (2 Robolectric tests — the
-  injection-independent lifecycle: `onStartCommand`→`START_STICKY`, `onBind`→`null`, on a
-  directly-constructed instance; the Hilt-injected `onCreate` stays on its pure seams + the instrumented
-  suite). Authored via the `android-test-writer` subagent; full suite green at **1277 → 1282 JVM (+5)**,
-  0 failures. **No production-code/schema change.**
-- **Previous objective (DONE — Claude Code tooling + CI fast-path MERGED to `main`; nothing in flight, no app change).**
-  Acted on the `claude-automation-recommender` review of this repo's Claude Code setup. **PR #345**
-  (`ca239c2`) added two subagents (`concurrency-reviewer`, `android-test-writer`), two skills
-  (`adversarial-review`, `new-migration`), a Tier-3 `Migrations.kt` advisory in `guard-sensitive-edits.sh`,
-  and a shared `.mcp.json` (context7; key via `CONTEXT7_API_KEY`, never committed). **PR #346** (`4b28b38`)
-  widened the CI `changes` classifier (both `ci.yml` + `instrumented.yml`) so `.claude/**` / `.mcp.json`-only
-  diffs skip the build gate **and** the emulator suite (anchored patterns; everything app-affecting still
-  gates; verified with a path-classification harness). Also flipped the **repo merge policy** to
-  merge-commits only (squash+rebase disabled) + enabled auto-merge. Each authored artifact was code-grounded
-  and adversarially verified via an 8-agent research→draft→refute Workflow before writing (140 claims
-  checked; 1 refuted, 3 partial, all corrected). **No app/Kotlin/schema/test change — 1277 JVM unchanged.**
-  **Next (no work in flight):** unchanged from below — the audit backlog's non-batchable items + the
-  internal→closed promotion judgment call.
-- **Previous objective (DONE — v1.0.12 / versionCode 28 SHIPPED → Play internal; nothing in flight).** The
-  collateral-only release PR #342 (`8aa7c3e`) merged, the annotated `v1.0.12` tag was pushed, and
-  `release.yml` (run `28051957931`) fired green end-to-end → signed AAB uploaded to the Play **internal**
-  track + GitHub Release `v1.0.12` (`app-release.aab` 15.29 MB). Promoted the post-v1.0.11 body already on
-  `main` (audit-triage A–D + #216 + #221 + #164 closed; **no new mechanics, no schema change**; 1277 JVM).
-  The developer-approved "What's new" (quiet hours + supply-drop cap; locale purchase fix; cleanup) is now
-  the Play release note. **Next (no work in flight):** the audit backlog's **non-batchable items** — #217
-  service tests (test-only), A24 anti-cheat rate-limit clock-tamper (large/fragile), battle game-loop perf
-  L46-L51 (fragile), L12 BattleViewModel decomposition (large, #306/ADR-0012), billing-anti-fraud
-  L35/A25/A26/L41 (by-design, no fix); the #34 i18n-externalization push; remaining audit med/low.
-  **Promotion status:** the **Play Console Data-Safety form (#192) was submitted 2026-06-24** — the last
-  repo-external pre-promotion prerequisite is cleared. The internal→closed promotion is now **purely the
-  developer's judgment call** (Closed-Test Readiness Gate, `plan-FORWARD.md`); once promoted, Google's
-  ≥12-tester / ≥14-day closed soak begins (Phase 2).
-- **Previous objective (DONE — audit single-issue fixes #216 + #221 MERGED to `main`).** Two
-  focused audit issues shipped this session, each through the full spec→adversarial-review→plan→
-  adversarial-review→TDD→PR→merge loop. **#221 FEAT-1** (PR #340, `705865f`) — removed the 4 seeded
-  projectile/enemy-skin cosmetics + the 2 unused `CosmeticCategory` values (`PROJECTILE_EFFECT`/`ENEMY_SKIN`)
-  that had no render path, closing the audit "live trap"; only `ZIGGURAT_SKIN` remains. Existing-device
-  safety (belt-and-suspenders): `CosmeticDao.deleteByIds` purge in `ensureSeedData` + resilient
-  `CosmeticRepositoryImpl.toDomainOrNull` filtering rows whose stored String category no longer parses (so
-  `CosmeticCategory.valueOf` can't crash; also covers the `StoreViewModel.init` purge-vs-`observeAll` race);
-  **no schema migration** (data-only delete); +2 JVM. **#216 NOTIF-1** (PR #339, `2f1c090`) — quiet-hours
-  (22:00–08:00 local) + supply-drop daily-cap (3/day) on the reminder & supply-drop notification paths via a
-  new pure-domain `domain/notification/NotificationPolicy`; `SupplyDropNotificationManager` injects
-  `TimeProvider` + field-caches its prefs (runs under the #120 credit mutex); `DataDeletionManager` also
-  wipes the new `supply_drop_notifications` prefs (#247); +19 JVM. Also closed **#164 Bundle E** (verify-and-
-  close — shipped v1.0.8, never closed). **No schema/economy change across the arc; 1256 → 1277 JVM.**
-  `[Unreleased]`. **Next (no work in flight):** the audit backlog's **non-batchable items** — #217 service
-  tests (test-only), A24 anti-cheat rate-limit clock-tamper (large/fragile), battle game-loop perf L46-L51
-  (fragile), L12 BattleViewModel decomposition (large, #306/ADR-0012), billing-anti-fraud L35/A25/A26/L41
-  (by-design, no fix); the #34 i18n-externalization push; remaining audit med/low. Also still open: the
-  v1.0.11 **internal→closed** promotion judgment call (gated on the **manual Play Console Data-Safety action
-  #192** — `docs/release/data-safety-form.md`, a human step).
-- **Previous objective (DONE — audit-triage batches A–D all SHIPPED to `main`).** A verification
-  `Workflow` code-grounded ~125 unverified #262/#128 tracker findings vs HEAD `617babd` → **83 LIVE / 23
-  FIXED / 6 STALE / 4 DUP / 1 POSITIVE**; LIVE survivors clustered into batches A–G. **A–D merged** (each
-  spec→plan→adversarial-review→implement→PR→merge): **A** docs/content-drift (#333), **B** dead-code removal
-  (#334), **C** i18n locale-safety incl. a REAL Turkish-locale billing bug L88 (#335), **D1** release/CI
-  config hardening + ktlint-job split (#336), **D2** Kover coverage + OSV supply-chain scan (#337). 1256 JVM
-  at arc end; **no schema change**. #218 closed; #262 annotated per batch. (Per-PR detail in RUN_LOG/CHANGELOG.)
-- *Prior objectives (all DONE, `[Unreleased]` unless noted) — the **v1.0.11 release** (vc 27 → Play internal,
-  tag `v1.0.11`, PR #330) and everything before it — are recorded per-PR in `docs/agent/RUN_LOG.md` +
-  `CHANGELOG.md` and summarized under "Recently shipped" below; not duplicated here.*
+- *Prior objectives (all DONE) — the recently-completed arc (i18n phase 2 #354/#355, `/backup-to-vault`
+  skill, #217 service tests, Claude-tooling PRs #345/#346, the **v1.0.12 release** vc 28 → Play internal,
+  audit fixes #216/#221, audit-triage batches A–D, and the **v1.0.11 release** vc 27 and everything before
+  it) — are recorded per-PR in `docs/agent/RUN_LOG.md` + `CHANGELOG.md` and summarized under "Recently
+  shipped" below; not duplicated here (per the one-page rule — CLAUDE.md "Always-on memory rules").*
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 

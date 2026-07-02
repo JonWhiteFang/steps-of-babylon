@@ -10,7 +10,7 @@ An Android idle tower defense game where real-world walking drives all progressi
 
 ## Status
 
-Version 1.0.12 (versionCode 28) · 1277 JVM + 9 instrumented tests green · live on the Play Console internal track. The CI pipeline (Plan 32) and `v*`-tag release lane are live; promotion to the closed track is judgment-gated on the Closed-Test Readiness Gate (see [plan-FORWARD.md](docs/plans/plan-FORWARD.md)) — the tester soak is a Phase 2 concern that begins after promotion.
+Version 1.0.12 (versionCode 28) · JVM + instrumented test suites green · live on the Play Console internal track. The CI pipeline (Plan 32) and `v*`-tag release lane are live; promotion to the closed track is judgment-gated on the Closed-Test Readiness Gate (see [plan-FORWARD.md](docs/plans/plan-FORWARD.md)) — the tester soak is a Phase 2 concern that begins after promotion.
 
 For the live current state (objective, priorities, fragile zones) see [docs/agent/STATE.md](docs/agent/STATE.md). For the dated change history see [CHANGELOG.md](CHANGELOG.md). These move every session; this section stays deliberately brief to avoid drift.
 
@@ -45,11 +45,14 @@ The repo ships a shared [`.mcp.json`](.mcp.json) that wires up the [context7](ht
 
 ## Build & Run
 
+> In CI or any non-TTY shell, prefix Gradle commands with `./run-gradle.sh` to avoid the
+> output-buffering hang — see [Non-TTY Environments](#non-tty-environments-ci-etc) below.
+
 ```bash
 # Debug APK
 ./gradlew assembleDebug
 
-# Unit tests (1277 JVM tests)
+# Unit tests (JVM lane — see CLAUDE.md / docs/agent/STATE.md for the live count)
 ./gradlew test
 
 # Lint
@@ -108,14 +111,19 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   ├── sensor/        # Step sensor data source, rate limiter, daily step manager
 │   ├── healthconnect/ # Health Connect client, cross-validator, activity-minute parity
 │   ├── billing/       # Real Play Billing v9 (sole binding post-C.5 PR 3)
-│   └── ads/           # Real AdMob v25 + UMP v4 consent (sole binding post-C.6 PR 3)
+│   ├── ads/           # Real AdMob v25 + UMP v4 consent (sole binding post-C.6 PR 3)
+│   ├── anticheat/     # Anti-cheat preferences / offense tracking
+│   ├── onboarding/    # First-launch completion flag (SharedPreferences)
+│   ├── diagnostics/   # Crash breadcrumb store (game-loop crash visibility)
+│   └── time/          # TimeProvider abstraction (testable clock)
 ├── domain/            # Pure Kotlin: models, use cases, repository interfaces (no Android imports)
 ├── presentation/      # ViewModels, Compose screens, SurfaceView battle renderer
 ├── di/                # Hilt modules (Database, Repository, Step, HealthConnect, Billing, Ad, Time, CoroutineScope)
 └── service/           # Foreground step-counting service, WorkManager workers, widget
 ```
 
-See [docs/architecture.md](docs/architecture.md) for layer rules and data flow.
+This tree is abbreviated; see [docs/steering/structure.md](docs/steering/structure.md) for the full
+file-by-file structural reference and [docs/architecture.md](docs/architecture.md) for layer rules and data flow.
 
 ## Where to start
 
