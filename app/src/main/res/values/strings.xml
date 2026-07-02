@@ -503,41 +503,41 @@
     <string name="fx_next_wave">Next Wave: %1$ds</string>
     <!-- i18n #34 phase 3: domain-model descriptions (category G) -->
     <!-- UpgradeType (24) -->
-    <string name="upgrade_desc_damage">+2% base damage per level</string>
-    <string name="upgrade_desc_attack_speed">+1.5% attacks per second</string>
-    <string name="upgrade_desc_critical_chance">+0.5% crit chance per level (cap 80%)</string>
+    <string name="upgrade_desc_damage" formatted="false">+2% base damage per level</string>
+    <string name="upgrade_desc_attack_speed" formatted="false">+1.5% attacks per second</string>
+    <string name="upgrade_desc_critical_chance" formatted="false">+0.5% crit chance per level (cap 80%)</string>
     <string name="upgrade_desc_critical_factor">+0.1x crit multiplier per level</string>
-    <string name="upgrade_desc_range">+2% attack radius (cap 300%)</string>
+    <string name="upgrade_desc_range" formatted="false">+2% attack radius (cap 300%)</string>
     <string name="upgrade_desc_multishot">+1 additional target per level (in-round Cash purchase or Labs research; cap 11 incl. baseline)</string>
     <string name="upgrade_desc_bounce_shot">+1 bounce per level (in-round Cash purchase or Labs research; cap 10)</string>
-    <string name="upgrade_desc_damage_per_meter">+1% bonus damage based on enemy distance</string>
+    <string name="upgrade_desc_damage_per_meter" formatted="false">+1% bonus damage based on enemy distance</string>
     <string name="upgrade_desc_rapid_fire">Periodic attack-speed burst (60s/5s/2.0× → permanent/3.0× at max)</string>
-    <string name="upgrade_desc_health">+3% max ziggurat health</string>
-    <string name="upgrade_desc_health_regen">+2% health regen per second</string>
-    <string name="upgrade_desc_defense_percent">+0.3% damage reduction (cap 75%)</string>
+    <string name="upgrade_desc_health" formatted="false">+3% max ziggurat health</string>
+    <string name="upgrade_desc_health_regen" formatted="false">+2% health regen per second</string>
+    <string name="upgrade_desc_defense_percent" formatted="false">+0.3% damage reduction (cap 75%)</string>
     <string name="upgrade_desc_defense_absolute">+flat damage blocked per hit</string>
-    <string name="upgrade_desc_knockback">+2% knockback force</string>
-    <string name="upgrade_desc_thorn_damage">+1% damage reflected to attackers</string>
+    <string name="upgrade_desc_knockback" formatted="false">+2% knockback force</string>
+    <string name="upgrade_desc_thorn_damage" formatted="false">+1% damage reflected to attackers</string>
     <string name="upgrade_desc_orbs">+1 orbiting projectile per level (cap 6)</string>
-    <string name="upgrade_desc_lifesteal">+0.2% damage dealt returned as health (cap 15%)</string>
-    <string name="upgrade_desc_death_defy">+1% chance to survive killing blow at 1 HP (cap 50%)</string>
-    <string name="upgrade_desc_cash_bonus">+3% cash earned during rounds</string>
+    <string name="upgrade_desc_lifesteal" formatted="false">+0.2% damage dealt returned as health (cap 15%)</string>
+    <string name="upgrade_desc_death_defy" formatted="false">+1% chance to survive killing blow at 1 HP (cap 50%)</string>
+    <string name="upgrade_desc_cash_bonus" formatted="false">+3% cash earned during rounds</string>
     <string name="upgrade_desc_cash_per_wave">+flat cash bonus at end of each wave</string>
-    <string name="upgrade_desc_interest">+0.5% interest on held cash between waves (cap 10%)</string>
-    <string name="upgrade_desc_free_upgrades">+1% chance for in-round upgrades to cost 0 (cap 25%)</string>
+    <string name="upgrade_desc_interest" formatted="false">+0.5% interest on held cash between waves (cap 10%)</string>
+    <string name="upgrade_desc_free_upgrades" formatted="false">+1% chance for in-round upgrades to cost 0 (cap 25%)</string>
     <string name="upgrade_desc_recovery_packages">Periodic health restore drops during waves</string>
-    <string name="upgrade_desc_step_multiplier">Bonus steps from walking — asymptotic curve approaches +100%</string>
+    <string name="upgrade_desc_step_multiplier" formatted="false">Bonus steps from walking — asymptotic curve approaches +100%</string>
     <!-- ResearchType (12) -->
-    <string name="research_desc_damage_research">+5% base damage multiplier</string>
-    <string name="research_desc_health_research">+5% max health multiplier</string>
-    <string name="research_desc_cash_research">+5% cash earned multiplier</string>
-    <string name="research_desc_step_efficiency">+2% bonus steps from walking</string>
+    <string name="research_desc_damage_research" formatted="false">+5% base damage multiplier</string>
+    <string name="research_desc_health_research" formatted="false">+5% max health multiplier</string>
+    <string name="research_desc_cash_research" formatted="false">+5% cash earned multiplier</string>
+    <string name="research_desc_step_efficiency" formatted="false">+2% bonus steps from walking</string>
     <string name="research_desc_wave_skip">Start rounds at wave X instead of wave 1</string>
     <string name="research_desc_auto_upgrade_ai">Reserved for v1.x — research progress preserved</string>
-    <string name="research_desc_uw_cooldown">-3% Ultimate Weapon cooldown</string>
-    <string name="research_desc_critical_research">+3% critical damage multiplier</string>
-    <string name="research_desc_regen_research">+4% health regen multiplier</string>
-    <string name="research_desc_enemy_intel">Tactical awareness. +2% damage per level. Reveals next wave at L1, enemy HP at L5, boss timing at L10.</string>
+    <string name="research_desc_uw_cooldown" formatted="false">-3% Ultimate Weapon cooldown</string>
+    <string name="research_desc_critical_research" formatted="false">+3% critical damage multiplier</string>
+    <string name="research_desc_regen_research" formatted="false">+4% health regen multiplier</string>
+    <string name="research_desc_enemy_intel" formatted="false">Tactical awareness. +2% damage per level. Reveals next wave at L1, enemy HP at L5, boss timing at L10.</string>
     <string name="research_desc_multishot_research">+1 multishot target</string>
     <string name="research_desc_bounce_research">+1 projectile bounce</string>
     <!-- DailyMissionType (6) -->
@@ -552,7 +552,7 @@
     <string name="uw_desc_chain_lightning">Arcing electrical damage chaining between enemies</string>
     <string name="uw_desc_black_hole">Gravity well pulling enemies inward with sustained damage</string>
     <string name="uw_desc_chrono_field">Slows all enemies for duration; lower factor = stronger slow</string>
-    <string name="uw_desc_poison_swamp">Toxic area dealing % max-health damage per second</string>
+    <string name="uw_desc_poison_swamp" formatted="false">Toxic area dealing % max-health damage per second</string>
     <string name="uw_desc_golden_ziggurat">Cash bonus + damage boost for duration</string>
     <!-- i18n #34 phase 3: milestone names (category G) -->
     <string name="milestone_name_first_steps">First Steps</string>
