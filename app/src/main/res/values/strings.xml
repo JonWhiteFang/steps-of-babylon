@@ -463,4 +463,16 @@
     <string name="nav_store">Store</string>
     <string name="nav_help">Help</string>
     <string name="nav_onboarding">Onboarding</string>
+    <!-- i18n #34 phase 3: UW path-value units (category D) — spacing byte-identical to source -->
+    <string name="uw_value_seconds">%1$ds</string>
+    <string name="uw_value_seconds_f">%1$ss</string>
+    <string name="uw_value_dps">%1$d DPS</string>
+    <string name="uw_value_dmg">%1$d dmg</string>
+    <string name="uw_value_enemies">%1$d enemies</string>
+    <string name="uw_value_pxs">%1$d px/s</string>
+    <string name="uw_value_percent">%1$s%%</string>
+    <string name="uw_value_multiplier">%1$s×</string>
+    <string name="uw_value_percent_screen">%1$s%% screen</string>
+    <string name="uw_value_percent_area">%1$s%% area</string>
+    <string name="uw_value_multiplier_dmg">%1$s× dmg</string>
 </resources>
