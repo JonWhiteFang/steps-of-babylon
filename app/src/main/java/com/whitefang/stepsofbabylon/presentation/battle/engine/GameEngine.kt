@@ -549,7 +549,11 @@ class GameEngine :
     private fun triggerWaveAnnouncement(wave: Int) {
         val fx = effectEngine ?: return
         val isBoss = wave % conditions.bossWaveInterval == 0 && wave > 0
-        fx.addEffect(WaveAnnouncement(wave, isBoss, screenWidth, screenHeight, reducedMotion))
+        val bossLabel = strings?.bossIncoming() ?: "⚠ BOSS INCOMING"
+        val waveLabel = strings?.waveHeader(wave) ?: "Wave $wave"
+        fx.addEffect(
+            WaveAnnouncement(wave, isBoss, screenWidth, screenHeight, reducedMotion, bossLabel, waveLabel),
+        )
         soundManager?.play(SoundEffect.WAVE_START)
 
         // Add cooldown text for next wave. The previous WaveCooldownText auto-finishes via the
@@ -557,8 +561,9 @@ class GameEngine :
         val spawner = waveSpawner
         if (spawner != null) {
             // V1X-15b: ENEMY_INTEL L1+ reveals the next wave's composition during cooldown.
+            val labeler: (Int) -> String = { secs -> strings?.nextWaveIn(secs) ?: "Next Wave: ${secs}s" }
             val ct =
-                WaveCooldownText(screenWidth, nextWaveCompositionLabel()) {
+                WaveCooldownText(screenWidth, nextWaveCompositionLabel(), labeler) {
                     if (spawner.phase == WavePhase.COOLDOWN) {
                         WaveSpawner.COOLDOWN_DURATION - (spawner.phaseTimer)
                     } else {
