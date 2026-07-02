@@ -10691,3 +10691,35 @@ After the fix, tests pass on first try and assembleDebug is clean.
   framing → submitted/cleared across `STATE.md` (headline §H + CURRENT promotion-status), `plan-FORWARD.md`
   (§H summary + the #192 gate item), and `docs/release/data-safety-form.md` (status line + acceptance
   checklist all ticked, dated 2026-06-24). Docs-only; no code; no ADR.
+
+## 2026-07-02 — Phase-1 tooling safety baseline: design → plan → review gates → PR-A implemented
+
+- **Track:** the 6 Phase-1 "safety baseline" findings from the #367 tooling-gap audit (tracker #389):
+  #370 `cicd-1` (release/R8 in CI), #376 `sectooling-1` (secret scanning), #371 `ai-3` (step-credit
+  allowlist test), #372 `ai-2` (concurrency-reviewer mandatory), #374 `obs-2` (crash-report exit path),
+  #380 `obs-1` (monitoring runbook). Grouped into 3 PRs by kind (A: CI/supply-chain; B: AI tripwires;
+  C: crash observability).
+- **Process:** brainstorming → design spec (`docs/superpowers/specs/2026-07-02-phase1-tooling-gap-design.md`)
+  → **Adversarial Review Gate on the spec** (6-dim code-grounded fan-out → 2 refuters/finding: 19 raised /
+  15 applied / 4 refuted; the survivors reshaped the #371 test to the full `currentStepBalance` write
+  surface and added the #374 `<queries>` requirement) → implementation plan
+  (`docs/superpowers/plans/2026-07-02-phase1-tooling-gap.md`) → **Adversarial Review Gate on the plan**
+  (20 raised / 19 survived / 1 refuted → 6 distinct defects fixed: the Assertion-3b predicate was red at
+  HEAD, `CrashReportIntentTest` missed the mandatory `@Config`, test-count off-by-one, manifest anchor,
+  PyYAML-not-installed, gitleaks `GITHUB_TOKEN`). Both gates run as background `Workflow`s (ultracode).
+- **PR-A implemented** (branch `ci/phase1-release-variant-and-gitleaks`, subagent-driven):
+  - **#370** — `ci.yml` `build-and-test` gains a separate "seed non-publishing `play.licenseKey`" step +
+    `assembleRelease` + an `always()` cleanup step (commit `7b6b7d6`). Validated locally:
+    `./run-gradle.sh assembleRelease` → BUILD SUCCESSFUL in 2m44s, `minifyReleaseWithR8` ran, `app-release.apk`
+    produced; the `ndk debugSymbolLevel=FULL` did NOT block the APK assemble despite no local NDK dir.
+  - **#376** — `.gitleaks.toml` (commit `4205c2e`) + `.github/workflows/gitleaks.yml` (commit `9f94e16`,
+    SHA-pinned v3.0.0, `GITHUB_TOKEN` + `pull-requests: write`), security-model doc (`aea545a`).
+  - **A5 finding:** `secret_scanning_non_provider_patterns` cannot be flipped via the REST API on this
+    personal-account repo (PATCH returns 200 but the value stays `disabled`) — corrected the security-model
+    doc (`ff821b7`) to record it as a manual **Settings → Code security** step; gitleaks already covers the
+    custom keystore/password patterns so it's incremental, not a coverage gap.
+  - Review discipline: every subagent's output was re-verified against the actual files (not the report),
+    which caught the false "non-provider patterns enabled" doc claim before it shipped.
+- **Remaining:** push PR-A + open the PR + tick #370/#376 on #389; then PR-B (#371/#372, incl. ADR-0038)
+  and PR-C (#374/#380). Test-count math for PR-B: StepCreditAllowlistTest = 6 @Tests + BattleEngineLockScanTest
+  = 1 → +7 (headline 1294 → 1301); PR-C CrashReportIntentTest → 1302.
