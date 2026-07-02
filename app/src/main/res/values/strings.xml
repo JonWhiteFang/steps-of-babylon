@@ -404,4 +404,17 @@
     <string name="billing_error_network">Network error. Check your connection and try again.</string>
     <string name="billing_error_other">Purchase failed (code %1$d).</string>
     <string name="billing_error_ok">OK</string>
+    <!-- i18n #34 phase 3: ad error messages (category A′) -->
+    <string name="ad_error_no_activity">No activity available for ad</string>
+    <string name="ad_error_consent_pending">Can\'t request ads yet — consent pending</string>
+    <string name="ad_error_load_internal">Ad request was invalid. (Internal error.)</string>
+    <string name="ad_error_load_invalid">Ad request was invalid. (Invalid request.)</string>
+    <string name="ad_error_load_network">Network error. Check your connection and try again.</string>
+    <string name="ad_error_load_no_fill">No ad available right now. Try again later.</string>
+    <string name="ad_error_load_other">Couldn\'t load ad. (code %1$d)</string>
+    <string name="ad_error_show_internal">Ad couldn\'t play. (Internal error.)</string>
+    <string name="ad_error_show_already">Ad was already shown.</string>
+    <string name="ad_error_show_not_ready">Ad isn\'t ready to show.</string>
+    <string name="ad_error_show_foreground">Ad couldn\'t play. (App not in foreground.)</string>
+    <string name="ad_error_show_other">Couldn\'t show ad. (code %1$d)</string>
 </resources>
