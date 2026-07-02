@@ -1,3 +1,43 @@
+## 2026-07-02 — Tooling-gap findings filed as GitHub issues (#370–#389; GitHub-only, no repo change)
+
+- **Goal:** ensure the 24 surviving findings from the #367 tooling-gap audit
+  (`docs/reviews/tooling-gap-assessment.md`) are captured as tracked GitHub issues, with **no duplicates**
+  against the existing backlog. Follows the developer's redirect mid-session (was about to start Phase-1
+  tooling work; pivoted to "file the findings first").
+- **Dedup method:** pulled the **full open+closed issue history** (`gh issue list --state all`, ~130 issues)
+  and cross-referenced every finding against near-neighbours before filing. Also verified against HEAD which
+  survivors PR #367 had *already applied* (README hygiene) so they wouldn't be re-filed as open work.
+- **Filed — 19 finding issues + 1 tracker, all under a NEW `tooling` label** (`gh label create tooling`):
+  - #370 `cicd-1` (**severity:major** — the audit's #1 gap: release/R8 variant never built in CI before the
+    `v*` tag auto-publishes to Play internal), #371 `ai-3` (step-credit allowlist test), #372 `ai-2`
+    (mandatory concurrency-reviewer on engine/effects diffs), #373 `testing-1` (scoped Kover verify ratchet),
+    #374 `obs-2` (crash-breadcrumb exit path), #375 `perf-3` (LeakCanary), #376 `sectooling-1` (secret
+    scanning), #377 `depmgmt-1` (OSS attribution), #378 `devenv-1` (`jvmToolchain(17)`), #379 `releaseops-1`
+    (versionCode guard), #380 `obs-1` (monitoring runbook), #381 `db-1` (MigrationTestHelper chain test),
+    #382 `cqt-1` (Compose-prose guard), #383 `releaseops-2` (rollout/rollback doc), #384 `perf-2` (frame-stats
+    overlay), #385 `perf-1` (macrobenchmark numbers), #386 `ai-1` (`AGENTS.md`), #387 `pm-1` (`BACKLOG.md`),
+    #388 `docs-2` (STATE.md trim — flagged **partially addressed by #367**).
+  - **#389** umbrella tracker (mirrors the #128/#262 tracker pattern): 4-phase roadmap linking all 19 +
+    the audit's "deliberately N/A" list. All findings get `tooling` + topical labels (github_actions/testing/
+    performance/dependencies/documentation/architecture) + severity; `cicd-1`=major, rest=minor.
+  - Each body carries: gap · this-app impact · recommended fix · files · difficulty/risk · verify command ·
+    an explicit "not a duplicate of #X" note where a nearby closed issue existed.
+- **Deliberately NOT filed (dedup results, recorded in #389):** `structure-1`/`structure-2`/`devenv-2` —
+  README hygiene, **already applied in PR #367** (verified at HEAD: test-count→pointer, 4 `data/` packages,
+  non-TTY cross-ref all present); `cicd-2` — **refuted** by the audit (branch protection documented in
+  ADR-0018's 2026-06-16 amendment). Plus the audit's N/A list (Dockerfile, `gradle.lockfile`, CodeQL,
+  third-party crash SDK, cloud save, etc.).
+- **Verification:** `gh issue list --label tooling --state open` returns exactly **20** (19 findings + tracker
+  #389), numbers contiguous #370–#389. No new duplicate against the ~130-issue open+closed set (checked
+  #212≠`cicd-1`, #218≠`testing-1`, #222/#237≠`db-1`, #34≠`cqt-1`, #23≠`obs-2`).
+- **Doc sync:** none required — GitHub-only, no code/test/schema/architecture change (CLAUDE.md, CHANGELOG,
+  source-files.md, structure.md, database-schema.md, README all untouched). No ADR (filing issues is not a
+  decision). STATE.md Current-objective rotated (this session on top; #367/#368 demoted to "Previous
+  objective") so the "NEXT" pointer now names the filed issue numbers instead of loose prose.
+- **Next:** developer selected the **Phase-1 tooling safety baseline** as the next work track — start with
+  #370 `cicd-1`, #371 `ai-3`, #372 `ai-2`; each through the Adversarial Review Gate (spec → plan →
+  implement) per CLAUDE.md.
+
 ## 2026-07-02 — Docs hardening: tooling-gap audit + "Steps never generated" invariant accuracy (2 docs-only PRs #367/#368 merged; no app/test/schema change)
 
 - **Goal:** (a) run the reusable tooling-gap audit prompt the developer left in `docs/reviews/`, and

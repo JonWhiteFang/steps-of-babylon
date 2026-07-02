@@ -41,25 +41,25 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (docs hardening — tooling-gap audit + "Steps never generated" invariant accuracy; 2 docs-only
-  PRs #367/#368 MERGED to `main`; no app/test/schema change).** (1) **#367** ran the reusable tooling-audit
-  prompt as a multi-agent ultracode audit (15-facet fan-out → adversarial refute-verify → synthesis; **25
-  raised / 24 survived / 1 refuted**) → `docs/reviews/tooling-gap-assessment.md` (maturity **High**; top
-  real gaps: release-variant/R8 not built in CI before auto-publish `cicd-1`, no production crash-visibility
-  exit path `obs-2`/`obs-1`, safety-critical invariants prose-only `ai-2`/`ai-3`, no coverage ratchet
-  `testing-1`). Applied the pure-doc-hygiene survivors (README stale test-count→pointer, +4 `data/`
-  packages, non-TTY cross-ref; **STATE.md trimmed 491→403 lines**). Audit's code/config findings NOT
-  implemented — scoped follow-ups per the report. (2) **#368** documented the **battle-step reward** as the
-  sole exception to "Steps never generated in-game" (flat per-kill, 2,000/day cap `AwardBattleSteps.DAILY_BATTLE_STEP_CAP`,
-  separate from the 50k ceiling, never multiplied — ADR-0003) across ~8 canonical docs, keeping "never
-  generated *passively*" (has the exception) distinct from "never purchasable with real money" (stays
-  absolute); positively defined the mechanic in GDD §3.2 + a new battle-formulas.md section +
-  step-tracking.md anti-cheat row. **NEXT (no work in flight):** the tooling-audit backlog's higher-priority
-  code/config findings if the developer opts in (`cicd-1` release-variant CI, `ai-3`/`ai-2` invariant
-  tripwires + wiring the concurrency-reviewer, `obs-2` crash exit path, `perf-3` LeakCanary, `testing-1`
-  scoped Kover ratchet, `sectooling-1` secret scanning); the first real non-English `values-xx` locale
-  (#34 payoff); the internal→closed promotion judgment call; A24 clock-tamper, L12 BattleViewModel
+- **CURRENT (tooling-gap backlog filed as GitHub issues; no repo change — GitHub-only).** The 24 surviving
+  findings from `docs/reviews/tooling-gap-assessment.md` (the #367 audit) were filed as **19 finding issues
+  #370–#388 + umbrella tracker #389**, all under a NEW **`tooling`** label (`gh issue list --label tooling`
+  groups them; `cicd-1`=`severity:major`, rest `severity:minor` + topical labels). Deduped against the full
+  open+closed history — **not filed:** `structure-1`/`structure-2`/`devenv-2` (README hygiene, already applied
+  in #367), `cicd-2` (refuted, ADR-0018). The tracker (#389) carries the 4-phase roadmap + the audit's
+  "deliberately N/A" list. Highest-leverage children (Phase 1, "ships-green-today" paths): **#370 `cicd-1`**
+  (release/R8 variant in CI before auto-publish), **#371 `ai-3`** (step-credit allowlist test), **#372 `ai-2`**
+  (mandatory concurrency-reviewer on engine/effects), **#376 `sectooling-1`** (secret scanning). **NEXT (no
+  work in flight):** the developer picked **Phase-1 tooling safety baseline** as the next work track (spec +
+  Adversarial Review Gate per finding before implementing) — start with #370/#371/#372. Alternatives on the
+  table: the first real non-English `values-xx` locale (#34 payoff); the internal→closed promotion judgment
+  call; #233 clean Simulation-hoist (ADR-0012) / #306 EntityProtocol; A24 clock-tamper, L12 BattleViewModel
   decomposition, battle perf L46-51.
+- *Previous objective (DONE, 2026-07-02) — docs hardening: **#367** ran the tooling-gap audit (multi-agent,
+  25 raised/24 survived/1 refuted → `docs/reviews/tooling-gap-assessment.md`, maturity High) + applied the
+  pure-doc-hygiene survivors (README + STATE.md trim 491→403); **#368** documented the battle-step reward as
+  the sole exception to "Steps never generated in-game" (ADR-0003) across ~8 canonical docs. Both docs-only,
+  no app/test/schema change. Detail in RUN_LOG.*
 - *Prior objectives (all DONE) — the recently-completed arc (#34 i18n phase 3 locale-readiness [6 PRs
   #360–#365, app 100% locale-ready, 1294 JVM], i18n phase 2 #354/#355, `/backup-to-vault` skill, #217
   service tests, Claude-tooling PRs #345/#346, the **v1.0.12 release** vc 28 → Play internal, audit fixes
