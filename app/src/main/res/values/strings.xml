@@ -120,6 +120,10 @@
     <string name="battle_error_body">Something went wrong and the battle had to stop. Your progress for this round wasn\'t saved.</string>
     <string name="battle_error_return">Return to menu</string>
     <string name="crash_notice_last_session">The game closed unexpectedly last time. Sorry about that!</string>
+    <string name="crash_notice_report_action">Report</string>
+    <string name="crash_report_email_subject">Steps of Babylon crash report</string>
+    <!-- %1$s exceptionClass, %2$s message, %3$s stackPreview, %4$s app+device metadata -->
+    <string name="crash_report_email_body">A crash was recorded on the previous session.\n\nException: %1$s\nMessage: %2$s\n\nStack:\n%3$s\n\n%4$s</string>
 
     <!-- #260: localized enum display names (replace raw CONSTANT_CASE surfacing) -->
     <string name="upgrade_cat_attack">Attack</string>
