@@ -49,6 +49,7 @@ import com.whitefang.stepsofbabylon.presentation.ui.labelRes
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
+import com.whitefang.stepsofbabylon.presentation.ui.resolve
 
 @Composable
 fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
@@ -62,10 +63,11 @@ fun StoreScreen(viewModel: StoreViewModel = hiltViewModel()) {
         return
     }
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     LaunchedEffect(state.userMessage) {
         state.userMessage?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.resolve(context))
             viewModel.clearMessage()
         }
     }

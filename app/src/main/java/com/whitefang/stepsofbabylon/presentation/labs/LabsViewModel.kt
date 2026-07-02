@@ -16,6 +16,7 @@ import com.whitefang.stepsofbabylon.domain.usecase.StartResearch
 import com.whitefang.stepsofbabylon.domain.usecase.UnlockLabSlot
 import com.whitefang.stepsofbabylon.domain.usecase.UpdateCompleteResearchMissionProgress
 import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -52,7 +53,7 @@ class LabsViewModel
 
         private val tick = MutableStateFlow(System.currentTimeMillis())
         private val _processing = MutableStateFlow(false)
-        private val _userMessage = MutableStateFlow<String?>(null)
+        private val _userMessage = MutableStateFlow<UiMessage?>(null)
 
         // #194: bump to re-subscribe the data flow after a load error (retry).
         private val _retry = MutableStateFlow(0)
@@ -154,7 +155,7 @@ class LabsViewModel
             // startResearch with a deferred type and spending Steps. Both layers read the same
             // content-as-code isComingSoon flag (only AUTO_UPGRADE_AI today), so they cannot drift.
             if (type.isComingSoon) {
-                _userMessage.value = "Coming soon \u2014 reserved for v1.x"
+                _userMessage.value = UiMessage.ResearchComingSoon
                 return
             }
             viewModelScope.launch {
@@ -165,10 +166,10 @@ class LabsViewModel
                     if (result !is StartResearch.Result.Success) {
                         _userMessage.value =
                             when (result) {
-                                is StartResearch.Result.InsufficientSteps -> "Not enough Steps"
-                                is StartResearch.Result.NoSlotAvailable -> "No research slot available"
-                                is StartResearch.Result.MaxLevelReached -> "Already at max level"
-                                is StartResearch.Result.AlreadyResearching -> "Already researching"
+                                is StartResearch.Result.InsufficientSteps -> UiMessage.NotEnoughSteps
+                                is StartResearch.Result.NoSlotAvailable -> UiMessage.NoResearchSlot
+                                is StartResearch.Result.MaxLevelReached -> UiMessage.AlreadyMaxLevel
+                                is StartResearch.Result.AlreadyResearching -> UiMessage.AlreadyResearching
                                 is StartResearch.Result.Success -> null
                             }
                     }
@@ -190,7 +191,7 @@ class LabsViewModel
                     if (result is RushResearch.Result.Rushed) {
                         updateMissionProgress(completedCount = 1)
                     } else {
-                        _userMessage.value = "Not enough Gems"
+                        _userMessage.value = UiMessage.NotEnoughGems
                     }
                 } finally {
                     _processing.value = false
@@ -205,16 +206,16 @@ class LabsViewModel
                 try {
                     val profile = playerRepository.observeProfile().first()
                     if (!profile.seasonPassActive || profile.seasonPassExpiry <= System.currentTimeMillis()) {
-                        _userMessage.value = "Season Pass required"
+                        _userMessage.value = UiMessage.SeasonPassRequired
                         return@launch
                     }
                     if (profile.freeLabRushUsedToday == LocalDate.now().toString()) {
-                        _userMessage.value = "Free rush already used today"
+                        _userMessage.value = UiMessage.FreeRushUsed
                         return@launch
                     }
                     val activeList = labRepository.observeActiveResearch().first()
                     if (activeList.find { it.type == type } == null) {
-                        _userMessage.value = "No active research to rush"
+                        _userMessage.value = UiMessage.NoActiveResearch
                         return@launch
                     }
                     labRepository.completeResearch(type)
@@ -233,8 +234,7 @@ class LabsViewModel
                 try {
                     val result = unlockLabSlot(uiState.value.totalSlots, uiState.value.gems)
                     if (result !is UnlockLabSlot.Result.Unlocked) {
-                        _userMessage.value =
-                            "Not enough Gems or max slots reached"
+                        _userMessage.value = UiMessage.NotEnoughGemsOrMaxSlots
                     }
                 } finally {
                     _processing.value = false

@@ -65,6 +65,7 @@ import com.whitefang.stepsofbabylon.presentation.battle.ui.InRoundUpgradeMenu
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PauseOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.PostRoundOverlay
 import com.whitefang.stepsofbabylon.presentation.battle.ui.UltimateWeaponBar
+import com.whitefang.stepsofbabylon.presentation.ui.resolve
 import com.whitefang.stepsofbabylon.presentation.ui.wavePhaseLabelRes
 
 @Composable
@@ -112,7 +113,7 @@ fun BattleScreen(
     // user dismisses the ad. Mirrors CardsScreen + LabsScreen + WorkshopScreen.
     LaunchedEffect(state.userMessage) {
         state.userMessage?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.resolve(context))
             viewModel.clearMessage()
         }
     }

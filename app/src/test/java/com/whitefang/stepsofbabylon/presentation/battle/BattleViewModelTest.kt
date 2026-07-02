@@ -5,6 +5,7 @@ import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationEvent
 import com.whitefang.stepsofbabylon.domain.model.*
 import com.whitefang.stepsofbabylon.domain.usecase.AwardBattleSteps
 import com.whitefang.stepsofbabylon.fakes.*
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 import com.whitefang.stepsofbabylon.service.MilestoneNotificationManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -287,7 +288,7 @@ class BattleViewModelTest {
 
             assertEquals(initialGems, playerRepo.profile.value.gems, "no credit on Cancelled")
             assertEquals(
-                "Ad cancelled. Try again.",
+                UiMessage.AdCancelled,
                 vm.uiState.value.userMessage,
                 "user-visible snackbar message on Cancelled (PR A: ad-error UX)",
             )
@@ -307,7 +308,7 @@ class BattleViewModelTest {
 
             assertEquals(initialGems, playerRepo.profile.value.gems, "no credit on Error")
             assertEquals(
-                "No ad available",
+                UiMessage.Raw("No ad available"),
                 vm.uiState.value.userMessage,
                 "AdResult.Error.message surfaces verbatim when non-blank (PR A: ad-error UX)",
             )
@@ -334,7 +335,7 @@ class BattleViewModelTest {
 
             assertEquals(initialPs, playerRepo.profile.value.powerStones, "no credit on Cancelled")
             assertEquals(
-                "Ad cancelled. Try again.",
+                UiMessage.AdCancelled,
                 vm.uiState.value.userMessage,
                 "user-visible snackbar message on Cancelled (PR A: ad-error UX)",
             )
@@ -355,7 +356,7 @@ class BattleViewModelTest {
             advanceUntilIdle()
 
             assertEquals(
-                "Ad failed to load. Try again later.",
+                UiMessage.AdFailed,
                 vm.uiState.value.userMessage,
                 "blank Error.message must not surface as an empty snackbar (PR A: ad-error UX)",
             )

@@ -1,7 +1,9 @@
 package com.whitefang.stepsofbabylon.data.ads
 
+import android.content.Context
 import android.util.Log
 import com.whitefang.stepsofbabylon.BuildConfig
+import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.data.ads.internal.ConsentManager
 import com.whitefang.stepsofbabylon.data.ads.internal.RewardedAdAdapter
 import com.whitefang.stepsofbabylon.data.ads.internal.SdkAdLoadResult
@@ -10,6 +12,7 @@ import com.whitefang.stepsofbabylon.data.billing.internal.ActivityProvider
 import com.whitefang.stepsofbabylon.domain.model.AdPlacement
 import com.whitefang.stepsofbabylon.domain.model.AdResult
 import com.whitefang.stepsofbabylon.domain.repository.RewardAdManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
@@ -77,6 +80,7 @@ internal class RewardAdManagerImpl
         private val adapter: RewardedAdAdapter,
         private val consentManager: ConsentManager,
         private val activityProvider: ActivityProvider,
+        @ApplicationContext private val context: Context,
     ) : RewardAdManager {
         /**
          * Serialises [showRewardAd] so two concurrent callers cannot race into overlapping
@@ -90,7 +94,7 @@ internal class RewardAdManagerImpl
             sessionMutex.withLock {
                 val activity =
                     activityProvider.current()
-                        ?: return@withLock AdResult.Error("No activity available for ad")
+                        ?: return@withLock AdResult.Error(context.getString(R.string.ad_error_no_activity))
 
                 // 1. Make sure UMP has run its consent flow at least once. No-op after the first
                 //    successful run per session (UMP itself caches across launches).
@@ -104,7 +108,7 @@ internal class RewardAdManagerImpl
                     }
 
                 if (!consentManager.canRequestAds()) {
-                    return@withLock AdResult.Error("Can't request ads yet — consent pending")
+                    return@withLock AdResult.Error(context.getString(R.string.ad_error_consent_pending))
                 }
 
                 // 2. Load a fresh RewardedAd for this placement.
@@ -159,11 +163,11 @@ internal class RewardAdManagerImpl
          */
         private fun SdkAdLoadResult.Error.toUserMessage(): String =
             when (code) {
-                0 -> "Ad request was invalid. (Internal error.)"
-                1 -> "Ad request was invalid. (Invalid request.)"
-                2 -> "Network error. Check your connection and try again."
-                3 -> "No ad available right now. Try again later."
-                else -> "Couldn't load ad. (code $code)"
+                0 -> context.getString(R.string.ad_error_load_internal)
+                1 -> context.getString(R.string.ad_error_load_invalid)
+                2 -> context.getString(R.string.ad_error_load_network)
+                3 -> context.getString(R.string.ad_error_load_no_fill)
+                else -> context.getString(R.string.ad_error_load_other, code)
             }
 
         /**
@@ -171,11 +175,11 @@ internal class RewardAdManagerImpl
          */
         private fun SdkAdShowResult.Error.toUserMessage(): String =
             when (code) {
-                0 -> "Ad couldn't play. (Internal error.)"
-                1 -> "Ad was already shown."
-                2 -> "Ad isn't ready to show."
-                3 -> "Ad couldn't play. (App not in foreground.)"
-                else -> "Couldn't show ad. (code $code)"
+                0 -> context.getString(R.string.ad_error_show_internal)
+                1 -> context.getString(R.string.ad_error_show_already)
+                2 -> context.getString(R.string.ad_error_show_not_ready)
+                3 -> context.getString(R.string.ad_error_show_foreground)
+                else -> context.getString(R.string.ad_error_show_other, code)
             }
 
         companion object {

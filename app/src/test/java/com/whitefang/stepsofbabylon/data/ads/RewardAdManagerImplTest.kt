@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.data.ads
 
 import android.app.Activity
+import androidx.test.core.app.ApplicationProvider
 import com.whitefang.stepsofbabylon.data.ads.internal.ConsentManager
 import com.whitefang.stepsofbabylon.data.ads.internal.RewardedAdAdapter
 import com.whitefang.stepsofbabylon.data.ads.internal.SdkAdLoadResult
@@ -14,19 +15,27 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * Unit coverage for [RewardAdManagerImpl] against a mocked [RewardedAdAdapter] and
  * [ConsentManager]. The adapter boundary is plain-Kotlin sealed classes, so mockito-kotlin's
- * default subclass mock-maker handles it without `mockito-inline`. No Robolectric required
- * — the impl talks only to the adapter + [ActivityProvider] + [ConsentManager] interfaces,
- * and `Activity` is mockito-mocked as a pass-through to the mocked adapter.
+ * default subclass mock-maker handles it without `mockito-inline`. `Activity` is mockito-mocked
+ * as a pass-through to the mocked adapter.
+ *
+ * Runs on the Robolectric/JVM lane (i18n #34 phase 3, A′): the impl now injects an
+ * `@ApplicationContext` and resolves its error strings via `context.getString(R.string.ad_error_*)`,
+ * so the assertions need a real resource-backed [android.content.Context] (supplied by
+ * [ApplicationProvider]). Under the default (English) locale the resolved strings are byte-identical
+ * to the former hard-coded literals, so the assertions below are unchanged.
  *
  * Every [AdResult] variant is exercised at least once:
  * - `AdResult.Rewarded` — happy path (consent ok → load ok → show returns `Rewarded`).
@@ -36,6 +45,8 @@ import org.mockito.kotlin.verify
  *
  * C.6 PR 1 / ADR-0006.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], application = android.app.Application::class)
 class RewardAdManagerImplTest {
     private lateinit var adapter: RewardedAdAdapter
     private lateinit var consentManager: ConsentManager
@@ -57,6 +68,7 @@ class RewardAdManagerImplTest {
                 adapter = adapter,
                 consentManager = consentManager,
                 activityProvider = activityProvider,
+                context = ApplicationProvider.getApplicationContext(),
             )
     }
 

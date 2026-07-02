@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,6 +36,7 @@ import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.formatCount
 import com.whitefang.stepsofbabylon.presentation.ui.formatRewardParts
+import com.whitefang.stepsofbabylon.presentation.ui.resolve
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,12 +65,13 @@ fun MissionsScreen(viewModel: MissionsViewModel = hiltViewModel()) {
     }
     val snackbarHostState = remember { SnackbarHostState() }
     var celebration by remember { mutableStateOf<ClaimCelebrationEvent?>(null) }
+    val context = LocalContext.current
 
     // C.4: surface non-Success ClaimMilestoneResult (InsufficientSteps, AlreadyClaimed,
     // UnknownCosmetic) as snackbars so claim failures are visible instead of silent.
     LaunchedEffect(state.userMessage) {
         state.userMessage?.let {
-            snackbarHostState.showSnackbar(it)
+            snackbarHostState.showSnackbar(it.resolve(context))
             viewModel.clearMessage()
         }
     }

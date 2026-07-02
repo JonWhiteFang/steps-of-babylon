@@ -15,6 +15,7 @@ import com.whitefang.stepsofbabylon.domain.usecase.OpenCardPack
 import com.whitefang.stepsofbabylon.domain.usecase.PackTier
 import com.whitefang.stepsofbabylon.domain.usecase.UpgradeCard
 import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,7 +46,7 @@ class CardsViewModel
         private val packRevealHandleFlow: StateFlow<PackRevealState?> =
             savedStateHandle.getStateFlow(KEY_PACK_REVEAL, null)
         private val _processing = MutableStateFlow(false)
-        private val _userMessage = MutableStateFlow<String?>(null)
+        private val _userMessage = MutableStateFlow<UiMessage?>(null)
 
         // #194: bump to re-subscribe the data flow after a load error (retry).
         private val _retry = MutableStateFlow(0)
@@ -111,7 +112,7 @@ class CardsViewModel
                     if (result is OpenCardPack.Result.Opened) {
                         savedStateHandle[KEY_PACK_REVEAL] = result.cards.toPackRevealState()
                     } else {
-                        _userMessage.value = "Not enough Gems"
+                        _userMessage.value = UiMessage.NotEnoughGems
                     }
                 } finally {
                     _processing.value = false
@@ -129,11 +130,11 @@ class CardsViewModel
                         is UpgradeCard.Result.Upgraded -> { /* UI updates reactively via Flow */ }
 
                         is UpgradeCard.Result.MaxLevel -> {
-                            _userMessage.value = "Card already at max level"
+                            _userMessage.value = UiMessage.CardAtMaxLevel
                         }
 
                         is UpgradeCard.Result.InsufficientCopies -> {
-                            _userMessage.value = "Not enough copies"
+                            _userMessage.value = UiMessage.NotEnoughCopies
                         }
                     }
                 } finally {
@@ -174,11 +175,12 @@ class CardsViewModel
                         }
 
                         is AdResult.Cancelled -> {
-                            _userMessage.value = "Ad cancelled. Try again."
+                            _userMessage.value = UiMessage.AdCancelled
                         }
 
                         is AdResult.Error -> {
-                            _userMessage.value = result.message.ifBlank { "Ad failed to load. Try again later." }
+                            _userMessage.value =
+                                if (result.message.isBlank()) UiMessage.AdFailed else UiMessage.Raw(result.message)
                         }
                     }
                 } finally {

@@ -46,6 +46,7 @@ import com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine
 import com.whitefang.stepsofbabylon.presentation.battle.engine.WavePhase
 import com.whitefang.stepsofbabylon.presentation.battle.engine.WaveSpawner
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BiomeTransitionInfo
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import com.whitefang.stepsofbabylon.service.MilestoneNotificationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -765,11 +766,12 @@ class BattleViewModel
                     }
 
                     is AdResult.Cancelled -> {
-                        _uiState.update { it.copy(userMessage = "Ad cancelled. Try again.") }
+                        _uiState.update { it.copy(userMessage = UiMessage.AdCancelled) }
                     }
 
                     is AdResult.Error -> {
-                        val msg = result.message.ifBlank { "Ad failed to load. Try again later." }
+                        val msg: UiMessage =
+                            if (result.message.isBlank()) UiMessage.AdFailed else UiMessage.Raw(result.message)
                         _uiState.update { it.copy(userMessage = msg) }
                     }
                 }
@@ -790,11 +792,12 @@ class BattleViewModel
                     }
 
                     is AdResult.Cancelled -> {
-                        _uiState.update { it.copy(userMessage = "Ad cancelled. Try again.") }
+                        _uiState.update { it.copy(userMessage = UiMessage.AdCancelled) }
                     }
 
                     is AdResult.Error -> {
-                        val msg = result.message.ifBlank { "Ad failed to load. Try again later." }
+                        val msg: UiMessage =
+                            if (result.message.isBlank()) UiMessage.AdFailed else UiMessage.Raw(result.message)
                         _uiState.update { it.copy(userMessage = msg) }
                     }
                 }

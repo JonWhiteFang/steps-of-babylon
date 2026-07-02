@@ -369,4 +369,52 @@
     <string name="uw_path_cooldown">Cooldown</string>
     <string name="lab_time_done">Done!</string>
     <string name="time_just_now">Just now</string>
+
+    <!-- i18n #34 phase 3: ViewModel user messages (category A) -->
+    <string name="msg_not_enough_gems">Not enough Gems</string>
+    <string name="msg_not_enough_steps">Not enough Steps</string>
+    <string name="msg_already_max_level">Already at max level</string>
+    <string name="msg_no_affordable_upgrades">No affordable upgrades</string>
+    <string name="msg_card_at_max_level">Card already at max level</string>
+    <string name="msg_not_enough_copies">Not enough copies</string>
+    <string name="msg_research_coming_soon">Coming soon — reserved for v1.x</string>
+    <string name="msg_no_research_slot">No research slot available</string>
+    <string name="msg_already_researching">Already researching</string>
+    <string name="msg_season_pass_required">Season Pass required</string>
+    <string name="msg_free_rush_used">Free rush already used today</string>
+    <string name="msg_no_active_research">No active research to rush</string>
+    <string name="msg_not_enough_gems_or_max_slots">Not enough Gems or max slots reached</string>
+    <string name="msg_mission_not_enough_steps">You haven\'t walked enough steps yet.</string>
+    <string name="msg_milestone_already_claimed">Milestone already claimed.</string>
+    <string name="msg_reward_unavailable">Reward temporarily unavailable (cosmetic “%1$s” is being finalised). Try again after the next update.</string>
+    <string name="msg_ad_cancelled">Ad cancelled. Try again.</string>
+    <string name="msg_ad_failed">Ad failed to load. Try again later.</string>
+
+    <!-- i18n #34 phase 3: billing error messages (category A′) -->
+    <string name="billing_error_no_activity">No activity available for purchase</string>
+    <string name="billing_error_product_unavailable">Product %1$s not available. (Play Console SKU may be missing or not yet released.)</string>
+    <string name="billing_error_cancelled">Purchase cancelled</string>
+    <string name="billing_error_pending">Purchase pending — complete payment to receive your items</string>
+    <string name="billing_error_unverified">Purchase could not be verified</string>
+    <string name="billing_error_service_unavailable">Billing service unavailable. Try again shortly.</string>
+    <string name="billing_error_billing_unavailable">Google Play billing is not available on this device.</string>
+    <string name="billing_error_item_unavailable">This product is not available right now.</string>
+    <string name="billing_error_item_owned">You already own this item.</string>
+    <string name="billing_error_developer">Purchase failed (configuration error).</string>
+    <string name="billing_error_network">Network error. Check your connection and try again.</string>
+    <string name="billing_error_other">Purchase failed (code %1$d).</string>
+    <string name="billing_error_ok">OK</string>
+    <!-- i18n #34 phase 3: ad error messages (category A′) -->
+    <string name="ad_error_no_activity">No activity available for ad</string>
+    <string name="ad_error_consent_pending">Can\'t request ads yet — consent pending</string>
+    <string name="ad_error_load_internal">Ad request was invalid. (Internal error.)</string>
+    <string name="ad_error_load_invalid">Ad request was invalid. (Invalid request.)</string>
+    <string name="ad_error_load_network">Network error. Check your connection and try again.</string>
+    <string name="ad_error_load_no_fill">No ad available right now. Try again later.</string>
+    <string name="ad_error_load_other">Couldn\'t load ad. (code %1$d)</string>
+    <string name="ad_error_show_internal">Ad couldn\'t play. (Internal error.)</string>
+    <string name="ad_error_show_already">Ad was already shown.</string>
+    <string name="ad_error_show_not_ready">Ad isn\'t ready to show.</string>
+    <string name="ad_error_show_foreground">Ad couldn\'t play. (App not in foreground.)</string>
+    <string name="ad_error_show_other">Couldn\'t show ad. (code %1$d)</string>
 </resources>
