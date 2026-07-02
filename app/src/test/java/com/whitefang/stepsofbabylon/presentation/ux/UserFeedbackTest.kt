@@ -5,6 +5,7 @@ import com.whitefang.stepsofbabylon.domain.model.PlayerProfile
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.fakes.FakePlayerRepository
 import com.whitefang.stepsofbabylon.fakes.FakeWorkshopRepository
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 import com.whitefang.stepsofbabylon.presentation.workshop.WorkshopViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -53,9 +54,9 @@ class UserFeedbackTest {
             advanceUntilIdle()
 
             assertNotNull(vm.uiState.value.userMessage)
-            assertTrue(
-                vm.uiState.value.userMessage!!
-                    .contains("Steps"),
+            assertEquals(
+                UiMessage.NotEnoughSteps,
+                vm.uiState.value.userMessage,
             )
         }
 
