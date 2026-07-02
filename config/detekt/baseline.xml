@@ -6,6 +6,7 @@
     <ID>CyclomaticComplexMethod:BattleViewModel.kt:BattleViewModel$fun startPollingEngine</ID>
     <ID>CyclomaticComplexMethod:DescribeUpgradeEffect.kt:DescribeUpgradeEffect$private fun format: String</ID>
     <ID>CyclomaticComplexMethod:EnumLabels.kt:@StringRes fun UpgradeType.descriptionRes: Int</ID>
+    <ID>CyclomaticComplexMethod:EnumLabels.kt:@StringRes fun UpgradeType.nameRes: Int</ID>
     <ID>CyclomaticComplexMethod:GameEngine.kt:GameEngine$fun update</ID>
     <ID>CyclomaticComplexMethod:MainActivity.kt:MainActivity$override fun onCreate</ID>
     <ID>CyclomaticComplexMethod:OnboardingScreen.kt:@Composable fun OnboardingScreen</ID>

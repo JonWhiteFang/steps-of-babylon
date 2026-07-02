@@ -35,12 +35,12 @@ import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.RarityBadge
 import com.whitefang.stepsofbabylon.presentation.ui.descriptionRes
+import com.whitefang.stepsofbabylon.presentation.ui.nameRes
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rarityBorder
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
 import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusWarning
-import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import com.whitefang.stepsofbabylon.presentation.ui.uwRarityLabelRes
 import com.whitefang.stepsofbabylon.presentation.ui.uwRarityTier
 
@@ -126,7 +126,7 @@ private fun UWCard(
                     ) {
                         RarityBadge(tier, stringResource(uwRarityLabelRes(tier)), alpha = rarityAlpha)
                         Text(
-                            info.type.name.toDisplayName(),
+                            stringResource(info.type.nameRes()),
                             fontWeight = FontWeight.Bold,
                             color = if (info.isUnlocked) Color.White else Color.Gray,
                         )

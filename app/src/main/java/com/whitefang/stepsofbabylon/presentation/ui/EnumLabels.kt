@@ -4,6 +4,8 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.whitefang.stepsofbabylon.R
+import com.whitefang.stepsofbabylon.domain.model.BattleCondition
+import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.domain.model.CardRarity
 import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
@@ -146,6 +148,107 @@ fun Milestone.displayNameRes(): Int =
         Milestone.MARATHON_WALKER -> R.string.milestone_name_marathon_walker
         Milestone.IRON_SOLES -> R.string.milestone_name_iron_soles
         Milestone.GLOBE_TROTTER -> R.string.milestone_name_globe_trotter
+    }
+
+/**
+ * #34 phase 3 (G): domain-model display-name resolvers. These replace the `.toDisplayName()`
+ * title-cased CONSTANT_CASE render at each UI site, so a non-English locale can localize the enum
+ * names. Values are BYTE-IDENTICAL to the old `String.toDisplayName()` output — including the
+ * pre-existing quirks `UW_COOLDOWN` → "U W Cooldown" and `UNDERWORLD_OF_KUR` → "Underworld Of Kur"
+ * (this is extraction, not a copy fix). Exhaustive `when` (no `else`) so a new enum member that
+ * forgets its name string fails to compile.
+ */
+@StringRes
+fun UpgradeType.nameRes(): Int =
+    when (this) {
+        UpgradeType.DAMAGE -> R.string.upgrade_name_damage
+        UpgradeType.ATTACK_SPEED -> R.string.upgrade_name_attack_speed
+        UpgradeType.CRITICAL_CHANCE -> R.string.upgrade_name_critical_chance
+        UpgradeType.CRITICAL_FACTOR -> R.string.upgrade_name_critical_factor
+        UpgradeType.RANGE -> R.string.upgrade_name_range
+        UpgradeType.MULTISHOT -> R.string.upgrade_name_multishot
+        UpgradeType.BOUNCE_SHOT -> R.string.upgrade_name_bounce_shot
+        UpgradeType.DAMAGE_PER_METER -> R.string.upgrade_name_damage_per_meter
+        UpgradeType.RAPID_FIRE -> R.string.upgrade_name_rapid_fire
+        UpgradeType.HEALTH -> R.string.upgrade_name_health
+        UpgradeType.HEALTH_REGEN -> R.string.upgrade_name_health_regen
+        UpgradeType.DEFENSE_PERCENT -> R.string.upgrade_name_defense_percent
+        UpgradeType.DEFENSE_ABSOLUTE -> R.string.upgrade_name_defense_absolute
+        UpgradeType.KNOCKBACK -> R.string.upgrade_name_knockback
+        UpgradeType.THORN_DAMAGE -> R.string.upgrade_name_thorn_damage
+        UpgradeType.ORBS -> R.string.upgrade_name_orbs
+        UpgradeType.LIFESTEAL -> R.string.upgrade_name_lifesteal
+        UpgradeType.DEATH_DEFY -> R.string.upgrade_name_death_defy
+        UpgradeType.CASH_BONUS -> R.string.upgrade_name_cash_bonus
+        UpgradeType.CASH_PER_WAVE -> R.string.upgrade_name_cash_per_wave
+        UpgradeType.INTEREST -> R.string.upgrade_name_interest
+        UpgradeType.FREE_UPGRADES -> R.string.upgrade_name_free_upgrades
+        UpgradeType.RECOVERY_PACKAGES -> R.string.upgrade_name_recovery_packages
+        UpgradeType.STEP_MULTIPLIER -> R.string.upgrade_name_step_multiplier
+    }
+
+@StringRes
+fun ResearchType.nameRes(): Int =
+    when (this) {
+        ResearchType.DAMAGE_RESEARCH -> R.string.research_name_damage_research
+        ResearchType.HEALTH_RESEARCH -> R.string.research_name_health_research
+        ResearchType.CASH_RESEARCH -> R.string.research_name_cash_research
+        ResearchType.STEP_EFFICIENCY -> R.string.research_name_step_efficiency
+        ResearchType.WAVE_SKIP -> R.string.research_name_wave_skip
+        ResearchType.AUTO_UPGRADE_AI -> R.string.research_name_auto_upgrade_ai
+        ResearchType.UW_COOLDOWN -> R.string.research_name_uw_cooldown
+        ResearchType.CRITICAL_RESEARCH -> R.string.research_name_critical_research
+        ResearchType.REGEN_RESEARCH -> R.string.research_name_regen_research
+        ResearchType.ENEMY_INTEL -> R.string.research_name_enemy_intel
+        ResearchType.MULTISHOT_RESEARCH -> R.string.research_name_multishot_research
+        ResearchType.BOUNCE_RESEARCH -> R.string.research_name_bounce_research
+    }
+
+@StringRes
+fun UltimateWeaponType.nameRes(): Int =
+    when (this) {
+        UltimateWeaponType.DEATH_WAVE -> R.string.uw_name_death_wave
+        UltimateWeaponType.CHAIN_LIGHTNING -> R.string.uw_name_chain_lightning
+        UltimateWeaponType.BLACK_HOLE -> R.string.uw_name_black_hole
+        UltimateWeaponType.CHRONO_FIELD -> R.string.uw_name_chrono_field
+        UltimateWeaponType.POISON_SWAMP -> R.string.uw_name_poison_swamp
+        UltimateWeaponType.GOLDEN_ZIGGURAT -> R.string.uw_name_golden_ziggurat
+    }
+
+@StringRes
+fun CardType.nameRes(): Int =
+    when (this) {
+        CardType.IRON_SKIN -> R.string.card_name_iron_skin
+        CardType.SHARP_SHOOTER -> R.string.card_name_sharp_shooter
+        CardType.CASH_GRAB -> R.string.card_name_cash_grab
+        CardType.VAMPIRIC_TOUCH -> R.string.card_name_vampiric_touch
+        CardType.CHAIN_REACTION -> R.string.card_name_chain_reaction
+        CardType.SECOND_WIND -> R.string.card_name_second_wind
+        CardType.WALKING_FORTRESS -> R.string.card_name_walking_fortress
+        CardType.GLASS_CANNON -> R.string.card_name_glass_cannon
+        CardType.STEP_SURGE -> R.string.card_name_step_surge
+    }
+
+@StringRes
+fun Biome.nameRes(): Int =
+    when (this) {
+        Biome.HANGING_GARDENS -> R.string.biome_name_hanging_gardens
+        Biome.BURNING_SANDS -> R.string.biome_name_burning_sands
+        Biome.FROZEN_ZIGGURATS -> R.string.biome_name_frozen_ziggurats
+        Biome.UNDERWORLD_OF_KUR -> R.string.biome_name_underworld_of_kur
+        Biome.CELESTIAL_GATE -> R.string.biome_name_celestial_gate
+    }
+
+@StringRes
+fun BattleCondition.nameRes(): Int =
+    when (this) {
+        BattleCondition.ORB_RESISTANCE -> R.string.battle_condition_orb_resistance
+        BattleCondition.KNOCKBACK_RESISTANCE -> R.string.battle_condition_knockback_resistance
+        BattleCondition.ARMORED_ENEMIES -> R.string.battle_condition_armored_enemies
+        BattleCondition.THORN_RESISTANCE -> R.string.battle_condition_thorn_resistance
+        BattleCondition.MORE_BOSSES -> R.string.battle_condition_more_bosses
+        BattleCondition.ENEMY_SPEED -> R.string.battle_condition_enemy_speed
+        BattleCondition.ENEMY_ATTACK_SPEED -> R.string.battle_condition_enemy_attack_speed
     }
 
 /**

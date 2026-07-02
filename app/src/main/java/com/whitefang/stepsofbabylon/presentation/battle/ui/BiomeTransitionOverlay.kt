@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.presentation.battle.biome.BiomeTheme
-import java.util.Locale
+import com.whitefang.stepsofbabylon.presentation.ui.nameRes
 
 data class BiomeTransitionInfo(
     val biome: Biome,
@@ -49,11 +49,9 @@ fun BiomeTransitionOverlay(
                 color = Color.White.copy(alpha = 0.7f),
             )
             Text(
-                // Title-case every word: "HANGING_GARDENS" -> "Hanging Gardens".
-                // (The old replaceFirstChar only capitalised the first word -> "Hanging gardens".)
-                info.biome.name.split('_').joinToString(" ") { word ->
-                    word.lowercase(Locale.ROOT).replaceFirstChar { it.uppercase() }
-                },
+                // i18n(#34): the biome display name resolves via the localized @StringRes map —
+                // byte-identical to the old inline title-case ("HANGING_GARDENS" -> "Hanging Gardens").
+                stringResource(info.biome.nameRes()),
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,

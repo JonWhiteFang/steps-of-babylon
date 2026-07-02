@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.presentation.ui.descriptionRes
+import com.whitefang.stepsofbabylon.presentation.ui.nameRes
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
@@ -30,7 +31,6 @@ import com.whitefang.stepsofbabylon.presentation.ui.theme.BronzeSurface
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Ivory
 import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusSuccess
-import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 
 @Composable
 fun UpgradeCard(
@@ -92,7 +92,7 @@ fun UpgradeCard(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        text = info.type.name.toDisplayName(),
+                        text = stringResource(info.type.nameRes()),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                     )

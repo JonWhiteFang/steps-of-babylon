@@ -25,8 +25,8 @@
         <error line="72" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/BattleViewModel.kt">
-        <error line="524" column="121" source="standard:max-line-length" />
-        <error line="540" column="121" source="standard:max-line-length" />
+        <error line="523" column="121" source="standard:max-line-length" />
+        <error line="539" column="121" source="standard:max-line-length" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/ui/BattleControlRail.kt">
         <error line="60" column="5" source="standard:function-naming" />
@@ -51,8 +51,8 @@
         <error line="41" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/cards/CardsScreen.kt">
-        <error line="68" column="5" source="standard:function-naming" />
-        <error line="233" column="13" source="standard:function-naming" />
+        <error line="69" column="5" source="standard:function-naming" />
+        <error line="234" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/cards/CardsViewModel.kt">
         <error line="48" column="21" source="standard:backing-property-naming" />
@@ -82,11 +82,11 @@
         <error line="59" column="21" source="standard:backing-property-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/home/TierSelector.kt">
-        <error line="32" column="5" source="standard:function-naming" />
+        <error line="33" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/labs/LabsScreen.kt">
-        <error line="56" column="5" source="standard:function-naming" />
-        <error line="131" column="13" source="standard:function-naming" />
+        <error line="55" column="5" source="standard:function-naming" />
+        <error line="130" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/labs/LabsViewModel.kt">
         <error line="55" column="21" source="standard:backing-property-naming" />

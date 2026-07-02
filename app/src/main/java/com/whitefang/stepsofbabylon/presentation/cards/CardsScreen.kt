@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.R
+import com.whitefang.stepsofbabylon.domain.model.CardType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyCost
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
@@ -56,13 +57,13 @@ import com.whitefang.stepsofbabylon.presentation.ui.cardRarityTier
 import com.whitefang.stepsofbabylon.presentation.ui.color
 import com.whitefang.stepsofbabylon.presentation.ui.effectDescription
 import com.whitefang.stepsofbabylon.presentation.ui.labelRes
+import com.whitefang.stepsofbabylon.presentation.ui.nameRes
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rarityBorder
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
 import com.whitefang.stepsofbabylon.presentation.ui.resolve
 import com.whitefang.stepsofbabylon.presentation.ui.theme.StatusWarning
-import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 
 @Composable
 fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
@@ -203,11 +204,11 @@ fun CardsScreen(viewModel: CardsViewModel = hiltViewModel()) {
                                 Spacer(Modifier.width(4.dp))
                                 Text(
                                     if (r.isNew) {
-                                        formatName(r.type.name)
+                                        formatName(r.type)
                                     } else {
                                         stringResource(
                                             R.string.card_pull_result,
-                                            formatName(r.type.name),
+                                            formatName(r.type),
                                             pluralStringResource(
                                                 R.plurals.card_copies,
                                                 r.copiesAwarded,
@@ -254,7 +255,7 @@ private fun CardItem(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     RarityBadge(tier, stringResource(cardRarityLabelRes(card.type.rarity)))
-                    Text(formatName(card.type.name), style = MaterialTheme.typography.titleSmall)
+                    Text(formatName(card.type), style = MaterialTheme.typography.titleSmall)
                 }
                 if (card.isEquipped) {
                     EquippedChip()
@@ -318,4 +319,5 @@ private fun CardItem(
     }
 }
 
-private fun formatName(name: String): String = name.toDisplayName()
+@Composable
+private fun formatName(type: CardType): String = stringResource(type.nameRes())
