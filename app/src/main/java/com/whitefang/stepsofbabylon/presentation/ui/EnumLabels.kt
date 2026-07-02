@@ -5,6 +5,7 @@ import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.domain.model.CardRarity
 import com.whitefang.stepsofbabylon.domain.model.CosmeticCategory
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
+import com.whitefang.stepsofbabylon.domain.model.Milestone
 import com.whitefang.stepsofbabylon.domain.model.ResearchType
 import com.whitefang.stepsofbabylon.domain.model.UltimateWeaponType
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
@@ -126,4 +127,52 @@ fun UltimateWeaponType.descriptionRes(): Int =
         UltimateWeaponType.CHRONO_FIELD -> R.string.uw_desc_chrono_field
         UltimateWeaponType.POISON_SWAMP -> R.string.uw_desc_poison_swamp
         UltimateWeaponType.GOLDEN_ZIGGURAT -> R.string.uw_desc_golden_ziggurat
+    }
+
+/**
+ * #34 phase 3 (G): Milestone display-name resolver. `Milestone.displayName` stays on the enum
+ * (keeps `domain/` Android-free); this maps each entry to a @StringRes for the render site.
+ * Exhaustive `when` (no `else`) so a new milestone that forgets its name string fails to compile.
+ */
+@StringRes
+fun Milestone.displayNameRes(): Int =
+    when (this) {
+        Milestone.FIRST_STEPS -> R.string.milestone_name_first_steps
+        Milestone.MORNING_JOGGER -> R.string.milestone_name_morning_jogger
+        Milestone.TRAIL_BLAZER -> R.string.milestone_name_trail_blazer
+        Milestone.MARATHON_WALKER -> R.string.milestone_name_marathon_walker
+        Milestone.IRON_SOLES -> R.string.milestone_name_iron_soles
+        Milestone.GLOBE_TROTTER -> R.string.milestone_name_globe_trotter
+    }
+
+/**
+ * #34 phase 3 (G): cosmetic name/description resolvers keyed by the stable `cosmeticId`. The
+ * localized value is resolved at the Store render site rather than baked into the seed DB rows
+ * (which would freeze at seed time and need a migration to change). Returns 0 for an unknown id
+ * so the render site can fall back to the stored `name`/`description` (resilient to future ids).
+ */
+@StringRes
+fun cosmeticNameRes(id: String): Int =
+    when (id) {
+        "zig_jade" -> R.string.cosmetic_name_zig_jade
+        "lapis_lazuli_skin" -> R.string.cosmetic_name_lapis_lazuli_skin
+        "garden_ziggurat_skin" -> R.string.cosmetic_name_garden_ziggurat_skin
+        "sandals_of_gilgamesh" -> R.string.cosmetic_name_sandals_of_gilgamesh
+        "zig_obsidian" -> R.string.cosmetic_name_zig_obsidian
+        "zig_crystal" -> R.string.cosmetic_name_zig_crystal
+        "zig_golden" -> R.string.cosmetic_name_zig_golden
+        else -> 0
+    }
+
+@StringRes
+fun cosmeticDescRes(id: String): Int =
+    when (id) {
+        "zig_jade" -> R.string.cosmetic_desc_zig_jade
+        "lapis_lazuli_skin" -> R.string.cosmetic_desc_lapis_lazuli_skin
+        "garden_ziggurat_skin" -> R.string.cosmetic_desc_garden_ziggurat_skin
+        "sandals_of_gilgamesh" -> R.string.cosmetic_desc_sandals_of_gilgamesh
+        "zig_obsidian" -> R.string.cosmetic_desc_zig_obsidian
+        "zig_crystal" -> R.string.cosmetic_desc_zig_crystal
+        "zig_golden" -> R.string.cosmetic_desc_zig_golden
+        else -> 0
     }

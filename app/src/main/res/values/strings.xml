@@ -541,4 +541,26 @@
     <string name="uw_desc_chrono_field">Slows all enemies for duration; lower factor = stronger slow</string>
     <string name="uw_desc_poison_swamp">Toxic area dealing % max-health damage per second</string>
     <string name="uw_desc_golden_ziggurat">Cash bonus + damage boost for duration</string>
+    <!-- i18n #34 phase 3: milestone names (category G) -->
+    <string name="milestone_name_first_steps">First Steps</string>
+    <string name="milestone_name_morning_jogger">Morning Jogger</string>
+    <string name="milestone_name_trail_blazer">Trail Blazer</string>
+    <string name="milestone_name_marathon_walker">Marathon Walker</string>
+    <string name="milestone_name_iron_soles">Iron Soles</string>
+    <string name="milestone_name_globe_trotter">Globe Trotter</string>
+    <!-- i18n #34 phase 3: cosmetic names/descriptions (category G) -->
+    <string name="cosmetic_name_zig_jade">Jade Ziggurat</string>
+    <string name="cosmetic_desc_zig_jade">Deep jade stone with pale highlights</string>
+    <string name="cosmetic_name_lapis_lazuli_skin">Lapis Lazuli Ziggurat Skin</string>
+    <string name="cosmetic_desc_lapis_lazuli_skin">Deep lapis lazuli stone with pyrite-gold flecks</string>
+    <string name="cosmetic_name_garden_ziggurat_skin">Garden Ziggurat Skin</string>
+    <string name="cosmetic_desc_garden_ziggurat_skin">Cascading hanging gardens draped over terracotta stone</string>
+    <string name="cosmetic_name_sandals_of_gilgamesh">Sandals of Gilgamesh</string>
+    <string name="cosmetic_desc_sandals_of_gilgamesh">Bronze ziggurat in honour of Gilgamesh, whose sandals walked the edges of the world</string>
+    <string name="cosmetic_name_zig_obsidian">Obsidian Ziggurat</string>
+    <string name="cosmetic_desc_zig_obsidian">Dark volcanic stone</string>
+    <string name="cosmetic_name_zig_crystal">Crystal Ziggurat</string>
+    <string name="cosmetic_desc_zig_crystal">Translucent crystal layers</string>
+    <string name="cosmetic_name_zig_golden">Golden Ziggurat</string>
+    <string name="cosmetic_desc_zig_golden">Pure gold plating</string>
 </resources>

@@ -35,6 +35,7 @@ import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
 import com.whitefang.stepsofbabylon.presentation.ui.descriptionRes
+import com.whitefang.stepsofbabylon.presentation.ui.displayNameRes
 import com.whitefang.stepsofbabylon.presentation.ui.formatCount
 import com.whitefang.stepsofbabylon.presentation.ui.formatRewardParts
 import com.whitefang.stepsofbabylon.presentation.ui.resolve
@@ -215,7 +216,11 @@ private fun MilestoneCard(
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(milestone.displayName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                Text(
+                    stringResource(milestone.displayNameRes()),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                )
                 if (ms.isClaimed) {
                     Icon(
                         Icons.Filled.CheckCircle,
