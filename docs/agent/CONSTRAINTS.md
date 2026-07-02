@@ -9,7 +9,11 @@
 - Use cases are plain Kotlin classes — no Hilt annotations.
 
 ## Game design invariants
-- Steps are earned ONLY from real-world walking/activity. Never generated in-game. Never purchasable.
+- Steps are earned ONLY from real-world walking/activity. Never generated passively in-game. Never purchasable.
+  **Sole exception (passive-generation only):** the battle-step reward — flat per enemy kill, capped at
+  2,000/day (`AwardBattleSteps.DAILY_BATTLE_STEP_CAP`), separate from the 50k walking ceiling, never
+  multiplied by any in-round upgrade (ADR-0003). This is active play, not passive generation, and there is
+  **no** exception to "never purchasable with money."
 - Room database is the single source of truth for all game state.
 - Upgrade cost formula: `baseCost * (scaling ^ level)` — no exceptions.
 - Loadout caps: 3 Ultimate Weapons, 3 Cards.
@@ -42,6 +46,9 @@
 ## "Never do" list
 - Never add Android imports to `domain/` layer.
 - Never hardcode dependency versions in build.gradle.kts.
-- Never generate Steps passively or allow Step purchase with real money.
+- Never generate Steps passively or allow Step purchase with real money. (The existing battle-step reward
+  is the **one** sanctioned Step-credit path outside walking — bounded at 2,000/day via
+  `AwardBattleSteps.DAILY_BATTLE_STEP_CAP`, ADR-0003. Do **not** treat it as a violation to remove, and do
+  **not** add any *new* in-game Step-credit path — see the `ai-3` audit finding on machine-enforcing this.)
 - Never use kapt — always KSP.
 - Never skip reading the relevant plan file before implementing a feature.

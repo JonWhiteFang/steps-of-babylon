@@ -12,10 +12,12 @@ project-invariant implications:
    spend step but cannot *do* it until they walk. The original V1X-22 scope proposed a **"100 free Steps
    welcome bonus"** to unlock the first Workshop upgrade immediately. That directly conflicts with a
    hard, load-bearing invariant repeated across `CONSTRAINTS.md` / `START_HERE.md` / `docs/product.md`:
-   *Steps can **never** be generated passively in-game or purchased with real money.* This invariant is
-   why the entire anti-cheat stack exists and is part of the store/privacy positioning. The #24 triage
-   note explicitly flagged the welcome-bonus as an owner decision, "not something to slip in via an
-   onboarding PR."
+   *Steps can **never** be generated passively in-game or purchased with real money.* (The one sanctioned
+   in-game Step source, the daily-capped battle-step reward for active play — ADR-0003 — is not a
+   counter-example: a free onboarding grant is *passive*, unearned, and unbounded by that mechanic's cap.)
+   This invariant is why the entire anti-cheat stack exists and is part of the store/privacy positioning.
+   The #24 triage note explicitly flagged the welcome-bonus as an owner decision, "not something to slip in
+   via an onboarding PR."
 
 2. **Where the "has completed onboarding" flag lives.** `STATE.md` had tagged #24 as "(Gate C,
    **schema**)", implying a Room migration. But onboarding-complete is a device-local UI preference, not

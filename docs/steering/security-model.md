@@ -29,9 +29,11 @@ See `docs/database-schema.md` for the encrypted schema (current version in that 
 
 ## 3. Step-integrity / anti-cheat
 
-Steps are the permanent currency and are **only** earned from real-world walking — never generated
-in-game, never purchasable with money. The anti-cheat stack guards that invariant. Full thresholds and
-the data-flow diagram live in `docs/step-tracking.md`; the invariant list is in `docs/agent/CONSTRAINTS.md`.
+Steps are the permanent currency and are earned from real-world walking — never generated *passively*
+in-game, never purchasable with money. The **one** sanctioned in-game source is the bounded battle-step
+reward (see the Battle Steps cap row below), which is active play, not passive generation. The anti-cheat
+stack guards that invariant. Full thresholds and the data-flow diagram live in `docs/step-tracking.md`;
+the invariant list is in `docs/agent/CONSTRAINTS.md`.
 
 - **Rate limit** — 200 steps/min (250 burst for running); excess silently discarded.
 - **Step velocity analysis** — detects shakers (constant rate, CV<5%) and spoofers (instant 0→150/min jump); penalty multiplier 0.5×/0.0×.
