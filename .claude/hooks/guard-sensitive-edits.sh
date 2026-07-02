@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse(Edit|Write) — guard documented fragile/process-controlled files.
 #
-# Two tiers, both fail-open (a hook error never blocks a legit edit; jq missing → no-op exit 0):
+# Four tiers, all fail-open (a hook error never blocks a legit edit; jq missing → no-op exit 0):
 #
 #   1. app/schemas/**  → permissionDecision "ask".  Room schema JSON is CI schema-drift-gated and
 #      migrations are a documented fragile zone. Schema files SHOULD only change via a real Room
@@ -18,8 +18,13 @@
 #      file, and editing one without the other is the classic schema-drift gate failure. Nudges
 #      toward the /new-migration skill (the full choreography) but lets the edit proceed.
 #
+#   4. presentation/battle/engine|effects/**, data/local/*Dao.kt, data/repository/PlayerRepositoryImpl.kt
+#      → advisory only (#372, ai-2). The lock-order / collaborators-hold-no-monitor invariant and the
+#      currency-move surface are the #118/#191 bug classes; the concurrency-reviewer subagent is a
+#      MANDATORY review lane on these diffs (CLAUDE.md Adversarial Review Gate). Nudges but proceeds.
+#
 # Output contract: PreToolUse JSON. For tier 1 we emit permissionDecision=ask with a reason. For
-# tiers 2 and 3 we emit additionalContext. Everything else prints nothing and exits 0.
+# tiers 2, 3 and 4 we emit additionalContext. Everything else prints nothing and exits 0.
 set -uo pipefail
 
 input="$(cat 2>/dev/null || true)"
