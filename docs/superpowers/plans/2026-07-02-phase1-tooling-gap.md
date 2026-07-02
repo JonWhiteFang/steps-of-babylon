@@ -10,6 +10,8 @@
 
 **Source spec:** `docs/superpowers/specs/2026-07-02-phase1-tooling-gap-design.md` (adversarial-review gate PASSED: 19 raised · 15 applied · 4 refuted).
 
+**Plan adversarial-review gate PASSED** (20 raised · 19 survived · 1 refuted; deduped to 6 distinct defects, all fixed): the Assertion-3b `PlayerProfileEntity(` predicate was red at HEAD (matched the class declaration) → now excludes `PlayerProfileEntity.kt` by name; `CrashReportIntentTest` was missing the repo-mandatory `@Config(sdk = [34], application = …)` → added; the manifest `<queries>` anchor pointed at the wrong last-permission → corrected to before `<application>`; the test-count deltas were off by one (StepCreditAllowlistTest has 6 `@Test`s → PR-B +7 → 1301, PR-C → 1302); the PyYAML validation step would crash (not installed) → made tool-agnostic; gitleaks-action v3 needs `GITHUB_TOKEN` + `pull-requests: write` → added.
+
 **Global conventions (apply to every PR):**
 - Branch off `main` first (repo rule: never commit directly to `main`). Branch names below.
 - Build/test via `./run-gradle.sh <task>` (non-TTY safe), never bare `./gradlew` in this harness.
@@ -134,8 +136,14 @@ Add, at the end of the `build-and-test` job's steps (after "Upload reports"), a 
 
 - [ ] **Step 3: Validate the workflow YAML locally**
 
-Run: `python3 -c "import yaml,sys; yaml.safe_load(open('.github/workflows/ci.yml')); print('ci.yml OK')"`
-Expected: `ci.yml OK` (no YAML parse error).
+PyYAML is not installed in this environment, so use whichever validator is available (prefer `actionlint` if present — it also catches Actions-specific mistakes):
+```bash
+if command -v actionlint >/dev/null; then actionlint .github/workflows/ci.yml && echo "ci.yml OK";
+elif command -v yq >/dev/null; then yq '.' .github/workflows/ci.yml >/dev/null && echo "ci.yml OK";
+elif python3 -c 'import yaml' 2>/dev/null; then python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml')); print('ci.yml OK')";
+else ruby -ryaml -e "YAML.load_file('.github/workflows/ci.yml'); puts 'ci.yml OK'"; fi
+```
+Expected: `ci.yml OK` (no parse error). If none of the tools is available, eyeball the indentation and rely on the CI run to validate.
 
 - [ ] **Step 4: Commit**
 
@@ -235,6 +243,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write # gitleaks-action posts a PR summary/comment on pull_request runs
 
 jobs:
   gitleaks:
@@ -247,12 +256,22 @@ jobs:
       - name: gitleaks
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # v3 uses it for the PR summary + license check
           GITLEAKS_CONFIG: .gitleaks.toml
+          # NB: gitleaks-action v3 is free for personal/public repos; no GITLEAKS_LICENSE needed
+          # (only orgs require one). If a license error appears, this repo is a personal account so
+          # it should not — re-check the account type before adding a license secret.
 ```
 
 - [ ] **Step 2: Validate the workflow YAML**
 
-Run: `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/gitleaks.yml')); print('gitleaks.yml OK')"`
+Use whichever validator is available (PyYAML is not installed here):
+```bash
+if command -v actionlint >/dev/null; then actionlint .github/workflows/gitleaks.yml && echo "gitleaks.yml OK";
+elif command -v yq >/dev/null; then yq '.' .github/workflows/gitleaks.yml >/dev/null && echo "gitleaks.yml OK";
+elif python3 -c 'import yaml' 2>/dev/null; then python3 -c "import yaml; yaml.safe_load(open('.github/workflows/gitleaks.yml')); print('gitleaks.yml OK')";
+else ruby -ryaml -e "YAML.load_file('.github/workflows/gitleaks.yml'); puts 'gitleaks.yml OK'"; fi
+```
 Expected: `gitleaks.yml OK`.
 
 - [ ] **Step 3: (Optional local dry-run) plant a fake secret and confirm the rules would catch it**
@@ -558,10 +577,16 @@ Add to the class:
         files.filter { stripComments(it.readText()).contains(".updateStepBalance(") }
             .map { it.name }.toSet()
 
-    /** Files that construct a `PlayerProfileEntity(` (which `upsert` writes as a full row). */
+    /**
+     * Files that CONSTRUCT a `PlayerProfileEntity(` (which `upsert` writes as a full row). Excludes
+     * `PlayerProfileEntity.kt` itself — its `data class PlayerProfileEntity(` DECLARATION contains
+     * the same substring but is not a construction site (mirrors how `BattleEngineLockScanTest`
+     * excludes `GameEngine.kt`/`BattleHosts.kt` by name).
+     */
     internal fun playerProfileEntityConstructionFiles(files: List<File>): Set<String> =
-        files.filter { stripComments(it.readText()).contains("PlayerProfileEntity(") }
-            .map { it.name }.toSet()
+        files.filter {
+            it.name != "PlayerProfileEntity.kt" && stripComments(it.readText()).contains("PlayerProfileEntity(")
+        }.map { it.name }.toSet()
 
     @Test
     fun `absolute step-balance setter has no production caller`() {
@@ -591,9 +616,9 @@ Add to the class:
 Run:
 ```bash
 sg -l kotlin -p '$X.updateStepBalance($$$)' app/src/main   # expect: no matches
-rg -n 'PlayerProfileEntity\(' app/src/main --glob '*.kt'   # expect: only PlayerRepositoryImpl.kt
+rg -n 'PlayerProfileEntity\(' app/src/main --glob '*.kt'   # expect: PlayerProfileEntity.kt:8 (decl) + PlayerRepositoryImpl.kt:106
 ```
-Expected: `updateStepBalance` has zero call sites; `PlayerProfileEntity(` appears only in `PlayerRepositoryImpl.kt`. If `PlayerProfileEntity(` appears elsewhere (e.g. a mapper), add that file to `expected` with a code comment explaining why it's a safe construction (not a balance-raising upsert), and note it in the KDoc.
+Expected: `updateStepBalance` has zero call sites. The bare `rg` returns **two** files — `PlayerProfileEntity.kt:8` (the `data class PlayerProfileEntity(` DECLARATION) and `PlayerRepositoryImpl.kt:106` (the real `dao.upsert(PlayerProfileEntity())` construction). The predicate excludes the declaration file by name, so the test's `actual` set is `{PlayerRepositoryImpl.kt}` — matching `expected`. If a *construction* (not the declaration) appears in a THIRD file (e.g. a mapper), add that file to `expected` with a code comment explaining why it's a safe construction (not a balance-raising upsert), and note it in the KDoc.
 
 - [ ] **Step 3: Add Assertion 4 (DAO write-surface pin)**
 
@@ -631,7 +656,7 @@ Expected: `3` (lines 16, 38, 52 — the three writers; the `MAX(0, currentStepBa
 - [ ] **Step 5: Run all four assertions — expect PASS at HEAD**
 
 Run: `./run-gradle.sh :app:testDebugUnitTest --tests '*StepCreditAllowlistTest*' > build.log 2>&1; tail -n 30 build.log`
-Expected: PASS (4 tests). Debug any count/set mismatch by re-running the verify commands above.
+Expected: PASS (5 tests — Assertion 1, 2, 3a, 3b, 4). Debug any count/set mismatch by re-running the verify commands above.
 
 - [ ] **Step 6: Commit**
 
@@ -687,7 +712,7 @@ The predicates take a `List<File>`; write synthetic files to a JUnit temp dir an
 - [ ] **Step 2: Run — expect PASS**
 
 Run: `./run-gradle.sh :app:testDebugUnitTest --tests '*StepCreditAllowlistTest*' > build.log 2>&1; tail -n 30 build.log`
-Expected: PASS (5 tests). The negative fixture proves each matcher fires on a rogue site and that the sign-check excludes debits.
+Expected: PASS (6 tests — the 5 above + the negative fixture). The negative fixture proves each matcher fires on a rogue site and that the sign-check excludes debits.
 
 - [ ] **Step 3: Run detekt + ktlint on the new test**
 
@@ -920,12 +945,12 @@ Enforce in three layers, strongest-first:
 
 - [ ] **Step 3: Update the CLAUDE.md test count**
 
-In `CLAUDE.md`, find the headline count line (`rg -n 'Headline count' CLAUDE.md`) and update it. `StepCreditAllowlistTest` adds 5 `@Test` methods and `BattleEngineLockScanTest` adds 1 → **+6**. Change `1294 JVM tests` to `1300 JVM tests`.
+In `CLAUDE.md`, find the headline count line (`rg -n 'Headline count' CLAUDE.md`) and update it. `StepCreditAllowlistTest` adds **6** `@Test` methods (Assertions 1, 2, 3a, 3b, 4 + negative fixture) and `BattleEngineLockScanTest` adds 1 → **+7**. Change `1294 JVM tests` to `1301 JVM tests`.
 
 - [ ] **Step 4: Verify the count against the actual suite**
 
 Run: `./run-gradle.sh :app:testDebugUnitTest > build.log 2>&1; rg -n 'Tests:|tests (completed|passed)|BUILD' build.log | tail`
-Expected: BUILD SUCCESSFUL. Cross-check the total moved by +6 vs the last known 1294 (the exact reported number is the source of truth — if it's not exactly 1300, set the CLAUDE.md line to the real number and note the delta in the commit).
+Expected: BUILD SUCCESSFUL. Cross-check the total moved by +7 vs the last known 1294 (the exact reported number is the source of truth — if it's not exactly 1301, set the CLAUDE.md line to the real number and note the delta in the commit).
 
 - [ ] **Step 5: Commit**
 
@@ -951,14 +976,14 @@ In `CHANGELOG.md` under `## [Unreleased]`, add:
   (ADR-0003) across the FULL `currentStepBalance` write surface: `.addSteps(` callers,
   positive `.adjustStepBalance(` sites, the zero-caller absolute `updateStepBalance` setter,
   `PlayerProfileEntity` construction, and a DAO write-surface count pin — plus a baked negative
-  fixture proving the matchers go red on a rogue site. (+5 tests.)
+  fixture proving the matchers go red on a rogue site. (+6 tests.)
 - **#372 (ai-2).** New `BattleEngineLockScanTest` asserts battle-engine collaborators hold no monitor
   of their own (comment-stripped, collaborator-scoped, excludes GameEngine/BattleHosts). (+1 test.)
   Made the `concurrency-reviewer` lane mandatory via a `guard-sensitive-edits.sh` PreToolUse advisory
   + CLAUDE.md Review-Gate wiring; the detekt nested-lock rule is deferred (ADR-0038).
 ```
 
-If a current-state block in CHANGELOG tracks the test count, bump it by +6.
+If a current-state block in CHANGELOG tracks the test count, bump it by +7.
 
 - [ ] **Step 3: STATE.md + RUN_LOG.md**
 
@@ -1015,7 +1040,9 @@ Without this, `ACTION_SENDTO`/`mailto:` `resolveActivity()` returns null under t
 
 - [ ] **Step 1: Add `<queries>` after the `<uses-permission>` block, before `<application>`**
 
-In `app/src/main/AndroidManifest.xml`, after the last `<uses-permission …/>` line (the health permissions ~line 18-19) and before `<application`, insert:
+In `app/src/main/AndroidManifest.xml`, insert immediately **before** the `<application>` element
+(~line 28) — i.e. after the LAST `<uses-permission>`, which is `com.android.vending.BILLING` (~line 26,
+preceded by its comment block ~21-25), NOT the health permissions at 18-19. Insert:
 
 ```xml
 
@@ -1092,8 +1119,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+// @Config MANDATORY: all 50 Robolectric tests in this repo pin sdk=34 + a plain Application (there is
+// no robolectric.properties). Without it, Robolectric 4.16.1 infers targetSdk=36 (> its max API 35)
+// and errors, and it would boot the @HiltAndroidApp StepsOfBabylonApp (Hilt injection → crash under a
+// plain runner). Matches OnboardingScreenTest.kt:40 exactly.
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], application = android.app.Application::class)
 class CrashReportIntentTest {
     private val context = ApplicationProvider.getApplicationContext<android.content.Context>()
 
@@ -1310,7 +1343,7 @@ git commit -m "docs(#380): add post-release Vitals monitoring runbook to release
 
 - [ ] **Step 1: CLAUDE.md test count (+1 for the Robolectric test)**
 
-Update the headline count line: the PR-B change set it to 1300; PR-C's `CrashReportIntentTest` adds 1 → **1301 JVM tests**. (Re-derive from the actual suite total if PR-B's real number differed.)
+Update the headline count line: the PR-B change set it to 1301; PR-C's `CrashReportIntentTest` adds 1 → **1302 JVM tests**. (Re-derive from the actual suite total if PR-B's real number differed.)
 
 - [ ] **Step 2: source-files.md**
 
@@ -1366,6 +1399,6 @@ gh pr create --title "feat: crash-report exit path + post-release monitoring run
 - #380 → C5 (monitoring runbook).
 - Doc-sync + STATE/RUN_LOG present in every PR (A7, B8, C6), before the commit/PR step, per the PR Task-List Convention. #389 ticked per PR.
 
-**Placeholder scan** — no TBD/TODO; every code step has complete code; every command has expected output. The one intentional variable is the exact test-count number (`+6`, `+1`) — the plan instructs re-deriving from the real suite total, because the count is a live number.
+**Placeholder scan** — no TBD/TODO; every code step has complete code; every command has expected output. The one intentional variable is the exact test-count number (PR-B +7, PR-C +1) — the plan instructs re-deriving from the real suite total, because the count is a live number.
 
 **Type/name consistency** — `buildCrashReportIntent(context, exceptionClass, message, stackPreview)` is defined in C3 and called identically in C4 and the C3 test. `CrashBreadcrumb` fields (`exceptionClass`, `message`, `stackPreview`) match the data class. Predicate helper names (`addStepsCallerFiles`, `positiveAdjustStepBalanceFiles`, `updateStepBalanceCallerFiles`, `playerProfileEntityConstructionFiles`) are defined once and reused consistently in the negative-fixture test. `stripComments` mirrors `DomainPurityTest`. Hook tier-4 glob paths match the CLAUDE.md trigger scope and the concurrency-reviewer agent scope.
