@@ -269,15 +269,33 @@ class MainActivity : ComponentActivity() {
                     },
                 ) { innerPadding ->
                     // #190 REL-1: surface a one-time notice if the previous session crashed.
-                    // Informational only — there is no in-app report channel to wire an action to.
+                    // #374: the notice now carries a "Report" action that emails the crash
+                    // breadcrumb via buildCrashReportIntent (ACTION_SENDTO mailto:).
                     // Resolve the string via stringResource (Compose-idiomatic) OUTSIDE the
                     // LaunchedEffect — a coroutine can't call the @Composable, and
                     // context.getString from LocalContext trips the Compose lint check.
                     val crashNotice = stringResource(R.string.crash_notice_last_session)
+                    val crashReportAction = stringResource(R.string.crash_notice_report_action)
                     LaunchedEffect(Unit) {
                         val crash = crashBreadcrumbStore.peek()
                         if (crash != null) {
-                            snackbarHostState.showSnackbar(crashNotice)
+                            val result =
+                                snackbarHostState.showSnackbar(
+                                    message = crashNotice,
+                                    actionLabel = crashReportAction,
+                                )
+                            if (result == SnackbarResult.ActionPerformed) {
+                                val reportIntent =
+                                    buildCrashReportIntent(
+                                        context = context,
+                                        exceptionClass = crash.exceptionClass,
+                                        message = crash.message,
+                                        stackPreview = crash.stackPreview,
+                                    )
+                                if (reportIntent.resolveActivity(context.packageManager) != null) {
+                                    context.startActivity(reportIntent)
+                                }
+                            }
                             crashBreadcrumbStore.clear()
                         }
                     }
