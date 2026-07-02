@@ -54,5 +54,46 @@ literals, which is why hardcoded Compose literals persisted into phase 2 and had
 **Deferred to a follow-up (PR3):** ViewModel `_userMessage` strings (Labs/Missions/economy — not
 `@Composable`, need a resource-ID-emission pattern rather than `stringResource`), `Screen.kt` bottom-nav
 `label`s (fragile zone), the `SCREEN_LOAD_ERROR` const, the duration-unit suffixes (need plurals), and the
-`pathValueAtNext`/Canvas/Activity literals. The first real non-English locale remains deferred to later
-V1X work.
+`pathValueAtNext`/Canvas/Activity literals. *(All delivered in phase 3 — see below.)* The first real
+non-English locale remains deferred to later V1X work.
+
+## Phase 3 — locale-readiness (2026-07-02, SHIPPED across 6 PRs #360–#365)
+
+Phase 3 extracted **every remaining user-facing English literal**, so the app is now **100%
+locale-ready** — dropping in a `res/values-<locale>/strings.xml` fully translates the UI. The surface
+turned out ~2–3× the "PR3 = Canvas/Activity" shorthand (a fresh spec + plan, both passed the multi-agent
+Adversarial Review Gate, expanded it to 11 categories). No behavior change; rendered English byte-identical.
+Test count 1282 → 1294 JVM (+12, `CardEffectDescriptionTest`). New patterns/decisions:
+
+- **VM transient messages → sealed `presentation/ui/UiMessage`** (`@StringRes resId` + optional `args`),
+  resolved at the Compose call site via `UiMessage.resolve(context)`. Keeps ViewModels Context-free and
+  pure-JVM testable (assert the *type*, not English). `UiMessage.Raw(text)` is the escape hatch for a
+  lower-layer string ALREADY localized at source (billing/ad `Error.message`) — never wrap un-localized
+  text in `Raw`.
+- **Data-layer error localization (A′):** `BillingManagerImpl` (already `@ApplicationContext`) and
+  `RewardAdManagerImpl` (Context injected) resolve their error text via `context.getString`; their tests
+  moved to the Robolectric lane.
+- **`SCREEN_LOAD_ERROR`** is now a `@StringRes Int` (was a `String` const); `UiState.error` is `Int?`; the
+  #194/ADR-0028 `.catch`-inside-`flatMapLatest` order is untouched (only the emitted value's type changed).
+- **`Screen.label` → `@StringRes labelRes: Int`** (#161 `by lazy` route lists untouched).
+- **Enum display copy → `@StringRes` resolvers in `presentation/ui/EnumLabels.kt`** (the pattern home):
+  `descriptionRes()` + `nameRes()` for Upgrade/Research/UW/Card + Milestone/Biome/BattleCondition; the
+  domain enums keep their `description`/`displayName`/`name` fields (localization source + gameplay
+  fallback) but the UI reads the resolvers — **domain stays Android-free** (`DomainPurityTest`). Enum
+  display NAMES are byte-identical to the old `.toDisplayName()` output **including quirks** (`UW_COOLDOWN`
+  → "Uw Cooldown"; `.toDisplayName()` splits only on `_`).
+- **CardType effect descriptions:** the string-builder `effectDescriptionAtLevel` was DELETED from domain;
+  a `@Composable CardType.effectDescription(level)` reuses the existing numeric `effectAtLevel`/
+  `secondaryAtLevel` accessors + `stringResource`; its string assertions moved to a Robolectric
+  `CardEffectDescriptionTest` (numeric coverage stays in `CardTypeTest`).
+- **Battle Canvas:** `domain/Strings` seam extended (`bossIncoming`/`waveHeader`/`nextWaveIn`); `GameEngine`
+  pre-resolves + passes labels into the effect ctors (effects hold no `Strings`; per-frame countdown via a
+  formatter lambda); null-`Strings` fallback keeps engine tests pure-JVM.
+- **`formatted="false"`** is required on bare-`%` description string resources that resolve with no format
+  args (Android lint `StringFormatInvalid` "multiple substitutions" otherwise) — caught by `lintRelease` in
+  CI, which is NOT covered by `testDebugUnitTest`/detekt/ktlint; run `:app:lintDebug :app:lintRelease` when
+  adding prose string resources.
+- **Documented residuals (NOT extracted, by design):** `SupplyDropTrigger.message` (authored push content),
+  `BillingProduct.priceDisplay` (static USD fallback, overridden by live Play price), the seed cosmetic
+  name/description in `CosmeticRepositoryImpl` (DB fallback; resolved-by-id at render).
+- **Next:** ship the first real non-English `values-xx` locale (the payoff — a separate effort).
