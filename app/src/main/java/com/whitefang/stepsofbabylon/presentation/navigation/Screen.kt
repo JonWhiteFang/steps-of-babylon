@@ -20,40 +20,40 @@ import com.whitefang.stepsofbabylon.R
 
 sealed class Screen(
     val route: String,
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector,
 ) {
-    data object Home : Screen("home", "Home", Icons.Default.Home)
+    data object Home : Screen("home", R.string.nav_home, Icons.Default.Home)
 
-    data object Workshop : Screen("workshop", "Workshop", Icons.Default.Build)
+    data object Workshop : Screen("workshop", R.string.nav_workshop, Icons.Default.Build)
 
-    data object Battle : Screen("battle", "Battle", Icons.Default.PlayArrow)
+    data object Battle : Screen("battle", R.string.nav_battle, Icons.Default.PlayArrow)
 
-    data object Labs : Screen("labs", "Labs", Icons.Default.Search)
+    data object Labs : Screen("labs", R.string.nav_labs, Icons.Default.Search)
 
-    data object Stats : Screen("stats", "Stats", Icons.Filled.BarChart)
+    data object Stats : Screen("stats", R.string.nav_stats, Icons.Filled.BarChart)
 
-    data object Weapons : Screen("weapons", "Weapons", Icons.Filled.AutoAwesome)
+    data object Weapons : Screen("weapons", R.string.nav_weapons, Icons.Filled.AutoAwesome)
 
-    data object Cards : Screen("cards", "Cards", Icons.Filled.Style)
+    data object Cards : Screen("cards", R.string.nav_cards, Icons.Filled.Style)
 
-    data object Supplies : Screen("supplies", "Supplies", Icons.Filled.Inbox)
+    data object Supplies : Screen("supplies", R.string.nav_supplies, Icons.Filled.Inbox)
 
-    data object Economy : Screen("economy", "Economy", Icons.Filled.AttachMoney)
+    data object Economy : Screen("economy", R.string.nav_economy, Icons.Filled.AttachMoney)
 
-    data object Missions : Screen("missions", "Missions", Icons.Filled.Flag)
+    data object Missions : Screen("missions", R.string.nav_missions, Icons.Filled.Flag)
 
-    data object Settings : Screen("settings", "Settings", Icons.Filled.Settings)
+    data object Settings : Screen("settings", R.string.nav_settings, Icons.Filled.Settings)
 
-    data object Store : Screen("store", "Store", Icons.Filled.ShoppingCart)
+    data object Store : Screen("store", R.string.nav_store, Icons.Filled.ShoppingCart)
 
-    data object Help : Screen("help", "Help", Icons.AutoMirrored.Filled.HelpOutline)
+    data object Help : Screen("help", R.string.nav_help, Icons.AutoMirrored.Filled.HelpOutline)
 
     // First-run / replay-only route. NOT in `items`, `allScreens`, or `argumentFreeRoutes`
     // (so it can't be reached as a public navigate_to deep-link target). The icon is
     // unused — Onboarding never appears in the bottom nav. Reached only via literal
     // Screen.Onboarding.route navigation (start destination on first launch; Settings replay).
-    data object Onboarding : Screen("onboarding", "Onboarding", Icons.AutoMirrored.Filled.HelpOutline)
+    data object Onboarding : Screen("onboarding", R.string.nav_onboarding, Icons.AutoMirrored.Filled.HelpOutline)
 
     companion object {
         val items by lazy { listOf(Home, Workshop, Battle, Labs, Stats) }
