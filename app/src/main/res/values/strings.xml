@@ -370,6 +370,15 @@
     <string name="lab_time_done">Done!</string>
     <string name="time_just_now">Just now</string>
 
+    <!-- i18n #34 phase 3: compound duration units (category D). -->
+    <string name="duration_hms">%1$dh %2$dm %3$ds</string>
+    <string name="duration_ms">%1$dm %2$ds</string>
+    <string name="duration_s">%1$ds</string>
+    <!-- i18n #34 phase 3: stats activity minutes (category D). -->
+    <string name="stats_activity_minutes">%1$d min</string>
+    <!-- i18n #34 phase 3: economy weekly-reset countdown (category D). -->
+    <string name="economy_time_remaining">%1$dd %2$dh</string>
+
     <!-- i18n #34 phase 3: ViewModel user messages (category A) -->
     <string name="msg_not_enough_gems">Not enough Gems</string>
     <string name="msg_not_enough_steps">Not enough Steps</string>

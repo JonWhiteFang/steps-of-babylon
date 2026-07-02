@@ -12,8 +12,9 @@ data class EconomyUiState(
     val todayGemsClaimed: Boolean = false,
     val isLoading: Boolean = true,
     @StringRes val error: Int? = null,
-    /** V1X-16: time remaining in current week (formatted, e.g. "3d 14h"). */
-    val weeklyTimeRemaining: String = "",
+    /** V1X-16 / i18n #34: raw time remaining in current week (composed at the UI boundary, e.g. "3d 14h"). */
+    val weeklyResetDays: Int = 0,
+    val weeklyResetHours: Int = 0,
     /** V1X-16: last 4 weeks history, newest first. Empty if no past data. */
     val weeklyHistory: List<WeeklyResult> = emptyList(),
 )

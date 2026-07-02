@@ -96,7 +96,9 @@ fun CurrencyDashboardScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                     )
-                    if (state.weeklyTimeRemaining.isNotBlank()) {
+                    // i18n #34: was guarded on a non-blank formatted string; the raw-int equivalent
+                    // hides the row only in the unpopulated (pre-refresh) state, same as before.
+                    if (state.weeklyResetDays > 0 || state.weeklyResetHours > 0) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.Schedule,
@@ -106,7 +108,11 @@ fun CurrencyDashboardScreen(
                             )
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                state.weeklyTimeRemaining,
+                                stringResource(
+                                    R.string.economy_time_remaining,
+                                    state.weeklyResetDays,
+                                    state.weeklyResetHours,
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )

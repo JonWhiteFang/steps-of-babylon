@@ -261,8 +261,9 @@ private fun ResearchCard(
 
 private fun formatName(type: ResearchType): String = type.name.toDisplayName()
 
-// i18n(#34): only the "Done!" early-return is localized (passed in); the h/m/s
-// duration units are deferred to the plurals pass.
+// i18n(#34): "Done!" early-return + the h/m/s duration units are localized. The h/m/s
+// values are small (≤ 59 for m/s, hours bounded by lab durations) — .toInt() for the %d args.
+@Composable
 private fun formatTime(
     ms: Long,
     doneLabel: String,
@@ -273,8 +274,8 @@ private fun formatTime(
     val minutes = (totalSeconds % 3600) / 60
     val seconds = totalSeconds % 60
     return when {
-        hours > 0 -> "${hours}h ${minutes}m ${seconds}s"
-        minutes > 0 -> "${minutes}m ${seconds}s"
-        else -> "${seconds}s"
+        hours > 0 -> stringResource(R.string.duration_hms, hours.toInt(), minutes.toInt(), seconds.toInt())
+        minutes > 0 -> stringResource(R.string.duration_ms, minutes.toInt(), seconds.toInt())
+        else -> stringResource(R.string.duration_s, seconds.toInt())
     }
 }

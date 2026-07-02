@@ -89,7 +89,7 @@ fun StatsScreen(viewModel: StatsViewModel = hiltViewModel()) {
                                 .replace("_", " ")
                                 .lowercase(Locale.ROOT)
                                 .replaceFirstChar { it.uppercase() },
-                            "$minutes min",
+                            stringResource(R.string.stats_activity_minutes, minutes),
                         )
                     }
                 }

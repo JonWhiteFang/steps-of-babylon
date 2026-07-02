@@ -76,4 +76,18 @@
         <item quantity="one">Today: %1$d step</item>
         <item quantity="other">Today: %1$d steps</item>
     </plurals>
+
+    <!-- i18n #34 phase 3: relative "time ago" (category D) -->
+    <plurals name="time_ago_minutes">
+        <item quantity="one">%1$dm ago</item>
+        <item quantity="other">%1$dm ago</item>
+    </plurals>
+    <plurals name="time_ago_hours">
+        <item quantity="one">%1$dh ago</item>
+        <item quantity="other">%1$dh ago</item>
+    </plurals>
+    <plurals name="time_ago_days">
+        <item quantity="one">%1$dd ago</item>
+        <item quantity="other">%1$dd ago</item>
+    </plurals>
 </resources>
