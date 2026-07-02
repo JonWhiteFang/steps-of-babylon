@@ -4,6 +4,46 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### i18n — locale-readiness, phase 3 / final (#34, ADR-0014; no behavior change)
+
+**Full string-extraction pass — the app is now 100% locale-ready** (a `res/values-<locale>/strings.xml`
+fully translates the UI, no English leaking through). No behavior change; rendered English byte-identical
+throughout. **1282 → 1294 JVM tests** (+12, from a new `CardEffectDescriptionTest`; other assertions
+updated in place). Android lint (debug+release) + detekt + ktlint green. Shipped as **six sequential PRs**
+(each merged + CI-verified before the next), executed subagent-driven with a two-stage review per task;
+both the design spec and the implementation plan passed the multi-agent Adversarial Review Gate first.
+
+- **PR3a (#360) — VM user-messages + data-layer errors (A + A′).** New sealed `presentation/ui/UiMessage`
+  type + `resolve(context)`; `userMessage: String?` → `UiMessage?` across **6** ViewModels
+  (Store/Cards/Workshop/Labs/Missions/Battle), their UiStates + screens (resolved at the `LaunchedEffect`).
+  `BillingManagerImpl` (had `@ApplicationContext`) + `RewardAdManagerImpl` (Context injected; test moved to
+  Robolectric) localize their error text at source; forwarded lower-layer errors use `UiMessage.Raw`.
+- **PR3b (#361) — error channel + Activities + Help + stragglers (C+F+H+Z).** `SCREEN_LOAD_ERROR`
+  `String` → `@StringRes Int` across 10 VMs + `ErrorState` (#194 `.catch`/`flatMapLatest` order untouched);
+  HealthConnectPermissionActivity (title + full privacy-policy body) + MainActivity snackbar; HelpScreen
+  (9 sections); WorkshopScreen `EmptyState`.
+- **PR3c (#362) — nav labels + duration/plurals (B+D).** `Screen.label: String` → `@StringRes labelRes`
+  (#161 `by lazy` route lists untouched, DeepLinkRoutingTest green); `pathValueAtNext` lifted to `@Composable`;
+  `formatTime`/`formatTimeAgo` (+ `<plurals>`); StatsScreen minutes; economy weekly-reset pipeline to raw
+  `Int?` fields (row-visibility byte-identical via a null-guard).
+- **PR3d (#363) — battle Canvas (E).** `domain/Strings` seam extended (`bossIncoming`/`waveHeader`/
+  `nextWaveIn`); `GameEngine` pre-resolves + passes labels into the `WaveAnnouncement`/`WaveCooldownText`
+  ctors (effects hold no `Strings`; per-frame countdown via a formatter lambda); null-`Strings` fallback
+  keeps `GameEngineTest`/`SimulationTest` pure-JVM.
+- **PR3e (#364) — domain-model display strings + enum names + Workshop stat units (G).** `@StringRes`
+  resolvers at the presentation boundary (`EnumLabels.kt`) for Upgrade/Research/Mission/UW **descriptions**,
+  Milestone names, Cosmetic name/desc (resolved by id), CardType effect descriptions (DTO carries
+  `type`+`level`; `effectDescriptionAtLevel` deleted from domain → its string assertions moved to a
+  Robolectric `CardEffectDescriptionTest`), all enum **display names** (`.toDisplayName()` at 11 render
+  sites; byte-identical incl. quirks like `Uw Cooldown`), and `WorkshopViewModel.statValueFor` units.
+  Domain stays Android-free (`DomainPurityTest` green). `formatted="false"` added to the bare-`%`
+  description resources (they resolve with no args). SmartReminder notification localized via the resolver.
+- **PR3f (#365) — onboarding carousel content (I).** The 4 first-launch slide titles/bodies → `@StringRes`
+  (`OnboardingSlide` stays JVM-testable). A full-phase completeness sweep confirmed no user-facing English
+  remains beyond documented residuals (`SupplyDropTrigger.message`, `BillingProduct.priceDisplay`, seed
+  cosmetic DB-fallback) + developer-facing exception/log strings + battle null-`Strings` fallbacks.
+- **Next:** ship the first real non-English `values-xx` locale (the payoff — separate effort).
+
 ### i18n — Compose-screen string extraction, phase 2 (#34, ADR-0014; no behavior change)
 
 **Mechanical string externalization — no behavior change, 1282 JVM tests unchanged** (assertions

@@ -1,3 +1,57 @@
+## 2026-07-02 — #34 i18n phase 3 / locale-readiness (6 PRs #360–#365 merged; app now 100% locale-ready; no behavior change)
+
+- **Goal:** extract every remaining user-facing English literal so a `res/values-<locale>/strings.xml` fully
+  translates the UI (the payoff prerequisite). Picked up from the phase-2 "PR3 follow-up" backlog. Ran the
+  full spec→plan→implementation loop: brainstormed scope, wrote a design spec + implementation plan, passed
+  **both** through the multi-agent Adversarial Review Gate (ultracode) before any code, then executed
+  subagent-driven (fresh implementer per task + spec-compliance & code-quality review gates) across 6
+  sequential PRs (each merged + CI-verified before cutting the next, per the developer's cadence request).
+- **Adversarial Review Gate outcomes (before coding):** spec — 37 findings, 26 surviving, all applied (it
+  reframed "PR3 = Canvas/Activity" into 11 categories, adding the domain-model display copy, 2 whole screens,
+  2 more `userMessage` VMs, the ad-error data layer). Plan — 41 findings, 24 surviving, all applied (caught
+  4 critical implementability defects: two data-layer test-lane breaks, the CardType/Mission DTO surgery,
+  the Battle-VM test mapping). Both gates run as background `Workflow`s with 3-vote refutation; the plan
+  workflow's first launch died on a `${t}`/`${v}` template-literal collision — fixed the script + resumed.
+- **What shipped (6 PRs; no schema/economy/engine-formula change; rendered English byte-identical):**
+  - **PR3a #360** — sealed `presentation/ui/UiMessage` (+ `resolve(context)`); `userMessage: String?` →
+    `UiMessage?` across 6 VMs (Store/Cards/Workshop/Labs/Missions/Battle); `BillingManagerImpl` +
+    `RewardAdManagerImpl` (Context injected, test → Robolectric) localize error text at source.
+  - **PR3b #361** — `SCREEN_LOAD_ERROR` `String`→`@StringRes Int` across 10 VMs (#194 `.catch` order kept);
+    HealthConnectPermissionActivity (title + policy body) + MainActivity snackbar; HelpScreen (9 sections);
+    WorkshopScreen EmptyState.
+  - **PR3c #362** — `Screen.label`→`@StringRes labelRes` (#161 route lists untouched); `pathValueAtNext`
+    lifted to `@Composable`; `formatTime`/`formatTimeAgo` (+ plurals); StatsScreen minutes; economy
+    weekly-reset pipeline → raw `Int?` fields.
+  - **PR3d #363** — `domain/Strings` seam extended (`bossIncoming`/`waveHeader`/`nextWaveIn`); `GameEngine`
+    pre-resolves + passes labels into the effect ctors (effects hold no `Strings`; null-fallback keeps
+    engine tests pure-JVM). concurrency-reviewer verdict: SAFE.
+  - **PR3e #364** (biggest) — `@StringRes` resolvers in `EnumLabels.kt` for Upgrade/Research/Mission/UW
+    descriptions, enum display names (11 render sites), Milestone names, Cosmetic name/desc, CardType effect
+    descriptions (DTO surgery + `effectDescriptionAtLevel` deleted from domain → assertions moved to a new
+    Robolectric `CardEffectDescriptionTest`), Workshop stat units. Domain stays Android-free.
+  - **PR3f #365** — onboarding carousel content (4 slide titles/bodies) → `@StringRes`; full-phase
+    completeness sweep confirmed no user-facing English leaks beyond documented residuals.
+- **Review caught (fixed inline, not shipped):** `UserFeedbackTest` + `HomeFirstWalkPromptTest` compile
+  breaks the plan's test lists missed; a byte-identity bug (`Uw Cooldown`, not "U W Cooldown" — my
+  ground-truth was wrong: `toDisplayName` splits only on `_`); an economy row-visibility regression (fixed
+  via nullable fields, not a `> 0` guard); a `lintRelease` failure on bare-`%` description strings
+  (`formatted="false"`); a SmartReminder notification English leak the completeness sweep surfaced.
+  **Local-gate gap noted:** Android `lint` (`lintDebug`/`lintRelease`) is a CI check NOT in
+  testDebugUnitTest/detekt/ktlint — added to the local gate mid-effort after PR3e's CI failure.
+- **Verification:** all 6 PRs green in CI (build-and-test incl. lint + instrumented emulator lane + ktlint).
+  **1282 → 1294 JVM tests** (+12 `CardEffectDescriptionTest`), 0 failures; Android lint + detekt + ktlint
+  green; final full-phase completeness sweep clean.
+- **Docs synced:** CLAUDE.md headline count 1282→1294; CHANGELOG `[Unreleased]` phase-3 section; ADR-0014
+  phase-3 note; source-files.md (`UiMessage.kt` added; `EnumLabels.kt`/`ErrorState.kt`/`Screen.kt` entries
+  updated); STATE.md objective rotated + fragile-zone i18n contract + #194 `error: Int?` correction.
+- **Plan-accuracy notes for future extraction passes:** (1) type-changing tasks must grep ALL test
+  constructors of the changed UiState (not just `.field` reads) — 2 compile breaks slipped the plan's test
+  lists; (2) `toDisplayName` splits only on `_` (so `UW_` → "Uw", not "U W") — verify quirks against the
+  actual algorithm, not intuition; (3) always run `:app:lintRelease` locally when adding prose string
+  resources (bare-`%` → `formatted="false"`).
+- **Next:** ship the first real non-English `values-xx` locale (the payoff — a separate effort). Extraction
+  itself is now complete.
+
 ## 2026-06-24 — #34 i18n Compose-screen string extraction, phase 2 (both PRs merged; no behavior change)
 
 - **Goal:** execute the reviewed 15-task plan (`docs/superpowers/plans/2026-06-24-i18n-compose-screen-extraction.md`)

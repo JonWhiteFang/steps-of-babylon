@@ -19,9 +19,9 @@ dependency-verification (#256), clock-tamper (#211), GameEngine decomposition (#
 dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependabot wave, CI/supply-chain
 (#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
 (CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
-#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1282 JVM + 9 instrumented tests**
-green (the post-v1.0.11 body lands at 1277: audit-triage A–D → 1256, then #216 +19 → 1275, #221 +2 → 1277;
-then #217 service/boot-receiver tests +5 → 1282; per-wave detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
+#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1294 JVM + 9 instrumented tests**
+green (post-v1.0.11 body: audit-triage A–D → 1256, #216 +19 → 1275, #221 +2 → 1277, #217 +5 → 1282, then
+#34 i18n phase 3 +12 → 1294; per-wave detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) **DONE — the manual Play
 Console Data-Safety form for #192 was submitted 2026-06-24** (the four AdMob-SDK data types Collected+Shared
@@ -42,18 +42,32 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (#34 i18n Compose-screen extraction phase 2 — BOTH PRs MERGED to `main`).** Executed the
-  reviewed 15-task plan via subagent-driven development: PR1 #354 (heavy screens store/settings/cards/
-  onboarding; merge-commit on `main`) + PR2 #355 (the rest + shared `presentation/ui` + two `battle/ui`
-  components + nav `secondaryTitle` + non-composable `@StringRes` helpers; merged `2b6813d`). Mechanical
-  string externalization to `strings.xml` via `stringResource`, **no behavior change, 1282 JVM unchanged**,
-  detekt + ktlint green. Each task passed a two-stage subagent review (spec → code quality); a final
-  interpolation-aware sweep caught `"${…} word"` literals the per-task grep masked (all extracted).
-  Structural: `Screen.secondaryTitle` → `@StringRes Int?` (fragile-zone `by lazy` lists untouched,
-  DeepLinkRoutingTest green). ADR-0014 amended with the phase-2 note + the `HardcodedText`-is-XML-only
-  correction. **NEXT (PR3 follow-up, by design):** ViewModel `_userMessage` strings (need a resource-ID-
-  emission pattern), `Screen.kt` bottom-nav labels (fragile zone), `SCREEN_LOAD_ERROR` const, duration-unit
-  suffixes (need plurals), `pathValueAtNext`/Canvas/Activity literals; then the first real non-English locale.
+- **CURRENT (#34 i18n phase 3 / locale-readiness — ALL 6 PRs MERGED to `main`; the app is now 100%
+  locale-ready).** A `res/values-<locale>/strings.xml` now fully translates the UI — no user-facing English
+  leaks. Fresh spec + plan (both passed the multi-agent Adversarial Review Gate — spec 37 findings/26
+  surviving, plan 41/24) reframed the "PR3 = Canvas/Activity" shorthand into **11 categories** and **6
+  sequential PRs** (each merged + CI-verified before the next), executed subagent-driven with a two-stage
+  review per task: **PR3a #360** (sealed `UiMessage` for VM messages + billing/ad data-layer error
+  localization), **PR3b #361** (`SCREEN_LOAD_ERROR`→`@StringRes` across 10 VMs + Activities + HelpScreen),
+  **PR3c #362** (nav labels #161 + duration/plurals + `pathValueAtNext`), **PR3d #363** (battle Canvas via
+  the `domain/Strings` seam), **PR3e #364** (domain-model descriptions + enum names + Workshop stat units,
+  the biggest — via `@StringRes` resolvers in `EnumLabels.kt`, domain stays Android-free), **PR3f #365**
+  (onboarding carousel content). **No behavior change, rendered English byte-identical; 1282 → 1294 JVM**
+  (+12 `CardEffectDescriptionTest`); Android lint (debug+release) + detekt + ktlint green. Review caught
+  real defects inline: a compile-breaking test the plan missed (`UserFeedbackTest`/`HomeFirstWalkPromptTest`),
+  a byte-identity quirk (`Uw Cooldown` not "U W Cooldown" — `toDisplayName` splits only on `_`), an economy
+  row-visibility regression (fixed via nullable fields), a `lintRelease` `formatted="false"` fix on bare-`%`
+  strings, and a SmartReminder notification leak the completeness sweep found. ADR-0014 amended with the
+  phase-3 note. Documented residuals (by design): `SupplyDropTrigger.message`, `BillingProduct.priceDisplay`,
+  seed cosmetic DB-fallback. **NEXT:** ship the first real non-English `values-xx` locale (the payoff — a
+  separate effort). Also unchanged: the internal→closed promotion judgment call + the audit backlog's
+  remaining non-batchable items (#217 done; A24 clock-tamper, L12 BattleViewModel decomposition, battle
+  perf L46-51 remain).
+- **Previous objective (DONE — #34 i18n Compose-screen extraction phase 2, BOTH PRs #354/#355 MERGED).**
+  Mechanical `stringResource` externalization of the standard Compose screens (+ dialogs, shared
+  `presentation/ui`, two `battle/ui` components, nav `secondaryTitle`→`@StringRes Int?`, non-composable
+  `@StringRes` helpers); no behavior change, 1282 JVM unchanged. ADR-0014 amended (phase-2 note +
+  `HardcodedText`-is-XML-only correction). Detail in `CHANGELOG.md` / `RUN_LOG.md`.
 - **Previous objective (DONE — `/backup-to-vault` skill built + reviewed; PR open).** New personal, user-invoked skill
   `.claude/skills/backup-to-vault/SKILL.md` that backs up the repo's gitignored essentials
   (`age`-encrypted: upload keystore + signing passwords + AdMob prod IDs + `run-gradle.sh`) and a full
@@ -254,8 +268,9 @@ Phase 2 (only AFTER the developer promotes internal → closed):
 6. **(External)** Recruit ≥12 testers; ≥14-day closed soak; apply for production access; staged rollout; tag `v1.0.0`.
 
 Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud save #36, telemetry #23, etc.).
-i18n #34: phase 1 (V1X-13) + phase 2 (Compose screens, 2026-06-24) shipped; PR3 (ViewModel messages,
-nav labels, plurals, Canvas/Activity) + the first real non-English locale remain.
+i18n #34: phase 1 (V1X-13) + phase 2 (Compose screens) + phase 3 (locale-readiness, 6 PRs #360–#365,
+2026-07-02) all shipped — extraction is COMPLETE (app 100% locale-ready). Only the first real non-English
+`values-xx` locale remains (the payoff — a separate effort).
 
 ## Do-not-touch / fragile zones
 
@@ -275,7 +290,8 @@ nav labels, plurals, Canvas/Activity) + the first real non-English locale remain
 - **GOLDEN damage layer (#119)** — GOLDEN is a re-derived `goldenDamageMult`, not a stat snapshot. Don't restore snapshot-and-overwrite.
 - **Economy spend/claim contract (#122, ADR-0020)** — `spendGems`/`spendPowerStones`/`spendStepsIfSufficient` return Boolean; gate the grant on the result. One-shot claims use guarded `… AND claimed=0` + mark-first.
 - **Premium spend+grant is atomic (#236, ADR-0027)** — card-pack and UW-unlock deduct+grant commit/roll back together via `CardDao.openCardPackAtomic` / `UltimateWeaponDao.unlockWeaponAtomic` (`@Transaction` default methods that call `PlayerProfileDao` as a param — same cross-DAO mechanism as `claimMilestoneAtomic`). The guarded deduct runs FIRST inside the tx; `openCardPackAtomic` returns `null` and `unlockWeaponAtomic` returns `false` on insufficient (no grant written). `unlockWeaponAtomic` re-checks already-unlocked INSIDE the tx before deducting (double-tap can't pay twice). Exposed via repository ports so the use cases stay domain-pure — `OpenCardPack`/`UnlockUltimateWeapon` no longer take `PlayerRepository`. Rarity rolling stays pure/seeded in `OpenCardPack` (the DAO only does the writes). The use cases' pre-checks (`gems < cost` etc.) are cheap fast-paths, NOT the guard. Don't reintroduce a separate spend-then-grant or move the deduct out of the tx. Guarded by `PremiumSpendDaoTest` + atomic-path assertions in `OpenCardPackTest`/`UnlockUltimateWeaponTest`; fakes use a `linkedPlayer` wallet seam.
-- **Screen error-state pattern (#194, ADR-0028)** — the 10 data-backed screens surface a load error via a shared `presentation/ui/ErrorState.kt` (+ `SCREEN_LOAD_ERROR`); each UiState carries `error: String?` and each VM wraps its data flow in `_retry.flatMapLatest { <combine/map>.catch { emit(errorState) } }` + `fun retry() { _retry.value++ }`. **The `.catch` MUST stay INSIDE `flatMapLatest`** — a downstream catch completes the stream so `retry()` becomes a no-op (stuck-error, the inverse bug). Screens early-return `ErrorState(state.error!!, onRetry = viewModel::retry)` before the loading check (`state.error` is a delegated property → `!!`, not smart-cast). Date VMs (Home/Missions/Stats) fold `_retry` via `combine(_date,_retry){d,_->d}`. **Battle is excluded** (owns `battleError`/overlay, #190). Guarded by `StatsViewModelTest` (throw→error, retry→recover); VM-level only (no Compose-UI harness in repo).
+- **Screen error-state pattern (#194, ADR-0028)** — the 10 data-backed screens surface a load error via a shared `presentation/ui/ErrorState.kt` (+ `SCREEN_LOAD_ERROR`, now a `@StringRes Int` — i18n #34 phase 3); each UiState carries `error: Int?` and each VM wraps its data flow in `_retry.flatMapLatest { <combine/map>.catch { emit(errorState) } }` + `fun retry() { _retry.value++ }`. **The `.catch` MUST stay INSIDE `flatMapLatest`** — a downstream catch completes the stream so `retry()` becomes a no-op (stuck-error, the inverse bug). Screens early-return `ErrorState(stringResource(state.error!!), onRetry = viewModel::retry)` before the loading check (`state.error` is a delegated property → `!!`, not smart-cast). Date VMs (Home/Missions/Stats) fold `_retry` via `combine(_date,_retry){d,_->d}`. **Battle is excluded** (owns `battleError`/overlay, #190). Guarded by `StatsViewModelTest` (throw→error, retry→recover); VM-level only (no Compose-UI harness in repo).
+- **i18n locale-readiness contract (#34 phase 3, ADR-0014)** — the app is 100% locale-ready; **do not reintroduce a hardcoded user-facing English literal**. VM transient messages use the sealed `presentation/ui/UiMessage` (`@StringRes` + args), resolved at the Compose call site via `UiMessage.resolve(context)`; new static messages are typed cases, and **`UiMessage.Raw(text)` is ONLY for a lower-layer string already localized at source** (billing/ad `Error.message` via `context.getString`) — never wrap un-localized English in `Raw`. Enum display copy resolves via `@StringRes` extensions in `presentation/ui/EnumLabels.kt` (`descriptionRes`/`nameRes`/`displayNameRes`/`effectDescription`); the **domain enums keep their `description`/`displayName`/`name` fields** (localization source + gameplay fallback) — the UI must read the resolver, and the resolvers must stay in presentation (domain Android-free, `DomainPurityTest`). Battle Canvas text flows through the `domain/Strings` seam (`GameEngine` pre-resolves, effects hold no `Strings`; null-`Strings` → literal fallback keeps engine tests pure-JVM). **A bare-`%` prose string resource resolved with no format args needs `formatted="false"`** (else `lintRelease` fails "multiple substitutions") — run `:app:lintDebug :app:lintRelease` when adding prose resources (NOT covered by testDebugUnitTest/detekt/ktlint). Documented residuals kept in English by design: `SupplyDropTrigger.message`, `BillingProduct.priceDisplay`, seed cosmetic name/desc in `CosmeticRepositoryImpl` (resolved-by-id at render).
 - **Background billing reconcile is time-bounded + best-effort (#250, ADR-0028)** — `MainActivity.onResume` (foreground) and `StepSyncWorker.doWork` (background, 15-min) both call the shared top-level `service.reconcileBillingSafely(billingManager)` = `withTimeoutOrNull(20s)` + catch-all. The timeout is load-bearing: `BillingManagerImpl.connect()` has NO internal timeout (its disconnect callback never resumes), so an offline/stalled device would otherwise hang the worker / leak a coroutine on resume. `reconcilePendingPurchases()` is idempotent + mutex-serialised + connect-guarded + Activity-independent (BillingClient from `@ApplicationContext`). Don't inline the call without the timeout, and don't drop either trigger (Store-open alone misses the 3-day Play auto-refund window). Guarded by `ReconcileBillingSafelyTest`.
 - **Battery-exemption primer gating (#261, ADR-0029)** — `OnboardingViewModel.shouldOfferBatteryExemption` = `!BatteryOptimizationStatus.isIgnoring()` is read ONCE at construction → it's STALE after the user grants the exemption. The onboarding granted-branch primer therefore gates re-display on a session-local `batteryPrimerHandled` flag that **BOTH** buttons ("Allow background activity" AND "Maybe later") set — setting it only on "Maybe later" re-shows the primer after the user just allowed. Never block the flow (both paths reach `finish()`). The durable re-offer is the Settings "Background activity" row (onboarding is one-shot). `MainActivity.requestBatteryExemption` fires `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (falls back to the settings list); manifest must keep `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (Play-eligible only via the FGS-health step service). Guarded by `OnboardingViewModelTest`.
 - **Battle is portrait-locked (#233, ADR-0029)** — `BattleScreen` sets `activity.requestedOrientation = PORTRAIT` in a `DisposableEffect` (via `LocalActivity`), restored to `UNSPECIFIED` on dispose. This makes the config-change engine/VM desync (fresh `remember`ed `GameSurfaceView`/engine vs. surviving `BattleViewModel`) UNREACHABLE by preventing mid-round rotation. The lock is per-screen (battle is a Compose destination in the single MainActivity — a manifest `screenOrientation` would lock the whole app). An entry-time recreate (device was landscape) is harmless: the round starts only after `configure`/`startPollingEngine`, strictly after `isLoading` flips false. Don't remove the lock without restoring orientation on dispose, and don't move it to the manifest (would lock the whole app). The clean fix (hoist `Simulation` to the VM, ADR-0012) is the deferred larger effort.
