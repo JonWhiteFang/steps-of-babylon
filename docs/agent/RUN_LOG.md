@@ -10752,3 +10752,24 @@ After the fix, tests pass on first try and assembleDebug is clean.
     detekt nested-lock rule deferred). Fixed the hook's stale "Two tiers" header → four.
   - Full JVM suite = **1301 tests, 0 failures** (= plan's +7 prediction; CLAUDE.md headline bumped).
 - **Remaining:** push+PR+merge PR-B (tick #371/#372 on #389), then PR-C (#374 crash-report + #380 runbook).
+
+## 2026-07-02 — Phase-1 tooling PR-B MERGED + PR-C implemented (crash-report exit path + runbook)
+
+- **PR-B (#371 + #372) MERGED** — PR #394. CI green incl. the assembleRelease step + gitleaks (clean
+  first try this time). Ticked #371/#372 on tracker #389.
+- **PR-C (#374 + #380) implemented** (branch `feat/phase1-crash-report-and-runbook`, subagent-driven,
+  rebased onto post-PR-B main):
+  - **#374** crash breadcrumb now has a tap-gated **Report** email exit path. Required a `<queries>`
+    SENDTO/mailto manifest entry (targetSdk-36 package visibility → `resolveActivity()` is null without
+    it even with a mail client — the plan-review gate's HIGH finding). Extracted top-level
+    `buildCrashReportIntent(context, exceptionClass, message, stackPreview)` (mirrors `openPrivacyPolicy`)
+    so it's unit-testable off the Activity; TDD (FAIL→PASS) via `CrashReportIntentTest` (Robolectric,
+    `@Config(sdk=[34], application=Application::class)` per the repo's 50/50 convention). Snackbar gains
+    the Report action; `clear()` stays after the awaited snackbar so a Report tap emails first.
+  - **#380** post-release monitoring runbook appended to `release-checklist.md` (24h/72h Vitals cadence,
+    crash/ANR roll-back trigger, mapping.txt-already-automated note).
+  - Full JVM suite = **1302** (1301 + the 1 crash test; = plan prediction). CLAUDE.md headline + CHANGELOG
+    + source-files.md (MainActivity crash-effect clause updated, CrashReportIntentTest added) synced.
+- **Phase 1 tooling safety baseline COMPLETE** once PR-C merges: all 6 findings (#370/#376/#371/#372/#374/#380)
+  shipped. Remaining #389 phases (2–4) are separate tracks. **Remaining now:** push+PR+merge PR-C, tick
+  #374/#380 + close #389.

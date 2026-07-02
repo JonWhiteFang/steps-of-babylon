@@ -41,20 +41,18 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (Phase-1 tooling safety baseline — IN FLIGHT, 3 PRs; spec+plan both passed the Adversarial
-  Review Gate).** Design → plan for the 6 Phase-1 findings under `docs/superpowers/{specs,plans}/2026-07-02-phase1-tooling-gap*`
-  (spec gate: 19 raised/15 applied/4 refuted; plan gate: 20/19/1→6 defects fixed). Grouped into 3 PRs:
-  **PR-A (CI/supply-chain, #370+#376) — MERGED** (PR #393 `7fe241f`): assembleRelease in the PR gate w/
-  throwaway license key (R8 ran green in CI); gitleaks workflow+`.gitleaks.toml` (path-scoped to `.properties`
-  after a real CHANGELOG-prose false positive was caught + fixed in CI); security-model doc. **A5 caveat:**
-  the `secret_scanning_non_provider_patterns` GitHub toggle is a **silent API no-op** on this personal repo —
-  documented as a manual Settings step. **PR-B (#371 + #372) — implementation DONE on branch
-  `test/phase1-ai-safety-tripwires`, pending push+PR:** `StepCreditAllowlistTest` (6 tests, full step-credit
-  write surface + baked negative fixture), `BattleEngineLockScanTest` (1 test), `guard-sensitive-edits.sh`
-  tier-4 advisory, CLAUDE.md mandatory-lane wiring + ADR-0038; headline **1294 → 1301** (full suite green).
-  **PR-C (#374 crash-report exit path + #380 monitoring runbook)** is next. Tracker **#389** (4-phase roadmap).
-  **NEXT:** push+PR+merge PR-B (tick #371/#372 on #389), then PR-C. Alternatives still on the table: first
-  non-English `values-xx` locale (#34); internal→closed promotion; #233 Simulation-hoist (ADR-0012); A24 clock-tamper.
+- **CURRENT (Phase-1 tooling safety baseline — PR-A + PR-B MERGED; PR-C up for merge).** The 6 Phase-1
+  findings (tracker #389), spec+plan both through the Adversarial Review Gate
+  (`docs/superpowers/{specs,plans}/2026-07-02-phase1-tooling-gap*`; spec gate 19/15/4, plan gate 20/19/1→6
+  fixed), shipped as 3 PRs: **PR-A #393 `7fe241f` MERGED** (#370 assembleRelease in the PR gate + #376
+  gitleaks; A5 non-provider-patterns is a silent-API-no-op → manual Settings step). **PR-B #394 MERGED**
+  (#371 `StepCreditAllowlistTest` 6 tests + #372 `BattleEngineLockScanTest` 1 test + `guard-sensitive-edits.sh`
+  tier-4 concurrency-reviewer advisory + CLAUDE.md wiring + ADR-0038; 1294→1301). **PR-C (#374 crash-report
+  Report/email exit path incl. the required `<queries>` + #380 monitoring runbook) — implementation DONE,
+  rebased on main, doc-synced, 1301→1302 (full suite green), pending push+PR.** **NEXT:** push+PR+merge PR-C
+  (tick #374/#380 + close #389). Then Phase 2 tooling (#378 jvmToolchain, #388 STATE trim, #387 BACKLOG.md,
+  #386 AGENTS.md) OR the other tracks: first non-English `values-xx` locale (#34); internal→closed promotion;
+  #233 clean Simulation-hoist (ADR-0012); A24 clock-tamper.
 - *Side research (DONE, 2026-07-02) — UX/UI design skills/plugins assessment →
   `docs/reviews/ux-ui-design-resources.md` (recommends `material-3-skill` + `compose-skill` baseline,
   `ux-ui-mastery` optional; report only, nothing installed — adoption phasing awaits the developer's

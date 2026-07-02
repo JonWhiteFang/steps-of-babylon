@@ -269,15 +269,33 @@ class MainActivity : ComponentActivity() {
                     },
                 ) { innerPadding ->
                     // #190 REL-1: surface a one-time notice if the previous session crashed.
-                    // Informational only — there is no in-app report channel to wire an action to.
+                    // #374: the notice now carries a "Report" action that emails the crash
+                    // breadcrumb via buildCrashReportIntent (ACTION_SENDTO mailto:).
                     // Resolve the string via stringResource (Compose-idiomatic) OUTSIDE the
                     // LaunchedEffect — a coroutine can't call the @Composable, and
                     // context.getString from LocalContext trips the Compose lint check.
                     val crashNotice = stringResource(R.string.crash_notice_last_session)
+                    val crashReportAction = stringResource(R.string.crash_notice_report_action)
                     LaunchedEffect(Unit) {
                         val crash = crashBreadcrumbStore.peek()
                         if (crash != null) {
-                            snackbarHostState.showSnackbar(crashNotice)
+                            val result =
+                                snackbarHostState.showSnackbar(
+                                    message = crashNotice,
+                                    actionLabel = crashReportAction,
+                                )
+                            if (result == SnackbarResult.ActionPerformed) {
+                                val reportIntent =
+                                    buildCrashReportIntent(
+                                        context = context,
+                                        exceptionClass = crash.exceptionClass,
+                                        message = crash.message,
+                                        stackPreview = crash.stackPreview,
+                                    )
+                                if (reportIntent.resolveActivity(context.packageManager) != null) {
+                                    context.startActivity(reportIntent)
+                                }
+                            }
                             crashBreadcrumbStore.clear()
                         }
                     }
@@ -558,5 +576,36 @@ private fun openPrivacyPolicy(context: android.content.Context) {
     val view = Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL))
     if (view.resolveActivity(context.packageManager) != null) {
         context.startActivity(view)
+    }
+}
+
+/**
+ * #374: build the crash-report email intent (ACTION_SENDTO mailto:) pre-filled with the crash
+ * breadcrumb. Extracted as a top-level fn (mirrors [openPrivacyPolicy]) so it is unit-testable
+ * without launching MainActivity — the createComposeRule JVM lane never instantiates this Activity.
+ * The manifest <queries> SENDTO/mailto entry makes this resolvable under package-visibility filtering.
+ */
+internal fun buildCrashReportIntent(
+    context: android.content.Context,
+    exceptionClass: String,
+    message: String?,
+    stackPreview: String,
+): Intent {
+    val metadata =
+        "App ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · " +
+            "Android ${android.os.Build.VERSION.RELEASE} · ${android.os.Build.MODEL}"
+    val subject = context.getString(R.string.crash_report_email_subject)
+    val body =
+        context.getString(
+            R.string.crash_report_email_body,
+            exceptionClass,
+            message ?: "(none)",
+            stackPreview,
+            metadata,
+        )
+    return Intent(Intent.ACTION_SENDTO).apply {
+        data = Uri.parse("mailto:jonwhitefang@gmail.com")
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, body)
     }
 }

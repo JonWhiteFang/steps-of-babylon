@@ -4,6 +4,19 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Observability — crash-report exit path + monitoring runbook (#374, #380) — Phase-1 tooling PR-C
+
+- **#374 (obs-2).** The one-time crash notice now offers a **Report** action that opens a pre-filled
+  email (`ACTION_SENDTO` mailto to the support address) carrying the breadcrumb (exception class,
+  message, stack preview, app/device metadata). Required a `<queries>` SENDTO/mailto manifest entry
+  (targetSdk-36 package visibility makes `resolveActivity()` null without it, even with a mail client)
+  and a testable extracted top-level `buildCrashReportIntent` (+1 Robolectric test). `clear()` stays
+  after the awaited snackbar so a Report tap emails the breadcrumb first. (+1 test → **1302 JVM**.)
+- **#380 (obs-1).** Added a "Post-release monitoring" section to `release-checklist.md` (24h/72h Play
+  Vitals cadence, crash/ANR roll-back trigger; notes `mapping.txt` upload is already automated).
+- Closes Phase 1 of the tooling-gap safety baseline (tracker #389): all 6 findings shipped across
+  PR-A (#370/#376), PR-B (#371/#372), PR-C (#374/#380).
+
 ### Testing / AI-safety — invariant tripwires (#371, #372) — Phase-1 tooling PR-B
 
 - **#371 (ai-3).** New `architecture/StepCreditAllowlistTest` machine-enforces "Steps are never generated
