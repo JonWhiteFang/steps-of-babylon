@@ -44,15 +44,17 @@ the med/low backlog (#262) remain.
 - **CURRENT (Phase-1 tooling safety baseline — IN FLIGHT, 3 PRs; spec+plan both passed the Adversarial
   Review Gate).** Design → plan for the 6 Phase-1 findings under `docs/superpowers/{specs,plans}/2026-07-02-phase1-tooling-gap*`
   (spec gate: 19 raised/15 applied/4 refuted; plan gate: 20/19/1→6 defects fixed). Grouped into 3 PRs:
-  **PR-A (CI/supply-chain, #370+#376) — implementation DONE on branch `ci/phase1-release-variant-and-gitleaks`**
-  (assembleRelease in the PR gate w/ throwaway license key — validated locally, R8 ran, APK built; gitleaks
-  workflow+`.gitleaks.toml`; security-model doc). **A5 caveat:** the `secret_scanning_non_provider_patterns`
-  GitHub toggle is a **silent API no-op** on this personal repo — documented as a manual Settings step (gitleaks
-  already covers the custom patterns). PR-A pending push+PR. **PR-B (#371 step-credit allowlist test + #372
-  concurrency-reviewer hook/CLAUDE.md + ADR-0038)** and **PR-C (#374 crash-report exit path + #380 monitoring
-  runbook)** are next, per the plan. Tracker **#389** (4-phase roadmap). **NEXT:** finish PR-A (push+PR+tick #389),
-  then PR-B, then PR-C. Alternatives still on the table: first non-English `values-xx` locale (#34); internal→closed
-  promotion judgment call; #233 clean Simulation-hoist (ADR-0012) / #306 EntityProtocol; A24 clock-tamper.
+  **PR-A (CI/supply-chain, #370+#376) — MERGED** (PR #393 `7fe241f`): assembleRelease in the PR gate w/
+  throwaway license key (R8 ran green in CI); gitleaks workflow+`.gitleaks.toml` (path-scoped to `.properties`
+  after a real CHANGELOG-prose false positive was caught + fixed in CI); security-model doc. **A5 caveat:**
+  the `secret_scanning_non_provider_patterns` GitHub toggle is a **silent API no-op** on this personal repo —
+  documented as a manual Settings step. **PR-B (#371 + #372) — implementation DONE on branch
+  `test/phase1-ai-safety-tripwires`, pending push+PR:** `StepCreditAllowlistTest` (6 tests, full step-credit
+  write surface + baked negative fixture), `BattleEngineLockScanTest` (1 test), `guard-sensitive-edits.sh`
+  tier-4 advisory, CLAUDE.md mandatory-lane wiring + ADR-0038; headline **1294 → 1301** (full suite green).
+  **PR-C (#374 crash-report exit path + #380 monitoring runbook)** is next. Tracker **#389** (4-phase roadmap).
+  **NEXT:** push+PR+merge PR-B (tick #371/#372 on #389), then PR-C. Alternatives still on the table: first
+  non-English `values-xx` locale (#34); internal→closed promotion; #233 Simulation-hoist (ADR-0012); A24 clock-tamper.
 - *Side research (DONE, 2026-07-02) — UX/UI design skills/plugins assessment →
   `docs/reviews/ux-ui-design-resources.md` (recommends `material-3-skill` + `compose-skill` baseline,
   `ux-ui-mastery` optional; report only, nothing installed — adoption phasing awaits the developer's
