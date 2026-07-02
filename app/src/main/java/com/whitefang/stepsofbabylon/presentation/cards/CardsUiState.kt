@@ -15,7 +15,6 @@ data class CardDisplayInfo(
     val copyCount: Int,
     val copiesNeeded: Int,
     val canAffordUpgrade: Boolean,
-    val effectDescription: String,
 )
 
 data class CardsUiState(

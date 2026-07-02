@@ -5,6 +5,8 @@
     <ID>CyclomaticComplexMethod:BattleScreen.kt:@Composable fun BattleScreen</ID>
     <ID>CyclomaticComplexMethod:BattleViewModel.kt:BattleViewModel$fun startPollingEngine</ID>
     <ID>CyclomaticComplexMethod:DescribeUpgradeEffect.kt:DescribeUpgradeEffect$private fun format: String</ID>
+    <ID>CyclomaticComplexMethod:EnumLabels.kt:@StringRes fun UpgradeType.descriptionRes: Int</ID>
+    <ID>CyclomaticComplexMethod:EnumLabels.kt:@StringRes fun UpgradeType.nameRes: Int</ID>
     <ID>CyclomaticComplexMethod:GameEngine.kt:GameEngine$fun update</ID>
     <ID>CyclomaticComplexMethod:MainActivity.kt:MainActivity$override fun onCreate</ID>
     <ID>CyclomaticComplexMethod:OnboardingScreen.kt:@Composable fun OnboardingScreen</ID>
@@ -16,9 +18,9 @@
     <ID>CyclomaticComplexMethod:UltimateWeaponScreen.kt:@StringRes private fun pathLabel: Int</ID>
     <ID>CyclomaticComplexMethod:UltimateWeaponScreen.kt:@Composable private fun pathValueAtNext: String</ID>
     <ID>CyclomaticComplexMethod:UpgradeCard.kt:@Composable fun UpgradeCard</ID>
+    <ID>CyclomaticComplexMethod:UpgradeCard.kt:@Composable private fun statValueLabel: String</ID>
     <ID>CyclomaticComplexMethod:WalkingHistoryChart.kt:@Composable fun WalkingHistoryChart</ID>
     <ID>CyclomaticComplexMethod:WaveSpawner.kt:WaveSpawner$private fun pickType: EnemyType</ID>
-    <ID>CyclomaticComplexMethod:WorkshopViewModel.kt:WorkshopViewModel$private fun statValueFor: String</ID>
     <ID>EmptyFunctionBlock:CombatResolverTest.kt:CombatResolverTest.FakeCombatHost${}</ID>
     <ID>EmptyFunctionBlock:DailyStepManagerErrorReportingTest.kt:DailyStepManagerErrorReportingTest.ThrowingWalkingEncounterRepository${}</ID>
     <ID>EmptyFunctionBlock:DataTransformMigrationsTest.kt:DataTransformMigrationsTest.&lt;no name provided&gt;${}</ID>
@@ -241,6 +243,7 @@
     <ID>TooManyFunctions:CardRepositoryImpl.kt:CardRepositoryImpl : CardRepository</ID>
     <ID>TooManyFunctions:DailyStepDao.kt:DailyStepDao</ID>
     <ID>TooManyFunctions:DatabaseModule.kt:DatabaseModule</ID>
+    <ID>TooManyFunctions:EnumLabels.kt:com.whitefang.stepsofbabylon.presentation.ui.EnumLabels.kt</ID>
     <ID>TooManyFunctions:GameEngine.kt:GameEngine : UWHostBuffHostCombatHost</ID>
     <ID>TooManyFunctions:MusicManager.kt:MusicManager : OnAudioFocusChangeListener</ID>
     <ID>TooManyFunctions:PlayerProfileDao.kt:PlayerProfileDao</ID>

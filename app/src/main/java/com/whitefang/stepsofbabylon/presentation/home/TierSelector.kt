@@ -24,9 +24,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.whitefang.stepsofbabylon.R
+import com.whitefang.stepsofbabylon.domain.model.BattleCondition
 import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.domain.model.TierConfig
-import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
+import com.whitefang.stepsofbabylon.presentation.ui.nameRes
 
 @Composable
 fun TierSelector(
@@ -41,7 +42,7 @@ fun TierSelector(
                 stringResource(
                     R.string.tier_selector_header,
                     currentTier,
-                    Biome.forTier(currentTier).name.toDisplayName(),
+                    stringResource(Biome.forTier(currentTier).nameRes()),
                 ),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
@@ -84,11 +85,27 @@ fun TierSelector(
         if (conditions.isNotEmpty()) {
             Spacer(Modifier.height(4.dp))
             Text(
-                text = conditions.entries.joinToString(" · ") { "${it.key.name.toDisplayName()} ${it.value}" },
+                text = conditionSummary(conditions),
                 style = MaterialTheme.typography.labelSmall,
                 color = Color(0xFFFF8A65),
                 textAlign = TextAlign.Center,
             )
         }
     }
+}
+
+/**
+ * i18n(#34): builds the "<Name> <value>" condition summary joined by " · ". Extracted so
+ * `stringResource` (a @Composable) can resolve each localized condition name in composable scope
+ * — a plain @Composable for-loop over the map entries preserves iteration order — since it cannot
+ * be called inside a non-@Composable `joinToString` lambda. Byte-identical to the old
+ * `it.key.name.toDisplayName()` render.
+ */
+@Composable
+private fun conditionSummary(conditions: Map<BattleCondition, Int>): String {
+    val segments = mutableListOf<String>()
+    for (entry in conditions.entries) {
+        segments += "${stringResource(entry.key.nameRes())} ${entry.value}"
+    }
+    return segments.joinToString(" · ")
 }

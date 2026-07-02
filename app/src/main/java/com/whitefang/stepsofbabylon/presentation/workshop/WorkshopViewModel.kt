@@ -4,7 +4,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.whitefang.stepsofbabylon.domain.model.DailyMissionType
-import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.domain.model.UpgradeCategory
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.repository.MissionRepository
@@ -30,7 +29,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.util.Locale
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -99,8 +97,7 @@ class WorkshopViewModel
                                         cost = cost,
                                         isMaxed = isMaxed,
                                         canAfford = !isMaxed && wallet.stepBalance >= cost,
-                                        description = type.config.description,
-                                        statValue = statValueFor(type, stats),
+                                        stats = stats,
                                         // Per-row workshop-dimension Now→Next preview (intentional fan-out; pure + small N).
                                         nowNext = describeUpgradeEffect.workshopPreview(upgrades, type),
                                         value = values[type],
@@ -190,38 +187,5 @@ class WorkshopViewModel
 
         private companion object {
             const val KEY_SELECTED_CATEGORY = "selectedCategory"
-        }
-
-        private fun statValueFor(
-            type: UpgradeType,
-            s: ResolvedStats,
-        ): String {
-            // #262 L87b: pin Locale.ROOT so decimal separators stay '.' regardless of device locale
-            // (a comma-decimal locale would otherwise render "1,5 dmg"). Matches the Locale.ROOT pattern
-            // already used by UltimateWeaponScreen / DescribeUpgradeEffect / CardType.
-            fun fmt(
-                pattern: String,
-                value: Number,
-            ): String = String.format(Locale.ROOT, pattern, value)
-            return when (type) {
-                UpgradeType.DAMAGE -> fmt("%.1f dmg", s.damage)
-                UpgradeType.ATTACK_SPEED -> fmt("%.2f/s", s.attackSpeed)
-                UpgradeType.CRITICAL_CHANCE -> fmt("%.1f%%", s.critChance * 100)
-                UpgradeType.CRITICAL_FACTOR -> fmt("%.1fx", s.critMultiplier)
-                UpgradeType.RANGE -> fmt("%.0f range", s.range)
-                UpgradeType.HEALTH -> fmt("%.0f HP", s.maxHealth)
-                UpgradeType.HEALTH_REGEN -> fmt("%.1f/s", s.healthRegen)
-                UpgradeType.DEFENSE_PERCENT -> fmt("%.1f%%", s.defensePercent * 100)
-                UpgradeType.DEFENSE_ABSOLUTE -> fmt("%.0f block", s.defenseAbsolute)
-                UpgradeType.KNOCKBACK -> fmt("%.1f force", s.knockbackForce)
-                UpgradeType.THORN_DAMAGE -> fmt("%.0f%%", s.thornPercent * 100)
-                UpgradeType.LIFESTEAL -> fmt("%.1f%%", s.lifestealPercent * 100)
-                UpgradeType.DAMAGE_PER_METER -> fmt("%.0f%%/m", s.damagePerMeterBonus * 100)
-                UpgradeType.DEATH_DEFY -> fmt("%.0f%%", s.deathDefyChance * 100)
-                UpgradeType.MULTISHOT -> "${s.multishotTargets} targets"
-                UpgradeType.BOUNCE_SHOT -> "${s.bounceCount} bounces"
-                UpgradeType.ORBS -> "${s.orbCount} orbs"
-                else -> ""
-            }
         }
     }

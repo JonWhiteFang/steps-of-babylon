@@ -78,7 +78,6 @@ class CardsViewModel
                                         copyCount = card.copyCount,
                                         copiesNeeded = copiesNeeded,
                                         canAffordUpgrade = !isMax && card.copyCount >= copiesNeeded,
-                                        effectDescription = card.type.effectDescriptionAtLevel(card.level),
                                     )
                                 },
                             equippedCount = equipped,

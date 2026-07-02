@@ -457,6 +457,19 @@
     <string name="help_fairplay_body">Steps of Babylon uses anti-cheat to keep the game fair:\n• 200 steps/minute rate limit (prevents shaker exploits).\n• 50,000 steps/day ceiling.\n• Health Connect cross-validation verifies step counts against your device\'s health data.\n• Activity Minute Parity converts exercise sessions to step-equivalents for indoor workouts.</string>
     <!-- i18n #34 phase 3: Workshop empty-state (category Z) -->
     <string name="workshop_empty">No upgrades in this category yet.</string>
+    <!-- i18n #34 phase 3: Workshop stat-value units (category G / D-workshop) -->
+    <string name="stat_dmg">%1$s dmg</string>
+    <string name="stat_per_sec">%1$s/s</string>
+    <string name="stat_percent">%1$s%%</string>
+    <string name="stat_multiplier">%1$sx</string>
+    <string name="stat_range">%1$s range</string>
+    <string name="stat_hp">%1$s HP</string>
+    <string name="stat_block">%1$s block</string>
+    <string name="stat_force">%1$s force</string>
+    <string name="stat_percent_per_m">%1$s%%/m</string>
+    <string name="stat_targets">%1$d targets</string>
+    <string name="stat_bounces">%1$d bounces</string>
+    <string name="stat_orbs">%1$d orbs</string>
     <!-- i18n #34 phase 3: bottom-nav labels (category B) -->
     <string name="nav_home">Home</string>
     <string name="nav_workshop">Workshop</string>
@@ -488,4 +501,153 @@
     <string name="fx_boss_incoming">⚠ BOSS INCOMING</string>
     <string name="fx_wave_header">Wave %1$d</string>
     <string name="fx_next_wave">Next Wave: %1$ds</string>
+    <!-- i18n #34 phase 3: domain-model descriptions (category G) -->
+    <!-- UpgradeType (24) -->
+    <string name="upgrade_desc_damage" formatted="false">+2% base damage per level</string>
+    <string name="upgrade_desc_attack_speed" formatted="false">+1.5% attacks per second</string>
+    <string name="upgrade_desc_critical_chance" formatted="false">+0.5% crit chance per level (cap 80%)</string>
+    <string name="upgrade_desc_critical_factor">+0.1x crit multiplier per level</string>
+    <string name="upgrade_desc_range" formatted="false">+2% attack radius (cap 300%)</string>
+    <string name="upgrade_desc_multishot">+1 additional target per level (in-round Cash purchase or Labs research; cap 11 incl. baseline)</string>
+    <string name="upgrade_desc_bounce_shot">+1 bounce per level (in-round Cash purchase or Labs research; cap 10)</string>
+    <string name="upgrade_desc_damage_per_meter" formatted="false">+1% bonus damage based on enemy distance</string>
+    <string name="upgrade_desc_rapid_fire">Periodic attack-speed burst (60s/5s/2.0× → permanent/3.0× at max)</string>
+    <string name="upgrade_desc_health" formatted="false">+3% max ziggurat health</string>
+    <string name="upgrade_desc_health_regen" formatted="false">+2% health regen per second</string>
+    <string name="upgrade_desc_defense_percent" formatted="false">+0.3% damage reduction (cap 75%)</string>
+    <string name="upgrade_desc_defense_absolute">+flat damage blocked per hit</string>
+    <string name="upgrade_desc_knockback" formatted="false">+2% knockback force</string>
+    <string name="upgrade_desc_thorn_damage" formatted="false">+1% damage reflected to attackers</string>
+    <string name="upgrade_desc_orbs">+1 orbiting projectile per level (cap 6)</string>
+    <string name="upgrade_desc_lifesteal" formatted="false">+0.2% damage dealt returned as health (cap 15%)</string>
+    <string name="upgrade_desc_death_defy" formatted="false">+1% chance to survive killing blow at 1 HP (cap 50%)</string>
+    <string name="upgrade_desc_cash_bonus" formatted="false">+3% cash earned during rounds</string>
+    <string name="upgrade_desc_cash_per_wave">+flat cash bonus at end of each wave</string>
+    <string name="upgrade_desc_interest" formatted="false">+0.5% interest on held cash between waves (cap 10%)</string>
+    <string name="upgrade_desc_free_upgrades" formatted="false">+1% chance for in-round upgrades to cost 0 (cap 25%)</string>
+    <string name="upgrade_desc_recovery_packages">Periodic health restore drops during waves</string>
+    <string name="upgrade_desc_step_multiplier" formatted="false">Bonus steps from walking — asymptotic curve approaches +100%</string>
+    <!-- ResearchType (12) -->
+    <string name="research_desc_damage_research" formatted="false">+5% base damage multiplier</string>
+    <string name="research_desc_health_research" formatted="false">+5% max health multiplier</string>
+    <string name="research_desc_cash_research" formatted="false">+5% cash earned multiplier</string>
+    <string name="research_desc_step_efficiency" formatted="false">+2% bonus steps from walking</string>
+    <string name="research_desc_wave_skip">Start rounds at wave X instead of wave 1</string>
+    <string name="research_desc_auto_upgrade_ai">Reserved for v1.x — research progress preserved</string>
+    <string name="research_desc_uw_cooldown" formatted="false">-3% Ultimate Weapon cooldown</string>
+    <string name="research_desc_critical_research" formatted="false">+3% critical damage multiplier</string>
+    <string name="research_desc_regen_research" formatted="false">+4% health regen multiplier</string>
+    <string name="research_desc_enemy_intel" formatted="false">Tactical awareness. +2% damage per level. Reveals next wave at L1, enemy HP at L5, boss timing at L10.</string>
+    <string name="research_desc_multishot_research">+1 multishot target</string>
+    <string name="research_desc_bounce_research">+1 projectile bounce</string>
+    <!-- DailyMissionType (6) -->
+    <string name="mission_desc_walk_5000">Walk 5,000 steps</string>
+    <string name="mission_desc_walk_12000">Walk 12,000 steps</string>
+    <string name="mission_desc_reach_wave_30">Reach Wave 30</string>
+    <string name="mission_desc_kill_500_enemies">Kill 500 enemies</string>
+    <string name="mission_desc_spend_5000_workshop">Spend 5,000 Steps on Workshop</string>
+    <string name="mission_desc_complete_research">Complete a Lab research</string>
+    <!-- UltimateWeaponType (6) -->
+    <string name="uw_desc_death_wave">Massive damage pulse radiating outward, damages enemies in radius</string>
+    <string name="uw_desc_chain_lightning">Arcing electrical damage chaining between enemies</string>
+    <string name="uw_desc_black_hole">Gravity well pulling enemies inward with sustained damage</string>
+    <string name="uw_desc_chrono_field">Slows all enemies for duration; lower factor = stronger slow</string>
+    <string name="uw_desc_poison_swamp" formatted="false">Toxic area dealing % max-health damage per second</string>
+    <string name="uw_desc_golden_ziggurat">Cash bonus + damage boost for duration</string>
+    <!-- i18n #34 phase 3: milestone names (category G) -->
+    <string name="milestone_name_first_steps">First Steps</string>
+    <string name="milestone_name_morning_jogger">Morning Jogger</string>
+    <string name="milestone_name_trail_blazer">Trail Blazer</string>
+    <string name="milestone_name_marathon_walker">Marathon Walker</string>
+    <string name="milestone_name_iron_soles">Iron Soles</string>
+    <string name="milestone_name_globe_trotter">Globe Trotter</string>
+    <!-- i18n #34 phase 3: cosmetic names/descriptions (category G) -->
+    <string name="cosmetic_name_zig_jade">Jade Ziggurat</string>
+    <string name="cosmetic_desc_zig_jade">Deep jade stone with pale highlights</string>
+    <string name="cosmetic_name_lapis_lazuli_skin">Lapis Lazuli Ziggurat Skin</string>
+    <string name="cosmetic_desc_lapis_lazuli_skin">Deep lapis lazuli stone with pyrite-gold flecks</string>
+    <string name="cosmetic_name_garden_ziggurat_skin">Garden Ziggurat Skin</string>
+    <string name="cosmetic_desc_garden_ziggurat_skin">Cascading hanging gardens draped over terracotta stone</string>
+    <string name="cosmetic_name_sandals_of_gilgamesh">Sandals of Gilgamesh</string>
+    <string name="cosmetic_desc_sandals_of_gilgamesh">Bronze ziggurat in honour of Gilgamesh, whose sandals walked the edges of the world</string>
+    <string name="cosmetic_name_zig_obsidian">Obsidian Ziggurat</string>
+    <string name="cosmetic_desc_zig_obsidian">Dark volcanic stone</string>
+    <string name="cosmetic_name_zig_crystal">Crystal Ziggurat</string>
+    <string name="cosmetic_desc_zig_crystal">Translucent crystal layers</string>
+    <string name="cosmetic_name_zig_golden">Golden Ziggurat</string>
+    <string name="cosmetic_desc_zig_golden">Pure gold plating</string>
+    <!-- i18n #34 phase 3: card effect descriptions (category G) -->
+    <string name="card_effect_iron_skin">+%1$d Defense Absolute</string>
+    <string name="card_effect_sharp_shooter">+%1$d%% Critical Chance</string>
+    <string name="card_effect_cash_grab">+%1$d%% Cash from kills</string>
+    <string name="card_effect_vampiric_touch">+%1$d%% Lifesteal</string>
+    <string name="card_effect_chain_reaction">+%1$d Bounce Shot targets</string>
+    <string name="card_effect_second_wind">Revive once at %1$d%% HP</string>
+    <string name="card_effect_walking_fortress">+%1$d%% Health, -%2$d%% Attack Speed</string>
+    <string name="card_effect_glass_cannon">+%1$d%% Damage, -%2$d%% Health</string>
+    <string name="card_effect_step_surge">Earn %1$sx Gems this round</string>
+    <!-- i18n #34 phase 3: enum display names (category G) -->
+    <string name="upgrade_name_damage">Damage</string>
+    <string name="upgrade_name_attack_speed">Attack Speed</string>
+    <string name="upgrade_name_critical_chance">Critical Chance</string>
+    <string name="upgrade_name_critical_factor">Critical Factor</string>
+    <string name="upgrade_name_range">Range</string>
+    <string name="upgrade_name_multishot">Multishot</string>
+    <string name="upgrade_name_bounce_shot">Bounce Shot</string>
+    <string name="upgrade_name_damage_per_meter">Damage Per Meter</string>
+    <string name="upgrade_name_rapid_fire">Rapid Fire</string>
+    <string name="upgrade_name_health">Health</string>
+    <string name="upgrade_name_health_regen">Health Regen</string>
+    <string name="upgrade_name_defense_percent">Defense Percent</string>
+    <string name="upgrade_name_defense_absolute">Defense Absolute</string>
+    <string name="upgrade_name_knockback">Knockback</string>
+    <string name="upgrade_name_thorn_damage">Thorn Damage</string>
+    <string name="upgrade_name_orbs">Orbs</string>
+    <string name="upgrade_name_lifesteal">Lifesteal</string>
+    <string name="upgrade_name_death_defy">Death Defy</string>
+    <string name="upgrade_name_cash_bonus">Cash Bonus</string>
+    <string name="upgrade_name_cash_per_wave">Cash Per Wave</string>
+    <string name="upgrade_name_interest">Interest</string>
+    <string name="upgrade_name_free_upgrades">Free Upgrades</string>
+    <string name="upgrade_name_recovery_packages">Recovery Packages</string>
+    <string name="upgrade_name_step_multiplier">Step Multiplier</string>
+    <string name="research_name_damage_research">Damage Research</string>
+    <string name="research_name_health_research">Health Research</string>
+    <string name="research_name_cash_research">Cash Research</string>
+    <string name="research_name_step_efficiency">Step Efficiency</string>
+    <string name="research_name_wave_skip">Wave Skip</string>
+    <string name="research_name_auto_upgrade_ai">Auto Upgrade Ai</string>
+    <string name="research_name_uw_cooldown">Uw Cooldown</string>
+    <string name="research_name_critical_research">Critical Research</string>
+    <string name="research_name_regen_research">Regen Research</string>
+    <string name="research_name_enemy_intel">Enemy Intel</string>
+    <string name="research_name_multishot_research">Multishot Research</string>
+    <string name="research_name_bounce_research">Bounce Research</string>
+    <string name="uw_name_death_wave">Death Wave</string>
+    <string name="uw_name_chain_lightning">Chain Lightning</string>
+    <string name="uw_name_black_hole">Black Hole</string>
+    <string name="uw_name_chrono_field">Chrono Field</string>
+    <string name="uw_name_poison_swamp">Poison Swamp</string>
+    <string name="uw_name_golden_ziggurat">Golden Ziggurat</string>
+    <string name="card_name_iron_skin">Iron Skin</string>
+    <string name="card_name_sharp_shooter">Sharp Shooter</string>
+    <string name="card_name_cash_grab">Cash Grab</string>
+    <string name="card_name_vampiric_touch">Vampiric Touch</string>
+    <string name="card_name_chain_reaction">Chain Reaction</string>
+    <string name="card_name_second_wind">Second Wind</string>
+    <string name="card_name_walking_fortress">Walking Fortress</string>
+    <string name="card_name_glass_cannon">Glass Cannon</string>
+    <string name="card_name_step_surge">Step Surge</string>
+    <string name="biome_name_hanging_gardens">Hanging Gardens</string>
+    <string name="biome_name_burning_sands">Burning Sands</string>
+    <string name="biome_name_frozen_ziggurats">Frozen Ziggurats</string>
+    <string name="biome_name_underworld_of_kur">Underworld Of Kur</string>
+    <string name="biome_name_celestial_gate">Celestial Gate</string>
+    <string name="battle_condition_orb_resistance">Orb Resistance</string>
+    <string name="battle_condition_knockback_resistance">Knockback Resistance</string>
+    <string name="battle_condition_armored_enemies">Armored Enemies</string>
+    <string name="battle_condition_thorn_resistance">Thorn Resistance</string>
+    <string name="battle_condition_more_bosses">More Bosses</string>
+    <string name="battle_condition_enemy_speed">Enemy Speed</string>
+    <string name="battle_condition_enemy_attack_speed">Enemy Attack Speed</string>
 </resources>

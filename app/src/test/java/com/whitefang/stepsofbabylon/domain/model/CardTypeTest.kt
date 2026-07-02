@@ -1,31 +1,26 @@
 package com.whitefang.stepsofbabylon.domain.model
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * Regression coverage for [CardType.effectDescriptionAtLevel] (#53).
+ * Numeric-lerp coverage for [CardType.effectAtLevel] / [CardType.secondaryAtLevel] (#53).
  *
- * Pre-fix the Cards UI rendered the hardcoded [CardType.effectLv1] string regardless of
- * `OwnedCard.level`, so a player who upgraded a card from Lv1 to Lv2 saw the same
- * "+10% Defense Absolute" text even though `ApplyCardEffects` correctly applied the
- * scaled value. The fix added [CardType.effectDescriptionAtLevel] as the single source of
- * truth for the level-aware user-facing description.
+ * The level-aware **display string** used to live on the enum as `effectDescriptionAtLevel`;
+ * #34 (i18n phase 3 G) moved that string-building to the presentation resolver
+ * `CardType.effectDescription(level)` (which reads @StringRes templates and reuses the numeric
+ * accessors below). The exact-English string assertions now live in
+ * `presentation/cards/CardEffectDescriptionTest` (Robolectric). This file keeps the pure-domain
+ * numeric contract: the interpolation values (post-`.toInt()` truncation, which the resolver
+ * consumes verbatim), the SECOND_WIND 100% cap, and the Lv1/Lv7 endpoint constants.
  *
- * Each card has 3 named tests (Lv1 / Lv4 / Lv7):
- *  - **Lv1** must equal [CardType.effectLv1] verbatim — players who haven't upgraded
- *    yet must see the unchanged baseline string. This is the no-regression contract.
- *  - **Lv4** is the midpoint and must be visibly different from both Lv1 and Lv7.
- *    Catches any "stuck on Lv1" or "jumps straight to Lv7" regressions.
- *  - **Lv7** must equal [CardType.effectLv7] verbatim — the curve must hit the documented
- *    cap exactly, not 1% off because of `.toInt()` rounding drift.
- *
- * Plus a smoke test that every (CardType × level 1..maxLevel) pair produces a non-empty
- * description — catches the case where a future `when` branch is missed when adding a new
- * card type.
+ * Endpoint contract per card:
+ *  - **Lv1** — the un-upgraded baseline. `effectAtLevel(1).toInt()` must match the number baked
+ *    into [CardType.effectLv1] (the no-regression contract the resolver preserves).
+ *  - **Lv4** — the midpoint; asserts the interpolation truncation the resolver renders.
+ *  - **Lv7** — the documented cap. Must hit exactly, not 1 off from `.toInt()` drift.
  */
 class CardTypeTest {
     @Test
@@ -34,251 +29,137 @@ class CardTypeTest {
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // IRON_SKIN — COMMON, primary-only
-    // ──────────────────────────────────────────────────────────────────────────
-
-    // #21: IRON_SKIN adds a FLAT defenseAbsolute value (ApplyCardEffects: `defenseAbsolute + v`,
-    // no /100), and defenseAbsolute is definitionally flat "damage blocked per hit". The `%`
-    // glyph in the old label was a unit error — the player saw a percentage but got a flat
-    // value. The label is corrected to drop `%`; the gameplay math is unchanged.
-
-    @Test
-    fun `IRON_SKIN Lv1 description matches effectLv1`() {
-        assertEquals("+10 Defense Absolute", CardType.IRON_SKIN.effectDescriptionAtLevel(1))
-        assertEquals(CardType.IRON_SKIN.effectLv1, CardType.IRON_SKIN.effectDescriptionAtLevel(1))
-    }
-
-    @Test
-    fun `IRON_SKIN Lv4 shows interpolated value`() {
-        // valueLv1=10, valueLv7=42 → at Lv4: 10 + 32 × 3/6 = 26
-        assertEquals("+26 Defense Absolute", CardType.IRON_SKIN.effectDescriptionAtLevel(4))
-    }
-
-    @Test
-    fun `IRON_SKIN Lv7 description matches effectLv7`() {
-        assertEquals("+42 Defense Absolute", CardType.IRON_SKIN.effectDescriptionAtLevel(7))
-        assertEquals(CardType.IRON_SKIN.effectLv7, CardType.IRON_SKIN.effectDescriptionAtLevel(7))
-    }
-
-    @Test
-    fun `R21 IRON_SKIN label has no percent sign because it applies a flat value`() {
-        // The flat-vs-percent unit fix (#21). defenseAbsolute is flat damage blocked; the `%`
-        // glyph misrepresented it. Guards against a future reintroduction of the unit error.
-        for (level in 1..CardType.IRON_SKIN.maxLevel) {
-            val desc = CardType.IRON_SKIN.effectDescriptionAtLevel(level)
-            assertFalse(desc.contains("%"), "IRON_SKIN Lv$level must not show a percent sign: \"$desc\"")
-        }
-        assertFalse(CardType.IRON_SKIN.effectLv1.contains("%"), "effectLv1 must not contain %")
-        assertFalse(CardType.IRON_SKIN.effectLv7.contains("%"), "effectLv7 must not contain %")
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // SHARP_SHOOTER — COMMON, primary-only
+    // IRON_SKIN — COMMON, primary-only. valueLv1=10, valueLv7=42
     // ──────────────────────────────────────────────────────────────────────────
 
     @Test
-    fun `SHARP_SHOOTER Lv1 description matches effectLv1`() {
-        assertEquals("+15% Critical Chance", CardType.SHARP_SHOOTER.effectDescriptionAtLevel(1))
-    }
-
-    @Test
-    fun `SHARP_SHOOTER Lv4 shows interpolated value`() {
-        // valueLv1=15, valueLv7=45 → at Lv4: 15 + 30 × 3/6 = 30
-        assertEquals("+30% Critical Chance", CardType.SHARP_SHOOTER.effectDescriptionAtLevel(4))
-    }
-
-    @Test
-    fun `SHARP_SHOOTER Lv7 description matches effectLv7`() {
-        assertEquals("+45% Critical Chance", CardType.SHARP_SHOOTER.effectDescriptionAtLevel(7))
+    fun `IRON_SKIN interpolates 10 to 26 to 42 with toInt truncation`() {
+        assertEquals(10, CardType.IRON_SKIN.effectAtLevel(1).toInt())
+        // 10 + 32 × 3/6 = 26
+        assertEquals(26, CardType.IRON_SKIN.effectAtLevel(4).toInt())
+        assertEquals(42, CardType.IRON_SKIN.effectAtLevel(7).toInt())
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // CASH_GRAB — COMMON, primary-only
+    // SHARP_SHOOTER — COMMON, primary-only. valueLv1=15, valueLv7=45
     // ──────────────────────────────────────────────────────────────────────────
 
     @Test
-    fun `CASH_GRAB Lv1 description matches effectLv1`() {
-        assertEquals("+20% Cash from kills", CardType.CASH_GRAB.effectDescriptionAtLevel(1))
-    }
-
-    @Test
-    fun `CASH_GRAB Lv4 shows interpolated value`() {
-        // valueLv1=20, valueLv7=65 → at Lv4: 20 + 45 × 3/6 = 42 (truncated from 42.5)
-        assertEquals("+42% Cash from kills", CardType.CASH_GRAB.effectDescriptionAtLevel(4))
-    }
-
-    @Test
-    fun `CASH_GRAB Lv7 description matches effectLv7`() {
-        assertEquals("+65% Cash from kills", CardType.CASH_GRAB.effectDescriptionAtLevel(7))
+    fun `SHARP_SHOOTER interpolates 15 to 30 to 45`() {
+        assertEquals(15, CardType.SHARP_SHOOTER.effectAtLevel(1).toInt())
+        // 15 + 30 × 3/6 = 30
+        assertEquals(30, CardType.SHARP_SHOOTER.effectAtLevel(4).toInt())
+        assertEquals(45, CardType.SHARP_SHOOTER.effectAtLevel(7).toInt())
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // VAMPIRIC_TOUCH — RARE, primary-only
+    // CASH_GRAB — COMMON, primary-only. valueLv1=20, valueLv7=65
     // ──────────────────────────────────────────────────────────────────────────
 
     @Test
-    fun `VAMPIRIC_TOUCH Lv1 description matches effectLv1`() {
-        assertEquals("+5% Lifesteal", CardType.VAMPIRIC_TOUCH.effectDescriptionAtLevel(1))
-    }
-
-    @Test
-    fun `VAMPIRIC_TOUCH Lv4 shows interpolated value`() {
-        // valueLv1=5, valueLv7=20 → at Lv4: 5 + 15 × 3/6 = 12 (truncated from 12.5)
-        assertEquals("+12% Lifesteal", CardType.VAMPIRIC_TOUCH.effectDescriptionAtLevel(4))
-    }
-
-    @Test
-    fun `VAMPIRIC_TOUCH Lv7 description matches effectLv7`() {
-        assertEquals("+20% Lifesteal", CardType.VAMPIRIC_TOUCH.effectDescriptionAtLevel(7))
+    fun `CASH_GRAB interpolates 20 to 42 to 65 truncating 42_5`() {
+        assertEquals(20, CardType.CASH_GRAB.effectAtLevel(1).toInt())
+        // 20 + 45 × 3/6 = 42.5 → 42
+        assertEquals(42, CardType.CASH_GRAB.effectAtLevel(4).toInt())
+        assertEquals(65, CardType.CASH_GRAB.effectAtLevel(7).toInt())
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // CHAIN_REACTION — RARE, integer count
+    // VAMPIRIC_TOUCH — RARE, primary-only. valueLv1=5, valueLv7=20
     // ──────────────────────────────────────────────────────────────────────────
 
     @Test
-    fun `CHAIN_REACTION Lv1 description matches effectLv1`() {
-        assertEquals("+2 Bounce Shot targets", CardType.CHAIN_REACTION.effectDescriptionAtLevel(1))
-    }
-
-    @Test
-    fun `CHAIN_REACTION Lv4 shows interpolated count`() {
-        // valueLv1=2, valueLv7=5 → at Lv4: 2 + 3 × 3/6 = 3 (truncated from 3.5; matches
-        // ApplyCardEffects.invoke which casts to Int via v.toInt() at the same level)
-        assertEquals("+3 Bounce Shot targets", CardType.CHAIN_REACTION.effectDescriptionAtLevel(4))
-    }
-
-    @Test
-    fun `CHAIN_REACTION Lv7 description matches effectLv7`() {
-        assertEquals("+5 Bounce Shot targets", CardType.CHAIN_REACTION.effectDescriptionAtLevel(7))
+    fun `VAMPIRIC_TOUCH interpolates 5 to 12 to 20 truncating 12_5`() {
+        assertEquals(5, CardType.VAMPIRIC_TOUCH.effectAtLevel(1).toInt())
+        // 5 + 15 × 3/6 = 12.5 → 12
+        assertEquals(12, CardType.VAMPIRIC_TOUCH.effectAtLevel(4).toInt())
+        assertEquals(20, CardType.VAMPIRIC_TOUCH.effectAtLevel(7).toInt())
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // SECOND_WIND — RARE, primary-only with 100 % cap
+    // CHAIN_REACTION — RARE, integer count. valueLv1=2, valueLv7=5
     // ──────────────────────────────────────────────────────────────────────────
 
     @Test
-    fun `SECOND_WIND Lv1 description matches effectLv1`() {
-        assertEquals("Revive once at 50% HP", CardType.SECOND_WIND.effectDescriptionAtLevel(1))
-    }
-
-    @Test
-    fun `SECOND_WIND Lv4 shows interpolated value`() {
-        // valueLv1=50, valueLv7=100 → at Lv4: 50 + 50 × 3/6 = 75
-        assertEquals("Revive once at 75% HP", CardType.SECOND_WIND.effectDescriptionAtLevel(4))
-    }
-
-    @Test
-    fun `SECOND_WIND Lv7 description matches effectLv7 and respects 100 percent cap`() {
-        assertEquals("Revive once at 100% HP", CardType.SECOND_WIND.effectDescriptionAtLevel(7))
+    fun `CHAIN_REACTION interpolates 2 to 3 to 5 truncating 3_5`() {
+        assertEquals(2, CardType.CHAIN_REACTION.effectAtLevel(1).toInt())
+        // 2 + 3 × 3/6 = 3.5 → 3 (matches ApplyCardEffects casting to Int at the same level)
+        assertEquals(3, CardType.CHAIN_REACTION.effectAtLevel(4).toInt())
+        assertEquals(5, CardType.CHAIN_REACTION.effectAtLevel(7).toInt())
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // WALKING_FORTRESS — EPIC, primary buff + secondary debuff
+    // SECOND_WIND — RARE, primary-only with 100% cap. valueLv1=50, valueLv7=100
     // ──────────────────────────────────────────────────────────────────────────
 
     @Test
-    fun `WALKING_FORTRESS Lv1 description matches effectLv1`() {
-        assertEquals("+50% Health, -20% Attack Speed", CardType.WALKING_FORTRESS.effectDescriptionAtLevel(1))
-    }
-
-    @Test
-    fun `WALKING_FORTRESS Lv4 shows both interpolated values`() {
-        // primary 50→125 at Lv4: 50 + 75 × 3/6 = 87 (truncated from 87.5)
-        // secondary 20→5 at Lv4: 20 + (5-20) × 3/6 = 12 (truncated from 12.5)
-        assertEquals("+87% Health, -12% Attack Speed", CardType.WALKING_FORTRESS.effectDescriptionAtLevel(4))
-    }
-
-    @Test
-    fun `WALKING_FORTRESS Lv7 description matches effectLv7`() {
-        assertEquals("+125% Health, -5% Attack Speed", CardType.WALKING_FORTRESS.effectDescriptionAtLevel(7))
+    fun `SECOND_WIND interpolates 50 to 75 to 100 and respects the 100 percent cap`() {
+        assertEquals(50, CardType.SECOND_WIND.effectAtLevel(1).toInt())
+        // 50 + 50 × 3/6 = 75
+        assertEquals(75, CardType.SECOND_WIND.effectAtLevel(4).toInt())
+        assertEquals(100, CardType.SECOND_WIND.effectAtLevel(7).toInt())
+        // The linear curve would exceed 100 past Lv7; the cap must clamp it.
+        assertEquals(100.0, CardType.SECOND_WIND.effectAtLevel(7))
+        assertTrue(CardType.SECOND_WIND.effectAtLevel(10) <= 100.0, "SECOND_WIND must cap at 100")
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // GLASS_CANNON — EPIC, primary buff + secondary debuff
+    // WALKING_FORTRESS — EPIC, primary buff + secondary debuff.
+    // primary 50→125, secondary 20→5
     // ──────────────────────────────────────────────────────────────────────────
 
     @Test
-    fun `GLASS_CANNON Lv1 description matches effectLv1`() {
-        assertEquals("+80% Damage, -40% Health", CardType.GLASS_CANNON.effectDescriptionAtLevel(1))
-    }
-
-    @Test
-    fun `GLASS_CANNON Lv4 shows both interpolated values`() {
-        // primary 80→140 at Lv4: 80 + 60 × 3/6 = 110
-        // secondary 40→10 at Lv4: 40 + (10-40) × 3/6 = 25
-        assertEquals("+110% Damage, -25% Health", CardType.GLASS_CANNON.effectDescriptionAtLevel(4))
-    }
-
-    @Test
-    fun `GLASS_CANNON Lv7 description matches effectLv7`() {
-        assertEquals("+140% Damage, -10% Health", CardType.GLASS_CANNON.effectDescriptionAtLevel(7))
+    fun `WALKING_FORTRESS interpolates both primary and secondary`() {
+        assertEquals(50, CardType.WALKING_FORTRESS.effectAtLevel(1).toInt())
+        assertEquals(20, CardType.WALKING_FORTRESS.secondaryAtLevel(1).toInt())
+        // primary 50 + 75 × 3/6 = 87.5 → 87 ; secondary 20 + (5-20) × 3/6 = 12.5 → 12
+        assertEquals(87, CardType.WALKING_FORTRESS.effectAtLevel(4).toInt())
+        assertEquals(12, CardType.WALKING_FORTRESS.secondaryAtLevel(4).toInt())
+        assertEquals(125, CardType.WALKING_FORTRESS.effectAtLevel(7).toInt())
+        assertEquals(5, CardType.WALKING_FORTRESS.secondaryAtLevel(7).toInt())
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // STEP_SURGE — EPIC, multiplier with one-decimal formatting (Locale.ROOT)
+    // GLASS_CANNON — EPIC, primary buff + secondary debuff.
+    // primary 80→140, secondary 40→10
     // ──────────────────────────────────────────────────────────────────────────
 
     @Test
-    fun `STEP_SURGE Lv1 description matches effectLv1 and drops trailing zero`() {
-        assertEquals("Earn 2x Gems this round", CardType.STEP_SURGE.effectDescriptionAtLevel(1))
-    }
-
-    @Test
-    fun `STEP_SURGE Lv4 shows fractional multiplier with one decimal`() {
-        // valueLv1=2.0, valueLv7=5.0 → at Lv4: 2.0 + 3.0 × 3/6 = 3.5
-        assertEquals("Earn 3.5x Gems this round", CardType.STEP_SURGE.effectDescriptionAtLevel(4))
-    }
-
-    @Test
-    fun `STEP_SURGE Lv7 description matches effectLv7`() {
-        assertEquals("Earn 5x Gems this round", CardType.STEP_SURGE.effectDescriptionAtLevel(7))
+    fun `GLASS_CANNON interpolates both primary and secondary`() {
+        assertEquals(80, CardType.GLASS_CANNON.effectAtLevel(1).toInt())
+        assertEquals(40, CardType.GLASS_CANNON.secondaryAtLevel(1).toInt())
+        // primary 80 + 60 × 3/6 = 110 ; secondary 40 + (10-40) × 3/6 = 25
+        assertEquals(110, CardType.GLASS_CANNON.effectAtLevel(4).toInt())
+        assertEquals(25, CardType.GLASS_CANNON.secondaryAtLevel(4).toInt())
+        assertEquals(140, CardType.GLASS_CANNON.effectAtLevel(7).toInt())
+        assertEquals(10, CardType.GLASS_CANNON.secondaryAtLevel(7).toInt())
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Smoke + cross-card invariants
+    // STEP_SURGE — EPIC, multiplier. valueLv1=2.0, valueLv7=5.0
     // ──────────────────────────────────────────────────────────────────────────
 
     @Test
-    fun `every card produces a non-empty description at every level 1 to maxLevel`() {
-        // Catches a future when-branch omission if a new CardType is added without a
-        // description case — Kotlin's `when` on enum is exhaustive at compile time, so
-        // this test exists to assert the runtime output is meaningful (not just non-null).
-        for (type in CardType.entries) {
-            for (level in 1..type.maxLevel) {
-                val desc = type.effectDescriptionAtLevel(level)
-                assertTrue(desc.isNotBlank(), "$type at Lv$level produced blank description")
-            }
-        }
+    fun `STEP_SURGE interpolates 2_0 to 3_5 to 5_0`() {
+        assertEquals(2.0, CardType.STEP_SURGE.effectAtLevel(1))
+        // 2.0 + 3.0 × 3/6 = 3.5 (the resolver's formatMultiplier renders this as "3.5")
+        assertEquals(3.5, CardType.STEP_SURGE.effectAtLevel(4))
+        assertEquals(5.0, CardType.STEP_SURGE.effectAtLevel(7))
     }
 
+    // ──────────────────────────────────────────────────────────────────────────
+    // Cross-card invariants
+    // ──────────────────────────────────────────────────────────────────────────
+
     @Test
-    fun `Lv1 and Lv7 descriptions are different for every card`() {
-        // Direct regression for #53 — pre-fix every level rendered effectLv1 verbatim, so
-        // Lv1 and Lv7 strings collided. This test would have failed on `main` pre-fix.
+    fun `Lv1 and Lv7 primary values differ for every card`() {
+        // Direct regression for #53 — pre-fix every level rendered effectLv1 verbatim; the
+        // numeric curve must actually move between the endpoints so the resolver can too.
         for (type in CardType.entries) {
             assertNotEquals(
-                type.effectDescriptionAtLevel(1),
-                type.effectDescriptionAtLevel(type.maxLevel),
-                "$type Lv1 and Lv${type.maxLevel} descriptions must differ",
-            )
-        }
-    }
-
-    @Test
-    fun `Lv4 description is different from both Lv1 and Lv7 for cards with continuous progression`() {
-        // CHAIN_REACTION uses integer truncation so Lv4 (3) collides with Lv3 (3) but not
-        // with Lv1 (2) or Lv7 (5); excluded from the "different from both ends" guard
-        // since the .toInt() collapse is intentional. Every other card has a continuous
-        // double progression that should produce a visibly different mid-curve string.
-        val continuousCards = CardType.entries - CardType.CHAIN_REACTION
-        for (type in continuousCards) {
-            val mid = type.effectDescriptionAtLevel(4)
-            assertNotEquals(type.effectDescriptionAtLevel(1), mid, "$type Lv4 must differ from Lv1")
-            assertNotEquals(
-                type.effectDescriptionAtLevel(type.maxLevel),
-                mid,
-                "$type Lv4 must differ from Lv${type.maxLevel}",
+                type.effectAtLevel(1).toInt(),
+                type.effectAtLevel(type.maxLevel).toInt(),
+                "$type Lv1 and Lv${type.maxLevel} primary values must differ",
             )
         }
     }

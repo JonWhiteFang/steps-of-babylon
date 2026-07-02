@@ -5,9 +5,11 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import com.whitefang.stepsofbabylon.R
 import com.whitefang.stepsofbabylon.data.NotificationPreferences
+import com.whitefang.stepsofbabylon.domain.model.Biome
 import com.whitefang.stepsofbabylon.presentation.MainActivity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -41,9 +43,14 @@ class MilestoneNotificationManager
 
         fun notifyNewBestWave(
             wave: Int,
-            biomeName: String,
+            biome: Biome,
         ) {
             if (!notificationPreferences.isMilestoneAlertsEnabled()) return
+            // i18n(#34): resolve the biome display name at the notification Context boundary. The VM
+            // (no Context) can't call stringResource, and the service layer must stay free of the
+            // presentation-layer `Biome.nameRes()` extension — so map Biome→R.string here. Values are
+            // byte-identical to the old `Biome.name.toDisplayName()` result the VM used to pass.
+            val biomeName = context.getString(biomeNameRes(biome))
             val intent =
                 PendingIntent.getActivity(
                     context,
@@ -62,6 +69,22 @@ class MilestoneNotificationManager
                     .build()
             notificationManager.notify(WAVE_NOTIFICATION_ID, notification)
         }
+
+        /**
+         * i18n(#34): Biome→display-name string-resource map, kept in the service layer so it can
+         * resolve via the manager's Context without importing the presentation-layer `Biome.nameRes()`
+         * extension. Mirrors those resource keys exactly (same `biome_name_*` values), including the
+         * pre-existing `UNDERWORLD_OF_KUR` → "Underworld Of Kur" quirk. Exhaustive `when` (no `else`).
+         */
+        @StringRes
+        private fun biomeNameRes(biome: Biome): Int =
+            when (biome) {
+                Biome.HANGING_GARDENS -> R.string.biome_name_hanging_gardens
+                Biome.BURNING_SANDS -> R.string.biome_name_burning_sands
+                Biome.FROZEN_ZIGGURATS -> R.string.biome_name_frozen_ziggurats
+                Biome.UNDERWORLD_OF_KUR -> R.string.biome_name_underworld_of_kur
+                Biome.CELESTIAL_GATE -> R.string.biome_name_celestial_gate
+            }
 
         fun notifyMilestoneAchieved(milestoneName: String) {
             if (!notificationPreferences.isMilestoneAlertsEnabled()) return

@@ -41,8 +41,8 @@ import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebration
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.nameRes
 import com.whitefang.stepsofbabylon.presentation.ui.theme.Gold
-import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 
 @Composable
 fun UnclaimedSuppliesScreen(viewModel: UnclaimedSuppliesViewModel = hiltViewModel()) {
@@ -157,7 +157,7 @@ internal fun formatSupplyReward(drop: SupplyDrop): String =
         SupplyDropReward.CARD_COPY -> {
             // #20: rewardAmount is a card-TYPE index, NOT a quantity — resolve the card name + "x1".
             val cardType = CardType.entries[drop.rewardAmount % CardType.entries.size]
-            stringResource(R.string.supplies_reward_card_copy, cardType.name.toDisplayName())
+            stringResource(R.string.supplies_reward_card_copy, stringResource(cardType.nameRes()))
         }
     }
 

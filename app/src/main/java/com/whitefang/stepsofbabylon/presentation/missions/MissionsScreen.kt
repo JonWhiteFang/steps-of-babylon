@@ -34,6 +34,8 @@ import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.descriptionRes
+import com.whitefang.stepsofbabylon.presentation.ui.displayNameRes
 import com.whitefang.stepsofbabylon.presentation.ui.formatCount
 import com.whitefang.stepsofbabylon.presentation.ui.formatRewardParts
 import com.whitefang.stepsofbabylon.presentation.ui.resolve
@@ -125,7 +127,11 @@ private fun MissionCard(
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(mission.description, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                Text(
+                    stringResource(mission.type.descriptionRes()),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                )
                 if (mission.claimed) {
                     Icon(
                         Icons.Filled.CheckCircle,
@@ -210,7 +216,11 @@ private fun MilestoneCard(
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(milestone.displayName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                Text(
+                    stringResource(milestone.displayNameRes()),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                )
                 if (ms.isClaimed) {
                     Icon(
                         Icons.Filled.CheckCircle,

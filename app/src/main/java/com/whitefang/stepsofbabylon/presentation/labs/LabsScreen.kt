@@ -38,17 +38,17 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.whitefang.stepsofbabylon.R
-import com.whitefang.stepsofbabylon.domain.model.ResearchType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyCost
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyType
 import com.whitefang.stepsofbabylon.presentation.ui.CurrencyValue
 import com.whitefang.stepsofbabylon.presentation.ui.ErrorState
 import com.whitefang.stepsofbabylon.presentation.ui.LoadingBox
+import com.whitefang.stepsofbabylon.presentation.ui.descriptionRes
+import com.whitefang.stepsofbabylon.presentation.ui.nameRes
 import com.whitefang.stepsofbabylon.presentation.ui.pulseScale
 import com.whitefang.stepsofbabylon.presentation.ui.rememberHaptics
 import com.whitefang.stepsofbabylon.presentation.ui.rememberPulse
 import com.whitefang.stepsofbabylon.presentation.ui.resolve
-import com.whitefang.stepsofbabylon.presentation.ui.toDisplayName
 import java.util.Locale
 
 @Composable
@@ -149,7 +149,7 @@ private fun ResearchCard(
     ) {
         Column(Modifier.padding(12.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(formatName(info.type), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(info.type.nameRes()), style = MaterialTheme.typography.titleSmall)
                 when {
                     info.isMaxed -> {
                         Text(
@@ -168,7 +168,7 @@ private fun ResearchCard(
                 }
             }
             Text(
-                info.type.description,
+                stringResource(info.type.descriptionRes()),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -258,8 +258,6 @@ private fun ResearchCard(
         }
     }
 }
-
-private fun formatName(type: ResearchType): String = type.name.toDisplayName()
 
 // i18n(#34): "Done!" early-return + the h/m/s duration units are localized. The h/m/s
 // values are small (≤ 59 for m/s, hours bounded by lab durations) — .toInt() for the %d args.

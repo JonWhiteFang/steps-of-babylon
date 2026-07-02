@@ -113,7 +113,7 @@ class MissionsViewModel
                                 missions.map { m ->
                                     MissionDisplayInfo(
                                         m.id,
-                                        m.type.description,
+                                        m.type,
                                         m.target,
                                         m.progress,
                                         m.rewardGems,
