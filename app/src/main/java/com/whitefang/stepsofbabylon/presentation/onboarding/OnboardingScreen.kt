@@ -181,13 +181,13 @@ fun OnboardingScreen(
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    slide.title,
+                                    stringResource(slide.titleRes),
                                     style = MaterialTheme.typography.headlineMedium,
                                     textAlign = TextAlign.Center,
                                 )
                                 Spacer(Modifier.height(16.dp))
                                 Text(
-                                    slide.body,
+                                    stringResource(slide.bodyRes),
                                     style = MaterialTheme.typography.bodyLarge,
                                     textAlign = TextAlign.Center,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
