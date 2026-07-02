@@ -1218,10 +1218,10 @@ git commit -m "i18n(#34): thread resolved wave labels into effect ctors via engi
 
 ---
 
-# PR3e — domain-model display strings (category G)
+# PR3e — domain-model display strings + enum names + Workshop stat units (categories G + G-names + D-workshop)
 
 **Branch:** `i18n/34-pr3e-domain-strings` (cut from `main` **after PR3d merges**).
-**Scope:** enum→`@StringRes` resolvers at the **presentation boundary** for UpgradeType/ResearchType/DailyMissionType/UltimateWeaponType descriptions, Milestone.displayName; a data-layer resource lookup for Cosmetic name/description; and the CardType effect-description numeric-split (the hard sub-item). Domain stays Android-free (`DomainPurityTest`). This PR may split into several commits; keep it one branch/PR unless it grows unwieldy.
+**Scope:** enum→`@StringRes` resolvers at the **presentation boundary** for (E1) UpgradeType/ResearchType/DailyMissionType/UltimateWeaponType **descriptions**, (E2) Milestone.displayName, (E3) Cosmetic name/description, (E4) the CardType effect-description numeric-split + DTO surgery, **(E6) enum DISPLAY NAMES via `.toDisplayName()`** (UpgradeType/ResearchType/UltimateWeaponType/CardType/Biome/BattleCondition — SCOPE-1), and **(E7) WorkshopViewModel stat units** (CG-09). Domain stays Android-free (`DomainPurityTest`). This is the **biggest PR** — it is fine to keep it one branch with per-task commits; split into a follow-on PR only if it grows unwieldy (E6/E7 could become a PR3e-2 if needed — but they must land before the phase is "100%"). E6/E7 were added by developer decision (2026-07-02) so the phase is genuinely locale-complete (no enum proper-names or stat-unit labels leaking English).
 
 **Precedent:** `presentation/ui/EnumLabels.kt` already houses `@StringRes` extension fns on enums (`UpgradeCategory.labelRes()` etc., #260) — put the new resolvers there. Pattern mirror: `CurrencyType.label()` (`@StringRes fun` resolved via `stringResource` at the call site).
 
@@ -1437,11 +1437,143 @@ git commit -m "i18n(#34): CardType effect descriptions via DTO type+level + @Str
 
 ---
 
+### Task E6: Enum DISPLAY-NAME resolvers (category G-names — review SCOPE-1, developer-approved into PR3e)
+
+The `.toDisplayName()` extension title-cases the raw enum constant and renders on core screens — a
+non-English locale would still show "Rapid Fire"/"Iron Skin"/"Chain Lightning"/"Hanging Gardens" in
+English. Add `@StringRes` name resolvers (mirroring `descriptionRes()` from E1 and the existing
+`labelRes()` patterns in `EnumLabels.kt`) and swap the render sites. **Output must be byte-identical to
+today's `.toDisplayName()` result** (verify each entry — note the pre-existing quirk `UW_COOLDOWN → "U W
+Cooldown"` and `UNDERWORLD_OF_KUR → "Underworld Of Kur"`; reproduce them EXACTLY, warts and all — this
+is extraction, not a copy fix).
+
+**Files:**
+- `presentation/ui/EnumLabels.kt` (add 6 `nameRes()` resolvers) · `strings.xml`.
+- Render sites (10, all confirmed by ground truth): `workshop/UpgradeCard.kt:94` (UpgradeType),
+  `battle/ui/InRoundUpgradeMenu.kt:141` (UpgradeType), `weapons/UltimateWeaponScreen.kt:128`
+  (UltimateWeaponType), `labs/LabsScreen.kt:149`+`formatName`/`:259` (ResearchType),
+  `cards/CardsScreen.kt:202,206,253`+`formatName`/`:317` (CardType), `supplies/UnclaimedSuppliesScreen.kt:160`
+  (CardType), `home/TierSelector.kt:44` (Biome) +`:87` (BattleCondition), `battle/BattleViewModel.kt:438`
+  (Biome — **NON-Composable**, feeds a milestone notification → resolve via a Context/`AndroidStrings`-style
+  path, NOT `stringResource`; see note).
+
+- [ ] **Step 1: Add name resources (one per rendered entry)**
+
+Add families `upgrade_name_*` (24), `research_name_*` (11 surfaced), `uw_name_*` (6), `card_name_*` (9),
+`biome_name_*` (5), `battle_condition_*` (7) — each value the EXACT `.toDisplayName()` output from ground
+truth (e.g. `<string name="uw_cooldown_research_name">U W Cooldown</string>` preserving the quirk; use a
+sensible key even where the display text is odd). Reproduce ALL entries per the ground-truth lists.
+
+- [ ] **Step 2: Add `@StringRes` `nameRes()` resolvers in `EnumLabels.kt`**
+
+```kotlin
+@StringRes fun UpgradeType.nameRes(): Int = when (this) { /* all 24 */ }
+@StringRes fun ResearchType.nameRes(): Int = when (this) { /* all 12 incl. AUTO_UPGRADE_AI for exhaustiveness */ }
+@StringRes fun UltimateWeaponType.nameRes(): Int = when (this) { /* all 6 */ }
+@StringRes fun CardType.nameRes(): Int = when (this) { /* all 9 */ }
+@StringRes fun Biome.nameRes(): Int = when (this) { /* all 5 */ }
+@StringRes fun BattleCondition.nameRes(): Int = when (this) { /* all 7 */ }
+```
+(Exhaustive `when` — the compiler guarantees no entry is missed. Include coming-soon entries
+AUTO_UPGRADE_AI/CELESTIAL_GATE for exhaustiveness even though they don't currently render.)
+
+- [ ] **Step 3: Swap the render sites**
+
+- The 9 **Composable** sites: replace `X.name.toDisplayName()` / `formatName(X.name)` with
+  `stringResource(X.nameRes())`. For `CardsScreen`'s `formatName(...)` helper (`:317`), either delete it and
+  inline `stringResource(cardType.nameRes())` at `:202/:206/:253`, or make `formatName` take a `CardType`
+  and return `stringResource(it.nameRes())` (it's called from `@Composable` scope). `TierSelector.kt:87`
+  builds a joined condition list inside a `joinToString` — resolve each `stringResource(it.key.nameRes())`
+  in the Composable BEFORE joining (a `stringResource` can't run inside the `joinToString` lambda if that
+  lambda isn't Composable — hoist to a `remember`ed/`map`ped list of resolved strings, mirroring the
+  `UltimateWeaponBar` per-item pattern from phase 2).
+- The 1 **non-Composable** site `battle/BattleViewModel.kt:438` (`Biome.forTier(tier).name.toDisplayName()`
+  feeding `notifyNewBestWave()`): the VM can't call `stringResource`. Resolve via the **notification layer's
+  Context** — the notification manager already has a `Context` (it builds `context.getString(...)` per the
+  phase-1 notif strings). Pass the `Biome` (or its `@StringRes` id) to the notification manager and resolve
+  there, OR resolve in the VM via an injected `Strings`-style provider if one is already available. Grep
+  `notifyNewBestWave` to see what it receives; prefer resolving at the notif-manager Context boundary
+  (mirrors how milestone notifications already localize). Do NOT add a `Context` to the VM.
+
+- [ ] **Step 4: Build + commit**
+
+Run assembleDebug → `BUILD SUCCESSFUL`. Methodology-grep the 10 sites → no `.toDisplayName()` on a
+user-facing enum name remains (the extension itself may stay for any non-user-facing use — grep to confirm
+none are user-facing after this).
+```bash
+git add app/src/main/java/com/whitefang/stepsofbabylon/presentation \
+  app/src/main/java/com/whitefang/stepsofbabylon/service 2>/dev/null \
+  app/src/main/res/values/strings.xml
+git commit -m "i18n(#34): enum display-name @StringRes resolvers, byte-identical (phase 3 G-names)"
+```
+
+---
+
+### Task E7: WorkshopViewModel stat units (category D-workshop — review CG-09, developer-approved into PR3e)
+
+`WorkshopViewModel.statValueFor` (`:194-225`, NON-Composable) builds user-facing unit labels
+(`"%.1f dmg"`, `"%.0f HP"`, `"${s.multishotTargets} targets"`, …) that render at `UpgradeCard.kt:130`
+(`Text(info.statValue, …)`). Same class as the UW `pathValueAtNext` units — extract to resources,
+resolve at the Composable render boundary (the VM can't call `stringResource`).
+
+**Approach (mirror the UW pattern):** move the label composition OUT of the VM to the `UpgradeCard`
+Composable. Carry the raw numeric stat + the `UpgradeType` on `UpgradeDisplayInfo` (grep `statValue`
+usages) so `UpgradeCard` can format via `stringResource`. Preserve `Locale.ROOT` numeric formatting and
+byte-identical spacing/decimals.
+
+**Files:**
+- `presentation/workshop/WorkshopViewModel.kt` (`statValueFor` + `UpgradeDisplayInfo.statValue` field) ·
+  `presentation/workshop/UpgradeCard.kt:130` (render) · `strings.xml`.
+
+- [ ] **Step 1: Add resources (byte-identical to the current `fmt(...)` output)**
+
+```xml
+    <!-- i18n #34 phase 3: Workshop stat-value units (category D-workshop) -->
+    <string name="stat_dmg">%1$s dmg</string>           <!-- "%.1f dmg" -> pre-format the float to %1$s -->
+    <string name="stat_per_sec">%1$s/s</string>          <!-- "%.2f/s" / "%.1f/s" (attack speed + regen differ in decimals -> two keys OR pass pre-formatted) -->
+    <string name="stat_regen_per_sec">%1$s/s</string>
+    <string name="stat_percent">%1$s%%</string>
+    <string name="stat_multiplier">%1$sx</string>
+    <string name="stat_range">%1$s range</string>
+    <string name="stat_hp">%1$s HP</string>
+    <string name="stat_block">%1$s block</string>
+    <string name="stat_force">%1$s force</string>
+    <string name="stat_percent_per_m">%1$s%%/m</string>
+    <string name="stat_targets">%1$d targets</string>
+    <string name="stat_bounces">%1$d bounces</string>
+    <string name="stat_orbs">%1$d orbs</string>
+```
+(The `%.1f` vs `%.2f` vs `%.0f` decimal differences are preserved by pre-formatting the float with a
+ROOT-locale `fmt` helper in the Composable and passing `%1$s` — same idiom as UW `pathValueAtNext`'s
+`fmt0`/`fmt1`. The 3 int forms use `%1$d`. Keep the `else -> ""` empty branch as an empty/absent label.)
+
+- [ ] **Step 2: Move formatting to `UpgradeCard` (Composable)**
+
+Add the `UpgradeType` + the raw `ResolvedStats`-derived numbers to `UpgradeDisplayInfo` (whatever
+`statValueFor` reads — grep the fields it uses: `s.damage`, `s.attackSpeed`, `s.multishotTargets`, etc.),
+OR carry the `UpgradeType` + a pre-computed numeric value. Then in `UpgradeCard` (`:130`), replace
+`Text(info.statValue, …)` with a `@Composable`/`stringResource`-based `statLabel(info)` that mirrors
+`statValueFor`'s `when` using the resources above. Delete `statValueFor` from the VM (grep for other
+callers first — ground truth found none besides the `statValue` assignment). Keep the `Locale.ROOT`
+`fmt` helper in the Composable.
+
+- [ ] **Step 3: Build + commit**
+
+Run assembleDebug → `BUILD SUCCESSFUL`. (No `WorkshopViewModelTest` assertion pins `statValueFor` output
+— ground truth confirmed; but run `*WorkshopViewModelTest` to be safe.)
+```bash
+git add app/src/main/java/com/whitefang/stepsofbabylon/presentation/workshop \
+  app/src/main/res/values/strings.xml
+git commit -m "i18n(#34): Workshop stat-value units via @StringRes at render (phase 3 D-workshop)"
+```
+
+---
+
 ### Task E5 (MERGE GATE): verify PR3e + open PR + merge + confirm merged
 
-- [ ] **Step 1:** Full suite + detekt + ktlint + **`DomainPurityTest`** (must stay green — no Android/data import entered domain). Confirm count (only shifted CardType assertions; net delta ~0 or small).
-- [ ] **Step 2:** Methodology grep across all category-G render sites. On-device spot-check: Workshop upgrade card, a Lab card, a mission, a UW card, a milestone name, a Store cosmetic, a card effect line.
-- [ ] **Step 3:** Push + `gh pr create` (title `i18n(#34): domain-model display strings — PR3e (G)`; body notes domain stays pure, CardType numeric-split, ~54 assertions moved to a presentation test).
+- [ ] **Step 1:** Full suite + detekt + ktlint + **`DomainPurityTest`** (must stay green — no Android/data import entered domain). Confirm count (shifted CardType assertions + any new value test; net delta small).
+- [ ] **Step 2:** Methodology grep across all category-G render sites INCL. the E6 name sites + E7 Workshop units. On-device spot-check: Workshop upgrade card (name + stat unit), a Lab card, a mission, a UW card, a milestone name, a Store cosmetic, a card effect line, the tier selector (biome + conditions).
+- [ ] **Step 3:** Push + `gh pr create` (title `i18n(#34): domain-model display strings + enum names + stat units — PR3e (G + G-names + D-workshop)`; body notes domain stays pure, CardType/Mission DTO surgery, enum-name resolvers byte-identical incl. the "U W Cooldown" quirk, Workshop stat units moved to render).
 - [ ] **Step 4 (GATE):** CI green → merge → confirm merge commit on `main` before cutting PR3f.
 
 ---
@@ -1534,7 +1666,7 @@ git commit -m "i18n(#34): onboarding carousel content via @StringRes (phase 3 I)
 rg -nE '"[A-Z][a-z]|"[a-z]+ [a-z]' app/src/main/java/com/whitefang/stepsofbabylon \
   --glob '*.kt' | rg -vE '//|^\s*\*|import |Log\.|R\.string|stringResource|pluralStringResource|CHANNEL|_ID|navigate_to|route =|"[A-Z]"$'
 ```
-Expected survivors: only data-only interpolations, glyphs, technical identifiers, the documented residuals (`SupplyDropTrigger.message`, `BillingProduct.priceDisplay`), and the domain enum `description`/`displayName` fields left in place (now unread by the UI). Extract any genuine user-facing English survivor before proceeding.
+Expected survivors: only data-only interpolations, glyphs, technical identifiers, the documented residuals (`SupplyDropTrigger.message`, `BillingProduct.priceDisplay`), and the domain enum `description`/`displayName`/name fields left in place (now unread by the UI — E1/E4/E6 stopped reading them). **No `.toDisplayName()` on a user-facing enum name and no `statValueFor`-style unit label should survive** (E6/E7 covered them). Extract any genuine user-facing English survivor before proceeding. With E6/E7 landed, the phase is **genuinely 100% locale-ready** — a `values-xx/strings.xml` fully translates the UI with no English proper-names leaking.
 - [ ] **Step 3:** On-device spot-check: first-launch onboarding carousel renders identically.
 - [ ] **Step 4:** Push + `gh pr create` (title `i18n(#34): onboarding carousel content — PR3f (I) + phase-3 completeness`; body notes the full-phase sweep result + documented residuals).
 - [ ] **Step 5 (GATE):** CI green → merge → confirm merge commit on `main`.
