@@ -24,4 +24,10 @@ class FakeStrings : Strings {
         "FAKE_COMP:" + counts.entries.joinToString(",") { "${it.value}:${it.key.name}" }
 
     override fun bossCountdown(waves: Int) = "FAKE_BOSS_$waves"
+
+    override fun bossIncoming() = "FAKE_BOSS_INCOMING"
+
+    override fun waveHeader(wave: Int) = "FAKE_WAVE_$wave"
+
+    override fun nextWaveIn(seconds: Int) = "FAKE_NEXT_$seconds"
 }

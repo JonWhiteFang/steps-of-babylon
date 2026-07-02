@@ -52,4 +52,10 @@ class AndroidStrings(
 
     override fun bossCountdown(waves: Int): String =
         context.resources.getQuantityString(R.plurals.boss_in_waves, waves, waves)
+
+    override fun bossIncoming(): String = context.getString(R.string.fx_boss_incoming)
+
+    override fun waveHeader(wave: Int): String = context.getString(R.string.fx_wave_header, wave)
+
+    override fun nextWaveIn(seconds: Int): String = context.getString(R.string.fx_next_wave, seconds)
 }
