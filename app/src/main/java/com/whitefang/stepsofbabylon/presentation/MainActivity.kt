@@ -560,3 +560,34 @@ private fun openPrivacyPolicy(context: android.content.Context) {
         context.startActivity(view)
     }
 }
+
+/**
+ * #374: build the crash-report email intent (ACTION_SENDTO mailto:) pre-filled with the crash
+ * breadcrumb. Extracted as a top-level fn (mirrors [openPrivacyPolicy]) so it is unit-testable
+ * without launching MainActivity — the createComposeRule JVM lane never instantiates this Activity.
+ * The manifest <queries> SENDTO/mailto entry makes this resolvable under package-visibility filtering.
+ */
+internal fun buildCrashReportIntent(
+    context: android.content.Context,
+    exceptionClass: String,
+    message: String?,
+    stackPreview: String,
+): Intent {
+    val metadata =
+        "App ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · " +
+            "Android ${android.os.Build.VERSION.RELEASE} · ${android.os.Build.MODEL}"
+    val subject = context.getString(R.string.crash_report_email_subject)
+    val body =
+        context.getString(
+            R.string.crash_report_email_body,
+            exceptionClass,
+            message ?: "(none)",
+            stackPreview,
+            metadata,
+        )
+    return Intent(Intent.ACTION_SENDTO).apply {
+        data = Uri.parse("mailto:jonwhitefang@gmail.com")
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+        putExtra(Intent.EXTRA_TEXT, body)
+    }
+}
