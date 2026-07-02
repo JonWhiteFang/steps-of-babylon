@@ -75,6 +75,17 @@ Severity-scale the response: a quick spec gets a leaner fan-out; "be thorough"/a
 full pattern with 3–5-vote verification. Do **not** advance to the next stage with unaddressed
 `critical`/`major` findings.
 
+**Mandatory `concurrency-reviewer` lane (#372, ADR-0038).** Any diff touching
+`presentation/battle/engine/**`, `presentation/battle/effects/**`, a Room DAO (`data/local/*Dao.kt`),
+`data/repository/PlayerRepositoryImpl`, the domain spend/claim use cases, or anything that structurally
+mutates a shared engine collection or moves a currency balance MUST include the `concurrency-reviewer`
+subagent as a review lane (it scopes exactly this surface). A **deterministic PreToolUse advisory**
+(`.claude/hooks/guard-sensitive-edits.sh` tier 4) nudges this on every such edit **regardless of ultracode
+state**; this protocol wording is the human/agent contract. The build-gated tripwires for the two prose
+invariants are `architecture/StepCreditAllowlistTest` (Steps-generation) and
+`architecture/BattleEngineLockScanTest` (collaborators-hold-no-monitor); a detekt nested-lock rule is a
+deferred follow-up (ADR-0038).
+
 **If ultracode is OFF** (a session reminder will say so), this gate's multi-agent form is disabled by the
 opt-in rules — do **not** silently skip it. **Flag to the developer that the artifact is unreviewed and
 ask** whether to (a) turn ultracode on for the review, (b) run a lighter single-agent review inline, or
@@ -346,7 +357,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1294 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1301 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Compose UI tests run on the JVM lane (#253):** `createComposeRule()` under Robolectric
   (`@RunWith(RobolectricTestRunner)` + `@GraphicsMode(NATIVE)`), backed by the `src/test/` fakes — no
@@ -357,6 +368,11 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
   fully-qualified `data.*` refs in domain code, comment-stripped so KDoc doc-links are ignored — #220);
   `architecture/PresentationPurityTest` (fails if `presentation/` imports a `data.local` DAO/`AppDatabase`/
   `@Entity` — #219/#229; allowlists the `BattleViewModel` `AppDatabase` seam);
+  `architecture/StepCreditAllowlistTest` (#371 — machine-enforces "Steps never generated in-game", ADR-0003:
+  pins the full `PlayerProfileDao` `currentStepBalance` write surface — `.addSteps(`/positive
+  `.adjustStepBalance(`/`updateStepBalance`/`PlayerProfileEntity(` + a DAO write-count pin + a baked negative
+  fixture); `architecture/BattleEngineLockScanTest` (#372 — battle-engine collaborators declare no monitor of
+  their own; comment-stripped, collaborator-scoped, excludes `GameEngine`/`BattleHosts`);
   `SimulationTest` (the extracted pure-domain game-loop core); `AtomicDaoConcurrencyTest` (#252 — the
   guarded-deduct / one-shot-claim atomic DAOs under real concurrent contention on a file-backed Room DB);
   `BattleSurfaceLifecycleTest` + `DeepLinkIntentTest` (instrumented, real-framework regression guards).
