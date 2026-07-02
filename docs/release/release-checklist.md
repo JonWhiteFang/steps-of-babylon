@@ -55,3 +55,21 @@
 
 - AAB: `app/build/outputs/bundle/release/app-release.aab`
 - APK: `app/build/outputs/apk/release/app-release.apk`
+
+## Post-release monitoring (#380)
+
+After a `v*` tag ships an AAB to the Play internal track (`release.yml`), monitor Play Console
+**Vitals** on a cadence — time-to-detect a field regression otherwise depends on remembering to look.
+
+- **At ~24h and ~72h post-release**, check Play Console → Quality → **Android vitals**:
+  - **Crash rate** (user-perceived crash rate) — investigate any rise vs the previous release's baseline.
+  - **ANR rate** — same.
+  - The `#190` in-app crash breadcrumb also gives a tap-to-email **Report** path (#374) for testers.
+- **Roll-back trigger:** if the crash or ANR rate rises materially above the prior release on the
+  internal track, halt promotion and ship a fixed build (new `versionCode`) — do not promote the
+  regressed build to a wider track.
+- **De-obfuscation:** `mapping.txt` upload is already automated in `release.yml` (the
+  `upload-google-play` step's `mappingFile`), so Vitals stack traces are de-obfuscated automatically —
+  no manual upload step needed.
+- See `docs/release/plan-31-walkthrough.md` for the original monitoring walkthrough this cadence
+  distills.
