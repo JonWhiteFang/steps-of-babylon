@@ -21,6 +21,7 @@ import com.whitefang.stepsofbabylon.domain.usecase.GenerateDailyMissions
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimCelebrationEvent
 import com.whitefang.stepsofbabylon.presentation.ui.ClaimReward
 import com.whitefang.stepsofbabylon.presentation.ui.SCREEN_LOAD_ERROR
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -69,7 +70,7 @@ class MissionsViewModel
         // #194: bump to re-subscribe the data flow after a load error (retry).
         private val _retry = MutableStateFlow(0)
         private val tick = MutableStateFlow(System.currentTimeMillis())
-        private val userMessage = MutableStateFlow<String?>(null)
+        private val userMessage = MutableStateFlow<UiMessage?>(null)
 
         // Bundle C (#162): one-shot claim-celebration event. CONFLATED for consistency with
         // UnclaimedSuppliesViewModel (Task 7) — the screen renders a brief reward chip + success haptic.
@@ -213,16 +214,15 @@ class MissionsViewModel
                     }
 
                     ClaimMilestoneResult.InsufficientSteps -> {
-                        userMessage.value = "You haven't walked enough steps yet."
+                        userMessage.value = UiMessage.NotEnoughStepsMission
                     }
 
                     ClaimMilestoneResult.AlreadyClaimed -> {
-                        userMessage.value = "Milestone already claimed."
+                        userMessage.value = UiMessage.MilestoneAlreadyClaimed
                     }
 
                     is ClaimMilestoneResult.UnknownCosmetic -> {
-                        userMessage.value =
-                            "Reward temporarily unavailable (cosmetic \u201c${result.cosmeticId}\u201d is being finalised). Try again after the next update."
+                        userMessage.value = UiMessage.RewardUnavailable(result.cosmeticId)
                     }
                 }
             }

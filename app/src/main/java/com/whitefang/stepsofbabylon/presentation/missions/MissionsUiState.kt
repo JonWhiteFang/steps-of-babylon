@@ -1,6 +1,7 @@
 package com.whitefang.stepsofbabylon.presentation.missions
 
 import com.whitefang.stepsofbabylon.domain.model.Milestone
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 
 data class MissionDisplayInfo(
     val id: Int,
@@ -33,5 +34,5 @@ data class MissionsUiState(
      * (C.4 \u2014 surfaces [com.whitefang.stepsofbabylon.domain.usecase.ClaimMilestoneResult.UnknownCosmetic]
      * for the 3 mismatched milestone cosmetic ids so the drop no longer happens silently).
      */
-    val userMessage: String? = null,
+    val userMessage: UiMessage? = null,
 )

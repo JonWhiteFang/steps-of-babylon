@@ -2,6 +2,7 @@ package com.whitefang.stepsofbabylon.presentation.battle
 
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.presentation.battle.ui.BiomeTransitionInfo
+import com.whitefang.stepsofbabylon.presentation.ui.UiMessage
 
 data class RoundEndState(
     val waveReached: Int,
@@ -52,7 +53,7 @@ data class BattleUiState(
      * after the snackbar shows. Mirrors the `userMessage` pattern used by
      * `MissionsViewModel` / `CardsViewModel` / `WorkshopViewModel` / `LabsViewModel`.
      */
-    val userMessage: String? = null,
+    val userMessage: UiMessage? = null,
     /**
      * #190 REL-2: set when the game-loop thread caught an exception and stopped. Drives a
      * non-dismissable "Battle error" overlay and suppresses all interactive round chrome.

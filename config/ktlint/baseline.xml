@@ -22,11 +22,11 @@
         <error line="23" column="13" source="standard:property-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/BattleScreen.kt">
-        <error line="71" column="5" source="standard:function-naming" />
+        <error line="72" column="5" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/BattleViewModel.kt">
-        <error line="523" column="121" source="standard:max-line-length" />
-        <error line="539" column="121" source="standard:max-line-length" />
+        <error line="524" column="121" source="standard:max-line-length" />
+        <error line="540" column="121" source="standard:max-line-length" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/battle/ui/BattleControlRail.kt">
         <error line="60" column="5" source="standard:function-naming" />
@@ -101,13 +101,13 @@
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/missions/MissionsScreen.kt">
         <error line="3" column="1" source="standard:no-wildcard-imports" />
         <error line="8" column="1" source="standard:no-wildcard-imports" />
-        <error line="41" column="5" source="standard:function-naming" />
-        <error line="118" column="13" source="standard:function-naming" />
-        <error line="189" column="13" source="standard:function-naming" />
+        <error line="43" column="5" source="standard:function-naming" />
+        <error line="121" column="13" source="standard:function-naming" />
+        <error line="192" column="13" source="standard:function-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/missions/MissionsViewModel.kt">
-        <error line="67" column="21" source="standard:backing-property-naming" />
-        <error line="70" column="21" source="standard:backing-property-naming" />
+        <error line="68" column="21" source="standard:backing-property-naming" />
+        <error line="71" column="21" source="standard:backing-property-naming" />
     </file>
     <file name="app/src/main/java/com/whitefang/stepsofbabylon/presentation/navigation/BottomNavBar.kt">
         <error line="34" column="5" source="standard:function-naming" />
@@ -348,7 +348,7 @@
         <error line="21" column="1" source="standard:no-wildcard-imports" />
     </file>
     <file name="app/src/test/java/com/whitefang/stepsofbabylon/presentation/ux/UserFeedbackTest.kt">
-        <error line="18" column="1" source="standard:no-wildcard-imports" />
+        <error line="19" column="1" source="standard:no-wildcard-imports" />
     </file>
     <file name="app/src/test/java/com/whitefang/stepsofbabylon/presentation/weapons/UltimateWeaponViewModelTest.kt">
         <error line="18" column="1" source="standard:no-wildcard-imports" />
