@@ -4,6 +4,20 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Tooling — developer-experience docs (#386, #387, #388) — Phase-2 tooling PR-1
+
+- **#386 (ai-1).** New thin `AGENTS.md` at the repo root — a pure redirect to `CLAUDE.md` /
+  `docs/agent/START_HERE.md` / `STATE.md` naming the hardest invariants only as ADR pointers
+  (ADR-0003 / ADR-0038 / ADR-0020); zero content duplication (portability insurance for non-Claude agents).
+- **#387 (pm-1).** `/checkpoint` gains a step 6 that regenerates a GENERATED `docs/agent/BACKLOG.md`
+  from `gh issue list --state open` (deterministic: descending issue number; writes only on a non-empty
+  successful capture). Seeded the first snapshot (open issues at authoring).
+- **#388 (docs-2).** Trimmed `docs/agent/STATE.md` (auto-injected every session): relocated the
+  duplicated per-PR "Recently shipped" narrative + the test-count ladder to RUN_LOG/CHANGELOG, collapsed
+  the deep objective stack, and corrected the stale headline count (1294 → **1302**). Fragile-zones +
+  live reference kept.
+- Docs/skill only — no app/test/schema/engine change; **JVM test count unchanged at 1302**.
+
 ### Observability — crash-report exit path + monitoring runbook (#374, #380) — Phase-1 tooling PR-C
 
 - **#374 (obs-2).** The one-time crash notice now offers a **Report** action that opens a pre-filled

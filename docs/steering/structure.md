@@ -20,6 +20,7 @@ The committed Baseline Profile lives at `app/src/release/generated/baselineProfi
 └── dependabot.yml      # gradle + github-actions weekly updates
 .claude/                # Claude Code config (ADR-0019): settings.json (hooks wiring) + hooks/ (session-preflight, guard-sensitive-edits [schema/migration/version guards], ktlint-format-edited, prefer-structural-tools) + skills/ (checkpoint, complete-app-review, release, adversarial-review, new-migration) + agents/ (concurrency-reviewer, android-test-writer). Tooling-only, never built/shipped.
 .mcp.json               # Shared MCP server config (context7 for live API docs); API key read from CONTEXT7_API_KEY env var, never committed
+AGENTS.md               # Thin redirect pointer to CLAUDE.md + docs/agent/START_HERE.md for non-Claude agents (#386, ai-1)
 site/                   # PUBLIC web root published to GitHub Pages by pages.yml — site/index.md = canonical privacy policy + site/_config.yml; ONLY this dir is served publicly (internal docs/ is not)
 config/                 # Lint tooling config (ADR-0037): config/detekt/ (detekt.yml + baseline.xml) + config/ktlint/ (baseline.xml). CI-enforced, baseline-gated.
 baselineprofile/        # :baselineprofile module — dev tooling; generates baseline-prof.txt; never ships

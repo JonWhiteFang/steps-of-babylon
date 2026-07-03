@@ -19,7 +19,7 @@ dependency-verification (#256), clock-tamper (#211), GameEngine decomposition (#
 dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependabot wave, CI/supply-chain
 (#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
 (CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
-#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1294 JVM + 9 instrumented tests**
+#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1302 JVM + 9 instrumented tests**
 green (per-wave test-count detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) **DONE — the manual Play
@@ -41,71 +41,28 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (Phase-1 tooling safety baseline — PR-A + PR-B MERGED; PR-C up for merge).** The 6 Phase-1
-  findings (tracker #389), spec+plan both through the Adversarial Review Gate
-  (`docs/superpowers/{specs,plans}/2026-07-02-phase1-tooling-gap*`; spec gate 19/15/4, plan gate 20/19/1→6
-  fixed), shipped as 3 PRs: **PR-A #393 `7fe241f` MERGED** (#370 assembleRelease in the PR gate + #376
-  gitleaks; A5 non-provider-patterns is a silent-API-no-op → manual Settings step). **PR-B #394 MERGED**
-  (#371 `StepCreditAllowlistTest` 6 tests + #372 `BattleEngineLockScanTest` 1 test + `guard-sensitive-edits.sh`
-  tier-4 concurrency-reviewer advisory + CLAUDE.md wiring + ADR-0038; 1294→1301). **PR-C (#374 crash-report
-  Report/email exit path incl. the required `<queries>` + #380 monitoring runbook) — implementation DONE,
-  rebased on main, doc-synced, 1301→1302 (full suite green), pending push+PR.** **NEXT:** push+PR+merge PR-C
-  (tick #374/#380 + close #389). Then Phase 2 tooling (#378 jvmToolchain, #388 STATE trim, #387 BACKLOG.md,
-  #386 AGENTS.md) OR the other tracks: first non-English `values-xx` locale (#34); internal→closed promotion;
-  #233 clean Simulation-hoist (ADR-0012); A24 clock-tamper.
-- *Side research (DONE, 2026-07-02) — UX/UI design skills/plugins assessment →
-  `docs/reviews/ux-ui-design-resources.md` (recommends `material-3-skill` + `compose-skill` baseline,
-  `ux-ui-mastery` optional; report only, nothing installed — adoption phasing awaits the developer's
-  pick). Detail in RUN_LOG.*
-- *Previous objective (DONE, 2026-07-02) — docs hardening: **#367** ran the tooling-gap audit (multi-agent,
-  25 raised/24 survived/1 refuted → `docs/reviews/tooling-gap-assessment.md`, maturity High) + applied the
-  pure-doc-hygiene survivors (README + STATE.md trim 491→403); **#368** documented the battle-step reward as
-  the sole exception to "Steps never generated in-game" (ADR-0003) across ~8 canonical docs. Both docs-only,
-  no app/test/schema change. Detail in RUN_LOG.*
-- *Prior objectives (all DONE) — the recently-completed arc (#34 i18n phase 3 locale-readiness [6 PRs
-  #360–#365, app 100% locale-ready, 1294 JVM], i18n phase 2 #354/#355, `/backup-to-vault` skill, #217
-  service tests, Claude-tooling PRs #345/#346, the **v1.0.12 release** vc 28 → Play internal, audit fixes
-  #216/#221, audit-triage batches A–D, and the **v1.0.11 release** vc 27 and everything before it) — are
-  recorded per-PR in `docs/agent/RUN_LOG.md` + `CHANGELOG.md` and summarized under "Recently shipped"
-  below; not duplicated here (per the one-page rule — CLAUDE.md "Always-on memory rules").*
+- **CURRENT (Phase-2 tooling — PR-1 docs/DX DONE on branch, up for PR; PR-2 #378 NEXT).** Phase-2 of the
+  tooling-gap backlog (tracker #389); spec+plan both through the Adversarial Review Gate
+  (`docs/superpowers/{specs,plans}/2026-07-03-phase2-tooling*`; spec gate 9/9/0, plan gate 12/11/1).
+  **PR-1 (branch `docs/phase2-tooling-dx`) — docs/DX, DONE, pending push+PR:** #386 thin `AGENTS.md`
+  redirect pointer, #387 `/checkpoint` step 6 that regenerates a GENERATED `docs/agent/BACKLOG.md` from
+  `gh issue list` (+ seeded snapshot), #388 STATE.md trim (relocated the per-PR "Recently shipped"
+  narrative + test-count ladder to RUN_LOG/CHANGELOG, collapsed the objective stack, corrected the stale
+  headline count to 1302). Docs/skill only — no app/test/schema/engine change; **JVM test count unchanged
+  at 1302**. **PR-2 (#378 `devenv-1`) NEXT:** pin the local JDK via `kotlin { jvmToolchain(17) }`.
+  **NEXT:** open+merge PR-1, then PR-2 (#378), then tick the Phase-2 boxes on tracker #389. Other tracks
+  still open: first non-English `values-xx` locale (#34); internal→closed promotion; #233 clean
+  Simulation-hoist (ADR-0012); A24 clock-tamper.
+- *Previous objective (DONE, 2026-07-02) — Phase-1 tooling safety baseline (tracker #389): all 6 findings
+  merged across PR-A (#370 assembleRelease-in-CI + #376 gitleaks), PR-B (#371 `StepCreditAllowlistTest` +
+  #372 `BattleEngineLockScanTest` + concurrency-reviewer advisory, ADR-0038), PR-C (#374 crash-report
+  email exit path + #380 monitoring runbook). Detail in RUN_LOG/CHANGELOG.*
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
-- **2026-06-20 — test-integrity + architecture cluster MERGED (all `[Unreleased]`, off the 2026-06-18
-  audit backlog; spec+plan each through the Adversarial Review Gate, single-agent).** **Test-integrity**
-  (#252 concurrent-contention DAO test / #253 Compose-UI-test beachhead) — PR #298, `7aac895`, +15 JVM →
-  **1167** (#253 left open for follow-up screens). **Architecture-invariant** (#227 domain→data
-  dependency-rule fix / #228 `DomainPurityTest` strengthened) — PR #299, `cfe46f1`, +1 JVM, ADR-0034.
-  **Presentation→data cleanup** (#219 ViewModel DAO/entity-leak / #229 persistence-abstraction rule) —
-  PR #300, `870c938`, +1 JVM, ADR-0035 (new `PresentationPurityTest`). The architecture cluster
-  #227/#228/#219/#229 is now fully closed; #220/#230/#231/#234 remain.
-- **2026-06-20 — three complete-app-review fix waves MERGED (all `[Unreleased]`, off the 2026-06-18 audit
-  backlog; spec+plan each through the Adversarial Review Gate, ultracode OFF → single-agent).**
-  **Accessibility** (#213 button contrast / #214 battle TalkBack live region / #226 color-blind deferral) —
-  PR #296, `0ff9662`, +13 JVM → **1152**. **Performance** (#242 background-music caching / #243
-  projectile-trail throttle) — PR #295, `2363359`, +9 JVM, ADR-0033. **Privacy/monetization** (#240 in-app
-  policy link / #239 policy-form consistency / #241 AdMob PG content-rating cap) — PR #294, `78846fe`, +4
-  JVM, ADR-0032 (+ ADR-0006 Q5 amended). No schema/economy/engine-formula change in any wave.
-- **2026-06-19 — full ultracode doc-drift sweep (docs-only, `[Unreleased]`).** Multi-agent `Workflow`
-  (59 agents: 9 live-doc-cluster finders, every claim code-grounded → per-finding adversarial refute →
-  cross-doc-coherence + link-integrity lanes → refute). 48 candidates → **48 surviving, 0 refuted**;
-  deduped to **34 unique fixes across 15 live docs**. Headline theme: the long-standing **test-count
-  inflation reconciled** — actual `@Test` count is **1118** (gradle: 1118, 0 failures), but CLAUDE.md
-  said 1141, STATE.md 1141 (with a self-flagged but never-reconciled "+23 pre-branch drift"), README
-  both 1110 and 1010, CHANGELOG `[Unreleased]` "1133→1141". All reconciled to **1110→1118 (+8)** on the
-  real shipped base. Also: `domain/usecase/` **36→39**; SFX **9→7** (.ogg ground truth); 7 per-file
-  test counts in source-files.md (CardType 31→32, BillingManagerImpl 14→20, RealPurchaseVerifier 4→9,
-  PlayerRepositoryImpl 13→18, DailyStepDao 14→13, CardRepositoryImpl 16→15, SimulationMath 34→42);
-  BattleViewModel **16→15-param**; CardsUiState "dust balance"→copy counts; **security-model.md** key-recovery
-  row rewritten to the #238 scoped-wipe behavior; **database-schema.md** `fallbackToDestructiveMigration()`→
-  `fallbackToDestructiveMigrationOnDowngrade` (+ migration-floor=v7 framing); **lib-room.md** `adjustStepBalance`
-  example regained its `MAX(0,…)` clamp; **plan-FORWARD.md** §H/§D blockers #190/#191/#192 + soak #193/#194/#195
-  ticked MERGED; **plan-V1X-roadmap** V1X-07/10/11 moved to shipped + 2 `AGENTS.md`→`CLAUDE.md` path refs;
-  **plan-31** build pointer v1.0.5→v1.0.10; **plan-32-ci** post-authoring reconciliation note (5 workflows +
-  benchmark type-check); **play-store-listing** desc char-count 2,389→2,927 + 3 mis-categorized upgrade bullets
-  fixed against `UpgradeType`; **product.md** Workshop 24→"22 Steps-purchasable (MULTISHOT/BOUNCE_SHOT hidden)".
-  No app code/schema/test change; **1118 JVM** unchanged.
-- *(Older entries trimmed — see RUN_LOG for full history.)*
+Per-PR history lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md` (per-PR) — not
+duplicated here (per the one-page rule). For the current objective and what's in-flight, see
+`## Current objective` above.
 
 ## What works (current capabilities)
 

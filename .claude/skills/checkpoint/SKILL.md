@@ -50,6 +50,26 @@ Apply the edits identified in step 1.
 - New decision → new `docs/agent/DECISIONS/ADR-NNNN-<slug>.md` from `ADR-0001-template.md`.
 - Amend an existing ADR's status only if this change explicitly warrants it.
 
+### 6. Regenerate `docs/agent/BACKLOG.md`
+Mechanically refresh the open-issue backlog snapshot so the spine — not chat — is the agent's source of
+truth. This is a generated file; do not hand-edit its body.
+
+Run:
+```bash
+gh issue list --state open --limit 200 --json number,title,labels \
+  --jq '.[] | "- #\(.number) — \(.title) — [\([.labels[].name] | join(", "))]"'
+```
+Write the result into `docs/agent/BACKLOG.md` under a **GENERATED — do not hand-edit** header that names
+this exact command and a "last generated: <today's date>" line (stamp the current date at run time).
+**Sort the lines by descending issue number** (the `--jq` output already emits newest-first from `gh`,
+but sort explicitly so regeneration is reproducible and diffs stay meaningful). Do not hand-group or
+reorder — determinism is the point of a generated file.
+
+**Write only on a successful, non-empty capture.** Capture the command output first; write
+`docs/agent/BACKLOG.md` ONLY if the command exited 0 AND produced at least one line. If `gh` is
+absent/unauthenticated (command errors) OR returns nothing, **log a one-line skip and leave any existing
+`docs/agent/BACKLOG.md` untouched** — never overwrite it with a truncated or empty file.
+
 ## Historical artifacts — NEVER modify
 Appending a new RUN_LOG entry is fine; editing the past is not. Leave these untouched:
 - Prior `docs/agent/RUN_LOG.md` entries.
