@@ -1,3 +1,52 @@
+## 2026-07-03 — Phase-3 tooling PR-1: four non-fragile quality/reliability guards (#373, #375, #381, #382)
+
+- **Goal:** ship the non-fragile batch of tracker #389 Phase 3 as one PR (#373 Kover ratchet, #375
+  LeakCanary, #381 full-chain migration schema test, #382 lint comment + Compose-prose guard); isolate
+  #384 (fragile GameLoopThread) to a later PR-2; leave #396 deferred (blocked in-issue). Branch
+  `tooling/phase3-nonfragile-guards`.
+- **Plan + Adversarial Review Gate (mandatory, ultracode Workflow):** wrote
+  `docs/superpowers/plans/2026-07-03-phase3-nonfragile-guards.md`; ran a 4-dimension code-grounded fan-out →
+  refute-verify → synthesis. **18 raised / 12 survived / 6 refuted.** The review earned its keep: a
+  **CRITICAL** finding said my central #373 design (four rules, each with per-rule `filters`) doesn't exist
+  in Kover 0.9.8. **Confirmed empirically** by disassembling `kover-gradle-plugin-0.9.8.jar` (`KoverVerifyRule`
+  exposes only `groupBy`/`bound` — no `filters`) + probe builds. Redesigned around a filtered
+  `variant("debug")` set (proven working via 5 throwaway probes). Also fixed: a false "zero prose exists"
+  claim (two real multi-line `Text("MAX")` literals ship), #381 Option-C scope (must validate all 13 v12
+  tables), a word-boundary anchor for the #382 scan, and several accuracy nits. Committed the amended plan
+  (`19193e3`).
+- **#373 (testing-1):** scoped Kover coverage ratchet. `kover { reports { variant("debug") { filters{4 pkg
+  globs} verify{ ruleA APPLICATION-blended floor 85; ruleB PACKAGE floor 54 } } } }`. Measured floors from a
+  fresh `koverXmlReport` parse: blend 87.18%, per-package data.repository 56.94 / domain.usecase 98.73 /
+  presentation.battle.engine 92.15 / domain.battle.{engine 100, entity 96.10}. Gates `koverVerifyDebug`;
+  aggregate `koverXmlReport`/`koverVerify` stay whole-app (verified: still 49 packages — #218 untouched).
+  CI: separate `:app:koverVerifyDebug` step AFTER the report step (so the report is written even if the gate
+  fails). Mis-scope check validated during probes (floor-99 listed only the 4 intended packages).
+- **#375 (perf-3):** LeakCanary 2.14 → `libs.versions.toml` + `debugImplementation(libs.leakcanary)`.
+  `assembleDebug` clean (no manifest-merger conflict; ContentProvider auto-install). Pulled 27 new transitive
+  artifacts → regenerated `gradle/verification-metadata.xml` via the README command (846→863 components;
+  #256 supply-chain posture kept).
+- **#381 (db-1):** `FullChainMigrationSchemaTest` (JVM/Robolectric). Chose the manual
+  `SupportSQLiteOpenHelper` idiom over `MigrationTestHelper` (the latter needs a real `Instrumentation` +
+  asset-path schemas — impractical on this lane; the module already avoids it). Builds v7 from the committed
+  `7.json` `createSql` (no hand-DDL), runs `AppMigrations.ALL` (v7→v12), asserts the terminal schema (table
+  SET + per-table `PRAGMA table_info` + `index_list`) against `12.json` for **all 13 tables** incl.
+  migration-created `billing_receipt`. Bug found + fixed during impl: nullable fields omit the `notNull` JSON
+  key → use `optBoolean`, not `getBoolean`. **Drift-catch proven** by injecting a bogus column into
+  `MIGRATION_11_12` (test went red with a precise message), then reverting.
+- **#382 (cqt-1):** refreshed the stale `lint{}` comment (dropped the "~110" claim; points at the new guard);
+  added `architecture/ComposeHardcodedStringTest` — word-boundary-anchored `Text("prose")` scan (so
+  `canvas.drawText(` doesn't false-positive), `$`-exclusion, empty allowlist, 3 predicate unit tests. Green
+  at HEAD (0 single-line offenders). Two known multi-line `Text("MAX")` literals documented off-scope in the
+  KDoc (`R.string.upgrade_max` exists — migrating them is a noted follow-up, not this PR).
+- **Verification:** full local gate GREEN — `testDebugUnitTest` (**1307 JVM**, +5) + `:app:koverVerifyDebug`
+  + `:app:detekt` + `assembleDebug` + `./lint-kotlin.sh` all exit 0. detekt caught one NEW `EmptyFunctionBlock`
+  in the migration test's empty `onUpgrade` override (siblings are baselined) → fixed with a comment body
+  rather than growing the baseline. No production runtime code changed; no schema change; no versionCode bump.
+- **What remains / next:** commit the implementation + open PR-1 (green-checks-only merge gate). Then PR-2:
+  #384 frame-stats overlay (fragile GameLoopThread — its own plan + adversarial review incl. the mandatory
+  `concurrency-reviewer` lane), rebased onto updated `main` per the sequential-merge rule. #396 stays
+  deferred (blocked: stable detekt custom-rule API + new rule module).
+
 ## 2026-07-03 — Phase-2 tooling closeout: merge both PRs + sequential-merge rule (PR #400)
 
 - **Goal:** land the two Phase-2 tooling PRs and capture the merge-ordering learning.

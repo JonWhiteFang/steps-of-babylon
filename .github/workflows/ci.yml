@@ -122,10 +122,22 @@ jobs:
       # #218: informational coverage of the JVM unit suite. NON-GATING — no threshold; the report is
       # uploaded as an artifact so future work can see which surfaces (Compose/service/worker) are
       # uncovered. :app:-prefixed to stay scoped to the shipping module (the com.android.test benchmark
-      # modules carry no product code + don't apply Kover). Reuses the just-run test results.
-      - name: Kover coverage report (informational)
+      # modules carry no product code + don't apply Kover). Reuses the just-run test results. This runs
+      # BEFORE the #373 verify step (below) as its OWN step so report.xml/html are written even if the
+      # gate then fails — the `if: always()` artifact upload always captures the whole-app report.
+      - name: Kover coverage report (informational, whole-app)
         if: needs.changes.outputs.code == 'true'
         run: ./gradlew :app:koverXmlReport :app:koverHtmlReport --stacktrace
+
+      # #373 (testing-1): GATING coverage ratchet — scoped to the fragile concurrency/economy zones only
+      # (see the kover{} block in app/build.gradle.kts). koverVerifyDebug uses the FILTERED debug-variant
+      # report set (blended floor 85 + per-package floor 54); the aggregate koverVerify/koverXmlReport
+      # stay unfiltered/whole-app (so #218 above is unaffected). A refactor that silently guts assertions
+      # on these zones drops coverage below a floor and fails HERE, on every code PR. Separate step so the
+      # report above is already written when this runs.
+      - name: Kover verify (fragile-zone coverage ratchet, #373)
+        if: needs.changes.outputs.code == 'true'
+        run: ./gradlew :app:koverVerifyDebug --stacktrace
 
       - name: Compile benchmark modules (type-check only; benchmarks run locally, never CI-gated)
         if: needs.changes.outputs.code == 'true'

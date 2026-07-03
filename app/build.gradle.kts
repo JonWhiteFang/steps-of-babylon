@@ -219,9 +219,10 @@ android {
         // V1X-13 / ADR-0014 i18n guard: promote HardcodedText from warning to error so a
         // hardcoded android:text/contentDescription/hint in an XML resource fails the build.
         // LIMITATION: HardcodedText is an XML-only check — it does NOT flag Compose
-        // `Text("literal")` (verified empirically: this build passes despite ~110 hardcoded
-        // Compose strings still present on phase-2 screens). Compose string discipline is held
-        // by the phase-1 migration + review until a dedicated Compose lint rule lands later.
+        // `Text("literal")`. i18n extraction (#34) is complete, so hardcoded Compose prose is
+        // now the exception, not the norm. The forward guard against a NEW hardcoded single-line
+        // `Text("prose")` regressing into presentation/ is the JVM arch test
+        // `architecture/ComposeHardcodedStringTest` (#382), not this XML-only lint rule.
         error += "HardcodedText"
     }
 }
@@ -246,6 +247,60 @@ baselineProfile {
     automaticGenerationDuringBuild = false
 }
 
+// #373 (testing-1): a scoped coverage RATCHET on the fragile concurrency/economy zones — the code most
+// costly to have silently un-tested. It gates `koverVerifyDebug` (the debug-variant report set), NOT the
+// aggregate `koverVerify`/`koverXmlReport`, so the #218 informational whole-app report stays UNFILTERED
+// (verified: `koverXmlReport` still emits all ~49 packages). The `filters { includes { classes(...) } }`
+// on the variant set scopes BOTH its report and its verify — that's why we put the gate on a *variant*
+// set, not on `total`.
+//
+// Kover 0.9.8 DSL note (verified against the plugin jar): a verify `rule {}` exposes only `groupBy` +
+// `bound`; there is NO per-rule `filters`. Scoping lives on the report SET. So two complementary rules
+// share the one variant filter:
+//   A) APPLICATION-blended floor — resists slow multi-package erosion across the whole scoped zone.
+//   B) PACKAGE floor — resists any SINGLE package collapsing (which the blend could mask).
+// Floors are a RATCHET (measured − a small churn margin), not a target — raise them as coverage climbs.
+// Measured LINE% at introduction: blended 87.18%; per-package data.repository 56.94 / domain.usecase 98.73
+// / presentation.battle.engine 92.15 / domain.battle.{engine 100, entity 96.10}. CI runs koverVerifyDebug.
+kover {
+    reports {
+        variant("debug") {
+            filters {
+                includes {
+                    classes(
+                        "com.whitefang.stepsofbabylon.data.repository.*",
+                        "com.whitefang.stepsofbabylon.domain.usecase.*",
+                        "com.whitefang.stepsofbabylon.presentation.battle.engine.*",
+                        "com.whitefang.stepsofbabylon.domain.battle.*",
+                    )
+                }
+            }
+            verify {
+                // A) blended floor over the whole scoped zone (measured 87.18%).
+                rule("fragile-zone blended line coverage") {
+                    groupBy = kotlinx.kover.gradle.plugin.dsl.GroupingEntityType.APPLICATION
+                    bound {
+                        minValue = 85
+                        coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
+                        aggregationForGroup =
+                            kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE
+                    }
+                }
+                // B) per-package floor — no single scoped package may collapse below this.
+                rule("fragile-zone per-package line coverage") {
+                    groupBy = kotlinx.kover.gradle.plugin.dsl.GroupingEntityType.PACKAGE
+                    bound {
+                        minValue = 54
+                        coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
+                        aggregationForGroup =
+                            kotlinx.kover.gradle.plugin.dsl.AggregationType.COVERED_PERCENTAGE
+                    }
+                }
+            }
+        }
+    }
+}
+
 dependencies {
     // Compose
     val composeBom = platform(libs.compose.bom)
@@ -257,6 +312,11 @@ dependencies {
     implementation(libs.compose.material.icons)
     implementation(libs.compose.material.icons.extended)
     debugImplementation(libs.compose.ui.tooling)
+
+    // #375: LeakCanary — debug-only leak detection for the long-lived loop-thread + engine +
+    // SurfaceHolder + foreground-service retention topology. Auto-installs via its own
+    // ContentProvider (zero wiring); NEVER enters the release AAB (debugImplementation only).
+    debugImplementation(libs.leakcanary)
 
     // Coroutines — #257: pin the runtime explicitly (was floating transitively at 1.9.0 via
     // Room-ktx/Lifecycle/Hilt). Aligned with kotlinx-coroutines-test via the shared `coroutines` ref.

@@ -54,7 +54,8 @@ All versions managed in `gradle/libs.versions.toml`. Never hardcode versions in 
 |---|---|---|---|
 | detekt | 2.0.0-alpha.5 | Gradle plugin (`dev.detekt`) | Code-smell / complexity analysis (`:app:detekt`) |
 | ktlint | 1.8.0 | CLI (`lint-kotlin.sh`, SHA-pinned) | Formatting enforcement (EditorConfig-driven) |
-| Kover | 0.9.8 | Gradle plugin (`org.jetbrains.kotlinx.kover`, `:app`) | JVM unit-test coverage report (`:app:koverXmlReport`/`koverHtmlReport`). **Informational / non-gating** — no threshold (#218) |
+| Kover | 0.9.8 | Gradle plugin (`org.jetbrains.kotlinx.kover`, `:app`) | Whole-app JVM coverage report (`:app:koverXmlReport`/`koverHtmlReport`) — **informational** (#218). **Plus a scoped GATING ratchet (#373):** `:app:koverVerifyDebug` fails the build if the fragile concurrency/economy zones (`data.repository`/`domain.usecase`/`presentation.battle.engine`/`domain.battle.*`) drop below a blended LINE floor 85 or per-package floor 54. Filtered `variant("debug")` set, so the whole-app report stays unfiltered |
+| LeakCanary | 2.14 | `debugImplementation` (`:app`) | **Debug-only** leak detection for the loop-thread/FGS/`SurfaceView` retention topology (#375). Auto-installs via ContentProvider; NEVER in the release AAB |
 | OSV-Scanner | reusable action (SHA-pinned) | `.github/workflows/osv-scan.yml` | Supply-chain vuln scan of the full dependency set → Code Scanning tab. **Non-gating**, weekly + on `main` (L77) |
 
 **Alpha rationale:** no stable detekt supports Kotlin 2.3.0 (stable 1.23.x targets ≤ 2.0); ktlint 1.8.0 embeds a 2.2.x Kotlin parser (no actual parse failures in this codebase). The alpha is dev-tooling only — never shipped in the AAB.
