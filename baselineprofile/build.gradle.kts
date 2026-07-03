@@ -24,6 +24,10 @@ android {
     targetProjectPath = ":app"
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+
 // Run the generator on a real device / non-rooted physical device or an AOSP/Play-image emulator.
 baselineProfile {
     useConnectedDevices = true
