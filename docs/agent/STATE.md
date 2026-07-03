@@ -19,7 +19,7 @@ dependency-verification (#256), clock-tamper (#211), GameEngine decomposition (#
 dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependabot wave, CI/supply-chain
 (#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
 (CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
-#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1294 JVM + 9 instrumented tests**
+#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1302 JVM + 9 instrumented tests**
 green (per-wave test-count detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) **DONE — the manual Play
@@ -47,9 +47,9 @@ the med/low backlog (#262) remain.
   fixed), shipped as 3 PRs: **PR-A #393 `7fe241f` MERGED** (#370 assembleRelease in the PR gate + #376
   gitleaks; A5 non-provider-patterns is a silent-API-no-op → manual Settings step). **PR-B #394 MERGED**
   (#371 `StepCreditAllowlistTest` 6 tests + #372 `BattleEngineLockScanTest` 1 test + `guard-sensitive-edits.sh`
-  tier-4 concurrency-reviewer advisory + CLAUDE.md wiring + ADR-0038; 1294→1301). **PR-C (#374 crash-report
+  tier-4 concurrency-reviewer advisory + CLAUDE.md wiring + ADR-0038). **PR-C (#374 crash-report
   Report/email exit path incl. the required `<queries>` + #380 monitoring runbook) — implementation DONE,
-  rebased on main, doc-synced, 1301→1302 (full suite green), pending push+PR.** **NEXT:** push+PR+merge PR-C
+  rebased on main, doc-synced, full suite green, pending push+PR.** **NEXT:** push+PR+merge PR-C
   (tick #374/#380 + close #389). Then Phase 2 tooling (#378 jvmToolchain, #388 STATE trim, #387 BACKLOG.md,
   #386 AGENTS.md) OR the other tracks: first non-English `values-xx` locale (#34); internal→closed promotion;
   #233 clean Simulation-hoist (ADR-0012); A24 clock-tamper.
@@ -62,12 +62,6 @@ the med/low backlog (#262) remain.
   pure-doc-hygiene survivors (README + STATE.md trim 491→403); **#368** documented the battle-step reward as
   the sole exception to "Steps never generated in-game" (ADR-0003) across ~8 canonical docs. Both docs-only,
   no app/test/schema change. Detail in RUN_LOG.*
-- *Prior objectives (all DONE) — the recently-completed arc (#34 i18n phase 3 locale-readiness [6 PRs
-  #360–#365, app 100% locale-ready, 1294 JVM], i18n phase 2 #354/#355, `/backup-to-vault` skill, #217
-  service tests, Claude-tooling PRs #345/#346, the **v1.0.12 release** vc 28 → Play internal, audit fixes
-  #216/#221, audit-triage batches A–D, and the **v1.0.11 release** vc 27 and everything before it) — are
-  recorded per-PR in `docs/agent/RUN_LOG.md` + `CHANGELOG.md` and summarized under "Recently shipped"
-  below; not duplicated here (per the one-page rule — CLAUDE.md "Always-on memory rules").*
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
