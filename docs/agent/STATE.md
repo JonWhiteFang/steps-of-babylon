@@ -71,41 +71,9 @@ the med/low backlog (#262) remain.
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
-- **2026-06-20 — test-integrity + architecture cluster MERGED (all `[Unreleased]`, off the 2026-06-18
-  audit backlog; spec+plan each through the Adversarial Review Gate, single-agent).** **Test-integrity**
-  (#252 concurrent-contention DAO test / #253 Compose-UI-test beachhead) — PR #298, `7aac895`, +15 JVM →
-  **1167** (#253 left open for follow-up screens). **Architecture-invariant** (#227 domain→data
-  dependency-rule fix / #228 `DomainPurityTest` strengthened) — PR #299, `cfe46f1`, +1 JVM, ADR-0034.
-  **Presentation→data cleanup** (#219 ViewModel DAO/entity-leak / #229 persistence-abstraction rule) —
-  PR #300, `870c938`, +1 JVM, ADR-0035 (new `PresentationPurityTest`). The architecture cluster
-  #227/#228/#219/#229 is now fully closed; #220/#230/#231/#234 remain.
-- **2026-06-20 — three complete-app-review fix waves MERGED (all `[Unreleased]`, off the 2026-06-18 audit
-  backlog; spec+plan each through the Adversarial Review Gate, ultracode OFF → single-agent).**
-  **Accessibility** (#213 button contrast / #214 battle TalkBack live region / #226 color-blind deferral) —
-  PR #296, `0ff9662`, +13 JVM → **1152**. **Performance** (#242 background-music caching / #243
-  projectile-trail throttle) — PR #295, `2363359`, +9 JVM, ADR-0033. **Privacy/monetization** (#240 in-app
-  policy link / #239 policy-form consistency / #241 AdMob PG content-rating cap) — PR #294, `78846fe`, +4
-  JVM, ADR-0032 (+ ADR-0006 Q5 amended). No schema/economy/engine-formula change in any wave.
-- **2026-06-19 — full ultracode doc-drift sweep (docs-only, `[Unreleased]`).** Multi-agent `Workflow`
-  (59 agents: 9 live-doc-cluster finders, every claim code-grounded → per-finding adversarial refute →
-  cross-doc-coherence + link-integrity lanes → refute). 48 candidates → **48 surviving, 0 refuted**;
-  deduped to **34 unique fixes across 15 live docs**. Headline theme: the long-standing **test-count
-  inflation reconciled** — actual `@Test` count is **1118** (gradle: 1118, 0 failures), but CLAUDE.md
-  said 1141, STATE.md 1141 (with a self-flagged but never-reconciled "+23 pre-branch drift"), README
-  both 1110 and 1010, CHANGELOG `[Unreleased]` "1133→1141". All reconciled to **1110→1118 (+8)** on the
-  real shipped base. Also: `domain/usecase/` **36→39**; SFX **9→7** (.ogg ground truth); 7 per-file
-  test counts in source-files.md (CardType 31→32, BillingManagerImpl 14→20, RealPurchaseVerifier 4→9,
-  PlayerRepositoryImpl 13→18, DailyStepDao 14→13, CardRepositoryImpl 16→15, SimulationMath 34→42);
-  BattleViewModel **16→15-param**; CardsUiState "dust balance"→copy counts; **security-model.md** key-recovery
-  row rewritten to the #238 scoped-wipe behavior; **database-schema.md** `fallbackToDestructiveMigration()`→
-  `fallbackToDestructiveMigrationOnDowngrade` (+ migration-floor=v7 framing); **lib-room.md** `adjustStepBalance`
-  example regained its `MAX(0,…)` clamp; **plan-FORWARD.md** §H/§D blockers #190/#191/#192 + soak #193/#194/#195
-  ticked MERGED; **plan-V1X-roadmap** V1X-07/10/11 moved to shipped + 2 `AGENTS.md`→`CLAUDE.md` path refs;
-  **plan-31** build pointer v1.0.5→v1.0.10; **plan-32-ci** post-authoring reconciliation note (5 workflows +
-  benchmark type-check); **play-store-listing** desc char-count 2,389→2,927 + 3 mis-categorized upgrade bullets
-  fixed against `UpgradeType`; **product.md** Workshop 24→"22 Steps-purchasable (MULTISHOT/BOUNCE_SHOT hidden)".
-  No app code/schema/test change; **1118 JVM** unchanged.
-- *(Older entries trimmed — see RUN_LOG for full history.)*
+Per-PR history lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md` (per-PR) — not
+duplicated here (per the one-page rule). For the current objective and what's in-flight, see
+`## Current objective` above.
 
 ## What works (current capabilities)
 
