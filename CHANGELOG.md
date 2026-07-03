@@ -4,6 +4,14 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Docs — sequential-merge rule for stacked PRs (PR #400)
+
+- Added a **Sequential merge for stacked PRs** subsection to `CLAUDE.md`'s Agent protocol (after the PR
+  Task-List Convention): when a plan produces multiple PRs, merge them one at a time — land one before
+  advancing the next, merge as soon as required checks pass (green-checks-only gate), and rebase the next
+  branch onto updated `main`. Prevents the newest-first doc-head collisions (`CHANGELOG.md`/`STATE.md`/
+  `RUN_LOG.md`) that forced a manual rebase on the Phase-2 PR-2 (#399) landing. Docs-only.
+
 ### Tooling — JDK toolchain pin (#378) — Phase-2 tooling PR-2
 
 - **#378 (devenv-1).** Pinned a JVM-17 Gradle toolchain on `:app` + both benchmark modules via

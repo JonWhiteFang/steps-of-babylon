@@ -41,23 +41,19 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (Phase-2 tooling — BOTH PRs MERGED).** Phase-2 of the tooling-gap backlog (tracker #389);
-  spec+plan both through the Adversarial Review Gate
-  (`docs/superpowers/{specs,plans}/2026-07-03-phase2-tooling*`; spec gate 9/9/0, plan gate 12/11/1),
-  executed subagent-driven (spec+quality review per task). **PR-1 #398 MERGED (`0802e22`) — docs/DX:**
-  #386 thin `AGENTS.md` redirect pointer, #387 `/checkpoint` step 6 that regenerates a GENERATED
-  `docs/agent/BACKLOG.md` from `gh issue list` (+ seeded snapshot), #388 STATE.md trim (relocated the
-  per-PR "Recently shipped" narrative + test-count ladder to RUN_LOG/CHANGELOG, collapsed the objective
-  stack, corrected the stale headline count to 1302). **PR-2 #399 MERGED — #378 `devenv-1`:** pinned a
-  JVM-17 Gradle toolchain (`kotlin { jvmToolchain(17) }`) on `:app` + both benchmark modules
-  (local-detection only, no foojay; ADR-0039). No app/test/schema/engine change; **JVM test count unchanged
-  at 1302**. **NEXT:** tick the Phase-2 boxes on tracker #389 (leave it open for Phases 3–4:
-  #373/#375/#382/#381/#384/#396, #379/#383/#385/#377). Other tracks still open: first non-English
-  `values-xx` locale (#34); internal→closed promotion; #233 clean Simulation-hoist (ADR-0012); A24 clock-tamper.
-- *Previous objective (DONE, 2026-07-02) — Phase-1 tooling safety baseline (tracker #389): all 6 findings
-  merged across PR-A (#370 assembleRelease-in-CI + #376 gitleaks), PR-B (#371 `StepCreditAllowlistTest` +
-  #372 `BattleEngineLockScanTest` + concurrency-reviewer advisory, ADR-0038), PR-C (#374 crash-report
-  email exit path + #380 monitoring runbook). Detail in RUN_LOG/CHANGELOG.*
+- **CURRENT — no active workstream; pick the next track.** Phase-2 tooling is fully closed out (below).
+  Open tracks to choose from: first non-English `values-xx` locale (#34, the i18n payoff — app is 100%
+  locale-ready); internal→closed promotion (developer-judgment Closed-Test Readiness Gate); #233 clean
+  Simulation-hoist (ADR-0012); A24 clock-tamper; and the tooling-gap **Phases 3–4** still open on tracker
+  #389 (quality/reliability #373/#375/#382/#381/#384/#396; release/ops #379/#383/#385/#377). See
+  `docs/agent/BACKLOG.md` for the full open-issue snapshot.
+- *Previous objective (DONE, 2026-07-03) — Phase-2 tooling (tracker #389 Phase 2): both PRs MERGED, all 4
+  findings closed. **PR-1 #398 (`0802e22`)** — #386 `AGENTS.md` redirect, #387 `/checkpoint`→`BACKLOG.md`,
+  #388 STATE.md trim (+ stale headline 1294→1302). **PR-2 #399 (`6984cb4`)** — #378 JVM-17 `jvmToolchain`
+  on all 3 modules (local-detection, no foojay; ADR-0039). Plus **PR #400** — the sequential-merge rule
+  for stacked PRs added to CLAUDE.md (learned from the #398/#399 rebase). Spec 9/9/0, plan 12/11/1;
+  subagent-driven. No app/test/schema change; **1302 JVM** unchanged. Phase-1 tooling baseline (6 findings,
+  PR-A/B/C) shipped 2026-07-02. Detail in RUN_LOG/CHANGELOG.*
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
