@@ -43,6 +43,8 @@
 - [ ] Widget renders correctly
 - [ ] Battery usage acceptable (< 5% per day for step counting)
 - [ ] Full JVM unit-test suite + instrumented suite pass (live counts in STATE.md / CLAUDE.md — don't hardcode here)
+- [ ] **Open-source notices render** — open Help → scroll to "Open-source notices"; the notice text loads (#377/ADR-0041; the only OSS-attribution check no build lane can catch)
+- [ ] **OSS notices regenerated if deps changed** — if the shipping (`implementation`) dependency set changed since the last release, re-run `python3 tools/generate_oss_notices.py` + commit `app/src/main/res/raw/oss_notices.txt` (#377)
 
 ## Play Store Assets (Plan 31)
 

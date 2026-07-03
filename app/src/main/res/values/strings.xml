@@ -459,6 +459,8 @@
     <string name="help_encounters_body">Rewards delivered while you walk:\n• Supply drops appear in your inbox based on step milestones and random chance.\n• Claim drops for Steps, Gems, Power Stones, or Card Copies.\n• Daily missions refresh at midnight — complete 3 per day for bonus rewards.\n• Walking milestones award Gems, Power Stones, and cosmetics at major step thresholds.</string>
     <string name="help_fairplay_title">🛡️ Fair Play</string>
     <string name="help_fairplay_body">Steps of Babylon uses anti-cheat to keep the game fair:\n• 200 steps/minute rate limit (prevents shaker exploits).\n• 50,000 steps/day ceiling.\n• Health Connect cross-validation verifies step counts against your device\'s health data.\n• Activity Minute Parity converts exercise sessions to step-equivalents for indoor workouts.</string>
+    <!-- #377 (depmgmt-1): Apache-2.0 §4(d) open-source attribution section title; body is the generated res/raw/oss_notices.txt asset -->
+    <string name="help_oss_title">📜 Open-source notices</string>
     <!-- i18n #34 phase 3: Workshop empty-state (category Z) -->
     <string name="workshop_empty">No upgrades in this category yet.</string>
     <!-- i18n #34 phase 3: Workshop stat-value units (category G / D-workshop) -->

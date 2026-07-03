@@ -4,6 +4,30 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Tooling — Phase-4: OSS-attribution notice (#377) + macrobenchmark-numbers tracking (#385) — Phase-4 tooling PR-3
+
+- **#377 (depmgmt-1).** Added an **open-source attribution surface** to satisfy Apache-2.0 §4(d) on the
+  shipped binary. New `tools/generate_oss_notices.py` generates `app/src/main/res/raw/oss_notices.txt` (the
+  full direct shipping-dependency set + license bodies); `HelpScreen` renders it read-only in a new
+  "Open-source notices" section. **No new runtime dependency, no nav route, no fragile-zone edit.**
+- **Approach change (Adversarial Review Gate, Survivor 5):** the original plan used Google's
+  `oss-licenses-plugin` + `OssLicensesMenuActivity`, but `play-services-oss-licenses:17.5.1`'s v2 activity
+  (since 17.4.0) drags **alpha AndroidX Compose + Navigation3** into the AAB (POM-verified), violating the
+  no-alpha-AAB discipline (#33). Switched to the **static NOTICE asset** (developer-confirmed). The generator
+  derives coordinates from `gradle/libs.versions.toml`; license bodies are hand-curated (regeneration catches
+  added/removed deps, not license-text changes — re-run + commit on a dependency change, a release-checklist
+  item). ADR-0041.
+- **R8-verified:** local `assembleRelease` (minified + resource-shrunk) retains `raw/oss_notices`
+  (resource `0x7f0e0004`) — a static `R.raw` id is a keep root; no proguard rule needed. The PR-gate
+  `assembleRelease` (`ci.yml`) exercises this on every code PR. The on-device render check is a REQUIRED
+  pre-tag release-checklist item.
+- **#385 (perf-1).** Refreshed `docs/performance/startup-baseline.md` §2: the macrobenchmark startup/frame
+  **numbers** remain deferred as a **one-time on-device developer step** (needs a non-debuggable fragile-zone
+  `benchmark` build type + a physical device; emulator timings are not CI-gated per spec). Tracking-note
+  only; no code change (ADR-0025 unchanged).
+- JVM test count unchanged (**1314**); no schema change; no versionCode bump. Plan + review in
+  `docs/superpowers/plans/2026-07-03-phase4-release-ops-tooling.md`.
+
 ### Tooling — Phase-4 release/ops: rollout/rollback doc (#383) — Phase-4 tooling PR-2
 
 - **#383 (releaseops-2).** Documented the **internal-only automated lane + manual-production

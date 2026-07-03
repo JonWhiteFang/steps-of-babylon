@@ -1,3 +1,34 @@
+## 2026-07-03 — Phase-4 tooling PR-3: OSS-attribution notice (#377) + #385 tracking note
+
+- **Goal:** #377 (`depmgmt-1`) — an Apache-2.0 §4(d) open-source attribution surface on the shipped AAB; +
+  refresh the #385 (`perf-1`) tracking note. Branched `tooling/phase4-oss-notices` off `main` **after PR-2
+  (#407) merged** (`1be832e`); restored the stashed PR-3 plan refinements from the lean re-review.
+- **Approach REVISED via the Adversarial Review Gate (Survivor 5, major/confirmed):** the plan's original
+  `oss-licenses-plugin` route was dropped — `play-services-oss-licenses:17.5.1`'s v2 activity (since 17.4.0)
+  pulls **alpha AndroidX Compose + Navigation3** into the AAB (verified against the 17.5.1 vs 17.3.0 POMs),
+  violating the no-alpha-AAB discipline (#33). Developer chose the **static NOTICE asset**. A lean
+  single-agent re-review of the new static-asset PR-3 section passed (3 minor fixes folded in: full direct-dep
+  enumeration incl. `user-messaging-platform`/`profileinstaller`, `.use{}` stream-close, honest
+  hand-curated-bodies scoping). ADR-0041.
+- **Implementation (zero new runtime dep, no fragile-zone edit, no nav route):**
+  `tools/generate_oss_notices.py` (joins the `tools/*.py` convention — NOT a Gradle task in the fragile
+  build file) derives the coordinate list from `libs.versions.toml` + hand-curated license bodies → writes
+  `app/src/main/res/raw/oss_notices.txt` (18 shipping libs; committed). `HelpScreen` reads it once
+  (`openRawResource(...).bufferedReader().use{}` in `remember{}`) and renders read-only via the existing
+  `HelpSection`; new `help_oss_title` string. No new `Screen` route (Help already exists → `DeepLinkRoutingTest`
+  untouched).
+- **Verification (full local gate GREEN):** `assembleDebug` + `testDebugUnitTest` (**1314 JVM**, incl.
+  `ComposeHardcodedStringTest`/`DeepLinkRoutingTest`/`PresentationPurityTest`) + `lintDebug`/`lintRelease` +
+  detekt + ktlint (after bumping the 2 pre-existing baselined `HelpScreen`/`HelpSection` `@Composable`-naming
+  line numbers 21→23 / 80→96, shifted by the insertion). **R8-verified:** local `assembleRelease` (minified +
+  resource-shrunk) retains `raw/oss_notices` (aapt2 dump: resource `0x7f0e0004`; the notice ships as
+  `res/E_.txt` 5361 bytes) — a static `R.raw` id is a keep root, no proguard rule needed.
+- **Docs synced:** source-files (HelpScreen + tools + raw asset), release-checklist (S7 render + regenerate
+  items), startup-baseline.md §2 (#385), CHANGELOG, ADR-0041, STATE. No schema change; no versionCode bump.
+- **What remains / next:** open PR-3, merge on green — **closes the completable Phase-4 body** (#379/#383/#377
+  done; #385 tracked/deferred; #396 detekt rule stays deferred). Then tracker #389 is down to the two
+  deferred items (#385 device pass, #396 detekt rule) + the non-tooling backlog.
+
 ## 2026-07-03 — Phase-4 tooling PR-2: rollout/rollback doc (#383, release-checklist.md)
 
 - **Goal:** #383 (`releaseops-2`) — document the internal-only automated release lane + the manual-production

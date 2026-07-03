@@ -1,0 +1,144 @@
+OPEN-SOURCE NOTICES — Steps of Babylon
+
+Steps of Babylon bundles the third-party open-source software listed below. This notice is provided
+to satisfy the attribution requirements of those licenses (including Apache License 2.0 section 4d).
+Generated from gradle/libs.versions.toml by tools/generate_oss_notices.py — re-run it if the
+shipping-dependency set changes.
+
+==========================================================================================
+BUNDLED LIBRARIES
+==========================================================================================
+
+* Jetpack Compose (UI, Graphics, Material 3, Material Icons)
+    Version:   managed by Compose BOM 2026.06.00
+    Copyright: The Android Open Source Project
+    License:   Apache-2.0
+
+* AndroidX Core KTX
+    Version:   1.19.0
+    Copyright: The Android Open Source Project
+    License:   Apache-2.0
+
+* AndroidX Activity Compose
+    Version:   1.13.0
+    Copyright: The Android Open Source Project
+    License:   Apache-2.0
+
+* AndroidX Lifecycle (ViewModel/Runtime Compose)
+    Version:   2.11.0
+    Copyright: The Android Open Source Project
+    License:   Apache-2.0
+
+* AndroidX Navigation Compose
+    Version:   2.9.8
+    Copyright: The Android Open Source Project
+    License:   Apache-2.0
+
+* AndroidX Room (Runtime, KTX)
+    Version:   2.8.4
+    Copyright: The Android Open Source Project
+    License:   Apache-2.0
+
+* AndroidX WorkManager
+    Version:   2.11.2
+    Copyright: The Android Open Source Project
+    License:   Apache-2.0
+
+* AndroidX Hilt (Work, Navigation Compose)
+    Version:   1.3.0
+    Copyright: The Android Open Source Project
+    License:   Apache-2.0
+
+* AndroidX Profile Installer
+    Version:   1.4.1
+    Copyright: The Android Open Source Project
+    License:   Apache-2.0
+
+* AndroidX Health Connect Client
+    Version:   1.1.0
+    Copyright: The Android Open Source Project
+    License:   Apache-2.0
+
+* AndroidX SQLite KTX
+    Version:   2.6.2
+    Copyright: The Android Open Source Project
+    License:   Apache-2.0
+
+* Dagger Hilt
+    Version:   2.59.2
+    Copyright: Google LLC
+    License:   Apache-2.0
+
+* Kotlin Coroutines (Android)
+    Version:   1.11.0
+    Copyright: JetBrains s.r.o. and contributors
+    License:   Apache-2.0
+
+* Guava
+    Version:   33.6.0-android
+    Copyright: Google LLC
+    License:   Apache-2.0
+
+* SQLCipher for Android
+    Version:   4.16.0
+    Copyright: Zetetic LLC
+    License:   BSD-3-Clause (Zetetic)
+
+* Google Play Billing Library
+    Version:   9.1.0
+    Copyright: Google LLC
+    License:   Android SDK License (Google)
+
+* Google Mobile Ads SDK (Play Services Ads)
+    Version:   25.4.0
+    Copyright: Google LLC
+    License:   Android SDK License (Google)
+
+* Google User Messaging Platform (UMP)
+    Version:   4.0.0
+    Copyright: Google LLC
+    License:   Android SDK License (Google)
+
+==========================================================================================
+LICENSE TEXTS
+==========================================================================================
+
+------------------------------------------------------------------------------------------
+Apache-2.0
+------------------------------------------------------------------------------------------
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use these files except
+in compliance with the License. You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is
+distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+implied. See the License for the specific language governing permissions and limitations under the
+License.
+
+
+------------------------------------------------------------------------------------------
+BSD-3-Clause (Zetetic)
+------------------------------------------------------------------------------------------
+Copyright (c) 2008-2024, Zetetic LLC. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted
+provided that the following conditions are met:
+  * Redistributions of source code must retain the above copyright notice, this list of conditions
+    and the following disclaimer.
+  * Redistributions in binary form must reproduce the above copyright notice, this list of conditions
+    and the following disclaimer in the documentation and/or other materials provided with the
+    distribution.
+  * Neither the name of the ZETETIC LLC nor the names of its contributors may be used to endorse or
+    promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY ZETETIC LLC ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES ARE
+DISCLAIMED. IN NO EVENT SHALL ZETETIC LLC BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE.
+
+
+------------------------------------------------------------------------------------------
+Android SDK License (Google)
+------------------------------------------------------------------------------------------
+Distributed under the Android Software Development Kit License Agreement
+(https://developer.android.com/studio/terms) / the Google APIs Terms of Service. Copyright Google LLC.
