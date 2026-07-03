@@ -39,7 +39,15 @@ single baseline profile is sufficient for v1. Not an error.
 
 ## 2. Startup-timing numbers — measurement procedure + status
 
-### Status: harness present; numbers are a documented follow-up (NOT blocking Gate G)
+### Status: harness present; numbers are a deferred, tracked, developer-run on-device step (#385)
+
+> **#385 (`perf-1`) status refresh (2026-07-03, Phase-4 tooling).** This deferral is now tracked as issue
+> **#385**. The gap is unchanged and deliberate: capturing startup/frame **numbers** needs a non-debuggable
+> `benchmark` build type on `:app` (a **fragile-zone** change to `app/build.gradle.kts` — it interacts with
+> the #124 license-key fail-closed guard's task graph) **and a physical device** (emulator timings are
+> unreliable and explicitly NOT CI-gated, per spec). It is a **one-time on-device developer step**, not a
+> repo task an agent can complete headless — hence deferred rather than done this pass. The procedure below
+> is the runbook for when that device pass happens; ADR-0025 records the original decision.
 
 The `:macrobenchmark` module ships `StartupBenchmark` (cold-start `StartupTimingMetric`, comparing
 `CompilationMode.None()` vs `CompilationMode.Partial(BaselineProfileMode.Require)`) and `JourneyBenchmark`

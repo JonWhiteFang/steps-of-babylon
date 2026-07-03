@@ -47,15 +47,17 @@ the med/low backlog (#262) remain.
   `releaseops-1`) MERGED** (#406, `207e67d`) — versionCode-collision fail-fast guard in `release.yml`
   (topology-independent `git tag -l --sort=-v:refname` lookup, `|| true`-safe first-release skip, loud
   `::error::` parse — S1/S2/S3 applied; verified locally against real+scratch tags). **PR-2 (#383,
-  `releaseops-2`) — IN FLIGHT** — doc-only:
+  `releaseops-2`) MERGED** (#407, `1be832e`) — doc-only:
   internal-only automated lane + manual-production rollout/rollback story in `release-checklist.md` (the
   `userFraction`/`inProgress` `release.yml` change is deferred until production lands). **PR-3 (#377,
-  `depmgmt-1`)** — **REVISED to a static build-time NOTICE asset in `HelpScreen`** (NOT the
+  `depmgmt-1`) — IN FLIGHT** — **static build-time NOTICE asset in `HelpScreen`** (NOT the
   oss-licenses-plugin: review S5 confirmed `play-services-oss-licenses:17.5.1`'s v2 activity drags **alpha
   AndroidX Compose + Navigation3** into the AAB, violating the no-alpha-AAB discipline — developer-confirmed
-  the static-asset route); zero new runtime deps; satisfies Apache-2.0 §4(d). **#385 (`perf-1`)** — deferred:
-  benchmark numbers need a physical device (not CI-gated per spec); PR-3 refreshes the `startup-baseline.md`
-  tracking note only. **#396** (detekt nested-lock rule) stays deferred. **1314 JVM + 9 instrumented tests.**
+  the static-asset route, ADR-0041); `tools/generate_oss_notices.py` → `res/raw/oss_notices.txt`; zero new
+  runtime deps, no fragile-zone edit, no nav route; R8-verified the asset survives shrink. **#385
+  (`perf-1`)** — deferred: benchmark numbers need a physical device (not CI-gated per spec); PR-3 refreshes
+  the `startup-baseline.md` tracking note only. **#396** (detekt nested-lock rule) stays deferred.
+  **1314 JVM + 9 instrumented tests.**
 - *Previous — Phase-3 tooling (tracker #389 Phase 3): BOTH PRs MERGED; only #396 (deferred) remains.*
   **PR-1 MERGED** (`aa2b50c`, #402) — four non-fragile guards: **#373** scoped Kover coverage ratchet
   (blended floor 85 + per-package 54 on the fragile concurrency/economy zones, filtered `variant("debug")`

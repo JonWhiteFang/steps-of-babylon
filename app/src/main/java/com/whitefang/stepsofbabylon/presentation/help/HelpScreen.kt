@@ -11,7 +11,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -71,6 +73,20 @@ fun HelpScreen() {
             stringResource(R.string.help_fairplay_title),
             stringResource(R.string.help_fairplay_body),
         )
+
+        // #377 (depmgmt-1): Apache-2.0 §4(d) open-source attribution surface. The notice text is a
+        // build-time-generated raw asset (tools/generate_oss_notices.py → res/raw/oss_notices.txt),
+        // read once here and rendered read-only. Loaded as a String (not a Text("literal")), so it
+        // does not trip ComposeHardcodedStringTest; the title resolves via stringResource. ADR-0041.
+        val context = LocalContext.current
+        val ossNotices =
+            remember {
+                context.resources
+                    .openRawResource(R.raw.oss_notices)
+                    .bufferedReader()
+                    .use { it.readText() }
+            }
+        HelpSection(stringResource(R.string.help_oss_title), ossNotices)
 
         Spacer(Modifier.height(32.dp))
     }
