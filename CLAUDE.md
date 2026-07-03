@@ -366,8 +366,14 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1302 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1307 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
+- **Coverage ratchet (#373):** `:app:koverVerifyDebug` gates a scoped Kover coverage floor on the fragile
+  concurrency/economy zones (`data.repository`/`domain.usecase`/`presentation.battle.engine`/`domain.battle.*`)
+  — blended LINE floor 85 + per-package floor 54 (a ratchet, raise as coverage climbs). It's a filtered
+  `variant("debug")` report set, so the aggregate `koverXmlReport`/`koverVerify` stay whole-app (#218
+  informational report unaffected). CI runs it as a separate step; a refactor that guts assertions on these
+  zones fails HERE. (Kover 0.9.8: verify rules have no per-rule `filters`; scoping is on the report set.)
 - **Compose UI tests run on the JVM lane (#253):** `createComposeRule()` under Robolectric
   (`@RunWith(RobolectricTestRunner)` + `@GraphicsMode(NATIVE)`), backed by the `src/test/` fakes — no
   emulator, gated by the PR lane. `ui-test-manifest` must stay on `debugImplementation` (it supplies the
@@ -382,6 +388,11 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
   `.adjustStepBalance(`/`updateStepBalance`/`PlayerProfileEntity(` + a DAO write-count pin + a baked negative
   fixture); `architecture/BattleEngineLockScanTest` (#372 — battle-engine collaborators declare no monitor of
   their own; comment-stripped, collaborator-scoped, excludes `GameEngine`/`BattleHosts`);
+  `architecture/ComposeHardcodedStringTest` (#382 — fails on a NEW hardcoded single-line `Text("prose")` in
+  `presentation/`; word-boundary-anchored, excludes `$`-interpolations; single-line-scoped with the two known
+  multi-line `Text("MAX")` literals documented off-scope);
+  `data/local/FullChainMigrationSchemaTest` (#381 — runs the whole v7→v12 migration chain and validates the
+  terminal schema shape of all 13 tables against the committed `app/schemas/12.json`);
   `SimulationTest` (the extracted pure-domain game-loop core); `AtomicDaoConcurrencyTest` (#252 — the
   guarded-deduct / one-shot-claim atomic DAOs under real concurrent contention on a file-backed Room DB);
   `BattleSurfaceLifecycleTest` + `DeepLinkIntentTest` (instrumented, real-framework regression guards).

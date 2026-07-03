@@ -41,12 +41,22 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — no active workstream; pick the next track.** Phase-2 tooling is fully closed out (below).
-  Open tracks to choose from: first non-English `values-xx` locale (#34, the i18n payoff — app is 100%
-  locale-ready); internal→closed promotion (developer-judgment Closed-Test Readiness Gate); #233 clean
-  Simulation-hoist (ADR-0012); A24 clock-tamper; and the tooling-gap **Phases 3–4** still open on tracker
-  #389 (quality/reliability #373/#375/#382/#381/#384/#396; release/ops #379/#383/#385/#377). See
-  `docs/agent/BACKLOG.md` for the full open-issue snapshot.
+- **CURRENT — Phase-3 tooling (tracker #389 Phase 3), PR-1 IN FLIGHT (branch
+  `tooling/phase3-nonfragile-guards`).** Four non-fragile quality/reliability guards, build-verified locally
+  (1307 JVM + 9 instrumented, koverVerifyDebug + detekt + ktlint + assembleDebug all green): **#373**
+  scoped Kover coverage ratchet (blended floor 85 + per-package 54 on the fragile concurrency/economy zones,
+  filtered `variant("debug")` set → `koverVerifyDebug`; #218 whole-app report untouched); **#375** LeakCanary
+  2.14 (`debugImplementation`, verification-metadata regenerated); **#381** `FullChainMigrationSchemaTest`
+  (v7→v12 schema-shape validation, drift-catch verified); **#382** stale `lint{}` comment refresh +
+  `ComposeHardcodedStringTest`. Plan reviewed via the Adversarial Review Gate (18 raised/12 survived/6
+  refuted — the CRITICAL finding, that Kover 0.9.8 has no per-rule `filters`, was confirmed by disassembling
+  the plugin jar and drove the variant-set redesign). **Next: commit + open PR-1, then PR-2 (#384
+  frame-stats overlay, fragile zone) rebased onto updated `main`.** #396 stays deferred (blocked in-issue:
+  needs a stable detekt custom-rule API + new module).
+- Open tracks remaining after Phase-3: first non-English `values-xx` locale (#34, the i18n payoff — app is
+  100% locale-ready); internal→closed promotion (developer-judgment Closed-Test Readiness Gate); #233 clean
+  Simulation-hoist (ADR-0012); A24 clock-tamper; the rest of tracker #389 Phase 3 (#384 as PR-2, #396
+  deferred) + Phase 4 (release/ops #379/#383/#385/#377). See `docs/agent/BACKLOG.md`.
 - *Previous objective (DONE, 2026-07-03) — Phase-2 tooling (tracker #389 Phase 2): both PRs MERGED, all 4
   findings closed. **PR-1 #398 (`0802e22`)** — #386 `AGENTS.md` redirect, #387 `/checkpoint`→`BACKLOG.md`,
   #388 STATE.md trim (+ stale headline 1294→1302). **PR-2 #399 (`6984cb4`)** — #378 JVM-17 `jvmToolchain`
@@ -147,6 +157,7 @@ i18n #34: phase 1 (V1X-13) + phase 2 (Compose screens) + phase 3 (locale-readine
 - `presentation/battle/effects/` — particle pool, effect engine, all visual effects.
 - `gradle/libs.versions.toml` — single source for all dependency versions. `app/proguard-rules.pro` — hardened R8 rules.
 - `app/build.gradle.kts` — signing config + AdMob production-ID wiring (don't break the test-ID fallback) + `ndk { debugSymbolLevel = "FULL" }`.
+- **Kover coverage ratchet (#373)** — the `kover { reports { variant("debug") { filters{…} verify{…} } } }` block gates `koverVerifyDebug` on the fragile concurrency/economy packages (blended floor 85 + per-package 54). It MUST stay on a **filtered `variant` set**, NOT `total` (a `total` filter narrows #218's whole-app `koverXmlReport`). Kover 0.9.8 verify rules have **no per-rule `filters`** — don't try to re-add them. Floors are a ratchet: raise as coverage climbs, never silently lower. CI calls `:app:koverVerifyDebug` (scoped), NOT `:app:koverVerify` (whole-app, would fail on 0%-covered generated packages).
 - `Screen.items by lazy` + `argumentFreeRoutes by lazy` — guard against sealed-class init-order NPE (commit 1872af9).
 - `release/` — gitignored; `release/upload-keystore.jks` is irreplaceable (now Play-App-Signing-enrolled, mostly historical).
 - **Live-price wiring (PR B)** — "fetch once on Store entry" is intentional for v1; don't add resume/locale refresh without re-deriving cache invalidation.

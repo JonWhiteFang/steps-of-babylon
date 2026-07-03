@@ -4,6 +4,42 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Tooling — Phase-3 quality/reliability guards (#373, #375, #381, #382) — Phase-3 tooling PR-1
+
+- **#373 (testing-1).** Added a **scoped Kover coverage RATCHET** on the fragile concurrency/economy zones
+  via a filtered `kover { reports { variant("debug") { … } } }` set (gates `koverVerifyDebug`). Two
+  complementary rules over the scoped packages (`data.repository`, `domain.usecase`,
+  `presentation.battle.engine`, `domain.battle.*`): an APPLICATION-blended LINE floor of **85** (measured
+  87.18%) + a per-PACKAGE floor of **54** (lowest package `data.repository` 56.94%). Floors are a ratchet
+  (measured − a small churn margin), raised as coverage climbs. The aggregate `koverVerify`/`koverXmlReport`
+  stay **unfiltered/whole-app** so #218's informational report is unaffected (verified: `koverXmlReport`
+  still emits all 49 packages). CI runs `:app:koverVerifyDebug` as a **separate** step after the report step
+  (so the whole-app report is written before the gate can fail). _DSL note:_ Kover 0.9.8 verify `rule {}`
+  has no per-rule `filters` — scoping lives on the report SET; a variant set was used so `total` stays
+  whole-app. Wires into `.github/workflows/ci.yml`.
+- **#375 (perf-3).** Added **LeakCanary 2.14** as `debugImplementation(libs.leakcanary)` — debug-only leak
+  detection for the long-lived loop-thread + engine + `SurfaceHolder` + foreground-service retention
+  topology. Auto-installs via its own ContentProvider (zero wiring); NEVER enters the release AAB.
+  `verification-metadata.xml` regenerated for the new transitive artifacts (#256 supply-chain posture kept).
+- **#381 (db-1).** New JVM/Robolectric test `FullChainMigrationSchemaTest` — builds the DB in the committed
+  **v7** shape, runs the entire `AppMigrations.ALL` chain (v7→v12), then asserts the resulting live schema
+  (every table's columns + indices, all 13 v12 tables incl. the migration-created `billing_receipt`) matches
+  the committed `app/schemas/…/12.json`. Catches a recreate-table/ALTER `CREATE` whose shape drifts from the
+  entity — a launch crash for upgrading users that the existing data-transform (#222) + version-contiguity
+  (#237) tests do NOT catch. Reads the schema JSON off disk (no hand-transcribed DDL); uses the module's
+  `SupportSQLiteOpenHelper` idiom (not `MigrationTestHelper`, which needs a real Instrumentation).
+- **#382 (cqt-1).** Refreshed the stale `lint{}` comment in `app/build.gradle.kts` (the "~110 hardcoded
+  Compose strings" claim predates i18n #34) + added the forward guard `architecture/ComposeHardcodedStringTest`:
+  a JVM arch test (PresentationPurityTest idiom) that fails on a NEW hardcoded single-line `Text("prose")`
+  in `presentation/`. Word-boundary-anchored so `canvas.drawText(…)` doesn't false-positive; excludes
+  `$`-interpolations. Documented boundary: single-line only (two known multi-line `Text("MAX")` literals in
+  `LabsScreen`/`UltimateWeaponScreen` are out of scope + named in the KDoc; `R.string.upgrade_max` exists).
+- **No production runtime code changed; no schema change; no versionCode bump.** JVM test count **1302 → 1307**
+  (+4 `ComposeHardcodedStringTest`, +1 `FullChainMigrationSchemaTest`); 9 instrumented unchanged. Plan +
+  adversarial review (18 raised / 12 survived / 6 refuted) in `docs/superpowers/plans/`.
+- **Deferred (Phase 3, blocked):** #396 detekt nested-lock rule — needs a stable detekt custom-rule API +
+  a new rule module (documented in-issue). #384 (frame-stats overlay) ships as PR-2 (fragile-zone-isolated).
+
 ### Docs — sequential-merge rule for stacked PRs (PR #400)
 
 - Added a **Sequential merge for stacked PRs** subsection to `CLAUDE.md`'s Agent protocol (after the PR
