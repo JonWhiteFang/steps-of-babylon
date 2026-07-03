@@ -56,21 +56,33 @@ top-level `kotlin {}` extension. Whether AGP-9's *built-in* Kotlin registers tha
 version-specific and **not safe to assume**. Therefore:
 
 - **Primary attempt:** `kotlin { jvmToolchain(17) }` in each module.
-- **Fallback (if the `kotlin {}` DSL does not resolve):** the Gradle-core Java toolchain, which AGP
-  **always** registers:
+- **Fallback (if the `kotlin {}` DSL does not resolve under AGP-9 built-in Kotlin):** **not** a
+  top-level `java { toolchain { … } }` block. That block is the `JavaPluginExtension`, which is
+  registered by Gradle's `java`/`java-library`/`java-base` plugin — **none of the three modules applies
+  it** (verified: `app/build.gradle.kts:3-13`, `baselineprofile/build.gradle.kts:1-5`,
+  `macrobenchmark/build.gradle.kts:1-4`). Android modules configure Java via `android { compileOptions
+  { } }` (which all three already have), and AGP does **not** register a `java {}` extension on
+  `com.android.*` modules — so an unguarded `java { toolchain }` block fails at configuration time.
+  Note also that `kotlin { jvmToolchain { languageVersion.set(…) } }` (the property form) is **not** an
+  independent fallback — it is the same `kotlin {}` extension as the primary, so it fails identically if
+  `kotlin {}` is unavailable. The genuinely-independent fallback is the KGP compile-task route:
   ```kotlin
-  java {
-      toolchain {
-          languageVersion = JavaLanguageVersion.of(17)
-      }
+  tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+      compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
   }
   ```
-  The Kotlin compile tasks honor the `java` toolchain when no explicit Kotlin toolchain is set, so this
-  achieves the same pin.
+  which exists whenever Kotlin compilation is present (incl. AGP-9 built-in Kotlin). **Caveat:** this
+  pins the *bytecode target*, not necessarily the *JDK the compiler runs on* — so if the primary
+  `kotlin { jvmToolchain(17) }` is unavailable, the spike MUST confirm the resulting compiler JDK is
+  actually 17 (a true toolchain pin), not merely the bytecode target, before treating the fallback as
+  equivalent.
 
-The implementation plan's **first task is a spike** that determines which of the two compiles, applied
-identically to all three modules for consistency. Whichever wins is what ships; the loser is recorded
-in the ADR as "tried, not available under our plugin set."
+The implementation plan's **first task is a spike** that determines whether the primary
+`kotlin { jvmToolchain(17) }` DSL resolves, applied identically to all three modules for consistency.
+The strong expectation is that it does (AGP-9 built-in Kotlin registers a `kotlin {}` extension); the
+KGP-task fallback is the documented contingency only. Whichever mechanism ships — and the corrected
+framework reasoning (`java {}` is unavailable on `com.android.*` without the java plugin) — is recorded
+in the ADR.
 
 **Keep** the existing `compileOptions { sourceCompatibility/targetCompatibility = 17 }` in every module
 — that is the *bytecode target* and is orthogonal to the toolchain (and other tooling/tests read it).
@@ -95,6 +107,8 @@ We do **not** add the `foojay-resolver-convention` plugin to `settings.gradle.kt
 - `docs/agent/DECISIONS/ADR-0039-jdk-toolchain-pin.md` — new (see §6).
 
 ### 3.5 Verification
+The listed `run-gradle.sh` commands are the **pre-push developer check**; the end-to-end proof is
+already automated in CI (last bullet).
 - `./run-gradle.sh :app:compileDebugKotlin` — the finding's own verify command.
 - `./run-gradle.sh :app:assembleDebug` — full app compile (KSP/Hilt/Room path).
 - Type-check both benchmark modules (`:baselineprofile:assembleDebug`-equivalent / recursive assemble)
@@ -102,13 +116,28 @@ We do **not** add the `foojay-resolver-convention` plugin to `settings.gradle.kt
 - Confirm the `#124` fail-closed release license-key guard in `app/build.gradle.kts`
   (`gradle.taskGraph.whenReady`) is **unperturbed** — the toolchain is a compile setting, not a
   task-graph change, so this is a read-only confirmation, not a code change.
+- **CI already covers all three modules on every code PR:** `ci.yml` (build-and-test, gated on the
+  `code` classifier) runs `assembleRelease` **and** `:baselineprofile:assemble :macrobenchmark:assemble`
+  — a `build.gradle.kts` toolchain edit trips that gate, so all three modules compile under the new
+  toolchain in CI automatically. (CI runs on a temurin JDK-17 runner, so it verifies JDK-17
+  *compilation*, not the *presence* of the pin — see §3.6 drift note.)
 - **Non-goal:** no test-count change (build config only).
 
 ### 3.6 Risks & mitigations
-- *DSL unavailable under built-in Kotlin* → §3.2 fallback to `java { toolchain }`. The spike settles it
-  before any doc claims a specific mechanism.
+- *Primary `kotlin { jvmToolchain(17) }` DSL unavailable under built-in Kotlin* → §3.2 KGP-task fallback
+  (NOT the unresolvable `java { toolchain }` block). The spike settles which mechanism ships before any
+  doc claims a specific one.
 - *No JDK 17 on a future machine* → intended failure mode (clear error). Documented in README + ADR.
 - *Benchmark modules regress* → they are type-checked in CI already; the plan verifies both locally.
+- *Toolchain pin drifts / is deleted from a module* → NOT build-gated. CI runs on a temurin JDK-17
+  runner (`ci.yml` `setup-java` 17), so a dropped `jvmToolchain(17)` block leaves every CI check green
+  (`assembleRelease` + benchmark assembles verify JDK-17 *compilation*, not pin *presence*) — the
+  first-clone protection would silently regress. A `StepCreditAllowlistTest`-style JVM test grepping
+  each of the three `build.gradle.kts` for a JVM-17 toolchain block **is** feasible and would close
+  this, but is **deliberately deferred**: `devenv-1` is Low-priority DX (a drift ships no broken code
+  and breaks no invariant — a fresh clone hits an immediate clear toolchain error), so the cost of a
+  config-parsing test outweighs the benefit. This mirrors ADR-0038's deferred detekt nested-lock rule
+  (tracked as follow-up #396). Revisit if a module drift is ever observed; note the defer in ADR-0039.
 
 ## 4. PR-1 — the three docs/DX findings
 
@@ -118,8 +147,9 @@ We do **not** add the `foojay-resolver-convention` plugin to `settings.gradle.kt
 requiring `gh issue list` + cross-referencing ~3 prose locations (the exact drift the V1X roadmap warns
 about).
 
-**Skill change.** Add a numbered step to `.claude/skills/checkpoint/SKILL.md` (after the RUN_LOG
-append, before the historical-artifacts guard) that **regenerates** `docs/agent/BACKLOG.md` from:
+**Skill change.** Add a new **final numbered step (step 6)** to `.claude/skills/checkpoint/SKILL.md`,
+immediately after the ADR step (step 5) and before the `## Historical artifacts — NEVER modify`
+section, that **regenerates** `docs/agent/BACKLOG.md` from:
 ```
 gh issue list --state open --limit 200 --json number,title,labels
 ```
@@ -137,8 +167,10 @@ gh issue list --state open --limit 200 --json number,title,labels
 existing `BACKLOG.md` untouched** — it never writes a truncated/empty file. (Checkpoint already assumes
 a working tree; `gh` is an additional soft dependency.)
 
-**Seed.** PR-1 commits the **first generated `BACKLOG.md`** (the current 30 open issues) so the file
-exists immediately and the skill has a real artifact to keep fresh.
+**Seed.** PR-1 commits the **first generated `BACKLOG.md`** (whatever `gh issue list --state open`
+returns at generation time — ~30 open at authoring; note PR-1 itself closes #386/#387/#388, so the
+committed set is smaller) so the file exists immediately and the skill has a real artifact to keep
+fresh. Do **not** treat any literal count as a spec constant — the seed is mechanically regenerated.
 
 **Files:** `.claude/skills/checkpoint/SKILL.md` (add step), new `docs/agent/BACKLOG.md` (seed).
 
@@ -170,7 +202,7 @@ burns the context budget each session. Trim it back toward one page.
 
 **What to relocate (it already lives in RUN_LOG/CHANGELOG — this is deletion of duplicated history, not
 a move of unique content):**
-- The `## Recently shipped (newest first)` per-PR narrative block — the detail is per-PR in `RUN_LOG.md`
+- The `## Recently shipped (newest first — see RUN_LOG for detail)` per-PR narrative block — the detail is per-PR in `RUN_LOG.md`
   and `CHANGELOG.md`. Replace with a 1–2 line pointer ("recent per-PR history → RUN_LOG / CHANGELOG").
 - Any test-count ladder / per-wave counts embedded in the headline and objective prose — those belong
   in CHANGELOG/RUN_LOG. Keep the single current headline count.
@@ -180,7 +212,7 @@ a move of unique content):**
 **What to KEEP verbatim (do NOT trim — these are legit live reference):**
 - `## Do-not-touch / fragile zones` — the finding explicitly says leave it.
 - `## Current objective` (rotated to Phase-2 at checkpoint), `## Top priorities / next actions`,
-  `## Known issues / debt`, `## What works`, `## References`.
+  `## Known issues / debt`, `## What works (current capabilities)`, `## References`.
 
 **Target.** Meaningfully back toward one page (the finding cites the "one page" rule; #367 got it from
 491→403 and #368 pushed to 411). Exact final line count is a judgement call, not a hard number — the
@@ -188,6 +220,14 @@ test is "no duplicated per-PR history remains; live reference intact."
 
 **Interaction with checkpoint.** This is best folded into the PR's `/checkpoint` pass (the finding says
 so). The Phase-2-objective rotation and the trim happen together at end-of-session.
+
+**Two-PR ordering.** Whichever PR lands second runs its own `/checkpoint`, which normally rotates
+`## Current objective` (newest on top). That is expected and correct — but the second PR's checkpoint
+MUST keep the section within #388's target of **the current objective + at most one prior line**
+(demote, do not re-stack a third level). It must not resurrect the multi-level `Previous objective` /
+`Prior objectives` stack this trim collapses. So the two PRs stay commutative: e.g. PR-1 first (trim +
+sets Phase-2 CURRENT) → PR-2 second yields CURRENT = JDK-toolchain, one `Previous objective` =
+Phase-2-docs — within budget, not a re-bloat.
 
 **Files:** `docs/agent/STATE.md` (trim). RUN_LOG/CHANGELOG already hold the detail — no relocation write
 needed unless a specific fact is found only in STATE (none expected; verify during the trim).
@@ -209,8 +249,11 @@ invalidates:
 
 - **ADR-0039 — JDK toolchain pin (PR-2).** Records: pin JVM to 17 via a Gradle toolchain on all three
   modules; **local-detection-only, no foojay auto-download** (supply-chain posture rationale); the
-  built-in-Kotlin DSL caveat + which mechanism actually shipped (`kotlin { jvmToolchain }` vs
-  `java { toolchain }`, decided by the spike); bytecode `compileOptions` retained as orthogonal.
+  built-in-Kotlin DSL caveat + the corrected framework reasoning (`java {}` is unavailable on
+  `com.android.*` without the java plugin → fallback is the KGP compile-task route, not `java {
+  toolchain }`) + which mechanism actually shipped, decided by the spike; bytecode `compileOptions`
+  retained as orthogonal; the deferred config-drift guard (§3.6) noted alongside the ADR-0038/#396
+  precedent.
 - **No ADR for PR-1** — docs/skill hygiene, no architectural decision. (If the BACKLOG-generation
   contract proves worth pinning, a one-liner can be added to the checkpoint skill's own header; not an
   ADR.)
@@ -232,6 +275,7 @@ invalidates:
 ## 8. Non-goals
 
 - No production-code, schema, economy, or battle-engine change.
-- No new JVM/instrumented test (nothing testable is added; the toolchain is a build setting, the rest
-  is docs/skill). The build itself is the verification for #378.
+- No new JVM/instrumented test. A `build.gradle.kts` config-file drift guard for the toolchain pin is
+  **feasible but deliberately deferred** (see §3.6) — `devenv-1` is Low-priority DX; the build itself
+  is the verification for #378, and the rest is docs/skill.
 - No foojay/auto-download; no Phase-3/4 findings; no content duplication into `AGENTS.md`/`BACKLOG.md`.
