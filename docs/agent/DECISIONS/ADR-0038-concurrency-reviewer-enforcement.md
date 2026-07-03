@@ -43,7 +43,8 @@ Enforce in three layers, strongest-first:
   collaborator-monitor case the `BattleEngineLockScanTest` fallback covers). Deferred: the repo has no detekt
   custom-rule module today (`app/build.gradle.kts` applies detekt as a bare plugin — no `detektPlugins`
   dependency), and detekt is `2.0.0-alpha.5` (unstable `RuleSetProvider` API). Authoring it needs a new
-  Gradle module + dependency. Tracked as a follow-up issue.
+  Gradle module + dependency. Tracked as follow-up issue **#396** (carries the two "unblock when"
+  conditions: a stable custom-rule API on a Kotlin-2.3.x-compatible detekt line + standing up a rule module).
 
 ## Consequences
 - A new Steps-credit site (any of the three write primitives) or a collaborator that takes its own monitor
