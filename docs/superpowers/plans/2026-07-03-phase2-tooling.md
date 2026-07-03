@@ -12,7 +12,10 @@
 is docs/skill only, no build impact: new `AGENTS.md`, new seed `docs/agent/BACKLOG.md`, a new checkpoint
 step, and the `STATE.md` trim. PR-2 (a separate branch off `main`) is the build-config change: a JVM-17
 Gradle toolchain on `:app` + both benchmark modules, plus README + ADR-0039. The two PRs are independent
-and commutative (see the two-PR ordering note).
+**except** that `docs/agent/BACKLOG.md` + the checkpoint step-6 change are introduced by **PR-1 only**;
+PR-2 refreshes `BACKLOG.md` solely if PR-1 has already merged (otherwise it leaves that file to PR-1 —
+Task 12 Step 4). Ordering is otherwise free; PR-1 is lower-risk and expected first (see the two-PR
+ordering note).
 
 **Tech Stack:** Kotlin/Gradle 9.6 (Kotlin DSL, AGP 9 built-in Kotlin, version catalog), `gh` CLI,
 markdown docs, the `.claude/skills/checkpoint` skill.
@@ -46,7 +49,10 @@ markdown docs, the `.claude/skills/checkpoint` skill.
   zones` (189), `## References` (402).
 - Latest ADR is `ADR-0038`; **ADR-0039** is the next free number.
 - README: `- JDK 17` at line 29 (under `## Prerequisites`).
-- Test count is **1302 JVM** — this plan adds/removes no test, so it stays 1302.
+- The true current test count is **1302 JVM** (ladder …→1294→1301→1302; canonical in `CLAUDE.md:360`).
+  **STATE.md's `**Headline:**` block is STALE at `1294 JVM` (line 22)** — PR-C's 1301→1302 landed in
+  CHANGELOG/CLAUDE.md but never propagated to the STATE headline. Task 5 Step 2 corrects it to 1302 as
+  part of the trim. This plan itself adds/removes no test.
 
 ---
 
@@ -60,8 +66,8 @@ doing PR-1 first means PR-2's end-of-session `/checkpoint` demotes the PR-1 obje
 
 # PR-1 — Docs & DX (branch `docs/phase2-tooling-dx`)
 
-> This branch already exists and has two commits (the gate-passed spec + its amendments). All PR-1 tasks
-> commit onto it. **Confirm you are on it before starting:** `git branch --show-current` → `docs/phase2-tooling-dx`.
+> This branch already exists and carries the gate-passed spec, its amendments, and this plan. All PR-1
+> tasks commit onto it. **Confirm you are on it before starting:** `git branch --show-current` → `docs/phase2-tooling-dx`.
 
 ## Task 1 — #386: add the thin `AGENTS.md` pointer
 
@@ -211,10 +217,15 @@ git commit -m "docs(#387): seed generated docs/agent/BACKLOG.md (open-issue snap
 - [ ] **Step 1: Confirm the narrative is duplicated in RUN_LOG/CHANGELOG** (so nothing unique is lost):
 
 Run: `sed -n '72,109p' docs/agent/STATE.md`
-Then spot-check two of its dated bullets against `RUN_LOG.md`/`CHANGELOG.md`:
-`grep -n '2026-06-20 — test-integrity' docs/agent/RUN_LOG.md docs/CHANGELOG.md CHANGELOG.md 2>/dev/null`
-Expected: the same per-PR entries exist in RUN_LOG/CHANGELOG. If a fact is found ONLY in STATE, preserve
-it in the pointer (none expected).
+Then spot-check that the block's underlying PRs are recorded downstream by a STABLE token (a PR number —
+immune to prose casing/wording drift; do NOT grep the STATE-only dated headline text, which by definition
+lives only in the block being deleted). Note the canonical CHANGELOG is the repo-root `CHANGELOG.md`
+(there is no `docs/CHANGELOG.md`):
+`grep -n '#252\|#298\|#299\|#300' docs/agent/RUN_LOG.md CHANGELOG.md`
+Expected: these per-PR entries appear in BOTH files (e.g. `#252` — RUN_LOG has ~7 hits, CHANGELOG ~3;
+`#298/#299/#300` in RUN_LOG's test-integrity/architecture wave) — confirming the `## Recently shipped`
+block only SUMMARIZES history that is recorded per-PR downstream, so deleting it loses no unique fact. If
+some fact is genuinely found ONLY in STATE, preserve it in the pointer (none expected).
 
 - [ ] **Step 2: Replace the section body** — keep the `## Recently shipped (newest first — see RUN_LOG for
   detail)` header, delete its stacked bullet narrative, and substitute this pointer:
@@ -247,16 +258,22 @@ git commit -m "docs(#388): trim STATE.md — replace duplicated per-PR narrative
 - Modify: `docs/agent/STATE.md` — the `**Headline:**` block (top) and the stacked `Previous/Prior objective`
   bullets under `## Current objective`.
 
-- [ ] **Step 1: Locate the volatile per-wave numbers + stacked-objective bullets:**
+- [ ] **Step 1: Locate the headline count + stacked-objective bullets:**
 
-Run: `grep -n 'JVM + 9 instrumented\|1294\|1167\|1152\|+15 JVM\|Previous objective\|Prior objectives' docs/agent/STATE.md`
-Expected: the headline test-count ladder + the multi-level `Previous objective (DONE…)` / `Prior
-objectives (all DONE)` bullets.
+Run: `grep -n 'JVM + 9 instrumented\|1294\|Previous objective\|Prior objectives' docs/agent/STATE.md`
+Expected: the `**Headline:**` count clause (currently `**1294 JVM + 9 instrumented tests**` at line 22 —
+STALE, see Step 2) + the multi-level `Previous objective (DONE…)` / `Prior objectives (all DONE)` bullets.
+(Note: the older per-wave deltas like `1167`/`1152`/`+15 JVM` live inside the `## Recently shipped` block
+that Task 4 already deleted, so they no longer appear here — don't grep for them.)
 
-- [ ] **Step 2: Keep the single current headline count, drop the ladder.** In the `**Headline:**` block,
-  retain the `1302 JVM + 9 instrumented tests` current number and the schema/version facts, but remove
-  per-wave count history (e.g. `1294`, `+15 JVM → 1167`) — that history is in CHANGELOG. Do not alter the
-  release-status prose.
+- [ ] **Step 2: CORRECT the stale headline count, then drop the ladder.** The `**Headline:**` block's
+  count clause is **currently STALE** — it reads `**1294 JVM + 9 instrumented tests**` at STATE.md:22, but
+  PR-C's 1301→1302 never propagated here (canonical `1302 JVM` is in `CLAUDE.md:360`). **Change that
+  clause in place `1294` → `1302`** so it reads `**1302 JVM + 9 instrumented tests**`. Keep the
+  schema/version facts and the release-status prose. Remove the per-wave count-ladder mentions that live
+  in the objective prose (e.g. `1294→1301` at line 50, and the `1294 JVM` at line 66 — the latter is
+  removed anyway by Step 3's `Prior objectives` deletion) — that history is in CHANGELOG. Do NOT delete
+  the headline count itself while stripping the ladder.
 
 - [ ] **Step 3: Collapse the stacked objectives.** Under `## Current objective`, keep the CURRENT bullet
   and AT MOST ONE `Previous objective` line; delete the deeper `Prior objectives (all DONE)` stack (it
@@ -265,8 +282,10 @@ objectives (all DONE)` bullets.
 
 - [ ] **Step 4: Verify:**
 
-Run: `grep -c 'Previous objective\|Prior objectives' docs/agent/STATE.md; grep -n '1302 JVM' docs/agent/STATE.md`
-Expected: at most one `Previous objective`, zero `Prior objectives`; the `1302 JVM` current count still present.
+Run: `grep -c 'Previous objective\|Prior objectives' docs/agent/STATE.md; grep -c '1302 JVM + 9 instrumented' docs/agent/STATE.md; grep -c '1294 JVM' docs/agent/STATE.md`
+Expected: at most one `Previous objective`, zero `Prior objectives`; exactly `1` match for `1302 JVM + 9
+instrumented` (the corrected headline); `0` for `1294 JVM` (the old headline clause is now 1302 and the
+line-66 ladder mention is gone with the `Prior objectives` stack).
 
 - [ ] **Step 5: Commit**
 
@@ -368,10 +387,20 @@ kotlin {
 - [ ] **Step 3: Verify the DSL resolves and compiles:**
 
 Run: `./run-gradle.sh :app:compileDebugKotlin`
-Expected: `BUILD SUCCESSFUL`. If it fails with an unresolved-reference on `kotlin`/`jvmToolchain`, fall
-back to the KGP compile-task route from spec §3.2 (`tasks.withType<KotlinCompile>().configureEach {
-compilerOptions.jvmTarget.set(JvmTarget.JVM_17) }` + the necessary imports) and re-run — then confirm the
-compiler JDK is 17, not merely the bytecode target. Record which mechanism worked for the ADR.
+Expected: `BUILD SUCCESSFUL` — the primary `kotlin { jvmToolchain(17) }` is expected to resolve (AGP-9's
+built-in Kotlin registers the `kotlin {}` extension; empirically confirmed even on the plugin-less
+benchmark modules), so this spike should confirm the primary path and the fallback should NOT fire. Only
+if it fails with an unresolved-reference on `kotlin`/`jvmToolchain`, fall back to the KGP compile-task
+route from spec §3.2, using the **fully-qualified** names so no imports are needed:
+
+```kotlin
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+}
+```
+
+Re-run, then confirm the compiler JDK is 17 (a true toolchain pin), not merely the bytecode target.
+Record which mechanism worked for the ADR.
 
 - [ ] **Step 4: Do NOT commit yet** — the benchmark modules (Task 9) must use the identical mechanism;
   commit all three together in Task 10 after they all compile.
@@ -382,10 +411,13 @@ compiler JDK is 17, not merely the bytecode target. Record which mechanism worke
 - Modify: `baselineprofile/build.gradle.kts`, `macrobenchmark/build.gradle.kts`
 
 - [ ] **Step 1: Add the identical block to each benchmark module.** The benchmark modules apply NO Kotlin
-  plugin (only `com.android.test`) — so the `kotlin {}` extension may or may not be present. Add the
-  **same** mechanism Task 8 settled on. If Task 8 used `kotlin { jvmToolchain(17) }`, add that; if it fell
-  back to the KGP-task route, add that (with imports). Place it after each `android { … }` block. For the
-  `kotlin {}` form:
+  plugin (only `com.android.test`) — but AGP-9's built-in Kotlin still registers the `kotlin {}` extension
+  (empirically confirmed), so the primary form is expected to work here too. Add the **same** mechanism
+  Task 8 settled on. If Task 8 used `kotlin { jvmToolchain(17) }`, add that; if it fell back to the
+  KGP-task route, add the same fully-qualified
+  `tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+  compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }` block (no imports
+  needed). Place it after each `android { … }` block. For the `kotlin {}` form:
 
 ```kotlin
 kotlin {
@@ -476,25 +508,29 @@ Local-detection-only (no foojay). Bytecode compileOptions retained (orthogonal).
   build.gradle.kts scan is feasible but deferred at `devenv-1`'s Low priority — mirrors ADR-0038's
   deferred detekt rule / follow-up #396).
 
-- [ ] **Step 3: Check `docs/steering/tech.md` + `CLAUDE.md`:**
+- [ ] **Step 3: Add a toolchain note to `docs/steering/tech.md`; leave `CLAUDE.md`.** `tech.md` IS the
+  Tech-Stack doc and documents the build setup, so append a one-line toolchain note to its
+  `- **Build:** Gradle 9.6.0 …` line (the JDK/build-setup line — around `tech.md:8`), e.g.
+  `(build pins a JVM-17 Gradle toolchain, local-detection only — #378/ADR-0039)`. Do **NOT** modify the
+  `- **Language:** Kotlin (JVM target 17)` line — that is a bytecode-target statement, orthogonal to the
+  toolchain. `CLAUDE.md`'s "Kotlin (JVM target 17)" is likewise a bytecode-target statement and stays
+  accurate — do not amend it (it does not describe toolchain/JDK-selection). Do not touch the headline
+  test count (unchanged).
 
-Run: `grep -n 'JDK 17\|jvmToolchain\|JVM target 17\|toolchain' docs/steering/tech.md CLAUDE.md`
-Expected: if `tech.md` documents the JDK/build setup, add a one-line toolchain note. `CLAUDE.md`'s
-"Kotlin (JVM target 17)" is a bytecode-target statement and stays accurate — amend only if it explicitly
-describes toolchain/JDK-selection (it does not). Do not touch the headline test count (unchanged).
-
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Commit** (stage `tech.md` since Step 3 edited it):
 
 ```bash
-git add README.md docs/agent/DECISIONS/ADR-0039-jdk-toolchain-pin.md
-git commit -m "docs(#378): README JDK-17 toolchain note + ADR-0039 (local-detection, no foojay)"
+git add README.md docs/agent/DECISIONS/ADR-0039-jdk-toolchain-pin.md docs/steering/tech.md
+git status --porcelain   # confirm no unstaged doc edit remains before committing
+git commit -m "docs(#378): README + tech.md JDK-17 toolchain note + ADR-0039 (local-detection, no foojay)"
 ```
 
 ## Task 12 — PR-2 doc sync + checkpoint
 
 **Files:**
 - Modify: `CHANGELOG.md` (`[Unreleased]` build-config entry), `docs/agent/STATE.md` (rotate objective +
-  trim per the two-PR rule), `docs/agent/RUN_LOG.md` (append), `docs/agent/BACKLOG.md` (regenerate)
+  trim per the two-PR rule), `docs/agent/RUN_LOG.md` (append), `docs/agent/BACKLOG.md`
+  (regenerate — **only if PR-1 has already merged**; see Step 4)
 
 - [ ] **Step 1: Add a `CHANGELOG.md` `[Unreleased]` entry** for #378 (build-config: JVM-17 toolchain on
   all three modules; local-detection, no foojay; ADR-0039). Note **test count unchanged at 1302**.
@@ -506,18 +542,29 @@ git commit -m "docs(#378): README JDK-17 toolchain note + ADR-0039 (local-detect
 - [ ] **Step 3: Append a `RUN_LOG.md` entry** for PR-2 (goal, what changed, verification: compile across
   all three modules + assembleRelease guard-intact + 1302 green, ADR-0039, doc-sync list).
 
-- [ ] **Step 4: Regenerate `docs/agent/BACKLOG.md`** per checkpoint step 6 (open set shifts as #378 closes).
+- [ ] **Step 4: Regenerate `docs/agent/BACKLOG.md` — CONDITIONALLY.** `docs/agent/BACKLOG.md` AND the
+  checkpoint step-6 skill change are introduced by **PR-1 only**; PR-2 branches off plain `main` (Task 8
+  Step 1), so on the default PR-1-still-unmerged path they do not exist on this base. Check first:
+
+Run: `git ls-files docs/agent/BACKLOG.md; grep -c '^### 6\.' .claude/skills/checkpoint/SKILL.md`
+  - **If both are present** (PR-1 already merged to main): follow checkpoint step 6 to regenerate
+    `docs/agent/BACKLOG.md` (open set shifts as #378 closes), and include it in the Step-6 commit.
+  - **If NOT** (PR-1 unmerged — the default): **SKIP this step entirely.** Do NOT hand-create
+    `BACKLOG.md` here — PR-1 is its sole introducer; creating a second copy causes an add/add merge
+    conflict when both PRs land. Leave it to PR-1.
 
 - [ ] **Step 5: Verify STATE.md stayed trim:**
 
 Run: `grep -c 'Prior objectives' docs/agent/STATE.md; wc -l docs/agent/STATE.md`
 Expected: `0` `Prior objectives`; line count still materially below 413.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Commit** (add `docs/agent/BACKLOG.md` ONLY if Step 4 actually regenerated it):
 
 ```bash
-git add CHANGELOG.md docs/agent/STATE.md docs/agent/RUN_LOG.md docs/agent/BACKLOG.md
-git commit -m "docs(#378): PR-2 doc sync — CHANGELOG + STATE rotate + RUN_LOG + BACKLOG refresh"
+git add CHANGELOG.md docs/agent/STATE.md docs/agent/RUN_LOG.md
+# add docs/agent/BACKLOG.md ONLY if PR-1 already merged and Step 4 regenerated it:
+# git add docs/agent/BACKLOG.md
+git commit -m "docs(#378): PR-2 doc sync — CHANGELOG + STATE rotate + RUN_LOG (+ BACKLOG if PR-1 merged)"
 ```
 
 ## Task 13 — open PR-2
