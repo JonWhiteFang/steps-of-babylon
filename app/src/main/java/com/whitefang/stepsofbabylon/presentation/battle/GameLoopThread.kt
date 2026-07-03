@@ -2,6 +2,7 @@ package com.whitefang.stepsofbabylon.presentation.battle
 
 import android.util.Log
 import android.view.SurfaceHolder
+import com.whitefang.stepsofbabylon.BuildConfig
 import com.whitefang.stepsofbabylon.data.diagnostics.CrashBreadcrumbStore
 import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath
 import com.whitefang.stepsofbabylon.presentation.battle.engine.GameEngine
@@ -10,6 +11,9 @@ class GameLoopThread(
     private val surfaceHolder: SurfaceHolder,
     private val engine: GameEngine,
     private val crashBreadcrumbStore: CrashBreadcrumbStore,
+    // #384: injectable ONLY so GameLoopThreadGuardTest can pin the #190 crash guard over the DEBUG overlay
+    // draw path (SCOPE-4). Production always uses the default. Loop-thread-confined like frameStats.
+    private val frameStatsOverlay: FrameStatsOverlay = FrameStatsOverlay(),
 ) : Thread("GameLoop") {
     @Volatile
     var isRunning: Boolean = false
@@ -27,6 +31,12 @@ class GameLoopThread(
      */
     @Volatile
     var onLoopError: ((Throwable) -> Unit)? = null
+
+    // #384: DEBUG-only frame-stats accumulator. LOOP-THREAD-CONFINED — touched only inside run() on this
+    // thread, so no lock / @Volatile (unlike the cross-thread @Volatile fields above). Use is gated behind
+    // BuildConfig.DEBUG, so release does zero work and R8 strips the branches. (The overlay renderer that
+    // consumes it is the constructor param above — injectable only for the guard test.)
+    private val frameStats = FrameStats()
 
     companion object {
         private const val TICK_NS = 16_666_667L // ~60 UPS (1e9 / 60)
@@ -66,6 +76,11 @@ class GameLoopThread(
                     if (canvas != null) {
                         synchronized(surfaceHolder) {
                             engine.render(canvas)
+                            // #384: DEBUG-only frame-stats overlay, drawn on top of the frame. Stays INSIDE
+                            // the #190 outer try/catch AND the inner canvas try/finally — an overlay bug is
+                            // caught + surfaced like any render crash, and the canvas still unlocks. Shows
+                            // the last CLOSED window's snapshot (one window stale). Release: dead-stripped.
+                            if (BuildConfig.DEBUG) frameStatsOverlay.draw(canvas, frameStats.snapshot())
                         }
                     }
                 } finally {
@@ -86,6 +101,10 @@ class GameLoopThread(
 
             // Yield to avoid burning CPU if we're ahead
             val frameTime = System.nanoTime() - currentTime
+            // #384: feed the already-computed frameTime into the DEBUG overlay's accumulator (no new timing
+            // call). Pure arithmetic, cannot throw — sits OUTSIDE the #190 try/catch by design (it does not
+            // touch the engine/canvas). DEBUG-gated so release does zero work.
+            if (BuildConfig.DEBUG) frameStats.record(frameTime, TICK_NS)
             val sleepMs = (TICK_NS - frameTime) / 1_000_000
             if (sleepMs > 0) {
                 try {

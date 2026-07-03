@@ -1,3 +1,31 @@
+## 2026-07-03 — Phase-3 tooling PR-2: DEBUG frame-stats overlay (#384, fragile GameLoopThread)
+
+- **Goal:** #384 (`perf-2`) — retain the battle loop's per-frame timing (currently computed only for sleep)
+  as a DEBUG frame-stats overlay so a frame-rate drop is visible in a dev build. Isolated as PR-2 because it
+  touches `GameLoopThread` (fragile: #190 crash guard + #126 clamp). Branched off `main` post-PR-1 merge.
+- **Plan + Adversarial Review Gate + mandatory `concurrency-reviewer` lane (ADR-0038):** wrote
+  `docs/superpowers/plans/2026-07-03-phase3-frame-stats-overlay.md`; 3-lane review (concurrency +
+  code-grounding + scope). **9 raised / 3 survived / 6 refuted.** The concurrency lane found **NO**
+  thread-safety violation in the loop-thread-confined design. Survivors (all minor/nit) applied: corrected a
+  BuildConfig ground-truth aside; test-count is a range not a pinned +1; **added a 3rd `GameLoopThreadGuardTest`**
+  pinning the overlay-draw crash path. Committed the amended plan (`7355d47`).
+- **Implementation:** `FrameStats.kt` — pure, loop-thread-confined accumulator (rolling window → min/avg/max
+  ms + dropped + UPS; no lock, no `@Volatile`, no Android → JVM-testable). `FrameStatsOverlay.kt` — two
+  cached `Paint`s (#26 A31), draws top-left, no-op on null snapshot. `GameLoopThread` — feeds the EXISTING
+  `frameTime` into `frameStats.record(...)` (outside the #190 try/catch — pure arithmetic) and draws the
+  overlay INSIDE the `synchronized(surfaceHolder){ engine.render }` block (inside both the #190 guard AND the
+  canvas try/finally); **both calls `BuildConfig.DEBUG`-gated** → zero release cost, R8-stripped. Overlay is a
+  defaulted ctor param (injectable ONLY for the guard test).
+- **Verification:** full local gate GREEN after two lint fixups — `testDebugUnitTest` (**1314 JVM**, +7: 6
+  `FrameStatsTest` + 1 new guard test) + `koverVerifyDebug` + detekt + lintDebug + assembleDebug + ktlint.
+  Fixups: ktlint `no-consecutive-comments` (folded the `open`-rationale EOL comment into the KDoc) + detekt
+  `TooGenericExceptionThrown` (test throws `IllegalStateException`, not `RuntimeException`). `GameLoopThread`
+  is in `presentation.battle` (not `.engine`) → outside the #373 ratchet scope (confirmed). No schema change,
+  no versionCode bump, no release behaviour change.
+- **What remains / next:** open PR-2, merge on green (sequential-merge rule). After #384, Phase 3's only
+  remaining item is #396 (detekt nested-lock rule), which stays deferred (blocked: needs a stable detekt
+  custom-rule API + a new rule module). Then tracker #389 Phase 4 (release/ops #379/#383/#385/#377).
+
 ## 2026-07-03 — Phase-3 tooling PR-1: four non-fragile quality/reliability guards (#373, #375, #381, #382)
 
 - **Goal:** ship the non-fragile batch of tracker #389 Phase 3 as one PR (#373 Kover ratchet, #375
