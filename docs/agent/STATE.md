@@ -41,7 +41,21 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — Phase-3 tooling (tracker #389 Phase 3): BOTH PRs MERGED; only #396 (deferred) remains.**
+- **CURRENT — Phase-4 tooling (tracker #389 Phase 4: release/ops): IN PROGRESS — 3 of 4 findings land as
+  stacked PRs; #385 is a tracking-note refresh.** Plan `docs/superpowers/plans/2026-07-03-phase4-release-ops-tooling.md`
+  passed the Adversarial Review Gate (**19 raised / 10 survived / 9 refuted**). **PR-1 (#379,
+  `releaseops-1`)** — versionCode-collision fail-fast guard in `release.yml` (topology-independent
+  `git tag -l --sort=-v:refname` lookup, `|| true`-safe first-release skip, loud `::error::` parse — S1/S2/S3
+  applied; verified locally against real+scratch tags). **PR-2 (#383, `releaseops-2`)** — doc-only:
+  internal-only automated lane + manual-production rollout/rollback story in `release-checklist.md` (the
+  `userFraction`/`inProgress` `release.yml` change is deferred until production lands). **PR-3 (#377,
+  `depmgmt-1`)** — **REVISED to a static build-time NOTICE asset in `HelpScreen`** (NOT the
+  oss-licenses-plugin: review S5 confirmed `play-services-oss-licenses:17.5.1`'s v2 activity drags **alpha
+  AndroidX Compose + Navigation3** into the AAB, violating the no-alpha-AAB discipline — developer-confirmed
+  the static-asset route); zero new runtime deps; satisfies Apache-2.0 §4(d). **#385 (`perf-1`)** — deferred:
+  benchmark numbers need a physical device (not CI-gated per spec); PR-3 refreshes the `startup-baseline.md`
+  tracking note only. **#396** (detekt nested-lock rule) stays deferred. **1314 JVM + 9 instrumented tests.**
+- *Previous — Phase-3 tooling (tracker #389 Phase 3): BOTH PRs MERGED; only #396 (deferred) remains.*
   **PR-1 MERGED** (`aa2b50c`, #402) — four non-fragile guards: **#373** scoped Kover coverage ratchet
   (blended floor 85 + per-package 54 on the fragile concurrency/economy zones, filtered `variant("debug")`
   set → `koverVerifyDebug`; #218 whole-app report untouched); **#375** LeakCanary 2.14 (`debugImplementation`);

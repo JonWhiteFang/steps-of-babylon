@@ -20,7 +20,7 @@
 
 ## Per-release Build Configuration
 
-- [ ] `versionCode` bumped (Play rejects reused codes) + `versionName` set in `app/build.gradle.kts`, committed before tagging
+- [ ] `versionCode` bumped (Play rejects reused codes) + `versionName` set in `app/build.gradle.kts`, committed before tagging — the release lane now **fail-fast-guards** both: a versionName↔tag mismatch and a versionCode not bumped past the previous `v*` tag both stop the run before the signed build (#379)
 - [ ] `PLAY_LICENSE_KEY` secret present in the `release` environment (the build hard-fails on a blank key for release)
 
 ## Documentation
