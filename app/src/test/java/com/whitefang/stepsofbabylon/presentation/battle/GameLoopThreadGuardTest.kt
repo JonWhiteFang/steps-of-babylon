@@ -72,4 +72,40 @@ class GameLoopThreadGuardTest {
         verify(holder).unlockCanvasAndPost(canvas)
         assertEquals(1, errorCount.get(), "onLoopError must fire exactly once on a render crash")
     }
+
+    @Test
+    fun `a DEBUG frame-stats overlay crash unlocks the canvas and is caught by the #190 guard`() {
+        // #384 / SCOPE-4: the DEBUG overlay draw is new surface INSIDE the #190 guard + inner canvas
+        // try/finally. Pin that a throwing overlay.draw() (not just engine.render()) still stops the loop,
+        // unlocks the canvas, and fires onLoopError exactly once — same protection as a render crash.
+        val engine = mock<GameEngine>() // update() + render() no-op
+        val canvas = mock<android.graphics.Canvas>()
+        val holder = mock<SurfaceHolder>()
+        whenever(holder.lockCanvas()).thenReturn(canvas) // non-null → the render/overlay block is entered
+        val store = mock<CrashBreadcrumbStore>()
+
+        // Inject an overlay whose draw() throws on the first frame (BuildConfig.DEBUG is true in unit tests).
+        val throwingOverlay =
+            object : FrameStatsOverlay() {
+                override fun draw(
+                    canvas: android.graphics.Canvas,
+                    snapshot: FrameStats.Snapshot?,
+                ): Unit = throw IllegalStateException("overlay boom")
+            }
+
+        val errorCount = AtomicInteger(0)
+        val thread =
+            GameLoopThread(holder, engine, store, throwingOverlay).apply {
+                onLoopError = { errorCount.incrementAndGet() }
+                isPaused = false
+                isRunning = true
+            }
+
+        thread.start()
+        thread.join(2_000)
+
+        assertFalse(thread.isAlive, "loop thread must have stopped after an overlay crash")
+        verify(holder).unlockCanvasAndPost(canvas) // inner finally unlocked before the outer catch
+        assertEquals(1, errorCount.get(), "onLoopError must fire exactly once on an overlay crash")
+    }
 }

@@ -4,6 +4,26 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Tooling — Phase-3 DEBUG frame-stats overlay (#384) — Phase-3 tooling PR-2
+
+- **#384 (perf-2).** Added a **DEBUG-only frame-stats overlay** to the battle game loop. `GameLoopThread`
+  now feeds the `frameTime` it already computes (for its sleep) into a new loop-thread-confined
+  `FrameStats` accumulator (rolling ~1s window → min/avg/max ms, dropped-frame count, UPS estimate) and
+  draws `FrameStatsOverlay` top-left. Both the `record()` and the `draw()` are gated behind
+  `BuildConfig.DEBUG` → **zero release cost** (R8 strips the branches). On a low-end device a battle-loop
+  frame-rate drop is now visible in a dev build instead of silent.
+- **Fragile-zone discipline:** `GameLoopThread` is a fragile zone (#190 crash guard + #126 clamp), so this
+  PR went through the mandatory **`concurrency-reviewer` lane** (ADR-0038) in the Adversarial Review Gate
+  (9 raised / 3 survived / 6 refuted — the concurrency lane found no thread-safety violation). The frame
+  stats are loop-thread-confined (no new lock, no `@Volatile`, no shared state); the overlay draws INSIDE
+  the existing #190 try/catch + canvas try/finally; the overlay `Paint`s are cached (no per-frame alloc,
+  #26 A31). A **third `GameLoopThreadGuardTest`** pins the overlay-draw crash path (a throwing overlay still
+  stops the loop, unlocks the canvas, fires `onLoopError` once).
+- **No production behaviour change in release; no schema change; no versionCode bump.** JVM test count
+  **1307 → 1314** (+6 `FrameStatsTest`, +1 new `GameLoopThreadGuardTest`); 9 instrumented unchanged.
+  `GameLoopThread` is in `presentation.battle` (not `.engine`), so it's outside the #373 `koverVerifyDebug`
+  ratchet scope. Plan + review in `docs/superpowers/plans/2026-07-03-phase3-frame-stats-overlay.md`.
+
 ### Tooling — Phase-3 quality/reliability guards (#373, #375, #381, #382) — Phase-3 tooling PR-1
 
 - **#373 (testing-1).** Added a **scoped Kover coverage RATCHET** on the fragile concurrency/economy zones

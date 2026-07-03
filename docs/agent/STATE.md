@@ -49,9 +49,13 @@ the med/low backlog (#262) remain.
   (v7→v12 schema-shape, drift-catch verified); **#382** `lint{}` comment refresh + `ComposeHardcodedStringTest`.
   1307 JVM tests. Plan reviewed via the Adversarial Review Gate (18/12/6 — the CRITICAL finding, that Kover
   0.9.8 has no per-rule `filters`, was confirmed by disassembling the plugin jar and drove the variant-set
-  redesign). **NEXT: PR-2 = #384 DEBUG frame-stats overlay** (touches the fragile `GameLoopThread` — its own
-  plan + adversarial review incl. the mandatory `concurrency-reviewer` lane), branched off the updated `main`.
-  #396 stays deferred (blocked in-issue: needs a stable detekt custom-rule API + new module).
+  redesign). **PR-2 = #384 DEBUG frame-stats overlay: BUILT + gate-green locally (1314 JVM, +7), ready to
+  open** (branch `tooling/phase3-frame-stats-overlay`). `GameLoopThread` feeds its existing `frameTime` into
+  a loop-thread-confined `FrameStats` + draws a `FrameStatsOverlay`, both `BuildConfig.DEBUG`-gated (zero
+  release cost). Passed the Adversarial Review Gate + the mandatory `concurrency-reviewer` lane (9/3/6 — no
+  thread-safety violation found); a 3rd `GameLoopThreadGuardTest` pins the overlay-crash path. **NEXT: open
+  PR-2, merge on green.** #396 stays deferred (blocked in-issue: needs a stable detekt custom-rule API +
+  new module) → after which Phase 3 is done; Phase 4 (release/ops #379/#383/#385/#377) remains.
 - Open tracks remaining after Phase-3: first non-English `values-xx` locale (#34, the i18n payoff — app is
   100% locale-ready); internal→closed promotion (developer-judgment Closed-Test Readiness Gate); #233 clean
   Simulation-hoist (ADR-0012); A24 clock-tamper; the rest of tracker #389 Phase 3 (#384 as PR-2, #396
