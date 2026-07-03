@@ -1,3 +1,29 @@
+## 2026-07-03 — Phase-4 tooling closeout + /checkpoint (tracker #389 Phase 4 DONE)
+
+- **Session outcome:** tracker #389 **Phase 4** (release/ops) complete — all 3 in-repo findings merged via
+  sequentially-landed stacked PRs (per the sequential-merge rule): **#379** (versionCode-collision guard,
+  PR #406 `207e67d`), **#383** (rollout/rollback doc, PR #407 `1be832e`), **#377** (OSS-attribution static
+  NOTICE asset, PR #408 `79948ce`, ADR-0041). All three auto-closed via `Closes #`; #385 stays open+deferred
+  (device pass) and #396 stays deferred (detekt API). The #389 tracker checklist was ticked (3 boxes) with a
+  summary comment; #385 annotated DEFERRED in-tracker. **This clears the entire non-deferred tracker-#389
+  body (Phases 1–4).**
+- **One plan-vs-implementation delta worth recording:** PR-3 put the notice generator in
+  `tools/generate_oss_notices.py` (matching the existing `tools/*.py` convention) rather than a Gradle task
+  in the fragile `app/build.gradle.kts` as the plan first sketched — same output, but keeps the #124 guard +
+  release task graph entirely out of scope. Documented in ADR-0041.
+- **`/checkpoint` doc sweep (this entry):** doc-drift sweep confirmed test count consistent (`1314` in
+  CLAUDE.md + CHANGELOG; the `1302` refs in STATE were historical, now trimmed), and no tech.md/lib-*/README
+  change needed (static-asset route added zero dependencies, no build/run change). Added a `structure.md`
+  row for `tools/generate_oss_notices.py` + `oss_notices.txt` (source-files.md already got them in PR-3).
+  Rotated STATE.md (Phase-4 DONE on top, Phase-3 condensed, stale Phase-2 block dropped — one-page rule).
+  Regenerated `docs/agent/BACKLOG.md`.
+- **Verification:** no code change in this checkpoint entry (docs only). The three PRs were each verified
+  green through CI before merge (build-and-test + connected emulator + ktlint + gitleaks); PR-3 additionally
+  R8-verified locally (`assembleRelease` retains `raw/oss_notices` = resource `0x7f0e0004`).
+- **Next:** non-tooling backlog — first non-English `values-xx` locale (#34), internal→closed promotion
+  (developer-judgment gate), #233 Simulation-hoist (ADR-0012), A24 clock-tamper; plus the two deferred
+  tracker-#389 items when their blockers clear (#385 needs a device; #396 needs a stable detekt rule API).
+
 ## 2026-07-03 — Phase-4 tooling PR-3: OSS-attribution notice (#377) + #385 tracking note
 
 - **Goal:** #377 (`depmgmt-1`) — an Apache-2.0 §4(d) open-source attribution surface on the shipped AAB; +

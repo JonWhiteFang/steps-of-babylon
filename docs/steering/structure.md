@@ -221,6 +221,7 @@ All in `domain/model/`:
 | `res/drawable/ic_launcher_foreground.xml` | 5-tier stepped-ziggurat silhouette with Gold → SandStone → lightened-DeepBronze vertical gradient |
 | `res/mipmap-anydpi-v26/ic_launcher.xml` + `ic_launcher_round.xml` | Adaptive-icon XML wrappers referencing the two drawables above. minSdk=34 means these are the sole icon source — no raster density fallbacks needed |
 | `tools/render_play_store_icon.py` | Pillow-only Python script that re-renders the Play Store 512×512 hi-res PNG icon from the same coordinates / gradient stops as the in-app vector XML. Run via `python3 tools/render_play_store_icon.py` |
+| `tools/generate_oss_notices.py` + `app/src/main/res/raw/oss_notices.txt` | #377/ADR-0041: stdlib-only generator + committed output for the Apache-2.0 §4(d) open-source attribution notice (rendered read-only in `HelpScreen`). Coordinate list derived from `libs.versions.toml`; license bodies hand-curated. Regenerate + commit when the shipping-dependency set changes |
 | `docs/release/store-assets/play-store-icon-512.png` | Play Store hi-res icon (512×512, ~3.8 KB). Generated artifact — regenerate via the script above |
 | `docs/release/store-assets/StepsOfBabylonArt.png` | User-supplied 1376×768 pixel-art source for the feature graphic |
 | `docs/release/store-assets/play-store-feature-graphic-1024x500.png` | Play Store feature graphic (1024×500, ~621 KB). Center-vertical-cropped + LANCZOS-downscaled from the source PNG |
