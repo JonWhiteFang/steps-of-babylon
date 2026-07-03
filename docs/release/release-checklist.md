@@ -73,3 +73,31 @@ After a `v*` tag ships an AAB to the Play internal track (`release.yml`), monito
   no manual upload step needed.
 - See `docs/release/plan-31-walkthrough.md` for the original monitoring walkthrough this cadence
   distills.
+
+## Rollout & rollback (#383)
+
+Documents *how* a release reaches users and how to pull it back — the mechanism the monitoring cadence
+above acts on. **The automated lane stops at the internal track; production is manual today.**
+
+### Today — automated internal-track lane
+- A `v*` tag drives `release.yml` to build + sign the AAB and upload it with **`tracks: internal`,
+  `status: completed`** — i.e. **100% of the internal track immediately**. There is intentionally **no
+  staged `userFraction`** and **no scripted rollback** at internal: the track is a small, internal-only
+  tester pool, so a percentage rollout adds no safety there.
+- **Internal-track rollback = halt + fix-forward.** There is no "un-publish" of an internal release.
+  If the monitoring cadence above trips the roll-back trigger (crash/ANR rise), the response is:
+  1. **Do not promote** the regressed build to any wider track.
+  2. Ship a **fixed build with a new `versionCode`** (the #379 guard enforces the bump) — fix-forward,
+     not roll-back. Play always serves testers the highest `versionCode` on the track.
+
+### Production — manual until automated (deferred follow-up)
+- **Promotion to production is a manual Play Console action** (Console → Production → create a release
+  *from* the internal artifact, choosing a staged-rollout percentage). The CI lane does **not** touch the
+  production track.
+- **Production rollback is also manual:** in Play Console, **halt the staged rollout** (stops further
+  distribution at the current fraction) and/or **resume the previous release** so new installs/updates get
+  the prior build. Existing installs already on the bad build require a fix-forward (new `versionCode`).
+- **When production automation is wanted (do NOT implement now — #383's deferred code half):** add a
+  `workflow_dispatch` input to `release.yml` for `status: inProgress` + a `userFraction` (staged rollout),
+  and gate the `tracks`/`status`/`userFraction` values on that input. Tracked under #383; the doc-only
+  half is this section.

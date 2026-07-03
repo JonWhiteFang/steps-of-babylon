@@ -4,6 +4,18 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Tooling — Phase-4 release/ops: rollout/rollback doc (#383) — Phase-4 tooling PR-2
+
+- **#383 (releaseops-2).** Documented the **internal-only automated lane + manual-production
+  rollout/rollback story** in `docs/release/release-checklist.md` (new "Rollout & rollback" section). Records
+  that `release.yml` uploads `tracks: internal` + `status: completed` (100% of the internal track, no
+  `userFraction`), that internal-track rollback is fix-forward (new `versionCode`, no un-publish), and that
+  **production promotion + rollback are manual Play Console actions** until automated. The `release.yml`
+  `status: inProgress` + `userFraction` staged-rollout change is explicitly **deferred until production
+  lands** (the code half of #383) — this PR is doc-only.
+- **Doc-only change** — no app/test/schema/workflow change; no versionCode bump; JVM test count unchanged
+  (**1314**). Plan in `docs/superpowers/plans/2026-07-03-phase4-release-ops-tooling.md`.
+
 ### Tooling — Phase-4 release/ops: versionCode-collision guard (#379) — Phase-4 tooling PR-1
 
 - **#379 (releaseops-1 ≡ cicd-3).** Added a **versionCode-collision fail-fast guard** to the release lane

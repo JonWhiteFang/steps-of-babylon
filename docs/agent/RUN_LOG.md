@@ -1,3 +1,24 @@
+## 2026-07-03 — Phase-4 tooling PR-2: rollout/rollback doc (#383, release-checklist.md)
+
+- **Goal:** #383 (`releaseops-2`) — document the internal-only automated release lane + the manual-production
+  rollout/rollback story (doc-only now; the `release.yml` `userFraction`/`inProgress` staged-rollout change
+  is deferred until production lands). Branched `tooling/phase4-rollout-doc` off `main` **after PR-1 (#406)
+  merged** (`207e67d`) per the sequential-merge rule — no rebase conflict on the doc heads.
+- **Reviewed:** covered by the multi-agent Adversarial Review Gate on the Phase-4 plan (no PR-2-specific
+  survivors — it's a straightforward doc addition; the scope-consistency lane confirmed #383 is correctly
+  doc-only-now with the code half deferred).
+- **Implementation:** new "Rollout & rollback (#383)" section in `release-checklist.md`, after
+  "Post-release monitoring (#380)" (the monitoring cadence's roll-back *trigger* + this rollout *mechanism*
+  are complementary — cross-linked, not duplicated). Records: internal = `tracks: internal` +
+  `status: completed` at 100% (no `userFraction`); internal rollback = fix-forward with a new `versionCode`
+  (the #379 guard enforces the bump); production promotion + rollback are manual Play Console actions;
+  the deferred code half (a `workflow_dispatch` `userFraction`/`inProgress` input) is a pointer, not built.
+- **Verification:** doc-only — prose review; cross-links (#380, #379) + `release.yml` references accurate at
+  HEAD. No app/test/schema/workflow change; no versionCode bump; **1314 JVM** unchanged.
+- **Docs synced:** CHANGELOG `[Unreleased]`. **What remains / next:** open PR-2, merge on green; then
+  rebase PR-3 (#377 static OSS-notices asset + #385 note) onto updated `main` and restore its stashed plan
+  refinements.
+
 ## 2026-07-03 — Phase-4 tooling PR-1: versionCode-collision guard (#379, release.yml)
 
 - **Goal:** open tracker #389 **Phase 4** (release/ops). PR-1 = **#379** (`releaseops-1` ≡ `cicd-3`): add a
