@@ -1,3 +1,28 @@
+## 2026-07-03 — Phase-2 tooling closeout: merge both PRs + sequential-merge rule (PR #400)
+
+- **Goal:** land the two Phase-2 tooling PRs and capture the merge-ordering learning.
+- **Merges (sequential, per the newly-written rule):** **PR-1 #398 MERGED first** (`0802e22`, docs/DX —
+  #386/#387/#388), then **PR-2 rebased onto the updated `main`** (`git rebase origin/main`) to resolve the
+  expected newest-first doc-head conflicts (CHANGELOG/STATE/RUN_LOG) — resolved by hand (PR-2 entries
+  stacked newest-first; kept PR-1's trimmed STATE with a merged-both-PRs CURRENT objective, discarded
+  PR-2's stale-base re-stacking of the old objective list). Rebased branch compile-verified
+  (`:app:compileDebugKotlin` green), force-pushed, **auto-merged after the full CI gate went green**
+  (`build-and-test` 4m31s incl. release-variant + benchmark assembles under the new toolchain; `connected`
+  3m59s) → **PR-2 #399 MERGED** (`6984cb4`).
+- **Issue bookkeeping:** closed **#378, #388, #387, #386** with merge-commit pointers (PR bodies hadn't
+  used `Closes` keywords); commented tracker **#389** with a Phase-2-complete summary and left it **OPEN**
+  for Phases 3–4.
+- **New convention (PR #400, `be587f4` → merged `ea9401c`):** added a **Sequential merge for stacked PRs**
+  subsection to `CLAUDE.md` (after the PR Task-List Convention): land one PR before advancing the next,
+  merge on green checks only, rebase the next branch onto updated `main`. Directly captures the #398/#399
+  rebase friction so future multi-PR plans avoid it. Docs-only, CI green (docs fast-path), self-merged.
+- **This checkpoint:** CHANGELOG `[Unreleased]` gained a PR #400 entry; STATE.md CURRENT rotated to
+  "no active workstream — pick next track" with Phase-2 demoted to a single Previous-objective line;
+  `docs/agent/BACKLOG.md` regenerated (31 → **27** open, descending — #386/#387/#388/#378 now closed);
+  this entry. No app/test/schema/engine change; **1302 JVM** unchanged.
+- **What remains / next:** no active workstream — open tracks are #34 first `values-xx` locale,
+  internal→closed promotion, #233 Simulation-hoist, A24 clock-tamper, and tooling Phases 3–4 (#389).
+
 ## 2026-07-03 — Phase-2 tooling PR-2: JVM-17 toolchain pin (#378, ADR-0039)
 
 - **Goal:** Phase-2 tooling finding **#378 (`devenv-1`)** — pin a Gradle **JVM-17 toolchain** so a
