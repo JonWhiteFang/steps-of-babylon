@@ -41,18 +41,19 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (Phase-2 tooling — PR-1 docs/DX DONE on branch, up for PR; PR-2 #378 NEXT).** Phase-2 of the
-  tooling-gap backlog (tracker #389); spec+plan both through the Adversarial Review Gate
-  (`docs/superpowers/{specs,plans}/2026-07-03-phase2-tooling*`; spec gate 9/9/0, plan gate 12/11/1).
-  **PR-1 (branch `docs/phase2-tooling-dx`) — docs/DX, DONE, pending push+PR:** #386 thin `AGENTS.md`
-  redirect pointer, #387 `/checkpoint` step 6 that regenerates a GENERATED `docs/agent/BACKLOG.md` from
-  `gh issue list` (+ seeded snapshot), #388 STATE.md trim (relocated the per-PR "Recently shipped"
-  narrative + test-count ladder to RUN_LOG/CHANGELOG, collapsed the objective stack, corrected the stale
-  headline count to 1302). Docs/skill only — no app/test/schema/engine change; **JVM test count unchanged
-  at 1302**. **PR-2 (#378 `devenv-1`) NEXT:** pin the local JDK via `kotlin { jvmToolchain(17) }`.
-  **NEXT:** open+merge PR-1, then PR-2 (#378), then tick the Phase-2 boxes on tracker #389. Other tracks
-  still open: first non-English `values-xx` locale (#34); internal→closed promotion; #233 clean
-  Simulation-hoist (ADR-0012); A24 clock-tamper.
+- **CURRENT (Phase-2 tooling — BOTH PRs MERGED).** Phase-2 of the tooling-gap backlog (tracker #389);
+  spec+plan both through the Adversarial Review Gate
+  (`docs/superpowers/{specs,plans}/2026-07-03-phase2-tooling*`; spec gate 9/9/0, plan gate 12/11/1),
+  executed subagent-driven (spec+quality review per task). **PR-1 #398 MERGED (`0802e22`) — docs/DX:**
+  #386 thin `AGENTS.md` redirect pointer, #387 `/checkpoint` step 6 that regenerates a GENERATED
+  `docs/agent/BACKLOG.md` from `gh issue list` (+ seeded snapshot), #388 STATE.md trim (relocated the
+  per-PR "Recently shipped" narrative + test-count ladder to RUN_LOG/CHANGELOG, collapsed the objective
+  stack, corrected the stale headline count to 1302). **PR-2 #399 MERGED — #378 `devenv-1`:** pinned a
+  JVM-17 Gradle toolchain (`kotlin { jvmToolchain(17) }`) on `:app` + both benchmark modules
+  (local-detection only, no foojay; ADR-0039). No app/test/schema/engine change; **JVM test count unchanged
+  at 1302**. **NEXT:** tick the Phase-2 boxes on tracker #389 (leave it open for Phases 3–4:
+  #373/#375/#382/#381/#384/#396, #379/#383/#385/#377). Other tracks still open: first non-English
+  `values-xx` locale (#34); internal→closed promotion; #233 clean Simulation-hoist (ADR-0012); A24 clock-tamper.
 - *Previous objective (DONE, 2026-07-02) — Phase-1 tooling safety baseline (tracker #389): all 6 findings
   merged across PR-A (#370 assembleRelease-in-CI + #376 gitleaks), PR-B (#371 `StepCreditAllowlistTest` +
   #372 `BattleEngineLockScanTest` + concurrency-reviewer advisory, ADR-0038), PR-C (#374 crash-report

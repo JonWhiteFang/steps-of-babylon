@@ -1,3 +1,35 @@
+## 2026-07-03 — Phase-2 tooling PR-2: JVM-17 toolchain pin (#378, ADR-0039)
+
+- **Goal:** Phase-2 tooling finding **#378 (`devenv-1`)** — pin a Gradle **JVM-17 toolchain** so a
+  first clone with a too-new ambient JDK (21/25) fails with a clear toolchain error instead of an
+  opaque KSP failure. This is **PR-2** of the Phase-2 tooling work (PR-1 — the docs/DX finding cluster
+  #388/#387/#386 — is a separate branch/PR **#398**).
+- **What changed (code, commits `7851710` + `6278368`):**
+  `kotlin { jvmToolchain(17) }` on **all three modules** — `:app` + `:baselineprofile` + `:macrobenchmark`.
+  **Local-detection only — NO foojay auto-download** (preserves the strict `verification-metadata.xml`
+  supply-chain posture). Bytecode-level `compileOptions { VERSION_17 }` **retained** as orthogonal
+  (toolchain = which JDK runs the compiler; compileOptions = bytecode/target level) — a code comment
+  records why both stay.
+- **Mechanism that worked:** the **primary `kotlin { jvmToolchain(17) }` DSL** — AGP-9's built-in Kotlin
+  registers the `kotlin {}` extension on all three modules (incl. the two `com.android.test` benchmark
+  modules), so the KGP-task-level fallback was **not needed**. A top-level `java { toolchain {…} }` block
+  is not usable here (the `com.android.*` modules apply no `java` plugin, so `JavaPluginExtension` doesn't
+  exist).
+- **What changed (docs):** `README.md` Prerequisites JDK line upgraded to explain the pin;
+  new **ADR-0039** (JDK toolchain pin — JVM-17, local-detection only); `docs/steering/tech.md` Build line
+  gained a toolchain note; `CHANGELOG.md` `[Unreleased]` #378 subsection; this RUN_LOG entry; a light
+  PR-2-scoped STATE.md note under Current objective.
+- **Verification:** all 3 modules compile; `:app:assembleDebug` green; `testDebugUnitTest` **1302** green
+  (unchanged — no app/test/schema change); the **#124** license-key guard confirmed byte-identical
+  (unperturbed); toolchain resolves to **JDK 17** via a fresh `--rerun-tasks` compile. CI full gate green
+  on PR #399 (`build-and-test` incl. release-variant + benchmark assembles, `connected`).
+- **Adversarial Review Gate:** both artifacts passed — spec **9/9/0**, plan **12/11/1**.
+- **Doc-sync (this PR):** README.md · ADR-0039 · tech.md · CHANGELOG.md · STATE.md · RUN_LOG.md.
+  **BACKLOG.md deliberately SKIPPED** — it does not exist on this branch (PR-2 was branched off `main`
+  before PR-1, which introduces BACKLOG.md; creating it here would cause an add/add merge conflict).
+- **Next:** config-drift guard (a build.gradle.kts scan asserting the toolchain block is present) is a
+  feasible-but-deferred Low-priority follow-up (ADR-0039, mirrors ADR-0038's deferred detekt rule / #396).
+
 ## 2026-07-03 — Phase-2 tooling PR-1: developer-experience docs (#386, #387, #388) (docs/skill-only; no app/test/schema/engine change)
 
 - **Goal:** ship the Phase-2 tooling PR-1 docs/DX slice (tracker #389) — the three
@@ -29,8 +61,7 @@
   `docs/agent/STATE.md` `## Current objective` rotated to Phase-2 (Phase-1 demoted to a single
   Previous-objective line); `docs/steering/structure.md` Root Layout gained an `AGENTS.md` line;
   `docs/agent/BACKLOG.md` re-checked against live `gh` (already current — no-op); this RUN_LOG entry.
-- **What remains:** open+merge PR-1, then **PR-2 = #378 (`devenv-1`)** — pin the local JDK via
-  `kotlin { jvmToolchain(17) }`; then tick the Phase-2 boxes on tracker #389.
+- **What remains:** **PR-2 = #378 (`devenv-1`)** (above) — then tick the Phase-2 boxes on tracker #389.
 
 ## 2026-07-02 — UX/UI design skills/plugins research report (docs-only; no app/test/schema change)
 

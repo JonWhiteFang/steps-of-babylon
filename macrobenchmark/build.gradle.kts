@@ -31,6 +31,12 @@ android {
     experimentalProperties["android.experimental.self-instrumenting"] = true
 }
 
+// #378: pin the compiler JDK to 17 via local toolchain detection (no foojay resolver).
+// Orthogonal to compileOptions above (which sets the bytecode/target level, not the compiler JDK).
+kotlin {
+    jvmToolchain(17)
+}
+
 dependencies {
     implementation(libs.androidx.test.ext.junit)
     implementation(libs.androidx.test.uiautomator)

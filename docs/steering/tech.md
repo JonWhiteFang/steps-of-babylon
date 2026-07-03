@@ -5,7 +5,7 @@
 - **Language:** Kotlin (JVM target 17)
 - **Min SDK:** 34 (Android 14) / Compile SDK 37 / Target SDK 36
 - **Architecture:** MVVM + Clean Architecture
-- **Build:** Gradle 9.6.0 with Kotlin DSL, version catalog at `gradle/libs.versions.toml`
+- **Build:** Gradle 9.6.0 with Kotlin DSL, version catalog at `gradle/libs.versions.toml`; JVM-17 toolchain pinned (local-detection only, #378/ADR-0039)
 - **Database encryption:** SQLCipher via Android Keystore-managed passphrase
 
 ## Key Libraries & Versions

@@ -226,6 +226,12 @@ android {
     }
 }
 
+// #378: pin the compiler JDK to 17 via local toolchain detection (no foojay resolver).
+// Orthogonal to compileOptions above (which sets the bytecode/target level, not the compiler JDK).
+kotlin {
+    jvmToolchain(17)
+}
+
 room {
     schemaDirectory("$projectDir/schemas")
 }

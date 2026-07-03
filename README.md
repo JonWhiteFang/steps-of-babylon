@@ -26,7 +26,9 @@ The app does NOT request location permissions; GPS / Exploration Mode was droppe
 
 ## Prerequisites
 
-- JDK 17
+- JDK 17 — the build pins a Gradle **JVM toolchain** to 17 (local-detection only, no auto-download), so
+  a locally-installed JDK 17 is required. A too-new ambient JDK (21/25) will not be silently used; the
+  build fails with a clear toolchain error instead of an opaque KSP failure.
 - compileSdk 37 / targetSdk 36, min SDK 34 (Android 14)
 - Android Studio (latest stable recommended)
 
