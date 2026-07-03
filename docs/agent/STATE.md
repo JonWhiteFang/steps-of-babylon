@@ -41,27 +41,22 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT (Phase-1 tooling safety baseline — PR-A + PR-B MERGED; PR-C up for merge).** The 6 Phase-1
-  findings (tracker #389), spec+plan both through the Adversarial Review Gate
-  (`docs/superpowers/{specs,plans}/2026-07-02-phase1-tooling-gap*`; spec gate 19/15/4, plan gate 20/19/1→6
-  fixed), shipped as 3 PRs: **PR-A #393 `7fe241f` MERGED** (#370 assembleRelease in the PR gate + #376
-  gitleaks; A5 non-provider-patterns is a silent-API-no-op → manual Settings step). **PR-B #394 MERGED**
-  (#371 `StepCreditAllowlistTest` 6 tests + #372 `BattleEngineLockScanTest` 1 test + `guard-sensitive-edits.sh`
-  tier-4 concurrency-reviewer advisory + CLAUDE.md wiring + ADR-0038). **PR-C (#374 crash-report
-  Report/email exit path incl. the required `<queries>` + #380 monitoring runbook) — implementation DONE,
-  rebased on main, doc-synced, full suite green, pending push+PR.** **NEXT:** push+PR+merge PR-C
-  (tick #374/#380 + close #389). Then Phase 2 tooling (#378 jvmToolchain, #388 STATE trim, #387 BACKLOG.md,
-  #386 AGENTS.md) OR the other tracks: first non-English `values-xx` locale (#34); internal→closed promotion;
-  #233 clean Simulation-hoist (ADR-0012); A24 clock-tamper.
-- *Side research (DONE, 2026-07-02) — UX/UI design skills/plugins assessment →
-  `docs/reviews/ux-ui-design-resources.md` (recommends `material-3-skill` + `compose-skill` baseline,
-  `ux-ui-mastery` optional; report only, nothing installed — adoption phasing awaits the developer's
-  pick). Detail in RUN_LOG.*
-- *Previous objective (DONE, 2026-07-02) — docs hardening: **#367** ran the tooling-gap audit (multi-agent,
-  25 raised/24 survived/1 refuted → `docs/reviews/tooling-gap-assessment.md`, maturity High) + applied the
-  pure-doc-hygiene survivors (README + STATE.md trim 491→403); **#368** documented the battle-step reward as
-  the sole exception to "Steps never generated in-game" (ADR-0003) across ~8 canonical docs. Both docs-only,
-  no app/test/schema change. Detail in RUN_LOG.*
+- **CURRENT (Phase-2 tooling — PR-1 docs/DX DONE on branch, up for PR; PR-2 #378 NEXT).** Phase-2 of the
+  tooling-gap backlog (tracker #389); spec+plan both through the Adversarial Review Gate
+  (`docs/superpowers/{specs,plans}/2026-07-03-phase2-tooling*`; spec gate 9/9/0, plan gate 12/11/1).
+  **PR-1 (branch `docs/phase2-tooling-dx`) — docs/DX, DONE, pending push+PR:** #386 thin `AGENTS.md`
+  redirect pointer, #387 `/checkpoint` step 6 that regenerates a GENERATED `docs/agent/BACKLOG.md` from
+  `gh issue list` (+ seeded snapshot), #388 STATE.md trim (relocated the per-PR "Recently shipped"
+  narrative + test-count ladder to RUN_LOG/CHANGELOG, collapsed the objective stack, corrected the stale
+  headline count to 1302). Docs/skill only — no app/test/schema/engine change; **JVM test count unchanged
+  at 1302**. **PR-2 (#378 `devenv-1`) NEXT:** pin the local JDK via `kotlin { jvmToolchain(17) }`.
+  **NEXT:** open+merge PR-1, then PR-2 (#378), then tick the Phase-2 boxes on tracker #389. Other tracks
+  still open: first non-English `values-xx` locale (#34); internal→closed promotion; #233 clean
+  Simulation-hoist (ADR-0012); A24 clock-tamper.
+- *Previous objective (DONE, 2026-07-02) — Phase-1 tooling safety baseline (tracker #389): all 6 findings
+  merged across PR-A (#370 assembleRelease-in-CI + #376 gitleaks), PR-B (#371 `StepCreditAllowlistTest` +
+  #372 `BattleEngineLockScanTest` + concurrency-reviewer advisory, ADR-0038), PR-C (#374 crash-report
+  email exit path + #380 monitoring runbook). Detail in RUN_LOG/CHANGELOG.*
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 

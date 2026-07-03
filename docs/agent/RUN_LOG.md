@@ -1,3 +1,37 @@
+## 2026-07-03 — Phase-2 tooling PR-1: developer-experience docs (#386, #387, #388) (docs/skill-only; no app/test/schema/engine change)
+
+- **Goal:** ship the Phase-2 tooling PR-1 docs/DX slice (tracker #389) — the three
+  documentation/agent-experience findings that don't touch build code: #386 `AGENTS.md`, #387
+  `BACKLOG.md` regen, #388 STATE.md trim. First of two Phase-2 PRs (PR-2 = #378 `jvmToolchain`).
+- **Gate:** spec + plan both passed the Adversarial Review Gate
+  (`docs/superpowers/{specs,plans}/2026-07-03-phase2-tooling*`) — **spec 9 raised / 9 survived / 0
+  refuted; plan 12 raised / 11 survived / 1 refuted**.
+- **What changed (branch `docs/phase2-tooling-dx`):**
+  - **#386 (ai-1).** New root `AGENTS.md` — a pure thin redirect to `CLAUDE.md` /
+    `docs/agent/START_HERE.md` / `STATE.md`, naming only the three hardest invariants as ADR pointers
+    (ADR-0003 Steps-never-generated / ADR-0038 battle-engine lock order / ADR-0020 guarded-deduct). Zero
+    content duplication — portability insurance for non-Claude agents. (`README.md` also got a note that
+    `run-gradle.sh` is gitignored/recreated.)
+  - **#387 (pm-1).** `/checkpoint` (`.claude/skills/checkpoint/SKILL.md`) gained a step 6 that
+    regenerates a GENERATED `docs/agent/BACKLOG.md` from `gh issue list --state open` — deterministic
+    (descending issue number), writes only on a non-empty successful capture (gh error/empty → leave
+    untouched). Seeded the first snapshot.
+  - **#388 (docs-2).** Trimmed `docs/agent/STATE.md`: replaced the duplicated per-PR "Recently shipped"
+    narrative with a RUN_LOG/CHANGELOG pointer, dropped the test-count ladder + deep objective stack,
+    and corrected the stale headline count (1294 → **1302**). Fragile-zones + References kept intact.
+- **Verification:** doc integrity only (no code). `AGENTS.md` is a pure redirect (no duplicated
+  guidance); `BACKLOG.md` body matches live `gh issue list` output exactly, descending, and the regen is
+  idempotent (re-running the command this session produced a byte-identical body — no-op); STATE.md
+  trimmed to ~375 lines with the headline corrected (grep for `1294` = 0) and at most one
+  `Previous objective` line (no `Prior objectives` stack). All three findings were produced under the
+  subagent spec+quality review gates.
+- **Docs synced (this PR's own sweep):** `CHANGELOG.md` `[Unreleased]` gained a Phase-2 PR-1 section;
+  `docs/agent/STATE.md` `## Current objective` rotated to Phase-2 (Phase-1 demoted to a single
+  Previous-objective line); `docs/steering/structure.md` Root Layout gained an `AGENTS.md` line;
+  `docs/agent/BACKLOG.md` re-checked against live `gh` (already current — no-op); this RUN_LOG entry.
+- **What remains:** open+merge PR-1, then **PR-2 = #378 (`devenv-1`)** — pin the local JDK via
+  `kotlin { jvmToolchain(17) }`; then tick the Phase-2 boxes on tracker #389.
+
 ## 2026-07-02 — UX/UI design skills/plugins research report (docs-only; no app/test/schema change)
 
 - **Goal:** developer asked which Claude Code skills/plugins would help this project's UX/UI design
