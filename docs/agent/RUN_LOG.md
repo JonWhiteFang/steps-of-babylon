@@ -1,3 +1,33 @@
+## 2026-07-03 — Phase-4 tooling PR-1: versionCode-collision guard (#379, release.yml)
+
+- **Goal:** open tracker #389 **Phase 4** (release/ops). PR-1 = **#379** (`releaseops-1` ≡ `cicd-3`): add a
+  versionCode-collision fail-fast guard to the release lane, symmetric with the existing Tag↔versionName
+  guard. Play rejects a reused code but only at upload (after a full signed build); this catches a forgotten
+  bump up front. Branched `tooling/phase4-versioncode-guard` off `main`.
+- **Plan + Adversarial Review Gate (ultracode ON):** wrote
+  `docs/superpowers/plans/2026-07-03-phase4-release-ops-tooling.md` (all 4 Phase-4 findings; 3 land in-repo).
+  5-dimension multi-agent gate (code-grounding · CI/git · framework/API · fragile-zone · scope). **19 raised
+  / 10 survived / 9 refuted.** PR-1 survivors applied: **S1** (first-release skip was unreachable under
+  `set -euo pipefail`), **S2** (parse miss aborted silently instead of loud `::error::`), **S3** (`git
+  describe "${REF}^"` follows only first-parent → misses a prior tag on a merged-in side branch). Rewrote the
+  lookup to a topology-independent `git tag -l 'v*' --sort=-v:refname` with `|| true`-scoped substitution +
+  guarded/loud parse.
+- **Implementation:** one new `versionCode collision guard` step in `release.yml` (`if: github.event_name ==
+  push`), before the unit-test guard. Parses committed `versionCode`, finds the previous `v*` tag (excluding
+  self), reads its committed `versionCode`, asserts current > previous; loud `::error::` + exit 1 on
+  collision or parse miss; clean skip on first release.
+- **Verification (local, since the lane only fires on a real `v*` tag):** YAML parses (ruby). Four scenarios
+  proven against the real repo + a scratch repo: happy path (v1.0.12 → v1.0.11, 28 > 27 PASS); collision
+  (27 vs 27 → loud fail); first-release (empty predecessor set → skip exit 0); parse-miss (→ loud `::error::`,
+  not silent); side-branch topology (tag-list form finds v1.1.0 where `describe "${REF}^"` misses it).
+- **Docs synced:** `release-checklist.md` versionCode line (notes the new guard) + CHANGELOG `[Unreleased]`.
+  No app/test/schema change; no versionCode bump; **1314 JVM** unchanged.
+- **What remains / next:** open PR-1, merge on green (sequential-merge rule); then rebase PR-2 (#383 doc)
+  onto updated `main`, then PR-3 (#377 static OSS-notices asset + #385 note). PR-3's #377 approach was
+  **revised** from the oss-licenses-plugin to a static NOTICE asset after review S5 (the 17.5.1 v2 activity
+  drags alpha AndroidX Compose + Navigation3 into the AAB — violates the no-alpha-AAB discipline);
+  developer-confirmed. A lean re-review of the new static-asset PR-3 section passed (3 minor fixes to fold in).
+
 ## 2026-07-03 — Phase-3 tooling PR-2: DEBUG frame-stats overlay (#384, fragile GameLoopThread)
 
 - **Goal:** #384 (`perf-2`) — retain the battle loop's per-frame timing (currently computed only for sleep)

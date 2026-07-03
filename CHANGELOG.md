@@ -4,6 +4,22 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Tooling — Phase-4 release/ops: versionCode-collision guard (#379) — Phase-4 tooling PR-1
+
+- **#379 (releaseops-1 ≡ cicd-3).** Added a **versionCode-collision fail-fast guard** to the release lane
+  (`.github/workflows/release.yml`), symmetric with the existing Tag↔versionName guard. On a `v*` tag push
+  it parses the committed `versionCode`, finds the previous release tag via a **topology-independent**
+  `git tag -l 'v*' --sort=-v:refname` (excluding the current tag), and fails fast with a `::error::` if the
+  code wasn't bumped past it. Play already rejects a reused code (the documented v13 rejection), but only at
+  upload — after a full signed build; this catches a forgotten bump up front. Play stays the backstop.
+- **Review-hardened (Adversarial Review Gate, 19 raised / 10 survived / 9 refuted):** the guard uses
+  `|| true`-scoped tag lookup so the **first-release case skips** (not a `set -euo pipefail` abort), a
+  guarded-assignment + emptiness test so a **parse miss is LOUD** (`::error::`, never a silent exit), and the
+  tag-list form (not `git describe "${REF}^"`) so a prior tag on a merged-in side branch isn't missed.
+  Verified locally against real tags (v1.0.12 → v1.0.11, 28 > 27) + negative/first-release/parse-miss cases.
+- **CI/workflow-only change** — no app/test/schema change; no versionCode bump; JVM test count unchanged
+  (**1314**). Plan + review in `docs/superpowers/plans/2026-07-03-phase4-release-ops-tooling.md`.
+
 ### Tooling — Phase-3 DEBUG frame-stats overlay (#384) — Phase-3 tooling PR-2
 
 - **#384 (perf-2).** Added a **DEBUG-only frame-stats overlay** to the battle game loop. `GameLoopThread`

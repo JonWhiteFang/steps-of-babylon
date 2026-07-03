@@ -55,6 +55,46 @@ jobs:
             exit 1
           fi
 
+      # #379 (releaseops-1): fail fast if the committed versionCode wasn't bumped past the previous
+      # release. Play REJECTS a reused versionCode (the documented v13 rejection), but that failure only
+      # surfaces at the very end — after a full signed build + Play upload. This asserts the bump up front.
+      # Play remains the backstop; this is a convenience fail-fast, not a safety gate. Skipped on manual
+      # dispatch (no tag). Topology-independent tag lookup (`git tag -l ... --sort=-v:refname`, not
+      # `git describe "${REF}^"` which follows only the first parent and aborts under pipefail when no prior
+      # tag exists). fetch-depth:0 (above) guarantees all tags are present. Assumes tags are pushed in
+      # increasing version order (true for all releases to date).
+      - name: versionCode collision guard
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          # Current committed versionCode — guarded parse, LOUD on failure (never a silent pipefail abort).
+          cur=$(grep -oE 'versionCode = [0-9]+' app/build.gradle.kts | grep -oE '[0-9]+' | head -1 || true)
+          if [ -z "$cur" ] || ! [[ "$cur" =~ ^[0-9]+$ ]]; then
+            echo "::error::Could not parse a numeric versionCode from app/build.gradle.kts."
+            exit 1
+          fi
+          # Previous release tag = highest-versioned v* tag that is NOT the current one. `|| true` so a
+          # missing predecessor (first-ever release) is an empty string, not a pipefail abort.
+          prev_tag=$(git tag -l 'v*' --sort=-v:refname | grep -vxF "${GITHUB_REF_NAME}" | head -1 || true)
+          if [ -z "$prev_tag" ]; then
+            echo "No prior v* tag — first release, skipping versionCode-collision guard."
+            exit 0
+          fi
+          # Previous tag's committed versionCode — same guarded/loud parse.
+          prev=$(git show "${prev_tag}:app/build.gradle.kts" | grep -oE 'versionCode = [0-9]+' | grep -oE '[0-9]+' | head -1 || true)
+          if [ -z "$prev" ] || ! [[ "$prev" =~ ^[0-9]+$ ]]; then
+            echo "::error::Could not parse versionCode from ${prev_tag}:app/build.gradle.kts."
+            exit 1
+          fi
+          echo "current versionCode=$cur · previous ($prev_tag) versionCode=$prev"
+          if [ "$cur" -gt "$prev" ]; then
+            echo "versionCode bumped ($prev → $cur) — OK."
+          else
+            echo "::error::versionCode $cur is not greater than the previous release ${prev_tag} ($prev)." \
+              "Bump versionCode in app/build.gradle.kts before tagging (Play rejects a reused code)."
+            exit 1
+          fi
+
       # Never ship a signed build that fails unit tests.
       - name: Unit test guard
         run: ./gradlew testDebugUnitTest
