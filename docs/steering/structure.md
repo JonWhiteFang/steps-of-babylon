@@ -205,7 +205,8 @@ All in `domain/model/`:
 | `presentation/navigation/Screen.kt` | 13 navigation routes (Home, Workshop, Battle, Labs, Stats, Weapons, Cards, Supplies, Economy, Missions, Settings, Store, Help) |
 | `presentation/home/HomeViewModel.kt` | Combines profile + step flows into HomeUiState |
 | `presentation/battle/GameSurfaceView.kt` | SurfaceView managing game loop thread lifecycle |
-| `presentation/battle/GameLoopThread.kt` | Fixed timestep (60 UPS), accumulator, speed multiplier |
+| `presentation/battle/GameLoopThread.kt` | Fixed timestep (60 UPS), accumulator, speed multiplier; #190 crash guard; #384 DEBUG frame-stats overlay hook |
+| `presentation/battle/FrameStats.kt` + `FrameStatsOverlay.kt` | #384 DEBUG-only frame-stats: pure loop-thread-confined accumulator (min/avg/max/dropped/UPS) + cached-Paint overlay; both `BuildConfig.DEBUG`-gated (zero release cost) |
 | `presentation/battle/engine/GameEngine.kt` | Orchestrator + sole `entitiesLock` owner + public façade; composes the 4 collaborators via host interfaces (ADR-0012 Phase 4, #230/#231) |
 | `presentation/battle/engine/BattleHosts.kt` | `UWHost`/`BuffHost`/`CombatHost` capability interfaces GameEngine implements (#230/#231) |
 | `presentation/battle/engine/BattleRenderer.kt` | Canvas draw + all `Paint` (#231) |
