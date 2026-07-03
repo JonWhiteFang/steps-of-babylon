@@ -368,7 +368,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
 - **Headline count: 1314 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
-- **Coverage ratchet (#373):** `:app:koverVerifyDebug` gates a scoped Kover coverage floor on the fragile
+- **Coverage ratchet (#373, ADR-0040):** `:app:koverVerifyDebug` gates a scoped Kover coverage floor on the fragile
   concurrency/economy zones (`data.repository`/`domain.usecase`/`presentation.battle.engine`/`domain.battle.*`)
   — blended LINE floor 85 + per-package floor 54 (a ratchet, raise as coverage climbs). It's a filtered
   `variant("debug")` report set, so the aggregate `koverXmlReport`/`koverVerify` stay whole-app (#218
