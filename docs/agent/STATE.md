@@ -41,47 +41,31 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — Phase-4 tooling (tracker #389 Phase 4: release/ops): IN PROGRESS — 3 of 4 findings land as
-  stacked PRs; #385 is a tracking-note refresh.** Plan `docs/superpowers/plans/2026-07-03-phase4-release-ops-tooling.md`
-  passed the Adversarial Review Gate (**19 raised / 10 survived / 9 refuted**). **PR-1 (#379,
-  `releaseops-1`) MERGED** (#406, `207e67d`) — versionCode-collision fail-fast guard in `release.yml`
-  (topology-independent `git tag -l --sort=-v:refname` lookup, `|| true`-safe first-release skip, loud
-  `::error::` parse — S1/S2/S3 applied; verified locally against real+scratch tags). **PR-2 (#383,
-  `releaseops-2`) MERGED** (#407, `1be832e`) — doc-only:
-  internal-only automated lane + manual-production rollout/rollback story in `release-checklist.md` (the
-  `userFraction`/`inProgress` `release.yml` change is deferred until production lands). **PR-3 (#377,
-  `depmgmt-1`) — IN FLIGHT** — **static build-time NOTICE asset in `HelpScreen`** (NOT the
-  oss-licenses-plugin: review S5 confirmed `play-services-oss-licenses:17.5.1`'s v2 activity drags **alpha
-  AndroidX Compose + Navigation3** into the AAB, violating the no-alpha-AAB discipline — developer-confirmed
-  the static-asset route, ADR-0041); `tools/generate_oss_notices.py` → `res/raw/oss_notices.txt`; zero new
-  runtime deps, no fragile-zone edit, no nav route; R8-verified the asset survives shrink. **#385
-  (`perf-1`)** — deferred: benchmark numbers need a physical device (not CI-gated per spec); PR-3 refreshes
-  the `startup-baseline.md` tracking note only. **#396** (detekt nested-lock rule) stays deferred.
-  **1314 JVM + 9 instrumented tests.**
-- *Previous — Phase-3 tooling (tracker #389 Phase 3): BOTH PRs MERGED; only #396 (deferred) remains.*
-  **PR-1 MERGED** (`aa2b50c`, #402) — four non-fragile guards: **#373** scoped Kover coverage ratchet
-  (blended floor 85 + per-package 54 on the fragile concurrency/economy zones, filtered `variant("debug")`
-  set → `koverVerifyDebug`; #218 whole-app report untouched); **#375** LeakCanary 2.14 (`debugImplementation`);
-  **#381** `FullChainMigrationSchemaTest` (v7→v12 schema-shape, drift-catch verified); **#382** `lint{}`
-  comment refresh + `ComposeHardcodedStringTest`. **PR-2 MERGED** (`cfbabcb`, #403) — **#384** DEBUG
-  frame-stats overlay in `GameLoopThread` (loop-thread-confined `FrameStats` + `FrameStatsOverlay`, both
-  `BuildConfig.DEBUG`-gated → zero release cost); went through the mandatory `concurrency-reviewer` lane (no
-  thread-safety violation) + a 3rd `GameLoopThreadGuardTest` pinning the overlay-crash path. **1314 JVM +
-  9 instrumented tests.** Both plans passed the Adversarial Review Gate (PR-1 18/12/6 — the CRITICAL finding
-  that Kover 0.9.8 has no per-rule `filters` drove the variant-set redesign; PR-2 9/3/6). **Phase-3 remaining:
-  only #396 (detekt nested-lock rule) — DEFERRED** (blocked in-issue: needs a stable detekt custom-rule API +
-  a new rule module). Then tracker #389 **Phase 4** (release/ops #379/#383/#385/#377) is the next tooling track.
-- Open tracks remaining after Phase-3: first non-English `values-xx` locale (#34, the i18n payoff — app is
-  100% locale-ready); internal→closed promotion (developer-judgment Closed-Test Readiness Gate); #233 clean
-  Simulation-hoist (ADR-0012); A24 clock-tamper; the rest of tracker #389 Phase 3 (#384 as PR-2, #396
-  deferred) + Phase 4 (release/ops #379/#383/#385/#377). See `docs/agent/BACKLOG.md`.
-- *Previous objective (DONE, 2026-07-03) — Phase-2 tooling (tracker #389 Phase 2): both PRs MERGED, all 4
-  findings closed. **PR-1 #398 (`0802e22`)** — #386 `AGENTS.md` redirect, #387 `/checkpoint`→`BACKLOG.md`,
-  #388 STATE.md trim (+ stale headline 1294→1302). **PR-2 #399 (`6984cb4`)** — #378 JVM-17 `jvmToolchain`
-  on all 3 modules (local-detection, no foojay; ADR-0039). Plus **PR #400** — the sequential-merge rule
-  for stacked PRs added to CLAUDE.md (learned from the #398/#399 rebase). Spec 9/9/0, plan 12/11/1;
-  subagent-driven. No app/test/schema change; **1302 JVM** unchanged. Phase-1 tooling baseline (6 findings,
-  PR-A/B/C) shipped 2026-07-02. Detail in RUN_LOG/CHANGELOG.*
+- **CURRENT — Phase-4 tooling (tracker #389 Phase 4: release/ops): DONE — all 3 in-repo findings MERGED;
+  only the 2 deferred items remain.** Plan `docs/superpowers/plans/2026-07-03-phase4-release-ops-tooling.md`
+  passed the Adversarial Review Gate (**19 raised / 10 survived / 9 refuted**). **#379** (`releaseops-1`,
+  PR #406) — versionCode-collision fail-fast guard in `release.yml` (topology-independent
+  `git tag -l --sort=-v:refname`, `|| true`-safe first-release skip, loud `::error::` parse — review S1/S2/S3).
+  **#383** (`releaseops-2`, PR #407) — doc: internal-only lane + manual-production rollout/rollback in
+  `release-checklist.md` (the `userFraction`/`inProgress` `release.yml` change deferred until production lands).
+  **#377** (`depmgmt-1`, PR #408, **ADR-0041**) — Apache-2.0 §4(d) OSS-attribution via a **static NOTICE
+  asset** (`tools/generate_oss_notices.py` → `res/raw/oss_notices.txt`, read-only in `HelpScreen`); switched
+  from the oss-licenses-plugin after review S5 found `play-services-oss-licenses:17.5.1`'s v2 activity drags
+  alpha AndroidX Compose + Navigation3 into the AAB (no-alpha-AAB discipline); zero new runtime deps, no
+  fragile-zone edit, no nav route, R8-verified. All 3 issues auto-closed; #389 tracker ticked. **1314 JVM +
+  9 instrumented tests** unchanged (no app-logic/schema change, no versionCode bump).
+  **Phase-4 remaining = deferred only:** #385 (`perf-1`) macrobenchmark numbers (one-time on-device
+  developer step — fragile-zone `benchmark` build type + a physical device; not CI-gated per spec; tracking
+  note refreshed in `startup-baseline.md` §2) and #396 (detekt nested-lock rule — blocked on a stable detekt
+  custom-rule API). **This clears the entire non-deferred tracker #389 body (Phases 1–4).**
+- *Previous — Phase-3 tooling (tracker #389 Phase 3): BOTH PRs MERGED.* **PR-1** (`aa2b50c`, #402) — #373
+  scoped Kover ratchet + #375 LeakCanary + #381 `FullChainMigrationSchemaTest` + #382 `ComposeHardcodedStringTest`.
+  **PR-2** (`cfbabcb`, #403) — #384 DEBUG frame-stats overlay (concurrency-reviewer lane, no violation).
+  Detail in RUN_LOG/CHANGELOG.
+- **Open tracks remaining (non-tooling / deferred):** first non-English `values-xx` locale (#34, the i18n
+  payoff — app is 100% locale-ready); internal→closed promotion (developer-judgment Closed-Test Readiness
+  Gate); #233 clean Simulation-hoist (ADR-0012); A24 clock-tamper; the two deferred tracker-#389 items
+  (#385 device pass, #396 detekt rule). See `docs/agent/BACKLOG.md`.
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 
