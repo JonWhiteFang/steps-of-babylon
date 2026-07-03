@@ -118,6 +118,15 @@ Historical artifacts — **NEVER modify** in a current-PR doc sweep:
 - `docs/archive/pre-claude-devdocs/*`, `docs/archive/smoke_tests/*` — pre-Claude analysis corpus; historical per HEAD pin.
 - Individual `docs/agent/DECISIONS/ADR-*.md` files — amend status only if explicitly warranted.
 
+### Sequential merge for stacked PRs (mandatory when one change ships as multiple PRs)
+When a plan produces multiple PRs, **merge them one at a time — fully land one before opening/advancing
+the next.** As soon as a PR's required checks pass, merge it; do not leave several open in parallel.
+Rationale: sibling branches cut from the same `main` collide on the newest-first doc heads
+(`CHANGELOG.md` / `docs/agent/STATE.md` / `docs/agent/RUN_LOG.md`), forcing a manual rebase + conflict
+resolution on whichever lands second. Merge PR-1, then **rebase the next branch onto the updated `main`**
+(`git rebase origin/main`) so it stays conflict-free before its own merge. Merging is gated on green
+checks only — no other approval is needed once CI is passing.
+
 ### End-of-Run memory writes (run `/checkpoint`)
 1. Current-state docs synced per the PR Task-List Convention above.
 2. Update `docs/agent/STATE.md` (what changed + what's next).
