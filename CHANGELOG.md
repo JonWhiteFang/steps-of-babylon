@@ -4,6 +4,15 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Tooling — JDK toolchain pin (#378) — Phase-2 tooling PR-2
+
+- **#378 (devenv-1).** Pinned a JVM-17 Gradle toolchain on `:app` + both benchmark modules via
+  `kotlin { jvmToolchain(17) }` (AGP-9 built-in Kotlin registers the `kotlin {}` extension on all three).
+  Local-detection only — no foojay auto-download (preserves the strict `verification-metadata.xml`
+  supply-chain posture). Bytecode `compileOptions { VERSION_17 }` retained (orthogonal). A too-new ambient
+  JDK now yields a clear toolchain error instead of an opaque KSP failure. ADR-0039. **No app/test/schema
+  change; JVM test count unchanged at 1302.** #124 license-key guard confirmed unperturbed.
+
 ### Tooling — developer-experience docs (#386, #387, #388) — Phase-2 tooling PR-1
 
 - **#386 (ai-1).** New thin `AGENTS.md` at the repo root — a pure redirect to `CLAUDE.md` /
