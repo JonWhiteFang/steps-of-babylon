@@ -44,9 +44,10 @@ the med/low backlog (#262) remain.
 - **CURRENT — Phase-4 tooling (tracker #389 Phase 4: release/ops): IN PROGRESS — 3 of 4 findings land as
   stacked PRs; #385 is a tracking-note refresh.** Plan `docs/superpowers/plans/2026-07-03-phase4-release-ops-tooling.md`
   passed the Adversarial Review Gate (**19 raised / 10 survived / 9 refuted**). **PR-1 (#379,
-  `releaseops-1`)** — versionCode-collision fail-fast guard in `release.yml` (topology-independent
-  `git tag -l --sort=-v:refname` lookup, `|| true`-safe first-release skip, loud `::error::` parse — S1/S2/S3
-  applied; verified locally against real+scratch tags). **PR-2 (#383, `releaseops-2`)** — doc-only:
+  `releaseops-1`) MERGED** (#406, `207e67d`) — versionCode-collision fail-fast guard in `release.yml`
+  (topology-independent `git tag -l --sort=-v:refname` lookup, `|| true`-safe first-release skip, loud
+  `::error::` parse — S1/S2/S3 applied; verified locally against real+scratch tags). **PR-2 (#383,
+  `releaseops-2`) — IN FLIGHT** — doc-only:
   internal-only automated lane + manual-production rollout/rollback story in `release-checklist.md` (the
   `userFraction`/`inProgress` `release.yml` change is deferred until production lands). **PR-3 (#377,
   `depmgmt-1`)** — **REVISED to a static build-time NOTICE asset in `HelpScreen`** (NOT the
