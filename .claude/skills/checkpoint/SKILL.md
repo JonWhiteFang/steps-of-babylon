@@ -61,12 +61,14 @@ gh issue list --state open --limit 200 --json number,title,labels \
 ```
 Write the result into `docs/agent/BACKLOG.md` under a **GENERATED — do not hand-edit** header that names
 this exact command and a "last generated: <today's date>" line (stamp the current date at run time).
-Group the lines by phase/label where it is obvious (e.g. the `tooling` phases, `severity:*`), otherwise
-list newest-issue-number first.
+**Sort the lines by descending issue number** (the `--jq` output already emits newest-first from `gh`,
+but sort explicitly so regeneration is reproducible and diffs stay meaningful). Do not hand-group or
+reorder — determinism is the point of a generated file.
 
-**Graceful degradation:** if `gh` is absent or unauthenticated (the command errors or returns nothing),
-**log a one-line skip and leave any existing `docs/agent/BACKLOG.md` untouched** — never write a
-truncated or empty file.
+**Write only on a successful, non-empty capture.** Capture the command output first; write
+`docs/agent/BACKLOG.md` ONLY if the command exited 0 AND produced at least one line. If `gh` is
+absent/unauthenticated (command errors) OR returns nothing, **log a one-line skip and leave any existing
+`docs/agent/BACKLOG.md` untouched** — never overwrite it with a truncated or empty file.
 
 ## Historical artifacts — NEVER modify
 Appending a new RUN_LOG entry is fine; editing the past is not. Leave these untouched:
