@@ -1,0 +1,668 @@
+<resources>
+    <string name="app_name">Steps of Babylon</string>
+
+    <!-- Step counter notification -->
+    <string name="notif_step_channel_name">Contador de Pasos</string>
+    <string name="notif_step_channel_desc">Muestra tu recuento diario de pasos</string>
+    <!-- #259: composed from notif_today_steps (plural, in plurals.xml) + notif_balance; word order in the resource. -->
+    <string name="notif_step_content">%1$s | %2$s</string>
+    <string name="notif_balance">Saldo: %1$d Pasos</string>
+    <string name="notif_step_action_workshop">Taller</string>
+    <string name="notif_step_action_battle">Batalla</string>
+    <string name="notif_step_minimal">Seguimiento de pasos activo</string>
+
+    <!-- Supply drop notification -->
+    <string name="notif_supply_channel_name">Suministros</string>
+    <string name="notif_supply_channel_desc">Recompensas obtenidas al caminar</string>
+    <string name="notif_supply_title">¡Suministro!</string>
+
+    <!-- Milestone notification -->
+    <string name="notif_milestone_channel_name">Hitos</string>
+    <string name="notif_milestone_channel_desc">Récords de oleadas e hitos de caminata</string>
+    <string name="notif_milestone_best_wave_title">¡Nuevo récord personal!</string>
+    <string name="notif_milestone_best_wave_text">¡Oleada %1$d en %2$s!</string>
+    <string name="notif_milestone_achieved_title">¡%1$s!</string>
+    <string name="notif_milestone_achieved_text">¡Reclama tu recompensa!</string>
+
+    <!-- Battle floating-text (engine-internal, via domain/Strings) -->
+    <string name="fx_heal_hp">+%1$d PS</string>
+    <string name="fx_rapid_fire">¡FUEGO RÁPIDO!</string>
+    <string name="fx_cash_reward">+%1$d</string>
+    <string name="fx_power_stone_reward">+%1$d PP</string>
+
+    <!-- #260: localized enemy-type names (replace raw EnemyType.name in the wave-composition overlay) -->
+    <string name="enemy_basic">Básico</string>
+    <string name="enemy_fast">Rápido</string>
+    <string name="enemy_tank">Tanque</string>
+    <string name="enemy_ranged">A distancia</string>
+    <string name="enemy_boss">Jefe</string>
+    <string name="enemy_scatter">Dispersor</string>
+
+    <!-- #260: next-wave composition (ENEMY_INTEL overlay). %1$s = the joined per-type list. -->
+    <string name="wave_composition">Siguiente: %1$s</string>
+    <!-- per-type entry: %1$d = count, %2$s = localized enemy name -->
+    <string name="wave_comp_entry">%1$d %2$s</string>
+    <!-- separator between entries -->
+    <string name="wave_composition_separator">", "</string>
+
+    <!-- Workshop screen -->
+    <string name="workshop_weapons">⚔ Armas Definitivas</string>
+    <string name="workshop_cards">🃏 Cartas</string>
+    <string name="workshop_balance">Saldo: %1$d Pasos</string>
+
+    <!-- Upgrade card (shared by Workshop list + in-round menu) -->
+    <string name="upgrade_max">MÁX</string>
+    <string name="upgrade_level">Nv. %1$d</string>
+    <string name="upgrade_cost_steps">%1$d Pasos</string>
+    <string name="upgrade_best_buy">★ MEJOR COMPRA</string>
+    <string name="upgrade_best_buy_save_up">★ MEJOR COMPRA · AHORRA</string>
+    <!-- #260: card-pull result line; %1$s = card name, %2$s = pre-formatted copy plural -->
+    <string name="card_pull_result">%1$s %2$s</string>
+
+    <!-- Battle HUD + bottom controls -->
+    <string name="battle_wave_header">Oleada %1$d · %2$s</string>
+    <string name="cash_amount">$%1$d</string>
+    <string name="battle_steps_earned_desc">Pasos de Batalla ganados esta ronda: %1$d</string>
+    <string name="battle_cd_quit_round">Abandonar ronda</string>
+    <string name="battle_speed_label">%1$dx</string>
+    <string name="battle_cd_speed">Velocidad %1$dx</string>
+    <string name="battle_cd_pause">Pausa</string>
+    <string name="battle_cd_upgrades">Mejoras</string>
+
+    <!-- #214: battle TalkBack live-region announcements (polite). Fed from uiState transitions. -->
+    <string name="battle_a11y_wave">Oleada %1$d</string>
+    <string name="battle_a11y_phase_spawning">Generando oleada</string>
+    <string name="battle_a11y_phase_cooldown">Enfriamiento de oleada</string>
+    <string name="battle_a11y_health">Salud del zigurat %1$d por ciento</string>
+    <string name="battle_a11y_round_over">Ronda terminada. Alcanzaste la oleada %1$d.</string>
+    <string name="battle_a11y_error">Batalla detenida por un error.</string>
+
+    <!-- In-round upgrade menu -->
+    <string name="inround_free">"  ¡GRATIS!"</string>
+    <string name="inround_level_desc">Nv %1$d · %2$s</string>
+    <string name="inround_readout_next">Ahora: %1$s → %2$s</string>
+    <string name="inround_readout_max">Ahora: %1$s (MÁX)</string>
+
+    <!-- Pause overlay -->
+    <string name="pause_title">En pausa</string>
+    <string name="action_resume">Reanudar</string>
+    <string name="pause_quit_round">Abandonar ronda</string>
+
+    <!-- Biome transition overlay -->
+    <string name="biome_welcome">Bienvenido a</string>
+    <string name="biome_steps_walked">%1$d pasos caminados</string>
+    <string name="action_continue">Continuar</string>
+
+    <!-- Post-round overlay -->
+    <string name="postround_title">Ronda terminada</string>
+    <string name="postround_new_record">🏆 ¡Nuevo récord!</string>
+    <string name="postround_previous_best">Mejor anterior: Oleada %1$d</string>
+    <string name="postround_tier_unlocked">🔓 ¡Nivel %1$d desbloqueado!</string>
+    <string name="postround_cash_multiplier">Multiplicador de dinero %1$sx</string>
+    <string name="postround_power_stones">💎 +%1$d Piedras de Poder</string>
+    <string name="postround_stat_wave">Oleada alcanzada</string>
+    <string name="postround_stat_enemies">Enemigos eliminados</string>
+    <string name="postround_stat_cash">Dinero ganado</string>
+    <string name="postround_stat_steps">Pasos ganados</string>
+    <string name="postround_stat_steps_value">+%1$d</string>
+    <string name="postround_stat_time">Tiempo sobrevivido</string>
+    <string name="postround_time_value">%1$d:%2$02d</string>
+    <string name="postround_gem_earned">✅ ¡+1 Gema ganada!</string>
+    <string name="postround_watch_gem_ad">🎬 Ver anuncio por +1 Gema</string>
+    <string name="postround_ps_doubled">✅ ¡Piedras de Poder duplicadas!</string>
+    <string name="postround_watch_ps_ad">🎬 Ver anuncio para duplicar PP</string>
+    <string name="postround_play_again">Jugar de nuevo</string>
+    <string name="postround_share_text">¡Acabo de alcanzar la Oleada %1$d en Steps of Babylon! Construido a base de caminar. %2$s</string>
+    <string name="postround_share_chooser">Comparte tu récord</string>
+    <string name="postround_share_record">📤 Compartir récord</string>
+    <string name="postround_leave_battle">Salir de la batalla</string>
+    <string name="battle_error_title">Error de batalla</string>
+    <string name="battle_error_body">Algo salió mal y la batalla tuvo que detenerse. Tu progreso de esta ronda no se guardó.</string>
+    <string name="battle_error_return">Volver al menú</string>
+    <string name="crash_notice_last_session">El juego se cerró inesperadamente la última vez. ¡Lo sentimos!</string>
+    <string name="crash_notice_report_action">Informar</string>
+    <string name="crash_report_email_subject">Informe de fallo de Steps of Babylon</string>
+    <!-- %1$s exceptionClass, %2$s message, %3$s stackPreview, %4$s app+device metadata -->
+    <string name="crash_report_email_body">Se registró un fallo en la sesión anterior.\n\nExcepción: %1$s\nMensaje: %2$s\n\nPila:\n%3$s\n\n%4$s</string>
+
+    <!-- #260: localized enum display names (replace raw CONSTANT_CASE surfacing) -->
+    <string name="upgrade_cat_attack">Ataque</string>
+    <string name="upgrade_cat_defense">Defensa</string>
+    <string name="upgrade_cat_utility">Utilidad</string>
+    <string name="pack_tier_common">Común</string>
+    <string name="pack_tier_rare">Raro</string>
+    <string name="pack_tier_epic">Épico</string>
+    <string name="rarity_common">COMÚN</string>
+    <string name="rarity_rare">RARO</string>
+    <string name="rarity_epic">ÉPICO</string>
+    <string name="uw_rarity_rare">RARO</string>
+    <string name="uw_rarity_epic">ÉPICO</string>
+    <string name="uw_rarity_legendary">LEGENDARIO</string>
+    <string name="cosmetic_cat_ziggurat_skin">Aspecto de Zigurat</string>
+    <string name="wave_phase_spawning">Generando</string>
+    <string name="wave_phase_cooldown">Enfriamiento</string>
+
+    <!-- #260: claim-celebration formatting. reward_join glues multiple reward parts; the leading
+         "+" lives inside the per-reward plurals (reward_gems/etc.). -->
+    <string name="reward_join">" "</string>
+    <string name="reward_claimed">¡%1$s reclamado!</string>
+    <string name="reward_generic">¡Recompensa reclamada!</string>
+    <string name="reward_all_supplies">¡Todos los suministros reclamados!</string>
+
+    <!-- #259: widget + smart-reminder copy (run outside Compose; getString/getQuantityString) -->
+    <string name="widget_balance">Saldo: %1$s</string>
+    <string name="reminder_channel_name">Recordatorios Inteligentes</string>
+    <string name="reminder_channel_desc">Recordatorios de proximidad a mejoras</string>
+    <string name="reminder_title">¡Casi lo tienes!</string>
+
+    <!-- Store screen -->
+    <string name="store_section_gem_packs">Paquetes de Gemas</string>
+    <string name="store_buy">Comprar</string>
+    <string name="store_section_premium">Premium</string>
+    <string name="store_ad_removal">Eliminar anuncios</string>
+    <string name="store_purchased">Comprado</string>
+    <string name="store_season_pass">Pase de Temporada</string>
+    <string name="store_subscribe">Suscribirse</string>
+    <string name="store_pass_perk_gems">• Gemas diarias: 0 → 10/día</string>
+    <string name="store_pass_perk_lab_rush">• Aceleración de Laboratorio: 50–200 Gemas → 1 gratis/día</string>
+    <string name="store_pass_perk_cosmetics">• Cosméticos exclusivos desbloqueados</string>
+    <string name="store_manage_subscription">Gestionar suscripción</string>
+    <string name="store_pass_comparison">Gratis vs Pase de Temporada:</string>
+    <string name="store_cosmetics_note">Se siguen ultimando más visuales cosméticos. Los aspectos de Zigurat Jade y Obsidiana ya están disponibles.</string>
+    <string name="store_section_cosmetics">Cosméticos</string>
+    <string name="store_unequip">Desequipar</string>
+    <string name="store_equip">Equipar</string>
+    <string name="store_coming_soon">Próximamente</string>
+
+    <!-- Settings screen -->
+    <string name="settings_sound_header">Sonido</string>
+    <string name="settings_music_volume">Volumen de la música</string>
+    <string name="settings_mute_sound_header">Silenciar efectos de sonido</string>
+    <string name="settings_mute_sound_subtitle">Silencia todos los sonidos del juego</string>
+    <string name="settings_mute_music_header">Silenciar música</string>
+    <string name="settings_mute_music_subtitle">Silencia la música de fondo</string>
+    <string name="settings_haptic_header">Vibración</string>
+    <string name="settings_haptic_subtitle">Vibra en toques, reclamos y recompensas</string>
+    <string name="settings_live_steps_header">Actualización de pasos en vivo</string>
+    <string name="settings_live_steps_subtitle">Actualiza la notificación con el recuento de pasos y el saldo en vivo. Mientras el conteo de pasos esté activo siempre se muestra una notificación de seguimiento mínima.</string>
+    <string name="settings_supply_drops_header">Suministros</string>
+    <string name="settings_supply_drops_subtitle">Notificaciones de recompensas por caminar</string>
+    <string name="settings_smart_reminders_header">Recordatorios inteligentes</string>
+    <string name="settings_smart_reminders_subtitle">Recordatorios de proximidad a mejoras</string>
+    <string name="settings_milestone_alerts_header">Alertas de hitos</string>
+    <string name="settings_milestone_alerts_subtitle">Récords de oleadas e hitos de pasos</string>
+    <string name="settings_help_header">Ayuda</string>
+    <string name="settings_replay_tutorial">Repetir tutorial</string>
+    <string name="settings_replay_tutorial_subtitle">Ver de nuevo la guía del primer inicio</string>
+    <string name="settings_background_activity_header">Actividad en segundo plano</string>
+    <string name="settings_background_activity_subtitle">Permite que el conteo de pasos siga funcionando en segundo plano</string>
+    <string name="settings_data_header">Datos</string>
+    <string name="settings_privacy_policy">Política de Privacidad</string>
+    <string name="settings_privacy_policy_subtitle">Cómo se gestionan tus datos</string>
+    <string name="settings_delete_card_header">Eliminar todos los datos</string>
+    <string name="settings_delete_card_subtitle">Borra permanentemente todo el progreso</string>
+    <string name="settings_delete_confirm_title">¿Eliminar todos los datos?</string>
+    <string name="settings_delete_confirm_body">Esto eliminará permanentemente todo tu progreso, historial de pasos, mejoras y monedas. Esto no se puede deshacer.</string>
+    <string name="settings_delete_final_title">¿Estás totalmente seguro?</string>
+    <string name="settings_delete_final_body">Todos los pasos, mejoras, cartas, armas y compras se perderán para siempre. La aplicación se reiniciará.</string>
+    <string name="settings_delete_confirm_final">Eliminar todo</string>
+    <string name="action_cancel">Cancelar</string>
+
+    <!-- Cards screen -->
+    <string name="cards_owned_count">%1$d cartas</string>
+    <string name="cards_equipped_count">Equipadas: %1$d/3</string>
+    <string name="cards_equipped_full">Equipadas: 3/3 — desequipa una para cambiar</string>
+    <string name="cards_empty_title">Aún no hay cartas</string>
+    <string name="cards_empty_message">Abre un paquete arriba para empezar tu colección. Equipa hasta 3 cartas para bonificaciones por ronda en batalla.</string>
+    <string name="cards_free_pack_ad">Paquete gratis (anuncio)</string>
+    <string name="cards_free_pack_used">Paquete gratis usado hoy</string>
+    <string name="cards_pack_opened_title">¡Paquete abierto!</string>
+    <string name="cards_pack_new">Nueva</string>
+    <string name="cards_pack_duplicate">Duplicada</string>
+    <string name="action_ok">Aceptar</string>
+    <string name="cards_level_progress">Nv %1$d/%2$d</string>
+    <string name="cards_unequip">Desequipar</string>
+    <string name="cards_equip">Equipar</string>
+    <string name="cards_upgrade_progress">Mejorar (%1$d/%2$d)</string>
+    <!-- Onboarding screen (buttons + final-slide body copy; slide-carousel content lives in OnboardingSlide via existing keys) -->
+    <string name="onboarding_skip">Omitir</string>
+    <string name="onboarding_next">Siguiente</string>
+    <string name="onboarding_no_sensor_body">Este dispositivo no tiene sensor contador de pasos. Aún puedes ganar Pasos conectando Health Connect en Ajustes; de lo contrario, el juego no puede seguir tu caminata.</string>
+    <string name="onboarding_continue_anyway">Continuar de todos modos</string>
+    <string name="onboarding_enabled_body">Conteo de pasos activado</string>
+    <string name="onboarding_battery_primer_body">Algunos teléfonos pausan las aplicaciones en segundo plano para ahorrar batería, lo que detiene el conteo de pasos. Permite que Steps of Babylon se ejecute en segundo plano para que tu caminata siempre cuente.</string>
+    <string name="onboarding_allow_background">Permitir actividad en segundo plano</string>
+    <string name="onboarding_maybe_later">Quizás más tarde</string>
+    <string name="onboarding_start_playing">Empezar a jugar</string>
+    <string name="onboarding_enable_step_counting">Activar conteo de pasos</string>
+    <string name="onboarding_denied_body">El conteo de pasos está desactivado. Puedes activarlo en cualquier momento en Ajustes.</string>
+    <string name="onboarding_open_settings">Abrir Ajustes</string>
+    <string name="onboarding_continue_without">Continuar sin conteo de pasos</string>
+    <!-- Home screen -->
+    <string name="home_today">Hoy</string>
+    <string name="home_today_steps">%1$s pasos</string>
+    <string name="home_currency_steps">Pasos</string>
+    <string name="home_currency_gems">Gemas</string>
+    <string name="home_currency_power_stones">Piedras de Poder</string>
+    <string name="home_empty_title">Gana tus primeros Pasos</string>
+    <string name="home_empty_message">Sal a caminar: cada paso potencia tu zigurat. Tus Pasos aparecerán aquí.</string>
+    <string name="home_best_wave">Mejor oleada: %1$d</string>
+    <string name="home_unclaimed_supplies_cd">Suministros sin reclamar, %1$d disponibles</string>
+    <string name="home_unclaimed_supplies">Suministros sin reclamar</string>
+    <string name="home_season_pass_active">Pase de Temporada activo</string>
+    <string name="home_battle">BATALLA</string>
+    <string name="home_menu_missions">Misiones</string>
+    <string name="home_menu_settings">Ajustes</string>
+    <string name="home_menu_help">Ayuda</string>
+    <string name="home_menu_store">Tienda</string>
+    <string name="tier_selector_header">Nivel %1$d — %2$s</string>
+
+    <!-- Premium Currencies (economy) screen -->
+    <string name="economy_store">Tienda</string>
+    <string name="economy_balance_gems">Gemas</string>
+    <string name="economy_balance_power_stones">Piedras de Poder</string>
+    <string name="economy_weekly_challenge">Desafío Semanal de Pasos</string>
+    <string name="economy_weekly_progress">%1$s / 100.000 pasos</string>
+    <string name="economy_past_weeks">Semanas anteriores</string>
+    <string name="economy_login_streak">Racha de inicio de sesión</string>
+    <string name="economy_gems_claimed_today">Gemas de hoy reclamadas</string>
+    <string name="economy_open_daily">¡Abre la aplicación a diario para conseguir Gemas!</string>
+    <string name="economy_daily_power_stone">Piedra de Poder diaria</string>
+    <string name="economy_earned_today">Ganada hoy (caminaste 1.000+ pasos)</string>
+    <string name="economy_walk_for_ps">Camina 1.000 pasos hoy por 1 Piedra de Poder</string>
+    <string name="economy_steps_to_ps">%1$s pasos → %2$d PP</string>
+    <string name="economy_ready">¡Listo!</string>
+    <string name="economy_claimed">Reclamado</string>
+    <string name="economy_cd_goal_met">Objetivo cumplido</string>
+    <string name="economy_cd_goal_missed">Objetivo no cumplido</string>
+    <string name="economy_week_ps_earned">%1$d PP</string>
+
+    <!-- Stats screen -->
+    <string name="stats_walking_history">Historial de caminatas</string>
+    <string name="stats_today">Hoy</string>
+    <string name="stats_battle_stats">Estadísticas de batalla</string>
+    <string name="stats_all_time">Estadísticas de todos los tiempos</string>
+    <string name="stats_gems">Gemas</string>
+    <string name="stats_power_stones">Piedras de Poder</string>
+    <!-- StatRow labels (passed as String args to StatRow(label, value)) -->
+    <string name="stats_row_steps">Pasos</string>
+    <string name="stats_row_activity_equiv">Pasos equivalentes por actividad</string>
+    <string name="stats_row_tier_best_wave">Mejor oleada del Nivel %1$d</string>
+    <string name="stats_row_rounds_played">Rondas jugadas</string>
+    <string name="stats_row_enemies_killed">Enemigos eliminados</string>
+    <string name="stats_row_total_cash">Dinero total ganado</string>
+    <string name="stats_row_lifetime_steps">Pasos de por vida</string>
+    <string name="stats_row_days_active">Días activo</string>
+    <string name="stats_row_avg_daily_steps">Promedio de pasos diarios</string>
+    <string name="stats_row_workshop_levels">Niveles del Taller</string>
+    <string name="stats_row_current">Actual</string>
+    <string name="stats_row_earned">Ganado</string>
+    <string name="stats_row_spent">Gastado</string>
+
+    <!-- Walking history chart -->
+    <string name="chart_legend_steps">Pasos</string>
+    <string name="chart_legend_activity_steps">Pasos por actividad</string>
+
+    <!-- Labs screen -->
+    <string name="labs_slots">Espacios de Laboratorio: %1$d/%2$d</string>
+    <string name="labs_unlock_slot">"Desbloquear espacio "</string>
+    <string name="labs_level_progress">Nv %1$d/%2$d</string>
+    <string name="labs_free">Gratis</string>
+    <string name="labs_rush">"Acelerar "</string>
+    <string name="labs_start">"Iniciar "</string>
+    <string name="labs_no_slot">No hay espacio disponible</string>
+
+    <!-- Missions screen -->
+    <string name="missions_daily">Misiones diarias</string>
+    <string name="missions_resets_in">Se reinicia en %1$dh %2$dm</string>
+    <string name="missions_milestones">Hitos de caminata</string>
+    <string name="missions_cd_claimed">Reclamado</string>
+    <string name="missions_reward_plus">+</string>
+    <string name="missions_claim">Reclamar</string>
+    <string name="missions_milestone_steps">%1$s pasos</string>
+
+    <!-- Ultimate Weapons screen -->
+    <string name="uw_power_stones_balance">Piedras de Poder: %1$d</string>
+    <string name="uw_equipped_full">Equipadas: 3/3 — desequipa una para cambiar</string>
+    <string name="uw_equipped_count">Equipadas: %1$d/3</string>
+    <string name="uw_unlock_cost">Desbloquear (%1$d PP)</string>
+    <string name="uw_unequip">Desequipar</string>
+    <string name="uw_equip">Equipar</string>
+    <string name="uw_path_level_cost">N%1$d (%2$d PP)</string>
+
+    <!-- Unclaimed Supplies screen -->
+    <string name="supplies_claim_all">Reclamar todo</string>
+    <string name="supplies_empty">Aún no hay suministros — ¡sigue caminando!</string>
+    <string name="supplies_claim">Reclamar</string>
+    <string name="supplies_reward_card_copy">%1$s x1</string>
+
+    <!-- Secondary-screen TopAppBar titles (Screen.secondaryTitle) -->
+    <string name="screen_title_weapons">Armas Definitivas</string>
+    <string name="screen_title_cards">Cartas</string>
+    <string name="screen_title_supplies">Suministros sin reclamar</string>
+    <string name="screen_title_economy">Monedas Premium</string>
+    <string name="screen_title_missions">Misiones</string>
+    <string name="screen_title_settings">Ajustes</string>
+    <string name="screen_title_store">Tienda</string>
+    <string name="screen_title_help">Ayuda</string>
+
+    <!-- Shared UI components -->
+    <string name="action_retry">Reintentar</string>
+    <string name="cd_back">Atrás</string>
+    <string name="equipped_chip">✓ EQUIPADO</string>
+    <string name="battle_uw_ready">%1$s lista</string>
+    <string name="battle_uw_cooldown">%1$s en enfriamiento, quedan %2$d segundos</string>
+    <string name="battle_close">✕</string>
+
+    <!-- Non-composable helper returns (resolved at call site) -->
+    <string name="currency_label_steps">Pasos</string>
+    <string name="currency_label_cash">Dinero</string>
+    <string name="currency_label_gems">Gemas</string>
+    <string name="currency_label_power_stones">Piedras de Poder</string>
+    <string name="uw_path_damage">Daño</string>
+    <string name="uw_path_slow_factor">Factor de ralentización</string>
+    <string name="uw_path_cash_multiplier">Multiplicador de dinero</string>
+    <string name="uw_path_dot">DoT % PS máx/seg</string>
+    <string name="uw_path_damage_dps">DPS de daño</string>
+    <string name="uw_path_chain_length">Longitud de cadena</string>
+    <string name="uw_path_radius">Radio</string>
+    <string name="uw_path_pull_strength">Fuerza de atracción</string>
+    <string name="uw_path_duration">Duración</string>
+    <string name="uw_path_area">Área</string>
+    <string name="uw_path_damage_multiplier">Multiplicador de daño</string>
+    <string name="uw_path_cooldown">Enfriamiento</string>
+    <string name="lab_time_done">¡Listo!</string>
+    <string name="time_just_now">Ahora mismo</string>
+
+    <!-- i18n #34 phase 3: compound duration units (category D). -->
+    <string name="duration_hms">%1$dh %2$dm %3$ds</string>
+    <string name="duration_ms">%1$dm %2$ds</string>
+    <string name="duration_s">%1$ds</string>
+    <!-- i18n #34 phase 3: stats activity minutes (category D). -->
+    <string name="stats_activity_minutes">%1$d min</string>
+    <!-- i18n #34 phase 3: economy weekly-reset countdown (category D). -->
+    <string name="economy_time_remaining">%1$dd %2$dh</string>
+
+    <!-- i18n #34 phase 3: ViewModel user messages (category A) -->
+    <string name="msg_not_enough_gems">Gemas insuficientes</string>
+    <string name="msg_not_enough_steps">Pasos insuficientes</string>
+    <string name="msg_already_max_level">Ya está al nivel máximo</string>
+    <string name="msg_no_affordable_upgrades">No hay mejoras asequibles</string>
+    <string name="msg_card_at_max_level">La carta ya está al nivel máximo</string>
+    <string name="msg_not_enough_copies">Copias insuficientes</string>
+    <string name="msg_research_coming_soon">Próximamente — reservado para v1.x</string>
+    <string name="msg_no_research_slot">No hay espacio de investigación disponible</string>
+    <string name="msg_already_researching">Ya se está investigando</string>
+    <string name="msg_season_pass_required">Se requiere Pase de Temporada</string>
+    <string name="msg_free_rush_used">Aceleración gratuita ya usada hoy</string>
+    <string name="msg_no_active_research">No hay investigación activa para acelerar</string>
+    <string name="msg_not_enough_gems_or_max_slots">Gemas insuficientes o máximo de espacios alcanzado</string>
+    <string name="msg_mission_not_enough_steps">Aún no has caminado pasos suficientes.</string>
+    <string name="msg_milestone_already_claimed">Hito ya reclamado.</string>
+    <string name="msg_reward_unavailable">Recompensa temporalmente no disponible (el cosmético “%1$s” se está ultimando). Inténtalo de nuevo tras la próxima actualización.</string>
+    <string name="msg_ad_cancelled">Anuncio cancelado. Inténtalo de nuevo.</string>
+    <string name="msg_ad_failed">El anuncio no se cargó. Inténtalo más tarde.</string>
+
+    <!-- i18n #34 phase 3: billing error messages (category A′) -->
+    <string name="billing_error_no_activity">No hay actividad disponible para la compra</string>
+    <string name="billing_error_product_unavailable">Producto %1$s no disponible. (El SKU de Play Console puede faltar o no haberse publicado aún.)</string>
+    <string name="billing_error_cancelled">Compra cancelada</string>
+    <string name="billing_error_pending">Compra pendiente — completa el pago para recibir tus artículos</string>
+    <string name="billing_error_unverified">No se pudo verificar la compra</string>
+    <string name="billing_error_service_unavailable">Servicio de facturación no disponible. Inténtalo de nuevo en breve.</string>
+    <string name="billing_error_billing_unavailable">La facturación de Google Play no está disponible en este dispositivo.</string>
+    <string name="billing_error_item_unavailable">Este producto no está disponible ahora mismo.</string>
+    <string name="billing_error_item_owned">Ya posees este artículo.</string>
+    <string name="billing_error_developer">La compra falló (error de configuración).</string>
+    <string name="billing_error_network">Error de red. Comprueba tu conexión e inténtalo de nuevo.</string>
+    <string name="billing_error_other">La compra falló (código %1$d).</string>
+    <string name="billing_error_ok">Aceptar</string>
+    <!-- i18n #34 phase 3: ad error messages (category A′) -->
+    <string name="ad_error_no_activity">No hay actividad disponible para el anuncio</string>
+    <string name="ad_error_consent_pending">Aún no se pueden solicitar anuncios — consentimiento pendiente</string>
+    <string name="ad_error_load_internal">La solicitud de anuncio no fue válida. (Error interno.)</string>
+    <string name="ad_error_load_invalid">La solicitud de anuncio no fue válida. (Solicitud inválida.)</string>
+    <string name="ad_error_load_network">Error de red. Comprueba tu conexión e inténtalo de nuevo.</string>
+    <string name="ad_error_load_no_fill">No hay ningún anuncio disponible ahora mismo. Inténtalo más tarde.</string>
+    <string name="ad_error_load_other">No se pudo cargar el anuncio. (código %1$d)</string>
+    <string name="ad_error_show_internal">El anuncio no se pudo reproducir. (Error interno.)</string>
+    <string name="ad_error_show_already">El anuncio ya se mostró.</string>
+    <string name="ad_error_show_not_ready">El anuncio no está listo para mostrarse.</string>
+    <string name="ad_error_show_foreground">El anuncio no se pudo reproducir. (La aplicación no está en primer plano.)</string>
+    <string name="ad_error_show_other">No se pudo mostrar el anuncio. (código %1$d)</string>
+
+    <!-- i18n #34 phase 3: shared screen load-error (category C) -->
+    <string name="screen_load_error">No se pudo cargar esta pantalla. Comprueba tu conexión e inténtalo de nuevo.</string>
+
+    <!-- i18n #34 phase 3: Activity literals (category F) -->
+    <string name="hc_privacy_policy_title">Política de Privacidad</string>
+    <string name="hc_privacy_policy_body">Steps of Babylon usa el sensor contador de pasos de tu dispositivo para seguir la actividad de caminata diaria. Estos datos alimentan toda la progresión dentro del juego.\n\nIntegración con Health Connect\nCon tu permiso, la aplicación lee:\n• Registros de recuento de pasos — para contrastar las lecturas del sensor y recuperar pasos omitidos\n• Registros de sesiones de ejercicio — para convertir los minutos de entrenamiento en interiores en créditos equivalentes a pasos (Paridad de Minutos de Actividad)\n\nPuedes revocar los permisos de Health Connect en cualquier momento desde los ajustes de tu dispositivo.\n\nAlmacenamiento de datos\nTus datos de pasos, de Health Connect y del juego se almacenan localmente en tu dispositivo en una base de datos cifrada. Steps of Babylon no tiene servidor backend, y no subimos tus datos de pasos, salud o juego a ningún servidor, no los vendemos ni los compartimos con terceros.\n\nPublicidad\nLa aplicación muestra anuncios de recompensa opcionales y voluntarios a través de Google AdMob. Para publicarlos, el SDK de anuncios de Google recopila el identificador de publicidad de tu dispositivo; esto lo recopila Google, no nosotros. Un aviso de consentimiento rige la personalización de anuncios. Puedes restablecer o limitar tu identificador de publicidad en Ajustes → Google → Anuncios. Política de privacidad completa: https://jonwhitefang.github.io/steps-of-babylon/\n\nContacto: jonwhitefang@gmail.com</string>
+    <string name="step_permission_hint">El conteo de pasos está desactivado — actívalo en Ajustes</string>
+    <string name="step_permission_action">Ajustes</string>
+
+    <!-- i18n #34 phase 3: Help screen (category H) -->
+    <string name="help_currencies_title">💰 Monedas</string>
+    <string name="help_currencies_body">• Pasos — se ganan solo caminando. Se gastan en mejoras del Taller e investigación de Laboratorios.\n• Dinero — se gana eliminando enemigos en batalla. Se reinicia cada ronda. Se gasta en mejoras dentro de la ronda.\n• Gemas — se ganan con hitos, rachas de inicio de sesión diarias y paquetes de cartas. Se gastan en paquetes de cartas y aceleración de Laboratorios.\n• Piedras de Poder — se ganan con desafíos semanales, hitos de oleadas y eliminaciones de jefes. Se gastan en mejoras de Armas Definitivas.\n• Copias — se ganan con paquetes y suministros. Reúne suficientes copias para subir de nivel una carta.</string>
+    <string name="help_workshop_title">🔨 Taller</string>
+    <string name="help_workshop_body">Mejoras permanentes compradas con Pasos. Tres categorías:\n• Ataque — Daño, Velocidad de Ataque, Alcance, Probabilidad Crítica, Disparo Múltiple, Disparo con Rebote, Fuego Rápido y más.\n• Defensa — Salud, Regeneración de Salud, Defensa, Retroceso, Daño de Espinas, Robo de Vida, Desafío a la Muerte.\n• Utilidad — Bonificación de Dinero, Interés, Mejoras Gratis, Multiplicador de Pasos, Paquetes de Recuperación.\n\nFórmula de coste: costeBase × escalado^nivel. Usa Inversión Rápida para comprar la mejora asequible más barata.</string>
+    <string name="help_battle_title">⚔️ Controles de batalla</string>
+    <string name="help_battle_body">• Botones de velocidad (1×/2×/4×) — controlan la velocidad del juego.\n• Pausa — congela la batalla.\n• Botón de mejora — abre el menú de mejoras dentro de la ronda. Gasta Dinero en mejoras temporales que duran una ronda.\n\nLas oleadas duran 26 segundos (fase de generación) seguidos de un enfriamiento de 9 segundos. ¡Sobrevive a tantas oleadas como puedas!</string>
+    <string name="help_tiers_title">🏔️ Niveles &amp; Biomas</string>
+    <string name="help_tiers_body">10 niveles de dificultad con desafíos crecientes:\n• Los niveles más altos se desbloquean alcanzando hitos de oleadas.\n• Cada nivel tiene un multiplicador de dinero (niveles más altos = más Dinero por eliminación).\n• Los Niveles 6+ introducen condiciones de batalla (enemigos más rápidos, regeneración reducida, etc.).\n\n5 biomas ligados a rangos de nivel:\n• Jardines Colgantes (N1–2) → Arenas Ardientes (N3–4) → Zigurats Congelados (N5–6) → Inframundo de Kur (N7–8) → Puerta Celestial (N9–10).</string>
+    <string name="help_labs_title">🔬 Laboratorios</string>
+    <string name="help_labs_body">Proyectos de investigación que tardan tiempo real en completarse:\n• Inicia una investigación gastando Pasos. Cada proyecto tiene un temporizador del mundo real.\n• Acelera con Gemas para completarla al instante.\n• Desbloquea hasta 4 espacios de investigación (200 Gemas cada uno).\n• Los tipos de investigación potencian daño, salud, probabilidad crítica, regeneración, dinero, eficiencia de pasos, enfriamiento de Armas Definitivas y salto de oleada.</string>
+    <string name="help_cards_title">🃏 Cartas</string>
+    <string name="help_cards_body">Cartas coleccionables que proporcionan bonificaciones por ronda:\n• Abre paquetes con Gemas (niveles Común/Raro/Épico).\n• Las cartas duplicadas suman copias. Reúne suficientes copias para subir de nivel (3 Común / 4 Raro / 5 Épico por nivel).\n• Nivel máximo 7. Equipa hasta 3 cartas a la vez.\n• 9 tipos de carta con efectos únicos (defensa, crítico, dinero, robo de vida, rebote, salud, daño, gemas).</string>
+    <string name="help_uw_title">⚡ Armas Definitivas</string>
+    <string name="help_uw_body">Habilidades poderosas que se activan automáticamente cuando su enfriamiento llega a cero y hay enemigos presentes:\n• 6 tipos: Rayo en Cadena, Onda de Muerte, Agujero Negro, Campo Cronológico, Pantano Venenoso, Zigurat Dorado.\n• Se desbloquean con Piedras de Poder. Equipa hasta 3 a la vez.\n• Cada Arma Definitiva tiene 3 rutas de mejora (Daño, Secundaria, Enfriamiento) — 10 niveles cada una.\n• Las eliminaciones de jefes otorgan Piedras de Poder (nivel × PP, hasta 100/día).</string>
+    <string name="help_encounters_title">📦 Encuentros al caminar</string>
+    <string name="help_encounters_body">Recompensas entregadas mientras caminas:\n• Los suministros aparecen en tu bandeja según los hitos de pasos y el azar.\n• Reclama suministros por Pasos, Gemas, Piedras de Poder o Copias.\n• Las misiones diarias se renuevan a medianoche — completa 3 al día para recompensas extra.\n• Los hitos de caminata otorgan Gemas, Piedras de Poder y cosméticos en umbrales de pasos importantes.</string>
+    <string name="help_fairplay_title">🛡️ Juego limpio</string>
+    <string name="help_fairplay_body">Steps of Babylon usa medidas anti-trampas para mantener el juego justo:\n• Límite de 200 pasos/minuto (evita trucos con agitadores).\n• Tope de 50.000 pasos/día.\n• La validación cruzada de Health Connect verifica los recuentos de pasos con los datos de salud de tu dispositivo.\n• La Paridad de Minutos de Actividad convierte las sesiones de ejercicio en pasos equivalentes para entrenamientos en interiores.</string>
+    <!-- #377 (depmgmt-1): Apache-2.0 §4(d) open-source attribution section title; body is the generated res/raw/oss_notices.txt asset -->
+    <string name="help_oss_title">📜 Avisos de código abierto</string>
+    <!-- i18n #34 phase 3: Workshop empty-state (category Z) -->
+    <string name="workshop_empty">Aún no hay mejoras en esta categoría.</string>
+    <!-- i18n #34 phase 3: Workshop stat-value units (category G / D-workshop) -->
+    <string name="stat_dmg">%1$s daño</string>
+    <string name="stat_per_sec">%1$s/s</string>
+    <string name="stat_percent">%1$s%%</string>
+    <string name="stat_multiplier">%1$sx</string>
+    <string name="stat_range">%1$s alcance</string>
+    <string name="stat_hp">%1$s PS</string>
+    <string name="stat_block">%1$s bloqueo</string>
+    <string name="stat_force">%1$s fuerza</string>
+    <string name="stat_percent_per_m">%1$s%%/m</string>
+    <string name="stat_targets">%1$d objetivos</string>
+    <string name="stat_bounces">%1$d rebotes</string>
+    <string name="stat_orbs">%1$d orbes</string>
+    <!-- i18n #34 phase 3: bottom-nav labels (category B) -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_workshop">Taller</string>
+    <string name="nav_battle">Batalla</string>
+    <string name="nav_labs">Laboratorios</string>
+    <string name="nav_stats">Estadísticas</string>
+    <string name="nav_weapons">Armas</string>
+    <string name="nav_cards">Cartas</string>
+    <string name="nav_supplies">Suministros</string>
+    <string name="nav_economy">Economía</string>
+    <string name="nav_missions">Misiones</string>
+    <string name="nav_settings">Ajustes</string>
+    <string name="nav_store">Tienda</string>
+    <string name="nav_help">Ayuda</string>
+    <string name="nav_onboarding">Introducción</string>
+    <!-- i18n #34 phase 3: UW path-value units (category D) — spacing byte-identical to source -->
+    <string name="uw_value_seconds">%1$ds</string>
+    <string name="uw_value_seconds_f">%1$ss</string>
+    <string name="uw_value_dps">%1$d DPS</string>
+    <string name="uw_value_dmg">%1$d daño</string>
+    <string name="uw_value_enemies">%1$d enemigos</string>
+    <string name="uw_value_pxs">%1$d px/s</string>
+    <string name="uw_value_percent">%1$s%%</string>
+    <string name="uw_value_multiplier">%1$s×</string>
+    <string name="uw_value_percent_screen">%1$s%% pantalla</string>
+    <string name="uw_value_percent_area">%1$s%% área</string>
+    <string name="uw_value_multiplier_dmg">%1$s× daño</string>
+    <!-- i18n #34 phase 3: battle Canvas text (category E) -->
+    <string name="fx_boss_incoming">⚠ JEFE ENTRANTE</string>
+    <string name="fx_wave_header">Oleada %1$d</string>
+    <string name="fx_next_wave">Siguiente oleada: %1$ds</string>
+    <!-- i18n #34 phase 3: domain-model descriptions (category G) -->
+    <!-- UpgradeType (24) -->
+    <string name="upgrade_desc_damage" formatted="false">+2% de daño base por nivel</string>
+    <string name="upgrade_desc_attack_speed" formatted="false">+1.5% de ataques por segundo</string>
+    <string name="upgrade_desc_critical_chance" formatted="false">+0.5% de probabilidad crítica por nivel (tope 80%)</string>
+    <string name="upgrade_desc_critical_factor">+0.1x de multiplicador crítico por nivel</string>
+    <string name="upgrade_desc_range" formatted="false">+2% de radio de ataque (tope 300%)</string>
+    <string name="upgrade_desc_multishot">+1 objetivo adicional por nivel (compra con Dinero en la ronda o investigación de Laboratorios; tope 11 incl. base)</string>
+    <string name="upgrade_desc_bounce_shot">+1 rebote por nivel (compra con Dinero en la ronda o investigación de Laboratorios; tope 10)</string>
+    <string name="upgrade_desc_damage_per_meter" formatted="false">+1% de daño extra según la distancia del enemigo</string>
+    <string name="upgrade_desc_rapid_fire">Ráfaga periódica de velocidad de ataque (60s/5s/2.0× → permanente/3.0× al máximo)</string>
+    <string name="upgrade_desc_health" formatted="false">+3% de salud máxima del zigurat</string>
+    <string name="upgrade_desc_health_regen" formatted="false">+2% de regeneración de salud por segundo</string>
+    <string name="upgrade_desc_defense_percent" formatted="false">+0.3% de reducción de daño (tope 75%)</string>
+    <string name="upgrade_desc_defense_absolute">+daño fijo bloqueado por golpe</string>
+    <string name="upgrade_desc_knockback" formatted="false">+2% de fuerza de retroceso</string>
+    <string name="upgrade_desc_thorn_damage" formatted="false">+1% de daño reflejado a los atacantes</string>
+    <string name="upgrade_desc_orbs">+1 proyectil orbitante por nivel (tope 6)</string>
+    <string name="upgrade_desc_lifesteal" formatted="false">+0.2% del daño infligido devuelto como salud (tope 15%)</string>
+    <string name="upgrade_desc_death_defy" formatted="false">+1% de probabilidad de sobrevivir al golpe mortal con 1 PS (tope 50%)</string>
+    <string name="upgrade_desc_cash_bonus" formatted="false">+3% de dinero ganado durante las rondas</string>
+    <string name="upgrade_desc_cash_per_wave">+bonificación de dinero fija al final de cada oleada</string>
+    <string name="upgrade_desc_interest" formatted="false">+0.5% de interés sobre el dinero retenido entre oleadas (tope 10%)</string>
+    <string name="upgrade_desc_free_upgrades" formatted="false">+1% de probabilidad de que las mejoras en la ronda cuesten 0 (tope 25%)</string>
+    <string name="upgrade_desc_recovery_packages">Suministros periódicos de restauración de salud durante las oleadas</string>
+    <string name="upgrade_desc_step_multiplier" formatted="false">Pasos extra al caminar — curva asintótica que se acerca a +100%</string>
+    <!-- ResearchType (12) -->
+    <string name="research_desc_damage_research" formatted="false">+5% de multiplicador de daño base</string>
+    <string name="research_desc_health_research" formatted="false">+5% de multiplicador de salud máxima</string>
+    <string name="research_desc_cash_research" formatted="false">+5% de multiplicador de dinero ganado</string>
+    <string name="research_desc_step_efficiency" formatted="false">+2% de pasos extra al caminar</string>
+    <string name="research_desc_wave_skip">Empieza las rondas en la oleada X en lugar de la oleada 1</string>
+    <string name="research_desc_auto_upgrade_ai">Reservado para v1.x — progreso de investigación conservado</string>
+    <string name="research_desc_uw_cooldown" formatted="false">-3% de enfriamiento de Arma Definitiva</string>
+    <string name="research_desc_critical_research" formatted="false">+3% de multiplicador de daño crítico</string>
+    <string name="research_desc_regen_research" formatted="false">+4% de multiplicador de regeneración de salud</string>
+    <string name="research_desc_enemy_intel" formatted="false">Conciencia táctica. +2% de daño por nivel. Revela la siguiente oleada en N1, PS de enemigos en N5, momento del jefe en N10.</string>
+    <string name="research_desc_multishot_research">+1 objetivo de Disparo Múltiple</string>
+    <string name="research_desc_bounce_research">+1 rebote de proyectil</string>
+    <!-- DailyMissionType (6) -->
+    <string name="mission_desc_walk_5000">Camina 5.000 pasos</string>
+    <string name="mission_desc_walk_12000">Camina 12.000 pasos</string>
+    <string name="mission_desc_reach_wave_30">Alcanza la Oleada 30</string>
+    <string name="mission_desc_kill_500_enemies">Elimina 500 enemigos</string>
+    <string name="mission_desc_spend_5000_workshop">Gasta 5.000 Pasos en el Taller</string>
+    <string name="mission_desc_complete_research">Completa una investigación de Laboratorio</string>
+    <!-- UltimateWeaponType (6) -->
+    <string name="uw_desc_death_wave">Pulso de daño masivo que se irradia hacia afuera, daña a los enemigos en el radio</string>
+    <string name="uw_desc_chain_lightning">Daño eléctrico en arco que se encadena entre enemigos</string>
+    <string name="uw_desc_black_hole">Pozo gravitatorio que atrae a los enemigos hacia adentro con daño sostenido</string>
+    <string name="uw_desc_chrono_field">Ralentiza a todos los enemigos durante un tiempo; un factor más bajo = ralentización más fuerte</string>
+    <string name="uw_desc_poison_swamp" formatted="false">Área tóxica que inflige % de daño de salud máxima por segundo</string>
+    <string name="uw_desc_golden_ziggurat">Bonificación de dinero + aumento de daño durante un tiempo</string>
+    <!-- i18n #34 phase 3: milestone names (category G) -->
+    <string name="milestone_name_first_steps">Primeros Pasos</string>
+    <string name="milestone_name_morning_jogger">Trotador Matutino</string>
+    <string name="milestone_name_trail_blazer">Pionero de Senderos</string>
+    <string name="milestone_name_marathon_walker">Caminante de Maratón</string>
+    <string name="milestone_name_iron_soles">Suelas de Hierro</string>
+    <string name="milestone_name_globe_trotter">Trotamundos</string>
+    <!-- i18n #34 phase 3: cosmetic names/descriptions (category G) -->
+    <string name="cosmetic_name_zig_jade">Zigurat de Jade</string>
+    <string name="cosmetic_desc_zig_jade">Piedra de jade profundo con reflejos pálidos</string>
+    <string name="cosmetic_name_lapis_lazuli_skin">Aspecto de Zigurat de Lapislázuli</string>
+    <string name="cosmetic_desc_lapis_lazuli_skin">Piedra de lapislázuli profundo con motas de pirita dorada</string>
+    <string name="cosmetic_name_garden_ziggurat_skin">Aspecto de Zigurat Jardín</string>
+    <string name="cosmetic_desc_garden_ziggurat_skin">Jardines colgantes en cascada sobre piedra de terracota</string>
+    <string name="cosmetic_name_sandals_of_gilgamesh">Sandalias de Gilgamesh</string>
+    <string name="cosmetic_desc_sandals_of_gilgamesh">Zigurat de bronce en honor a Gilgamesh, cuyas sandalias recorrieron los confines del mundo</string>
+    <string name="cosmetic_name_zig_obsidian">Zigurat de Obsidiana</string>
+    <string name="cosmetic_desc_zig_obsidian">Piedra volcánica oscura</string>
+    <string name="cosmetic_name_zig_crystal">Zigurat de Cristal</string>
+    <string name="cosmetic_desc_zig_crystal">Capas de cristal translúcido</string>
+    <string name="cosmetic_name_zig_golden">Zigurat Dorado</string>
+    <string name="cosmetic_desc_zig_golden">Chapado de oro puro</string>
+    <!-- i18n #34 phase 3: card effect descriptions (category G) -->
+    <string name="card_effect_iron_skin">+%1$d de Defensa Absoluta</string>
+    <string name="card_effect_sharp_shooter">+%1$d%% de Probabilidad Crítica</string>
+    <string name="card_effect_cash_grab">+%1$d%% de Dinero por eliminaciones</string>
+    <string name="card_effect_vampiric_touch">+%1$d%% de Robo de Vida</string>
+    <string name="card_effect_chain_reaction">+%1$d objetivos de Disparo con Rebote</string>
+    <string name="card_effect_second_wind">Revive una vez con %1$d%% de PS</string>
+    <string name="card_effect_walking_fortress">+%1$d%% de Salud, -%2$d%% de Velocidad de Ataque</string>
+    <string name="card_effect_glass_cannon">+%1$d%% de Daño, -%2$d%% de Salud</string>
+    <string name="card_effect_step_surge">Gana %1$sx Gemas esta ronda</string>
+    <!-- i18n #34 phase 3: enum display names (category G) -->
+    <string name="upgrade_name_damage">Daño</string>
+    <string name="upgrade_name_attack_speed">Velocidad de Ataque</string>
+    <string name="upgrade_name_critical_chance">Probabilidad Crítica</string>
+    <string name="upgrade_name_critical_factor">Factor Crítico</string>
+    <string name="upgrade_name_range">Alcance</string>
+    <string name="upgrade_name_multishot">Disparo Múltiple</string>
+    <string name="upgrade_name_bounce_shot">Disparo con Rebote</string>
+    <string name="upgrade_name_damage_per_meter">Daño por Metro</string>
+    <string name="upgrade_name_rapid_fire">Fuego Rápido</string>
+    <string name="upgrade_name_health">Salud</string>
+    <string name="upgrade_name_health_regen">Regeneración de Salud</string>
+    <string name="upgrade_name_defense_percent">Defensa Porcentual</string>
+    <string name="upgrade_name_defense_absolute">Defensa Absoluta</string>
+    <string name="upgrade_name_knockback">Retroceso</string>
+    <string name="upgrade_name_thorn_damage">Daño de Espinas</string>
+    <string name="upgrade_name_orbs">Orbes</string>
+    <string name="upgrade_name_lifesteal">Robo de Vida</string>
+    <string name="upgrade_name_death_defy">Desafío a la Muerte</string>
+    <string name="upgrade_name_cash_bonus">Bonificación de Dinero</string>
+    <string name="upgrade_name_cash_per_wave">Dinero por Oleada</string>
+    <string name="upgrade_name_interest">Interés</string>
+    <string name="upgrade_name_free_upgrades">Mejoras Gratis</string>
+    <string name="upgrade_name_recovery_packages">Paquetes de Recuperación</string>
+    <string name="upgrade_name_step_multiplier">Multiplicador de Pasos</string>
+    <string name="research_name_damage_research">Investigación de Daño</string>
+    <string name="research_name_health_research">Investigación de Salud</string>
+    <string name="research_name_cash_research">Investigación de Dinero</string>
+    <string name="research_name_step_efficiency">Eficiencia de Pasos</string>
+    <string name="research_name_wave_skip">Salto de Oleada</string>
+    <string name="research_name_auto_upgrade_ai">IA de Mejora Automática</string>
+    <string name="research_name_uw_cooldown">Enfriamiento de Arma Definitiva</string>
+    <string name="research_name_critical_research">Investigación Crítica</string>
+    <string name="research_name_regen_research">Investigación de Regeneración</string>
+    <string name="research_name_enemy_intel">Inteligencia de Enemigos</string>
+    <string name="research_name_multishot_research">Investigación de Disparo Múltiple</string>
+    <string name="research_name_bounce_research">Investigación de Rebote</string>
+    <string name="uw_name_death_wave">Onda de Muerte</string>
+    <string name="uw_name_chain_lightning">Rayo en Cadena</string>
+    <string name="uw_name_black_hole">Agujero Negro</string>
+    <string name="uw_name_chrono_field">Campo Cronológico</string>
+    <string name="uw_name_poison_swamp">Pantano Venenoso</string>
+    <string name="uw_name_golden_ziggurat">Zigurat Dorado</string>
+    <string name="card_name_iron_skin">Piel de Hierro</string>
+    <string name="card_name_sharp_shooter">Tirador Certero</string>
+    <string name="card_name_cash_grab">Golpe de Efectivo</string>
+    <string name="card_name_vampiric_touch">Toque Vampírico</string>
+    <string name="card_name_chain_reaction">Reacción en Cadena</string>
+    <string name="card_name_second_wind">Segundo Aire</string>
+    <string name="card_name_walking_fortress">Fortaleza Andante</string>
+    <string name="card_name_glass_cannon">Cañón de Cristal</string>
+    <string name="card_name_step_surge">Oleada de Pasos</string>
+    <string name="biome_name_hanging_gardens">Jardines Colgantes</string>
+    <string name="biome_name_burning_sands">Arenas Ardientes</string>
+    <string name="biome_name_frozen_ziggurats">Zigurats Congelados</string>
+    <string name="biome_name_underworld_of_kur">Inframundo de Kur</string>
+    <string name="biome_name_celestial_gate">Puerta Celestial</string>
+    <string name="battle_condition_orb_resistance">Resistencia a Orbes</string>
+    <string name="battle_condition_knockback_resistance">Resistencia a Retroceso</string>
+    <string name="battle_condition_armored_enemies">Enemigos Acorazados</string>
+    <string name="battle_condition_thorn_resistance">Resistencia a Espinas</string>
+    <string name="battle_condition_more_bosses">Más Jefes</string>
+    <string name="battle_condition_enemy_speed">Velocidad de Enemigos</string>
+    <string name="battle_condition_enemy_attack_speed">Velocidad de Ataque de Enemigos</string>
+    <!-- i18n #34 phase 3: onboarding carousel content (category I) -->
+    <string name="onboarding_slide1_title">Camina para potenciar tu zigurat</string>
+    <string name="onboarding_slide1_body">Cada paso real que das gana Pasos — la moneda permanente que impulsa todo. Los Pasos se ganan solo caminando.</string>
+    <string name="onboarding_slide2_title">Gasta Pasos en el Taller</string>
+    <string name="onboarding_slide2_body">Las mejoras permanentes hacen tu torre más fuerte en tres categorías: Ataque, Defensa y Utilidad.</string>
+    <string name="onboarding_slide3_title">Envíalo a la batalla</string>
+    <string name="onboarding_slide3_body">Tu zigurat lucha automáticamente contra oleadas de enemigos. Sobrevive, sube de nivel y desbloquea nuevos biomas.</string>
+    <string name="onboarding_slide4_title">Activa el conteo de pasos</string>
+    <string name="onboarding_slide4_body">Para convertir tus pasos del mundo real en Pasos, necesitamos permiso de reconocimiento de actividad. Las notificaciones son opcionales. ¡Después sal a caminar para ganar tus primeros Pasos!</string>
+</resources>
