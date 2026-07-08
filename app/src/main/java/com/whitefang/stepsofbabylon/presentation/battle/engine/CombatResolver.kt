@@ -2,12 +2,12 @@ package com.whitefang.stepsofbabylon.presentation.battle.engine
 
 import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationEvent
 import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath
+import com.whitefang.stepsofbabylon.domain.battle.engine.ZigguratDamageResolver
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.domain.model.TierConfig
 import com.whitefang.stepsofbabylon.domain.model.UpgradeType
 import com.whitefang.stepsofbabylon.domain.model.ZigguratBaseStats
 import com.whitefang.stepsofbabylon.domain.usecase.CalculateDamage
-import com.whitefang.stepsofbabylon.domain.usecase.CalculateDefense
 import com.whitefang.stepsofbabylon.presentation.audio.SoundEffect
 import com.whitefang.stepsofbabylon.presentation.battle.effects.DeathEffect
 import com.whitefang.stepsofbabylon.presentation.battle.effects.FloatingText
@@ -26,9 +26,10 @@ import kotlin.random.Random
  */
 class CombatResolver(
     private val host: CombatHost,
+    private val random: Random = Random.Default,
 ) {
     private val calculateDamage = CalculateDamage()
-    private val calculateDefense = CalculateDefense()
+    private val zigguratDamageResolver = ZigguratDamageResolver(random = random)
 
     fun onProjectileHitEnemy(
         proj: ProjectileEntity,
@@ -113,25 +114,20 @@ class CombatResolver(
         attacker: EnemyEntity?,
     ) {
         val zig = host.ziggurat ?: return
-        val stats = host.currentStats
-        val mitigated = calculateDefense(rawDamage, stats)
-        if (zig.currentHp - mitigated <= 0.0 && stats.deathDefyChance > 0) {
-            if (Random.nextDouble() < stats.deathDefyChance) {
-                zig.currentHp = 1.0
-                applyThorn(rawDamage, attacker)
-                return
-            }
-        }
-        if (zig.currentHp - mitigated <= 0.0 && host.secondWindHpPercent > 0.0 && host.consumeSecondWind()) {
-            zig.currentHp = zig.maxHp * host.secondWindHpPercent
-            applyThorn(rawDamage, attacker)
-            return
-        }
-        val prevHpRatio = zig.currentHp / zig.maxHp
-        zig.currentHp = (zig.currentHp - mitigated).coerceAtLeast(0.0)
-        val newHpRatio = zig.currentHp / zig.maxHp
-        // Screen shake when HP drops below 25%
-        if (prevHpRatio > 0.25 && newHpRatio <= 0.25 && !host.reducedMotion) {
+        // #306 (ADR-0012 Phase 5): the pure defense/death-defy/second-wind/HP-floor/shake-threshold
+        // resolution is hoisted to the domain ZigguratDamageResolver, operating on the Damageable port.
+        // This adapter keeps only the presentation side-effects: the reducedMotion-gated screen shake and
+        // thorn reflection (which calls a presentation EnemyEntity's takeDamage → out of domain scope).
+        // consumeSecondWind stays the engine's one-shot test-and-set; both run inside the held entitiesLock.
+        val outcome =
+            zigguratDamageResolver.resolve(
+                target = zig.zigguratState,
+                rawDamage = rawDamage,
+                stats = host.currentStats,
+                secondWindHpPercent = host.secondWindHpPercent,
+                consumeSecondWind = host::consumeSecondWind,
+            )
+        if (outcome.crossedShakeThreshold && !host.reducedMotion) {
             host.effectEngine?.screenShake?.trigger(5f, 0.2f)
         }
         applyThorn(rawDamage, attacker)

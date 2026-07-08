@@ -19,7 +19,7 @@ dependency-verification (#256), clock-tamper (#211), GameEngine decomposition (#
 dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependabot wave, CI/supply-chain
 (#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
 (CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
-#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1302 JVM + 9 instrumented tests**
+#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1302 JVM + 9 instrumented tests (v1.0.12 shipped snapshot; the in-flight #306 branch is at 1332 — see Current objective)**
 green (per-wave test-count detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) **DONE — the manual Play
@@ -41,7 +41,19 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — first non-English locale: Spanish (`es`) SHIPPED (#34, PR #411 MERGED `0a685c5`, merge
+- **CURRENT — #306 ADR-0012 Phase 5 Slice 1: ziggurat damage resolution hoisted to pure domain (branch
+  `arch/306-ziggurat-damage-hoist`).** New pure-domain `domain/battle/entity/Damageable` port
+  (`currentHp`/`maxHp`, deliberately NOT an `EntityProtocol` subtype) + `domain/battle/engine/ZigguratDamageResolver`
+  lift the defense/death-defy/second-wind/HP-floor/<25%-shake-threshold arithmetic + HP mutation out of
+  presentation `CombatResolver.applyDamageToZiggurat`, which is now a thin adapter (delegates + keeps the
+  `reducedMotion`-gated screen shake + thorn glue). `ZigguratState` implements the port; `ZigguratEntity`
+  exposes `zigguratState: Damageable`. Behaviour-preserving — pre-hoist characterization tests (baseline
+  oracle) + resolver tests. Full gate green: **1332 JVM tests** (1317+15) + detekt + ktlint + assembleDebug.
+  Spec/plan `docs/superpowers/{specs,plans}/2026-07-08-ziggurat-damage-hoist*.md` (Adversarial Review Gate,
+  17 findings applied). **#306 stays open for the remaining slices:** enemy `takeDamage`/`onDeath`/SCATTER
+  child spawn, the `UWController.when(type)` effect bodies, `onProjectileHitEnemy`/`onOrbHit`
+  knockback+lifesteal.
+- **Previous — first non-English locale: Spanish (`es`) SHIPPED (#34, PR #411 MERGED `0a685c5`, merge
   commit; issue #34 auto-closed COMPLETED).** Complete `values-es/` (566 strings + 16 plurals) mirroring
   the English default, device-language-only (no in-app picker, no `locales_config.xml`), machine-translated.
   New pure-JVM `architecture/LocaleCompletenessTest` pins locale key / per-key format-arg-signature /
