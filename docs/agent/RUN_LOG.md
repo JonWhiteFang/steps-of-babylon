@@ -1,3 +1,21 @@
+## 2026-07-08 — v1.0.13 SHIPPED → Play internal (release closeout)
+
+- **Outcome:** release PR #416 merged (`4ba353e`), annotated tag `v1.0.13` pushed (type `tag`; message =
+  the developer-approved bilingual What's-new, 279 chars ≤500), triggering `release.yml` run
+  **`28948789820` → `success` end-to-end.** All steps green: tag↔versionName + versionCode-collision +
+  unit-test guards, `bundleRelease` (R8+sign), `Verify signature + assert signing identity`
+  (`jarsigner -verify`), `Prepare Play release notes`, **`Upload to Play internal track`**, `GitHub Release`
+  (`v1.0.13` w/ `app-release.aab` 16.08 MB).
+- **Shipped body (since v1.0.12):** #34 Spanish locale (player headline), #306 Slice 1 ziggurat-damage
+  hoist, Phases 1–4 tooling/CI/observability, i18n phases 2–3, contact-email/info-site. No new mechanics,
+  no schema change (schema-diff vs v1.0.12 empty). 1332 JVM tests.
+- **Post-ship checkpoint (this entry):** STATE headline + Current objective rotated to "SHIPPED"; this
+  RUN_LOG closeout. AAB is on the Play **internal** track only.
+- **External follow-ups (not code):** (1) in the live Play Console listing set the Website field
+  (`jonwhitefang.uk/projects/steps-of-babylon`) + new contact email (`steps-of-babylon@jonwhitefang.uk`);
+  (2) #410 Spanish native copy review before promoting the locale beyond internal. **Internal→closed
+  promotion remains the developer's judgment call** (Closed-Test Readiness Gate, `plan-FORWARD.md`).
+
 ## 2026-07-08 — v1.0.13 (versionCode 29) release cut (/release)
 
 - **Goal:** cut the next internal release promoting everything on `main` since v1.0.12 (developer ran

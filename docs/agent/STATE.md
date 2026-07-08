@@ -3,8 +3,10 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.13 (versionCode 29) release CUT — collateral PR on `release/v1.0.13` (awaiting merge +
-`v1.0.13` tag → `release.yml` → Play internal).** Promotes the body accumulated since v1.0.12: **first
+**Headline:** **v1.0.13 (versionCode 29) SHIPPED → Play internal** (tag `v1.0.13`, release PR #416 merged
+`4ba353e`; release run `28948789820` `success` end-to-end — versionCode-collision + unit-test guards,
+`bundleRelease` [R8+sign], `jarsigner -verify`, Play-internal upload, GitHub Release `v1.0.13` w/
+`app-release.aab` 16.08 MB). Promotes the body accumulated since v1.0.12: **first
 non-English locale (Spanish `es`, #34)**, the ADR-0012 Phase 5 Slice 1 **ziggurat-damage domain hoist
 (#306)**, the Phase 1–4 **tooling/CI/observability** body, i18n locale-readiness plumbing (phases 2–3,
 ADR-0014), and the new **project contact email + information site**. Player-facing: Spanish language support
@@ -32,15 +34,14 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — v1.0.13 (versionCode 29) release cut (`/release`).** Collateral-only release PR on
-  `release/v1.0.13`: `versionCode` 28→29, `versionName` 1.0.12→1.0.13; `[Unreleased]`→`[1.0.13]` CHANGELOG
-  promotion + fresh empty `[Unreleased]`; `docs/release/release-notes-v1.0.13.md`; version-pointer sweep
-  (README/GDD/master-plan/plan-31/STATE). No production-code change (everything's already on `main`). No
-  schema change (`app/schemas` byte-identical to v1.0.12; verified empty diff). Unit suite **1332 JVM**
-  green. Developer-approved bilingual "What's new" (¡Ahora en español! — Spanish support + contact/site +
-  cleanup). **Next:** developer reviews/merges the PR → push annotated tag `v1.0.13` (message = the
-  approved What's-new) → `release.yml` builds/signs/uploads to Play **internal**. Promotes since v1.0.12:
-  #34 Spanish locale, #306 Slice 1, Phases 1–4 tooling, i18n phases 2–3, contact-email/site.
+- **CURRENT — v1.0.13 (versionCode 29) SHIPPED → Play internal (`/release` complete).** Release PR #416
+  merged (`4ba353e`); annotated tag `v1.0.13` pushed (message = the developer-approved bilingual "What's
+  new" → `whatsnew-en-US`); release run `28948789820` `success` end-to-end (all guards + `bundleRelease`
+  R8+sign + `jarsigner -verify` + Play-internal upload + GitHub Release w/ `app-release.aab` 16.08 MB).
+  Promotes since v1.0.12: **#34 Spanish locale** (player headline), **#306 Slice 1**, Phases 1–4 tooling,
+  i18n phases 2–3, contact-email/info-site. No new mechanics, no schema change. **Post-ship external (not
+  code):** set the Play Console listing Website field + new contact email; the internal→closed promotion
+  stays the developer's judgment call (Closed-Test Readiness Gate).
 - *Previous — project contact email + information site updated.* Contact email →
   `steps-of-babylon@jonwhitefang.uk` (was `jonwhitefang@gmail.com`) across all project-contact surfaces:
   in-app HC privacy strings (`values/` + `values-es/`), crash-report `mailto:` (+ `CrashReportIntentTest`),
