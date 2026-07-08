@@ -20,6 +20,7 @@ The app collects step counts, exercise sessions, and purchase history locally. T
 
 The app does NOT request location permissions; GPS / Exploration Mode was dropped from v1.x scope per ADR-0016.
 
+- Project site: <https://jonwhitefang.uk/projects/steps-of-babylon>
 - Privacy policy (hosted): <https://jonwhitefang.github.io/steps-of-babylon/>
 - Data deletion: <https://jonwhitefang.github.io/steps-of-babylon/#delete-data>
 - Canonical source: [site/index.md](site/index.md) — the published Pages page IS the single source of truth (built from `site/` by `.github/workflows/pages.yml`; internal `docs/` is not published)

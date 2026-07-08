@@ -97,4 +97,4 @@ We may update this privacy policy from time to time. Changes will be posted on t
 
 If you have questions about this privacy policy, contact us at:
 
-**Email:** jonwhitefang@gmail.com
+**Email:** steps-of-babylon@jonwhitefang.uk

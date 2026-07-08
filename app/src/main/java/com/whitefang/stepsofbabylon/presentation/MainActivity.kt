@@ -604,7 +604,7 @@ internal fun buildCrashReportIntent(
             metadata,
         )
     return Intent(Intent.ACTION_SENDTO).apply {
-        data = Uri.parse("mailto:jonwhitefang@gmail.com")
+        data = Uri.parse("mailto:steps-of-babylon@jonwhitefang.uk")
         putExtra(Intent.EXTRA_SUBJECT, subject)
         putExtra(Intent.EXTRA_TEXT, body)
     }

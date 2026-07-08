@@ -49,7 +49,7 @@ Project constants you will paste repeatedly:
 | Version | `versionName` / `versionCode` — always read the current values from `app/build.gradle.kts` (this walkthrough is not the source of truth for the live version) |
 | Min SDK / Target SDK | 34 / 36 |
 | Category | Games → Strategy |
-| Contact email | `jonwhitefang@gmail.com` (per `play-store-listing.md`) |
+| Contact email | `steps-of-babylon@jonwhitefang.uk` (per `play-store-listing.md`) |
 
 ---
 
@@ -263,7 +263,7 @@ keystore signs uploads.
 | Tablet screenshots | Optional; skip unless you have them |
 | Category | Games → Strategy |
 | Tags | "Casual", "Strategy", "Tower defense" |
-| Contact email | `jonwhitefang@gmail.com` (per `play-store-listing.md`) |
+| Contact email | `steps-of-babylon@jonwhitefang.uk` (per `play-store-listing.md`) |
 | Privacy policy URL | From Phase B |
 
 ### E3. Content rating

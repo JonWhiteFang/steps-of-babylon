@@ -4,6 +4,25 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Changed — Project contact email + information site
+
+- **Contact email → `steps-of-babylon@jonwhitefang.uk`** (was `jonwhitefang@gmail.com`) in every
+  project-contact surface: the in-app Health Connect privacy rationale (`values/` + `values-es/`
+  `hc_privacy_policy_body`), the crash-report `mailto:` (`MainActivity.buildCrashReportIntent` + its
+  `CrashReportIntentTest`), the hosted privacy policy (`site/index.md`), `LICENSE`, and the Play listing
+  (`play-store-listing.md` + `plan-31-walkthrough.md`). The Play Console **developer-account identity**
+  (`jonwhitefang@gmail.com`, the account login) is unchanged — it only appears in historical RUN_LOG /
+  CHANGELOG entries, which are left as-is.
+- **Information site `https://jonwhitefang.uk/projects/steps-of-babylon`** added to the README project
+  links and as a new **Website** field in the Play listing. This is a *separate* artifact from the hosted
+  **privacy policy** (`https://jonwhitefang.github.io/steps-of-babylon/`), which is unchanged everywhere it
+  is referenced (in-app strings, README, Play Data Safety) — the legally-load-bearing policy URL was
+  deliberately not repointed.
+- Docs-only + content strings; no behaviour/schema/dependency/`versionCode` change, no test-count change.
+  Ships in the app on the next `v*` tag. **External follow-ups (not code):** add the Website field + the
+  new contact email in the live Play Console listing; the privacy-policy page itself is unchanged so no
+  Data Safety resubmission is needed.
+
 ### Changed — Ziggurat damage resolution hoisted to pure domain (#306, ADR-0012 Phase 5 Slice 1)
 
 - **First slice of the tracked ADR-0012 effect-resolution hoist.** The pure defense/death-defy/second-wind/

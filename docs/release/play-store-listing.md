@@ -81,7 +81,11 @@ Recommended rating: **Everyone (E)** / **PEGI 3**
 
 ## Contact Email
 
-`jonwhitefang@gmail.com`
+`steps-of-babylon@jonwhitefang.uk`
+
+## Website
+
+`https://jonwhitefang.uk/projects/steps-of-babylon`
 
 ## Visual Assets
 
