@@ -26,6 +26,7 @@ import kotlin.random.Random
  */
 class CombatResolver(
     private val host: CombatHost,
+    private val random: Random = Random.Default,
 ) {
     private val calculateDamage = CalculateDamage()
     private val calculateDefense = CalculateDefense()
@@ -116,7 +117,7 @@ class CombatResolver(
         val stats = host.currentStats
         val mitigated = calculateDefense(rawDamage, stats)
         if (zig.currentHp - mitigated <= 0.0 && stats.deathDefyChance > 0) {
-            if (Random.nextDouble() < stats.deathDefyChance) {
+            if (random.nextDouble() < stats.deathDefyChance) {
                 zig.currentHp = 1.0
                 applyThorn(rawDamage, attacker)
                 return
