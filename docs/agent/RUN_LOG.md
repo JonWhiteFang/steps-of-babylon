@@ -1,3 +1,31 @@
+## 2026-07-08 — Spanish locale PR #411 merged + /checkpoint
+
+- **Session outcome:** **PR #411 (first Spanish locale, #34) MERGED to `main`** via a true merge commit
+  `0a685c5` (`--merge --delete-branch`, no squash, per developer instruction — 2 parents confirmed).
+  Local `main` fast-forwarded to `0a685c5` (== `origin/main`); feature branch `i18n/first-spanish-locale`
+  deleted local + remote. **Issue #34 auto-closed COMPLETED** by the `Closes #34` in the PR body. All CI
+  green pre-merge: build-and-test, connected emulator (2m40s), ktlint, gitleaks, changes.
+- **Merge diff:** 11 files, +1873/-6 — `values-es/strings.xml` (668 lines), `values-es/plurals.xml`,
+  `LocaleCompletenessTest.kt` (166), ADR-0014 amendment, RUN_LOG, STATE, source-files, + the spec/plan.
+- **/checkpoint housekeeping (this entry):** the code-change doc sync (CLAUDE.md 1314→1317, CHANGELOG,
+  source-files, ADR-0014) all landed inside PR #411, so the checkpoint's residual work was: (1) **rotate
+  STATE.md** — the Spanish block was `CURRENT` on top and Phase-4 demoted to `Previous` (PR #411 had added
+  a second `CURRENT` marker mid-list; drift resolved), Phase-3 detail dropped to keep one page; (2) this
+  RUN_LOG entry; (3) regenerate `docs/agent/BACKLOG.md`. **No structure.md change** — it enumerates only
+  special resource assets (launcher icons, generated tool outputs), not the `values/` string tree, so a
+  `values-es/` row would be an orphan; localization structure lives in source-files.md + ADR-0014. **No new
+  ADR** — ADR-0014's 2026-07-07 amendment (added in #411) already records the first-locale decision + the
+  add-a-locale contract.
+- **Verification:** no code change in this checkpoint (docs only). PR #411 itself was verified green
+  through CI before merge; the full local gate (assembleDebug + lintDebug/lintRelease + 1317 testDebugUnitTest
+  + detekt + ktlint) was run directly during implementation.
+- **Next:** i18n follow-through = the #410 Spanish native review (privacy-body legal precision + term
+  consistency + on-device truncation) before promotion beyond internal, and further `values-xx` locales
+  (each = mirror both XML files + register in `LocaleCompletenessTest.locales`). Unchanged non-i18n tracks:
+  #233 clean Simulation-hoist (ADR-0012), internal→closed promotion (developer-judgment gate), A24
+  clock-tamper, deferred tracker-#389 items (#385 device pass, #396 detekt rule). Spanish strings ride out
+  on the next `v*` release tag.
+
 ## 2026-07-07 — First non-English locale: Spanish (`es`) (#34)
 
 - **Session outcome:** shipped the first real non-English locale — complete `values-es/strings.xml`
