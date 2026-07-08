@@ -66,4 +66,12 @@ class ZigguratStateTest {
         assertEquals(300f, s.attackRange, 1e-5f)
         assertEquals(0.25f, s.attackInterval, 1e-5f)
     }
+
+    @Test
+    fun `ZigguratState is a Damageable exposing currentHp and maxHp`() {
+        val s: Damageable = ZigguratState(ResolvedStats(maxHealth = 100.0))
+        assertEquals(100.0, s.maxHp, 1e-9)
+        s.currentHp = 40.0
+        assertEquals(40.0, s.currentHp, 1e-9)
+    }
 }

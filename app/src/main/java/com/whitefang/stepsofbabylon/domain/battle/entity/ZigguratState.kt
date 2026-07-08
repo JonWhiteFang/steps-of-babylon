@@ -18,13 +18,13 @@ import kotlin.math.min
  */
 class ZigguratState(
     initialStats: ResolvedStats,
-) {
+) : Damageable {
     /** Live combat stats; redirected by [updateStats] when an in-round upgrade / UW mutates them. */
     var stats: ResolvedStats = initialStats
         private set
 
-    var currentHp: Double = initialStats.maxHealth
-    var maxHp: Double = initialStats.maxHealth
+    override var currentHp: Double = initialStats.maxHealth
+    override var maxHp: Double = initialStats.maxHealth
 
     /** Transient RAPID_FIRE attack-speed multiplier (R4-03); `1f` means no burst active. */
     @Volatile
