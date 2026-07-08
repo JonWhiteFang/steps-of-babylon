@@ -1,3 +1,30 @@
+## 2026-07-08 — v1.0.13 (versionCode 29) release cut (/release)
+
+- **Goal:** cut the next internal release promoting everything on `main` since v1.0.12 (developer ran
+  `/release`). Followed the documented lane (`release-checklist.md`, `plan-32-ci.md`, ADR-0018).
+- **Versions:** read from `app/build.gradle.kts` (28/1.0.12) → bumped to **versionCode 29 / versionName
+  1.0.13** (patch — collateral polish, no new player mechanics). Never a reused code.
+- **What this release promotes (since v1.0.12):** #34 first Spanish locale (player-facing); #306 ADR-0012
+  Phase 5 Slice 1 ziggurat-damage hoist; Phase 1–4 tooling/CI/observability body (#370–#389 range);
+  i18n locale-readiness phases 2–3 (#34/ADR-0014); the project contact-email + info-site change. **No new
+  mechanics, no schema change** (`git diff v1.0.12..HEAD -- app/schemas/` empty — 0 files).
+- **"What's new" (developer-approved, bilingual, ~250 chars):** "¡Ahora en español! Steps of Babylon now
+  speaks Spanish … • New project email + info site • Behind-the-scenes cleanup and stability work. Keep
+  walking!" This verbatim text becomes the annotated tag message → `distribution/whatsnew/whatsnew-en-US`
+  (release.yml reads `git tag -l --format='%(contents)'`, ≤500 cap).
+- **Collateral PR contents (on `release/v1.0.13`, NO production code):** version bump; CHANGELOG
+  `[Unreleased]`→`[1.0.13] — 2026-07-08 (versionCode 29)` + fresh empty `[Unreleased]` + a `[1.0.13]`
+  intro paragraph; new `docs/release/release-notes-v1.0.13.md` (reconciled against `git log v1.0.12..HEAD`);
+  version-pointer sweep — README (1.0.13/29), GDD, master-plan (Plan 31 + Plan 32 lines), plan-31-play-console,
+  STATE headline + objective. Doc sync + this RUN_LOG per the PR Task-List Convention.
+- **Verification:** `testDebugUnitTest` green — **1332 JVM tests, 0 failures/errors/skipped**; schema-diff
+  vs v1.0.12 empty. (Full PR gate + instrumented lane run on the PR before merge.)
+- **Next (the ship step, after merge):** on `main`, `git tag -a v1.0.13 -m "<approved What's-new>"` +
+  `git push origin v1.0.13` → triggers `release.yml` → signed AAB → Play **internal** track. Do NOT
+  self-merge the release PR; the developer reviews/merges. Post-upload: set the Play Console listing
+  Website field + new contact email (external, tracked in CHANGELOG follow-ups). Internal→closed promotion
+  stays the developer's judgment call.
+
 ## 2026-07-08 — Project contact email + information site
 
 - **Goal:** developer got a dedicated project email (`steps-of-babylon@jonwhitefang.uk`) and an information
