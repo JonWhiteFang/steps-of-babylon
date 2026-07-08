@@ -41,26 +41,28 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — #306 ADR-0012 Phase 5 Slice 1: ziggurat damage resolution hoisted to pure domain — SHIPPED
-  (PR #413 MERGED `ac9dbb4`, merge commit; #306 stays OPEN for the remaining slices).** New pure-domain `domain/battle/entity/Damageable` port
-  (`currentHp`/`maxHp`, deliberately NOT an `EntityProtocol` subtype) + `domain/battle/engine/ZigguratDamageResolver`
-  lift the defense/death-defy/second-wind/HP-floor/<25%-shake-threshold arithmetic + HP mutation out of
-  presentation `CombatResolver.applyDamageToZiggurat`, which is now a thin adapter (delegates + keeps the
-  `reducedMotion`-gated screen shake + thorn glue). `ZigguratState` implements the port; `ZigguratEntity`
-  exposes `zigguratState: Damageable`. Behaviour-preserving — pre-hoist characterization tests (baseline
-  oracle) + resolver tests. Full gate green: **1332 JVM tests** (1317+15) + detekt + ktlint + assembleDebug.
-  Spec/plan `docs/superpowers/{specs,plans}/2026-07-08-ziggurat-damage-hoist*.md` (Adversarial Review Gate,
-  17 findings applied). **#306 stays open for the remaining slices:** enemy `takeDamage`/`onDeath`/SCATTER
-  child spawn, the `UWController.when(type)` effect bodies, `onProjectileHitEnemy`/`onOrbHit`
-  knockback+lifesteal.
+- **CURRENT — project contact email + information site updated.** Contact email →
+  `steps-of-babylon@jonwhitefang.uk` (was `jonwhitefang@gmail.com`) across all project-contact surfaces:
+  in-app HC privacy strings (`values/` + `values-es/`), crash-report `mailto:` (+ `CrashReportIntentTest`),
+  `site/index.md`, `LICENSE`, Play listing (`play-store-listing.md` + `plan-31-walkthrough.md`). New
+  information site `https://jonwhitefang.uk/projects/steps-of-babylon` added to README links + a Play-listing
+  **Website** field. The hosted **privacy policy** URL (`jonwhitefang.github.io/steps-of-babylon`) is a
+  SEPARATE, legally-load-bearing artifact — deliberately left unchanged (no Data Safety resubmission). The
+  Play Console dev-account identity (`jonwhitefang@gmail.com`) is the login and is unchanged (historical logs
+  untouched). Content/docs only — no behaviour/schema/`versionCode` change; **1332 JVM tests** unchanged,
+  lintDebug/lintRelease + detekt + ktlint + assembleDebug green. Ships on the next `v*` tag. External
+  follow-up (not code): set the Website field + new contact email in the live Play Console listing.
+- *Previous — #306 ADR-0012 Phase 5 Slice 1: ziggurat damage resolution hoisted to pure domain — SHIPPED
+  (PR #413 MERGED `ac9dbb4`). New pure-domain `Damageable` port + `ZigguratDamageResolver` lift the
+  defense/death-defy/second-wind/HP-floor/shake-threshold arithmetic out of `CombatResolver.applyDamageToZiggurat`
+  (now a thin adapter). Behaviour-preserving (pre-hoist characterization oracle + resolver tests); 1317→1332
+  JVM. **#306 stays OPEN** for the remaining slices: enemy `takeDamage`/`onDeath`/SCATTER, `UWController.when(type)`
+  effect bodies, `onProjectileHitEnemy`/`onOrbHit` knockback+lifesteal. Detail in RUN_LOG/CHANGELOG + ADR-0012.*
 - *Previous — first non-English locale: Spanish (`es`) SHIPPED (#34, PR #411 MERGED `0a685c5`; issue #34
   auto-closed COMPLETED). Complete `values-es/` (566 strings + 16 plurals), device-language-only,
   machine-translated; new `architecture/LocaleCompletenessTest` pins key/format-arg/plurals parity.
   Native-review follow-up **#410** (copy quality, not a code blocker). Ships on the next `v*` tag. Detail
   in RUN_LOG/CHANGELOG + ADR-0014.*
-- *Previous — Phase-4 tooling (tracker #389 Phase 4: release/ops): DONE — all 3 in-repo findings MERGED
-  (#379 PR #406, #383 PR #407, #377 PR #408 / ADR-0041); only the 2 deferred items remain (#385 device
-  macrobenchmark pass, #396 detekt nested-lock rule). Cleared the entire non-deferred tracker #389 body.*
 - **Open tracks remaining (non-tooling / deferred):** the remaining **#306 slices** (enemy
   `takeDamage`/`onDeath`/SCATTER, `UWController.when(type)` effect bodies, `onProjectileHitEnemy`/`onOrbHit`
   knockback+lifesteal — the harder ADR-0012 Phase 5 hoist); further `values-xx` locales + the #410 Spanish

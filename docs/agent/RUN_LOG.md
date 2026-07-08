@@ -1,3 +1,33 @@
+## 2026-07-08 — Project contact email + information site
+
+- **Goal:** developer got a dedicated project email (`steps-of-babylon@jonwhitefang.uk`) and an information
+  site (`https://jonwhitefang.uk/projects/steps-of-babylon`); update them in the relevant places.
+- **Scoping decisions (asked the developer before touching outward-facing/legal content):**
+  - The info site is **separate** from the hosted **privacy policy** (`jonwhitefang.github.io/steps-of-babylon`)
+    — the policy URL is legally load-bearing (Play Data Safety + in-app HC rationale) and was left
+    **unchanged** everywhere. Info-site URL added to README project links + a new Play-listing **Website**
+    field (developer's chosen surfaces).
+  - `jonwhitefang@gmail.com` has two roles: the **project contact** (changed) vs. the Play Console
+    **developer-account identity / login** (unchanged — it only appears in historical RUN_LOG/CHANGELOG
+    entries, which are append-only and were not edited).
+- **What changed (10 files, +15/-10):** contact email → `steps-of-babylon@jonwhitefang.uk` in the in-app
+  HC privacy strings (`values/` + `values-es/` `hc_privacy_policy_body`), the crash-report `mailto:`
+  (`MainActivity.buildCrashReportIntent`) + its `CrashReportIntentTest` assertion, `site/index.md` (privacy
+  policy contact), `LICENSE`, `play-store-listing.md`, `plan-31-walkthrough.md` (2 tables), and the
+  `source-files.md` HC-activity description. Info-site URL added to `README.md` + a Website field in
+  `play-store-listing.md`.
+- **Verification:** `rg` confirmed zero `jonwhitefang@gmail.com` left in live surfaces (only historical
+  logs/reviews retain it, by design). Full gate green: **1332 JVM tests, 0 failures** (unchanged — content
+  edits), `CrashReportIntentTest` (new email) + `LocaleCompletenessTest` (parity intact — email is content,
+  keys/format-args unchanged) pass, `lintDebug` + `lintRelease` (privacy strings changed) + `detekt` +
+  `ktlint` + `assembleDebug` all green.
+- **Doc sync:** CHANGELOG `[Unreleased]` entry; STATE.md objective rotated (this = CURRENT; #306 slice +
+  Spanish demoted to Previous; Phase-4 bullet dropped per the one-page rule — its deferred items live in
+  "Open tracks remaining"); this RUN_LOG entry. No ADR (no architectural decision). No structure.md change.
+- **External follow-up (not code):** in the live Play Console listing, set the Website field
+  (`jonwhitefang.uk/projects/steps-of-babylon`) + the new contact email. The privacy-policy page is
+  unchanged, so **no Data Safety resubmission** is needed. In-app strings ship on the next `v*` tag.
+
 ## 2026-07-08 — #306 ADR-0012 Phase 5 Slice 1: ziggurat damage hoist (PR #413 merged)
 
 - **Goal:** first bounded slice of the tracked ADR-0012 effect-resolution hoist (#306) — move the pure

@@ -32,7 +32,7 @@ class CrashReportIntentTest {
         assertEquals("mailto", intent.data?.scheme)
         assertTrue(
             "recipient must be the support address",
-            intent.data?.schemeSpecificPart?.contains("jonwhitefang@gmail.com") == true,
+            intent.data?.schemeSpecificPart?.contains("steps-of-babylon@jonwhitefang.uk") == true,
         )
         val body = intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
         assertTrue("body carries exception class", body.contains("java.lang.IllegalStateException"))
