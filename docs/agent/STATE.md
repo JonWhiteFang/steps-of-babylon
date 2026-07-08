@@ -41,7 +41,19 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — first non-English locale: Spanish (`es`) SHIPPED (#34, PR #411 MERGED `0a685c5`, merge
+- **CURRENT — #306 ADR-0012 Phase 5 Slice 1: ziggurat damage resolution hoisted to pure domain (branch
+  `arch/306-ziggurat-damage-hoist`).** New pure-domain `domain/battle/entity/Damageable` port
+  (`currentHp`/`maxHp`, deliberately NOT an `EntityProtocol` subtype) + `domain/battle/engine/ZigguratDamageResolver`
+  lift the defense/death-defy/second-wind/HP-floor/<25%-shake-threshold arithmetic + HP mutation out of
+  presentation `CombatResolver.applyDamageToZiggurat`, which is now a thin adapter (delegates + keeps the
+  `reducedMotion`-gated screen shake + thorn glue). `ZigguratState` implements the port; `ZigguratEntity`
+  exposes `zigguratState: Damageable`. Behaviour-preserving — pre-hoist characterization tests (baseline
+  oracle) + resolver tests. Full gate green: **1330 JVM tests** (1317+13) + detekt + ktlint + assembleDebug.
+  Spec/plan `docs/superpowers/{specs,plans}/2026-07-08-ziggurat-damage-hoist*.md` (Adversarial Review Gate,
+  17 findings applied). **#306 stays open for the remaining slices:** enemy `takeDamage`/`onDeath`/SCATTER
+  child spawn, the `UWController.when(type)` effect bodies, `onProjectileHitEnemy`/`onOrbHit`
+  knockback+lifesteal.
+- **Previous — first non-English locale: Spanish (`es`) SHIPPED (#34, PR #411 MERGED `0a685c5`, merge
   commit; issue #34 auto-closed COMPLETED).** Complete `values-es/` (566 strings + 16 plurals) mirroring
   the English default, device-language-only (no in-app picker, no `locales_config.xml`), machine-translated.
   New pure-JVM `architecture/LocaleCompletenessTest` pins locale key / per-key format-arg-signature /

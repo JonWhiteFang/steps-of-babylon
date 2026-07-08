@@ -4,6 +4,31 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Changed — Ziggurat damage resolution hoisted to pure domain (#306, ADR-0012 Phase 5 Slice 1)
+
+- **First slice of the tracked ADR-0012 effect-resolution hoist.** The pure defense/death-defy/second-wind/
+  HP-floor/<25%-shake-threshold arithmetic + HP mutation is lifted out of presentation
+  `CombatResolver.applyDamageToZiggurat` into a new pure-domain
+  `domain/battle/engine/ZigguratDamageResolver`. It operates on a new `domain/battle/entity/Damageable`
+  port (`currentHp`/`maxHp`) — deliberately NOT an `EntityProtocol` subtype (HP is orthogonal to the
+  positional/tickable surface; `ZigguratState` is non-positional) — and returns a
+  `DamageOutcome(crossedShakeThreshold)`.
+- **`CombatResolver.applyDamageToZiggurat` is now a thin adapter:** it delegates to the resolver, then
+  keeps only the presentation side-effects — the `reducedMotion`-gated screen shake (fired on
+  `outcome.crossedShakeThreshold`) and thorn reflection (thorn calls a presentation `EnemyEntity.takeDamage`,
+  so it stays presentation). `ZigguratState` implements `Damageable`; `ZigguratEntity` exposes
+  `zigguratState: Damageable` (port-typed, so the state's loop-thread-only mutators stay encapsulated).
+- **Behaviour-preserving.** Validated by pre-hoist characterization tests against the current
+  `applyDamageToZiggurat` (baseline oracle — must pass unchanged post-hoist) + the new resolver unit tests.
+  Thread-safety unchanged: the resolver holds no monitor and runs inside the engine's held `entitiesLock`
+  (the "no monitor" property on domain files is convention-only — `BattleEngineLockScanTest` scans only
+  `presentation/battle/engine`; extending it to `domain/battle/**` is deferred).
+- **Still open (#306 remaining slices):** enemy `takeDamage`/`onDeath`/SCATTER child spawn; the
+  `UWController.when(type)` effect bodies; `onProjectileHitEnemy`/`onOrbHit` knockback+lifesteal.
+- JVM test count **1317 → 1330** (+13: 3 pre-hoist characterization + 9 resolver + 1 `Damageable` port
+  assertion). No production behaviour change, no schema, no dependency, no `versionCode` change. Spec/plan
+  `docs/superpowers/{specs,plans}/2026-07-08-ziggurat-damage-hoist*.md` (Adversarial Review Gate — 17 findings applied).
+
 ### Added — First non-English locale: Spanish (`es`) (#34)
 
 - **Complete `values-es/` translation** — all **566** `<string>` (`values-es/strings.xml`) + **16**

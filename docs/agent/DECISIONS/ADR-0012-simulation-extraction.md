@@ -89,6 +89,25 @@ Phase 3 is complete: the in-round cash economy, round-progress counters, chrono-
 
 **Explicitly NOT done (tracked remaining slice, per #230's "track remaining slices explicitly"):** UW *effect resolution* (the `when(type)` damage/pull/DoT bodies) and `applyDamageToZiggurat`/`applyThorn` HP mutation are NOT hoisted to the pure-domain `Simulation` — they call `EnemyEntity.takeDamage`/`applyKnockback`/`ZigguratEntity.currentHp`, none of which `EntityProtocol` exposes. A true domain hoist needs entity-model surgery (extend `EntityProtocol` / new domain ports) — a separate large refactor. #231 closes on this PR; #230 closes on the partial-domain-hoist + explicit-tracking basis (confirm with the issue owner if #230 demands the full domain migration).
 
+**Phase 5 (#306, Slice 1 — ziggurat damage resolution, 2026-07-08):** The first slice of the tracked
+effect-resolution hoist. New pure-domain `domain/battle/entity/Damageable` port (`currentHp`/`maxHp`) —
+deliberately NOT a subtype of `EntityProtocol` (HP is orthogonal to the positional/tickable surface;
+`ZigguratState` is non-positional). `ZigguratState` implements it (declaration + `override`). New pure
+`domain/battle/engine/ZigguratDamageResolver` lifts the defense/death-defy/second-wind/HP-floor/
+shake-threshold arithmetic + HP mutation out of `CombatResolver.applyDamageToZiggurat`, operating on the
+`Damageable` port and returning a `DamageOutcome(crossedShakeThreshold)`. `CombatResolver` becomes a thin
+adapter: it fires the `reducedMotion`-gated screen shake + thorn reflection (thorn calls a presentation
+`EnemyEntity.takeDamage`, so it stays presentation). `ZigguratEntity` exposes `zigguratState: Damageable`
+(port-typed, so `ZigguratState`'s loop-thread-only mutators stay encapsulated). Behaviour-preserving,
+validated by pre-hoist characterization tests (baseline oracle) + the new resolver tests.
+Thread-safety unchanged: the resolver holds no monitor and runs inside the engine's held `entitiesLock`.
+**Caveat:** the pure-domain "no monitor" property is convention-only — `BattleEngineLockScanTest` scans
+only `presentation/battle/engine`; extending it to `domain/battle/**` is deferred forward-hardening ahead
+of the larger #306 slices (enemy HP + UW effect bodies).
+
+**Explicitly still NOT done (remaining #306 slices):** enemy `takeDamage`/`onDeath`/SCATTER child spawn;
+all `UWController.when(type)` effect bodies; `onProjectileHitEnemy`/`onOrbHit` knockback+lifesteal.
+
 ## References
 
 - `domain/battle/engine/SimulationMath.kt` — extracted pure-math helpers
