@@ -3,24 +3,15 @@
 One-page live snapshot. History lives in `docs/agent/RUN_LOG.md` (per-session) and `CHANGELOG.md`
 (per-PR); decisions in `docs/agent/DECISIONS/`. Keep this file to ~one page — push detail there.
 
-**Headline:** **v1.0.12 (versionCode 28) SHIPPED → Play internal** (tag `v1.0.12` release run `28051957931`
-`success` end-to-end — every step green incl. `bundleRelease` [R8+sign], `jarsigner -verify`, Play-internal
-upload, GitHub Release `v1.0.12` w/ `app-release.aab` 15.29 MB; release PR #342 squash `8aa7c3e`). v1.0.12
-promotes the body accumulated since v1.0.11 — the audit-triage **batches A–D** (docs-drift, dead-code, i18n
-locale-safety incl. a real Turkish-locale billing fix, CI/release hardening, Kover+OSV tooling) + two
-focused audit fixes (**#216** notification quiet-hours/cap, **#221** dead-cosmetic removal) + **#164** Bundle
-E closed. **No new mechanics, no schema change** (`app/schemas` byte-identical to v1.0.11). **Predecessor:
-v1.0.11 (vc 27) SHIPPED → Play internal** (tag `v1.0.11` release run `28018033566` `success`; PR #330
-`3915fd1`), which promoted the large post-v1.0.10 polish/hardening body —
-player-facing: accessibility (#213/#214), i18n correctness (#225/#259/#260), Home zero-state (#224),
-perf-smoothness (#242/#243), offline step/purchase reliability (#251/#249), process-death survival (#234).
-Internal: detekt+ktlint gate + 6-stage format (#312/#311), Compose UI + DAO-contention tests (#253/#252),
-dependency-verification (#256), clock-tamper (#211), GameEngine decomposition (#230/#231), architecture
-dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependabot wave, CI/supply-chain
-(#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
-(CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
-#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1302 JVM + 9 instrumented tests (v1.0.12 shipped snapshot; the in-flight #306 branch is at 1332 — see Current objective)**
-green (per-wave test-count detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
+**Headline:** **v1.0.13 (versionCode 29) release CUT — collateral PR on `release/v1.0.13` (awaiting merge +
+`v1.0.13` tag → `release.yml` → Play internal).** Promotes the body accumulated since v1.0.12: **first
+non-English locale (Spanish `es`, #34)**, the ADR-0012 Phase 5 Slice 1 **ziggurat-damage domain hoist
+(#306)**, the Phase 1–4 **tooling/CI/observability** body, i18n locale-readiness plumbing (phases 2–3,
+ADR-0014), and the new **project contact email + information site**. Player-facing: Spanish language support
++ new support contact. **No new mechanics, no schema change** (`app/schemas` byte-identical to v1.0.12).
+**Predecessor: v1.0.12 (vc 28) SHIPPED → Play internal** (tag `v1.0.12` release run `28051957931` `success`;
+release PR #342 `8aa7c3e`) — the audit-triage batches A–D + #216/#221 + #164. **1332 JVM + 9 instrumented
+tests** green (per-wave detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) **DONE — the manual Play
 Console Data-Safety form for #192 was submitted 2026-06-24** (the four AdMob-SDK data types Collected+Shared
@@ -41,7 +32,16 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — project contact email + information site updated.** Contact email →
+- **CURRENT — v1.0.13 (versionCode 29) release cut (`/release`).** Collateral-only release PR on
+  `release/v1.0.13`: `versionCode` 28→29, `versionName` 1.0.12→1.0.13; `[Unreleased]`→`[1.0.13]` CHANGELOG
+  promotion + fresh empty `[Unreleased]`; `docs/release/release-notes-v1.0.13.md`; version-pointer sweep
+  (README/GDD/master-plan/plan-31/STATE). No production-code change (everything's already on `main`). No
+  schema change (`app/schemas` byte-identical to v1.0.12; verified empty diff). Unit suite **1332 JVM**
+  green. Developer-approved bilingual "What's new" (¡Ahora en español! — Spanish support + contact/site +
+  cleanup). **Next:** developer reviews/merges the PR → push annotated tag `v1.0.13` (message = the
+  approved What's-new) → `release.yml` builds/signs/uploads to Play **internal**. Promotes since v1.0.12:
+  #34 Spanish locale, #306 Slice 1, Phases 1–4 tooling, i18n phases 2–3, contact-email/site.
+- *Previous — project contact email + information site updated.* Contact email →
   `steps-of-babylon@jonwhitefang.uk` (was `jonwhitefang@gmail.com`) across all project-contact surfaces:
   in-app HC privacy strings (`values/` + `values-es/`), crash-report `mailto:` (+ `CrashReportIntentTest`),
   `site/index.md`, `LICENSE`, Play listing (`play-store-listing.md` + `plan-31-walkthrough.md`). New

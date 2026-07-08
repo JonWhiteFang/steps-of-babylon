@@ -4,6 +4,20 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+## [1.0.13] — 2026-07-08 (versionCode 29)
+
+Shipped to the Play Console **internal** track (tag `v1.0.13`). Promotes everything accumulated since
+v1.0.12 — most notably the **first non-English locale (Spanish `es`, #34)**, the ADR-0012 Phase 5 Slice 1
+**ziggurat-damage domain hoist (#306)**, the Phase 1–4 **tooling/CI/observability** body (crash-report exit
+path #374, release-variant + secret-scanning CI #370/#376, invariant tripwires #371/#372, JDK-toolchain pin
+#378, versionCode-collision guard #379, DEBUG frame-stats overlay #384, OSS-attribution notice #377,
+coverage/schema/hardcoded-string guards #373/#375/#381/#382), the i18n locale-readiness plumbing (phases 2–3,
+ADR-0014), and the new **project contact email + information site**. **No new player mechanics, no schema
+change** (the `app/schemas` tree is byte-identical to v1.0.12). Player-facing: Spanish language support
+(auto-selected on Spanish devices) + the new support contact. **1277 → 1332 JVM tests** across the body.
+`versionCode` 28 → 29, `versionName` 1.0.12 → 1.0.13 (the bump rides in with this release PR). Per-change
+detail in the entries below.
+
 ### Changed — Project contact email + information site
 
 - **Contact email → `steps-of-babylon@jonwhitefang.uk`** (was `jonwhitefang@gmail.com`) in every
