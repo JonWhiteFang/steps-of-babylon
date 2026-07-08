@@ -1,3 +1,17 @@
+## 2026-07-08 — Post-ship follow-ups cleared (Play listing + #410 Spanish native review)
+
+- **Play Console listing (external, developer-done):** the Website field
+  (`jonwhitefang.uk/projects/steps-of-babylon`) + new contact email (`steps-of-babylon@jonwhitefang.uk`)
+  are now set in the live listing.
+- **#410 Spanish native review — CLOSED (completed).** Developer noted on the issue that a native Spanish
+  speaker reviewed & approved the `values-es/` locale; the copy-quality gate is cleared, so `es` is good to
+  promote beyond the internal track. Closed with a note (shipped in v1.0.13 / vc 29).
+- **Spine sync (this entry):** STATE — post-ship external follow-ups marked DONE in the v1.0.13 CURRENT
+  block; #410 removed from "Open tracks remaining" + the i18n backlog line (locale now approved/promotable);
+  this RUN_LOG entry; BACKLOG regenerated (open-issue snapshot, #410 gone). Docs-only.
+- **Net:** no remaining repo-external prerequisite for the internal→closed promotion — it's now purely the
+  developer's judgment call (Closed-Test Readiness Gate, `plan-FORWARD.md`).
+
 ## 2026-07-08 — v1.0.13 SHIPPED → Play internal (release closeout)
 
 - **Outcome:** release PR #416 merged (`4ba353e`), annotated tag `v1.0.13` pushed (type `tag`; message =

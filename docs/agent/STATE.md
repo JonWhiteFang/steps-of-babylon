@@ -39,9 +39,11 @@ the med/low backlog (#262) remain.
   new" → `whatsnew-en-US`); release run `28948789820` `success` end-to-end (all guards + `bundleRelease`
   R8+sign + `jarsigner -verify` + Play-internal upload + GitHub Release w/ `app-release.aab` 16.08 MB).
   Promotes since v1.0.12: **#34 Spanish locale** (player headline), **#306 Slice 1**, Phases 1–4 tooling,
-  i18n phases 2–3, contact-email/info-site. No new mechanics, no schema change. **Post-ship external (not
-  code):** set the Play Console listing Website field + new contact email; the internal→closed promotion
-  stays the developer's judgment call (Closed-Test Readiness Gate).
+  i18n phases 2–3, contact-email/info-site. No new mechanics, no schema change. **Post-ship external
+  follow-ups — DONE:** the Play Console listing Website field + new contact email are set, and the Spanish
+  locale has been **native-reviewed & approved (#410 CLOSED)** — the copy-quality gate is cleared, so `es`
+  is good to promote beyond internal. The internal→closed promotion now stays purely the developer's
+  judgment call (Closed-Test Readiness Gate) — no remaining repo-external prerequisite.
 - *Previous — project contact email + information site updated.* Contact email →
   `steps-of-babylon@jonwhitefang.uk` (was `jonwhitefang@gmail.com`) across all project-contact surfaces:
   in-app HC privacy strings (`values/` + `values-es/`), crash-report `mailto:` (+ `CrashReportIntentTest`),
@@ -66,8 +68,8 @@ the med/low backlog (#262) remain.
   in RUN_LOG/CHANGELOG + ADR-0014.*
 - **Open tracks remaining (non-tooling / deferred):** the remaining **#306 slices** (enemy
   `takeDamage`/`onDeath`/SCATTER, `UWController.when(type)` effect bodies, `onProjectileHitEnemy`/`onOrbHit`
-  knockback+lifesteal — the harder ADR-0012 Phase 5 hoist); further `values-xx` locales + the #410 Spanish
-  native review (i18n follow-through); internal→closed promotion (developer-judgment Closed-Test Readiness
+  knockback+lifesteal — the harder ADR-0012 Phase 5 hoist); further `values-xx` locales (the #410 Spanish
+  native review is DONE — locale approved, promotable); internal→closed promotion (developer-judgment Closed-Test Readiness
   Gate); #233 (config-change durability — already neutralized by the ADR-0029 portrait lock; its own clean
   fix is the deferred durable-`Simulation`-owner-in-VM refactor); A24 clock-tamper; the two deferred
   tracker-#389 items (#385 device pass, #396 detekt rule). See `docs/agent/BACKLOG.md`.
@@ -155,8 +157,9 @@ Phase 2 (only AFTER the developer promotes internal → closed):
 Backlog (post-launch): V1X waves — see `docs/plans/plan-V1X-roadmap.md` (cloud save #36, telemetry #23, etc.).
 i18n #34: phase 1 (V1X-13) + phase 2 (Compose screens) + phase 3 (locale-readiness, 6 PRs #360–#365,
 2026-07-02) all shipped — extraction is COMPLETE (app 100% locale-ready). **First real locale — Spanish
-(`es`) — shipped 2026-07-07** (566 strings + 16 plurals, device-language-only). Remaining i18n work:
-further `values-xx` locales + the Spanish native review (#410). Adding a locale = mirror both XML files +
+(`es`) — shipped 2026-07-07** (566 strings + 16 plurals, device-language-only); **native-reviewed &
+approved 2026-07-08 (#410 CLOSED)**, so it's promotable beyond internal. Remaining i18n work: further
+`values-xx` locales. Adding a locale = mirror both XML files +
 pass `LocaleCompletenessTest` (register the code in its `locales` list).
 
 ## Do-not-touch / fragile zones

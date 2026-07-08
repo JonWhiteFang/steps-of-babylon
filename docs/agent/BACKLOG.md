@@ -10,7 +10,6 @@
 > ```
 > Last generated: 2026-07-08
 
-- #410 — [i18n] Native review of the Spanish (es) locale before promotion — [ux, i18n]
 - #396 — [Tooling] detekt custom rule: flag nested lock acquisition in the battle engine (deferred from #372 / ADR-0038) — [severity:minor, area:battle, architecture, tooling]
 - #391 — [Research] Asset-generation pipeline: using Claude + paid AI tools for consistent art/audio/store/text assets — [enhancement, severity:minor, audio, content, game-design]
 - #389 — [Tooling] Tracker: 24 tooling/automation-gap findings (2026-07-02 assessment) — [severity:minor, tooling]
