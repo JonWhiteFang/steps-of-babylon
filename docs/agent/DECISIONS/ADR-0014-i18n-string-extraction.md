@@ -97,3 +97,31 @@ Test count 1282 → 1294 JVM (+12, `CardEffectDescriptionTest`). New patterns/de
   `BillingProduct.priceDisplay` (static USD fallback, overridden by live Play price), the seed cosmetic
   name/description in `CosmeticRepositoryImpl` (DB fallback; resolved-by-id at render).
 - **Next:** ship the first real non-English `values-xx` locale (the payoff — a separate effort).
+
+## Amendment — 2026-07-07: first locale shipped (Spanish, `es`)
+
+The payoff landed. Spanish (`es`) is the **first non-English locale** — a complete `values-es/strings.xml`
+(566 strings) + `values-es/plurals.xml` (16 plurals), mirroring the English default key-for-key.
+Spec `docs/superpowers/specs/2026-07-07-first-spanish-locale-design.md`, plan
+`docs/superpowers/plans/2026-07-07-first-spanish-locale.md` (Adversarial Review Gate: 22/16/5).
+
+- **Access model:** device-language only — **no** in-app language picker and **no** `locales_config.xml`.
+  Android auto-selects `values-es` on Spanish-set devices; adding a picker/OS-level per-app language is a
+  deliberately-deferred separate effort.
+- **Translation source:** machine-generated (this repo has no in-house translator), **complete** so it
+  passes CI (`MissingTranslation` is FATAL under AGP 9.2.1). Privacy/legal body + gameplay-term
+  consistency are flagged for **native/human review before promotion beyond the internal track** (tracked
+  as a follow-up issue) — the locale is opt-in by device language, so English users are unaffected meanwhile.
+- **The add-a-locale contract (enforced in code):** adding a locale = mirror **both** XML files
+  key-for-key and pass **`architecture/LocaleCompletenessTest`** (pure-JVM). That guard pins key-set,
+  per-key format-arg-signature (arg extractor strips `%%`, catches width modifiers), and `formatted="false"`
+  parity for `<string>`, and **per-`(name, quantity)`-item** quantity + arg-signature parity for `<plurals>`
+  (so `boss_in_waves`'s intentional one=0-arg/other=1-arg asymmetry is preserved). Register the new locale
+  by adding its code to the test's `locales` list. `assembleDebug` (aapt2) is the XML-escaping backstop;
+  `lintRelease` remains the `MissingTranslation`/`StringFormatInvalid` gate.
+- **Fourth documented residual added:** `R.raw.oss_notices` (the Help "Open-source notices" body) joins
+  the by-design English residuals — its Apache-2.0 §4(d) attribution + upstream license names stay English;
+  **only its section title** (`help_oss_title`) localizes.
+- **Accepted non-fatal lint:** 16 `MissingQuantity` warnings (Spanish CLDR defines a `many` category
+  English lacks). Not added — doing so would break the completeness guard's identical-quantity-set rule,
+  and `getQuantityString` correctly falls back to `other`. `0 errors`.

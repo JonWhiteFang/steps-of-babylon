@@ -4,6 +4,34 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Added — First non-English locale: Spanish (`es`) (#34)
+
+- **Complete `values-es/` translation** — all **566** `<string>` (`values-es/strings.xml`) + **16**
+  `<plurals>` (`values-es/plurals.xml`) translated to Spanish. The app's 100% locale-readiness
+  (ADR-0014) now ships a real locale. **Device-language only** (no in-app language picker, no
+  `locales_config.xml`) — Android auto-selects `values-es` on Spanish-set devices; every other locale is
+  byte-for-byte unaffected.
+- **Kept English by design:** `app_name` ("Steps of Babylon", proper-noun launcher label) + the four
+  documented residuals — `SupplyDropTrigger.message`, `BillingProduct.priceDisplay` (USD fallback), seed
+  cosmetic fallback fields, and the `R.raw.oss_notices` Help body (Apache-2.0 attribution stays English;
+  only its section title localizes).
+- **New guard `architecture/LocaleCompletenessTest`** (pure-JVM, JUnit Jupiter, `javax.xml` — no new
+  dependency): pins locale **key-set** parity (`MissingTranslation`/`ExtraTranslation`), **per-key
+  format-arg-signature** parity (arg extractor strips `%%`, catches width modifiers like `%2$02d`), and
+  **`formatted="false"`** parity; plurals compared **per `(name, quantity)` item** (so `boss_in_waves`'s
+  intentional one=0-arg/other=1-arg asymmetry is preserved). When English adds a string without a
+  matching translation, this test goes red — the permanent "add-a-locale contract".
+- **Machine-translated** — flagged for native/human review (privacy-body legal precision + gameplay-term
+  consistency) before promotion beyond the internal track; see the follow-up issue.
+- **Known non-fatal lint:** 16 `MissingQuantity` warnings (Spanish CLDR defines a `many` category;
+  English has only `one`/`other`). Left as-is by design — the completeness guard requires identical
+  quantity-item sets EN↔ES, and `getQuantityString` falls back to `other`, which is grammatically correct
+  for these counts. `0 errors` — `lintRelease` stays green.
+- JVM test count **1314 → 1317** (+3 in the guard). No production Kotlin, no schema, no dependency, no
+  `versionCode` change. Spec + Adversarial Review Gate (22 raised / 16 survived / 5 refuted):
+  `docs/superpowers/specs/2026-07-07-first-spanish-locale-design.md`; plan
+  `docs/superpowers/plans/2026-07-07-first-spanish-locale.md`.
+
 ### Tooling — Phase-4: OSS-attribution notice (#377) + macrobenchmark-numbers tracking (#385) — Phase-4 tooling PR-3
 
 - **#377 (depmgmt-1).** Added an **open-source attribution surface** to satisfy Apache-2.0 §4(d) on the

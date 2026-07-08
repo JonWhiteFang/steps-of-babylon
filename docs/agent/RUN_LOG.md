@@ -1,3 +1,39 @@
+## 2026-07-07 — First non-English locale: Spanish (`es`) (#34)
+
+- **Session outcome:** shipped the first real non-English locale — complete `values-es/strings.xml`
+  (566 strings) + `values-es/plurals.xml` (16 plurals), mirroring the English default key-for-key.
+  Turns the app's 100% locale-readiness (ADR-0014) into a user-facing feature. **Device-language only**
+  (no in-app picker, no `locales_config.xml`); machine-translated. On branch `i18n/first-spanish-locale`.
+- **Flow:** brainstorming → spec (`docs/superpowers/specs/2026-07-07-first-spanish-locale-design.md`) →
+  **Adversarial Review Gate** (6-dimension fan-out → adversarial refute-verify: **22 raised / 16 survived
+  / 5 refuted**; 2 refutations actually strengthened the spec — a verifier decompiled the AGP 9.2.1
+  `lint-checks-32.2.1` jar and confirmed `MissingTranslation`/`ExtraTranslation`/`StringFormatInvalid` are
+  FATAL defaults) → plan (`.../plans/2026-07-07-first-spanish-locale.md`) → subagent-driven execution
+  (fresh implementer + spec-review per task).
+- **New guard `architecture/LocaleCompletenessTest`** (pure-JVM, JUnit Jupiter, `javax.xml` — no new dep):
+  pins locale key-set / per-key format-arg-signature / `formatted="false"` parity for `<string>`, and
+  per-`(name,quantity)`-item quantity + arg-signature parity for `<plurals>` (so `boss_in_waves`'s
+  one=0-arg/other=1-arg asymmetry is enforced). Code-quality review caught a real gap in the arg
+  extractor (missed width modifiers like `%2$02d` in `postround_time_value`); fixed the regex to
+  `%(\d+\$)?[-+#,0-9.]*[a-zA-Z]` (the implementer correctly dropped the space flag I'd proposed — it
+  would have failed the guard's own `DoT % MaxHP/sec` fixture). +3 tests → **1317 JVM**.
+- **Kept English by design:** `app_name` + the 4 documented residuals (added `R.raw.oss_notices` as the
+  4th — its title localizes, body stays English). `assembleDebug` (aapt2) is the escaping backstop.
+- **Verification (full gate GREEN, run directly):** assembleDebug ✓; lintDebug + lintRelease ✓ (0 errors;
+  16 accepted `MissingQuantity` warnings — Spanish CLDR `many`; NOT added, would break the guard's
+  identical-quantity-set rule and `other` is the correct fallback); testDebugUnitTest **1317** ✓; detekt ✓;
+  ktlint ✓. No production Kotlin, no schema, no dependency, no `versionCode` change.
+- **Docs synced:** CLAUDE.md count 1314→1317; CHANGELOG `[Unreleased]`; source-files (2 res files + the
+  test); ADR-0014 2026-07-07 amendment (access model + add-a-locale contract + oss_notices residual +
+  MissingQuantity trade-off). master-plan needs no change (its "Current Status" tracks numbered v1.0 plans,
+  not GitHub issues; i18n status lives in plan-V1X-roadmap + STATE).
+- **Follow-up filed:** **#410** — native/human review of the Spanish locale (privacy-body legal precision +
+  gameplay-term consistency + on-device truncation + the oss_notices English-under-Spanish-title mix)
+  before promotion beyond internal. A copy-quality gate, not a code blocker.
+- **What remains / next:** open the PR, merge on green (sequential-merge rule). Then i18n follow-through =
+  further `values-xx` locales + the #410 native review; unchanged non-i18n tracks (#233 Simulation-hoist,
+  internal→closed promotion, deferred #385/#396).
+
 ## 2026-07-03 — Phase-4 tooling closeout + /checkpoint (tracker #389 Phase 4 DONE)
 
 - **Session outcome:** tracker #389 **Phase 4** (release/ops) complete — all 3 in-repo findings merged via

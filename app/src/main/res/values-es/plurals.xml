@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spanish (es) — first non-English locale (#34). Mirrors values/plurals.xml key-for-key.
+         Spanish CLDR plural categories are one/other, same as English. -->
+
+    <plurals name="fx_step_reward">
+        <item quantity="one">+%1$d Paso</item>
+        <item quantity="other">+%1$d Pasos</item>
+    </plurals>
+
+    <plurals name="steps_earned_banner">
+        <item quantity="one">👟 +%1$d Paso</item>
+        <item quantity="other">👟 +%1$d Pasos</item>
+    </plurals>
+
+    <plurals name="wave_enemies">
+        <item quantity="one">%1$d enemigo</item>
+        <item quantity="other">%1$d enemigos</item>
+    </plurals>
+
+    <plurals name="boss_in_waves">
+        <item quantity="one">Jefe la próxima oleada</item>
+        <item quantity="other">Jefe en %1$d oleadas</item>
+    </plurals>
+
+    <plurals name="reward_gems">
+        <item quantity="one">+%1$d Gema</item>
+        <item quantity="other">+%1$d Gemas</item>
+    </plurals>
+    <plurals name="reward_power_stones">
+        <item quantity="one">+%1$d Piedra de Poder</item>
+        <item quantity="other">+%1$d Piedras de Poder</item>
+    </plurals>
+    <plurals name="reward_steps">
+        <item quantity="one">+%1$d Paso</item>
+        <item quantity="other">+%1$d Pasos</item>
+    </plurals>
+
+    <plurals name="card_copies">
+        <item quantity="one">+%1$d Copia</item>
+        <item quantity="other">+%1$d Copias</item>
+    </plurals>
+
+    <plurals name="days_remaining">
+        <item quantity="one">Activo — %1$d día restante</item>
+        <item quantity="other">Activo — %1$d días restantes</item>
+    </plurals>
+
+    <plurals name="page_x_of_n">
+        <item quantity="one">Página %1$d de %2$d</item>
+        <item quantity="other">Página %1$d de %2$d</item>
+    </plurals>
+
+    <plurals name="widget_steps">
+        <item quantity="one">%1$s paso</item>
+        <item quantity="other">%1$s pasos</item>
+    </plurals>
+
+    <plurals name="reminder_steps_away">
+        <item quantity="one">¡Estás a %1$d paso de mejorar %2$s!</item>
+        <item quantity="other">¡Estás a %1$d pasos de mejorar %2$s!</item>
+    </plurals>
+
+    <plurals name="notif_today_steps">
+        <item quantity="one">Hoy: %1$d paso</item>
+        <item quantity="other">Hoy: %1$d pasos</item>
+    </plurals>
+
+    <plurals name="time_ago_minutes">
+        <item quantity="one">hace %1$dm</item>
+        <item quantity="other">hace %1$dm</item>
+    </plurals>
+    <plurals name="time_ago_hours">
+        <item quantity="one">hace %1$dh</item>
+        <item quantity="other">hace %1$dh</item>
+    </plurals>
+    <plurals name="time_ago_days">
+        <item quantity="one">hace %1$dd</item>
+        <item quantity="other">hace %1$dd</item>
+    </plurals>
+</resources>
