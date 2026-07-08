@@ -19,7 +19,7 @@ dependency-verification (#256), clock-tamper (#211), GameEngine decomposition (#
 dependency-rule restoration (#220/#227/#228/#219/#229), compileSdk-37 + Dependabot wave, CI/supply-chain
 (#257/#254/#212/#255), privacy/monetization (#240/#241/#239). Collateral grounded by a verification fan-out
 (CHANGELOG↔commit reconcile / pointer sweep / What's-new — all adversarially confirmed; lint entry PR# fixed
-#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1302 JVM + 9 instrumented tests**
+#311→#312; #310/#311/#287 given a CI/tooling note). **v1.0.12 supersedes v1.0.11 (vc 27)** · **1302 JVM + 9 instrumented tests (v1.0.12 shipped snapshot; the in-flight #306 branch is at 1330 — see Current objective)**
 green (per-wave test-count detail in `CHANGELOG.md` + `RUN_LOG.md`) · schema v12 · all closed-test Gate A–G in-repo items MERGED · **all 3 Gate H `severity:blocker`s MERGED:** #190 + #191
 (crash visibility + the two reachable battle CMEs — PR #204, `d673386`) and #192 (privacy/Data-Safety
 text — PR #205, `0019217`). **Remaining to promote internal → closed:** (a) **DONE — the manual Play

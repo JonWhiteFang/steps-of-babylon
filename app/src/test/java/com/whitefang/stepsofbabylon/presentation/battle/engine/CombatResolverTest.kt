@@ -32,7 +32,7 @@ class CombatResolverTest {
     ) : CombatHost {
         override val conditions: BattleConditionEffects = BattleConditionEffects()
         override val tier: Int = 1
-        override val effectEngine: EffectEngine? = EffectEngine(reducedMotion = true)
+        override val effectEngine: EffectEngine? = EffectEngine(reducedMotion = reducedMotion)
         override val soundManager = null
         override val strings: Strings? = FakeStrings()
         override val fortuneMultiplier: Double = 1.0
@@ -153,7 +153,14 @@ class CombatResolverTest {
     @Test
     fun `CHAR death-defy success on a lethal hit leaves the ziggurat at 1 HP`() {
         val zig = makeZigguratWithHealth(100.0)
-        val host = FakeCombatHost(zig, currentStats = ResolvedStats(maxHealth = 100.0, deathDefyChance = 0.5))
+        val host =
+            FakeCombatHost(
+                zig,
+                currentStats = ResolvedStats(maxHealth = 100.0, deathDefyChance = 0.5),
+                // A second wind is AVAILABLE (percent > 0) so consumeSecondWindCalls == 0 genuinely
+                // proves death-defy takes priority — not just that second wind was disabled.
+                secondWindHpPercent = 0.5,
+            )
         val resolver = CombatResolver(host, random = fixedRandom(0.0)) // 0.0 < 0.5 → defy succeeds
 
         resolver.applyDamageToZiggurat(rawDamage = 200.0, attacker = null)
@@ -194,5 +201,44 @@ class CombatResolverTest {
 
         assertEquals(50.0, zig.currentHp, 1e-9, "a failed defy roll must fall through to second wind (→ 50.0)")
         assertEquals(1, host.consumeSecondWindCalls, "the fall-through must consume second wind exactly once")
+    }
+
+    // --- #306 (ADR-0012 Phase 5): adapter screen-shake glue on a <25% HP crossing ---
+    // The hoist moved the shake side-effect out of the branch into the adapter's
+    // `if (crossedShakeThreshold && !reducedMotion) screenShake.trigger(...)`. ScreenShake exposes no
+    // "was triggered" flag; dx/dy stay 0 until update() runs, so we trigger via a crossing hit, pump
+    // one update(dt), and observe dy. (dx can land near-zero; dy = sin(0.1*47) * amp ≈ -2.5 is robust.)
+
+    @Test
+    fun `CHAR crossing 25 percent fires screen shake when motion is enabled`() {
+        val zig = makeZigguratWithHealth(100.0)
+        val host = FakeCombatHost(zig, currentStats = ResolvedStats(maxHealth = 100.0), reducedMotion = false)
+        zig.currentHp = 30.0 // 30% → after 10 damage → 20% : crosses the 25% shake threshold
+        val resolver = CombatResolver(host)
+
+        resolver.applyDamageToZiggurat(rawDamage = 10.0, attacker = null)
+        host.effectEngine!!.update(0.1f) // pump the shake: dx/dy stay 0 until an update runs
+
+        assertTrue(
+            host.effectEngine.screenShake.dy != 0f,
+            "crossing 25% with motion enabled must fire the shake (dy should be non-zero after update)",
+        )
+    }
+
+    @Test
+    fun `CHAR crossing 25 percent does not fire screen shake under reduced motion`() {
+        val zig = makeZigguratWithHealth(100.0)
+        val host = FakeCombatHost(zig, currentStats = ResolvedStats(maxHealth = 100.0)) // reducedMotion defaults true
+        zig.currentHp = 30.0 // same crossing hit as the positive case
+        val resolver = CombatResolver(host)
+
+        resolver.applyDamageToZiggurat(rawDamage = 10.0, attacker = null)
+        host.effectEngine!!.update(0.1f)
+
+        assertEquals(
+            0f,
+            host.effectEngine.screenShake.dy,
+            "reduced motion must suppress the shake (adapter's !reducedMotion gate; dy stays 0)",
+        )
     }
 }
