@@ -41,8 +41,8 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — #306 ADR-0012 Phase 5 Slice 1: ziggurat damage resolution hoisted to pure domain (branch
-  `arch/306-ziggurat-damage-hoist`).** New pure-domain `domain/battle/entity/Damageable` port
+- **CURRENT — #306 ADR-0012 Phase 5 Slice 1: ziggurat damage resolution hoisted to pure domain — SHIPPED
+  (PR #413 MERGED `ac9dbb4`, merge commit; #306 stays OPEN for the remaining slices).** New pure-domain `domain/battle/entity/Damageable` port
   (`currentHp`/`maxHp`, deliberately NOT an `EntityProtocol` subtype) + `domain/battle/engine/ZigguratDamageResolver`
   lift the defense/death-defy/second-wind/HP-floor/<25%-shake-threshold arithmetic + HP mutation out of
   presentation `CombatResolver.applyDamageToZiggurat`, which is now a thin adapter (delegates + keeps the
@@ -53,26 +53,21 @@ the med/low backlog (#262) remain.
   17 findings applied). **#306 stays open for the remaining slices:** enemy `takeDamage`/`onDeath`/SCATTER
   child spawn, the `UWController.when(type)` effect bodies, `onProjectileHitEnemy`/`onOrbHit`
   knockback+lifesteal.
-- **Previous — first non-English locale: Spanish (`es`) SHIPPED (#34, PR #411 MERGED `0a685c5`, merge
-  commit; issue #34 auto-closed COMPLETED).** Complete `values-es/` (566 strings + 16 plurals) mirroring
-  the English default, device-language-only (no in-app picker, no `locales_config.xml`), machine-translated.
-  New pure-JVM `architecture/LocaleCompletenessTest` pins locale key / per-key format-arg-signature /
-  `formatted="false"` parity (plurals per `(name,quantity)` item; arg extractor strips `%%`, catches width
-  mods like `%2$02d`). `app_name` + 4 documented residuals (incl. `R.raw.oss_notices` body) stay English.
-  Full gate green: assembleDebug + lintDebug/lintRelease (0 errors; **16 accepted `MissingQuantity`
-  warnings** — Spanish CLDR `many`; NOT added, would break the guard's identical-quantity-set rule, `other`
-  is the correct fallback) + **1317 JVM tests** (1314+3) + detekt + ktlint. Native-review follow-up filed
-  (**#410**) — a copy-quality gate before promotion beyond internal, NOT a code blocker. Ships on the next
-  `v*` tag (no versionCode bump this PR). Spec/plan `docs/superpowers/{specs,plans}/2026-07-07-first-spanish-locale*.md`
-  (Adversarial Review Gate 22/16/5, 2 refutations strengthened the spec).
+- *Previous — first non-English locale: Spanish (`es`) SHIPPED (#34, PR #411 MERGED `0a685c5`; issue #34
+  auto-closed COMPLETED). Complete `values-es/` (566 strings + 16 plurals), device-language-only,
+  machine-translated; new `architecture/LocaleCompletenessTest` pins key/format-arg/plurals parity.
+  Native-review follow-up **#410** (copy quality, not a code blocker). Ships on the next `v*` tag. Detail
+  in RUN_LOG/CHANGELOG + ADR-0014.*
 - *Previous — Phase-4 tooling (tracker #389 Phase 4: release/ops): DONE — all 3 in-repo findings MERGED
   (#379 PR #406, #383 PR #407, #377 PR #408 / ADR-0041); only the 2 deferred items remain (#385 device
-  macrobenchmark pass, #396 detekt nested-lock rule). Cleared the entire non-deferred tracker #389 body
-  (Phases 1–4). Detail in RUN_LOG/CHANGELOG.*
-- **Open tracks remaining (non-tooling / deferred):** further `values-xx` locales + the #410 Spanish
+  macrobenchmark pass, #396 detekt nested-lock rule). Cleared the entire non-deferred tracker #389 body.*
+- **Open tracks remaining (non-tooling / deferred):** the remaining **#306 slices** (enemy
+  `takeDamage`/`onDeath`/SCATTER, `UWController.when(type)` effect bodies, `onProjectileHitEnemy`/`onOrbHit`
+  knockback+lifesteal — the harder ADR-0012 Phase 5 hoist); further `values-xx` locales + the #410 Spanish
   native review (i18n follow-through); internal→closed promotion (developer-judgment Closed-Test Readiness
-  Gate); #233 clean Simulation-hoist (ADR-0012); A24 clock-tamper; the two deferred tracker-#389 items
-  (#385 device pass, #396 detekt rule). See `docs/agent/BACKLOG.md`.
+  Gate); #233 (config-change durability — already neutralized by the ADR-0029 portrait lock; its own clean
+  fix is the deferred durable-`Simulation`-owner-in-VM refactor); A24 clock-tamper; the two deferred
+  tracker-#389 items (#385 device pass, #396 detekt rule). See `docs/agent/BACKLOG.md`.
 
 ## Recently shipped (newest first — see RUN_LOG for detail)
 

@@ -1,3 +1,52 @@
+## 2026-07-08 — #306 ADR-0012 Phase 5 Slice 1: ziggurat damage hoist (PR #413 merged)
+
+- **Goal:** first bounded slice of the tracked ADR-0012 effect-resolution hoist (#306) — move the pure
+  combat arithmetic + HP mutation of `CombatResolver.applyDamageToZiggurat` into a pure-domain resolver,
+  leaving the collaborator a thin adapter. Full lifecycle this session: brainstorm → spec → Adversarial
+  Review Gate → plan → subagent-driven execution → final holistic review → PR → merge.
+- **What changed (PR #413, merge commit `ac9dbb4`; 9 impl + 3 doc commits):**
+  - NEW `domain/battle/entity/Damageable` port (`var currentHp`/`val maxHp`) — deliberately NOT an
+    `EntityProtocol` subtype (HP is orthogonal to the positional/tickable surface; the deferred enemy slice
+    will declare `EnemyState : EntityProtocol, Damageable`).
+  - NEW `domain/battle/engine/ZigguratDamageResolver` — `resolve(target, rawDamage, stats,
+    secondWindHpPercent, consumeSecondWind): DamageOutcome(crossedShakeThreshold)`. Lifted verbatim:
+    defense mitigate → death-defy (lazy `random.nextDouble()`, injectable) → second-wind (caller's one-shot
+    lambda) → normal damage with 0.0 floor → <25% shake crossing. Mutates `target.currentHp`; holds no
+    monitor.
+  - `ZigguratState : Damageable` (added `override` on the two HP props); `ZigguratEntity` exposes
+    `zigguratState: Damageable` (port-typed → loop-thread-only mutators stay encapsulated);
+    `CombatResolver.applyDamageToZiggurat` now delegates + keeps only the `reducedMotion`-gated screen shake
+    + thorn glue; `CalculateDefense` field/import removed (moved into the resolver); `random` injected into
+    `CombatResolver` (pre-hoist seam threaded into the resolver's defy roll).
+  - **Behaviour-preserving** — no production behaviour change, no schema, no dependency, no `versionCode`
+    bump. Thorn now fires once unconditionally at the adapter tail (== the original's per-branch calls,
+    since the resolver returns in the defy/second-wind cases).
+- **Test/oracle strategy (the review's key catch):** the R3-02/R17 tests do NOT cover defy/second-wind/
+  shake (R3-02 pins the ziggurat unkillable; R17 drives `onProjectileHitEnemy`). So the plan front-loaded
+  **pre-hoist characterization tests** against the current `CombatResolver` (baseline oracle) that pass
+  unchanged after the hoist — the resolver is diffed against real baseline, not against itself.
+- **Verification (run independently, not trusted from the subagent trace):** full JVM suite **1332 tests,
+  0 failures/errors/skipped** (1317 → 1332: +3 characterization + 9 resolver + 1 `Damageable` port
+  assertion + 2 adapter shake-glue tests); `detekt` + `ktlint` + `assembleDebug` green; `DomainPurityTest`
+  + `BattleEngineLockScanTest` green. CI on PR #413: build-and-test (13m43s), connected emulator (4m48s),
+  ktlint, gitleaks, changes — all green before merge.
+- **Reviews:** spec Adversarial Review Gate = 18 findings / 17 surviving / 1 refuted (applied, commit
+  `d012c76`) — biggest catches: the `: Damageable` change needs `override` (would not compile as first
+  written), and the false R3-02/R17 oracle claim → pre-hoist characterization tests. Final holistic branch
+  review = 6 findings, all `nit`, 0 major/critical (a mutation-test lens confirmed the tests are a genuine
+  oracle); 3 nits folded in (`551a6db`): strengthen defy-priority assertion, add 2 shake-glue tests,
+  STATE.md test-count clarity.
+- **Doc sync (in-PR):** ADR-0012 Phase 5 (Slice 1) entry; CLAUDE.md headline 1317→1332 + Battle Renderer
+  bullet drift fix (it had claimed HP-mutation was un-hoisted); source-files.md (2 new + 3 updated entries);
+  CHANGELOG `[Unreleased]`; STATE.md objective. This checkpoint: rotated STATE (#306 CURRENT→shipped,
+  Spanish/Phase-4 compacted to Previous), this RUN_LOG entry, BACKLOG regen. No new ADR (ADR-0012 Phase 5
+  entry covers it). No structure.md change (no new module/dir). Slice ships on the next `v*` tag.
+- **Next:** the remaining #306 slices (enemy `takeDamage`/`onDeath`/SCATTER, `UWController.when(type)`
+  effect bodies, `onProjectileHitEnemy`/`onOrbHit` knockback+lifesteal — each needs enemy-model surgery,
+  the harder half). Unchanged tracks: further `values-xx` locales + #410 Spanish native review;
+  internal→closed promotion (developer gate); A24 clock-tamper; deferred #389 items (#385 device pass,
+  #396 detekt nested-lock rule — which would also machine-gate the resolver's no-monitor property).
+
 ## 2026-07-08 — Spanish locale PR #411 merged + /checkpoint
 
 - **Session outcome:** **PR #411 (first Spanish locale, #34) MERGED to `main`** via a true merge commit
