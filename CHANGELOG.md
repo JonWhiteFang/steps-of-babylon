@@ -25,8 +25,8 @@ All notable changes to Steps of Babylon are documented here.
   `presentation/battle/engine`; extending it to `domain/battle/**` is deferred).
 - **Still open (#306 remaining slices):** enemy `takeDamage`/`onDeath`/SCATTER child spawn; the
   `UWController.when(type)` effect bodies; `onProjectileHitEnemy`/`onOrbHit` knockback+lifesteal.
-- JVM test count **1317 → 1330** (+13: 3 pre-hoist characterization + 9 resolver + 1 `Damageable` port
-  assertion). No production behaviour change, no schema, no dependency, no `versionCode` change. Spec/plan
+- JVM test count **1317 → 1332** (+15: 3 pre-hoist characterization + 9 resolver + 1 `Damageable` port
+  assertion + 2 adapter shake-glue tests). No production behaviour change, no schema, no dependency, no `versionCode` change. Spec/plan
   `docs/superpowers/{specs,plans}/2026-07-08-ziggurat-damage-hoist*.md` (Adversarial Review Gate — 17 findings applied).
 
 ### Added — First non-English locale: Spanish (`es`) (#34)
