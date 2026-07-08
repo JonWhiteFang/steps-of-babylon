@@ -41,35 +41,22 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — Phase-4 tooling (tracker #389 Phase 4: release/ops): DONE — all 3 in-repo findings MERGED;
-  only the 2 deferred items remain.** Plan `docs/superpowers/plans/2026-07-03-phase4-release-ops-tooling.md`
-  passed the Adversarial Review Gate (**19 raised / 10 survived / 9 refuted**). **#379** (`releaseops-1`,
-  PR #406) — versionCode-collision fail-fast guard in `release.yml` (topology-independent
-  `git tag -l --sort=-v:refname`, `|| true`-safe first-release skip, loud `::error::` parse — review S1/S2/S3).
-  **#383** (`releaseops-2`, PR #407) — doc: internal-only lane + manual-production rollout/rollback in
-  `release-checklist.md` (the `userFraction`/`inProgress` `release.yml` change deferred until production lands).
-  **#377** (`depmgmt-1`, PR #408, **ADR-0041**) — Apache-2.0 §4(d) OSS-attribution via a **static NOTICE
-  asset** (`tools/generate_oss_notices.py` → `res/raw/oss_notices.txt`, read-only in `HelpScreen`); switched
-  from the oss-licenses-plugin after review S5 found `play-services-oss-licenses:17.5.1`'s v2 activity drags
-  alpha AndroidX Compose + Navigation3 into the AAB (no-alpha-AAB discipline); zero new runtime deps, no
-  fragile-zone edit, no nav route, R8-verified. All 3 issues auto-closed; #389 tracker ticked. **1314 JVM +
-  9 instrumented tests** unchanged (no app-logic/schema change, no versionCode bump).
-  **Phase-4 remaining = deferred only:** #385 (`perf-1`) macrobenchmark numbers (one-time on-device
-  developer step — fragile-zone `benchmark` build type + a physical device; not CI-gated per spec; tracking
-  note refreshed in `startup-baseline.md` §2) and #396 (detekt nested-lock rule — blocked on a stable detekt
-  custom-rule API). **This clears the entire non-deferred tracker #389 body (Phases 1–4).**
-- *Previous — Phase-3 tooling (tracker #389 Phase 3): BOTH PRs MERGED.* **PR-1** (`aa2b50c`, #402) — #373
-  scoped Kover ratchet + #375 LeakCanary + #381 `FullChainMigrationSchemaTest` + #382 `ComposeHardcodedStringTest`.
-  **PR-2** (`cfbabcb`, #403) — #384 DEBUG frame-stats overlay (concurrency-reviewer lane, no violation).
-  Detail in RUN_LOG/CHANGELOG.
-- **CURRENT — first non-English locale: Spanish (`es`) shipped (#34).** Complete `values-es/` (566
-  strings + 16 plurals) mirroring the English default, device-language-only, machine-translated. New
-  pure-JVM `architecture/LocaleCompletenessTest` pins locale key / per-key format-arg-signature /
-  `formatted="false"` parity (plurals per `(name,quantity)` item). Full gate green: assembleDebug +
-  lintDebug/lintRelease (0 errors; 16 accepted `MissingQuantity` warnings) + **1317 JVM tests** + detekt +
-  ktlint. Native-review follow-up filed (#410) — a copy-quality gate before promotion beyond internal, NOT
-  a code blocker. Spec/plan `docs/superpowers/{specs,plans}/2026-07-07-first-spanish-locale*.md` (Adversarial
-  Review Gate 22/16/5).
+- **CURRENT — first non-English locale: Spanish (`es`) SHIPPED (#34, PR #411 MERGED `0a685c5`, merge
+  commit; issue #34 auto-closed COMPLETED).** Complete `values-es/` (566 strings + 16 plurals) mirroring
+  the English default, device-language-only (no in-app picker, no `locales_config.xml`), machine-translated.
+  New pure-JVM `architecture/LocaleCompletenessTest` pins locale key / per-key format-arg-signature /
+  `formatted="false"` parity (plurals per `(name,quantity)` item; arg extractor strips `%%`, catches width
+  mods like `%2$02d`). `app_name` + 4 documented residuals (incl. `R.raw.oss_notices` body) stay English.
+  Full gate green: assembleDebug + lintDebug/lintRelease (0 errors; **16 accepted `MissingQuantity`
+  warnings** — Spanish CLDR `many`; NOT added, would break the guard's identical-quantity-set rule, `other`
+  is the correct fallback) + **1317 JVM tests** (1314+3) + detekt + ktlint. Native-review follow-up filed
+  (**#410**) — a copy-quality gate before promotion beyond internal, NOT a code blocker. Ships on the next
+  `v*` tag (no versionCode bump this PR). Spec/plan `docs/superpowers/{specs,plans}/2026-07-07-first-spanish-locale*.md`
+  (Adversarial Review Gate 22/16/5, 2 refutations strengthened the spec).
+- *Previous — Phase-4 tooling (tracker #389 Phase 4: release/ops): DONE — all 3 in-repo findings MERGED
+  (#379 PR #406, #383 PR #407, #377 PR #408 / ADR-0041); only the 2 deferred items remain (#385 device
+  macrobenchmark pass, #396 detekt nested-lock rule). Cleared the entire non-deferred tracker #389 body
+  (Phases 1–4). Detail in RUN_LOG/CHANGELOG.*
 - **Open tracks remaining (non-tooling / deferred):** further `values-xx` locales + the #410 Spanish
   native review (i18n follow-through); internal→closed promotion (developer-judgment Closed-Test Readiness
   Gate); #233 clean Simulation-hoist (ADR-0012); A24 clock-tamper; the two deferred tracker-#389 items

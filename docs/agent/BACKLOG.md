@@ -8,8 +8,9 @@
 > gh issue list --state open --limit 200 --json number,title,labels \
 >   --jq '.[] | "- #\(.number) — \(.title) — [\([.labels[].name] | join(", "))]"'
 > ```
-> Last generated: 2026-07-03
+> Last generated: 2026-07-08
 
+- #410 — [i18n] Native review of the Spanish (es) locale before promotion — [ux, i18n]
 - #396 — [Tooling] detekt custom rule: flag nested lock acquisition in the battle engine (deferred from #372 / ADR-0038) — [severity:minor, area:battle, architecture, tooling]
 - #391 — [Research] Asset-generation pipeline: using Claude + paid AI tools for consistent art/audio/store/text assets — [enhancement, severity:minor, audio, content, game-design]
 - #389 — [Tooling] Tracker: 24 tooling/automation-gap findings (2026-07-02 assessment) — [severity:minor, tooling]
@@ -18,7 +19,6 @@
 - #153 — High-intensity activity earns bonus Steps (e.g. running = 1.2× step reward) — [enhancement, retention, game-design]
 - #128 — [Audit] Tracker: 30 Low-severity audit findings (2026-06-10) — [bug, severity:minor]
 - #36 — [Retention] No cloud save or data backup path — [data-integrity, retention]
-- #34 — [i18n] All UI strings are hardcoded; strings.xml has only one entry — [ux, i18n]
 - #31 — Strengthen thematic identity, accessibility, and monetisation strategy — []
 - #30 — Build internal balancing and economy simulation tooling — []
 - #28 — Expand long-term progression systems and meta-progression depth — []
