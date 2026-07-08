@@ -3,8 +3,10 @@
 **Date:** 2026-07-08
 **Issue:** #306 (Extend EntityProtocol to enable domain hoist of combat effect-resolution + damage
 application — ADR-0012 future slice). Advances #306; does **not** close it. Related: #233 (in-flight
-round destroyed on config change) is already neutralized by the ADR-0029 portrait lock — this slice is
-the *clean* fix #233 pointed to, but #233 does not gate or reopen on it.
+round destroyed on config change) is already **CLOSED** by the ADR-0029 portrait lock. #233's own
+"clean fix" is a *different, deferred* ADR-0012 axis — the durable-`Simulation`-owner-in-the-VM refactor
+— not this effect-resolution slice. This slice is one step in the broader ADR-0012 program; #233 neither
+gates nor reopens on it.
 **Status:** approved (brainstorming) → pending Adversarial Review Gate before plan.
 
 ## Problem & context
@@ -59,9 +61,14 @@ direct coverage.
        val maxHp: Double
    }
    ```
-2. **`ZigguratState` declares `: Damageable`.** It already has `var currentHp: Double` and
-   `var maxHp: Double` (public) — this is a declaration-only change; `currentHp` already matches the
-   `var` (get+set) requirement and `maxHp` satisfies the `val` (get) requirement. No member bodies change.
+2. **`ZigguratState` declares `: Damageable` and adds the `override` modifier to both properties.**
+   It already has `var currentHp: Double` and `var maxHp: Double` (public, `ZigguratState.kt:26-27`).
+   A class `var` legally satisfies an interface `val` (the class just adds a setter), so no type change is
+   needed — BUT Kotlin **requires** an explicit `override` modifier on any member implementing an abstract
+   interface member. So the two property lines must become `override var currentHp: Double = …` and
+   `override var maxHp: Double = …`. Without `override`, adding `: Damageable` does **not** compile
+   ("'currentHp' hides member of supertype 'Damageable' and needs an 'override' modifier"). No member
+   *bodies* / initializers change — only the two `override` keywords are added.
 3. **New `domain/battle/engine/ZigguratDamageResolver.kt`** — pure resolver:
    ```kotlin
    class ZigguratDamageResolver(
@@ -79,13 +86,22 @@ direct coverage.
        ): DamageOutcome
    }
    ```
-   Body **lifted verbatim** from `CombatResolver.applyDamageToZiggurat` (current lines 117–137):
-   defense mitigation (`calculateDefense`) → death-defy branch (rolls `random.nextDouble()` **lazily,
-   only inside that branch**, faithful to the original `Random.nextDouble()` call site) → second-wind
-   branch (invokes `consumeSecondWind()` **exactly where the original does** — preserving the stateful
-   one-shot test-and-set order and short-circuit) → normal damage with the `coerceAtLeast(0.0)` HP floor →
-   shake-threshold crossing computed as a pure boolean (`prevRatio > 0.25 && newRatio <= 0.25`). Mutates
-   `target.currentHp` directly. Returns `DamageOutcome(crossedShakeThreshold)`.
+   The *logic sequence* is lifted from `CombatResolver.applyDamageToZiggurat` lines 117–134, **minus the
+   three presentation tails that stay in the adapter**: defense mitigation (`calculateDefense`) →
+   death-defy branch (rolls `random.nextDouble()` **lazily, only inside that branch**, faithful to the
+   original `Random.nextDouble()` call site) → second-wind branch (invokes `consumeSecondWind()`
+   **exactly where the original does** — preserving the stateful one-shot test-and-set order and
+   short-circuit) → normal damage with the `coerceAtLeast(0.0)` HP floor → shake-threshold crossing
+   computed as a pure boolean (`prevRatio > 0.25 && newRatio <= 0.25`). Mutates `target.currentHp`
+   directly. Returns `DamageOutcome(crossedShakeThreshold)`.
+
+   **What is NOT in the resolver** (a literal verbatim lift of :117–137 would break `DomainPurityTest`):
+   the three `applyThorn(rawDamage, attacker)` calls (:121 defy branch, :127 second-wind branch, :137
+   normal path) stay in the adapter (thorn calls `attacker.takeDamage` on a presentation `EnemyEntity`);
+   the `!host.reducedMotion` gate + `effectEngine?.screenShake?.trigger(5f, 0.2f)` (:134–135) stay in the
+   adapter; and `val zig = host.ziggurat` / `val stats = host.currentStats` (:115–116) stay in the adapter
+   (`stats` is passed in). The resolver returns only the `crossedShakeThreshold` boolean derived from the
+   :134 ratio comparison; the adapter decides whether to fire the shake.
 
    **Ordering invariant (verbatim from original):** death-defy is checked **before** second-wind; when a
    lethal hit is survived by either branch, the ziggurat is set to its restore HP and the method returns
@@ -98,14 +114,37 @@ direct coverage.
      (the `reducedMotion` gate + `effectEngine?.screenShake?.trigger(5f, 0.2f)` stay presentation),
    - calls `applyThorn(rawDamage, attacker)` (unchanged).
    `CombatResolver` gains a `private val zigguratDamageResolver = ZigguratDamageResolver()` field and
-   **removes** its now-unused `private val calculateDefense = CalculateDefense()` field (dead after the
-   hoist — verify no other method in the file uses it; `onProjectileHitEnemy`/`onOrbHit` use
-   `calculateDamage`, not `calculateDefense`).
-5. **`ZigguratEntity` exposes its state:** `val zigguratState: ZigguratState get() = state`
-   (the private `state` field already exists). Read-only accessor — no new mutable surface.
+   **removes** its now-unused `private val calculateDefense = CalculateDefense()` field **and the
+   `import …domain.usecase.CalculateDefense` line (`CombatResolver.kt:10`)** — both dead after the hoist.
+   Verified via ast-grep/rg that `calculateDefense` is referenced **only** at `CombatResolver.kt:31`
+   (field) and `:117` (inside `applyDamageToZiggurat`) — nowhere else in the file or main tree — so the
+   removal is safe (`onProjectileHitEnemy` uses `calculateDamage`; `onOrbHit` takes `damage` as a param
+   and calls neither). **Dropping the import too is required:** the CI-enforced ktlint `no-unused-imports`
+   / detekt `UnusedImports` lane fails on a freshly-orphaned import.
+5. **`ZigguratEntity` exposes its state through the port:** `val zigguratState: Damageable get() = state`
+   (the private `state: ZigguratState` field already exists; `ZigguratState : Damageable` from item 2).
+   **Return the `Damageable` port type, NOT the concrete `ZigguratState`** — the resolver only consumes
+   `Damageable`, so this compiles unchanged, and it keeps `ZigguratState`'s loop-thread-only mutators
+   (`regenHp`/`tickAttackReady`/`onFired`/`holdReady` — today unreachable through `ZigguratEntity`'s
+   public API) encapsulated. A concrete-type accessor would leak those under-lock writers to any
+   presentation caller (latent, not a reachable regression this slice, but it weakens the encapsulation
+   that keeps them inside `entitiesLock`). The port-typed accessor makes the "no new capability" claim
+   literally true — callers see only `currentHp`/`maxHp`. (The new `ZigguratDamageResolverTest`
+   constructs `ZigguratState` directly, so it is unaffected by the accessor's narrower type.)
 6. **New pure-JVM `ZigguratDamageResolverTest`** (domain lane) — see Testing.
-7. Doc sync: ADR-0012 Phase 5 entry (this slice); CLAUDE.md headline test count; `source-files.md`
-   (new files); STATE.md fragile-zone note if the economy/battle fragile list warrants it; CHANGELOG.
+7. Doc sync (per the PR Task-List Convention):
+   - **ADR-0012** — add a Phase 5 (Slice 1) entry describing this hoist. Note that the pure-domain
+     "no-monitor" property of `ZigguratDamageResolver` is **convention-only** (not build-enforced —
+     `BattleEngineLockScanTest` scans only `presentation/battle/engine`; see fz-3 forward-hardening note).
+   - **CLAUDE.md** — headline test count (rises; see Testing).
+   - **`docs/steering/source-files.md`** — ADD entries for `Damageable.kt` + `ZigguratDamageResolver.kt`,
+     AND UPDATE the existing `CombatResolver` (responsibility shrank — ziggurat-damage math hoisted),
+     `ZigguratState` (now implements `Damageable`), and `ZigguratEntity` (exposes `zigguratState`) entries
+     so they don't drift factually wrong post-merge.
+   - **CHANGELOG** — add the PR section.
+   - **STATE.md** — a fragile-zone note only if the battle/economy fragile list warrants it.
+   - **NOT** `docs/plans/master-plan.md` (it tracks plan-level v1.0 completion, not ADR-0012 phase
+     slices — confirmed no `#306`/`ADR-0012`/`Phase` tracker rows exist there).
 
 ### Out of scope (YAGNI — deferred to later #306 slices)
 - Enemy `takeDamage` / `armorHits` / `onDeath` / SCATTER child spawning → a pure `EnemyState`-owned HP
@@ -127,10 +166,14 @@ direct coverage.
 - `ZigguratDamageResolver` holds **no monitor of its own** (like `SimulationMath` / `CalculateDefense`).
   It is a stateless pure function object; the only mutable state it touches is the caller-supplied
   `target` (the ziggurat's already-lock-protected HP).
-- `secondWindUsed` is a `@Volatile` engine field; the resolver never reads/writes it directly — it calls
-  the `consumeSecondWind` callback (`host::consumeSecondWind`), which keeps the existing
-  test-and-set-under-lock semantics exactly. `secondWindHpPercent` is passed by value (read once by the
-  caller before the call — same as the original inline read).
+- `secondWindUsed` is a `@Volatile` engine field (`GameEngine.kt:130`); the resolver never reads/writes it
+  directly — it calls the `consumeSecondWind` callback (`host::consumeSecondWind`, a genuine test-and-set
+  at `GameEngine.kt:214-218`), which keeps the existing test-and-set-under-lock semantics exactly.
+- `secondWindHpPercent` (`@Volatile`, `GameEngine.kt:128`): the **original reads it twice** (the guard at
+  `CombatResolver.kt:125` and the restore at `:126`). The adapter collapses this into **one** by-value
+  read passed as a param, so the resolver uses a single consistent snapshot for the guard + restore. This
+  is behaviour-preserving (strictly safer, actually) because both original reads happen under the held
+  `entitiesLock` with no interleaving writer.
 - **Guards that must stay green, unchanged:** `GameEngineConcurrencyTest`, `EffectEngineConcurrencyTest`
   (empty diff), `BattleEngineLockScanTest` (new class is under `domain/battle/`, out of its
   `presentation/battle/engine` scan scope; `CombatResolver` stays in the allowlist and gains no
@@ -150,48 +193,98 @@ collision sweep / melee callback (inside entitiesLock)
 
 ## Testing
 
-**New `ZigguratDamageResolverTest`** (pure JVM, `domain/battle/engine/`, JUnit Jupiter) — the payoff.
-Drives `resolve()` against a **real `ZigguratState`** (already pure-constructible from `ResolvedStats`)
-and stub `consumeSecondWind` lambdas. Cover the branches that have thin-to-no direct coverage today:
-- **Defense mitigation:** percent + flat defense reduce the HP lost (delegates to `CalculateDefense`; a
-  smoke assertion, since `CalculateDefenseTest` owns the math).
-- **Normal damage:** `currentHp` drops by the mitigated amount; floored at `0.0` on an overkill hit.
-- **Death-defy:** injected `random` returning `< deathDefyChance` on a lethal hit → HP restored to `1.0`,
-  `crossedShakeThreshold == false`, second-wind **not** consumed. Injected `random` returning
-  `>= deathDefyChance` → normal lethal damage applied (HP floored at 0).
-- **Second-wind:** `deathDefyChance == 0`, `secondWindHpPercent > 0`, `consumeSecondWind` returns true on
-  a lethal hit → HP restored to `maxHp × pct`, `crossedShakeThreshold == false`. `consumeSecondWind`
-  returns false → normal lethal damage. **Priority:** when both death-defy (roll succeeds) and second-wind
-  are eligible, death-defy wins and `consumeSecondWind` is **not** called (verify via a spy lambda).
-- **Shake threshold:** a hit that crosses `prevRatio > 0.25 && newRatio <= 0.25` → `crossedShakeThreshold
-  == true`; a hit entirely above 0.25, or one already below 0.25, → `false`; the defy/second-wind
-  early-returns → `false`.
+**The behaviour-preservation net is the load-bearing part of this section, because the existing corpus
+does NOT pin the branches being hoisted.** Verified during review:
+- `GameEngineTest` **R3-02** thorn tests (`:1403`, `:1428`) set `eng.ziggurat!!.currentHp = 1_000_000.0`
+  so the ziggurat is **unkillable** — they never reach a lethal hit, so death-defy, second-wind, and the
+  shake threshold are never exercised; they assert only the thorn reflection onto the attacker.
+- `GameEngineTest` **R17** armor/lifesteal tests (`:1008`, `:1056`) drive `onProjectileHitEnemy` (an
+  enemy-hit path this slice does **not** touch) — **zero** coverage of `applyDamageToZiggurat`.
+- So death-defy / second-wind / <25%-shake-crossing have **no existing end-to-end oracle**, and
+  "existing corpus green" alone cannot prove the hoist is behaviour-preserving. A `ZigguratDamageResolverTest`
+  written only against the *new* resolver is a characterization test (it codifies whatever the new code
+  does) — not an independent oracle for the *old* behaviour.
 
-**Behaviour-preservation oracle (must pass unchanged):**
-- `GameEngineTest` R3-02 thorn tests + R17 armor/lifesteal tests drive `applyDamageToZiggurat`'s normal
-  branch and the thorn tail — these are the end-to-end oracle. They pass **unchanged**.
-- `ZigguratStateTest` unchanged (optionally +1 line asserting `ZigguratState` is a `Damageable`).
-- `CombatResolverTest` unchanged (its two tests exercise `handleEnemyDeath`/`handleWaveComplete`, not the
-  ziggurat-damage path).
+**Step 1 — pre-hoist characterization tests (write FIRST, against the CURRENT
+`CombatResolver.applyDamageToZiggurat`, before touching the code).** Extend `CombatResolverTest` (its
+`FakeCombatHost` already wires `secondWindHpPercent` + `consumeSecondWind`, `CombatResolverTest.kt:39-45`,
+and builds a real `ZigguratEntity`). Assert against **old code** (they must pass on `main` before the
+hoist, then unchanged after — this is the true diff-against-baseline oracle):
+- Death-defy success (inject a `stats.deathDefyChance` high enough / a deterministic roll) → `zig.currentHp
+  == 1.0` after a lethal hit.
+- Second-wind success (`deathDefyChance == 0`, `secondWindHpPercent > 0`) → `zig.currentHp == maxHp × pct`.
+- **Defy-fails → second-wind-rescues fall-through** (`deathDefyChance > 0` but roll fails, `secondWindHpPercent
+  > 0`, `consumeSecondWind` returns true) → HP restored to `maxHp × pct`. This reachable interaction (the
+  original falls through the nested defy `if` at `:118-124` into the second-wind check at `:125`) is the
+  exact case a mis-lift to `else if` would silently break.
+- Shake-threshold crossing → `effectEngine.screenShake` fires when a hit crosses `prevRatio > 0.25 &&
+  newRatio <= 0.25` with `reducedMotion == false`, and does NOT fire when `reducedMotion == true`
+  (also covers the ts-3 thin-adapter shake glue on both sides of the hoist).
+> Note: forcing the death-defy roll deterministically at the `CombatResolver` layer requires the roll to be
+> injectable. `CombatResolver` currently constructs its own `Random` implicitly via the `Random.nextDouble()`
+> call inside `applyDamageToZiggurat` — the characterization test either (a) sets `deathDefyChance = 1.0`
+> (roll always succeeds) / `0.0` (branch never taken) to avoid needing injection, and drives the fall-through
+> case with `deathDefyChance` between the two after the hoist makes `random` injectable, or (b) is written
+> after the `random` seam exists. The plan must sequence this: if the characterization tests need the
+> injectable seam, add the seam first as a pure-refactor step, run the tests green on baseline, THEN hoist.
 
-**Headline test count** rises by ~+6–8 (the new resolver tests). Update the count line in CLAUDE.md +
-CHANGELOG when it lands. The new class lands in the Kover-ratcheted `domain.battle.*` coverage zone.
+**Step 2 — new `ZigguratDamageResolverTest`** (pure JVM, `domain/battle/engine/`, JUnit Jupiter). Drives
+`resolve()` against a **real `ZigguratState`** (pure-constructible from `ResolvedStats`, per
+`ZigguratStateTest.kt:20`) with injected `random` + stub/spy `consumeSecondWind` lambdas:
+- **Defense mitigation:** percent + flat defense reduce HP lost (smoke assertion; `CalculateDefenseTest`
+  owns the math).
+- **Normal damage:** `currentHp` drops by the mitigated amount; floored at `0.0` on overkill.
+- **Death-defy:** injected `random < deathDefyChance` on a lethal hit → HP `== 1.0`, `crossedShakeThreshold
+  == false`, `consumeSecondWind` **not** called (spy). `random >= deathDefyChance` → normal lethal damage
+  (HP floored at 0).
+- **Second-wind:** `deathDefyChance == 0`, `secondWindHpPercent > 0`, `consumeSecondWind → true` on a
+  lethal hit → HP `== maxHp × pct`, `crossedShakeThreshold == false`. `consumeSecondWind → false` → normal
+  lethal damage.
+- **Defy-fails → second-wind-rescues** (the reachable combination): `deathDefyChance > 0` with injected
+  `random >= chance` (roll fails), `secondWindHpPercent > 0`, `consumeSecondWind → true` → HP `== maxHp ×
+  pct` and `consumeSecondWind` **IS** called (spy). Mirrors the Step-1 fall-through case.
+- **Priority:** both eligible + defy roll succeeds → death-defy wins, `consumeSecondWind` **not** called.
+- **Shake threshold:** crossing hit → `crossedShakeThreshold == true`; a hit entirely above 0.25 or already
+  below 0.25 → `false`; the defy/second-wind early-returns → `false`.
+
+**Unchanged (spot-checked):**
+- `ZigguratStateTest` — unchanged (optionally +1 line asserting `ZigguratState is Damageable`).
+- `CombatResolverTest`'s two existing tests (`handleEnemyDeath`/`handleWaveComplete`) — unchanged (the new
+  characterization tests are additions).
+- `SimulationTest`'s `FakeEntity` — unaffected: `Damageable` is a **separate** port, not an `EntityProtocol`
+  member, so `FakeEntity` needs no new members.
+
+**Headline test count** rises by ~+10–12 (Step-1 characterization + Step-2 resolver tests). Update the count
+line in CLAUDE.md + CHANGELOG when it lands. The new resolver lands in the Kover-ratcheted `domain.battle.*`
+coverage zone.
 
 ## Acceptance
 - `applyDamageToZiggurat`'s pure arithmetic + HP mutation lives in `ZigguratDamageResolver` (domain);
   `CombatResolver.applyDamageToZiggurat` is a thin adapter firing only presentation side-effects.
 - `ZigguratState` implements `Damageable`; the resolver mutates via the port.
-- Behaviour-preserving: full existing corpus green with **no assertion weakened**; new resolver tests
-  green.
+- Behaviour-preserving: full existing corpus green with **no assertion weakened**; the pre-hoist
+  characterization tests (Step 1) pass on baseline AND after the hoist unchanged; new resolver tests green.
 - `DomainPurityTest` / `BattleEngineLockScanTest` / both concurrency tests green.
 - ADR-0012 gains a Phase 5 (Slice 1) entry; #306 stays open for the enemy + UW slices.
 
 ## Risks & mitigations
-- **Risk: a subtle re-ordering changes the death-defy/second-wind priority or the lazy random roll.**
-  Mitigation: lift the body verbatim; the R3-02/R17 `GameEngineTest` oracle + the new priority test pin it.
+- **Risk: no existing test pins the hoisted branches, so a subtle transcription error in the "verbatim
+  lift" (death-defy/second-wind priority, the defy-fails→second-wind fall-through, the lazy random roll)
+  would be caught by nothing in the current corpus.** This is the load-bearing risk. Mitigation: the
+  **Step-1 pre-hoist characterization tests** (written against the current `CombatResolver` and passing on
+  baseline) are the independent oracle — the new resolver is diffed against baseline behaviour, not just
+  against itself. Preservation rests on verbatim-lift discipline + those characterization tests + review,
+  NOT on "existing corpus green" (which is satisfiable even if the lift changes behaviour).
 - **Risk: `crossedShakeThreshold` semantics drift** (original computes ratios around the HP write).
   Mitigation: compute `prevRatio` before the write and `newRatio` after, identical to the inline code;
-  the shake-crossing test pins the three cases (crossing / above / already-below).
-- **Risk: exposing `zigguratState` widens the entity's mutable surface.** Mitigation: expose as a
-  read-only `val … get() = state`; callers get the already-mutable `currentHp` they had via
-  `zig.currentHp` anyway — no new capability.
+  the shake-crossing test pins the three cases (crossing / above / already-below), and the Step-1 test
+  pins the adapter's `&& !reducedMotion` gate on both sides of the hoist.
+- **Risk: exposing `zigguratState` widens the entity's mutable surface.** Mitigation: type the accessor
+  as the `Damageable` **port** (`val zigguratState: Damageable get() = state`), so callers see only
+  `currentHp`/`maxHp` — the same capability they already had via `zig.currentHp`, and `ZigguratState`'s
+  loop-thread-only mutators stay encapsulated.
+- **Risk: the domain-side "no monitor" invariant is convention-only** (not build-enforced; the lock-scan
+  is presentation-scoped). Mitigation for this slice: the resolver is stateless/pure. Forward-hardening
+  (deferred, noted in the ADR): extend `BattleEngineLockScanTest` (or a sibling) to also scan
+  `domain/battle/**` for `synchronized`/`ReentrantLock`/`= Any()` ahead of the larger #306 slices that add
+  more domain resolvers.
