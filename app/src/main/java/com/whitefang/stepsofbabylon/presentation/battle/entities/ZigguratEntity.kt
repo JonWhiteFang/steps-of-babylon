@@ -2,6 +2,7 @@ package com.whitefang.stepsofbabylon.presentation.battle.entities
 
 import android.graphics.Canvas
 import android.graphics.Paint
+import com.whitefang.stepsofbabylon.domain.battle.entity.Damageable
 import com.whitefang.stepsofbabylon.domain.battle.entity.ZigguratState
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
 import com.whitefang.stepsofbabylon.presentation.battle.engine.Entity
@@ -23,6 +24,13 @@ class ZigguratEntity(
      * nearest-enemy targeting + fire callback, and the Canvas `render()`.
      */
     private val state = ZigguratState(initialStats)
+
+    /**
+     * The ziggurat's damage/HP surface, exposed as the [Damageable] port (NOT the concrete
+     * [ZigguratState]) so a combat resolver can apply damage while [ZigguratState]'s loop-thread-only
+     * mutators (regenHp/tickAttackReady/onFired/holdReady) stay encapsulated (#306, ADR-0012 Phase 5).
+     */
+    val zigguratState: Damageable get() = state
 
     /** Live combat stats (read-only externally; mutated via [updateStats]). Delegates to [state]. */
     val stats: ResolvedStats get() = state.stats
