@@ -108,6 +108,11 @@ class EnemyState(
 `currentHp`/`armorHits` are plain `var` (loop-thread mutated under the engine's `entitiesLock`, exactly as
 today — no new happens-before requirement; matches how `ZigguratState`'s HP is a plain `var`).
 
+**Ctor compatibility note:** the three new params must carry defaults (`initialHp`/`maxHp` a sentinel such
+as `0.0`, `initialArmorHits = 0`) so the existing `EnemyStateTest` movement-only helper — which constructs
+`EnemyState(...)` with movement args only — keeps compiling unchanged. `EnemyEntity` (the one real caller)
+always passes real HP/armor values.
+
 ### 3. `EnemyEntity` delegates + becomes a thin damage adapter
 
 - `EnemyEntity` constructs `EnemyState` with the HP/armor params it currently holds, and delegates
