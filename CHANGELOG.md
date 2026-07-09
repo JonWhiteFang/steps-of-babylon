@@ -4,6 +4,16 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Added — Tone Bible (#425, #391 free-lane C5)
+
+- `docs/steering/tone-bible.md` — the single reference for the game's written voice (grounded, encouraging,
+  quietly mythic): voice pillars, register/mechanics, the five-biome naming/mood table, per-surface copy
+  patterns, a forbidden-words list (no passive/free-Steps framing, no dark-pattern urgency, no faux-archaic
+  English), and a localization note. Companion to `style-bible.md`. **Docs-only** — a copy-quality guide, not
+  a source of new strings (the app is 100% locale-ready; machine rules stay `ComposeHardcodedStringTest` +
+  `LocaleCompletenessTest` + the i18n contract). Fifth (final, optional) child of the #391 free lane — the
+  code-drawable lane is now complete. No code/test/schema change.
+
 ### Changed — Per-biome particle config vocabulary (#424, #391 free-lane C4)
 
 - Introduced `BattlePalette.ParticleConfig` (`color`/`driftX`/`driftY`/`count`) — the named ambient-emitter

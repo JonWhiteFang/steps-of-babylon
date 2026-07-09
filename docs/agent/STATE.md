@@ -48,10 +48,13 @@ the med/low backlog (#262) remain.
   `BattlePalette.ParticleConfig` vocabulary; `BiomeColors`/`BiomeTheme` carry `particles` (flat accessors
   delegate); `BackgroundRenderer` reads the structured config. `concurrency-reviewer` run: **SAFE** (pure
   immutable-config refactor). `EffectEngine`/`ParticlePool` deliberately untouched (they don't consume
-  per-biome config — spec's "feed EffectEngine" framing descoped). All zero-visual-change. Spec+plan under
-  `docs/superpowers/{specs,plans}/2026-07-09-*`. Remaining: C5 tone bible #425 (optional). #391 stays the epic
-  for the deferred **paid** lanes (raster + audio; ElevenLabs "Studio Games" clause must close before new
-  audio ships). **Next: PR C4; C5 optional.**
+  per-biome config — spec's "feed EffectEngine" framing descoped). C4 **MERGED** (PR #430, `6d1f83f`; #424
+  closed). C5 tone bible (#425) implemented (branch `docs/391-c5-tone-bible`, not yet PR'd):
+  `docs/steering/tone-bible.md` — docs-only voice/copy consistency guide, companion to `style-bible.md`.
+  **The #391 free / code-drawable lane is now COMPLETE (C1–C5).** All zero-visual-change / docs-only; spec+plan
+  under `docs/superpowers/{specs,plans}/2026-07-09-*`. #391 stays the epic for the deferred **paid** lanes
+  (raster + audio; ElevenLabs "Studio Games" clause must close before new audio ships). **Next: PR C5, then
+  the free lane closes out.**
 - **CURRENT — v1.0.13 (versionCode 29) SHIPPED → Play internal (`/release` complete).** Release PR #416
   merged (`4ba353e`); annotated tag `v1.0.13` pushed (message = the developer-approved bilingual "What's
   new" → `whatsnew-en-US`); release run `28948789820` `success` end-to-end (all guards + `bundleRelease`
