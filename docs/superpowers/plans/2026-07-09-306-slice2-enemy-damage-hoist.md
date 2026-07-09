@@ -404,6 +404,14 @@ class EnemyEntity(
 > - `presentation/battle/entities/OrbEntityTest.kt`
 >
 > Positional callers are unaffected. `maxHp` keeps its name. Fix all 6 in this step so the module compiles.
+>
+> **Do NOT rename the `maxHp` ctor param.** It is intentionally BOTH a plain constructor parameter and a
+> same-named member property (`val maxHp get() = state.maxHp`). This is the legal Kotlin
+> `class Foo(a) { val a = a }` idiom — the param shadows the property inside initializers, so
+> `EnemyState(maxHp = maxHp, ...)` binds the RHS to the param. The current file already relies on this exact
+> idiom for `armorHits` (a ctor param AND a `var armorHits` member), so it compiles. `currentHp` differs:
+> its ctor param becomes `initialHp` (renamed) while the member stays `currentHp` — because `currentHp` must
+> be a mutable delegating `var` (external writers set it) and can't share a name with a plain param it reads.
 
 (b) Rewrite `takeDamage` to delegate to the resolver (replace the whole current method body):
 
