@@ -368,7 +368,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1332 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1337 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Coverage ratchet (#373, ADR-0040):** `:app:koverVerifyDebug` gates a scoped Kover coverage floor on the fragile
   concurrency/economy zones (`data.repository`/`domain.usecase`/`presentation.battle.engine`/`domain.battle.*`)

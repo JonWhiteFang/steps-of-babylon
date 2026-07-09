@@ -34,6 +34,15 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
+- **IN FLIGHT — #391 asset-pipeline free lane, C1 (#421) implemented (branch `feat/391-c1-style-bible-palette`,
+  not yet PR'd).** New `presentation/battle/biome/BattlePalette.kt` = the single source of truth for the
+  battle **art** palette (per-biome/enemy/ziggurat ARGB, **byte-identical values, zero visual change**) +
+  `docs/steering/style-bible.md` (with a separate *functional palette* section: HP-bar/armor/range UI-signal
+  colours stay inline, excluded from the palette). `BiomeTheme.forBiome()` repointed to a thin adapter over it.
+  +5 JVM (`BattlePaletteTest`) → **1337**. Spec+plan under `docs/superpowers/{specs,plans}/2026-07-09-*`.
+  #391 decomposed into #421–#426 (C1 done; C2 enemy #422, C3 biome/ziggurat #423, C4 particle #424, C5 tone
+  bible #425 opt, guard #426 — likely rides C3). #391 stays the epic for the deferred **paid** lanes (raster
+  + audio; ElevenLabs "Studio Games" clause must close before new audio ships). **Next: commit + open C1 PR.**
 - **CURRENT — v1.0.13 (versionCode 29) SHIPPED → Play internal (`/release` complete).** Release PR #416
   merged (`4ba353e`); annotated tag `v1.0.13` pushed (message = the developer-approved bilingual "What's
   new" → `whatsnew-en-US`); release run `28948789820` `success` end-to-end (all guards + `bundleRelease`
