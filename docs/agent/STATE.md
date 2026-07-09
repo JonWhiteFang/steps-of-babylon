@@ -38,13 +38,15 @@ the med/low backlog (#262) remain.
   `presentation/battle/biome/BattlePalette.kt` = the single source of truth for the battle **art** palette
   (per-biome/enemy/ziggurat ARGB, **byte-identical values, zero visual change**) + `docs/steering/style-bible.md`
   (with a separate *functional palette* section: HP-bar/armor/range UI-signal colours stay inline). `BiomeTheme.forBiome()`
-  repointed to a thin adapter. +5 JVM (`BattlePaletteTest`) → **1337**. C2 (#422) implemented (branch
-  `feat/391-c2-enemy-palette`, not yet PR'd): `EnemyEntity` reads `BattlePalette.enemyBaseColors` (removed
-  its local `BASE_COLORS` map); zero visual change, no new tests (colours pinned by `BattlePaletteTest`).
-  Spec+plan under `docs/superpowers/{specs,plans}/2026-07-09-*`. Remaining children: C3 biome/ziggurat #423,
-  C4 particle #424, C5 tone bible #425 opt, guard #426 (likely rides C3). #391 stays the epic for the deferred
-  **paid** lanes (raster + audio; ElevenLabs "Studio Games" clause must close before new audio ships).
-  **Next: PR C2, then C3.**
+  repointed to a thin adapter. +5 JVM (`BattlePaletteTest`) → **1337**. C2 (#422) **MERGED** (PR #428,
+  `c7d1d10`): `EnemyEntity` reads `BattlePalette.enemyBaseColors` (removed its local `BASE_COLORS` map).
+  C3 (#423) + guard (#426) implemented (branch `feat/391-c3-ziggurat-palette-guard`, not yet PR'd):
+  `ZigguratEntity.DEFAULT_COLORS` = `BattlePalette.zigguratDefaultLayers` + new
+  `architecture/BattleArtPaletteTest` guard (fails on a NEW un-sourced art hex literal in the 3 consumers;
+  allowlists functional-signal colours). +2 JVM → **1339**. All zero-visual-change. Spec+plan under
+  `docs/superpowers/{specs,plans}/2026-07-09-*`. Remaining children: C4 particle #424 (needs
+  `concurrency-reviewer`), C5 tone bible #425 opt. #391 stays the epic for the deferred **paid** lanes
+  (raster + audio; ElevenLabs "Studio Games" clause must close before new audio ships). **Next: PR C3, then C4.**
 - **CURRENT — v1.0.13 (versionCode 29) SHIPPED → Play internal (`/release` complete).** Release PR #416
   merged (`4ba353e`); annotated tag `v1.0.13` pushed (message = the developer-approved bilingual "What's
   new" → `whatsnew-en-US`); release run `28948789820` `success` end-to-end (all guards + `bundleRelease`
@@ -178,6 +180,13 @@ pass `LocaleCompletenessTest` (register the code in its `locales` list).
 - `domain/model/` — stable; balance constants validated by regression tests. `BillingProduct.skuId()` is a stable public API.
 - `domain/usecase/` — 39 use cases stable.
 - `presentation/battle/effects/` — particle pool, effect engine, all visual effects.
+- **Battle ART palette is single-sourced (#391 C1–C3, #421/#422/#423)** — every battle art colour lives in
+  `presentation/battle/biome/BattlePalette.kt` (per-biome/enemy/ziggurat). `BiomeTheme`/`EnemyEntity`/
+  `ZigguratEntity` read from it; do NOT reintroduce an inline `0x…` art-colour literal there — the
+  `architecture/BattleArtPaletteTest` guard (#426) fails the build on a new one. FUNCTIONAL-feedback colours
+  (HP-bar thresholds + bg, armor stroke, ziggurat origin gold, range-circle alphas) are UI signal, stay
+  inline, and are allowlisted in that guard (style-bible §7) — keep the art/functional split. Companion doc:
+  `docs/steering/style-bible.md`.
 - `gradle/libs.versions.toml` — single source for all dependency versions. `app/proguard-rules.pro` — hardened R8 rules.
 - `app/build.gradle.kts` — signing config + AdMob production-ID wiring (don't break the test-ID fallback) + `ndk { debugSymbolLevel = "FULL" }`.
 - **Kover coverage ratchet (#373, ADR-0040)** — the `kover { reports { variant("debug") { filters{…} verify{…} } } }` block gates `koverVerifyDebug` on the fragile concurrency/economy packages (blended floor 85 + per-package 54). It MUST stay on a **filtered `variant` set**, NOT `total` (a `total` filter narrows #218's whole-app `koverXmlReport`). Kover 0.9.8 verify rules have **no per-rule `filters`** — don't try to re-add them. Floors are a ratchet: raise as coverage climbs, never silently lower. CI calls `:app:koverVerifyDebug` (scoped), NOT `:app:koverVerify` (whole-app, would fail on 0%-covered generated packages).

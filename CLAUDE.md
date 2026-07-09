@@ -368,7 +368,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1337 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1339 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Coverage ratchet (#373, ADR-0040):** `:app:koverVerifyDebug` gates a scoped Kover coverage floor on the fragile
   concurrency/economy zones (`data.repository`/`domain.usecase`/`presentation.battle.engine`/`domain.battle.*`)
@@ -393,6 +393,11 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
   `architecture/ComposeHardcodedStringTest` (#382 — fails on a NEW hardcoded single-line `Text("prose")` in
   `presentation/`; word-boundary-anchored, excludes `$`-interpolations; single-line-scoped with the two known
   multi-line `Text("MAX")` literals documented off-scope);
+  `architecture/BattleArtPaletteTest` (#426, #391 free-lane — machine-enforces the battle **art** palette
+  stays sourced from `presentation/battle/biome/BattlePalette.kt`: fails on a NEW raw `0x…` ARGB literal in the
+  three art-colour consumers `BiomeTheme`/`EnemyEntity`/`ZigguratEntity`; allowlists the FUNCTIONAL-feedback
+  colours — HP-bar thresholds, armor stroke, HP-bar bg, ziggurat origin gold, range-circle alphas — which are
+  UI signal, not art, per `docs/steering/style-bible.md` §7);
   `data/local/FullChainMigrationSchemaTest` (#381 — runs the whole v7→v12 migration chain and validates the
   terminal schema shape of all 13 tables against the committed `app/schemas/12.json`);
   `SimulationTest` (the extracted pure-domain game-loop core); `AtomicDaoConcurrencyTest` (#252 — the
