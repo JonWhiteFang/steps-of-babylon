@@ -525,7 +525,8 @@ class ScatterSplitTest {
 
     @Test
     fun `offsets fan out symmetrically for two children`() {
-        // count=2: i=0 → (0 - 1) * 15 = -15 ; i=1 → (1 - 1) * 15 = 0  (integer 2/2f = 1f)
+        // count=2: `count / 2f` is FLOAT division (Int count promoted) → 2/2f = 1.0f.
+        // i=0 → (0 - 1.0) * 15 = -15 ; i=1 → (1 - 1.0) * 15 = 0
         val children = ScatterSplit.children(parentMaxHp = 20.0, parentDamage = 8.0, random = fixedIntRandom(2))
         assertEquals(-15f, children[0].offsetX, 1e-4f)
         assertEquals(0f, children[1].offsetX, 1e-4f)
@@ -533,11 +534,14 @@ class ScatterSplitTest {
 
     @Test
     fun `offsets fan out for three children`() {
-        // count=3: 3/2f = 1f ; i=0 → -15 ; i=1 → 0 ; i=2 → +15
+        // count=3: `count / 2f` is FLOAT division → 3/2f = 1.5f (NOT integer 1). This matches the verbatim
+        // pre-hoist formula `(i - childCount / 2f) * 15f` in CombatResolver — do NOT "fix" the helper to
+        // integer division; that would shift SCATTER spawn-X and break behaviour-preservation.
+        // i=0 → (0 - 1.5) * 15 = -22.5 ; i=1 → (1 - 1.5) * 15 = -7.5 ; i=2 → (2 - 1.5) * 15 = +7.5
         val children = ScatterSplit.children(parentMaxHp = 20.0, parentDamage = 8.0, random = fixedIntRandom(3))
-        assertEquals(-15f, children[0].offsetX, 1e-4f)
-        assertEquals(0f, children[1].offsetX, 1e-4f)
-        assertEquals(15f, children[2].offsetX, 1e-4f)
+        assertEquals(-22.5f, children[0].offsetX, 1e-4f)
+        assertEquals(-7.5f, children[1].offsetX, 1e-4f)
+        assertEquals(7.5f, children[2].offsetX, 1e-4f)
     }
 }
 ```
@@ -659,26 +663,20 @@ Add to `CombatResolverTest.kt` (inside the class):
     }
 ```
 
-Add the import if not already present:
+`assertTrue`, `assertEquals`, `EnemyType`, `EnemyEntity` are already imported in this file — do NOT add a
+duplicate import (ktlint fails on it).
 
-```kotlin
-import org.junit.jupiter.api.Assertions.assertTrue
-```
+- [ ] **Step 2: Run the test — it CHARACTERIZES existing behaviour (passes green)**
 
-(`assertTrue`, `assertEquals`, `EnemyType`, `EnemyEntity` are already imported in this file.)
-
-- [ ] **Step 2: Run test to verify it fails**
-
-The named-arg rename from Task 4 (`currentHp =` → `initialHp =`) means the existing SCATTER construction in
-`CombatResolver.kt` still uses the old code path (verbatim `(2..3).random()` + inline children). This new
-test should PASS against the pre-refactor SCATTER code IF Task 4 already renamed the ctor args in
-`CombatResolver.kt`'s SCATTER block. To make Step 2 a genuine red→green, first confirm the test compiles and
-runs against current behaviour:
+This is a **characterization test**, not a red→green: after Task 4 the SCATTER block in `CombatResolver.kt`
+already compiles (the `initialHp` rename was applied there) and still runs the pre-hoist `(2..3).random()` +
+inline-children path, which produces exactly the 2..3 half-HP BASIC children this test asserts. So it passes
+NOW and must KEEP passing after Step 3's refactor — that is its whole job as the behaviour-preservation
+oracle over `ScatterSplit`.
 
 Run: `./run-gradle.sh :app:testDebugUnitTest --tests "*CombatResolverTest*" > /tmp/t6.log 2>&1; tail -n 15 /tmp/t6.log`
-Expected: PASS (this test characterizes existing behaviour — it is the oracle that Step 3's refactor must
-preserve). If it fails to COMPILE due to the `initialHp` rename not yet applied in the SCATTER block, apply
-the rename first (it belongs to Task 4's fan-out).
+Expected: PASS (green baseline). If it fails to COMPILE, the `initialHp` rename in `CombatResolver.kt`'s
+SCATTER block from Task 4 was missed — apply it first.
 
 - [ ] **Step 3: Rewrite the SCATTER branch to use `ScatterSplit`**
 
