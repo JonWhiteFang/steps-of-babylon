@@ -1,3 +1,27 @@
+## 2026-07-09 — #391 asset-pipeline planned + free-lane C1 (#421) implemented
+
+- **Planned out #391** (research/backlog epic: Claude + paid AI tools for consistent assets). Scope decision
+  (developer): the **free / code-drawable lane** only, ElevenLabs account noted for a *separate* audio issue.
+  Key finding: the research assumes procedural art has a "single source of truth" — it didn't. Palette was
+  fragmented across `Color.kt` (brand, intentful) / `BiomeTheme.kt` (~45 raw hex) / `EnemyEntity.BASE_COLORS`
+  / `ZigguratEntity.DEFAULT_COLORS`.
+- **Spec** `docs/superpowers/specs/2026-07-09-asset-pipeline-free-lane-design.md` (light single-agent review
+  folded in — ultracode OFF, multi-agent gate consciously waived for this low-risk docs+consolidation plan).
+  **Plan** `docs/superpowers/plans/2026-07-09-asset-pipeline-c1-style-bible.md`.
+- **Filed children off #391:** #421 (C1 bible+palette), #422 (C2 enemy), #423 (C3 biome/ziggurat), #424 (C4
+  particle config), #425 (C5 tone bible, opt), #426 (guard `BattleArtPaletteTest`). #391 stays the epic for
+  the deferred paid lanes (raster + audio).
+- **Implemented C1 (#421)** on `feat/391-c1-style-bible-palette`: new `BattlePalette.kt` (single art-colour
+  source of truth — per-biome `BiomeColors`, `enemyBaseColors`, `zigguratDefaultLayers`; **byte-identical
+  values**, zero visual change), `docs/steering/style-bible.md` (with a deliberately-separate *functional
+  palette* section for HP-bar/armor/range UI-signal colours), and `BiomeTheme.forBiome()` repointed as a thin
+  adapter over it (proof-of-use). New `BattlePaletteTest` (5 tests) pins the palette + that `BiomeTheme`
+  derives every field value-for-value. **1332 → 1337 JVM.**
+- **Verify:** `BiomeThemeTest`/`ContrastTest`/`BattlePaletteTest` green; detekt + ktlint + assembleDebug
+  green (fixed a `forBiome` LongMethod detekt hit by hoisting each biome to a private `val`).
+- **Remaining:** commit + open the C1 PR; then C2–C4 (each its own PR, sequential merge, rebase onto main).
+  Guard #426 leaning toward riding C3 (most meaningful once consumers are repointed).
+
 ## 2026-07-08 — Post-ship follow-ups cleared (Play listing + #410 Spanish native review)
 
 - **Play Console listing (external, developer-done):** the Website field

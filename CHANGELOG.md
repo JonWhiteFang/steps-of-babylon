@@ -4,6 +4,24 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Added — Style Bible + BattlePalette art-colour source of truth (#421, #391 free-lane C1)
+
+- **`presentation/battle/biome/BattlePalette.kt`** — the single source of truth for the battle **art**
+  palette. Procedural battle art (biome backgrounds, enemies, ziggurat) was previously coloured by ~50
+  anonymous raw `0xFF…` ARGB ints scattered across `BiomeTheme`, `EnemyEntity.BASE_COLORS`, and
+  `ZigguratEntity.DEFAULT_COLORS` with no shared vocabulary. `BattlePalette` names them as intentful
+  constants (`forBiome(biome): BiomeColors`, `enemyBaseColors`, `zigguratDefaultLayers`). **Zero visual
+  change** — every value is byte-identical to the literal it replaced.
+- **`docs/steering/style-bible.md`** — the human companion doc: art direction, brand palette, per-biome
+  palettes/mood, the 6-enemy silhouette+colour language, ziggurat ramp, particle vocabulary, and a
+  deliberately-separate **functional palette** section (HP-bar/armor/range colours are UI *signal*, excluded
+  from `BattlePalette` and kept inline).
+- `BiomeTheme.forBiome()` repointed to a thin adapter over `BattlePalette` (proof-of-use; values pinned by
+  `BiomeThemeTest` + the new `BattlePaletteTest`, +5 JVM tests → **1332 → 1337**).
+- First child of the #391 asset-pipeline free lane (spec `docs/superpowers/specs/2026-07-09-asset-pipeline-free-lane-design.md`).
+  Follow-ups: C2 enemy repoint (#422), C3 biome/ziggurat repoint (#423), C4 particle config (#424),
+  the `BattleArtPaletteTest` guard (#426). No schema/dependency/`versionCode` change.
+
 ## [1.0.13] — 2026-07-08 (versionCode 29)
 
 Shipped to the Play Console **internal** track (tag `v1.0.13`). Promotes everything accumulated since
