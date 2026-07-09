@@ -4,6 +4,19 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Changed — Ziggurat ramp derives from BattlePalette + art-palette guard (#423/#426, #391 free-lane C3)
+
+- `ZigguratEntity.DEFAULT_COLORS` now = `BattlePalette.zigguratDefaultLayers` (the C1 source of truth);
+  removed the inline 5-stop bronze→gold literal. Biome ziggurat ramps already flowed through
+  `BiomeTheme`→`BattlePalette` (C1). **Zero visual change.** With C1–C3, every battle **art** colour now
+  lives in `BattlePalette`; the only remaining inline hex literals are functional-feedback (UI signal).
+- **New guard `architecture/BattleArtPaletteTest` (#426)** — dependency-free JVM source-scan (mirrors
+  `StepCreditAllowlistTest`/`ComposeHardcodedStringTest`) that fails the build on a NEW raw `0x…` ARGB
+  literal in the three art-colour consumers (`BiomeTheme`/`EnemyEntity`/`ZigguratEntity`) not sourced from
+  `BattlePalette`. `functionalColorAllowlist` exempts the UI-signal colours (HP-bar thresholds + bg, armor
+  stroke, ziggurat origin gold, range-circle alphas — style-bible §7). +2 JVM (guard + negative fixture) →
+  **1337 → 1339**. Third child of the #391 free lane; no schema/dependency change.
+
 ### Changed — Enemy base colours derive from BattlePalette (#422, #391 free-lane C2)
 
 - `EnemyEntity` now reads its per-type base body colour from `BattlePalette.enemyBaseColors` (the C1

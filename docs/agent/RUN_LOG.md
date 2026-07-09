@@ -1,3 +1,23 @@
+## 2026-07-09 — #391 free-lane: C2 (#422) MERGED + C3 (#423) + guard (#426) implemented
+
+- **C2 (#422) MERGED** — PR #428 (`c7d1d10`), all checks green (build-and-test 13m + connected 4m44s).
+  #422 auto-closed, `main` synced.
+- **C3 (#423) implemented** on `feat/391-c3-ziggurat-palette-guard`: `ZigguratEntity.DEFAULT_COLORS` now =
+  `BattlePalette.zigguratDefaultLayers` (removed the inline 5-stop literal). Biome ziggurat ramps already
+  flowed through `BiomeTheme`→`BattlePalette` (C1). **Zero visual change.**
+- **Guard (#426) implemented** — `architecture/BattleArtPaletteTest`: dependency-free source-scan of the 3
+  art-colour consumers (`BiomeTheme`/`EnemyEntity`/`ZigguratEntity`); fails on a NEW un-sourced `0x…` ARGB
+  literal. `functionalColorAllowlist` exempts UI-signal colours (HP-bar thresholds/bg, armor stroke, ziggurat
+  origin gold, range-circle alphas — style-bible §7). Keyed `FileName:hexLiteral` (fixed a MaxLineLength
+  detekt hit from full-line keys). +2 JVM (guard + negative fixture) → **1339**. `BattlePalette.kt` itself is
+  not scanned (it's the source of truth). After C1–C3 every battle art colour lives in `BattlePalette`.
+- **Verify:** `BattleArtPaletteTest`/`BiomeThemeTest`/`BattlePaletteTest` green; detekt + ktlint +
+  assembleDebug + full `testDebugUnitTest` green.
+- **Doc sync:** CLAUDE.md count 1337→1339 + guard in Notable-guards; source-files.md (ZigguratEntity + new
+  guard test); CHANGELOG `[Unreleased]`; STATE (in-flight + new fragile-zone note for the single-sourced art
+  palette); this RUN_LOG.
+- **Remaining:** PR C3; then C4 particle config (#424, needs `concurrency-reviewer`), C5 tone bible (#425, opt).
+
 ## 2026-07-09 — #391 free-lane: C1 (#421) MERGED + C2 (#422) implemented
 
 - **C1 (#421) MERGED** — PR #427 (`f2ca07c`), all checks green incl. the emulator `connected` lane +

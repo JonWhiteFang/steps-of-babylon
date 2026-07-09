@@ -5,6 +5,7 @@ import android.graphics.Paint
 import com.whitefang.stepsofbabylon.domain.battle.entity.Damageable
 import com.whitefang.stepsofbabylon.domain.battle.entity.ZigguratState
 import com.whitefang.stepsofbabylon.domain.model.ResolvedStats
+import com.whitefang.stepsofbabylon.presentation.battle.biome.BattlePalette
 import com.whitefang.stepsofbabylon.presentation.battle.engine.Entity
 
 class ZigguratEntity(
@@ -119,7 +120,10 @@ class ZigguratEntity(
     }
 
     companion object {
-        val DEFAULT_COLORS =
-            listOf(0xFF8B7355.toInt(), 0xFF9C8565.toInt(), 0xFFC2B280.toInt(), 0xFFCDBFA0.toInt(), 0xFFD4A843.toInt())
+        /**
+         * #423 (#391 free-lane C3): the default ziggurat layer ramp now derives from the single art-palette
+         * source of truth [BattlePalette.zigguratDefaultLayers] (bronze → gold). Value unchanged.
+         */
+        val DEFAULT_COLORS = BattlePalette.zigguratDefaultLayers
     }
 }
