@@ -4,6 +4,13 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Changed — Enemy base colours derive from BattlePalette (#422, #391 free-lane C2)
+
+- `EnemyEntity` now reads its per-type base body colour from `BattlePalette.enemyBaseColors` (the C1
+  source of truth) instead of a private `BASE_COLORS` map + raw `0xFFE53935` fallback literal. The map is
+  exhaustive over `EnemyType` (pinned by `BattlePaletteTest`), so the lookup uses `getValue`. **Zero visual
+  change** — identical colours. Second child of the #391 free lane; no test/schema/dependency change.
+
 ### Added — Style Bible + BattlePalette art-colour source of truth (#421, #391 free-lane C1)
 
 - **`presentation/battle/biome/BattlePalette.kt`** — the single source of truth for the battle **art**

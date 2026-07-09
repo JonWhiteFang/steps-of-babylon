@@ -1,3 +1,15 @@
+## 2026-07-09 — #391 free-lane: C1 (#421) MERGED + C2 (#422) implemented
+
+- **C1 (#421) MERGED** — PR #427 (`f2ca07c`), all checks green incl. the emulator `connected` lane +
+  `build-and-test`. Branch deleted, #421 auto-closed. `main` synced.
+- **C2 (#422) implemented** on `feat/391-c2-enemy-palette`: `EnemyEntity` now reads its per-type base body
+  colour from `BattlePalette.enemyBaseColors` (`getValue`, exhaustive over `EnemyType`) instead of a private
+  `BASE_COLORS` map + a raw `0xFFE53935` fallback literal. **Zero visual change.** No new tests — colours are
+  pinned by `BattlePaletteTest`; behaviour-preserving refactor.
+- **Verify:** detekt + ktlint + assembleDebug + full `testDebugUnitTest` (1337) green.
+- **Remaining:** PR C2; then C3 biome/ziggurat repoint (#423, guard #426 likely rides here), C4 particle
+  config (#424, needs `concurrency-reviewer`), C5 tone bible (#425, opt).
+
 ## 2026-07-09 — #391 asset-pipeline planned + free-lane C1 (#421) implemented
 
 - **Planned out #391** (research/backlog epic: Claude + paid AI tools for consistent assets). Scope decision
