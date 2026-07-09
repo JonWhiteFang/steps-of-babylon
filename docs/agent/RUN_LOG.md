@@ -1,3 +1,36 @@
+## 2026-07-09 — #306 Slice 2 (enemy damage/death hoist): spec + plan authored, reviewed, MERGED (docs-only)
+
+- **Goal:** open the next ADR-0012 Phase 5 slice — hoist enemy damage/death resolution into the pure domain,
+  mirroring the Slice-1 ziggurat pattern. This session produced the reviewed spec + implementation plan only
+  (no production code); the code lands in a follow-up PR.
+- **Process (full protocol):** brainstorming → spec → Adversarial Review Gate → plan → Adversarial Review
+  Gate. Scoped (via AskUserQuestion) to **Slice 2 only** (enemy `takeDamage`/`onDeath`/SCATTER), deferring
+  the UW-effect-bodies and projectile/orb-knockback slices. Chose Approach 3 (faithful Slice-1 analogue:
+  `DamageableEnemy` port on `EnemyState` + pure `EnemyDamageResolver` + pure `ScatterSplit`;
+  `EnemyEntity.takeDamage` → thin adapter). Documented an ADR-0012 wording deviation: the Slice-1 note said
+  the enemy slice would declare `EnemyState : EntityProtocol, Damageable`, but `EntityProtocol.update(dt):
+  Unit` clashes with `EnemyState.update(dt): Boolean` — so `EnemyState` implements `DamageableEnemy` only
+  (the ADR gets amended when the code lands, per the plan's Task 7).
+- **Review gate (lighter inline form, both artifacts):**
+  - **Spec** — `concurrency-reviewer` **SAFE** (no critical/major/minor; 2 info notes already disclosed). My
+    correctness pass confirmed the no-HP-floor divergence + one-site ctor blast radius; folded in a
+    ctor-default note (the movement-only `EnemyStateTest` helper must keep compiling).
+  - **Plan** — `concurrency-reviewer` **SAFE** on the concrete code; caught **1 real defect**: the
+    `ScatterSplitTest` count=3 offset assertions used integer-division values (`-15/0/+15`) against the
+    verbatim float-division formula (`3/2f=1.5` → `-22.5/-7.5/+7.5`) — a red test that would have pressured a
+    silent SCATTER spawn-X behaviour change. **Fixed.** My pass fixed 2 more: a muddled red/green framing in
+    Task 6 Step 2 (it's a characterization test) and a stale "add import" note that would cause a
+    duplicate-import ktlint failure (verified `assertTrue` already imported). Also independently verified the
+    `currentHp`→`initialHp` ctor rename hits **6** call sites (spec/plan first said 4) — enumerated in the plan.
+- **Verification:** docs-only; PR #433 CI green (build-and-test / changes / connected / gitleaks / ktlint all
+  pass). Merged `52040a7`, branch deleted, `main` synced. No test-count/schema/architecture change this PR.
+- **Doc sync:** STATE.md current-objective rotated (#306 Slice 2 = CURRENT; #391 free-lane demoted to
+  Previous). BACKLOG regenerated. No ADR yet (decisions live in the spec/plan; ADR-0012 amendment is deferred
+  to the implementation PR per plan Task 7). No CLAUDE.md/source-files change (no code moved yet).
+- **Next:** execute the 7-task plan (`docs/superpowers/plans/2026-07-09-306-slice2-enemy-damage-hoist.md`) —
+  execution mode (subagent-driven vs inline) still to be chosen. Watch Task 4 (the behaviour-critical
+  `takeDamage` swap + 6-site ctor rename). #306 stays OPEN for the later slices.
+
 ## 2026-07-09 — /checkpoint: #391 free-lane closeout (ADR-0042 + STATE rotation)
 
 - **C5 (#425) MERGED** — PR #431 (`139d495`), docs-only; CI path-filter correctly skipped the heavy build
