@@ -8,11 +8,15 @@ data class BiomeTheme(
     val groundColor: Int,
     val zigguratColors: List<Int>,
     val enemyTint: Int,
-    val particleColor: Int,
-    val particleDriftX: Float,
-    val particleDriftY: Float,
-    val particleCount: Int,
+    /** The named ambient-particle emitter config (#424, C4). */
+    val particles: BattlePalette.ParticleConfig,
 ) {
+    // Flat convenience accessors — kept so existing readers (GameEngine, BackgroundRenderer) are untouched.
+    val particleColor: Int get() = particles.color
+    val particleDriftX: Float get() = particles.driftX
+    val particleDriftY: Float get() = particles.driftY
+    val particleCount: Int get() = particles.count
+
     companion object {
         /**
          * #421 (#391 free-lane): the per-biome art colours now derive from the single source of truth
@@ -27,10 +31,7 @@ data class BiomeTheme(
                     groundColor = groundColor,
                     zigguratColors = zigguratColors,
                     enemyTint = enemyTint,
-                    particleColor = particleColor,
-                    particleDriftX = particleDriftX,
-                    particleDriftY = particleDriftY,
-                    particleCount = particleCount,
+                    particles = particles,
                 )
             }
     }

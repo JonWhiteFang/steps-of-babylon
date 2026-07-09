@@ -1,3 +1,21 @@
+## 2026-07-09 — #391 free-lane: C3+guard (#423/#426) MERGED + C4 (#424) implemented
+
+- **C3 + guard (#423/#426) MERGED** — PR #429 (`d522569`), all checks green (build-and-test 12m + connected
+  4m59s). #423 auto-closed; #426 closed manually with a note (single "Closes" didn't action both).
+- **C4 (#424) implemented** on `feat/391-c4-particle-config`: new `BattlePalette.ParticleConfig`
+  (`color`/`driftX`/`driftY`/`count`) — the named ambient-emitter vocabulary. `BattlePalette.BiomeColors` +
+  `BiomeTheme` carry `particles: ParticleConfig` as the canonical field; flat `particle*` fields kept as
+  delegating accessors (readers untouched). `BackgroundRenderer` reads the structured config. **Zero visual
+  change.** Descoped the spec's "feed EffectEngine" framing — `EffectEngine`/`ParticlePool` are a generic
+  effect system that doesn't consume per-biome config (only `BackgroundRenderer` does), so the `effectsLock`
+  fragile zone was deliberately left untouched.
+- **`concurrency-reviewer` lane run (ADR-0038 mandatory for this surface): SAFE** — pure immutable-config
+  refactor, no lock/shared-state impact; confirmed `BackgroundRenderer` stays loop-thread-confined + the
+  `GameEngine` L441 `biomeTheme.particleColor` reader is value-preserving under `entitiesLock`.
+- **Verify:** detekt + ktlint + assembleDebug + full `testDebugUnitTest` (1339) green. No new `@Test`
+  (strengthened `BattlePaletteTest` with a `particles` config assertion).
+- **Remaining:** PR C4; C5 tone bible (#425) is optional — the substantive free-lane refactor is complete.
+
 ## 2026-07-09 — #391 free-lane: C2 (#422) MERGED + C3 (#423) + guard (#426) implemented
 
 - **C2 (#422) MERGED** — PR #428 (`c7d1d10`), all checks green (build-and-test 13m + connected 4m44s).

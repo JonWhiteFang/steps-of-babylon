@@ -4,6 +4,19 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Changed — Per-biome particle config vocabulary (#424, #391 free-lane C4)
+
+- Introduced `BattlePalette.ParticleConfig` (`color`/`driftX`/`driftY`/`count`) — the named ambient-emitter
+  vocabulary that groups the four previously-loose particle fields. `BattlePalette.BiomeColors` and
+  `BiomeTheme` now carry `particles: ParticleConfig` as the canonical field; the flat `particleColor`/
+  `particleDriftX`/`particleDriftY`/`particleCount` are kept as delegating accessors so existing readers
+  (`GameEngine`, `BackgroundRenderer`) are untouched. `BackgroundRenderer` reads the structured config.
+  **Zero visual change** (values byte-identical). **Scope note:** `EffectEngine`/`ParticlePool` are a generic
+  effect system that does NOT consume per-biome config (only `BackgroundRenderer` does), so C4 deliberately
+  did not touch the `effectsLock` regions — the original spec's "feed EffectEngine" framing was descoped as
+  unnecessary. **`concurrency-reviewer` lane run (ADR-0038): SAFE** — pure immutable-config refactor, no
+  lock/shared-state impact. Fourth child of the #391 free lane; no test-count/schema/dependency change.
+
 ### Changed — Ziggurat ramp derives from BattlePalette + art-palette guard (#423/#426, #391 free-lane C3)
 
 - `ZigguratEntity.DEFAULT_COLORS` now = `BattlePalette.zigguratDefaultLayers` (the C1 source of truth);

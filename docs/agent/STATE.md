@@ -43,10 +43,15 @@ the med/low backlog (#262) remain.
   C3 (#423) + guard (#426) implemented (branch `feat/391-c3-ziggurat-palette-guard`, not yet PR'd):
   `ZigguratEntity.DEFAULT_COLORS` = `BattlePalette.zigguratDefaultLayers` + new
   `architecture/BattleArtPaletteTest` guard (fails on a NEW un-sourced art hex literal in the 3 consumers;
-  allowlists functional-signal colours). +2 JVM → **1339**. All zero-visual-change. Spec+plan under
-  `docs/superpowers/{specs,plans}/2026-07-09-*`. Remaining children: C4 particle #424 (needs
-  `concurrency-reviewer`), C5 tone bible #425 opt. #391 stays the epic for the deferred **paid** lanes
-  (raster + audio; ElevenLabs "Studio Games" clause must close before new audio ships). **Next: PR C3, then C4.**
+  allowlists functional-signal colours). +2 JVM → **1339**. C3 **MERGED** (PR #429, `d522569`; #423 + #426
+  closed). C4 (#424) implemented (branch `feat/391-c4-particle-config`, not yet PR'd): new
+  `BattlePalette.ParticleConfig` vocabulary; `BiomeColors`/`BiomeTheme` carry `particles` (flat accessors
+  delegate); `BackgroundRenderer` reads the structured config. `concurrency-reviewer` run: **SAFE** (pure
+  immutable-config refactor). `EffectEngine`/`ParticlePool` deliberately untouched (they don't consume
+  per-biome config — spec's "feed EffectEngine" framing descoped). All zero-visual-change. Spec+plan under
+  `docs/superpowers/{specs,plans}/2026-07-09-*`. Remaining: C5 tone bible #425 (optional). #391 stays the epic
+  for the deferred **paid** lanes (raster + audio; ElevenLabs "Studio Games" clause must close before new
+  audio ships). **Next: PR C4; C5 optional.**
 - **CURRENT — v1.0.13 (versionCode 29) SHIPPED → Play internal (`/release` complete).** Release PR #416
   merged (`4ba353e`); annotated tag `v1.0.13` pushed (message = the developer-approved bilingual "What's
   new" → `whatsnew-en-US`); release run `28948789820` `success` end-to-end (all guards + `bundleRelease`
