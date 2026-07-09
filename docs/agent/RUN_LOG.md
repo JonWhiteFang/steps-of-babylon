@@ -1,3 +1,20 @@
+## 2026-07-09 — /checkpoint: #391 free-lane closeout (ADR-0042 + STATE rotation)
+
+- **C5 (#425) MERGED** — PR #431 (`139d495`), docs-only; CI path-filter correctly skipped the heavy build
+  (all checks green in seconds). #425 closed. `main` synced.
+- **Session finalization (this checkpoint, branch `docs/checkpoint-391-free-lane`):**
+  - **ADR-0042** written — battle art palette single-sourced in `BattlePalette` + `BattleArtPaletteTest`
+    guard + the art/functional colour split + style/tone bibles; records the C4 "descope EffectEngine"
+    decision and the deferred paid lanes.
+  - `docs/steering/structure.md` — biome line now names `BattlePalette` (+ `ParticleConfig`).
+  - STATE.md — rotated: #391 free-lane COMPLETE is the new CURRENT (v1.0.13 demoted to Previous); ADR-0042
+    added to the ADR reference list; fragile-zone note for the single-sourced palette already added earlier
+    in the session.
+  - BACKLOG.md regenerated.
+- **Net:** the #391 free / code-drawable lane (C1–C5) is fully shipped to `main`, guarded, and documented.
+  Posted a lane-complete summary on the #391 epic (stays open for the paid raster + audio lanes). Everything
+  ships in-app on the next `v*` tag. 1339 JVM tests.
+
 ## 2026-07-09 — #391 free-lane: C4 (#424) MERGED + C5 tone bible (#425) — lane COMPLETE
 
 - **C4 (#424) MERGED** — PR #430 (`6d1f83f`), all checks green (build-and-test 16m + connected 5m24s).

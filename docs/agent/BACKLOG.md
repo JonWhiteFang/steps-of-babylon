@@ -8,7 +8,7 @@
 > gh issue list --state open --limit 200 --json number,title,labels \
 >   --jq '.[] | "- #\(.number) — \(.title) — [\([.labels[].name] | join(", "))]"'
 > ```
-> Last generated: 2026-07-08
+> Last generated: 2026-07-09
 
 - #396 — [Tooling] detekt custom rule: flag nested lock acquisition in the battle engine (deferred from #372 / ADR-0038) — [severity:minor, area:battle, architecture, tooling]
 - #391 — [Research] Asset-generation pipeline: using Claude + paid AI tools for consistent art/audio/store/text assets — [enhancement, severity:minor, audio, content, game-design]

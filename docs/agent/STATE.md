@@ -34,28 +34,19 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **IN FLIGHT — #391 asset-pipeline free lane.** C1 (#421) **MERGED** (PR #427, `f2ca07c`): new
-  `presentation/battle/biome/BattlePalette.kt` = the single source of truth for the battle **art** palette
-  (per-biome/enemy/ziggurat ARGB, **byte-identical values, zero visual change**) + `docs/steering/style-bible.md`
-  (with a separate *functional palette* section: HP-bar/armor/range UI-signal colours stay inline). `BiomeTheme.forBiome()`
-  repointed to a thin adapter. +5 JVM (`BattlePaletteTest`) → **1337**. C2 (#422) **MERGED** (PR #428,
-  `c7d1d10`): `EnemyEntity` reads `BattlePalette.enemyBaseColors` (removed its local `BASE_COLORS` map).
-  C3 (#423) + guard (#426) implemented (branch `feat/391-c3-ziggurat-palette-guard`, not yet PR'd):
-  `ZigguratEntity.DEFAULT_COLORS` = `BattlePalette.zigguratDefaultLayers` + new
-  `architecture/BattleArtPaletteTest` guard (fails on a NEW un-sourced art hex literal in the 3 consumers;
-  allowlists functional-signal colours). +2 JVM → **1339**. C3 **MERGED** (PR #429, `d522569`; #423 + #426
-  closed). C4 (#424) implemented (branch `feat/391-c4-particle-config`, not yet PR'd): new
-  `BattlePalette.ParticleConfig` vocabulary; `BiomeColors`/`BiomeTheme` carry `particles` (flat accessors
-  delegate); `BackgroundRenderer` reads the structured config. `concurrency-reviewer` run: **SAFE** (pure
-  immutable-config refactor). `EffectEngine`/`ParticlePool` deliberately untouched (they don't consume
-  per-biome config — spec's "feed EffectEngine" framing descoped). C4 **MERGED** (PR #430, `6d1f83f`; #424
-  closed). C5 tone bible (#425) implemented (branch `docs/391-c5-tone-bible`, not yet PR'd):
-  `docs/steering/tone-bible.md` — docs-only voice/copy consistency guide, companion to `style-bible.md`.
-  **The #391 free / code-drawable lane is now COMPLETE (C1–C5).** All zero-visual-change / docs-only; spec+plan
-  under `docs/superpowers/{specs,plans}/2026-07-09-*`. #391 stays the epic for the deferred **paid** lanes
-  (raster + audio; ElevenLabs "Studio Games" clause must close before new audio ships). **Next: PR C5, then
-  the free lane closes out.**
-- **CURRENT — v1.0.13 (versionCode 29) SHIPPED → Play internal (`/release` complete).** Release PR #416
+- **CURRENT — #391 asset-pipeline free / code-drawable lane COMPLETE (C1–C5 all MERGED, ADR-0042).** Every
+  battle **art** colour is now single-sourced in `presentation/battle/biome/BattlePalette.kt` (per-biome
+  `BiomeColors` + `enemyBaseColors` + `zigguratDefaultLayers` + named `ParticleConfig`), with
+  `BiomeTheme`/`EnemyEntity`/`ZigguratEntity`/`BackgroundRenderer` all deriving from it. Guarded by
+  `architecture/BattleArtPaletteTest` (fails on a NEW un-sourced art hex literal; functional-signal colours —
+  HP-bar/armor/range — allowlisted + kept inline). Human refs: `docs/steering/style-bible.md` +
+  `tone-bible.md`. **Zero visual change** across the lane (all values byte-identical); **1332 → 1339 JVM**.
+  Shipped as 5 sequential-merge PRs #427–#431 (C1 #421, C2 #422, C3 #423, guard #426, C4 #424 — `concurrency-reviewer`
+  SAFE, C5 #425). Spec+plan under `docs/superpowers/{specs,plans}/2026-07-09-*`. **#391 stays OPEN** as the
+  epic for the deferred **paid** lanes: raster (icon/feature-graphic/screenshots — paid image tool + human-edit
+  copyright pass; FLUX.1-dev non-commercial) and audio (ElevenLabs; "Studio Games" clause must close before
+  shipping new audio in a monetized build). Ships in-app on the next `v*` tag.
+- *Previous — v1.0.13 (versionCode 29) SHIPPED → Play internal (`/release` complete).* Release PR #416
   merged (`4ba353e`); annotated tag `v1.0.13` pushed (message = the developer-approved bilingual "What's
   new" → `whatsnew-en-US`); release run `28948789820` `success` end-to-end (all guards + `bundleRelease`
   R8+sign + `jarsigner -verify` + Play-internal upload + GitHub Release w/ `app-release.aab` 16.08 MB).
@@ -415,4 +406,4 @@ pass `LocaleCompletenessTest` (register the code in its `locales` list).
 - **Audit (run via the `complete-app-review` skill; dated reports are point-in-time artifacts):**
   `docs/external-reviews/2026-06-10-multi-agent-code-audit.md` (findings #118–#128) · `docs/reviews/2026-06-17-complete-app-review.md` (raised Gate H blockers #190–#192 + soak-hardening #193–#195) · **latest `docs/reviews/2026-06-18-complete-app-review.md` (7/10; 7 high · 43 med · 95 low; filed Med+ #224–#261 + Low tracker #262; 4 net-new HIGHs #233/#236/#250/#261).**
 - **Release:** `docs/release/plan-31-walkthrough.md` · privacy policy `site/index.md` (canonical; published to GitHub Pages by `.github/workflows/pages.yml` — `site/` ONLY, not `docs/`) → hosted https://jonwhitefang.github.io/steps-of-babylon/ (delete-data: `#delete-data`) · listing copy `docs/release/play-store-listing.md`.
-- **ADRs:** 0003 (Battle Step Rewards) · 0004 (FollowOnPipeline, deferred) · 0005 (Billing) · 0006 (Ads) · 0007 (ADV keystore) · 0010 (Cards copy-based) · 0012 (Simulation extraction) · 0014 (i18n) · 0015/0016 (STEP_MULTIPLIER / GPS dropped) · 0017 (ENEMY_INTEL) · 0018 (CI) · 0019 (Claude Code) · 0020 (economy atomicity) · 0021 (onboarding explain-only) · 0022 (design tokens + de-emoji) · 0023 (bottom-nav back-stack) · 0024 (Bundle E: custom font + onboarding biome theming + persist-first completion beat) · **0025 (#26 perf/battery Gate-G: multi-module benchmark tooling on AGP-9 [1.5.0-alpha, dev-only] + #124 guard narrowing + A28/A31/A29 GC-churn fixes)**. Full set in `docs/agent/DECISIONS/`.
+- **ADRs:** 0003 (Battle Step Rewards) · 0004 (FollowOnPipeline, deferred) · 0005 (Billing) · 0006 (Ads) · 0007 (ADV keystore) · 0010 (Cards copy-based) · 0012 (Simulation extraction) · 0014 (i18n) · 0015/0016 (STEP_MULTIPLIER / GPS dropped) · 0017 (ENEMY_INTEL) · 0018 (CI) · 0019 (Claude Code) · 0020 (economy atomicity) · 0021 (onboarding explain-only) · 0022 (design tokens + de-emoji) · 0023 (bottom-nav back-stack) · 0024 (Bundle E: custom font + onboarding biome theming + persist-first completion beat) · 0025 (#26 perf/battery Gate-G: multi-module benchmark tooling on AGP-9 [1.5.0-alpha, dev-only] + #124 guard narrowing + A28/A31/A29 GC-churn fixes) · **0042 (#391 free lane: battle art palette single-sourced in `BattlePalette` + `BattleArtPaletteTest` guard + art/functional colour split + style/tone bibles)**. Full set in `docs/agent/DECISIONS/`.
