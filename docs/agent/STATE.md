@@ -34,7 +34,21 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — #391 asset-pipeline free / code-drawable lane COMPLETE (C1–C5 all MERGED, ADR-0042).** Every
+- **CURRENT — #306 Slice 2 (enemy damage/death hoist): spec + plan REVIEWED & MERGED (docs-only, PR #433
+  `52040a7`); implementation NOT started.** The next slice of the ADR-0012 Phase 5 effect-resolution hoist.
+  Design: move enemy `currentHp`/`maxHp`/`armorHits` into the pure-domain `EnemyState` behind a new
+  `DamageableEnemy : Damageable` port; hoist the corpse-guard(#146)/armor-absorb(#17)/no-floor-HP/death
+  arithmetic into a pure `EnemyDamageResolver`; move SCATTER child-descriptor math into a pure `ScatterSplit`;
+  `EnemyEntity.takeDamage` becomes a thin adapter that flips `isAlive` + fires the (already-Simulation-backed)
+  `onDeath` cascade. **Behaviour-preserving** (existing corpus + new characterization tests are the oracle).
+  Both artifacts passed the **Adversarial Review Gate** (lighter inline form): `concurrency-reviewer` SAFE on
+  spec AND plan; the plan review caught + fixed a real defect (a `ScatterSplitTest` float/integer-division
+  mismatch — `3/2f=1.5` — that would have forced a silent SCATTER spawn-X change). Artifacts:
+  `docs/superpowers/{specs,plans}/2026-07-09-306-slice2-enemy-damage-hoist*`. Plan = 7 TDD tasks; expect
+  ~+12 JVM tests. **Sharp edge for the implementer:** the `currentHp`→`initialHp` ctor rename fans out to
+  **6** `EnemyEntity(…)` call sites (enumerated in the plan). #306 stays OPEN for the remaining slices (UW
+  `when(type)` effect bodies; projectile/orb knockback+lifesteal).
+- *Previous — #391 asset-pipeline free / code-drawable lane COMPLETE (C1–C5 all MERGED, ADR-0042).* Every
   battle **art** colour is now single-sourced in `presentation/battle/biome/BattlePalette.kt` (per-biome
   `BiomeColors` + `enemyBaseColors` + `zigguratDefaultLayers` + named `ParticleConfig`), with
   `BiomeTheme`/`EnemyEntity`/`ZigguratEntity`/`BackgroundRenderer` all deriving from it. Guarded by
