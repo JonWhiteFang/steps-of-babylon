@@ -76,10 +76,16 @@ gold `#D4A843` (apex). Biomes override the ramp via their `zigguratColors` (§3)
 
 ## 6. Particle / effect vocabulary
 
-Each biome carries `particleColor`, `particleDriftX/Y`, and `particleCount` (in `BattlePalette`), consumed by
-`BackgroundRenderer` (ambient) and — as the vocabulary is formalised in C4 (#424) — `EffectEngine`/
-`ParticlePool`. Drift direction is a mood lever: downward (gardens/snow), horizontal (sand-wind), upward
-(embers). **C4 must change config values only — never the `EffectEngine` `effectsLock` regions** (fragile zone).
+Each biome carries a named `BattlePalette.ParticleConfig` (`color`, `driftX`, `driftY`, `count`) — the
+ambient-emitter vocabulary (#424, C4), consumed by `BackgroundRenderer`. Drift direction is a mood lever:
+downward (gardens/snow), horizontal +X (sand-wind), upward -Y (rising embers). `BiomeTheme.particles` is the
+canonical field; the flat `particleColor`/`particleDriftX/Y`/`particleCount` accessors delegate to it (kept
+so existing readers — `GameEngine`, `BackgroundRenderer` — are untouched).
+
+> **Scope note (C4).** `EffectEngine`/`ParticlePool` are a *generic* effect system and do NOT consume the
+> per-biome config — only `BackgroundRenderer` does. C4 deliberately did **not** touch the `EffectEngine`
+> `effectsLock` regions (fragile zone); the "feed EffectEngine" framing in the original spec was descoped as
+> unnecessary. Any future work there must keep the lock discipline.
 
 ## 7. Functional palette (UI signal — NOT art, NOT in BattlePalette)
 

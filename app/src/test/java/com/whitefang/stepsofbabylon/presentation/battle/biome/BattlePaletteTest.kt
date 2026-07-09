@@ -30,6 +30,7 @@ class BattlePaletteTest {
             assertEquals(palette.groundColor, theme.groundColor, "$biome groundColor")
             assertEquals(palette.zigguratColors, theme.zigguratColors, "$biome zigguratColors")
             assertEquals(palette.enemyTint, theme.enemyTint, "$biome enemyTint")
+            assertEquals(palette.particles, theme.particles, "$biome particles config")
             assertEquals(palette.particleColor, theme.particleColor, "$biome particleColor")
             assertEquals(palette.particleDriftX, theme.particleDriftX, "$biome particleDriftX")
             assertEquals(palette.particleDriftY, theme.particleDriftY, "$biome particleDriftY")

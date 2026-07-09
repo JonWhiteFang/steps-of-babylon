@@ -32,10 +32,13 @@ class BackgroundRenderer(
                 )
         }
     private val groundPaint = Paint().apply { color = theme.groundColor }
-    private val particlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = theme.particleColor }
+
+    // #424 (#391 C4): the ambient emitter reads the named ParticleConfig vocabulary from the biome theme.
+    private val particleConfig = theme.particles
+    private val particlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = particleConfig.color }
 
     private val particles =
-        List(theme.particleCount) {
+        List(particleConfig.count) {
             Particle(
                 Random.nextFloat() * width,
                 Random.nextFloat() * height,
@@ -46,8 +49,8 @@ class BackgroundRenderer(
 
     fun update(deltaTime: Float) {
         for (p in particles) {
-            p.x += theme.particleDriftX * deltaTime
-            p.y += theme.particleDriftY * deltaTime
+            p.x += particleConfig.driftX * deltaTime
+            p.y += particleConfig.driftY * deltaTime
             if (p.x > width) {
                 p.x -= width
             } else if (p.x < 0) {

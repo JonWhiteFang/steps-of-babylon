@@ -23,6 +23,19 @@ import com.whitefang.stepsofbabylon.domain.model.EnemyType
  * [BiomeTheme.forBiome] still produces the same palette for all five biomes.
  */
 object BattlePalette {
+    /**
+     * #424 (#391 free-lane, C4): the named per-biome ambient-particle emitter vocabulary. Groups the four
+     * loose particle fields into one intentful value type — `color` (ARGB, may carry alpha), `driftX`/
+     * `driftY` (px/s; sign is a mood lever — down = snow/motes, +X = sand-wind, -Y = rising embers),
+     * `count` (emitter density). Consumed by [BackgroundRenderer]. Values unchanged.
+     */
+    data class ParticleConfig(
+        val color: Int,
+        val driftX: Float,
+        val driftY: Float,
+        val count: Int,
+    )
+
     /** Per-biome art palette. Values mirror the pre-#421 [BiomeTheme] literals exactly. */
     data class BiomeColors(
         val skyColorTop: Int,
@@ -30,11 +43,15 @@ object BattlePalette {
         val groundColor: Int,
         val zigguratColors: List<Int>,
         val enemyTint: Int,
-        val particleColor: Int,
-        val particleDriftX: Float,
-        val particleDriftY: Float,
-        val particleCount: Int,
-    )
+        /** The named ambient-particle emitter config (#424, C4). */
+        val particles: ParticleConfig,
+    ) {
+        // Flat convenience accessors — kept so BiomeTheme / BackgroundRenderer / tests read unchanged.
+        val particleColor: Int get() = particles.color
+        val particleDriftX: Float get() = particles.driftX
+        val particleDriftY: Float get() = particles.driftY
+        val particleCount: Int get() = particles.count
+    }
 
     fun forBiome(biome: Biome): BiomeColors =
         when (biome) {
@@ -59,10 +76,7 @@ object BattlePalette {
                     0xFFD4A843.toInt(),
                 ),
             enemyTint = 0xFF6B8E4E.toInt(),
-            particleColor = 0x9966BB6A.toInt(),
-            particleDriftX = 8f,
-            particleDriftY = 30f,
-            particleCount = 35,
+            particles = ParticleConfig(color = 0x9966BB6A.toInt(), driftX = 8f, driftY = 30f, count = 35),
         )
 
     private val burningSands =
@@ -79,10 +93,7 @@ object BattlePalette {
                     0xFFFF8C00.toInt(),
                 ),
             enemyTint = 0xFFD4843A.toInt(),
-            particleColor = 0x66DEB887,
-            particleDriftX = 40f,
-            particleDriftY = 5f,
-            particleCount = 40,
+            particles = ParticleConfig(color = 0x66DEB887, driftX = 40f, driftY = 5f, count = 40),
         )
 
     private val frozenZiggurats =
@@ -99,10 +110,7 @@ object BattlePalette {
                     0xFFE0F0FF.toInt(),
                 ),
             enemyTint = 0xFF7EB8DA.toInt(),
-            particleColor = 0xBBFFFFFF.toInt(),
-            particleDriftX = 3f,
-            particleDriftY = 15f,
-            particleCount = 50,
+            particles = ParticleConfig(color = 0xBBFFFFFF.toInt(), driftX = 3f, driftY = 15f, count = 50),
         )
 
     private val underworldOfKur =
@@ -119,10 +127,7 @@ object BattlePalette {
                     0xFF9B59B6.toInt(),
                 ),
             enemyTint = 0xFF8E44AD.toInt(),
-            particleColor = 0x99FF6B35.toInt(),
-            particleDriftX = 2f,
-            particleDriftY = -25f,
-            particleCount = 30,
+            particles = ParticleConfig(color = 0x99FF6B35.toInt(), driftX = 2f, driftY = -25f, count = 30),
         )
 
     private val celestialGate =
@@ -139,10 +144,7 @@ object BattlePalette {
                     0xFFFFD700.toInt(),
                 ),
             enemyTint = 0xFFDA70D6.toInt(),
-            particleColor = 0xCCFFFFFF.toInt(),
-            particleDriftX = 5f,
-            particleDriftY = -3f,
-            particleCount = 45,
+            particles = ParticleConfig(color = 0xCCFFFFFF.toInt(), driftX = 5f, driftY = -3f, count = 45),
         )
 
     /**
