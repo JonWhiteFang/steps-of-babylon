@@ -56,7 +56,7 @@ app/src/main/java/com/whitefang/stepsofbabylon/
 │   │   ├── engine/     # GameEngine (orchestrator+lock-owner+façade) + collaborators BattleRenderer/UWController/BuffTickers/CombatResolver + BattleHosts (host interfaces); Entity, WaveSpawner, EnemyScaler, CollisionSystem
 │   │   ├── entities/   # ZigguratEntity, ProjectileEntity, EnemyEntity, EnemyProjectileEntity, OrbEntity
 │   │   ├── effects/   # ParticlePool, EffectEngine, ScreenShake, DeathEffect, UWVisualEffect, WaveAnnouncement, FloatingText, ProjectileTrailEffect, ReducedMotionCheck
-│   │   ├── biome/      # BiomeTheme, BackgroundRenderer (gradient sky + ambient particles)
+│   │   ├── biome/      # BattlePalette (single ART-colour source of truth: biome/enemy/ziggurat + ParticleConfig), BiomeTheme, BackgroundRenderer (gradient sky + ambient particles)
 │   │   └── ui/         # BattleControlRail, HealthBarRenderer, InRoundUpgradeMenu, PostRoundOverlay, PauseOverlay, BiomeTransitionOverlay, UltimateWeaponBar
 │   ├── weapons/        # UltimateWeaponScreen, UltimateWeaponViewModel
 │   ├── labs/           # LabsScreen, LabsViewModel
