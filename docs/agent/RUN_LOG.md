@@ -1,3 +1,19 @@
+## 2026-07-09 — #391 free-lane: C4 (#424) MERGED + C5 tone bible (#425) — lane COMPLETE
+
+- **C4 (#424) MERGED** — PR #430 (`6d1f83f`), all checks green (build-and-test 16m + connected 5m24s).
+  #424 auto-closed, `main` synced.
+- **C5 tone bible (#425) implemented** on `docs/391-c5-tone-bible`: `docs/steering/tone-bible.md` — the
+  written-voice reference (grounded/encouraging/quietly-mythic; voice pillars, register, five-biome mood
+  table, per-surface copy patterns, forbidden-words list, localization note). **Docs-only** — a copy-quality
+  guide, not a source of new strings; machine rules stay `ComposeHardcodedStringTest`/`LocaleCompletenessTest`/
+  the i18n contract. Companion to `style-bible.md`.
+- **The #391 free / code-drawable lane is COMPLETE (C1–C5).** Net result: every battle art colour is
+  single-sourced in `BattlePalette` (biome/enemy/ziggurat + named `ParticleConfig`), guarded by
+  `architecture/BattleArtPaletteTest`, with `style-bible.md` + `tone-bible.md` as the human references.
+  1332 → 1339 JVM across the lane. #391 stays open as the epic for the deferred **paid** lanes (raster +
+  audio; ElevenLabs "Studio Games" clause to close first).
+- **Remaining:** PR C5.
+
 ## 2026-07-09 — #391 free-lane: C3+guard (#423/#426) MERGED + C4 (#424) implemented
 
 - **C3 + guard (#423/#426) MERGED** — PR #429 (`d522569`), all checks green (build-and-test 12m + connected
