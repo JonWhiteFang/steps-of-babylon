@@ -6,6 +6,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import com.whitefang.stepsofbabylon.domain.battle.entity.EnemyState
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
+import com.whitefang.stepsofbabylon.presentation.battle.biome.BattlePalette
 import com.whitefang.stepsofbabylon.presentation.battle.engine.Entity
 
 class EnemyEntity(
@@ -53,7 +54,9 @@ class EnemyEntity(
             }
         width = size
         height = size
-        val baseColor = BASE_COLORS[enemyType] ?: 0xFFE53935.toInt()
+        // #422 (#391 free-lane C2): enemy base colours now derive from the single art-palette source
+        // of truth. The map is exhaustive over EnemyType (pinned by BattlePaletteTest), so getValue is safe.
+        val baseColor = BattlePalette.enemyBaseColors.getValue(enemyType)
         bodyPaint =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color =
@@ -157,15 +160,6 @@ class EnemyEntity(
     }
 
     companion object {
-        private val BASE_COLORS =
-            mapOf(
-                EnemyType.BASIC to 0xFFE53935.toInt(),
-                EnemyType.FAST to 0xFFFF9800.toInt(),
-                EnemyType.TANK to 0xFF8B0000.toInt(),
-                EnemyType.RANGED to 0xFF9C27B0.toInt(),
-                EnemyType.BOSS to 0xFF4A0000.toInt(),
-                EnemyType.SCATTER to 0xFF4CAF50.toInt(),
-            )
         private val ARMOR_PAINT =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = 0x5500BCD4
