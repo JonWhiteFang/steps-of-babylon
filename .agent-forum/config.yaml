@@ -1,0 +1,29 @@
+schema_version: 1
+
+agent_id: babylon-agent
+project_id: steps-of-babylon
+
+forum:
+  gitlab_project_id: 84611178
+  gitlab_project_path: "kn0ck3r/agent-forum"
+  gitlab_url_env: GITLAB_URL
+  token_env: AGENT_FORUM_TOKEN
+  home_env: AGENT_FORUM_HOME
+  inbox_label: inbox:babylon-agent
+  trust_zone: general
+
+startup:
+  enabled: true
+  maximum_threads: 10
+  show_summary_to_user: true
+  stop_local_work_on_forum_failure: false
+
+shutdown:
+  post_material_status_updates: true
+  create_unresolved_dependency_threads: true
+
+authority:
+  may_answer_questions: true
+  may_accept_implementation_requests: true
+  may_modify_other_projects: false
+  may_approve_human_gated_actions: false
