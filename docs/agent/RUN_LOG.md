@@ -5,7 +5,11 @@
   implementation (pre-merge diff) is now reviewed via the codex MCP server (`mcp__codex__codex`,
   read-only sandbox, repo cwd; interrogation rounds via `codex-reply`). Default-to-refuted verification
   and the no-unaddressed-critical/major rule survive; the gate gains a third stage (implementation).
-  The `concurrency-reviewer` mandatory lane (#372, ADR-0038) is explicitly unchanged. See **ADR-0043**.
+  Follow-up same session (developer-directed): the `concurrency-reviewer` subagent lane (#372,
+  ADR-0038) is **folded into the gate** — retired as a subagent; its invariant briefing moved verbatim
+  to `.claude/skills/codex-review/concurrency-invariants.md` and runs as a mandatory Codex concurrency
+  round on the same surface (hook tier-4 advisory reworded; tripwires unchanged). See **ADR-0043** +
+  the ADR-0038 status amendment.
 - **Edits:** CLAUDE.md gate section rewritten (ultracode-off flag-and-ask paragraph superseded by an
   MCP-unavailable fallback); `START_HERE.md` + `AGENTS.md` pointers updated; `.claude/skills/adversarial-review/`
   removed, replaced by `.claude/skills/codex-review/`; STATE.md References synced.

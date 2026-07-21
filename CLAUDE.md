@@ -82,16 +82,18 @@ or anything brushing a fragile zone gets follow-up interrogation rounds (`codex-
 risks. If the codex MCP server is unavailable, do **not** silently skip the gate — flag the artifact as
 unreviewed and ask the developer whether to run an inline single-agent review or proceed without one.
 
-**Mandatory `concurrency-reviewer` lane (#372, ADR-0038).** Any diff touching
+**Mandatory concurrency round (#372, ADR-0038; folded into this gate by ADR-0043).** Any diff touching
 `presentation/battle/engine/**`, `presentation/battle/effects/**`, a Room DAO (`data/local/*Dao.kt`),
 `data/repository/PlayerRepositoryImpl`, the domain spend/claim use cases, or anything that structurally
-mutates a shared engine collection or moves a currency balance MUST include the `concurrency-reviewer`
-subagent as a review lane (it scopes exactly this surface). A **deterministic PreToolUse advisory**
-(`.claude/hooks/guard-sensitive-edits.sh` tier 4) nudges this on every such edit **regardless of ultracode
-state**; this protocol wording is the human/agent contract. The build-gated tripwires for the two prose
-invariants are `architecture/StepCreditAllowlistTest` (Steps-generation) and
-`architecture/BattleEngineLockScanTest` (collaborators-hold-no-monitor); a detekt nested-lock rule is a
-deferred follow-up (ADR-0038).
+mutates a shared engine collection or moves a currency balance MUST include a **dedicated Codex
+concurrency round** in its implementation review: a `codex-reply` round (or its own session for a
+review outside the gate) whose prompt includes the invariant briefing at
+`.claude/skills/codex-review/concurrency-invariants.md` (the lock model 1A–1E + atomic-economy 2A–2E
+checklist, with its SAFE/CONCERNS/BLOCK verdict format). A **deterministic PreToolUse advisory**
+(`.claude/hooks/guard-sensitive-edits.sh` tier 4) nudges this on every such edit; this protocol wording
+is the human/agent contract. The build-gated tripwires for the two prose invariants are
+`architecture/StepCreditAllowlistTest` (Steps-generation) and `architecture/BattleEngineLockScanTest`
+(collaborators-hold-no-monitor); a detekt nested-lock rule is a deferred follow-up (ADR-0038).
 
 ### PR Task-List Convention (mandatory for every code-changing PR)
 Every task list for a PR that changes production code, tests, or configuration MUST include

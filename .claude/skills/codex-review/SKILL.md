@@ -72,5 +72,12 @@ major→`severity:major`, minor→`severity:minor`.
   fixes (implementation stage). The review does not implement the plan.
 - **Read-only Codex.** The Codex session never gets `workspace-write`/`danger-full-access` for a
   review; you make the edits, not Codex.
-- The mandatory `concurrency-reviewer` lane (#372, ADR-0038) is **unchanged** by this gate — diffs on
-  its surface still include that subagent lane in addition to the Codex review.
+- **Mandatory concurrency round (#372, ADR-0038 — folded into this gate by ADR-0043).** If the
+  artifact touches the concurrency surface (`presentation/battle/engine/**`,
+  `presentation/battle/effects/**`, `data/local/*Dao.kt`, `data/repository/PlayerRepositoryImpl`,
+  the domain spend/claim use cases, or anything that structurally mutates a shared engine collection
+  or moves a currency balance), the review MUST include a dedicated Codex concurrency round: a
+  `codex-reply` round whose prompt pastes the invariant briefing at
+  `concurrency-invariants.md` (in this skill's directory — lock model 1A–1E, atomic economy 2A–2E)
+  and asks for its `SAFE | CONCERNS | BLOCK` verdict format. Treat `BLOCK` as `critical` and
+  `CONCERNS` findings at the severity the briefing assigns.

@@ -27,10 +27,17 @@
     applied; survivors are amended in place (specs/plans) or fixed in the diff (implementations),
     committed with total / applied / refuted counts.
   - No advancing a stage with unaddressed `critical`/`major` findings.
-- **Unchanged:** the mandatory `concurrency-reviewer` lane (#372, ADR-0038) — its deterministic
-  PreToolUse advisory and its scope are untouched; concurrency-surface diffs get that lane *in
-  addition to* the Codex review. The build-gated tripwires (`StepCreditAllowlistTest`,
-  `BattleEngineLockScanTest`) and `/complete-app-review` (whole-repo audit) are also unaffected.
+- **Concurrency lane folded in (developer-directed, same day):** the mandatory
+  `concurrency-reviewer` subagent lane (#372, ADR-0038) is replaced by a **mandatory Codex
+  concurrency round** on the same surface: the subagent's system prompt (the lock-model 1A–1E +
+  atomic-economy 2A–2E invariant briefing, with its SAFE/CONCERNS/BLOCK verdict format) moves
+  verbatim to `.claude/skills/codex-review/concurrency-invariants.md` and is pasted into a dedicated
+  `codex-reply` round whenever a diff touches that surface. `.claude/agents/concurrency-reviewer.md`
+  is retired; the tier-4 PreToolUse advisory in `guard-sensitive-edits.sh` now points at the Codex
+  round. **Unchanged:** the advisory's trigger surface, the build-gated tripwires
+  (`StepCreditAllowlistTest`, `BattleEngineLockScanTest`), and `/complete-app-review` (whole-repo
+  audit). ADR-0038's enforcement *mechanism* is amended (see its status note); its invariants and
+  deterministic-nudge design are not.
 - **Fallback:** if the codex MCP server is unavailable, the gate is not silently skipped — flag the
   artifact as unreviewed and ask the developer (inline single-agent review, or proceed without).
 

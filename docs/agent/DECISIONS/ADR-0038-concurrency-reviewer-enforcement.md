@@ -1,6 +1,10 @@
 # ADR-0038: Enforcing the concurrency/economy review invariants (#371 ai-3, #372 ai-2)
 
-Status: Accepted (2026-07-02)
+Status: Accepted (2026-07-02) · **Amended by ADR-0043 (2026-07-21):** the review lane's *mechanism*
+changed — the `concurrency-reviewer` subagent is retired and the mandatory lane is now a dedicated
+Codex concurrency round (briefing preserved verbatim at
+`.claude/skills/codex-review/concurrency-invariants.md`). The invariants, the trigger surface, the
+tier-4 deterministic advisory, and the build-gated tripwires below are unchanged.
 
 ## Context
 - Two of the codebase's most safety-critical invariants were **prose-only** — an AI agent (or a human)
