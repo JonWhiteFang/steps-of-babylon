@@ -20,8 +20,8 @@
 #
 #   4. presentation/battle/engine|effects/**, data/local/*Dao.kt, data/repository/PlayerRepositoryImpl.kt
 #      → advisory only (#372, ai-2). The lock-order / collaborators-hold-no-monitor invariant and the
-#      currency-move surface are the #118/#191 bug classes; the concurrency-reviewer subagent is a
-#      MANDATORY review lane on these diffs (CLAUDE.md Adversarial Review Gate). Nudges but proceeds.
+#      currency-move surface are the #118/#191 bug classes; a dedicated Codex concurrency round is
+#      MANDATORY on these diffs (CLAUDE.md Codex Review Gate, ADR-0043). Nudges but proceeds.
 #
 # Output contract: PreToolUse JSON. For tier 1 we emit permissionDecision=ask with a reason. For
 # tiers 2, 3 and 4 we emit additionalContext. Everything else prints nothing and exits 0.
@@ -66,12 +66,12 @@ esac
 # --- Tier 4: battle-engine / effects / DAO / currency surface → advisory (#372, ai-2) ----------
 # The lock-order invariant (entitiesLock → effectsLock; collaborators hold no monitor) and the
 # currency-move surface are the two bug classes the project was burned by (#118/#191) and the
-# ones an agent is most likely to trip. The concurrency-reviewer subagent is MANDATORY on these
-# diffs (CLAUDE.md Adversarial Review Gate). Advisory nudge (matches Tiers 2/3 house style) — the
-# edit proceeds, but flags that the mandatory concurrency-review lane applies.
+# ones an agent is most likely to trip. A dedicated Codex concurrency round is MANDATORY on these
+# diffs (CLAUDE.md Codex Review Gate, ADR-0043). Advisory nudge (matches Tiers 2/3 house style) —
+# the edit proceeds, but flags that the mandatory concurrency round applies.
 case "$file" in
   */presentation/battle/engine/*|*/presentation/battle/effects/*|*/data/local/*Dao.kt|*/data/repository/PlayerRepositoryImpl.kt)
-    jq -cn --arg ctx "Advisory (#372 / CLAUDE.md Adversarial Review Gate): this edits the battle-engine/effects, a Room DAO, or the currency-moving PlayerRepositoryImpl. The concurrency-reviewer subagent is a MANDATORY review lane for this diff (thread-safety: entitiesLock→effectsLock order, collaborators hold no monitor; atomic guarded-deduct economy). Run it before committing. The edit proceeds." \
+    jq -cn --arg ctx "Advisory (#372 / CLAUDE.md Codex Review Gate, ADR-0043): this edits the battle-engine/effects, a Room DAO, or the currency-moving PlayerRepositoryImpl. A dedicated Codex concurrency round is MANDATORY for this diff — brief it with .claude/skills/codex-review/concurrency-invariants.md (thread-safety: entitiesLock→effectsLock order, collaborators hold no monitor; atomic guarded-deduct economy). Run it before committing. The edit proceeds." \
       '{hookSpecificOutput:{hookEventName:"PreToolUse",additionalContext:$ctx}}' 2>/dev/null || true
     exit 0
     ;;

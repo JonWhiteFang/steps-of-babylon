@@ -11,7 +11,7 @@ can find the authority.
 ## Before you touch code
 
 1. Read the memory spine (`docs/agent/START_HERE.md` → `STATE.md` → `CONSTRAINTS.md`) — never rely on chat history.
-2. Every spec and plan passes the **Adversarial Review Gate** (see `CLAUDE.md`) before the next stage.
+2. Every spec, plan, and final implementation passes the **Codex Review Gate** (see `CLAUDE.md`) before the next stage.
 3. Build/test via the wrappers, not bare Gradle: `./run-gradle.sh <task>` (JVM tests:
    `./run-gradle.sh testDebugUnitTest`) and `./lint-kotlin.sh` (formatting). `run-gradle.sh` is
    gitignored — recreate it per `README.md` (a fresh clone won't have it).
