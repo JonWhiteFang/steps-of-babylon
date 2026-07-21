@@ -22,8 +22,8 @@
 - All deps in `gradle/libs.versions.toml` — never hardcode versions.
 - Annotation processing uses KSP (not kapt).
 - Check the relevant plan file in `docs/plans/` before implementing any feature.
-- Every design spec and implementation plan passes the **Adversarial Review Gate** before the next
-  stage (see CLAUDE.md → Agent protocol). Default-on under ultracode; if ultracode is off, flag + ask.
+- Every design spec, implementation plan, and final implementation passes the **Codex Review Gate**
+  before the next stage (see CLAUDE.md → Agent protocol; runs via the codex MCP server, ADR-0043).
 
 ## Where project memory lives
 - STATE: docs/agent/STATE.md

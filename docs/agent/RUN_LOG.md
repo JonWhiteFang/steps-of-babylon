@@ -1,4 +1,24 @@
-## 2026-07-09 — #306 Slice 2 (enemy damage/death hoist): spec + plan authored, reviewed, MERGED (docs-only)
+## 2026-07-21 — Review procedure replaced: Codex Review Gate (ADR-0043) + GitLab-migration spec drafted
+
+- **Process change (developer-directed, permanent):** the multi-agent **Adversarial Review Gate** is
+  replaced by the **Codex Review Gate** — every design spec, implementation plan, AND final
+  implementation (pre-merge diff) is now reviewed via the codex MCP server (`mcp__codex__codex`,
+  read-only sandbox, repo cwd; interrogation rounds via `codex-reply`). Default-to-refuted verification
+  and the no-unaddressed-critical/major rule survive; the gate gains a third stage (implementation).
+  The `concurrency-reviewer` mandatory lane (#372, ADR-0038) is explicitly unchanged. See **ADR-0043**.
+- **Edits:** CLAUDE.md gate section rewritten (ultracode-off flag-and-ask paragraph superseded by an
+  MCP-unavailable fallback); `START_HERE.md` + `AGENTS.md` pointers updated; `.claude/skills/adversarial-review/`
+  removed, replaced by `.claude/skills/codex-review/`; STATE.md References synced.
+- **Also this session (separate branch `docs/gitlab-migration-spec`, commit `e192f15`):** consulted
+  gaslight-agent via agent-forum thread AF-2026-000016 (their firsthand 2026-07-20 GitHub→GitLab
+  migration), brainstormed the steps-of-babylon migration, and wrote
+  `docs/superpowers/specs/2026-07-21-gitlab-migration-design.md` (phased approach: KVM/minutes spike →
+  CI port on scratch import → policy URL to a jonwhitefang.uk custom domain pre-cutover → quiesce/import/
+  verify/archive cutover → Renovate + doc sweep). Spec awaits the (new) Codex Review Gate before planning.
+- **Next:** run `/codex-review` on the migration spec; then the implementation plan; forum thread #16
+  stays open pending a closing reply.
+
+
 
 - **Goal:** open the next ADR-0012 Phase 5 slice — hoist enemy damage/death resolution into the pure domain,
   mirroring the Slice-1 ziggurat pattern. This session produced the reviewed spec + implementation plan only

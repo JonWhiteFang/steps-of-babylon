@@ -56,24 +56,31 @@ Treat these as the project source of truth — never rely on chat history.
 4. Output a brief "Session Brief" (~10 bullets): what the project is, current state,
    constraints/invariants, today's objective, risks/unknowns.
 
-### Adversarial Review Gate (mandatory before acting on a spec or a plan)
-Every **design spec** and every **implementation plan** MUST pass a full adversarial review before the
-next stage begins — review the spec before writing the plan; review the plan before any implementation.
-This is the standing default; the developer should not have to ask for it each time.
+### Codex Review Gate (mandatory before advancing spec → plan → implementation → merge)
+Every **design spec**, every **implementation plan**, and every **final implementation** (the finished
+diff, before its PR merges) MUST pass a Codex review before the next stage begins — review the spec
+before writing the plan; review the plan before any implementation; review the completed implementation
+before merge. This is the standing default; the developer should not have to ask for it each time.
+(This gate replaced the earlier multi-agent-Workflow Adversarial Review Gate — ADR-0043.)
 
-The review is a multi-agent `Workflow` (see the Workflow tool's quality patterns), shaped as:
-1. **Code-grounded multi-dimension fan-out** — one reviewer per dimension (e.g. code-grounding of every
-   `file:line` claim, API/framework correctness, fragile-zone & invariant safety, scope completeness vs
-   the issue/review, test-strategy feasibility, internal consistency/ambiguity). Each finding must cite
-   the **actual code** it checked, not just the spec's prose.
-2. **Adversarial verify** — a skeptic re-checks each finding against spec + code and tries to **refute**
-   it; only `confirmed`/`partial` findings survive (default-to-refuted discipline).
-3. **Synthesis** — apply every surviving finding to the artifact, then commit the amendments with a
-   message summarising findings (total / surviving / refuted) and the substantive fixes.
+The review runs through the **codex MCP server** (`/codex-review` is the one-command form):
+1. **Session** — `mcp__codex__codex` with `sandbox: read-only` and `cwd` = repo root, so Codex reads
+   the real code; follow-up rounds continue the same thread via `mcp__codex__codex-reply`.
+2. **Prompt** — name the artifact (the spec/plan file, or the diff range for an implementation review)
+   and require **code-grounded findings**: each finding cites the actual `file:line` Codex opened (not
+   the artifact's own prose), carries a severity (`critical`/`major`/`minor`), and covers correctness,
+   API/framework usage, fragile-zone & invariant safety, scope completeness vs the issue/spec,
+   test-strategy feasibility, and internal consistency/ambiguity.
+3. **Skeptical application** — the default-to-refuted discipline survives the procedure change: verify
+   each Codex finding against the real code before amending; apply the survivors (specs/plans amended
+   in place, implementation findings fixed in the diff), then commit with a message summarising
+   findings (total / applied / refuted) and the substantive fixes.
+4. **Gate** — do **not** advance to the next stage with unaddressed `critical`/`major` findings.
 
-Severity-scale the response: a quick spec gets a leaner fan-out; "be thorough"/audit-grade work gets the
-full pattern with 3–5-vote verification. Do **not** advance to the next stage with unaddressed
-`critical`/`major` findings.
+Severity-scale the response: a quick artifact gets a single Codex pass; "be thorough"/audit-grade work
+or anything brushing a fragile zone gets follow-up interrogation rounds (`codex-reply`) on the specific
+risks. If the codex MCP server is unavailable, do **not** silently skip the gate — flag the artifact as
+unreviewed and ask the developer whether to run an inline single-agent review or proceed without one.
 
 **Mandatory `concurrency-reviewer` lane (#372, ADR-0038).** Any diff touching
 `presentation/battle/engine/**`, `presentation/battle/effects/**`, a Room DAO (`data/local/*Dao.kt`),
@@ -85,12 +92,6 @@ state**; this protocol wording is the human/agent contract. The build-gated trip
 invariants are `architecture/StepCreditAllowlistTest` (Steps-generation) and
 `architecture/BattleEngineLockScanTest` (collaborators-hold-no-monitor); a detekt nested-lock rule is a
 deferred follow-up (ADR-0038).
-
-**If ultracode is OFF** (a session reminder will say so), this gate's multi-agent form is disabled by the
-opt-in rules — do **not** silently skip it. **Flag to the developer that the artifact is unreviewed and
-ask** whether to (a) turn ultracode on for the review, (b) run a lighter single-agent review inline, or
-(c) proceed without one. Never advance spec→plan→implementation on an unreviewed artifact without that
-explicit choice.
 
 ### PR Task-List Convention (mandatory for every code-changing PR)
 Every task list for a PR that changes production code, tests, or configuration MUST include
