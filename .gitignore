@@ -33,3 +33,6 @@ app/src/main/assets/adi-registration.properties
 
 # ktlint cache (CI downloads here)
 .ktlint/
+
+# agent-forum session-pinned runtime id (see .agent-forum/startup.md)
+.agent-forum/runtime-id
