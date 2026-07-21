@@ -4,6 +4,19 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Changed — Review procedure: Codex Review Gate (PR #438, ADR-0043)
+
+- The multi-agent-Workflow **Adversarial Review Gate** is replaced by the **Codex Review Gate**: every
+  design spec, implementation plan, and **final implementation** (pre-merge diff — a new third stage) is
+  reviewed via the codex MCP server (read-only sandbox, repo cwd, code-grounded `file:line` findings,
+  default-to-refuted application, no advancing on unaddressed critical/major). `/codex-review` replaces
+  `/adversarial-review`. The mandatory `concurrency-reviewer` subagent lane (#372, ADR-0038) is **folded
+  in** as a mandatory Codex concurrency round on the same surface — the invariant briefing moved verbatim
+  to `.claude/skills/codex-review/concurrency-invariants.md`; the tier-4 hook advisory points at it;
+  trigger surface + build tripwires unchanged (ADR-0038 status amended). **Docs/config-only** — no
+  production code, tests, or schema; test count unchanged. First live run same session: the
+  GitLab-migration design spec (19 findings, 19 verified+applied, 0 refuted).
+
 ### Added — Tone Bible (#425, #391 free-lane C5)
 
 - `docs/steering/tone-bible.md` — the single reference for the game's written voice (grounded, encouraging,

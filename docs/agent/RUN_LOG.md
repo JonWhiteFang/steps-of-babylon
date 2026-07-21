@@ -1,3 +1,30 @@
+## 2026-07-21 (later) — Codex gate first run: migration spec reviewed & amended; PR #438 MERGED
+
+- **Goal:** land the review-procedure change and put the GitLab-migration spec through the new gate.
+- **Codex Review Gate first live run** (on `docs/superpowers/specs/2026-07-21-gitlab-migration-design.md`,
+  via `mcp__codex__codex`, read-only, repo cwd): **19 findings — 17 major / 2 minor. Verified every one
+  against the real code before applying (default-to-refuted): 19 confirmed, 0 refuted; all applied**
+  (`13f83ff`). Highest-impact catches: the docs-only fast path can't be `rules:changes` (fail-safe
+  inversion inexpressible — scripted classifier kept); GitLab tag pipelines arrive as source `push` (a
+  branch-only rule would silently kill every release); the Play uploader is a GitHub Action with no GitLab
+  equivalent (no Gradle Play Publisher in the build — verified; Phase-1 dry-run proof of a replacement now
+  required); the release lane needs 9 variables incl. the hard-fail `PLAY_LICENSE_KEY`, not 2; today's
+  GitHub Release ships the AAB as a durable artifact (GitLab Release equivalent added); the privacy-policy
+  URL is baked into the shipped app (`PRIVACY_POLICY_URL` + EN/ES strings + drift test → 4-part Phase 2,
+  old URL serves indefinitely); `site/` is Jekyll (raw copy publishes no index.html); `gh`-dependent
+  automation (checkpoint/release/complete-app-review skills, forum procedures, BACKLOG regen) + the local
+  `origin` remote must flip BEFORE archive (moved into the cutover runbook); self-hosted-runner fallback
+  needs real isolation hardening (public-MR code on personal hardware).
+- **PR #438 MERGED (`2ab5e7c`)** — the Codex Review Gate process change (both commits, incl. the
+  concurrency-lane fold-in). All checks green (docs-only fast path). `docs/gitlab-migration-spec` rebased
+  onto updated main per the sequential-merge rule (clean, no conflicts).
+- **Forum:** thread AF-2026-000016 held OPEN per developer (closing reply deferred); no shutdown posts —
+  no new cross-project dependency yet (migration not approved).
+- **Doc sync (this checkpoint):** CHANGELOG (+#438 section), STATE.md (objective rotated: GitLab migration
+  CURRENT; #306 Slice 2 demoted to Previous), BACKLOG regenerated. No new ADR (ADR-0043 shipped in #438).
+- **Next:** developer reviews the amended spec → open its PR → `/codex-review`-gated implementation plan →
+  Phase 0 spike (KVM/minutes/secret-push-protection). #306 Slice 2 implementation still queued.
+
 ## 2026-07-21 — Review procedure replaced: Codex Review Gate (ADR-0043) + GitLab-migration spec drafted
 
 - **Process change (developer-directed, permanent):** the multi-agent **Adversarial Review Gate** is

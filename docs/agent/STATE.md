@@ -34,8 +34,24 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — #306 Slice 2 (enemy damage/death hoist): spec + plan REVIEWED & MERGED (docs-only, PR #433
-  `52040a7`); implementation NOT started.** The next slice of the ADR-0012 Phase 5 effect-resolution hoist.
+- **CURRENT — GitHub→GitLab migration: design spec REVIEWED (first artifact through the new Codex Review
+  Gate); awaiting developer sign-off → implementation plan.** Consolidation move (the agent forum +
+  gaslight-and-grimoire already live on gitlab.com/kn0ck3r); advice sourced from gaslight-agent via forum
+  thread AF-2026-000016 (held OPEN per developer). Spec:
+  `docs/superpowers/specs/2026-07-21-gitlab-migration-design.md` on branch `docs/gitlab-migration-spec`
+  (PR not yet opened; rebased on main). Phased: KVM/minutes/secret-push-protection spike → CI port on a
+  scratch import (incl. Play-uploader proof — the `r0adkll/upload-google-play` Action has no GitLab
+  equivalent) → policy URL to a jonwhitefang.uk hostname (the URL is baked into the shipped app — 4-part
+  move, old github.io URL serves indefinitely) → quiesce/import/verify-incl-tags/remote-flip/
+  automation-update/archive cutover → Renovate + doc sweep. Codex gate result: 19 findings (17 major /
+  2 minor), all 19 verified against code + applied, 0 refuted (`13f83ff`). **Shipped alongside (PR #438
+  `2ab5e7c`): the Codex Review Gate itself (ADR-0043)** — spec/plan/implementation reviewed via codex MCP;
+  `/codex-review` replaces `/adversarial-review`; the `concurrency-reviewer` subagent folded in as a
+  mandatory Codex concurrency round (briefing at `.claude/skills/codex-review/concurrency-invariants.md`;
+  ADR-0038 status amended). Next: developer reviews the spec → `/codex-review`-gated implementation plan →
+  Phase 0 spike. #306 Slice 2 implementation remains the queued code work.
+- *Previous — #306 Slice 2 (enemy damage/death hoist): spec + plan reviewed & merged (docs-only, PR #433
+  `52040a7`); implementation NOT started.* The next slice of the ADR-0012 Phase 5 effect-resolution hoist.
   Design: move enemy `currentHp`/`maxHp`/`armorHits` into the pure-domain `EnemyState` behind a new
   `DamageableEnemy : Damageable` port; hoist the corpse-guard(#146)/armor-absorb(#17)/no-floor-HP/death
   arithmetic into a pure `EnemyDamageResolver`; move SCATTER child-descriptor math into a pure `ScatterSplit`;
