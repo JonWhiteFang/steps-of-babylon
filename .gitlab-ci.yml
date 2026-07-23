@@ -200,9 +200,11 @@ pages:
   script:
     - bundle install
     - bundle exec jekyll build --source site --destination public
-    - test -f public/index.html || { echo "No public/index.html — Jekyll build produced nothing"; exit 1; }
-    - grep -qi 'privacy' public/index.html || { echo "index.html missing the privacy heading"; exit 1; }
-    - grep -q 'delete-data' public/index.html || { echo "index.html lost the #delete-data anchor"; exit 1; }
+    # Block scalar: `#` is literal here (a plain-scalar ` #delete-data` would be parsed as a YAML comment).
+    - |
+      test -f public/index.html || { echo "No public/index.html - Jekyll produced nothing"; exit 1; }
+      grep -qi 'privacy' public/index.html || { echo "index.html missing the privacy heading"; exit 1; }
+      grep -q 'delete-data' public/index.html || { echo "index.html lost the delete-data anchor"; exit 1; }
   artifacts:
     paths: [public]
 
