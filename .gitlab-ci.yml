@@ -111,8 +111,18 @@ ktlint:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
   script:
     - if [ "${CODE:-true}" != "true" ]; then echo "Docs-only — ktlint skipped."; exit 0; fi
-    - apt-get update -qq && apt-get install -y -qq curl coreutils   # coreutils provides sha256sum
-    - ./lint-kotlin.sh   # owns the ktlint 1.8.0 version + SHA-256 (single source of truth)
+    # curl (download), coreutils (sha256sum), perl (provides `shasum`, which lint-kotlin.sh re-verifies with).
+    - apt-get update -qq && apt-get install -y -qq curl coreutils perl
+    # lint-kotlin.sh LOCATES ktlint (it does not download). Source the pinned version+SHA from it
+    # (the single source of truth) and place the verified binary at .ktlint/ktlint — same as ci.yml.
+    - |
+      KTLINT_VERSION=$(grep -oE 'KTLINT_VERSION="[^"]+"' lint-kotlin.sh | cut -d'"' -f2)
+      KTLINT_SHA256=$(grep -oE 'KTLINT_SHA256="[^"]+"' lint-kotlin.sh | cut -d'"' -f2)
+      mkdir -p .ktlint
+      curl -sSfL "https://github.com/pinterest/ktlint/releases/download/${KTLINT_VERSION}/ktlint" -o .ktlint/ktlint
+      echo "$KTLINT_SHA256  .ktlint/ktlint" | sha256sum -c -
+      chmod +x .ktlint/ktlint
+    - ./lint-kotlin.sh
 
 # ============================================================================
 # gitleaks — secret scan, FULL history (GIT_DEPTH:0 — a shallow default silently weakens it).
