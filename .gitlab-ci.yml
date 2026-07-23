@@ -139,6 +139,7 @@ ktlint:
 # ============================================================================
 gitleaks:
   stage: security
+  needs: []   # independent of gate; run immediately (parallel)
   image:
     name: zricethezav/gitleaks:v8.18.4@sha256:75bdb2b2f4db213cde0b8295f13a88d6b333091bbfbf3012a4e083d00d31caba
     entrypoint: [""]   # the image ENTRYPOINT is `gitleaks`; clear it so GitLab's shell runs the script
@@ -160,6 +161,7 @@ gitleaks:
 # ============================================================================
 osv-scan:
   stage: security
+  needs: []   # independent of gate; run immediately (parallel)
   # osv-scanner's official image is distroless (no shell) → a GitLab script can't run in it. Run the
   # SHA-pinned binary from alpine instead. allow_failure makes vulns/tool-errors visible (yellow), not green.
   image: alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
@@ -188,6 +190,7 @@ osv-scan:
 # ============================================================================
 pages:
   stage: pages
+  needs: []   # independent of gate; run immediately (parallel)
   image: ruby:3.3@sha256:52557f527955fb8ea78bd2a196f4d5eb8fb71fd69a38cbbb50b70ca4a63457c5
   resource_group: pages   # serialize; never cancel a half-deploy (matches pages.yml concurrency)
   rules:

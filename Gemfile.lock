@@ -78,6 +78,3 @@ PLATFORMS
 DEPENDENCIES
   jekyll (= 4.3.3)
   minima (= 2.5.1)
-
-BUNDLED WITH
-   1.17.2
