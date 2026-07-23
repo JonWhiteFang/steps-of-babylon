@@ -2,7 +2,10 @@
 
 **Date:** 2026-07-21
 **Status:** Reviewed — Codex Review Gate passed 2026-07-21 (19 findings: 17 major / 2 minor; all 19
-verified against code and applied; 0 refuted)
+verified against code and applied; 0 refuted). **Amended 2026-07-23 from Phase-0 spike results:** target
+namespace → `kn0ck3r-group` (personal namespace has 0 CI minutes); instrumented lane **demoted to
+local-only** (no `/dev/kvm` on gitlab.com shared runners — owner declined self-hosted/Firebase); Secret
+Push Protection confirmed available. See `docs/migration/phase0-spike.md`.
 **Informed by:** agent-forum thread AF-2026-000016 (gaslight-agent consultation — firsthand
 migration of gaslight-and-grimoire on 2026-07-20; their `docs/DECISIONS/ADR-0014-gitlab-migration.md`,
 `.gitlab-ci.yml`, `renovate.json` at gitlab.com/kn0ck3r/gaslight-and-grimoire)
@@ -24,7 +27,13 @@ already live there. Full cutover; GitHub is archived, not deleted.
 
 ## Target state
 
-**Repo:** `gitlab.com/kn0ck3r/steps-of-babylon` (public). The GitHub repo
+> **Namespace correction (2026-07-23 spike):** the target is `gitlab.com/kn0ck3r-group/steps-of-babylon`,
+> NOT the personal `kn0ck3r` namespace originally written below — the personal namespace has **0 CI
+> minutes** (`ci_quota_exceeded`), while `kn0ck3r-group` has 10,000 min/month and already hosts
+> gaslight-and-grimoire's working CI. Every `kn0ck3r/steps-of-babylon` reference in this spec should read
+> `kn0ck3r-group/steps-of-babylon` (importer destination, `origin` URL, Renovate scoping, forum citations).
+
+**Repo:** `gitlab.com/kn0ck3r-group/steps-of-babylon` (public). The GitHub repo
 (`JonWhiteFang/steps-of-babylon`) is archived and declared — in the migration ADR — the
 canonical resolver for every historical `#N` citation in the memory spine. Historical docs are
 never rewritten (they are point-in-time records); new work cites GitLab iids. GitHub's shared
@@ -39,8 +48,9 @@ before the lane mapping:
   osv-scan: weekly cron + `main` + manual; pages: `main` path-filtered + manual; release: `v*`
   tags). The `workflow: rules:` block must enumerate `merge_request_event`, branch push, **tag
   push**, `schedule`, and `web` — and distinguish schedules/manual runs with a
-  `PIPELINE_KIND=instrumented|osv|renovate|pages` variable keyed at the schedule/web level, so a
-  generic schedule can't run the wrong jobs. Each current manual (`workflow_dispatch`) trigger is
+  `PIPELINE_KIND=osv|renovate|pages` variable keyed at the schedule/web level, so a
+  generic schedule can't run the wrong jobs. (The `instrumented` kind is gone — that lane is demoted
+  to local-only per the 2026-07-23 spike; its nightly-canary schedule is retired with it.) Each current manual (`workflow_dispatch`) trigger is
   either preserved as a guarded `web` path or its retirement is recorded in the migration ADR.
   **Tag-pipeline gotcha:** in GitLab a tag push arrives as source `push` (with `CI_COMMIT_TAG`
   set) — a branch-only `push` rule would silently suppress every release pipeline. The workflow
@@ -57,7 +67,7 @@ before the lane mapping:
 | Today (Actions) | On GitLab |
 |---|---|
 | `ci.yml` (PR gate) | MR-pipeline jobs preserving the **full current contract**, not just the headline steps: gradle-wrapper JAR validation (#212), `testDebugUnitTest` + `lintDebug` + `lintRelease` + `assembleDebug`, the seeded-license **unsigned `assembleRelease` R8/shrink guard** (seed + post-run cleanup of the license key), whole-app Kover reports (informational, #218) **and** `:app:koverVerifyDebug` (the fragile-zone ratchet, #373), benchmark-module compilation (type-check only), the Room schema-drift guard, detekt, CI report artifacts, and the **standalone SHA-pinned ktlint job** (own job, no Gradle/JDK setup). Docs-only fast path via the scripted classifier above. Runs on MR pipelines and pushes to `main` |
-| `instrumented.yml` | Blocking MR job + nightly schedule (`PIPELINE_KIND=instrumented`) + manual trigger. Runs on shared runners if the Phase-0 KVM spike passes; otherwise on a **hardened** self-hosted runner (requirements in Phase 0) |
+| `instrumented.yml` | **NOT PORTED — demoted to local-only (2026-07-23 spike: Q1 FAIL, no `/dev/kvm` on gitlab.com shared runners; owner declined self-hosted runner + Firebase Test Lab).** The 9 instrumented tests (`:app:connectedDebugAndroidTest`) run on a device locally before a release, not in the GitLab pipeline. Accepted regression (they were a blocking MR lane on GitHub) — recorded in ADR-0044. No `instrumented` job, no `«RUNNER_TAG»`, no self-hosted runner in the pipeline |
 | `release.yml` | 1:1 port of behavior: protected `v*` tag → wrapper validation + guards → build signed AAB → publish to Play internal track → **GitLab Release with the AAB as a durable asset** (Generic Package Registry or equivalent non-expiring location linked from the release — NOT a short-lived job artifact; today's GitHub Release ships `app-release.aab` and that artifact must not be silently dropped). `resource_group: play-release` so two release pipelines can never publish concurrently. **Uploader must be chosen and proven in Phase 1** — `r0adkll/upload-google-play` is a GitHub Action with no GitLab equivalent; candidates are a pinned Fastlane (`supply`) container or the Gradle Play Publisher plugin (version-catalogued). Whichever is chosen must reproduce the full current upload config: package `com.whitefang.stepsofbabylon`, track `internal`, status `completed`, the AAB, `mapping.txt`, and `distribution/whatsnew`. **Full CI-variable inventory** (protected; masked where the format allows, base64-wrapped single-line values where raw content can't be masked; file-type where a file path is needed): `UPLOAD_KEYSTORE_BASE64`, `KEYSTORE_STORE_PASSWORD`, `KEYSTORE_KEY_ALIAS`, `KEYSTORE_KEY_PASSWORD`, `PLAY_SERVICE_ACCOUNT_JSON`, **`PLAY_LICENSE_KEY` (mandatory — a missing value fails the release build by design, #124)**, plus the four optional production AdMob values (`ADMOB_APP_ID`, `ADMOB_AD_UNIT_POST_ROUND_GEM`, `ADMOB_AD_UNIT_POST_ROUND_DOUBLE_PS`, `ADMOB_AD_UNIT_DAILY_FREE_CARD_PACK`; absent → Google test IDs). Materialization and post-job cleanup of secret files specified in the plan; protected-ref-only availability proven in the Phase-1 scratch job |
 | `gitleaks.yml` | Port with **full history** (`GIT_DEPTH: 0` or explicit unshallow — a shallow default silently weakens the scan) and a defined findings surface (job log + retained report artifact). The current PR summary-comment behavior is retired as a small accepted regression (or reproduced via an MR note if cheap). **Layered-defense regression:** GitHub-native secret scanning + push protection do not port; GitLab Secret Push Protection is tier-dependent — verify availability on our tier in Phase 0, and if absent, record prevention→detection as an accepted, documented regression with an incident-response note |
 | `osv-scan.yml` | NOT a mechanical port — today it is a Google **reusable workflow** that uploads SARIF to GitHub Code Scanning (non-gating). Port as a pinned osv-scanner binary/container job with the same triggers (weekly cron via `PIPELINE_KIND=osv` + `main` + manual), recursive scan, fail-open (`fail-on-vuln=false` semantics), and a retained human-readable + SARIF artifact. GitLab security-dashboard ingestion needs a paid tier — the Code-Scanning dashboard loss is an accepted regression recorded in the ADR |
@@ -207,12 +217,13 @@ step 9 instead)
 
 ## Risks
 
-1. **Emulator lane infeasible on shared runners** → settled first by the Phase-0 spike;
-   pre-decided fallback is a self-hosted runner, which carries its own risk — **running public-MR
-   code on personal hardware** — mitigated by the mandatory isolation hardening in Phase 0 (and
-   the fallback decision reopens if that hardening isn't achievable).
-2. **CI-minute exhaustion on the free tier** → measured in the spike; self-hosted runner
-   also mitigates.
+1. **Emulator lane infeasible on shared runners** → **SETTLED (2026-07-23 spike): Q1 FAIL** (no
+   `/dev/kvm`). Resolution: instrumented tests **demoted to local-only** (owner declined the
+   self-hosted-runner + Firebase fallbacks). Residual risk = a regression only caught by an
+   instrumented test slips past the MR gate; mitigated by the pre-release local device run + the
+   existing JVM/Robolectric coverage (Compose UI on the JVM lane, #253).
+2. **CI-minute exhaustion** → **SETTLED (2026-07-23 spike):** target the `kn0ck3r-group` namespace
+   (10,000 min/month), not the personal namespace (0 min). Non-emulator lanes fit the budget.
 3. **Policy-URL breakage for shipped app versions** → eliminated by Phase 2's four-part
    ordering: old URL serves/redirects indefinitely; new URL embedded via a normal release.
 4. **Release-lane misfire** → protected-tag + protected-variable structure; the Phase-1 inert
@@ -231,7 +242,7 @@ step 9 instead)
 
 - MR gate green on a real change; red MR provably refused; docs-only fast path green in
   seconds.
-- Instrumented lane blocking on MRs (shared or hardened self-hosted runner).
+- Instrumented tests run locally on a device before releases (demoted from a CI gate — 2026-07-23 spike).
 - One owner-verified `v*` tag → signed AAB on the Play internal track **and a GitLab Release
   carrying the AAB as a durable asset**.
 - Privacy policy live on the custom hostname, registered in Play Console, **and embedded in the

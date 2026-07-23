@@ -2,7 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Move `steps-of-babylon` from GitHub (`JonWhiteFang/steps-of-babylon`) to `gitlab.com/kn0ck3r/steps-of-babylon` — porting all seven Actions workflows to one `.gitlab-ci.yml`, moving the privacy-policy URL to a forge-neutral hostname, importing history/issues/tags, and updating every piece of automation that shells out to `gh`/GitHub — with GitHub archived (never deleted) as the canonical resolver for historical `#N` citations.
+**Goal:** Move `steps-of-babylon` from GitHub (`JonWhiteFang/steps-of-babylon`) to `gitlab.com/kn0ck3r-group/steps-of-babylon` — porting six of the seven Actions workflows to one `.gitlab-ci.yml` (the seventh, `instrumented.yml`, is demoted to local-only — 2026-07-23 spike), moving the privacy-policy URL to a forge-neutral hostname, importing history/issues/tags, and updating every piece of automation that shells out to `gh`/GitHub — with GitHub archived (never deleted) as the canonical resolver for historical `#N` citations.
+
+> **Amended 2026-07-23 from Phase-0 spike results** (`docs/migration/phase0-spike.md`): (1) target namespace is **`kn0ck3r-group`** (personal `kn0ck3r` = 0 CI minutes; group = 10k/mo); (2) the **instrumented lane is demoted to local-only** — Q1 FAIL (no `/dev/kvm` on gitlab.com shared runners; owner declined self-hosted runner + Firebase). So: no `instrumented` job, no `«RUNNER_TAG»`, no Task 1.0; Task 1.4 is a local-only note; the `instrumented` stage + PIPELINE_KIND are removed. (3) Secret Push Protection confirmed available → enable it, no regression note.
 
 **Architecture:** Phased with a pre-migration go/no-go spike (spec Approach A). Phase 0 (spike) and Phase 1 (CI port on a *scratch* import) touch nothing in the real repo — the real `main` is untouched until Phase 3's single-sitting cutover. Phase 2 (privacy-URL move) is an independent normal PR whose new URL must be served by a **durable** Pages owner (not the throwaway scratch project) before the release that embeds it ships. CI-config artifacts (`.gitlab-ci.yml`, `ci/*.sh`, `renovate.json`) are authored on the migration branch (harmless/inert on GitHub — GitHub ignores them), proven on the scratch GitLab import, and land in GitLab `main` at cutover.
 
@@ -19,10 +21,10 @@ Every task's requirements implicitly include this section. Values copied verbati
 - **The forum can never cause a store release.** Only the owner may push a `v*` tag → protected `v*` tags, owner-only.
 - **Merge gating (recreated by hand — the importer drops all branch protection):** `only_allow_merge_if_pipeline_succeeds = true`; merge-commit-only (no squash); protected `main`; protected `v*` tags. GitLab gates on the **whole pipeline** green (not named checks) — every job in an MR pipeline must deserve to block merge. `workflow: rules:` must guarantee an MR pipeline always exists.
 - **Docs-only fast path is a fail-safe inversion** — skip the heavy gate only when EVERY changed path is allowlisted (`docs/**`, `*.md`, `.claude/**`, `.mcp.json`); any unknown path **or unknown diff base** → full gate. `rules:changes` cannot express this — it stays a scripted classifier.
-- **Trigger matrix, not a generic rules block.** `workflow: rules:` enumerates `merge_request_event`, branch push, **tag push** (arrives as source `push` with `CI_COMMIT_TAG` set — a branch-only push rule silently suppresses every release), `schedule`, `web`; schedules/manual runs are disambiguated by a `PIPELINE_KIND=instrumented|osv|renovate|pages` variable, and **every schedule/web job gates on its exact `PIPELINE_KIND`** so one manual run can't fire all lanes.
+- **Trigger matrix, not a generic rules block.** `workflow: rules:` enumerates `merge_request_event`, branch push, **tag push** (arrives as source `push` with `CI_COMMIT_TAG` set — a branch-only push rule silently suppresses every release), `schedule`, `web`; schedules/manual runs are disambiguated by a `PIPELINE_KIND=osv|renovate|pages` variable, and **every schedule/web job gates on its exact `PIPELINE_KIND`** so one manual run can't fire all lanes.
 - **Full digest/SHA-pinning** — EVERY external container image, downloaded binary, AND Ruby gem is pinned (image → `@sha256:…`; binary → SHA-256 checksum; gem → a committed `Gemfile.lock`). No `:latest` or bare tag survives the Phase-1 proof (Task 1.10 pin-resolution checklist). Matches ADR-0018 decision #5; Renovate maintains the pins.
-- **Runner isolation** — the self-hosted `«RUNNER_TAG»` (if Phase-0 needs one) is assigned **only to the `instrumented` job**, never to `default`. Secret-bearing jobs (release-*, renovate) must never land on the public-MR-code runner.
-- **Accepted, documented regressions** (recorded in ADR-0044, never silently assumed ported): GitHub dependency-submission API (retired); Code-Scanning SARIF dashboard (osv-scan artifact-only); Secret Push Protection (if tier-gated — Phase-0 Q3); gitleaks PR summary-comment; release `workflow_dispatch`; GitHub auto-generated release notes.
+- **Instrumented tests are local-only (2026-07-23 spike)** — Q1 FAIL (no `/dev/kvm` on gitlab.com shared runners; owner declined self-hosted runner + Firebase). The 9 `:app:connectedDebugAndroidTest` tests run on a device before a release, NOT in the pipeline (accepted regression — they blocked MRs on GitHub — recorded in ADR-0044). All GitLab jobs run on shared runners in `kn0ck3r-group` (10k min/mo), so no `default.tags` and no self-hosted runner exist.
+- **Accepted, documented regressions** (recorded in ADR-0044, never silently assumed ported): GitHub dependency-submission API (retired); Code-Scanning SARIF dashboard (osv-scan artifact-only); Secret Push Protection (if tier-gated — Phase-0 Q3); gitleaks PR summary-comment; release `workflow_dispatch`; GitHub auto-generated release notes; **the instrumented lane demoted to local-only** (no `/dev/kvm` on shared runners — 2026-07-23 spike).
 - **PR Task-List Convention (CLAUDE.md).** Every code/config-changing PR's task list ends with, in order, immediately before its final commit: (1) sync affected current-state docs; (2) update `docs/agent/STATE.md` + append `docs/agent/RUN_LOG.md`. See "PR structure" below.
 - **Out of scope:** release cadence / versioning / track-promotion changes; rewriting historical docs; privacy-policy *content* (URL/host + in-app constant only); GitLab paid-tier features (merge trains, security dashboards).
 
@@ -58,7 +60,6 @@ Authored by the agent (committed to the relevant PR branch unless noted):
 
 **Empirically-resolved tokens** (deferred by the spec — resolved in-phase, not guessed; the ONLY permitted `«...»` tokens):
 - `«ANDROID_IMAGE»` — digest-pinned Android SDK container image (Phase 1, Task 1.2 Step 1).
-- `«RUNNER_TAG»` — the instrumented job's runner tag: shared vs a self-hosted tag (Phase-0 spike).
 - `«FASTLANE_IMAGE»` — digest-pinned Fastlane container for the publish job (Phase 1, Task 1.5).
 - `«NEW_URL»` — the privacy hostname (Phase 2 website-agent thread).
 - Plus per-image/gem digests collected by the Task-1.10 pin checklist.
@@ -67,7 +68,13 @@ Authored by the agent (committed to the relevant PR branch unless noted):
 
 # PHASE 0 — Spike (go/no-go; nothing else moves first)
 
-### Task 0.1: Author the spike runbook + throwaway pipeline
+> **✅ PHASE 0 COMPLETE (2026-07-23).** Runbook authored + spike run + results recorded in
+> `docs/migration/phase0-spike.md`. Outcome: **Q1 FAIL** (no `/dev/kvm` on shared runners →
+> instrumented demoted to local-only), **Q2** (personal namespace 0 min → target `kn0ck3r-group`,
+> 10k min/mo), **Q3** (Secret Push Protection available → enable, no regression). The `«RUNNER_TAG»`
+> decision paths in the Task-0.1 template below are moot (resolved to "no runner"); kept as the run record.
+
+### Task 0.1: Author the spike runbook + throwaway pipeline  ✅ DONE
 
 **Files:** Create `docs/migration/phase0-spike.md`
 
@@ -148,11 +155,9 @@ git commit -m "docs: Phase 0 migration spike runbook (KVM + real instrumented te
 
 > Phase-1 artifacts are authored on `ci/gitlab-pipeline` and iterated against a **scratch** GitLab import (`kn0ck3r/sob-scratch`). Inert on GitHub. The release lane runs in **validate-only** mode on the scratch project (`RELEASE_VALIDATE_ONLY=true`) but still proves the uploader.
 
-### Task 1.0: [HUMAN] Conditional self-hosted runner provisioning + hardening sign-off
+### Task 1.0: ~~Self-hosted runner provisioning~~ — DROPPED (2026-07-23 spike)
 
-Only if Phase-0 Q1 failed. (Finding 17.)
-
-- [ ] **Step 1: [HUMAN]** Provision the dedicated disposable KVM runner per the Phase-0 hardening checklist; register it with a dedicated tag = `«RUNNER_TAG»`; sign off that per-job reset + credential isolation + network/fs restriction hold. If not achievable, reopen the fallback (Firebase Test Lab / demote-to-local) and revise Task 1.4 accordingly.
+Q1 FAILED (no `/dev/kvm` on shared runners) and the owner chose **demote-to-local** over a self-hosted runner. No runner to provision, no `«RUNNER_TAG»`. The instrumented lane is not ported (Task 1.4).
 
 ### Task 1.1: `ci/` scripts — classifier + wrapper validator
 
@@ -247,10 +252,10 @@ git commit -m "ci: docs-only classifier + gradle-wrapper.jar validator (GitLab C
 # disambiguated by PIPELINE_KIND. Docs-only fast path via ci/classify-diff.sh (fail-safe inversion).
 default:
   image: «ANDROID_IMAGE»
-  # NB: NO default `tags` — the self-hosted «RUNNER_TAG» (if any) is set ONLY on `instrumented`
-  # so release/renovate secret jobs never touch the public-MR-code runner (finding 3).
+  # All jobs run on shared runners in kn0ck3r-group (10k min/mo). No self-hosted runner exists
+  # (instrumented lane demoted to local-only — 2026-07-23 spike, no /dev/kvm on shared runners).
 
-stages: [classify, gate, verify, instrumented, security, pages, release-build, release-publish, release-object, renovate]
+stages: [classify, gate, verify, security, pages, release-build, release-publish, release-object, renovate]
 
 variables:
   GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
@@ -361,50 +366,11 @@ git add .gitlab-ci.yml
 git commit -m "ci: core-gate (full ci.yml contract + wrapper validation) + JRE-backed ktlint job"
 ```
 
-### Task 1.4: Instrumented job (ports `instrumented.yml`)
+### Task 1.4: Instrumented lane — NOT PORTED (local-only, 2026-07-23 spike)
 
-**Files:** Modify `.gitlab-ci.yml`
+Q1 FAILED (no `/dev/kvm` on gitlab.com shared runners) and the owner chose **demote-to-local**. There is **no `instrumented` job** in `.gitlab-ci.yml` (the `instrumented` stage was removed from the skeleton in Task 1.2). The 9 `:app:connectedDebugAndroidTest` tests are run **on a device before each release** — a [HUMAN] pre-release step, folded into `/release` (Task 3.2 automation update) and the release-checklist (Task 4.2).
 
-- [ ] **Step 1: Append `instrumented`** (findings 2, 3 — optional need; `«RUNNER_TAG»` ONLY here; web self-gates on `PIPELINE_KIND`):
-
-```yaml
-# ---- instrumented: :app connectedDebugAndroidTest (9 tests). Blocking on MRs + nightly + manual. --
-instrumented:
-  stage: instrumented
-  needs: [{ job: classify, optional: true }]
-  tags: [«RUNNER_TAG»]   # shared if Phase-0 Q1 PASS; else the hardened self-hosted tag. ONLY here.
-  timeout: 45m
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_PIPELINE_SOURCE == "schedule" && $PIPELINE_KIND == "instrumented"'
-    - if: '$CI_PIPELINE_SOURCE == "web" && $PIPELINE_KIND == "instrumented"'
-  cache: { key: "gradle-$CI_COMMIT_REF_SLUG", paths: [.gradle/caches, .gradle/wrapper] }
-  script:
-    - if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ] && [ "${CODE:-true}" != "true" ]; then echo "Docs-only — emulator skipped."; exit 0; fi
-    - bash ci/validate-wrapper.sh
-    - ls -l /dev/kvm
-    - |
-      yes | sdkmanager "system-images;android-34;google_apis;x86_64" >/dev/null
-      echo no | avdmanager create avd -n ci -k "system-images;android-34;google_apis;x86_64" --force
-      $ANDROID_HOME/emulator/emulator -avd ci -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot-save -accel on &
-      $ANDROID_HOME/platform-tools/adb wait-for-device
-      timeout 300 bash -c 'until [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" = "1" ]; do sleep 3; done'
-      adb shell settings put global window_animation_scale 0
-      adb shell settings put global transition_animation_scale 0
-      adb shell settings put global animator_duration_scale 0
-    - ./gradlew :app:connectedDebugAndroidTest
-  artifacts:
-    when: always
-    paths: ["**/build/outputs/androidTest-results/**"]
-    expire_in: 7 days
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add .gitlab-ci.yml
-git commit -m "ci: instrumented emulator job (blocking MR + nightly + manual, isolated runner tag)"
-```
+- [ ] **Step 1: Document the local-only contract** in `docs/migration/phase1-ci-port.md` (Task 1.10) and the release checklist: before pushing a `v*` tag, run `./run-gradle.sh :app:connectedDebugAndroidTest` on a connected API-34+ device and confirm green. This is the replacement gate for the retired CI lane (accepted regression, ADR-0044). **No job, no commit here** — this task is a note, not a `.gitlab-ci.yml` change.
 
 ### Task 1.5: Release lane — three jobs (ports `release.yml`) + prove the uploader
 
@@ -869,7 +835,7 @@ already-installed versions. Content unchanged; URL/host + publisher-infra refs o
    ```bash
    git remote rename origin github-archive
    git remote set-url --push github-archive DISABLED
-   git remote add origin git@gitlab.com:kn0ck3r/steps-of-babylon.git
+   git remote add origin git@gitlab.com:kn0ck3r-group/steps-of-babylon.git
    git fetch origin && git rev-parse origin/main && git ls-remote --tags origin | grep 'v'
    # authenticated non-release round-trip: push a throwaway branch + open+close an MR via glab
    ```
@@ -959,7 +925,7 @@ git commit -m "docs: ADR-0044 — GitHub→GitLab migration (numbering resolver 
 ## Success criteria (verify all before declaring done)
 
 - [ ] MR gate green on a real change; red MR provably refused; docs-only fast path green in seconds.
-- [ ] Instrumented lane blocking on MRs (shared or hardened self-hosted runner) — proven by a real instrumented test, not just a boot.
+- [ ] Instrumented tests run green on a device before releases (local-only replacement gate; the CI lane is retired — 2026-07-23 spike).
 - [ ] One owner-verified `v*` tag → signed AAB on Play internal **and** a GitLab Release carrying the AAB as a durable asset (Task 4.1 Step 3).
 - [ ] Privacy policy live on the custom hostname (durable owner), registered in Play Console (both URL fields), **and** embedded in the app via a shipped release; old URL still serving/redirecting.
 - [ ] GitHub repo archived; historical-number resolver rule in ADR-0044; local `origin` → GitLab (old remote read-only `github-archive`).
@@ -967,5 +933,13 @@ git commit -m "docs: ADR-0044 — GitHub→GitLab migration (numbering resolver 
 - [ ] Every CI image/binary/gem digest-pinned (Task 1.10 checklist); no `:latest`/bare tag remains.
 
 ## Codex Review Gate — plan review record
+
+> **Post-review amendment (2026-07-23, after the Phase-0 spike):** the reviewed plan assumed the
+> instrumented lane would be ported (shared or self-hosted runner) under the personal `kn0ck3r`
+> namespace. The spike overturned both assumptions — Q1 FAIL (no `/dev/kvm` on shared runners) and the
+> personal namespace has 0 CI minutes. Applied: target namespace → `kn0ck3r-group`; instrumented lane
+> **demoted to local-only** (Task 1.0 dropped, Task 1.4 is a note, the `instrumented` stage/job/PIPELINE_KIND
+> removed, `«RUNNER_TAG»` gone). These simplify the reviewed design (remove a lane); **the amended plan
+> should get a light Codex re-review before Phase 1 implementation begins.**
 
 Reviewed 2026-07-23 (codex MCP, read-only). **19 findings (18 major, 1 minor); all 19 verified against the real code and applied; 0 refuted.** Key structural fixes folded in: split the release lane into build/publish/release-object jobs (Fastlane `supply` in its own pinned container; durable asset via dotenv→release-object); `needs:{optional:true}` + `CODE:-true` fallback so schedule/web pipelines are valid; `PIPELINE_KIND`-gated schedule/web jobs; `«RUNNER_TAG»` isolated to `instrumented` (no `default.tags`); real `ci/validate-wrapper.sh`; `entrypoint:[""]` on the git image; JRE-backed ktlint; ten-not-nine release vars + `RELEASE_VALIDATE_ONLY` inversion; pinned `Gemfile`/minima + `resource_group:pages`; current-schema `renovate.json`; osv `allow_failure` not `||true`; full pin-resolution checklist; durable Pages owner for the Phase-2 hostname; coherent four-part URL move; explicit `[HUMAN]` tasks for runner provisioning + first owner-witnessed release; PR boundaries with the mandatory doc-sweep/STATE/RUN_LOG steps. The concurrency round was not triggered (no `battle/engine`, `effects`, DAO, or economy surface).
