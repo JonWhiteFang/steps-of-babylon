@@ -35,7 +35,7 @@ workflow:
 classify:
   stage: classify
   image:
-    name: alpine/git:2.45.2   # TODO(Task 1.10): digest-pin
+    name: alpine/git:2.45.2@sha256:16ad8e788e1d3b0c30f18da8dde5c0ace3b187445a62d8af893b003ca1e70592
     entrypoint: [""]          # clear the git entrypoint so the job script runs in a shell
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -104,7 +104,7 @@ ktlint:
   needs:
     - job: classify
       optional: true
-  image: eclipse-temurin:17-jre   # TODO(Task 1.10): digest-pin
+  image: eclipse-temurin:17-jre@sha256:92999aea37688157a53a40bfcb187c30f317422e028045fd5fc5c548fde9e626
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
@@ -118,7 +118,7 @@ ktlint:
 # ============================================================================
 gitleaks:
   stage: security
-  image: zricethezav/gitleaks:v8.18.4   # TODO(Task 1.10): digest-pin
+  image: zricethezav/gitleaks:v8.18.4@sha256:75bdb2b2f4db213cde0b8295f13a88d6b333091bbfbf3012a4e083d00d31caba
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
@@ -137,7 +137,7 @@ gitleaks:
 # ============================================================================
 osv-scan:
   stage: security
-  image: ghcr.io/google/osv-scanner:v2.3.8   # TODO(Task 1.10): digest-pin
+  image: ghcr.io/google/osv-scanner:v2.3.8@sha256:64e86bec6df2466feea5137fc7c78fb3b7c21ec077f014d7130f64810e50676b
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule" && $PIPELINE_KIND == "osv"'
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
@@ -157,7 +157,7 @@ osv-scan:
 # ============================================================================
 pages:
   stage: pages
-  image: ruby:3.3   # TODO(Task 1.10): digest-pin
+  image: ruby:3.3@sha256:52557f527955fb8ea78bd2a196f4d5eb8fb71fd69a38cbbb50b70ca4a63457c5
   resource_group: pages   # serialize; never cancel a half-deploy (matches pages.yml concurrency)
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
@@ -248,7 +248,7 @@ release-build:
 # ============================================================================
 release-publish:
   stage: release-publish
-  image: fastlane/fastlane:2.222.0   # TODO(Task 1.5/1.10): digest-pin the proven fastlane image
+  image: fastlane/fastlane:2.222.0   # TODO(Task 1.5): PROVE `supply --validate_only` on scratch, then digest-pin (tag unresolved locally)
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v/'
   resource_group: play-release
@@ -274,7 +274,7 @@ release-publish:
 # ============================================================================
 release-object:
   stage: release-object
-  image: registry.gitlab.com/gitlab-org/release-cli:latest   # TODO(Task 1.10): digest-pin
+  image: registry.gitlab.com/gitlab-org/release-cli:v0.24.0@sha256:3f52d526f48e8d10625c722fa6d6423ee82aadeae1b1aa91f07b62551d96dacf
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v/'
   needs: [release-build]   # inherits AAB_URL from release-build's dotenv report
@@ -294,7 +294,7 @@ release-object:
 # ============================================================================
 renovate:
   stage: renovate
-  image: renovate/renovate:37   # TODO(Task 1.10): digest-pin
+  image: renovate/renovate:37@sha256:1ee424e0ed4d8e64e5bb2d442d6bc72b3809bb9d0cf804f4b7180caa47d6002a
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule" && $PIPELINE_KIND == "renovate"'
     - if: '$CI_PIPELINE_SOURCE == "web" && $PIPELINE_KIND == "renovate"'
