@@ -285,12 +285,16 @@ release-build:
 # ============================================================================
 release-publish:
   stage: release-publish
-  image: fastlane/fastlane:2.222.0   # TODO(Task 1.5): PROVE `supply --validate_only` on scratch, then digest-pin (tag unresolved locally)
+  # fastlane publishes no official Docker image → run the pinned gem from the pinned ruby image.
+  image: ruby:3.3@sha256:52557f527955fb8ea78bd2a196f4d5eb8fb71fd69a38cbbb50b70ca4a63457c5
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v/'
   resource_group: play-release
   needs: [release-build]   # consumes the AAB + mapping + whatsnew artifacts
+  variables:
+    FASTLANE_VERSION: "2.237.0"
   script:
+    - gem install fastlane -N -v "$FASTLANE_VERSION"
     # PLAY_SERVICE_ACCOUNT_JSON is a FILE-type CI variable → $PLAY_SERVICE_ACCOUNT_JSON is its path.
     - |
       COMMON="--package_name com.whitefang.stepsofbabylon --track internal \
