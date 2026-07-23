@@ -18,6 +18,10 @@ The committed Baseline Profile lives at `app/src/release/generated/baselineProfi
 .github/
 ├── workflows/          # CI: ci.yml (PR gate) + instrumented.yml (emulator) + release.yml (Play internal) + pages.yml (privacy-policy → GitHub Pages, site/ only) + dependency-submission.yml — SHA-pinned (Plan 32 / ADR-0018). ci.yml + instrumented.yml share a `changes` classifier that skips the heavy gates for docs/tooling-only diffs (`docs/**`, `*.md`, `.claude/**`, `.mcp.json`); everything else runs the full gate.
 └── dependabot.yml      # gradle + github-actions weekly updates
+.gitlab-ci.yml          # GitLab CI pipeline — authored + PROVEN on a scratch import (2026-07-23); INERT on GitHub, active only after the GitLab cutover. Replaces 6 of the 7 .github/workflows (instrumented demoted to local-only per the Phase-0 spike). See docs/migration/.
+ci/                     # GitLab CI helpers (INERT until cutover): classify-diff.sh (docs-only classifier + test), validate-wrapper.sh (#212 wrapper-jar guard port), prepare-whatsnew.sh (Play changelog), ci/fastlane/ (locked fastlane 2.237.0 for the release publisher).
+renovate.json           # Self-hosted Renovate policy (dependabot carryover) — active on GitLab post-cutover.
+Gemfile / Gemfile.lock  # Pinned Jekyll 4.3.3 + minima 2.5.1 for the GitLab Pages job (site/ privacy policy).
 .claude/                # Claude Code config (ADR-0019): settings.json (hooks wiring) + hooks/ (session-preflight, guard-sensitive-edits [schema/migration/version guards], ktlint-format-edited, prefer-structural-tools) + skills/ (checkpoint, complete-app-review, release, adversarial-review, new-migration) + agents/ (concurrency-reviewer, android-test-writer). Tooling-only, never built/shipped.
 .mcp.json               # Shared MCP server config (context7 for live API docs); API key read from CONTEXT7_API_KEY env var, never committed
 AGENTS.md               # Thin redirect pointer to CLAUDE.md + docs/agent/START_HERE.md for non-Claude agents (#386, ai-1)

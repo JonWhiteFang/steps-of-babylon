@@ -34,22 +34,26 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — GitHub→GitLab migration: design spec REVIEWED (first artifact through the new Codex Review
-  Gate); awaiting developer sign-off → implementation plan.** Consolidation move (the agent forum +
-  gaslight-and-grimoire already live on gitlab.com/kn0ck3r); advice sourced from gaslight-agent via forum
-  thread AF-2026-000016 (held OPEN per developer). Spec:
-  `docs/superpowers/specs/2026-07-21-gitlab-migration-design.md` on branch `docs/gitlab-migration-spec`
-  (PR not yet opened; rebased on main). Phased: KVM/minutes/secret-push-protection spike → CI port on a
-  scratch import (incl. Play-uploader proof — the `r0adkll/upload-google-play` Action has no GitLab
-  equivalent) → policy URL to a jonwhitefang.uk hostname (the URL is baked into the shipped app — 4-part
-  move, old github.io URL serves indefinitely) → quiesce/import/verify-incl-tags/remote-flip/
-  automation-update/archive cutover → Renovate + doc sweep. Codex gate result: 19 findings (17 major /
-  2 minor), all 19 verified against code + applied, 0 refuted (`13f83ff`). **Shipped alongside (PR #438
-  `2ab5e7c`): the Codex Review Gate itself (ADR-0043)** — spec/plan/implementation reviewed via codex MCP;
-  `/codex-review` replaces `/adversarial-review`; the `concurrency-reviewer` subagent folded in as a
-  mandatory Codex concurrency round (briefing at `.claude/skills/codex-review/concurrency-invariants.md`;
-  ADR-0038 status amended). Next: developer reviews the spec → `/codex-review`-gated implementation plan →
-  Phase 0 spike. #306 Slice 2 implementation remains the queued code work.
+- **CURRENT — GitHub→GitLab migration: Phase 0 spike DONE + Phase 1 CI port authored & PROVEN GREEN on a
+  scratch import; Codex-gated; prepping PR-1.** Consolidation move (agent forum + gaslight-and-grimoire
+  already on gitlab.com). Spec `docs/superpowers/specs/2026-07-21-gitlab-migration-design.md` + plan
+  `docs/superpowers/plans/2026-07-23-gitlab-migration.md` (both Codex-reviewed: spec 19/19 applied; plan
+  19/19 applied). Branch `ci/gitlab-pipeline`.
+  - **Phase 0 (`docs/migration/phase0-spike.md`):** Q1 FAIL (no `/dev/kvm` on shared runners) → **instrumented
+    lane demoted to LOCAL-ONLY** (pre-release device run; self-hosted/Firebase declined). Q2 → **target namespace
+    = `kn0ck3r-group`** (personal = 0 CI minutes; group = 10k/mo). Q3 → Secret Push Protection available.
+  - **Phase 1 (`docs/migration/phase1-ci-port.md`):** `.gitlab-ci.yml` (10 jobs replacing 6 GitHub workflows)
+    + `ci/*.sh` + `renovate.json` + `Gemfile*` + `ci/fastlane/Gemfile.lock` — **all lanes proven green on
+    `kn0ck3r-group/sob-scratch`** (deleted after) incl. the release lane (fastlane `supply --validate_only`
+    authenticated with the real SA to the AAB-signature boundary). 9 env-parity bugs fixed. **Codex
+    implementation review: 7 findings (5 major/2 minor) all applied (`99619c2`)** — changelog upload, release
+    ordering, protected-tag-push rules, fastlane lock, tag/UTF-8 hardening, osv table.
+  - **Next:** open PR-1 on GitHub (CI files inert there) → Phase 2 (privacy-URL move) → Phase 3 (cutover:
+    quiesce/import/verify-incl-tags/remote-flip/automation-update/archive) → Phase 4 (Renovate + doc sweep).
+    The 10 release CI variables (keystore+passwords+admob in the OneDrive `steps-of-babylon-local-files` bundle;
+    `PLAY_LICENSE_KEY` from Play Console Licensing; `PLAY_SERVICE_ACCOUNT_JSON`) load into GitLab at cutover.
+  - **Shipped earlier (PR #438 `2ab5e7c`): the Codex Review Gate itself (ADR-0043).** #306 Slice 2 remains the
+    queued code work.
 - *Previous — #306 Slice 2 (enemy damage/death hoist): spec + plan reviewed & merged (docs-only, PR #433
   `52040a7`); implementation NOT started.* The next slice of the ADR-0012 Phase 5 effect-resolution hoist.
   Design: move enemy `currentHp`/`maxHp`/`armorHits` into the pure-domain `EnemyState` behind a new

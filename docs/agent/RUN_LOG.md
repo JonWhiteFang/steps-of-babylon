@@ -1,3 +1,30 @@
+## 2026-07-23 — GitLab migration: Phase 0 spike + Phase 1 CI port authored & PROVEN on scratch (Codex-gated)
+
+- **Plan written + Codex-gated** (`docs/superpowers/plans/2026-07-23-gitlab-migration.md`): 19-finding
+  plan review (all applied, 0 refuted), then amended from the Phase-0 spike.
+- **Phase 0 spike (go/no-go) DONE** (`docs/migration/phase0-spike.md`): **Q1 FAIL** — no `/dev/kvm` on
+  gitlab.com shared runners → **instrumented lane demoted to local-only** (owner call; self-hosted runner +
+  Firebase declined). **Q2** — personal `kn0ck3r` namespace has 0 CI minutes → **target namespace corrected
+  to `kn0ck3r-group`** (10k min/mo; gaslight already runs CI there). **Q3** — Secret Push Protection
+  available. Spec + plan amended (`86d9c4a`).
+- **Phase 1 CI port authored + PROVEN GREEN** on a throwaway scratch import (`kn0ck3r-group/sob-scratch`,
+  deleted after; real SA loaded via stdin then removed with the project): `.gitlab-ci.yml` (10 jobs replacing
+  6 GitHub workflows — instrumented not ported) + `ci/{classify-diff,validate-wrapper,prepare-whatsnew}.sh` +
+  `renovate.json` + `Gemfile`/`Gemfile.lock` + `ci/fastlane/Gemfile.lock`. Every lane green on real runners,
+  incl. the release lane: `release-build`/`release-object` green; `release-publish` fastlane `supply
+  --validate_only` authenticated with the real SA and validated config to the AAB-signature boundary (throwaway
+  key rejected as expected; Google returned the real upload-key SHA). **9 environment-parity bugs** found +
+  fixed (missing bash on alpine/git; ktlint download+perl; JDK-17 for `jvmToolchain(17)`; tool-as-ENTRYPOINT
+  gitleaks; distroless osv→pinned binary; stale `BUNDLED WITH` + a ` #`-as-YAML-comment; no fastlane image →
+  bundle). Branch `ci/gitlab-pipeline`.
+- **Codex Review Gate on the CI implementation: 7 findings (5 major / 2 minor), all applied** (`99619c2`):
+  Play changelog upload restored (F1); `release-object` needs `release-publish` (F2); release rules require a
+  PROTECTED `v*` tag push (F3); fastlane transitive graph locked (F4); lightweight-tag + UTF-8 hardening
+  (F5/F6 — "regression" framing refuted vs the identical GitHub original, hardened anyway); osv table report (F7).
+- **Remaining:** PR-1 (this doc sync) opens on GitHub (CI files inert there → current gate stays green);
+  then Phase 2 (privacy URL move), Phase 3 (cutover), Phase 4 (Renovate + doc sweep). Red-MR-blocks-merge is
+  a GitLab project setting at cutover; docs-only fast path is unit-tested + proven via the `classify` job.
+
 ## 2026-07-21 (later) — Codex gate first run: migration spec reviewed & amended; PR #438 MERGED
 
 - **Goal:** land the review-procedure change and put the GitLab-migration spec through the new gate.
