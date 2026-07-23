@@ -291,20 +291,18 @@ release-publish:
   resource_group: play-release
   needs: [release-build]   # consumes the AAB + mapping + whatsnew artifacts
   script:
-    - echo "$PLAY_SERVICE_ACCOUNT_JSON" > sa.json
+    # PLAY_SERVICE_ACCOUNT_JSON is a FILE-type CI variable → $PLAY_SERVICE_ACCOUNT_JSON is its path.
     - |
       COMMON="--package_name com.whitefang.stepsofbabylon --track internal \
         --aab app/build/outputs/bundle/release/app-release.aab \
         --mapping app/build/outputs/mapping/release/mapping.txt \
-        --metadata_path distribution --json_key sa.json"
+        --json_key $PLAY_SERVICE_ACCOUNT_JSON --skip_upload_changelogs true"
       if [ "${RELEASE_VALIDATE_ONLY:-false}" = "true" ]; then
         echo "VALIDATE-ONLY (scratch): proving the uploader without publishing."
         fastlane supply $COMMON --validate_only
       else
-        fastlane supply $COMMON --release_status completed
+        fastlane supply $COMMON --metadata_path distribution --release_status completed
       fi
-  after_script:
-    - rm -f sa.json
 
 # ============================================================================
 # release-object — create the GitLab Release linking the durable AAB asset (release-cli image).
