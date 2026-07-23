@@ -139,7 +139,9 @@ ktlint:
 # ============================================================================
 gitleaks:
   stage: security
-  image: zricethezav/gitleaks:v8.18.4@sha256:75bdb2b2f4db213cde0b8295f13a88d6b333091bbfbf3012a4e083d00d31caba
+  image:
+    name: zricethezav/gitleaks:v8.18.4@sha256:75bdb2b2f4db213cde0b8295f13a88d6b333091bbfbf3012a4e083d00d31caba
+    entrypoint: [""]   # the image ENTRYPOINT is `gitleaks`; clear it so GitLab's shell runs the script
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
@@ -158,15 +160,23 @@ gitleaks:
 # ============================================================================
 osv-scan:
   stage: security
-  image: ghcr.io/google/osv-scanner:v2.3.8@sha256:64e86bec6df2466feea5137fc7c78fb3b7c21ec077f014d7130f64810e50676b
+  # osv-scanner's official image is distroless (no shell) → a GitLab script can't run in it. Run the
+  # SHA-pinned binary from alpine instead. allow_failure makes vulns/tool-errors visible (yellow), not green.
+  image: alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule" && $PIPELINE_KIND == "osv"'
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
     - if: '$CI_PIPELINE_SOURCE == "web" && $PIPELINE_KIND == "osv"'
   allow_failure: true   # vulns found → non-zero exit → job yellow (visible, non-blocking)
+  variables:
+    OSV_VERSION: "v2.3.8"
+    OSV_SHA256: "bc98e15319ed0d515e3f9235287ba53cdc5535d576d24fd573978ecfe9ab92dc"
   script:
-    - osv-scanner scan -r ./ --format table            # human-readable to the job log
-    - osv-scanner scan -r ./ --format sarif > osv.sarif
+    - apk add --no-cache curl
+    - curl -sSL "https://github.com/google/osv-scanner/releases/download/${OSV_VERSION}/osv-scanner_linux_amd64" -o /usr/local/bin/osv-scanner
+    - echo "$OSV_SHA256  /usr/local/bin/osv-scanner" | sha256sum -c -
+    - chmod +x /usr/local/bin/osv-scanner
+    - osv-scanner scan -r ./ --format sarif > osv.sarif   # sarif to stdout→artifact; exit 1 (vulns) → yellow
   artifacts:
     when: always
     paths: [osv.sarif]
