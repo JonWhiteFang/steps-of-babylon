@@ -43,6 +43,7 @@ classify:
   variables:
     GIT_DEPTH: 0   # need the diff base
   script:
+    - apk add --no-cache bash   # alpine/git has no bash; ci/classify-diff.sh needs it
     - |
       if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
         base="$CI_MERGE_REQUEST_DIFF_BASE_SHA"; head="$CI_COMMIT_SHA"
