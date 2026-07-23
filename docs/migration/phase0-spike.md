@@ -35,20 +35,36 @@ kvm-emulator-probe:
 
 Run it manually (CI/CD → Pipelines → Run pipeline). Record wall-clock + minutes consumed.
 
-## Go/no-go questions
+## Go/no-go questions — ANSWERED 2026-07-23 (run on `kn0ck3r-group/sob-spike`)
 
 | # | Question | How measured | Finding |
 |---|---|---|---|
-| Q1 | `/dev/kvm` present AND `InfrastructureSmokeTest.harnessBoots` runs green on the emulator on our tier | pipeline above | _fill_ |
-| Q2 | Public-project compute-minute allowance on our tier; est. current CI volume | Settings → Usage Quotas + current Actions run counts | _fill_ |
-| Q3 | Is GitLab Secret Push Protection available on our tier? | Settings → Repository → Secret push protection toggle present? | _fill_ |
+| Q1 | `/dev/kvm` present AND `InfrastructureSmokeTest.harnessBoots` runs green on the emulator on our tier | pipeline above, on `saas-linux-small-amd64` shared runner | **FAIL** — `ls: cannot access '/dev/kvm': No such file or directory`. gitlab.com standard Linux SaaS runners have **no nested virtualization / KVM**; the probe died on line 1. No hardware-accelerated emulator on shared runners. |
+| Q2 | Compute-minute allowance on our tier | group vs personal namespace quota | Personal `kn0ck3r` namespace = **0 minutes** (`ci_quota_exceeded` — every job fails instantly). Group `kn0ck3r-group` namespace = **10,000 min/month** (`shared_runners_minutes_limit: 10000`), and non-emulator jobs run fine there. |
+| Q3 | Is GitLab Secret Push Protection available on our tier? | `GET /projects/:id/security_settings` | **AVAILABLE** — `secret_push_protection_enabled` field is present (currently `false`) on the project's security settings, so the feature exists on this tier; just enable it. (Confirm by toggling it on at cutover.) |
 
-## Decision matrix
+## Decision matrix — RESOLVED
 
-- **Q1 PASS on shared runners** → instrumented lane uses shared runners; `«RUNNER_TAG»` = the shared-runner tag.
-- **Q1 FAIL** → provision a hardened self-hosted runner (below) → `«RUNNER_TAG»` = its tag; else Firebase Test Lab / demote-to-local.
-- **Q2** informs whether a self-hosted runner is also needed for minute headroom.
-- **Q3 absent** → record prevention→detection as an accepted regression in ADR-0044 with an incident-response note (Tasks 1.6 / 4.3).
+- **Q1 FAILED** → the instrumented lane **cannot** use shared runners. Take the fallback: a **hardened self-hosted GitLab runner** with `/dev/kvm` passthrough (plan Task 1.0 + the hardening checklist below), OR Firebase Test Lab / demote-to-local. `«RUNNER_TAG»` = the self-hosted runner's tag once provisioned + signed off. **This is a [HUMAN] provisioning task and a real go/no-go cost — surface it to the owner before Phase 1 Task 1.4.**
+- **Q2** → **the real migration target must be the `kn0ck3r-group` namespace** (10k min), NOT the personal `kn0ck3r` namespace the spec/plan currently name (0 min). gaslight-and-grimoire already runs CI successfully under `kn0ck3r-group`. Non-emulator lanes (gate/ktlint/security/pages/release-build) run on shared runners within the 10k budget; only the emulator lane needs self-hosting. **→ Spec/plan amendment required (see below).**
+- **Q3 AVAILABLE** → enable native Secret Push Protection at cutover; **no** prevention→detection regression note needed in ADR-0044 (the gitleaks lane stays as detection-in-depth, not the sole control).
+
+## Consequential finding — target namespace correction (feed back to spec + plan)
+
+The design spec (`Target state`) and plan name `gitlab.com/kn0ck3r/steps-of-babylon` (personal namespace). Q2
+shows that namespace has **zero** CI minutes, so releases/CI would never run there. The migration target
+must be **`gitlab.com/kn0ck3r-group/steps-of-babylon`**. This changes: the importer destination (cutover
+step 3), the `origin` URL (cutover step 8: `git@gitlab.com:kn0ck3r-group/steps-of-babylon.git`), the
+Renovate `RENOVATE_REPOSITORIES`/token scoping, the forum registry citation paths, and every doc-sweep URL.
+Amend the spec's `Target state` + the plan's cutover runbook + Phase-4 sweep accordingly before Phase 1.
+
+## Spike run record (2026-07-23)
+
+- Project imported as `kn0ck3r/sob-spike`, transferred to `kn0ck3r-group/sob-spike` (personal namespace had 0 minutes).
+- Empty stray `kn0ck3r-group/steps-of-babylon` (id 84622910, 0 commits, created 2026-07-20) deleted.
+- Pipeline `2699405235` (source `api`) reached the runner, failed at the `/dev/kvm` check → Q1 FAIL.
+- Spike CI rule was broadened to `push`/`web`/`api` and `main` unprotected to drive it from the CLI (throwaway project).
+- **Next:** delete the spike project once these findings are transcribed; provision the self-hosted KVM runner (Task 1.0) before authoring the instrumented lane (Task 1.4).
 
 ## Self-hosted fallback hardening (part of the go/no-go)
 
