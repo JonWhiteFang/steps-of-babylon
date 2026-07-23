@@ -19,6 +19,15 @@ stages: [classify, gate, security, pages, release-build, release-publish, releas
 variables:
   GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
 
+# The android-sdk image's default JDK is not 17, but app/build.gradle.kts pins `jvmToolchain(17)`
+# (strict). GitHub used setup-java@17; here we install JDK 17 so Gradle can resolve the toolchain.
+# Referenced (not extended) by the two Gradle jobs so env set here persists in their shared shell.
+.jdk17-setup:
+  script:
+    - apt-get update -qq && apt-get install -y -qq openjdk-17-jdk-headless
+    - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+    - java -version
+
 workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -73,6 +82,7 @@ core-gate:
     paths: [.gradle/caches, .gradle/wrapper]
   script:
     - if [ "${CODE:-true}" != "true" ]; then echo "Docs-only — heavy gate skipped."; exit 0; fi
+    - !reference [.jdk17-setup, script]                             # provide JDK 17 for jvmToolchain(17)
     - bash ci/validate-wrapper.sh                                    # #212 wrapper JAR validation BEFORE gradle
     - ./gradlew testDebugUnitTest lintDebug lintRelease assembleDebug --stacktrace
     # #370 unsigned assembleRelease R8/shrink guard: seed a THROWAWAY non-publishing key, clean up after.
@@ -197,6 +207,7 @@ release-build:
   variables:
     GIT_DEPTH: 0   # all tags (versionCode guard) + annotated tag object (notes)
   script:
+    - !reference [.jdk17-setup, script]   # provide JDK 17 for jvmToolchain(17)
     - bash ci/validate-wrapper.sh
     - |
       tag="${CI_COMMIT_TAG#v}"
