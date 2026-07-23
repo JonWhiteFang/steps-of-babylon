@@ -1,0 +1,307 @@
+# Ported from the GitHub Actions workflows (Plan 32 / ADR-0018 → ADR-0044). One pipeline.
+# Target namespace: gitlab.com/kn0ck3r-group/steps-of-babylon (personal namespace has 0 CI minutes).
+#
+# Trigger matrix (NOT a generic rules block): MR events, branch push, TAG push (source=push +
+# CI_COMMIT_TAG — a branch-only rule silently kills every release), schedule + web disambiguated by
+# PIPELINE_KIND. Docs-only fast path via ci/classify-diff.sh (fail-safe inversion; rules:changes can't).
+#
+# The instrumented lane (instrumented.yml) is NOT ported — demoted to local-only (2026-07-23 spike:
+# no /dev/kvm on gitlab.com shared runners). The 9 :app:connectedDebugAndroidTest tests run on a
+# device before a release. All jobs here run on shared runners; there is no self-hosted runner.
+#
+# Image digests: android-sdk is pinned; the smaller images carry version tags pending the Task-1.10
+# digest-pin pass (Renovate maintains all pins thereafter).
+default:
+  image: ghcr.io/cirruslabs/android-sdk:34@sha256:1c2e7e9c4490dbc1f85364556aa08e550945e6dffb29baab86d5fe2c7be0773a
+
+stages: [classify, gate, security, pages, release-build, release-publish, release-object, renovate]
+
+variables:
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_TAG =~ /^v/'                                   # tag push (release) — explicit
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'                         # PIPELINE_KIND set on the schedule
+    - if: '$CI_PIPELINE_SOURCE == "web"'                             # manual — jobs self-gate on PIPELINE_KIND
+    # else: no pipeline. (An MR always matches rule 1 → the merge gate always has a pipeline.)
+
+# ============================================================================
+# classify — docs-only fast path (dotenv verdict consumed by core-gate). Present on MR + main push;
+# ABSENT on schedule/web, so downstream `needs` it OPTIONALLY and falls back to CODE=true.
+# ============================================================================
+classify:
+  stage: classify
+  image:
+    name: alpine/git:2.45.2   # TODO(Task 1.10): digest-pin
+    entrypoint: [""]          # clear the git entrypoint so the job script runs in a shell
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+  variables:
+    GIT_DEPTH: 0   # need the diff base
+  script:
+    - |
+      if [ "$CI_PIPELINE_SOURCE" = "merge_request_event" ]; then
+        base="$CI_MERGE_REQUEST_DIFF_BASE_SHA"; head="$CI_COMMIT_SHA"
+      else
+        base="$CI_COMMIT_BEFORE_SHA"; head="$CI_COMMIT_SHA"
+      fi
+      bash ci/classify-diff.sh "$base" "$head" | tee classify.env
+  artifacts:
+    reports:
+      dotenv: classify.env
+
+# ============================================================================
+# core-gate — ports ci.yml build-and-test (FULL contract). Runs on MR + main push.
+# ============================================================================
+core-gate:
+  stage: gate
+  needs:
+    - job: classify
+      optional: true   # present on MR/main; absent-safe elsewhere (CODE defaults true below)
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+  variables:
+    GIT_DEPTH: 50
+  cache:
+    key: "gradle-$CI_COMMIT_REF_SLUG"
+    paths: [.gradle/caches, .gradle/wrapper]
+  script:
+    - if [ "${CODE:-true}" != "true" ]; then echo "Docs-only — heavy gate skipped."; exit 0; fi
+    - bash ci/validate-wrapper.sh                                    # #212 wrapper JAR validation BEFORE gradle
+    - ./gradlew testDebugUnitTest lintDebug lintRelease assembleDebug --stacktrace
+    # #370 unsigned assembleRelease R8/shrink guard: seed a THROWAWAY non-publishing key, clean up after.
+    - echo 'play.licenseKey=ci-nonpublishing-placeholder' >> local.properties
+    - ./gradlew assembleRelease --stacktrace
+    - rm -f local.properties
+    - ./gradlew :app:koverXmlReport :app:koverHtmlReport --stacktrace   # #218 informational whole-app
+    - ./gradlew :app:koverVerifyDebug --stacktrace                     # #373 fragile-zone ratchet (GATING)
+    - ./gradlew :baselineprofile:assemble :macrobenchmark:assemble --stacktrace   # benchmark type-check
+    # Room schema-drift guard (#254): stage new + modified, fail on any diff or untracked schema
+    - git add -N app/schemas
+    - git diff --exit-code app/schemas || { echo "Room schema drift — commit app/schemas"; exit 1; }
+    - test -z "$(git status --porcelain app/schemas)" || { echo "Untracked schema files"; git status --porcelain app/schemas; exit 1; }
+    - ./gradlew :app:detekt --stacktrace
+  after_script:
+    - rm -f local.properties   # belt-and-braces (seeded key) — runs even on failure
+  artifacts:
+    when: always
+    paths:
+      - "**/build/reports/**"
+      - "**/build/test-results/**"
+      - "**/build/outputs/apk/debug/*.apk"
+    expire_in: 7 days
+
+# ============================================================================
+# ktlint — standalone, parallel to core-gate. ktlint runs on the JVM → needs a JRE image.
+# ============================================================================
+ktlint:
+  stage: gate
+  needs:
+    - job: classify
+      optional: true
+  image: eclipse-temurin:17-jre   # TODO(Task 1.10): digest-pin
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+  script:
+    - if [ "${CODE:-true}" != "true" ]; then echo "Docs-only — ktlint skipped."; exit 0; fi
+    - apt-get update -qq && apt-get install -y -qq curl coreutils   # coreutils provides sha256sum
+    - ./lint-kotlin.sh   # owns the ktlint 1.8.0 version + SHA-256 (single source of truth)
+
+# ============================================================================
+# gitleaks — secret scan, FULL history (GIT_DEPTH:0 — a shallow default silently weakens it).
+# ============================================================================
+gitleaks:
+  stage: security
+  image: zricethezav/gitleaks:v8.18.4   # TODO(Task 1.10): digest-pin
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+  variables:
+    GIT_DEPTH: 0
+  script:
+    - gitleaks detect --source . --config .gitleaks.toml --report-format sarif --report-path gitleaks.sarif --redact --exit-code 1
+  artifacts:
+    when: always
+    paths: [gitleaks.sarif]
+    expire_in: 30 days
+
+# ============================================================================
+# osv-scan — full dep set vs OSV.dev. Non-gating via allow_failure (NOT ||true — a broken scanner
+# must still surface). Weekly + main + manual. SARIF artifact only (Code-Scanning dashboard retired).
+# ============================================================================
+osv-scan:
+  stage: security
+  image: ghcr.io/google/osv-scanner:v2.3.8   # TODO(Task 1.10): digest-pin
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $PIPELINE_KIND == "osv"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $PIPELINE_KIND == "osv"'
+  allow_failure: true   # vulns found → non-zero exit → job yellow (visible, non-blocking)
+  script:
+    - osv-scanner scan -r ./ --format table            # human-readable to the job log
+    - osv-scanner scan -r ./ --format sarif > osv.sarif
+  artifacts:
+    when: always
+    paths: [osv.sarif]
+    expire_in: 30 days
+
+# ============================================================================
+# pages — pinned Jekyll+minima build of site/ → public/. Publishes ONLY site/ output (never docs/).
+# The custom hostname (privacy.jonwhitefang.uk) is configured against the durable Pages owner (Phase 2).
+# ============================================================================
+pages:
+  stage: pages
+  image: ruby:3.3   # TODO(Task 1.10): digest-pin
+  resource_group: pages   # serialize; never cancel a half-deploy (matches pages.yml concurrency)
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+      changes: [site/**, .gitlab-ci.yml, Gemfile, Gemfile.lock]
+    - if: '$CI_PIPELINE_SOURCE == "web" && $PIPELINE_KIND == "pages"'
+  script:
+    - bundle install
+    - bundle exec jekyll build --source site --destination public
+    - test -f public/index.html || { echo "No public/index.html — Jekyll build produced nothing"; exit 1; }
+    - grep -qi 'privacy' public/index.html || { echo "index.html missing the privacy heading"; exit 1; }
+    - grep -q 'delete-data' public/index.html || { echo "index.html lost the #delete-data anchor"; exit 1; }
+  artifacts:
+    paths: [public]
+
+# ============================================================================
+# release-build — protected v* tag → signed AAB + durable asset. Publishing is a downstream job.
+# Ten protected CI variables: UPLOAD_KEYSTORE_BASE64, KEYSTORE_STORE_PASSWORD, KEYSTORE_KEY_ALIAS,
+# KEYSTORE_KEY_PASSWORD, PLAY_SERVICE_ACCOUNT_JSON, PLAY_LICENSE_KEY (mandatory), + 4 optional AdMob.
+# ============================================================================
+release-build:
+  stage: release-build
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v/'   # protected tag → protected vars available
+  resource_group: play-release
+  timeout: 30m
+  variables:
+    GIT_DEPTH: 0   # all tags (versionCode guard) + annotated tag object (notes)
+  script:
+    - bash ci/validate-wrapper.sh
+    - |
+      tag="${CI_COMMIT_TAG#v}"
+      vn="$(grep -oE 'versionName = "[^"]+"' app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')"
+      [ "$tag" = "$vn" ] || { echo "Tag $CI_COMMIT_TAG != committed versionName ($vn)"; exit 1; }
+    - |
+      cur=$(grep -oE 'versionCode = [0-9]+' app/build.gradle.kts | grep -oE '[0-9]+' | head -1)
+      prev_tag=$(git tag -l 'v*' --sort=-v:refname | grep -vxF "$CI_COMMIT_TAG" | head -1 || true)
+      if [ -n "$prev_tag" ]; then
+        prev=$(git show "$prev_tag:app/build.gradle.kts" | grep -oE 'versionCode = [0-9]+' | grep -oE '[0-9]+' | head -1)
+        [ "$cur" -gt "$prev" ] || { echo "versionCode $cur not > $prev_tag ($prev)"; exit 1; }
+        echo "versionCode $prev → $cur OK"
+      else echo "First release — no prior tag."; fi
+    - ./gradlew testDebugUnitTest   # never ship a signed build that fails unit tests
+    - mkdir -p release && echo "$UPLOAD_KEYSTORE_BASE64" | base64 -d > release/upload-keystore.jks
+    - |
+      cat > keystore.properties <<EOF
+      storeFile=release/upload-keystore.jks
+      storePassword=$KEYSTORE_STORE_PASSWORD
+      keyAlias=$KEYSTORE_KEY_ALIAS
+      keyPassword=$KEYSTORE_KEY_PASSWORD
+      EOF
+    - |
+      [ -n "${ADMOB_APP_ID:-}" ] && echo "admob.appId=$ADMOB_APP_ID" >> local.properties || true
+      [ -n "${ADMOB_AD_UNIT_POST_ROUND_GEM:-}" ] && echo "admob.adUnit.postRoundGem=$ADMOB_AD_UNIT_POST_ROUND_GEM" >> local.properties || true
+      [ -n "${ADMOB_AD_UNIT_POST_ROUND_DOUBLE_PS:-}" ] && echo "admob.adUnit.postRoundDoublePs=$ADMOB_AD_UNIT_POST_ROUND_DOUBLE_PS" >> local.properties || true
+      [ -n "${ADMOB_AD_UNIT_DAILY_FREE_CARD_PACK:-}" ] && echo "admob.adUnit.dailyFreeCardPack=$ADMOB_AD_UNIT_DAILY_FREE_CARD_PACK" >> local.properties || true
+    - |
+      [ -n "${PLAY_LICENSE_KEY:-}" ] || { echo "PLAY_LICENSE_KEY empty — #124 would ship fail-open. Refusing."; exit 1; }
+      echo "play.licenseKey=$PLAY_LICENSE_KEY" >> local.properties
+    - ./gradlew bundleRelease
+    - |
+      AAB=app/build/outputs/bundle/release/app-release.aab
+      jarsigner -verify "$AAB"
+      norm() { grep -m1 'SHA256:' | sed -E 's/.*SHA256:[[:space:]]*//; s/[: ]//g' | tr 'a-f' 'A-F'; }
+      expected="$(keytool -list -v -keystore release/upload-keystore.jks -alias "$KEYSTORE_KEY_ALIAS" -storepass "$KEYSTORE_STORE_PASSWORD" | norm)"
+      actual="$(keytool -printcert -jarfile "$AAB" | norm)"
+      [ -n "$expected" ] && [ "$expected" = "$actual" ] || { echo "AAB signer $actual != upload key $expected"; exit 1; }
+    - bash ci/prepare-whatsnew.sh "$CI_COMMIT_TAG"
+    # Durable asset → Generic Package Registry (non-expiring); publish AAB URL to dotenv for release-object.
+    - |
+      AAB=app/build/outputs/bundle/release/app-release.aab
+      PKG="$CI_API_V4_URL/projects/$CI_PROJECT_ID/packages/generic/steps-of-babylon/$CI_COMMIT_TAG/app-release.aab"
+      curl --fail --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file "$AAB" "$PKG"
+      echo "AAB_URL=$PKG" >> release.env
+  artifacts:
+    reports:
+      dotenv: release.env
+    paths:
+      - app/build/outputs/bundle/release/app-release.aab
+      - app/build/outputs/mapping/release/mapping.txt
+      - distribution/whatsnew/
+    expire_in: 1 day   # short-lived hand-off to release-publish; the DURABLE copy is in the package registry
+  after_script:
+    - rm -f release/upload-keystore.jks keystore.properties local.properties
+
+# ============================================================================
+# release-publish — Fastlane supply in its own pinned container. Scratch sets RELEASE_VALIDATE_ONLY=true;
+# the real project leaves it unset → publishes to Play internal, status completed.
+# ============================================================================
+release-publish:
+  stage: release-publish
+  image: fastlane/fastlane:2.222.0   # TODO(Task 1.5/1.10): digest-pin the proven fastlane image
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v/'
+  resource_group: play-release
+  needs: [release-build]   # consumes the AAB + mapping + whatsnew artifacts
+  script:
+    - echo "$PLAY_SERVICE_ACCOUNT_JSON" > sa.json
+    - |
+      COMMON="--package_name com.whitefang.stepsofbabylon --track internal \
+        --aab app/build/outputs/bundle/release/app-release.aab \
+        --mapping app/build/outputs/mapping/release/mapping.txt \
+        --metadata_path distribution --json_key sa.json"
+      if [ "${RELEASE_VALIDATE_ONLY:-false}" = "true" ]; then
+        echo "VALIDATE-ONLY (scratch): proving the uploader without publishing."
+        fastlane supply $COMMON --validate_only
+      else
+        fastlane supply $COMMON --release_status completed
+      fi
+  after_script:
+    - rm -f sa.json
+
+# ============================================================================
+# release-object — create the GitLab Release linking the durable AAB asset (release-cli image).
+# ============================================================================
+release-object:
+  stage: release-object
+  image: registry.gitlab.com/gitlab-org/release-cli:latest   # TODO(Task 1.10): digest-pin
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v/'
+  needs: [release-build]   # inherits AAB_URL from release-build's dotenv report
+  script:
+    - echo "Creating GitLab Release for $CI_COMMIT_TAG → $AAB_URL"
+  release:
+    tag_name: '$CI_COMMIT_TAG'
+    description: 'Automated release $CI_COMMIT_TAG'   # (GitHub auto-notes retired — ADR-0044 accepted regression)
+    assets:
+      links:
+        - name: 'app-release.aab'
+          url: '$AAB_URL'
+
+# ============================================================================
+# renovate — self-hosted weekly (Mend discontinued the hosted GitLab app). PIPELINE_KIND=renovate.
+# RENOVATE_TOKEN (project access token: api + write_repository) + GITHUB_COM_TOKEN loaded in Phase 4.
+# ============================================================================
+renovate:
+  stage: renovate
+  image: renovate/renovate:37   # TODO(Task 1.10): digest-pin
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $PIPELINE_KIND == "renovate"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $PIPELINE_KIND == "renovate"'
+  variables:
+    RENOVATE_PLATFORM: gitlab
+    RENOVATE_ENDPOINT: "$CI_API_V4_URL"
+    RENOVATE_REPOSITORIES: "$CI_PROJECT_PATH"
+    LOG_LEVEL: info
+  script:
+    - renovate
