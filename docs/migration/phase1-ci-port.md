@@ -3,6 +3,34 @@
 > Plan: `docs/superpowers/plans/2026-07-23-gitlab-migration.md` (Task 1.10). Branch: `ci/gitlab-pipeline`.
 > The real repo is untouched — this proves `.gitlab-ci.yml` on a **throwaway scratch import** before cutover.
 
+## ✅ PROVEN GREEN on scratch (`kn0ck3r-group/sob-scratch`, deleted after) — 2026-07-23
+
+Every lane ran on real gitlab.com shared runners in the `kn0ck3r-group` namespace:
+
+| Lane | Result | Notes |
+|---|---|---|
+| `classify` | ✅ | docs-only fast-path verdict via `ci/classify-diff.sh` |
+| `core-gate` | ✅ | full ci.yml contract (unit+lint+assembleDebug+unsigned assembleRelease+kover ratchet+benchmark compile+schema-drift+detekt) |
+| `ktlint` | ✅ | download+verify ktlint on a JRE image |
+| `gitleaks` | ✅ | full-history scan |
+| `pages` | ✅ | pinned Jekyll+minima build + the 3 assertions |
+| `osv-scan` | ✅ (allowed-to-fail) | scanned 897 pkgs, produced SARIF; non-blocking |
+| `release-build` | ✅ | signed AAB (throwaway key) + signer-identity assertion + durable AAB upload to the Generic Package Registry |
+| `release-object` | ✅ | GitLab Release created linking the durable AAB asset |
+| `release-publish` | ✅ **uploader proven** | Fastlane `supply --validate_only` (real SA) authenticated to Play, parsed the full config, and reached AAB signature validation — rejected ONLY the throwaway key (`Found 23:0E… expected A6:52…` = the real upload key). The real pipeline signs with the real key → passes. |
+
+**Bugs found + fixed during the proof (all committed to `ci/gitlab-pipeline`):** `bash` missing on
+alpine/git (classify); ktlint not downloaded + `shasum`/perl (ktlint); no JDK 17 for `jvmToolchain(17)`
+(core-gate/release-build); tool-as-ENTRYPOINT (gitleaks); distroless image (osv → pinned binary on alpine);
+stale `BUNDLED WITH` + a ` #`-as-YAML-comment assertion (pages); no fastlane Docker image (release-publish →
+`gem install fastlane` on pinned ruby). Also parallelized gitleaks/osv/pages with `needs: []`.
+
+**Remaining Phase-1 items:** (a) gate-semantics — docs-only fast path is covered by `classify-diff.test.sh`
++ the proven `classify` job; red-MR-blocks-merge is the `only_allow_merge_if_pipeline_succeeds` project
+setting configured at cutover (Phase 3 step 5), not a config-file behaviour. (b) **Codex Review Gate** on
+the completed `.gitlab-ci.yml` + `ci/*.sh` + `renovate.json` + `Gemfile*` (Task 1.10 Step 4). (c) PR-1 doc
+sync (Task 1.11).
+
 ## Already done on the branch (agent, 2026-07-23)
 
 - `ci/classify-diff.sh` + `ci/classify-diff.test.sh` — classifier, **3/3 fixture cases green locally**.
@@ -65,7 +93,7 @@
 | ruby:3.3 | `@sha256:52557f52…` | ✅ baked |
 | renovate/renovate:37 | `@sha256:1ee424e0…` | ✅ baked |
 | registry.gitlab.com/gitlab-org/release-cli:v0.24.0 | `@sha256:3f52d526…` | ✅ baked |
-| fastlane/fastlane | (tag TBD) | ⏳ prove `supply --validate_only` then digest-pin (step 5) |
+| fastlane (gem) | `gem install fastlane -v 2.237.0` on `ruby:3.3@sha256:52557f52…` | ✅ proven (no fastlane Docker image exists) |
 | gradle-wrapper.jar (Gradle 9.6.0) | `497c8c2a…` in `ci/validate-wrapper.sh` | ✅ pinned |
 | ktlint 1.8.0 | `a3fd…` in `lint-kotlin.sh` | ✅ already pinned |
 | jekyll/minima gems | `Gemfile.lock` | ✅ locked (reconfirm on ruby:3.3, step 4) |
