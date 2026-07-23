@@ -31,7 +31,9 @@ variables:
 workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-    - if: '$CI_COMMIT_TAG =~ /^v/'                                   # tag push (release) — explicit
+    # Release: only a PUSH of a PROTECTED v* tag (defense-in-depth beyond the owner-only protected-tag
+    # setting — a web/schedule/api pipeline on a v* ref can't enter the publishing lane).
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_TAG =~ /^v/ && $CI_COMMIT_REF_PROTECTED == "true"'
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
     - if: '$CI_PIPELINE_SOURCE == "schedule"'                         # PIPELINE_KIND set on the schedule
     - if: '$CI_PIPELINE_SOURCE == "web"'                             # manual — jobs self-gate on PIPELINE_KIND
@@ -178,10 +180,14 @@ osv-scan:
     - curl -sSL "https://github.com/google/osv-scanner/releases/download/${OSV_VERSION}/osv-scanner_linux_amd64" -o /usr/local/bin/osv-scanner
     - echo "$OSV_SHA256  /usr/local/bin/osv-scanner" | sha256sum -c -
     - chmod +x /usr/local/bin/osv-scanner
-    - osv-scanner scan -r ./ --format sarif > osv.sarif   # sarif to stdout→artifact; exit 1 (vulns) → yellow
+    # Human-readable report to the job log + a retained text artifact (replaces the lost Code-Scanning
+    # view). `|| true` on THIS line is log-only — a real scanner error still surfaces on the SARIF line,
+    # whose exit status drives the job (vulns → exit 1 → yellow via allow_failure; a crash → also non-zero).
+    - osv-scanner scan -r ./ --format table | tee osv-report.txt || true
+    - osv-scanner scan -r ./ --format sarif > osv.sarif
   artifacts:
     when: always
-    paths: [osv.sarif]
+    paths: [osv.sarif, osv-report.txt]
     expire_in: 30 days
 
 # ============================================================================
@@ -216,7 +222,7 @@ pages:
 release-build:
   stage: release-build
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^v/'   # protected tag → protected vars available
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_TAG =~ /^v/ && $CI_COMMIT_REF_PROTECTED == "true"'   # protected v* tag push only
   resource_group: play-release
   timeout: 30m
   variables:
@@ -274,7 +280,7 @@ release-build:
     paths:
       - app/build/outputs/bundle/release/app-release.aab
       - app/build/outputs/mapping/release/mapping.txt
-      - distribution/whatsnew/
+      - distribution/
     expire_in: 1 day   # short-lived hand-off to release-publish; the DURABLE copy is in the package registry
   after_script:
     - rm -f release/upload-keystore.jks keystore.properties local.properties
@@ -288,24 +294,29 @@ release-publish:
   # fastlane publishes no official Docker image → run the pinned gem from the pinned ruby image.
   image: ruby:3.3@sha256:52557f527955fb8ea78bd2a196f4d5eb8fb71fd69a38cbbb50b70ca4a63457c5
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^v/'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_TAG =~ /^v/ && $CI_COMMIT_REF_PROTECTED == "true"'
   resource_group: play-release
-  needs: [release-build]   # consumes the AAB + mapping + whatsnew artifacts
+  needs: [release-build]   # consumes the AAB + mapping + distribution/ (changelog) artifacts
   variables:
-    FASTLANE_VERSION: "2.237.0"
+    BUNDLE_GEMFILE: "$CI_PROJECT_DIR/ci/fastlane/Gemfile"   # locked fastlane graph → reproducible publisher
   script:
-    - gem install fastlane -N -v "$FASTLANE_VERSION"
+    - bundle config set --local frozen true   # CI must not silently rewrite a stale lock
+    - bundle install
     # PLAY_SERVICE_ACCOUNT_JSON is a FILE-type CI variable → $PLAY_SERVICE_ACCOUNT_JSON is its path.
+    # Upload AAB + mapping + the changelog (distribution/<locale>/changelogs/<versionCode>.txt from
+    # release-build's prepare-whatsnew.sh); skip store listing/images (r0adkll only did aab+mapping+whatsnew).
+    # Validate-only exercises the SAME command incl. the changelog layout — no publish-only surprises.
     - |
       COMMON="--package_name com.whitefang.stepsofbabylon --track internal \
         --aab app/build/outputs/bundle/release/app-release.aab \
         --mapping app/build/outputs/mapping/release/mapping.txt \
-        --json_key $PLAY_SERVICE_ACCOUNT_JSON --skip_upload_changelogs true"
+        --json_key $PLAY_SERVICE_ACCOUNT_JSON --metadata_path distribution \
+        --skip_upload_metadata true --skip_upload_images true --skip_upload_screenshots true"
       if [ "${RELEASE_VALIDATE_ONLY:-false}" = "true" ]; then
-        echo "VALIDATE-ONLY (scratch): proving the uploader without publishing."
-        fastlane supply $COMMON --validate_only
+        echo "VALIDATE-ONLY: prove the uploader (incl. changelog layout) without publishing."
+        bundle exec fastlane supply $COMMON --validate_only
       else
-        fastlane supply $COMMON --metadata_path distribution --release_status completed
+        bundle exec fastlane supply $COMMON --release_status completed
       fi
 
 # ============================================================================
@@ -315,8 +326,10 @@ release-object:
   stage: release-object
   image: registry.gitlab.com/gitlab-org/release-cli:v0.24.0@sha256:3f52d526f48e8d10625c722fa6d6423ee82aadeae1b1aa91f07b62551d96dacf
   rules:
-    - if: '$CI_COMMIT_TAG =~ /^v/'
-  needs: [release-build]   # inherits AAB_URL from release-build's dotenv report
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_TAG =~ /^v/ && $CI_COMMIT_REF_PROTECTED == "true"'
+  # Needs BOTH: release-build for AAB_URL (dotenv), AND release-publish so the GitLab Release is created
+  # ONLY after the Play upload succeeds (a failed publish must not advertise an AAB that never shipped).
+  needs: [release-build, release-publish]
   script:
     - echo "Creating GitLab Release for $CI_COMMIT_TAG → $AAB_URL"
   release:

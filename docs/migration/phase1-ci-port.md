@@ -93,7 +93,7 @@ sync (Task 1.11).
 | ruby:3.3 | `@sha256:52557f52…` | ✅ baked |
 | renovate/renovate:37 | `@sha256:1ee424e0…` | ✅ baked |
 | registry.gitlab.com/gitlab-org/release-cli:v0.24.0 | `@sha256:3f52d526…` | ✅ baked |
-| fastlane (gem) | `gem install fastlane -v 2.237.0` on `ruby:3.3@sha256:52557f52…` | ✅ proven (no fastlane Docker image exists) |
+| fastlane | `ci/fastlane/Gemfile.lock` (2.237.0 + 96 gems) → `bundle install` on `ruby:3.3@sha256:52557f52…` | ✅ locked/reproducible (Codex F4) |
 | gradle-wrapper.jar (Gradle 9.6.0) | `497c8c2a…` in `ci/validate-wrapper.sh` | ✅ pinned |
 | ktlint 1.8.0 | `a3fd…` in `lint-kotlin.sh` | ✅ already pinned |
 | jekyll/minima gems | `Gemfile.lock` | ✅ locked (reconfirm on ruby:3.3, step 4) |
