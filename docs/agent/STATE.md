@@ -34,11 +34,25 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — GitHub→GitLab migration: Phase 0 spike DONE + Phase 1 CI port authored & PROVEN GREEN on a
-  scratch import; Codex-gated; prepping PR-1.** Consolidation move (agent forum + gaslight-and-grimoire
-  already on gitlab.com). Spec `docs/superpowers/specs/2026-07-21-gitlab-migration-design.md` + plan
-  `docs/superpowers/plans/2026-07-23-gitlab-migration.md` (both Codex-reviewed: spec 19/19 applied; plan
-  19/19 applied). Branch `ci/gitlab-pipeline`.
+- **CURRENT — GitHub→GitLab migration: Phase 1 MERGED (PR #441 `d58722b`); Phase 2 hostname DECIDED but
+  its code half is BLOCKED on the website agent; Phase 3 is the active work.** Plan
+  `docs/superpowers/plans/2026-07-23-gitlab-migration.md`.
+  - **Phase 2 decision (2026-07-26, forum AF-2026-000017 — owner-approved):** `«NEW_URL»` =
+    **`https://jonwhitefang.uk/legal/steps-of-babylon-privacy/`**, an apex path on the website deployment
+    (Cloudflare Workers). **GitLab Pages declined** — a Pages custom domain makes the hostname forge-neutral
+    but leaves *serving* forge-coupled, i.e. it swaps GitHub for GitLab and keeps the dependency Phase 2
+    exists to shed. Conditional on a scoped Cloudflare WAF exception (approved): that zone's Super Bot Fight
+    Mode 403s HTML documents to non-browser clients, and a 403 to a Play validator is a compliance failure.
+    **Old-URL decision reversed:** the github.io URL keeps a **full copy** of the text (no redirect — GitHub
+    Pages has no true 301, so `#delete-data` propagation is unguaranteed and a JS pointer is invisible to a
+    non-JS fetcher); repo still archived, with a written unarchive→update→re-archive procedure.
+    **PR-2 does NOT land until the website agent confirms the new URL live** (200 non-browser, one
+    `id="delete-data"`, fragment scrolling in Android WebView). Two open items are the owner's:
+    verify the **developer name as displayed on Play** (a mismatch makes this a wording change, not URL-only)
+    and the **Health apps declaration** URL + any per-locale privacy URL in Console. No uptime monitoring
+    exists for either URL — new action item, not an existing capability.
+  - Spec `docs/superpowers/specs/2026-07-21-gitlab-migration-design.md` (Codex-reviewed 19/19 applied);
+    plan Codex-reviewed 19/19 applied.
   - **Phase 0 (`docs/migration/phase0-spike.md`):** Q1 FAIL (no `/dev/kvm` on shared runners) → **instrumented
     lane demoted to LOCAL-ONLY** (pre-release device run; self-hosted/Firebase declined). Q2 → **target namespace
     = `kn0ck3r-group`** (personal = 0 CI minutes; group = 10k/mo). Q3 → Secret Push Protection available.
@@ -48,7 +62,9 @@ the med/low backlog (#262) remain.
     authenticated with the real SA to the AAB-signature boundary). 9 env-parity bugs fixed. **Codex
     implementation review: 7 findings (5 major/2 minor) all applied (`99619c2`)** — changelog upload, release
     ordering, protected-tag-push rules, fastlane lock, tag/UTF-8 hardening, osv table.
-  - **Next:** open PR-1 on GitHub (CI files inert there) → Phase 2 (privacy-URL move) → Phase 3 (cutover:
+  - **Next:** ~~PR-1~~ **MERGED** (`d58722b`) → Phase 2 code half **blocked on the website agent** (decision
+    above; the CI-port files are inert on GitHub so the current gate stays green) → **Phase 3 = the active
+    work** (Task 3.1 cutover runbook + Task 3.2 `gh`→`glab` automation as PR-3; the cutover itself is
     quiesce/import/verify-incl-tags/remote-flip/automation-update/archive) → Phase 4 (Renovate + doc sweep).
     The 10 release CI variables (keystore+passwords+admob in the OneDrive `steps-of-babylon-local-files` bundle;
     `PLAY_LICENSE_KEY` from Play Console Licensing; `PLAY_SERVICE_ACCOUNT_JSON`) load into GitLab at cutover.
