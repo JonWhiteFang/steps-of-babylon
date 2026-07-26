@@ -26,6 +26,11 @@
 ## Documentation
 
 - [x] Privacy policy written (`site/index.md` — canonical; published to GitHub Pages via `.github/workflows/pages.yml`)
+- [ ] **If this release changes the policy text, BOTH published copies must move together.** After the GitLab
+      cutover the old `jonwhitefang.github.io` URL keeps serving a full copy for already-installed builds, and
+      the archived repo is read-only — so a revision needs the **unarchive → update → re-archive** procedure in
+      `docs/migration/phase3-cutover-runbook.md` (step 10), done in the same sitting as the canonical update.
+      Skipping it leaves two divergent live policies, one of them the URL declared to Google.
 - [x] Play Store listing text written (`docs/release/play-store-listing.md`)
 - [x] Signing guide written (`docs/release/signing-guide.md`)
 - [ ] CHANGELOG section added for the release being shipped (per-release)
@@ -43,6 +48,11 @@
 - [ ] Widget renders correctly
 - [ ] Battery usage acceptable (< 5% per day for step counting)
 - [ ] Full JVM unit-test suite + instrumented suite pass (live counts in STATE.md / CLAUDE.md — don't hardcode here)
+- [ ] **Instrumented suite run ON A DEVICE before tagging** — `./run-gradle.sh :app:connectedDebugAndroidTest`
+      against a connected API-34+ device/emulator, green. **This is a human gate with no CI backstop after the
+      GitLab cutover:** the Phase-0 spike found no `/dev/kvm` on gitlab.com shared runners, so the instrumented
+      lane is demoted to local-only (ADR-0044) — the one accepted regression that genuinely weakens the merge
+      gate. Scope to `:app`; the benchmark modules' connected tests refuse a debuggable build.
 - [ ] **Open-source notices render** — open Help → scroll to "Open-source notices"; the notice text loads (#377/ADR-0041; the only OSS-attribution check no build lane can catch)
 - [ ] **OSS notices regenerated if deps changed** — if the shipping (`implementation`) dependency set changed since the last release, re-run `python3 tools/generate_oss_notices.py` + commit `app/src/main/res/raw/oss_notices.txt` (#377)
 
