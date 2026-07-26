@@ -11,6 +11,15 @@ import com.whitefang.stepsofbabylon.domain.battle.entity.DamageableEnemy
  * callers gate lifesteal/knockback on a positive value) and [Outcome.died] (the adapter flips `isAlive`
  * and fires `onDeath`). Stateless + pure — a single shared instance is safe. No Android imports; holds no
  * monitor — the caller invokes it inside the engine's held `entitiesLock`.
+ *
+ * **Known trade-off — one [Outcome] allocation per hit.** The pre-hoist inline `takeDamage` allocated
+ * nothing. This is a hot path: BLACK_HOLE and POISON_SWAMP call `takeDamage` for every alive enemy on every
+ * active tick, so at ~40 enemies with two ongoing UWs at 4x speed it is O(10k) short-lived objects per
+ * second. Accepted deliberately rather than encoding `dealt`+`died` into a primitive: the explicit `died`
+ * flag is what lets the adapter avoid re-deriving death from HP, which is the #146 corpse-guard invariant.
+ * The instance never escapes `EnemyEntity.takeDamage`, so it is a scalar-replacement candidate. If a
+ * profiler ever shows this in GC churn (cf. the #26 A28/A31 per-frame allocation fixes), the fix is a
+ * caller-owned mutable result holder — NOT re-deriving `died`.
  */
 class EnemyDamageResolver {
     /**
