@@ -241,4 +241,43 @@ class CombatResolverTest {
             "reduced motion must suppress the shake (adapter's !reducedMotion gate; dy stays 0)",
         )
     }
+
+    /**
+     * #306 Slice 2 characterization oracle for the SCATTER split. Asserts the OBSERVABLE outcome
+     * (2..3 BASIC children, each at half the parent's maxHp) rather than the arithmetic, so it holds
+     * identically across the hoist to the pure-domain `ScatterSplit`. Verified green against both the
+     * pre-hoist inline path and the post-hoist helper.
+     */
+    @Test
+    fun `handleEnemyDeath on a SCATTER enemy spawns half-HP BASIC children`() {
+        val zig = makeZiggurat()
+        val host = FakeCombatHost(zig)
+        // Seed the RNG so the 2..3 roll is deterministic run-to-run.
+        val resolver = CombatResolver(host, random = kotlin.random.Random(1))
+        val scatter =
+            EnemyEntity(
+                enemyType = EnemyType.SCATTER,
+                currentHp = 40.0,
+                maxHp = 40.0,
+                speed = 0f,
+                damage = 12.0,
+                targetX = zig.originX,
+                targetY = zig.originY,
+                onDeath = { },
+            ).apply {
+                x = zig.originX
+                y = zig.originY + 200f
+            }
+
+        resolver.handleEnemyDeath(scatter)
+
+        val children = host.pending.filterIsInstance<EnemyEntity>()
+        assertTrue(children.size in 2..3, "SCATTER must spawn 2..3 children (was ${children.size})")
+        children.forEach { child ->
+            assertEquals(EnemyType.BASIC, child.enemyType, "SCATTER children are BASIC")
+            assertEquals(20.0, child.maxHp, 1e-9, "each child gets half the parent maxHp (40 → 20)")
+            assertEquals(20.0, child.currentHp, 1e-9)
+            assertEquals(6.0, child.damage, 1e-9, "each child gets half the parent damage (12 → 6)")
+        }
+    }
 }
