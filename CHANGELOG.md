@@ -4,6 +4,34 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Changed — #306 Slice 2: enemy damage/death resolution hoisted to pure domain (ADR-0012 Phase 5)
+
+- **Behaviour-preserving refactor**, no gameplay change. Mirrors Slice 1's ziggurat hoist, applied to enemies.
+- **Added (pure domain, no Android):** `domain/battle/entity/DamageableEnemy.kt` (extends `Damageable` with
+  `var armorHits` — armor is enemy-specific, so it sits on a sub-port rather than widening `Damageable`);
+  `domain/battle/engine/EnemyDamageResolver.kt` (corpse guard #146 → armor absorb #17 → **no-floor** HP
+  subtraction → death detect); `domain/battle/engine/ScatterSplit.kt` (SCATTER child count/HP/damage/offset).
+- **Changed:** `EnemyState` implements `DamageableEnemy` and owns enemy `currentHp`/`maxHp`/`armorHits`;
+  `EnemyEntity.takeDamage` is now a thin adapter that flips `isAlive` and fires the `onDeath` cascade;
+  `CombatResolver`'s SCATTER branch maps `ScatterSplit` descriptors onto children and rolls the count off its
+  injected `random` (identical in production, deterministic under test).
+- **No `EnemyEntity(...)` call site changed.** The plan specified renaming the `currentHp` constructor
+  parameter to `initialHp` across an estimated 6 sites — actually ~20 — on the premise that a mutable
+  delegating property cannot share a name with the parameter it reads. That premise is false: a plain
+  (non-`val`) parameter shadows the same-named member inside property initializers, an idiom this file
+  already used for `armorHits`. So `WaveSpawner`, `CombatResolver` and four test files are untouched.
+- **Two invariants preserved deliberately, both test-pinned:** enemy HP has **no floor** (overkill goes
+  negative, unlike the ziggurat's `coerceAtLeast(0.0)`), and the SCATTER fan uses **float** division
+  (`count / 2f` → 1.5f for three children), documented against being "tidied" to integer division.
+- **Behaviour preservation was proven, not asserted:** the SCATTER characterization test was run green
+  against the pre-hoist inline path (stashing only `CombatResolver.kt`), then green again after the hoist.
+  The `takeDamage` call-site set is unchanged at 7 (`CombatResolver` ×3, `UWController` ×4).
+- **Also fixed a defect in the plan itself:** its `resolve()` used three guard-clause returns, which trips
+  detekt's `ReturnCount` limit of 2 — as written it would have failed the CI gate. Rewritten as a single
+  `when` expression with identical branch order and semantics.
+- **1339 → 1352 JVM tests** (+5 resolver, +5 ScatterSplit, +2 `EnemyState`, +1 SCATTER integration).
+  detekt + `koverVerifyDebug` green. No schema change.
+
 ### Security — `google-protobuf` 3.23.4 → 3.25.8 in the Pages `Gemfile.lock` (CI-only, no app impact)
 
 - Clears the one open high Dependabot alert (#34): `google-protobuf < 3.25.5` carries a DoS advisory, and

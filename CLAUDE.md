@@ -347,8 +347,12 @@ from game logic — the simulation has been extracted to a pure-domain core:
   formulas live in `SimulationMath` (`killCashReward`/`waveCompleteCash`), and ziggurat HP-mutation is now
   domain-hoisted too: `CombatResolver.applyDamageToZiggurat` delegates to the pure-domain
   `ZigguratDamageResolver` over a `Damageable` port — deliberately NOT an `EntityProtocol` subtype (#306,
-  ADR-0012 Phase 5 Slice 1). The remaining entity-coupled work (UW effect resolution + enemy HP-mutation)
-  is NOT yet domain-hoisted — tracked as future ADR-0012 slices (needs `EntityProtocol` surgery).
+  ADR-0012 Phase 5 Slice 1). **Enemy damage/death is domain-hoisted too (Slice 2):** `EnemyState` owns
+  enemy HP/armor behind a `DamageableEnemy` port, the pure `EnemyDamageResolver` does the corpse-guard/
+  armor-absorb/no-floor-subtract/death-detect arithmetic, `ScatterSplit` holds the SCATTER child math, and
+  `EnemyEntity.takeDamage` is a thin adapter that flips `isAlive` + fires `onDeath`. The remaining
+  entity-coupled work is the `UWController.when(type)` effect bodies + `onProjectileHitEnemy`/`onOrbHit`
+  knockback+lifesteal — tracked as future ADR-0012 slices.
 - **`GameLoopThread`** runs `update()`/`render()` on a dedicated thread with a fixed timestep. Its
   per-tick `update()`/`render()` is wrapped in a `try/catch` (#190): on a throw it records a crash
   breadcrumb, stops the loop, and fires `onLoopError` → a "Battle error" UI state — **never silent
@@ -392,7 +396,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1339 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1352 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Coverage ratchet (#373, ADR-0040):** `:app:koverVerifyDebug` gates a scoped Kover coverage floor on the fragile
   concurrency/economy zones (`data.repository`/`domain.usecase`/`presentation.battle.engine`/`domain.battle.*`)
@@ -440,17 +444,29 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Preferred CLI tooling** (use these over the defaults — they are installed; `command -v` to confirm).
   **This applies to subagents too:** when dispatching an implementer/reviewer/explorer that will search
   or touch Kotlin, copy the relevant rule below into its prompt — subagents do NOT see this file.
-  - **`ast-grep`/`sg`** — DEFAULT for any *structural* Kotlin search: call sites, ctor/param sweeps,
-    enum-name surfacing, API-shape audits, "who calls X". Use `sg -l kotlin -p '<pattern>' <path>`
-    (e.g. `sg -l kotlin -p '$X.checkAndAward($$$)' app/src`). Reach for `grep`/`rg` ONLY for literal
+  - **`ast-grep`** — DEFAULT for any *structural* Kotlin search: call sites, ctor/param sweeps,
+    enum-name surfacing, API-shape audits, "who calls X". Use `ast-grep -l kotlin -p '<pattern>' <path>`
+    (e.g. `ast-grep -l kotlin -p '$X.checkAndAward($$$)' app/src`). Reach for `grep`/`rg` ONLY for literal
     text/log/comment scans where structure doesn't matter. If you catch yourself `grep`-ing for a
-    function/class/call, switch to `sg`.
+    function/class/call, switch to `ast-grep`. **Invoke it as `ast-grep`, not the old `sg` alias** — the
+    alias still works but prints a deprecation banner on every call (verified on 0.45.0). `--json=compact`
+    piped through `python`/`jq` is the reliable way to *count* matches per file.
+    *Install (both this and ktlint are absent from a fresh machine despite being listed here):*
+    `npm i -g @ast-grep/cli`.
   - **`fd`** — DEFAULT for file discovery (`fd -e kt Foo`, `fd -t f pattern path`). Use `find` only when
     `fd` genuinely can't express the query.
   - **`detekt`/`ktlint`** — Kotlin static analysis / formatting. **CI-enforced** (PR gate);
-    `./run-gradle.sh :app:detekt` (code-smell/complexity) + `./lint-kotlin.sh` (formatting check;
-    `--format` for auto-fix). Baseline-gated — fails only on NEW violations. See `config/detekt/` +
-    `.editorconfig`. (ADR-0037.)
+    `./run-gradle.sh :app:detekt` (code-smell/complexity) + `./lint-kotlin.sh` (formatting check).
+    Baseline-gated — fails only on NEW violations. See `config/detekt/` + `.editorconfig`. (ADR-0037.)
+    *Install ktlint if missing (`lint-kotlin.sh` will tell you):* download the pinned 1.8.0 release binary
+    to `.ktlint/ktlint` (`curl -sSL -o .ktlint/ktlint https://github.com/pinterest/ktlint/releases/download/1.8.0/ktlint && chmod +x .ktlint/ktlint`)
+    — the script SHA-256-verifies that path fail-closed, and `.ktlint/` is gitignored.
+    ⚠️ **Do NOT run `./lint-kotlin.sh --format` to fix your own diff.** Format mode drops the baseline and
+    runs over ALL of `app/src`, so it "fixes" grandfathered violations across the repo and buries your
+    change in unrelated churn. Scope it to the files you touched instead:
+    `.ktlint/ktlint -F $(git diff --name-only main...HEAD -- '*.kt')`, then re-run the plain check.
+    Autofix leaves genuinely structural issues (e.g. `no-consecutive-comments` from an orphaned KDoc) for
+    you to fix by hand — read the residual list, don't assume `-F` cleared everything.
   - **`delta`** — git-diff pager for a **human at a terminal** (`core.pager`). In this non-TTY agent
     harness git disables the pager, so delta does NOT render for you — read diffs with `git show`/`git
     diff` directly, or force readable output with `delta --paging=never` / `git -c core.pager=delta show`.

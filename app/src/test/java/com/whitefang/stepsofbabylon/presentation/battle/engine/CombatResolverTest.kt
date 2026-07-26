@@ -241,4 +241,53 @@ class CombatResolverTest {
             "reduced motion must suppress the shake (adapter's !reducedMotion gate; dy stays 0)",
         )
     }
+
+    /**
+     * #306 Slice 2 characterization oracle for the SCATTER split. Asserts the OBSERVABLE outcome rather
+     * than the arithmetic, so it holds identically across the hoist to the pure-domain `ScatterSplit`.
+     * Verified green against both the pre-hoist inline path and the post-hoist helper.
+     *
+     * The parent is deliberately given **`currentHp` != `maxHp`** so the test can distinguish them: the
+     * children derive from the parent's `maxHp` (40 → 20 each), so a regression that passed
+     * `enemy.currentHp` (10) into the split would yield 5.0 and fail here. With a 40/40 parent that
+     * mix-up would have been invisible. Child X offsets are asserted too, so the adapter cannot silently
+     * ignore `descriptor.offsetX` while the pure helper's own tests still pass.
+     */
+    @Test
+    fun `handleEnemyDeath on a SCATTER enemy spawns half-HP BASIC children`() {
+        val zig = makeZiggurat()
+        val host = FakeCombatHost(zig)
+        // Seed the RNG so the 2..3 roll is deterministic run-to-run.
+        val resolver = CombatResolver(host, random = kotlin.random.Random(1))
+        val parentX = zig.originX
+        val scatter =
+            EnemyEntity(
+                enemyType = EnemyType.SCATTER,
+                currentHp = 10.0, // deliberately NOT maxHp — see the KDoc
+                maxHp = 40.0,
+                speed = 0f,
+                damage = 12.0,
+                targetX = zig.originX,
+                targetY = zig.originY,
+                onDeath = { },
+            ).apply {
+                x = parentX
+                y = zig.originY + 200f
+            }
+
+        resolver.handleEnemyDeath(scatter)
+
+        val children = host.pending.filterIsInstance<EnemyEntity>()
+        assertTrue(children.size in 2..3, "SCATTER must spawn 2..3 children (was ${children.size})")
+        children.forEach { child ->
+            assertEquals(EnemyType.BASIC, child.enemyType, "SCATTER children are BASIC")
+            assertEquals(20.0, child.maxHp, 1e-9, "half the parent MAX hp (40 → 20), not half currentHp (10 → 5)")
+            assertEquals(20.0, child.currentHp, 1e-9, "children spawn at full health for their own maxHp")
+            assertEquals(6.0, child.damage, 1e-9, "each child gets half the parent damage (12 → 6)")
+        }
+        // Pins that the adapter actually applies descriptor.offsetX: `(i - n / 2f) * 15f` off the parent X.
+        val n = children.size
+        val expectedX = (0 until n).map { parentX + (it - n / 2f) * 15f }
+        assertEquals(expectedX, children.map { it.x }, "children fan out from the parent X by (i - n/2f)*15")
+    }
 }
