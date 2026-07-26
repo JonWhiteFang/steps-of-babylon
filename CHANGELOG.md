@@ -50,6 +50,32 @@ All notable changes to Steps of Babylon are documented here.
   three of the pages job's assertions pass (`index.html` exists, privacy heading present, `#delete-data`
   anchor preserved). Worth doing by hand because `pages.yml` only triggers on `site/**`, so this PR's
   GitHub CI does not exercise the Pages build at all.
+### Added — GitLab migration Phase 3: cutover runbook + `gh`→`glab` automation port (PR #443, docs/skills-only)
+
+- **`docs/migration/phase3-cutover-runbook.md`** — the executable ten-step cutover (quiesce → fingerprint →
+  import → verify → recreate gating → load ten protected release variables → prove the gate → flip remotes →
+  land the automation → archive). Abort is free through step 9; step 10 archives, never deletes.
+- **Automation ported to `glab`** across `/checkpoint`, `/release`, `/complete-app-review`, `/new-migration`
+  and the four `.agent-forum` procedure docs. Flags verified against the installed `glab` 1.109.0, which
+  caught three things a naive binary swap would have broken: GitLab caps `per_page` at **100** (so `gh`'s
+  `--limit 200` can't be ported — the backlog regen now uses `glab api --paginate`); the issue number is
+  **`iid`** and `labels` is an array of **plain strings** (the old `[.labels[].name]` yields nulls); and
+  **`glab issue create`/`mr create` have no `--body-file`**.
+- **Two semantic corrections, not just binary swaps:** `/release` no longer claims the MR pipeline covers the
+  instrumented suite — it does not after cutover (no `/dev/kvm` on shared runners), so the device run is a
+  human pre-tag gate now recorded in `release-checklist.md`; and the forum citation convention now
+  distinguishes GitLab `#<iid>` (issue) / `!<iid>` (MR) from `GitHub-era #<n>`, because a bare `#204` becomes
+  ambiguous once issues and MRs have separate number spaces.
+- **Codex Review Gate: 9 findings (7 major, 1 minor, 1 consistency) — all verified against the code and
+  applied, 0 refuted.** Three were *vacuous verifications* that would have passed while proving nothing: the
+  import check re-measured GitHub (`origin` points there until step 8), the protected-variable check ran on
+  `main` where no job reads those variables, and the fingerprint masked failed `gh` counts into blank fields.
+  Also fixed: a fingerprint blind to parked branches (`rev-list --all` 798 vs `HEAD` 792), a dedup command
+  that truncated at 100 of 155 issues, and a missing `pipefail` that let a truncated capture overwrite the
+  backlog. Sweep gaps found in two docs that direct *future* work at GitHub (`plan-FORWARD.md` closed-track
+  triage; `structure.md`'s `.github/` tree).
+- **Not merged with this PR** — it lands at cutover step 9. Merging earlier would break `/checkpoint` and
+  `/release` against a GitLab project that does not exist yet.
 
 ### Changed — GitLab migration Phase 2: privacy-policy host decided (plan amendment, docs-only)
 
