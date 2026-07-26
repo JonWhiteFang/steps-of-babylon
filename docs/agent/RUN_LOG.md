@@ -1,3 +1,52 @@
+## 2026-07-26 (latest) — #306 Slice 2 IMPLEMENTED: enemy damage/death hoisted to pure domain (Codex SAFE)
+
+- **Goal:** with every GitLab-migration phase authored and the cutover blocked on the developer, pick up the
+  other unblocked track — the #306 Slice 2 code work whose spec+plan were merged but never implemented.
+- **All 7 plan tasks done.** New `DamageableEnemy` port, `EnemyDamageResolver`, `ScatterSplit`; `EnemyState`
+  owns enemy HP/armor; `EnemyEntity.takeDamage` is a thin adapter; `CombatResolver`'s SCATTER branch maps
+  descriptors. **1339 → 1352 JVM tests**, detekt + ktlint + `koverVerifyDebug` green, no schema change.
+- **Behaviour preservation was proven, not asserted.** The SCATTER characterization test was run green
+  against the *pre-hoist* inline path by stashing only `CombatResolver.kt`, then green again after the hoist.
+  `takeDamage` call sites unchanged at 7 (`CombatResolver` ×3, `UWController` ×4).
+- **Three defects found in the PLAN — which had itself passed a Codex review:**
+  - its `resolve()` used three guard-clause returns, tripping detekt's `ReturnCount` limit of 2, so **as
+    written the plan would have failed the CI gate**. A real blind spot in the gate: the plan review never
+    checked the plan's own code against this repo's detekt config.
+  - its `ScatterSplit` KDoc said "integer `count / 2f`" while its own tests correctly asserted float
+    division (`3/2f = 1.5f`).
+  - its headline "sharp edge for the implementer" — rename the `currentHp` ctor param at ~6 named-arg call
+    sites — rested on a **false premise** (that a mutable delegating property cannot share a name with the
+    param it reads). It can: a plain parameter shadows the same-named member inside property initializers,
+    an idiom the file already used for `armorHits`. **Zero call sites changed.** ast-grep counted **21**
+    construction sites across 6 files (GameEngineTest alone: 15) — the plan's estimate was 3.5× low, so
+    avoiding the rename mattered more than it implied. Codex independently confirmed "no shadowing hazard".
+- **Codex Review Gate PASSED; mandatory concurrency round SAFE, zero findings** — the resolver is the only
+  post-construction HP/armor mutator, all callers run inside the held `entitiesLock`, the shared resolver
+  instance was verified stateless, no new monitor or lock-order edge, #146/#125 double-credit still
+  unreachable. 3 minor findings applied: the SCATTER test had `currentHp == maxHp` so a mix-up was invisible
+  (now 10/40, and **verified by injecting the regression and watching it fail**); `EnemyState`'s KDoc still
+  claimed the entity "keeps HP/armor"; `source-files.md` test counts were stale.
+- **Accepted, documented trade-off:** one `Outcome` allocation per hit where the inline path allocated none,
+  on a hot path (BLACK_HOLE/POISON_SWAMP hit every alive enemy every tick — O(10k)/sec at 40 enemies + 2 UWs
+  + 4×). Deliberately not "optimised": encoding `dealt`+`died` into a primitive would mean re-deriving death
+  from HP, which is precisely the #146 corpse-guard invariant. Documented on the resolver with the correct
+  fix (a caller-owned result holder) should a profiler ever show it.
+- **Installed the two tools CLAUDE.md lists but that were absent locally** — `ast-grep` (npm) and the pinned
+  ktlint 1.8.0 binary into the gitignored `.ktlint/` (SHA-256 matched the repo's pin exactly).
+  **ktlint immediately found 19 formatting violations in the new code — this branch would have failed CI.**
+  17 autofixed; the other 2 were a real defect (replacing `takeDamage` left the OLD KDoc orphaned above the
+  new one → two consecutive KDoc blocks), fixed by merging them and keeping the pre-#17 history note.
+  Formatting was scoped to the 10 changed files, NOT `lint-kotlin.sh --format`, which drops the baseline and
+  reformats all of `app/src`. CLAUDE.md corrected on all three points (invoke `ast-grep`, not the deprecated
+  `sg`; install lines for both; a warning against `--format` for fixing your own diff).
+- **Doc sync:** ADR-0012 (Slice 2 entry + the correction that `EnemyState` implements `DamageableEnemy` only —
+  `EntityProtocol.update(dt): Unit` clashes with `EnemyState.update(dt): Boolean`), CLAUDE.md (test count,
+  battle-renderer hoist note, tooling), `source-files.md` (3 new files, 2 reshaped, test entries), CHANGELOG,
+  STATE, this entry.
+- **Remaining:** merge the PR on green. **#306 stays OPEN** for the last slices (`UWController.when(type)`
+  effect bodies; `onProjectileHitEnemy`/`onOrbHit` knockback+lifesteal). The GitLab cutover sitting and all
+  Play Console work remain with the developer.
+
 ## 2026-07-26 (later) — Dependabot alert 34 cleared: google-protobuf 3.23.4 → 3.25.8 (Pages lockfile, CI-only)
 
 - **Goal:** clear the one open high Dependabot alert, which our own Phase-1 work introduced (the
