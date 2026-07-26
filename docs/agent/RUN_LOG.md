@@ -46,6 +46,54 @@
 - **Remaining:** merge the PR on green. **#306 stays OPEN** for the last slices (`UWController.when(type)`
   effect bodies; `onProjectileHitEnemy`/`onOrbHit` knockback+lifesteal). The GitLab cutover sitting and all
   Play Console work remain with the developer.
+## 2026-07-26 (latest) — Phase 4 authored: ADR-0044 + forge sweep + a TESTED cutover tool (Codex: 12/12 applied)
+
+- **Goal:** do everything remaining that doesn't need the developer off-Claude.
+- **`tools/migration-fingerprint.sh`** — the cutover oracle (runbook steps 2 + 4) extracted from inline
+  copy-paste into a script with `capture`/`verify`, **and exercised against the live repo before anyone needs
+  it**: capture wrote a full fingerprint + confirmed all 13 `v*` tags annotated; verify gave MATCH/exit 0
+  against an identical mirror and MISMATCH/exit 1 on a differing HEAD.
+- **ADR-0044** written pre-cutover on purpose (status line says so): the numbering-resolver rule, the
+  namespace choice, the instrumented demotion, both privacy-hosting decisions, and every accepted regression
+  tabled with its mitigation.
+- **Forge sweep (Task 4.2):** README badge, CLAUDE.md, tech.md's CI section rewritten to the real 10 jobs,
+  security-model, structure.md, plan-31, release-checklist, one build-script comment. ADR-0018 + plan-32-ci
+  got **status pointers only**. Closed a gap PR-1 left: `source-files.md` had never received `.gitlab-ci.yml`
+  / `ci/*.sh` / `renovate.json` / `Gemfile` entries. Also found `plan-FORWARD.md` still aiming *future*
+  closed-track tester feedback at the soon-archived repo.
+- **Codex fact-check: 12 findings (7 major, 5 minor), all verified and applied.** The two that mattered were
+  mine:
+  - **`COMMITS_ALL_REFS` was not a valid cross-forge oracle — and it was the fix I added earlier the same
+    day.** Measured: a GitHub mirror carries **293 `refs/pull/*`** refs, so `rev-list --all` = 1244 vs
+    branches+tags = 805. A GitLab import has no `refs/pull/*`, so the field would have mismatched on **every
+    healthy import** and aborted the cutover. My GitHub-mirror-vs-GitHub-mirror test could not have caught it;
+    now `COMMITS_BRANCHES_TAGS`. The runbook's "~450 commits on side branches" was wrong for the same reason.
+  - **A scope error:** I swept the privacy URL in Phase 4, but Task 2.2 owns it. README/release-checklist/
+    plan-31 briefly advertised the new URL while it isn't live, the app constant still points at the old one,
+    and Play points at a typo'd 404 — publishing a link to a non-existent page. Reverted; the boundary is now
+    written into the plan.
+  - Also: `verify` didn't actually print the branch inventory the runbook claimed (now does); `num "$(gh …)"`
+    discarded gh's exit status (a print-then-fail would pass — now checked separately, and tested);
+    tech.md still named the GitHub `build-and-test`/`connected` jobs; my "a broken osv-scanner still shows
+    red" claim was **false** (`allow_failure: true` allows any non-zero, so a crash is yellow too — and the
+    inherited plan wording said the same); the expected-line extraction pattern-guessed line shapes; the
+    "equivalent inline commands" block wasn't equivalent (deleted); security-model over-claimed Secret Push
+    Protection as *enabled* when the spike only confirmed it *exists*; the runbook still called alert 34 open.
+- **Structural fix for "docs assert GitLab is live pre-cutover":** PR-3 (#443) and PR-4 (#446) are both
+  **drafts** landing at cutover steps 9 and 10. Chose the merge gate over hedged prose deliberately — hedged
+  prose has to be un-hedged at cutover, which is a step someone forgets.
+- **Skipped on purpose:** the AF-16 forum closing reply (Task 4.4 owns it, post-cutover — a status note now
+  plus a closing note later is the double-message noise the forum guidance warns against) and the cross-repo
+  `agents/babylon-agent.yaml` MR (another project, cutover-time).
+- **Verification:** docs/tooling only apart from one build-script comment and one `.gitlab-ci.yml` comment;
+  no logic, tests, resources or schema. `bash -n` + full capture/verify regression after every script change.
+  **Test count unchanged (1339 JVM + 9 instrumented.)**
+- **Doc sync:** `CHANGELOG.md`, `docs/agent/STATE.md`, this entry, the migration plan (PR-table merge gate +
+  the Task-4.2 scope boundary + the Task-4.2 file list).
+- **Remaining:** the **cutover sitting** (human/infra; step 8 is the point of no easy return), then Phase 4's
+  human half (Renovate tokens, first owner-witnessed `v*` tag, the cross-repo MR, AF-16 closeout). Phase 2's
+  code half still waits on the website agent; all Play Console work is deferred by owner decision to after
+  the migration.
 
 ## 2026-07-26 (later) — Dependabot alert 34 cleared: google-protobuf 3.23.4 → 3.25.8 (Pages lockfile, CI-only)
 

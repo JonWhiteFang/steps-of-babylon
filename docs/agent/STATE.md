@@ -112,9 +112,20 @@ the med/low backlog (#262) remain.
     load-bearing ways: `per_page` caps at 100, the number is `iid`, `labels` is a string array.
     **The cutover itself is human/infra work and has NOT begun** — it needs quiesce timing, running the
     importer, and loading ten protected secrets; step 8 (remote flip) is the point of no easy return.
-  - **Next:** ~~PR-1~~ **MERGED** (`d58722b`) → ~~Phase-2 decision~~ **MERGED** (PR #442) → Phase 2 *code*
-    half **blocked on the website agent** → Phase 3 **authored, awaiting the cutover sitting** →
-    Phase 4 (Renovate + doc sweep + ADR-0044).
+  - **Phase 4 AUTHORED (2026-07-26) — PR #446 open as a DRAFT; must NOT merge until after cutover step 10.**
+    ADR-0044 (migration + accepted regressions, written pre-cutover with a status line saying so) + the forge
+    doc sweep + **`tools/migration-fingerprint.sh`** (the cutover oracle as a tested script). **Codex gate:
+    12 findings, all applied.** Two were mine and material: (a) `COMMITS_ALL_REFS` was **not** a valid
+    cross-forge oracle — a GitHub mirror carries **293 `refs/pull/*`** refs (`--all` = 1244 vs branches+tags
+    = 805), so it would have failed every healthy import; now `COMMITS_BRANCHES_TAGS`. (b) a **scope error** —
+    the privacy-URL swap belongs to PR-2, and sweeping it in Phase 4 briefly advertised a URL that isn't live
+    while the app still points at the old one. **Rule now recorded in the plan: Task 4.2 changes forge names
+    and tooling only; URLs move when PR-2 moves them.**
+  - **Next:** ~~PR-1~~ **MERGED** (`d58722b`) → ~~Phase-2 decision~~ **MERGED** (#442) → ~~gem bump~~
+    **MERGED** (#444) → ~~Play-console findings~~ **MERGED** (#445) → Phase 2 *code* half **blocked on the
+    website agent** → **PR #443 (Phase 3) + PR #446 (Phase 4) both DRAFT, awaiting the cutover sitting**
+    (they land at cutover steps 9 and 10 respectively; both are written in the post-cutover present tense
+    and are false until then).
   - **Known drift to resolve before cutover:** 1 open **high Dependabot alert** — `google-protobuf 3.23.4`
     in the root `Gemfile.lock` (the Jekyll/minima Pages lockfile added in Phase 1; constraint
     `sass-embedded → ~> 3.21`, so the patched 3.25.5 satisfies it). **CI-only, not shipped in the app.**
