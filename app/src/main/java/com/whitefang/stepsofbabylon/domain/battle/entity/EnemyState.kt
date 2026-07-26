@@ -21,7 +21,13 @@ class EnemyState(
     private val speed: Float,
     private val isRanged: Boolean,
     private val attackInterval: Float,
-) {
+    initialHp: Double = 0.0,
+    override val maxHp: Double = 0.0,
+    initialArmorHits: Int = 0,
+) : DamageableEnemy {
+    override var currentHp: Double = initialHp
+    override var armorHits: Int = initialArmorHits
+
     var x: Float = 0f
         private set
     var y: Float = 0f
