@@ -347,8 +347,12 @@ from game logic — the simulation has been extracted to a pure-domain core:
   formulas live in `SimulationMath` (`killCashReward`/`waveCompleteCash`), and ziggurat HP-mutation is now
   domain-hoisted too: `CombatResolver.applyDamageToZiggurat` delegates to the pure-domain
   `ZigguratDamageResolver` over a `Damageable` port — deliberately NOT an `EntityProtocol` subtype (#306,
-  ADR-0012 Phase 5 Slice 1). The remaining entity-coupled work (UW effect resolution + enemy HP-mutation)
-  is NOT yet domain-hoisted — tracked as future ADR-0012 slices (needs `EntityProtocol` surgery).
+  ADR-0012 Phase 5 Slice 1). **Enemy damage/death is domain-hoisted too (Slice 2):** `EnemyState` owns
+  enemy HP/armor behind a `DamageableEnemy` port, the pure `EnemyDamageResolver` does the corpse-guard/
+  armor-absorb/no-floor-subtract/death-detect arithmetic, `ScatterSplit` holds the SCATTER child math, and
+  `EnemyEntity.takeDamage` is a thin adapter that flips `isAlive` + fires `onDeath`. The remaining
+  entity-coupled work is the `UWController.when(type)` effect bodies + `onProjectileHitEnemy`/`onOrbHit`
+  knockback+lifesteal — tracked as future ADR-0012 slices.
 - **`GameLoopThread`** runs `update()`/`render()` on a dedicated thread with a fixed timestep. Its
   per-tick `update()`/`render()` is wrapped in a `try/catch` (#190): on a throw it records a crash
   breadcrumb, stops the loop, and fires `onLoopError` → a "Battle error" UI state — **never silent
@@ -392,7 +396,7 @@ known concurrency/economy issues are reachability-confirmed but not yet fixed.
 - **Run:** `./run-gradle.sh testDebugUnitTest` (JVM) · `./run-gradle.sh :app:connectedDebugAndroidTest` (instrumented — scope to `:app`; the benchmark modules' connected tests refuse a debuggable build).
 - **Source:** `app/src/test/java/com/whitefang/stepsofbabylon/` (JVM) and
   `app/src/androidTest/java/com/whitefang/stepsofbabylon/` (instrumented).
-- **Headline count: 1339 JVM tests + 9 instrumented tests.** Update this line when it changes; the
+- **Headline count: 1352 JVM tests + 9 instrumented tests.** Update this line when it changes; the
   per-PR breakdown and what's-covered detail lives in `CHANGELOG.md` / `RUN_LOG.md`, not here.
 - **Coverage ratchet (#373, ADR-0040):** `:app:koverVerifyDebug` gates a scoped Kover coverage floor on the fragile
   concurrency/economy zones (`data.repository`/`domain.usecase`/`presentation.battle.engine`/`domain.battle.*`)
