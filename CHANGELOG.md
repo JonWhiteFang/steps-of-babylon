@@ -4,6 +4,25 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Security — `google-protobuf` 3.23.4 → 3.25.8 in the Pages `Gemfile.lock` (CI-only, no app impact)
+
+- Clears the one open high Dependabot alert (#34): `google-protobuf < 3.25.5` carries a DoS advisory, and
+  the root `Gemfile.lock` (the Jekyll/minima lockfile added in Phase 1 for the privacy-policy site) pinned
+  3.23.4. **CI-only — nothing in this Gemfile ships in the app**, and the app has no protobuf dependency.
+- Fixed via an explicit **security floor** on a transitive gem — `gem "google-protobuf", ">= 3.25.5", "< 4"`
+  in the `Gemfile`. A plain `bundle lock --update=google-protobuf` was rejected because it cascades: it
+  also upgrades `sass-embedded` (1.58.3 → 1.102.0) and therefore jumps protobuf to **4.35.1**, churning a
+  Pages toolchain already proven green on the Phase-1 scratch import. The `< 4` bound keeps the resolution
+  inside the 3.x line `sass-embedded 1.58.3` asks for (`~> 3.21`). Net lockfile diff: **two lines**.
+- Three bundler-on-Windows artifacts were stripped so the lock still matches what Linux CI resolves:
+  the `x64-mingw-ucrt` platform + its gem variants, and a re-added **`BUNDLED WITH`** — the latter matters
+  because Phase 1 removed it deliberately (a stale `BUNDLED WITH` was one of the nine env-parity bugs that
+  broke the pages job). `PLATFORMS` stays `ruby`-only.
+- **Verified locally, not assumed:** `bundle exec jekyll build --source site` succeeds on 3.25.8 and all
+  three of the pages job's assertions pass (`index.html` exists, privacy heading present, `#delete-data`
+  anchor preserved). Worth doing by hand because `pages.yml` only triggers on `site/**`, so this PR's
+  GitHub CI does not exercise the Pages build at all.
+
 ### Changed — GitLab migration Phase 2: privacy-policy host decided (plan amendment, docs-only)
 
 - The Phase-2 `«NEW_URL»` token is **resolved**: the hosted privacy policy moves to

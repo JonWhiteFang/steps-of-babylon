@@ -1,3 +1,31 @@
+## 2026-07-26 (later) — Dependabot alert 34 cleared: google-protobuf 3.23.4 → 3.25.8 (Pages lockfile, CI-only)
+
+- **Goal:** clear the one open high Dependabot alert, which our own Phase-1 work introduced (the
+  Jekyll/minima `Gemfile.lock` for the privacy-policy Pages build). CI-only; the app has no protobuf dep.
+- **Rejected the obvious fix.** `bundle lock --update=google-protobuf` cascades: it also upgrades
+  `sass-embedded` 1.58.3 → 1.102.0, whose newer constraint (`~> 4.31`) drags protobuf to **4.35.1** and
+  pulls in `bigdecimal` — churning a Pages toolchain already proven green on the Phase-1 scratch import,
+  for an advisory that only needs `>= 3.25.5`.
+- **Took a security floor instead:** `gem "google-protobuf", ">= 3.25.5", "< 4"` in the `Gemfile`, with the
+  reasoning in a comment. `< 4` holds the resolution inside the 3.x line `sass-embedded 1.58.3` requires
+  (`~> 3.21`). Net `Gemfile.lock` diff: **two lines** (3.23.4 → 3.25.8 + the new DEPENDENCIES entry).
+- **Three bundler-on-Windows artifacts had to be stripped** — both `bundle lock` and `bundle install` add
+  them, and all three would have diverged the lock from what Linux CI resolves: the `x64-mingw-ucrt`
+  platform, its per-gem variants (`ffi`/`google-protobuf`/`sass-embedded`), and a re-added **`BUNDLED
+  WITH`**. That last one is a *regression trap*: Phase 1 removed `BUNDLED WITH` deliberately because a
+  stale value was one of the nine env-parity bugs that broke the pages job. Verified after restoring:
+  0 mingw refs, 0 `BUNDLED WITH`, `PLATFORMS` = `ruby`, LF endings intact.
+- **Verified the build rather than assuming it.** `bundle exec jekyll build --source site` succeeds on
+  3.25.8 and all three of the pages job's assertions pass (index.html present, privacy heading, and the
+  `#delete-data` anchor — the one Play's Data-safety form points at). This mattered because `pages.yml`
+  triggers only on `site/**`, so the PR's own CI never builds the site; without the local run this change
+  would have merged unexercised. (The GitLab `pages` job I wrote in Phase 1 *does* watch `Gemfile`/
+  `Gemfile.lock`, so post-cutover this gap closes by itself.) Gems installed to a throwaway path via
+  `BUNDLE_PATH` env only — no `.bundle/` or `vendor/` left in the repo.
+- **Corrects** STATE's stale "Dependabot dashboard clean" claim.
+- **Remaining:** unchanged — the cutover sitting, then Phase 4. Phase 2's code half still waits on the
+  website agent.
+
 ## 2026-07-26 — GitLab migration: Phase 1 merged; Phase 2 privacy-host DECIDED (forum AF-17) + plan amended
 
 - **Goal:** answer "what's next" after PR-1 merged, then unblock Phase 2 — whose first task is a `[HUMAN]`
