@@ -64,9 +64,9 @@ orchestration and ask them to turn ultracode on (or explicitly accept a weaker s
    (the full 20-section report per `review-brief.md`), creating `docs/reviews/` if absent. The
    **date-stamped filename is deliberate** — each run is a point-in-time artifact kept for tracking +
    backlinking, so a new run does **not** overwrite the prior one.
-4. **File findings as GitHub issues (propose-then-confirm).** After refutation, the workflow returns
+4. **File findings as GitLab issues (propose-then-confirm).** After refutation, the workflow returns
    a deduped issue plan; **do not file blindly** — see "Filing issues" below. This is an outward-facing
-   bulk action, so you present the plan and get the developer's go-ahead before any `gh issue create`.
+   bulk action, so you present the plan and get the developer's go-ahead before any `glab issue create`.
 5. **Relay to the developer** the three required deliverables: (1) short summary of the most
    important findings, (2) the top-10 highest-priority fixes, (3) the exact report path.
 6. These dated reports are point-in-time artifacts — like `docs/external-reviews/*`, **do not edit a
@@ -77,11 +77,14 @@ structure live in `review-brief.md` — the workflow's finder and synthesis prom
 
 ## Filing issues (propose-then-confirm)
 
-Every surviving finding should be trackable as a GitHub issue, **without creating duplicates** and
-matching this repo's conventions. The workflow does NOT call `gh` itself — it returns a plan; you
+Every surviving finding should be trackable as a GitLab issue, **without creating duplicates** and
+matching this repo's conventions. The workflow does NOT call `glab` itself — it returns a plan; you
 execute it only after the developer confirms.
 
-1. **Dedup against existing issues first.** `gh issue list --state all --limit 200 --json number,title,labels`.
+1. **Dedup against existing issues first.** `glab issue list --all --per-page 100 --output json`
+   (`--all` = every state; GitLab caps `per_page` at 100, so for a full sweep prefer
+   `glab api --paginate "projects/:id/issues?per_page=100"`). Note the field names differ from the
+   GitHub era: the number is **`iid`** and `labels` is an array of plain strings.
    A finding already has an issue when an open/closed issue clearly covers the same root cause (match
    on the finding ID in the title, e.g. `(REL-2)`, or on the described defect — not just keyword
    overlap). Findings that map onto an existing issue are reported as "already tracked → #N", not refiled.
@@ -92,19 +95,20 @@ execute it only after the developer confirms.
    the old one as superseded-by with a cross-link) rather than leaving two open.
 3. **Conventions:** title `[Audit] <finding title>`; body = the report's evidence (`file:line`),
    why-it-matters, fix, effort, and a backlink to `docs/reviews/<date>-complete-app-review.md`.
-   **Labels — use ONLY labels that exist in this repo** (`gh label list` to confirm). This repo has
+   **Labels — use ONLY labels that exist in this repo** (`glab label list` to confirm). This repo has
    **no `area:reliability`/`area:architecture`/etc.** — the only `area:*` labels are
    `battle/missions/economy/billing/ui`. The workflow's `proposedIndividualIssues[].suggestedLabels`
    are already pre-mapped to real labels (`bug` + `severity:{blocker|major|minor}` + a domain label like
    `architecture`/`accessibility`/`testing`/`performance`/`dependencies`/`documentation`/`i18n`/`ux`/
    `monetization`/`data-integrity`/`content`); still verify before filing — **a nonexistent label makes
-   `gh issue create` fail.**
+   `glab issue create` fail.**
 4. **Re-run dedup is the hard part.** A re-run against a near-unchanged HEAD re-surfaces findings you
-   already filed last run AND open epics. Pull `gh issue list --state all --limit 200`, build an
+   already filed last run AND open epics. Pull `glab issue list --all --per-page 100` (or the paginated `glab api` form), build an
    explicit "proposed → DUP #N / NEW" map, and only file the NEWs. (Past slip: a duplicate of an
    already-open issue was filed and had to be closed — dedup *before* filing, not after.)
 5. **Present the plan, then confirm.** Show the developer the list (new issues + "already tracked → #N"
-   mappings) and wait for go-ahead. Only then run `gh issue create` (batch via `--body-file`). After
+   mappings) and wait for go-ahead. Only then run `glab issue create` — note it has **no `--body-file`**, so pass the body as
+   `glab issue create -t "<title>" -l "<labels>" -d "$(cat <body-file>)"` (or `--no-editor`). After
    filing, note the new issue numbers back into the report's Technical Debt Register if asked.
 
 ## Red flags — STOP, you are rationalizing away the refutation

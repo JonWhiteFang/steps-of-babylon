@@ -73,6 +73,59 @@ the med/low backlog (#262) remain.
 
 - *Previous (superseded by the CURRENT entry above — implementation is now done) — #306 Slice 2: spec + plan reviewed & merged (docs-only, PR #433
   `52040a7`); implementation shipped 2026-07-26 — see the CURRENT entry.* The next slice of the ADR-0012 Phase 5 effect-resolution hoist.
+- **CURRENT — GitHub→GitLab migration: Phase 1 MERGED (PR #441 `d58722b`); Phase 2 hostname DECIDED but
+  its code half is BLOCKED on the website agent; Phase 3 is the active work.** Plan
+  `docs/superpowers/plans/2026-07-23-gitlab-migration.md`.
+  - **Phase 2 decision (2026-07-26, forum AF-2026-000017 — owner-approved):** `«NEW_URL»` =
+    **`https://jonwhitefang.uk/legal/steps-of-babylon-privacy/`**, an apex path on the website deployment
+    (Cloudflare Workers). **GitLab Pages declined** — a Pages custom domain makes the hostname forge-neutral
+    but leaves *serving* forge-coupled, i.e. it swaps GitHub for GitLab and keeps the dependency Phase 2
+    exists to shed. Conditional on a scoped Cloudflare WAF exception (approved): that zone's Super Bot Fight
+    Mode 403s HTML documents to non-browser clients, and a 403 to a Play validator is a compliance failure.
+    **Old-URL decision reversed:** the github.io URL keeps a **full copy** of the text (no redirect — GitHub
+    Pages has no true 301, so `#delete-data` propagation is unguaranteed and a JS pointer is invisible to a
+    non-JS fetcher); repo still archived, with a written unarchive→update→re-archive procedure.
+    **PR-2 does NOT land until the website agent confirms the new URL live** (200 non-browser, one
+    `id="delete-data"`, fragment scrolling in Android WebView). Two open items are the owner's:
+    verify the **developer name as displayed on Play** (a mismatch makes this a wording change, not URL-only)
+    and the **Health apps declaration** URL + any per-locale privacy URL in Console. No uptime monitoring
+    exists for either URL — new action item, not an existing capability.
+  - Spec `docs/superpowers/specs/2026-07-21-gitlab-migration-design.md` (Codex-reviewed 19/19 applied);
+    plan Codex-reviewed 19/19 applied.
+  - **Phase 0 (`docs/migration/phase0-spike.md`):** Q1 FAIL (no `/dev/kvm` on shared runners) → **instrumented
+    lane demoted to LOCAL-ONLY** (pre-release device run; self-hosted/Firebase declined). Q2 → **target namespace
+    = `kn0ck3r-group`** (personal = 0 CI minutes; group = 10k/mo). Q3 → Secret Push Protection available.
+  - **Phase 1 (`docs/migration/phase1-ci-port.md`):** `.gitlab-ci.yml` (10 jobs replacing 6 GitHub workflows)
+    + `ci/*.sh` + `renovate.json` + `Gemfile*` + `ci/fastlane/Gemfile.lock` — **all lanes proven green on
+    `kn0ck3r-group/sob-scratch`** (deleted after) incl. the release lane (fastlane `supply --validate_only`
+    authenticated with the real SA to the AAB-signature boundary). 9 env-parity bugs fixed. **Codex
+    implementation review: 7 findings (5 major/2 minor) all applied (`99619c2`)** — changelog upload, release
+    ordering, protected-tag-push rules, fastlane lock, tag/UTF-8 hardening, osv table.
+  - **Phase 3 AUTHORED (2026-07-26) — PR #443 is open as a DRAFT and must NOT merge until cutover step 9.**
+    Merging it early repoints `/checkpoint`, `/release`, the backlog regen and the forum procedures at a
+    GitLab project that doesn't exist yet, breaking all four. Contents: `docs/migration/phase3-cutover-runbook.md`
+    (ten steps; abort free through step 9; step 10 archives, never deletes) + the `gh`→`glab` port across the
+    4 skills and 4 `.agent-forum` docs. **Codex gate: 9 findings, all verified + applied, 0 refuted** — the
+    three best catches were *vacuous verifications* (import check re-measuring GitHub since `origin` points
+    there until step 8; protected-variable check on `main`, where no job reads them; fingerprint masking
+    failed `gh` counts into blank fields). `glab` 1.109.0 flag semantics differ from `gh` in three
+    load-bearing ways: `per_page` caps at 100, the number is `iid`, `labels` is a string array.
+    **The cutover itself is human/infra work and has NOT begun** — it needs quiesce timing, running the
+    importer, and loading ten protected secrets; step 8 (remote flip) is the point of no easy return.
+  - **Next:** ~~PR-1~~ **MERGED** (`d58722b`) → ~~Phase-2 decision~~ **MERGED** (PR #442) → Phase 2 *code*
+    half **blocked on the website agent** → Phase 3 **authored, awaiting the cutover sitting** →
+    Phase 4 (Renovate + doc sweep + ADR-0044).
+  - **Known drift to resolve before cutover:** 1 open **high Dependabot alert** — `google-protobuf 3.23.4`
+    in the root `Gemfile.lock` (the Jekyll/minima Pages lockfile added in Phase 1; constraint
+    `sass-embedded → ~> 3.21`, so the patched 3.25.5 satisfies it). **CI-only, not shipped in the app.**
+    Dependabot alerts do NOT migrate, so runbook step 1 says resolve-or-record. STATE previously claimed
+    "Dependabot dashboard clean" — that is no longer true.
+    The 10 release CI variables (keystore+passwords+admob in the OneDrive `steps-of-babylon-local-files` bundle;
+    `PLAY_LICENSE_KEY` from Play Console Licensing; `PLAY_SERVICE_ACCOUNT_JSON`) load into GitLab at cutover.
+  - **Shipped earlier (PR #438 `2ab5e7c`): the Codex Review Gate itself (ADR-0043).** #306 Slice 2 remains the
+    queued code work.
+- *Previous — #306 Slice 2 (enemy damage/death hoist): spec + plan reviewed & merged (docs-only, PR #433
+  `52040a7`); implementation NOT started.* The next slice of the ADR-0012 Phase 5 effect-resolution hoist.
   Design: move enemy `currentHp`/`maxHp`/`armorHits` into the pure-domain `EnemyState` behind a new
   `DamageableEnemy : Damageable` port; hoist the corpse-guard(#146)/armor-absorb(#17)/no-floor-HP/death
   arithmetic into a pure `EnemyDamageResolver`; move SCATTER child-descriptor math into a pure `ScatterSplit`;

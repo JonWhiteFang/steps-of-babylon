@@ -74,6 +74,61 @@
 - **Corrects** STATE's stale "Dependabot dashboard clean" claim.
 - **Remaining:** unchanged — the cutover sitting, then Phase 4. Phase 2's code half still waits on the
   website agent.
+## 2026-07-26 (later, before the gem bump) — GitLab migration Phase 3 AUTHORED: cutover runbook + gh→glab port (Codex-gated, 9/9 applied)
+
+- **Goal:** after the Phase-2 decision landed, author Phase 3 — the cutover runbook (Task 3.1) and the
+  `gh`→`glab` automation port (Task 3.2, PR-3).
+- **PR #442 MERGED** (the Phase-2 decision record; docs-only, all checks green — the docs-only fast path
+  worked as designed, `build-and-test` green in 5s and `connected` in 6s). `main` → `0de36a2`.
+- **Task 3.1 — `docs/migration/phase3-cutover-runbook.md`** (`574d2b4`). Ten steps with the *reasoning* that
+  makes each verification non-vacuous. Load-bearing points: the annotated-tag check (a lightweight-imported
+  tag still fires the pipeline but has no message → the next release silently publishes the generic Play
+  "What's new" line); numbering deliberately not preserved (GitHub shares one number space, GitLab splits
+  issues/MRs → the archived repo stays the `#N` resolver); the two silent-failure traps (blank
+  `PLAY_LICENSE_KEY` must fail closed; a leaked `RELEASE_VALIDATE_ONLY` looks green while publishing
+  nothing). Also wrote the old-privacy-URL obligation + unarchive→update→re-archive procedure into step 10,
+  and added the local-only instrumented device gate + the policy-revision pointer to `release-checklist.md`.
+- **Task 3.2 — the port** (`f659919`), 10 files. **Verified flags against the installed `glab` 1.109.0
+  instead of guessing**, which caught three breakages a naive swap would have shipped: GitLab caps
+  `per_page` at **100** (so `gh --limit 200` can't be ported → `glab api --paginate`); the number is **`iid`**
+  and `labels` is an array of **plain strings** (`[.labels[].name]` → nulls); and **no `--body-file`** on
+  `glab issue create`/`mr create`. Then **executed the converted backlog pipeline against a real GitLab
+  project** — correct output, correct descending sort. Two semantic fixes beyond swaps: `/release` no longer
+  claims CI covers the instrumented suite, and the forum citation convention now separates GitLab
+  `#<iid>`/`!<iid>` from `GitHub-era #<n>`.
+- **Codex Review Gate (`0d39310`): 8 findings (7 major, 1 minor) + 1 consistency defect. All 9 verified
+  against the real code and applied; 0 refuted.** Four confirmed by *measurement*, not reading:
+  `rev-list --all` 798 vs `HEAD` 792; `echo "$(failing)"` exits 0; 155 issues vs the 100/page cap;
+  `false | sort` exits 0 without `pipefail`. The three highest-value catches were all **vacuous
+  verifications** — checks that would pass while proving nothing: (F1) step 4 re-measured GitHub because
+  `origin` points there until step 8; (F4) "run a pipeline on a protected ref" proves nothing about the ten
+  release variables, since only `release-build`/`release-publish` read them and their rules require
+  `CI_COMMIT_TAG =~ /^v/ && CI_COMMIT_REF_PROTECTED`; (F3) the fingerprint masked failed `gh` counts into
+  blank fields and would have been committed as the import oracle. Also (F2) fingerprint blind to parked
+  branches, (F5) a dedup command truncating at 100 of 155 issues, (F6) missing `pipefail` letting a
+  truncated capture overwrite the backlog, (F7) two live docs directing *future* work at GitHub
+  (`plan-FORWARD.md:143` closed-track triage; `structure.md:18`'s `.github/` tree that cutover step 5
+  deletes), (F8) `#` vs `!` sigil conflation. Post-edit validation: `bash -n` on the fingerprint script,
+  the numeric guard rejects empty/non-numeric, `node --check` on `review-workflow.js`.
+  Concurrency round not triggered (no battle/engine, effects, DAO, or economy surface).
+- **PR #443 opened as a DRAFT, marked DO NOT MERGE until cutover step 9** — merging early would break
+  `/checkpoint`, `/release`, the backlog regen and the forum procedures against a nonexistent GitLab project.
+- **`gh` was authenticated mid-session** (it had been unauthenticated during the earlier checkpoint), so:
+  BACKLOG.md was **verified not stale** — the live open-issue set is byte-identical to the file's 18 entries,
+  so that checkpoint step is genuinely satisfied rather than skipped. The earlier entry's "not regenerated"
+  line stays as written (it was true then; the log is append-only).
+- **New drift surfaced:** 1 open **high Dependabot alert** — `google-protobuf 3.23.4` in the root
+  `Gemfile.lock`, i.e. introduced by our own Phase-1 Pages lockfile. CI-only (not shipped); the `~> 3.21`
+  constraint admits the patched 3.25.5, and Ruby 3.3 + bundler are available locally, so it is a one-command
+  fix. Left for the developer's call — alerts don't migrate, hence runbook step 1's resolve-or-record.
+  STATE's "Dependabot dashboard clean" claim is corrected.
+- **Verification:** docs/skills/config only — no code, tests, resources, or schema, so no Gradle build was
+  run (nothing in the diff compiles or lints). **Test count unchanged (1339 JVM + 9 instrumented.)**
+- **Doc sync:** `CHANGELOG.md`, `docs/agent/STATE.md`, this entry, the migration plan (Task 4.2 file list).
+- **Remaining:** the **cutover sitting itself** (human/infra: quiesce timing, run the importer, load ten
+  protected secrets, flip remotes, archive) — not started, and step 8 is the point of no easy return. Then
+  Phase 4 (Renovate tokens, first owner-witnessed `v*` tag on GitLab, doc sweep, ADR-0044). Phase 2's code
+  half still waits on the website agent's live-URL confirmation.
 
 ## 2026-07-26 — GitLab migration: Phase 1 merged; Phase 2 privacy-host DECIDED (forum AF-17) + plan amended
 

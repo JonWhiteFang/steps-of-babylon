@@ -937,7 +937,20 @@ git commit -m "chore: migrate load-bearing automation gh→glab / GitHub→GitLa
 
 ### Task 4.2: Doc & cross-project sweep
 
-**Files:** Modify `README.md`, `CLAUDE.md`, `docs/steering/tech.md`, `docs/steering/security-model.md`, `docs/steering/source-files.md`, `docs/release/release-checklist.md`, `docs/plans/plan-32-ci.md`, `docs/agent/DECISIONS/ADR-0018-ci-github-actions.md`, `app/build.gradle.kts` (comment-only), `.agent-forum/message-guidance.md`, `.agent-forum/security.md`; cross-repo MR: `agents/babylon-agent.yaml`
+**Files:** Modify `README.md`, `CLAUDE.md`, `docs/steering/tech.md`, `docs/steering/security-model.md`, `docs/steering/source-files.md`, `docs/release/release-checklist.md`, `docs/plans/plan-32-ci.md`, `docs/agent/DECISIONS/ADR-0018-ci-github-actions.md`, `app/build.gradle.kts` (comment-only); cross-repo MR: `agents/babylon-agent.yaml`
+
+**Three files added to this list 2026-07-26** (a repo-wide sweep + the PR-3 Codex review found them; none was covered by any phase's file list, and all three direct **future** work at GitHub rather than being historical citations):
+- **`docs/plans/plan-FORWARD.md:143`** — "triage issues filed against `JonWhiteFang/steps-of-babylon`" in the *closed-track* step list. This is the live promotion plan: tester feedback in Phase 2 of the launch would be filed against an archived, read-only repo. **Highest-priority of the three.**
+- **`docs/steering/structure.md:18`** — documents the `.github/` tree (`ci.yml`/`instrumented.yml`/`release.yml`/`pages.yml`/`dependency-submission.yml` + `dependabot.yml`) as the current root layout. Cutover step 5 **deletes** that tree, so this becomes actively wrong at cutover.
+- **`docs/release/plan-31-walkthrough.md:86`** — names `.github/workflows/pages.yml` as the privacy-policy publisher.
+
+> **Deliberately NOT swept:** `docs/agent/DECISIONS/ADR-*` bodies (historical — status pointers only), `docs/archive/**`, `docs/external-reviews/**`, `docs/reviews/**`, prior `RUN_LOG` entries, and `CHANGELOG` history. **Already done in PR-3 (Task 3.2), not pending here:** `.agent-forum/message-guidance.md` + `.agent-forum/security.md` — the citation convention had to move with the forum procedures, since a post-import bare `#N` is ambiguous.
+
+> **Already done in PR-3 (Task 3.2), not pending here:** `.agent-forum/message-guidance.md` and
+> `.agent-forum/security.md` — the citation convention had to move with the forum procedures, since a
+> post-import bare `#N` is ambiguous. **Deliberately NOT swept:** `docs/agent/DECISIONS/ADR-0005-*` and
+> other ADR bodies (historical — status amendments only), `docs/archive/**`, `docs/external-reviews/**`,
+> `docs/reviews/**`, prior `RUN_LOG` entries.
 
 - [ ] **Step 1: Sweep each file** — swap forge names/URLs/tooling. On `docs/plans/plan-32-ci.md` + `docs/agent/DECISIONS/ADR-0018-ci-github-actions.md` add **amended-status pointers only** (historical content unedited). (Finding 18 — both are in the Files list + git add below.)
 - [ ] **Step 2:** Open the cross-repo MR against the agent-forum repo for `agents/babylon-agent.yaml` (authority wording "GitHub issue/PR tracking" → GitLab).

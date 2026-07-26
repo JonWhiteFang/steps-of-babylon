@@ -38,7 +38,7 @@ load-bearing, not optional.
 | Migration registration | `AppMigrations.ALL: Array<Migration>` → wired into the Room builder via `.addMigrations(*AppMigrations.ALL)` in `di/DatabaseModule.kt` |
 | Chain self-check | `AppMigrations.validateChain` + `MIGRATION_FLOOR = 7`; pinned by `MigrationChainTest` (#237) |
 | Exported schemas | `room { schemaDirectory("$projectDir/schemas") }` in `app/build.gradle.kts` → JSON at `app/schemas/com.whitefang.stepsofbabylon.data.local.AppDatabase/N.json`. KSP **regenerates** the next `N.json` during `assembleDebug`. |
-| CI drift gate | `.github/workflows/ci.yml` → the **"Room schema-drift guard"** step (`git add -N app/schemas` → `git diff --exit-code app/schemas` → `git status --porcelain app/schemas`). #254: `git add -N` is what catches a NEW, untracked `N.json` the dev forgot to `git add` — the most likely real drift. |
+| CI drift gate | `.gitlab-ci.yml` → the `core-gate` job's **Room schema-drift guard** steps (`git add -N app/schemas` → `git diff --exit-code app/schemas` → `git status --porcelain app/schemas`). #254: `git add -N` is what catches a NEW, untracked `N.json` the dev forgot to `git add` — the most likely real drift. |
 | Atomic-DAO contention guard | `AtomicDaoConcurrencyTest` (#252) — extend it if a guarded/atomic DAO changed |
 | Per-migration test pattern | `Migration11To12Test` (drives the migration's `migrate(db)` against a real seeded old-version DB) |
 | Schema doc | `docs/database-schema.md` (per CLAUDE.md PR Task-List Convention) |
