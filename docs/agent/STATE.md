@@ -160,6 +160,20 @@ duplicated here (per the one-page rule). For the current objective and what's in
 
 ## Known issues / debt
 
+- **⚠️ OPEN (2026-07-26) — the privacy-policy URL declared in Play Console is a 404.** The Console holds
+  `https://jonwhitefang.github.io/steps-of-bablylon/` (transposed `l`); verified by fetch — misspelled path
+  **404**, correct path **200**. Field last edited 2026-05-13, so the declared policy has been unreachable
+  since then. **The app is unaffected** (`PRIVACY_POLICY_URL` is correct and test-pinned) — this is a
+  Console-only defect, but it breaks Play's in-app-link-matches-declaration expectation and would block the
+  closed-track promotion. Not yet checked: whether the Data-safety **deletion URL** and **Sign in details**
+  carry the same typo. **Also open from the same visit:** the **Health apps** declaration may be unsubmitted
+  (it rendered as an editable 3-step wizard, and it is mandatory for a Health Connect app), and the
+  **Play-displayed developer name** vs the policy's "Whitefang Games" is unverified (a mismatch turns the
+  Task-2.2 URL swap into a wording change). **Deferred by owner decision: all Play Console work happens
+  AFTER the GitLab migration**, folding into the plan's Task 2.3 — so the value to enter then is the NEW
+  hostname, not the old github.io URL. Full record + the corrected acceptance checklist:
+  `docs/release/data-safety-form.md`.
+
 - **CLOSED-TRACK PROMOTION BLOCKERS (2026-06-17 complete-app review, Gate H) — all 3 MERGED:** **#190**
   (crash visibility + game-loop guard — REL-1/REL-2) + **#191** (two reachable battle CMEs — CONC-1/CONC-2)
   via PR #204 (`d673386`, ADR-0026); **#192** (privacy/Data-Safety text — PRIV-1/SEC-1) via PR #205

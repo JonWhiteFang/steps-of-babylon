@@ -818,6 +818,13 @@ already-installed versions. Content unchanged; URL/host + publisher-infra refs o
 
 ### Task 2.3: [HUMAN] Play Console + old-URL guarantees
 
+> **⚠️ One field is currently a 404, not merely stale (found 2026-07-26).** The Console's privacy-policy URL
+> holds `https://jonwhitefang.github.io/steps-of-bablylon/` — a transposed `l`; verified 404 by fetch, vs 200
+> for the correct spelling. So this task is a **repair**, not just a migration: entering `«NEW_URL»` fixes a
+> live compliance defect at the same time. Assume the Data-safety **deletion URL** and **Sign in details**
+> carry the same typo until checked. The **Health apps** declaration may also be unsubmitted (it rendered as
+> an editable 3-step wizard). Full record: `docs/release/data-safety-form.md`.
+
 - [ ] **Step 1: [HUMAN]** After `«NEW_URL»` serves AND the release embedding it ships, set **every** Play field explicitly. The inventory is larger than the two this plan originally listed (website-agent's question surfaced the extras):
   1. Store listing / App content — **privacy-policy URL** → `«NEW_URL»`.
   2. App content → Data safety — **deletion URL** → `«NEW_URL»#delete-data`.
