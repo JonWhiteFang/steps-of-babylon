@@ -34,44 +34,45 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — GitHub→GitLab migration: Phase 1 MERGED (PR #441 `d58722b`); Phase 2 hostname DECIDED but
-  its code half is BLOCKED on the website agent; Phase 3 is the active work.** Plan
-  `docs/superpowers/plans/2026-07-23-gitlab-migration.md`.
-  - **Phase 2 decision (2026-07-26, forum AF-2026-000017 — owner-approved):** `«NEW_URL»` =
-    **`https://jonwhitefang.uk/legal/steps-of-babylon-privacy/`**, an apex path on the website deployment
-    (Cloudflare Workers). **GitLab Pages declined** — a Pages custom domain makes the hostname forge-neutral
-    but leaves *serving* forge-coupled, i.e. it swaps GitHub for GitLab and keeps the dependency Phase 2
-    exists to shed. Conditional on a scoped Cloudflare WAF exception (approved): that zone's Super Bot Fight
-    Mode 403s HTML documents to non-browser clients, and a 403 to a Play validator is a compliance failure.
-    **Old-URL decision reversed:** the github.io URL keeps a **full copy** of the text (no redirect — GitHub
-    Pages has no true 301, so `#delete-data` propagation is unguaranteed and a JS pointer is invisible to a
-    non-JS fetcher); repo still archived, with a written unarchive→update→re-archive procedure.
-    **PR-2 does NOT land until the website agent confirms the new URL live** (200 non-browser, one
-    `id="delete-data"`, fragment scrolling in Android WebView). Two open items are the owner's:
-    verify the **developer name as displayed on Play** (a mismatch makes this a wording change, not URL-only)
-    and the **Health apps declaration** URL + any per-locale privacy URL in Console. No uptime monitoring
-    exists for either URL — new action item, not an existing capability.
-  - Spec `docs/superpowers/specs/2026-07-21-gitlab-migration-design.md` (Codex-reviewed 19/19 applied);
-    plan Codex-reviewed 19/19 applied.
-  - **Phase 0 (`docs/migration/phase0-spike.md`):** Q1 FAIL (no `/dev/kvm` on shared runners) → **instrumented
-    lane demoted to LOCAL-ONLY** (pre-release device run; self-hosted/Firebase declined). Q2 → **target namespace
-    = `kn0ck3r-group`** (personal = 0 CI minutes; group = 10k/mo). Q3 → Secret Push Protection available.
-  - **Phase 1 (`docs/migration/phase1-ci-port.md`):** `.gitlab-ci.yml` (10 jobs replacing 6 GitHub workflows)
-    + `ci/*.sh` + `renovate.json` + `Gemfile*` + `ci/fastlane/Gemfile.lock` — **all lanes proven green on
-    `kn0ck3r-group/sob-scratch`** (deleted after) incl. the release lane (fastlane `supply --validate_only`
-    authenticated with the real SA to the AAB-signature boundary). 9 env-parity bugs fixed. **Codex
-    implementation review: 7 findings (5 major/2 minor) all applied (`99619c2`)** — changelog upload, release
-    ordering, protected-tag-push rules, fastlane lock, tag/UTF-8 hardening, osv table.
-  - **Next:** ~~PR-1~~ **MERGED** (`d58722b`) → Phase 2 code half **blocked on the website agent** (decision
-    above; the CI-port files are inert on GitHub so the current gate stays green) → **Phase 3 = the active
-    work** (Task 3.1 cutover runbook + Task 3.2 `gh`→`glab` automation as PR-3; the cutover itself is
-    quiesce/import/verify-incl-tags/remote-flip/automation-update/archive) → Phase 4 (Renovate + doc sweep).
-    The 10 release CI variables (keystore+passwords+admob in the OneDrive `steps-of-babylon-local-files` bundle;
-    `PLAY_LICENSE_KEY` from Play Console Licensing; `PLAY_SERVICE_ACCOUNT_JSON`) load into GitLab at cutover.
-  - **Shipped earlier (PR #438 `2ab5e7c`): the Codex Review Gate itself (ADR-0043).** #306 Slice 2 remains the
-    queued code work.
-- *Previous — #306 Slice 2 (enemy damage/death hoist): spec + plan reviewed & merged (docs-only, PR #433
-  `52040a7`); implementation NOT started.* The next slice of the ADR-0012 Phase 5 effect-resolution hoist.
+- **CURRENT — #306 Slice 2 (enemy damage/death hoist) IMPLEMENTED, PR open (2026-07-26).** ADR-0012 Phase 5
+  Slice 2, mirroring Slice 1's ziggurat hoist. New pure-domain `DamageableEnemy` port (`Damageable` +
+  `var armorHits`), `EnemyDamageResolver` (corpse-guard #146 → armor-absorb #17 → **no-floor** HP subtract →
+  death detect) and `ScatterSplit` (SCATTER child count/HP/damage/offset). `EnemyState` owns enemy
+  HP/armor; `EnemyEntity.takeDamage` is a thin adapter that only flips `isAlive` + fires `onDeath`.
+  **Behaviour-preserving and proven so** — the SCATTER characterization test was run green against the
+  pre-hoist inline path (stashing only `CombatResolver.kt`) and again after the hoist; the `takeDamage`
+  call-site set is unchanged at 7. **1339 → 1352 JVM tests.** No schema change.
+  - **Codex Review Gate PASSED — concurrency round SAFE, zero findings** (the resolver is the only
+    post-construction HP/armor mutator; all 7 callers run inside the held `entitiesLock`; the shared
+    resolver instance is stateless; no new monitor or lock-order edge; #146/#125 double-credit still
+    unreachable). 3 minor findings applied, incl. strengthening the SCATTER test so a
+    `currentHp`/`maxHp` mix-up can no longer pass unnoticed (verified by injecting the regression).
+  - **Three defects found IN THE PLAN itself** (it had passed a Codex review): its `resolve()` used 3
+    guard-clause returns and so would have **failed detekt's `ReturnCount`** gate; its `ScatterSplit` KDoc
+    claimed integer division where its own tests correctly asserted float; and its central "sharp edge" —
+    renaming the `currentHp` ctor param at ~6 call sites — rested on a **false premise**. A plain parameter
+    legally shadows its same-named member inside property initializers, so **zero call sites changed**
+    (ast-grep counted 21 construction sites across 6 files, not 6).
+  - **Accepted trade-off, documented on the resolver:** one `Outcome` allocation per hit where the inline
+    path allocated none, on a hot path (~O(10k)/sec at 40 enemies + 2 UWs + 4×). Not "fixed", because the
+    alternative — encoding `dealt`+`died` into a primitive — would mean re-deriving death from HP, which is
+    the #146 invariant. If a profiler shows it, the fix is a caller-owned result holder.
+  - **#306 stays OPEN** for the remaining slices: `UWController.when(type)` effect bodies and
+    `onProjectileHitEnemy`/`onOrbHit` knockback+lifesteal.
+
+- *Previous — GitHub→GitLab migration: Phases 0–4 all authored, Codex-gated and green; **the cutover sitting
+  is the only thing left and it needs the developer**.* Phase 1 MERGED (PR #441 `d58722b`); the Phase-2
+  hostname decision MERGED (#442); the gem bump (#444) and Play-Console findings (#445) MERGED; **PR #443
+  (Phase 3) and #446 (Phase 4) are DRAFTS that must not merge until cutover steps 9 and 10** — both are
+  written in the post-cutover present tense and are false until then. Plan
+  `docs/superpowers/plans/2026-07-23-gitlab-migration.md`; runbook
+  `docs/migration/phase3-cutover-runbook.md`; ADR-0044. Phase 2's *code* half is still blocked on the
+  website agent confirming the new privacy URL live. All Play Console work is deferred by owner decision
+  until after the migration — including a **404 in the Console's declared privacy URL**
+  (`steps-of-bablylon`, see `docs/release/data-safety-form.md`).
+
+- *Previous (superseded by the CURRENT entry above — implementation is now done) — #306 Slice 2: spec + plan reviewed & merged (docs-only, PR #433
+  `52040a7`); implementation shipped 2026-07-26 — see the CURRENT entry.* The next slice of the ADR-0012 Phase 5 effect-resolution hoist.
   Design: move enemy `currentHp`/`maxHp`/`armorHits` into the pure-domain `EnemyState` behind a new
   `DamageableEnemy : Damageable` port; hoist the corpse-guard(#146)/armor-absorb(#17)/no-floor-HP/death
   arithmetic into a pure `EnemyDamageResolver`; move SCATTER child-descriptor math into a pure `ScatterSplit`;
