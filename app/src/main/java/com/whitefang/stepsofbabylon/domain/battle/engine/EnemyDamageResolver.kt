@@ -23,17 +23,30 @@ class EnemyDamageResolver {
         val died: Boolean,
     )
 
+    /**
+     * Branch order is load-bearing and matches the pre-hoist `takeDamage` exactly: corpse guard first, then
+     * armor, then HP. Written as a `when` expression rather than guard clauses because three early returns
+     * trip detekt's `ReturnCount` limit of 2 — the semantics are identical.
+     */
     fun resolve(
         target: DamageableEnemy,
         amount: Double,
         isAlive: Boolean,
-    ): Outcome {
-        if (!isAlive) return Outcome(dealt = 0.0, died = false)
-        if (target.armorHits > 0) {
-            target.armorHits--
-            return Outcome(dealt = 0.0, died = false)
+    ): Outcome =
+        when {
+            // #146: a dead enemy leaves `entities` only at end of frame, so a later hit in the same
+            // collision sweep must be a no-op rather than re-triggering death.
+            !isAlive -> Outcome(dealt = 0.0, died = false)
+            // #17: an armor charge absorbs the whole hit — no HP lost, and `dealt = 0.0` so the caller
+            // grants no lifesteal or knockback for it.
+            target.armorHits > 0 -> {
+                target.armorHits--
+                Outcome(dealt = 0.0, died = false)
+            }
+            // No HP floor: overkill drives HP negative, unlike the ziggurat's coerceAtLeast(0.0).
+            else -> {
+                target.currentHp -= amount
+                Outcome(dealt = amount, died = target.currentHp <= 0.0)
+            }
         }
-        target.currentHp -= amount
-        return Outcome(dealt = amount, died = target.currentHp <= 0.0)
-    }
 }
