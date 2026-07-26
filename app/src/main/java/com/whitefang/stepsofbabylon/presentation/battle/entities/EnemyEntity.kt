@@ -4,6 +4,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import com.whitefang.stepsofbabylon.domain.battle.engine.EnemyDamageResolver
 import com.whitefang.stepsofbabylon.domain.battle.entity.EnemyState
 import com.whitefang.stepsofbabylon.domain.model.EnemyType
 import com.whitefang.stepsofbabylon.presentation.battle.biome.BattlePalette
@@ -11,8 +12,8 @@ import com.whitefang.stepsofbabylon.presentation.battle.engine.Entity
 
 class EnemyEntity(
     val enemyType: EnemyType,
-    var currentHp: Double,
-    val maxHp: Double,
+    currentHp: Double,
+    maxHp: Double,
     val speed: Float,
     val damage: Double,
     private val targetX: Float,
@@ -33,9 +34,35 @@ class EnemyEntity(
     armorHits: Int = 0,
     enemyTint: Int = 0,
 ) : Entity() {
-    var armorHits: Int = armorHits
-        private set
-    private val state = EnemyState(targetX, targetY, speed, enemyType == EnemyType.RANGED, attackInterval)
+    private val state =
+        EnemyState(
+            targetX = targetX,
+            targetY = targetY,
+            speed = speed,
+            isRanged = enemyType == EnemyType.RANGED,
+            attackInterval = attackInterval,
+            initialHp = currentHp,
+            maxHp = maxHp,
+            initialArmorHits = armorHits,
+        )
+
+    /**
+     * HP + armor now live in the pure-domain [EnemyState] behind the `DamageableEnemy` port (#306
+     * Slice 2); these delegate so every external reader — `BattleAnnouncer`, `BattleRenderer`, the
+     * `CombatResolver` SCATTER split, `WaveSpawner`, `render()` — sees the unchanged surface.
+     *
+     * The constructor parameters keep the names `currentHp`/`maxHp`/`armorHits` deliberately, so **no
+     * call site changes**: a plain (non-`val`) parameter shadows the same-named member inside property
+     * initializers, so `initialHp = currentHp` above binds to the parameter while reads elsewhere hit
+     * the delegating accessor. The file already relied on this idiom for `armorHits`.
+     */
+    var currentHp: Double
+        get() = state.currentHp
+        set(value) {
+            state.currentHp = value
+        }
+    val maxHp: Double get() = state.maxHp
+    val armorHits: Int get() = state.armorHits
 
     // V1X-09 Phase 3: CHRONO_FIELD slows enemies only. Simulation.tickEntities reads this
     // flag instead of a presentation-layer `is EnemyEntity` check.
@@ -85,23 +112,28 @@ class EnemyEntity(
      * only on hits that landed (#17). Pre-fix this returned `Unit` and those side-effects ran off
      * the intended damage regardless of absorption, granting free healing/CC on armored hits.
      */
+    /**
+     * Applies [amount] HP damage and returns the damage actually dealt — `0.0` when the enemy is already
+     * dead (#146 corpse guard) or the hit is fully absorbed by an armor charge (#17). Callers gate
+     * damage-proportional side-effects (lifesteal, knockback) on a positive return.
+     *
+     * The corpse-guard / armor-absorb / HP-subtract / death-detect arithmetic is hoisted to the
+     * pure-domain [EnemyDamageResolver] (#306 Slice 2). This adapter keeps only the presentation
+     * concerns: flipping `isAlive` and firing the `onDeath` cascade (cash / battle-Steps / boss drop /
+     * SCATTER split — the reward data itself already lives in `Simulation`).
+     *
+     * The #146 corpse guard is why `isAlive` is passed in rather than re-derived from HP: a dead enemy is
+     * removed from `entities` only at end of frame, so a second projectile in the same collision sweep can
+     * land on the corpse, where `currentHp <= 0.0` is still true and `onDeath` would re-fire —
+     * double-decrementing the enemy count AND re-crediting the kill reward.
+     */
     fun takeDamage(amount: Double): Double {
-        // #146 cause #2: an already-dead enemy is removed from `entities` only at end of frame,
-        // so a second projectile in the same collision sweep (or any post-death hit) can land on
-        // the corpse. Without this guard `currentHp <= 0.0` is still true and onDeath re-fires —
-        // double-decrementing the enemy counter AND re-crediting the kill reward (cash + battle
-        // Steps). Defense-in-depth complementing the #125 getAliveEnemies live re-derive.
-        if (!isAlive) return 0.0
-        if (armorHits > 0) {
-            armorHits--
-            return 0.0
-        }
-        currentHp -= amount
-        if (currentHp <= 0.0) {
+        val outcome = ENEMY_DAMAGE_RESOLVER.resolve(state, amount, isAlive)
+        if (outcome.died) {
             isAlive = false
             onDeath(this)
         }
-        return amount
+        return outcome.dealt
     }
 
     fun applyKnockback(
@@ -160,6 +192,9 @@ class EnemyEntity(
     }
 
     companion object {
+        /** Stateless + monitor-free, so one shared instance is safe across all enemies (#306 Slice 2). */
+        private val ENEMY_DAMAGE_RESOLVER = EnemyDamageResolver()
+
         private val ARMOR_PAINT =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = 0x5500BCD4
