@@ -4,6 +4,34 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Changed — GitLab migration Phase 2: privacy-policy host decided (plan amendment, docs-only)
+
+- The Phase-2 `«NEW_URL»` token is **resolved**: the hosted privacy policy moves to
+  **`https://jonwhitefang.uk/legal/steps-of-babylon-privacy/`** — an apex path served by the website
+  deployment (Cloudflare Workers). The plan's own recommendation (a `privacy.` subdomain on a standalone
+  GitLab Pages project) was **declined**: a Pages custom domain makes the *hostname* forge-neutral but
+  leaves the *serving* forge-coupled, which is the dependency Phase 2 exists to shed. Conditional on a
+  scoped Cloudflare WAF exception (that zone's Super Bot Fight Mode currently 403s HTML documents to
+  non-browser clients — a Play validator getting a 403 is a compliance failure).
+- **Old-URL decision reversed from "optionally 301":** the github.io URL keeps serving a **full copy** of
+  the policy text, not a redirect. GitHub Pages has no server-side 301, so a `meta refresh` pointer gives
+  no guaranteed `#delete-data` propagation and is invisible to a non-JS fetcher. The repo is still archived
+  at cutover (it remains the historical `#N` citation resolver), with a written
+  **unarchive → update → re-archive** procedure so a future policy revision reaches both copies in one
+  sitting — otherwise archiving would freeze one of two divergent live policies, one being the URL declared
+  to Google.
+- **Play field inventory grew from 2 to 4** (+2 to verify in Console): the store-listing privacy URL and the
+  Data-safety deletion URL, **plus** the Health apps declaration (the app reads Health Connect, so that form
+  holds its own privacy link — the repo has no record of its current value) and whether Play exposes a
+  per-locale privacy URL now that Spanish ships. Also recorded: the in-app URL lives in **three** places
+  (the `PRIVACY_POLICY_URL` constant + the `hc_privacy_policy_body` prose in both `values/` and `values-es/`).
+- **Open content gate:** the policy must identify the developer *as shown on Play*. The text says "Whitefang
+  Games"; the repo does not record the Console's displayed developer name. If it differs, that is a wording
+  change requiring the policy owner and "URL/host only" no longer describes PR-2.
+- **Docs-only** — no production code, tests, resources, or schema; the shipped URL is unchanged and the test
+  count is unchanged. The `PRIVACY_POLICY_URL` change itself is PR-2, gated on the new URL being verified
+  live (Task 2.2 does not land before that confirmation).
+
 ### Changed — Review procedure: Codex Review Gate (PR #438, ADR-0043)
 
 - The multi-agent-Workflow **Adversarial Review Gate** is replaced by the **Codex Review Gate**: every

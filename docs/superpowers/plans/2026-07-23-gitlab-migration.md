@@ -61,7 +61,8 @@ Authored by the agent (committed to the relevant PR branch unless noted):
 **Empirically-resolved tokens** (deferred by the spec — resolved in-phase, not guessed; the ONLY permitted `«...»` tokens):
 - `«ANDROID_IMAGE»` — digest-pinned Android SDK container image (Phase 1, Task 1.2 Step 1).
 - `«FASTLANE_IMAGE»` — digest-pinned Fastlane container for the publish job (Phase 1, Task 1.5).
-- `«NEW_URL»` — the privacy hostname (Phase 2 website-agent thread).
+- ~~`«NEW_URL»`~~ — **RESOLVED 2026-07-26** (Phase 2 website-agent thread AF-2026-000017):
+  `https://jonwhitefang.uk/legal/steps-of-babylon-privacy/` (trailing slash included). See Task 2.1.
 - Plus per-image/gem digests collected by the Task-1.10 pin checklist.
 
 ---
@@ -722,16 +723,45 @@ git commit -m "docs: sync current-state docs for the GitLab CI port (PR-1)"
 
 ---
 
-# PHASE 2 — Privacy-policy URL move (PR-2; new URL must be served by a DURABLE Pages owner)
+# PHASE 2 — Privacy-policy URL move (PR-2; new URL must be served by a DURABLE owner)
 
 > The URL is **embedded in the shipped app**. Ordering rule: **new URL live (on a durable owner) before the release that embeds it ships**.
 
-### Task 2.1: [HUMAN + website-agent] Decide the hostname AND its durable Pages owner
+> **✅ TASK 2.1 DECIDED 2026-07-26** (owner sign-off on website-agent's AF-2026-000017 recommendation).
+> `«NEW_URL»` = **`https://jonwhitefang.uk/legal/steps-of-babylon-privacy/`** — an apex **path** served by
+> the website-agent's Cloudflare Workers deployment. **The plan's own recommendation (a `privacy.`
+> subdomain on a standalone GitLab Pages project) was declined**, on website-agent's decisive argument:
+> a GitLab Pages custom domain makes the *hostname* forge-neutral but leaves the *serving* forge-coupled
+> — it swaps GitHub for GitLab and keeps the dependency Phase 2 exists to shed. The apex path adds no DNS
+> record, no certificate, and no new failure domain, and attaches the availability obligation to a host
+> that is already load-bearing for its owner.
+>
+> **Conditional on a Jon-gated Cloudflare WAF exception (approved).** That zone's Super Bot Fight Mode
+> (`definitely_automated: block`) currently 403s HTML documents to non-browser clients — measured from the
+> firewall event log; UA spoofing doesn't help, classification is behavioural. A 403 to a Play validator
+> is a compliance failure, so a scoped `http_request_sbfm` skip (both slash spellings, + `bic`/
+> `securityLevel`) is a prerequisite, not a nicety. Its acceptance gate is empirical: 200 from a plain
+> non-browser client + Cloudflare Trace proving the skip *matched*.
+>
+> **Sequencing (hard gate).** Task 2.2 does NOT land until website-agent posts live-confirmation on
+> AF-17: 200 from a non-browser client, `text/html`, full policy text in the HTML without JS, exactly one
+> `id="delete-data"`, fragment scrolling in Chrome **and Android WebView**, old URL still serving. Never
+> ship an app pointing at an unconfirmed URL.
+>
+> **Anchor trap found while answering (would have shipped a dead fragment):** our `delete-data` anchor is
+> NOT slug-derived — `site/index.md` carries an explicit `<a name="delete-data"></a>` above `## Data
+> Deletion`. A slugger yields `data-deletion`, so `rehype-slug` alone produces the WRONG id and the page
+> still returns 200 with a fragment that resolves to nothing. Website-agent also maps `h1` to
+> `() => null`, which would silently delete our `# Privacy Policy — Steps of Babylon` title (em-dash,
+> U+2014). Both were reported; its render-the-production-HTML test is the gate.
+
+### Task 2.1: [HUMAN + website-agent] Decide the hostname AND its durable owner  ✅ DECIDED 2026-07-26
 
 Finding 15 — the scratch project is deleted before Phase 2 and the real repo isn't imported until Phase 3, so neither can own the hostname. Decide a **durable** owner now.
 
-- [ ] **Step 1: [HUMAN]** In the website-agent thread, decide (a) the exact URL `«NEW_URL»` (recommend `https://privacy.jonwhitefang.uk/` — a hostname binds cleanly; a path would make the main website deployment own routing/TLS, which must then be assigned explicitly), and (b) **who serves it durably**: recommended = a **standalone permanent GitLab project** (e.g. `kn0ck3r/privacy-site`) holding a copy of `site/` + the Task-1.8 `pages` job, decoupled from the app-repo cutover (matches the gaslight advice to decouple the policy site from the forge). Record the exact URL byte-for-byte (trailing slash included).
-- [ ] **Step 2: [HUMAN]** Stand up the durable owner: create the standalone project, push `site/` + the pinned Pages job, add the custom domain (GitLab → Settings → Pages → New domain → TXT verify via website-agent DNS → Let's Encrypt). **Confirm `«NEW_URL»` serves the built `index.html` before Task 2.2 merges.** (The app repo's own `pages` job continues to publish the same content post-cutover; the durable owner is what the hostname points at.)
+- [x] **Step 1: [HUMAN]** Decided as above: `«NEW_URL»` = `https://jonwhitefang.uk/legal/steps-of-babylon-privacy/`; durable owner = the website-agent Cloudflare Workers deployment (source held outside `public/`, read at build time, so the policy has exactly one canonical representation there). GitLab Pages declined; the `privacy.` subdomain shape declined (its Worker has no host-based routing, so a second hostname would duplicate the whole site under a second permanent HSTS obligation). Fallback if ever needed: proxied `AAAA 100::` + a Single Redirect to the apex path — recorded, not requested.
+- [ ] **Step 2: [website-agent, Jon-gated]** Ship the page + the anchor fix + the WAF exception, then post the verification gate on AF-17. **Our side is blocked until that confirmation** — the app repo's own `pages` job is no longer the durable owner of anything and the app-repo Pages lane becomes redundant for this URL (it still publishes `site/` as the canonical *source of record*).
+- [ ] **Step 3: [ours, open]** No uptime monitoring exists for either URL today (stated plainly on AF-17 rather than implying coverage). Standing up monitoring for both the new and the old URL is a new action item, not an existing capability.
 
 ### Task 2.2: Code + docs URL update (TDD)
 
@@ -788,8 +818,17 @@ already-installed versions. Content unchanged; URL/host + publisher-infra refs o
 
 ### Task 2.3: [HUMAN] Play Console + old-URL guarantees
 
-- [ ] **Step 1: [HUMAN]** After `«NEW_URL»` serves AND the release embedding it ships: Play Console → App content → set **both** fields explicitly — (i) the **privacy-policy URL** → `«NEW_URL»`, and (ii) the **Data-safety deletion URL** → `«NEW_URL»#delete-data`. Then flip `docs/release/data-safety-form.md` status from "pending resubmission" to resubmitted with the date.
-- [ ] **Step 2: [HUMAN]** Keep the github.io URL serving **indefinitely** (already-installed versions render the baked old URL). Archiving GitHub freezes but does not unpublish Pages — that satisfies it. Optionally replace old-site content with a 301-pointer **before** archive.
+- [ ] **Step 1: [HUMAN]** After `«NEW_URL»` serves AND the release embedding it ships, set **every** Play field explicitly. The inventory is larger than the two this plan originally listed (website-agent's question surfaced the extras):
+  1. Store listing / App content — **privacy-policy URL** → `«NEW_URL»`.
+  2. App content → Data safety — **deletion URL** → `«NEW_URL»#delete-data`.
+  3. **Health apps declaration** — the app reads Health Connect (`READ_STEPS`/`READ_EXERCISE`), so that form exists and carries its own privacy link. **The repo has no record of what URL it currently holds** — check it in Console; this was a blind spot.
+  4. **Per-locale URLs** — the listing now has a Spanish localization. Whether Play exposes a per-locale privacy URL is unconfirmed; verify in Console rather than assuming either way.
+
+  Then flip `docs/release/data-safety-form.md` status from "pending resubmission" to resubmitted with the date.
+- [ ] **Step 2: [HUMAN, needed BEFORE the wording is locked]** **Verify the developer name as displayed on the live Play listing.** Google's account-deletion requirements are about *content*: the resource must identify the app/developer **as shown on Play**. The policy text says "Whitefang Games"; the repo does not record the Console's displayed developer name, and the account identity differs. If it displays differently, that is a **wording change requiring the policy owner** and "URL/host only" no longer describes this PR. The other three content elements were checked and are present: how to request deletion (in-app `Settings → Delete All Data` + system Clear Data steps), what's deleted ("Types of data deleted"), what's retained and for how long ("Retention after deletion: none" + the Google-controlled ad-ID carve-out).
+- [ ] **Step 3: OLD-URL DECISION (decided 2026-07-26 — supersedes "optionally 301").** The old github.io URL keeps serving the **full current policy text**, NOT a redirect. Website-agent's push-back was accepted: archiving makes the old page read-only *for future revisions*, so a later policy change would leave **two divergent live policies**, one of them the URL declared to Google — worse than a stale URL. A redirect was explicitly declined too: GitHub Pages has no server-side 301, so a `meta http-equiv=refresh` / `jekyll-redirect-from` pointer gives no guaranteed `#delete-data` propagation and is invisible to a non-JS fetcher — i.e. exactly the Play-validator failure mode this move exists to prevent. The repo is **still archived** at cutover (it is the canonical resolver for historical `#N` citations — ADR-0044), with the mitigation in Step 4.
+- [ ] **Step 4:** Write the **unarchive → update → re-archive** procedure into `docs/migration/phase3-cutover-runbook.md` (Task 3.1) and `docs/release/release-checklist.md`, so a future policy revision updates BOTH copies in one sitting. This makes the divergence risk procedural rather than structural — not as good as a single copy, and that is the accepted price of keeping old installs covered. Record it in ADR-0044.
+- [ ] **Step 5: [open]** Consider a *separate* policy revision (owner's call, deliberately NOT part of this move): the app has no account creation and no server at all, but "requires no account creation" appears only under *Children's Privacy*, not under *Data Deletion* where a reviewer would look for it. Stating it there would strengthen the review posture; it is a content change, so it stays out of the URL move.
 
 ---
 
@@ -841,7 +880,10 @@ already-installed versions. Content unchanged; URL/host + publisher-infra refs o
    ```
 
 9. **Update load-bearing automation in-repo** (Task 3.2 diff — merges as part of cutover).
-10. **Archive the GitHub repo.** Pages keeps serving the old policy URL. Nothing destructive.
+10. **Archive the GitHub repo.** Pages keeps serving the old policy URL — as a **full copy of the policy
+    text**, not a redirect (Task 2.3 Step 3). Because archiving makes it read-only, this step MUST be
+    accompanied by the written **unarchive → update → re-archive** procedure so a future policy revision
+    can reach both copies in one sitting (Task 2.3 Step 4). Nothing destructive.
 ````
 
 - [ ] **Step 2: Commit** (runbook is docs-only)
@@ -906,7 +948,7 @@ git commit -m "docs: forge sweep GitHub→GitLab (README/CLAUDE/steering/forum +
 
 **Files:** Create `docs/agent/DECISIONS/ADR-0044-gitlab-migration.md`
 
-- [ ] **Step 1: Write ADR-0044** recording: the migration decision; the **archived-GitHub-as-numbering-resolver** rule; and the **accepted regressions** each with rationale — dependency-submission retired (osv-scan + Renovate cover transitive CVEs), Code-Scanning dashboard lost (osv-scan artifact-only), Secret Push Protection (if Phase-0 Q3=absent → prevention→detection + incident-response note), gitleaks PR-comment retired, **release `workflow_dispatch` retired** (finding 10), **GitHub auto-generated release notes retired** (finding 10 — GitLab Release uses a static description; Play "What's new" still comes from the annotated tag). Link ADR-0018 (amended-status pointer) + the spec + this plan.
+- [ ] **Step 1: Write ADR-0044** recording: the migration decision; the **archived-GitHub-as-numbering-resolver** rule; the **two Phase-2 hosting decisions** (2026-07-26 — the policy is served from an apex path on the website deployment, NOT GitLab Pages, because a Pages custom domain leaves *serving* forge-coupled; and the old github.io URL keeps a **full copy** of the text rather than a redirect, with a written unarchive→update→re-archive procedure, because archiving would otherwise freeze one of two divergent live policies — see Task 2.1 / Task 2.3); and the **accepted regressions** each with rationale — dependency-submission retired (osv-scan + Renovate cover transitive CVEs), Code-Scanning dashboard lost (osv-scan artifact-only), Secret Push Protection (if Phase-0 Q3=absent → prevention→detection + incident-response note), gitleaks PR-comment retired, **release `workflow_dispatch` retired** (finding 10), **GitHub auto-generated release notes retired** (finding 10 — GitLab Release uses a static description; Play "What's new" still comes from the annotated tag). Link ADR-0018 (amended-status pointer) + the spec + this plan.
 
 - [ ] **Step 2: Commit**
 

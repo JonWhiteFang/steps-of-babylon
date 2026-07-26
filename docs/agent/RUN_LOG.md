@@ -1,3 +1,59 @@
+## 2026-07-26 — GitLab migration: Phase 1 merged; Phase 2 privacy-host DECIDED (forum AF-17) + plan amended
+
+- **Goal:** answer "what's next" after PR-1 merged, then unblock Phase 2 — whose first task is a `[HUMAN]`
+  hostname + durable-owner decision.
+- **Preflight found the forum inbox non-empty** (2 threads, both `status:awaiting-requester`). AF-2026-000017
+  (privacy hosting, addressed to website-agent) had a **full answer waiting** — the exact Task-2.1 blocker.
+  AF-2026-000016 (migration advice) is spent; its closing reply is already Task 4.4.
+  - *Tooling note:* `agent-forum read` crashes on Windows (`UnicodeEncodeError`, cp1252 vs `→` in thread
+    bodies). Worked around with `PYTHONUTF8=1`/`PYTHONIOENCODING=utf-8` + redirect to a file. Worth a fix
+    upstream if it recurs.
+- **Owner decisions taken (all three):** (a) hostname = **apex path
+  `https://jonwhitefang.uk/legal/steps-of-babylon-privacy/`** on the website deployment, **GitLab Pages
+  declined** (a Pages custom domain leaves *serving* forge-coupled — swaps GitHub for GitLab and keeps the
+  dependency Phase 2 exists to shed); (b) the Cloudflare **WAF exception approved** (that zone's Super Bot
+  Fight Mode `definitely_automated: block` 403s HTML docs to non-browser clients — a 403 to a Play validator
+  is a compliance failure); (c) the old github.io URL keeps a **full copy** of the policy text, **not** a
+  redirect, + a written unarchive→update→re-archive procedure.
+- **Replied on AF-17** (note `3602279541`, `--response-type answer --confidence high`). Four substantive
+  contributions beyond relaying the decision:
+  - **Found a second anchor bug their fix would not have caught.** Our `delete-data` anchor is NOT
+    slug-derived — `site/index.md` carries an explicit `<a name="delete-data"></a>` above `## Data Deletion`,
+    so a slugger yields `data-deletion`. Their planned `rehype-slug` + forward-the-`id` fix would still have
+    shipped a 200 page with a dead fragment. Confirmed their own h1 finding too (our title is an h1 with an
+    em-dash; their renderer maps h1 → `() => null`).
+  - **Handed over the policy source**, verified **byte-identical** to `site/index.md` @ `d58722b` by script
+    (89 lines; front matter + internal comments stripped, nothing else touched) rather than eyeballed.
+  - **Answered their deletion-content question against Google's four elements:** three present and quoted;
+    the fourth — identifies the developer *as shown on Play* — **could not be verified from the repo** (text
+    says "Whitefang Games"; no record of the Console's displayed name; account identity differs). Flagged as
+    the one thing that could turn PR-2 from URL-only into a wording change.
+  - **Play field inventory 2 → 4**, and the in-app URL is **3 sites** not 1 (constant + `hc_privacy_policy_body`
+    in `values/` AND `values-es/`). Their question surfaced two fields we had no record of: the **Health apps
+    declaration** (we read Health Connect, so that form holds its own privacy link) and possible per-locale
+    privacy URLs now that Spanish ships. Also stated plainly that we have **no uptime monitoring** for either
+    URL rather than agreeing to "add both to monitoring".
+- **Plan amended** (`docs/superpowers/plans/2026-07-23-gitlab-migration.md`): `«NEW_URL»` resolved in the token
+  table; Task 2.1 marked DECIDED with the declined alternatives and the hard "don't ship an app pointing at an
+  unconfirmed URL" gate; Task 2.3 rewritten (4-field Play inventory + developer-name gate + old-URL decision +
+  the unarchive procedure + a deliberately-deferred content revision); cutover **step 10** amended so archiving
+  carries the unarchive procedure; Task 4.3 now requires ADR-0044 to record both hosting decisions.
+- **Verification:** docs-only — no code, tests, resources, or schema touched, so no build was run (nothing in
+  the diff is compiled or linted). Plan fences verified balanced; the handoff/source equality checked by script.
+  **Test count unchanged (1339 JVM + 9 instrumented).**
+- **Doc sync:** `CHANGELOG.md` (new `[Unreleased]` section), `docs/agent/STATE.md` (objective rotated),
+  this entry, the migration plan. **Deliberately NOT touched:** `CLAUDE.md` (its only privacy reference is the
+  CI Pages lane, still accurate pre-cutover), `docs/steering/tech.md`, `README.md`, `site/*`,
+  `docs/release/data-safety-form.md` — the shipped URL has not changed yet; those are PR-2/Phase-4 edits, and
+  editing them now would claim a move that hasn't happened.
+- **`docs/agent/BACKLOG.md` NOT regenerated** — `gh` is unauthenticated in this environment (`gh auth login`
+  needed), so per the checkpoint contract the existing file was left untouched rather than overwritten empty.
+- **No ADR written.** These decisions belong in **ADR-0044**, which Task 4.3 owns and which needs post-cutover
+  facts; writing it early would create a half-true ADR. The plan now pins the requirement instead.
+- **Remaining:** push this branch (`docs/phase2-url-decision`) + open its PR (**blocked: `gh` unauthenticated**);
+  then **Phase 3** — Task 3.1 cutover runbook, Task 3.2 `gh`→`glab` automation (PR-3). Phase 2's code half waits
+  on the website agent's live-confirmation.
+
 ## 2026-07-23 — GitLab migration: Phase 0 spike + Phase 1 CI port authored & PROVEN on scratch (Codex-gated)
 
 - **Plan written + Codex-gated** (`docs/superpowers/plans/2026-07-23-gitlab-migration.md`): 19-finding
