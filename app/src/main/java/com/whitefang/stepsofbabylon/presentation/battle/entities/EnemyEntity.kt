@@ -106,16 +106,11 @@ class EnemyEntity(
     }
 
     /**
-     * Applies [amount] HP damage and returns the damage actually dealt — `0.0` when the hit is
-     * fully absorbed by an armor charge (the charge is consumed but no HP is lost). Callers gate
-     * damage-proportional side-effects (lifesteal, knockback) on a positive return so they fire
-     * only on hits that landed (#17). Pre-fix this returned `Unit` and those side-effects ran off
-     * the intended damage regardless of absorption, granting free healing/CC on armored hits.
-     */
-    /**
      * Applies [amount] HP damage and returns the damage actually dealt — `0.0` when the enemy is already
-     * dead (#146 corpse guard) or the hit is fully absorbed by an armor charge (#17). Callers gate
-     * damage-proportional side-effects (lifesteal, knockback) on a positive return.
+     * dead (#146 corpse guard) or the hit is fully absorbed by an armor charge (#17, the charge is consumed
+     * but no HP is lost). Callers gate damage-proportional side-effects (lifesteal, knockback) on a positive
+     * return so they fire only on hits that landed. Pre-#17 this returned `Unit` and those side-effects ran
+     * off the intended damage regardless of absorption, granting free healing/CC on armored hits.
      *
      * The corpse-guard / armor-absorb / HP-subtract / death-detect arithmetic is hoisted to the
      * pure-domain [EnemyDamageResolver] (#306 Slice 2). This adapter keeps only the presentation

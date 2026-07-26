@@ -36,13 +36,17 @@ class EnemyDamageResolver {
         when {
             // #146: a dead enemy leaves `entities` only at end of frame, so a later hit in the same
             // collision sweep must be a no-op rather than re-triggering death.
-            !isAlive -> Outcome(dealt = 0.0, died = false)
+            !isAlive -> {
+                Outcome(dealt = 0.0, died = false)
+            }
+
             // #17: an armor charge absorbs the whole hit — no HP lost, and `dealt = 0.0` so the caller
             // grants no lifesteal or knockback for it.
             target.armorHits > 0 -> {
                 target.armorHits--
                 Outcome(dealt = 0.0, died = false)
             }
+
             // No HP floor: overkill drives HP negative, unlike the ziggurat's coerceAtLeast(0.0).
             else -> {
                 target.currentHp -= amount
