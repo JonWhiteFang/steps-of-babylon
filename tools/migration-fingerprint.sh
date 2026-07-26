@@ -35,7 +35,13 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 git_fields() {
   echo "HEAD $(git rev-parse HEAD)"
   echo "COMMITS_HEAD $(git rev-list --count HEAD)"
-  echo "COMMITS_ALL_REFS $(git rev-list --all --count)"
+  # Branches + tags ONLY — deliberately NOT `rev-list --all`.
+  # `--all` includes every ref the forge advertises, and those sets are forge-specific: a GitHub mirror
+  # of this repo carries 293 `refs/pull/*` refs (measured), so `--all` reads 1244 while branches+tags
+  # read 805. A GitLab import has no `refs/pull/*` (it has its own internal MR refs), so comparing
+  # `--all` across forges would MISMATCH on a perfectly healthy import and abort the cutover.
+  # Branches+tags is the logical content that must actually survive the move.
+  echo "COMMITS_BRANCHES_TAGS $(git rev-list --count --branches --tags)"
   echo "--- v* tag inventory (name | peeled-sha | type | msg-sha) ---"
   local t sha type msg
   for t in $(git tag -l 'v*' --sort=v:refname); do
@@ -64,16 +70,20 @@ cmd_capture() {
   git clone --quiet --mirror "$src_url" "$srctmp/source.git" || die "mirror clone failed: $src_url"
 
   # Validate every count BEFORE writing anything: a blank field in the oracle is worse than no oracle.
-  local n
-  num() {
-    n="$1"
-    case "$n" in ''|*[!0-9]*) die "failed to read $2 (got '$n')";; esac
-    printf '%s' "$n"
+  # `num "$(gh …)"` is NOT enough on its own — command substitution used as an argument DISCARDS the
+  # inner exit status, so a gh that prints partial/cached numeric output and *then* fails would sail
+  # through both `num` and `set -e`. So capture stdout and status separately and check both.
+  count_or_die() {
+    local out rc label="$2"
+    out="$(eval "$1")" && rc=0 || rc=$?
+    [ "$rc" -eq 0 ] || die "$label: command exited $rc"
+    case "$out" in ''|*[!0-9]*) die "$label: expected a number, got '$out'";; esac
+    printf '%s' "$out"
   }
   local issues_open issues_closed prs
-  issues_open="$(num "$(gh issue list -s open   -L 999 --json number -q 'length')" ISSUES_OPEN)"
-  issues_closed="$(num "$(gh issue list -s closed -L 999 --json number -q 'length')" ISSUES_CLOSED)"
-  prs="$(num "$(gh pr list -s all -L 999 --json number -q 'length')" PRS)"
+  issues_open="$(count_or_die "gh issue list -s open   -L 999 --json number -q 'length'" ISSUES_OPEN)"
+  issues_closed="$(count_or_die "gh issue list -s closed -L 999 --json number -q 'length'" ISSUES_CLOSED)"
+  prs="$(count_or_die "gh pr list -s all -L 999 --json number -q 'length'" PRS)"
 
   local lightweight
   lightweight="$(cd "$srctmp/source.git" && git tag -l 'v*' | while read -r t; do
@@ -122,14 +132,33 @@ cmd_verify() {
   git clone --quiet --mirror "$url" "$tmp/import.git" || die "clone failed: $url"
 
   local actual; actual="$(cd "$tmp/import.git" && git_fields)"
-  # Compare only the git-side fields; issue/MR counts are checked in the UI (GitLab splits PRs into MRs).
-  local expected; expected="$(grep -E '^(HEAD|COMMITS_HEAD|COMMITS_ALL_REFS|v[0-9]|--- v\*)' "$fp_abs" || true)"
+  # Extract the same fields from the fingerprint by SECTION, not by pattern-guessing line shapes.
+  # A `grep -E '^v[0-9]'` would both over-match (a branch named `v1-spike` in the inventory) and
+  # under-match (a legitimate pipeline-triggering tag like `vNext`), so slice structurally instead:
+  # the three named scalars, then everything between the tag header and the next `---` section.
+  local expected
+  expected="$(awk '
+    /^HEAD /{print; next} /^COMMITS_HEAD /{print; next} /^COMMITS_BRANCHES_TAGS /{print; next}
+    /^--- v\* tag inventory/{print; intag=1; next}
+    # End the tag section on the next section header OR on any line that is not a `name | … | … | …`
+    # row — the ISSUES_*/PRS scalars follow the tag block without a header of their own, and an
+    # earlier version of this filter silently swallowed them into the comparison.
+    intag && (/^--- / || $0 !~ / \| /){intag=0}
+    intag{print}
+  ' "$fp_abs")"
 
   echo
   if diff <(printf '%s\n' "$expected") <(printf '%s\n' "$actual"); then
     echo "MATCH: HEAD, commit counts, and every v* tag (peeled sha + type + message hash) agree."
-    echo "Still to check by hand (runbook step 4): branch inventory, and issue/MR counts + authorship,"
-    echo "labels, comment/review threads and attachments on sampled items."
+    echo
+    echo "--- branch inventory IN THE IMPORT (compare against the fingerprint's own block) ---"
+    (cd "$tmp/import.git" && git for-each-ref --format='%(refname:short) | %(objectname)' refs/heads)
+    echo "--- fingerprint's recorded branch inventory ---"
+    awk '/^--- branch inventory/{inb=1;next} inb&&/^--- /{inb=0} inb' "$fp_abs"
+    echo
+    echo "Branches are printed, NOT diffed: step 1's pruning legitimately changes the set between"
+    echo "capture and import, so a human decides. Also still to check by hand: issue/MR counts, and"
+    echo "authorship, labels, comment/review threads and attachments on sampled items."
   else
     echo >&2
     echo "MISMATCH (< expected fingerprint, > the import). ABORT the cutover." >&2

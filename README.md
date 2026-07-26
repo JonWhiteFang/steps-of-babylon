@@ -21,13 +21,15 @@ The app collects step counts, exercise sessions, and purchase history locally. T
 The app does NOT request location permissions; GPS / Exploration Mode was dropped from v1.x scope per ADR-0016.
 
 - Project site: <https://jonwhitefang.uk/projects/steps-of-babylon>
-- Privacy policy (hosted): <https://jonwhitefang.uk/legal/steps-of-babylon-privacy/>
-- Data deletion: <https://jonwhitefang.uk/legal/steps-of-babylon-privacy/#delete-data>
+- Privacy policy (hosted): <https://jonwhitefang.github.io/steps-of-babylon/>
+- Data deletion: <https://jonwhitefang.github.io/steps-of-babylon/#delete-data>
 - Canonical source: [site/index.md](site/index.md) — the single source of truth for the policy *text*; the
-  hosted page is rendered from it. Serving is deliberately **forge-independent** (ADR-0044): a Pages
-  custom domain would only move the forge coupling rather than remove it. The former
-  `jonwhitefang.github.io/steps-of-babylon/` URL keeps serving a **full copy** indefinitely, because
-  already-installed builds have it baked in.
+  hosted page is rendered from it.
+  > **Moving (ADR-0044):** the policy is relocating to
+  > `https://jonwhitefang.uk/legal/steps-of-babylon-privacy/` — off-forge on purpose, since a Pages custom
+  > domain would only move the forge coupling rather than remove it. **The links above stay authoritative
+  > until that URL is confirmed live and a release embedding it has shipped**; the github.io URL then keeps
+  > serving a full copy indefinitely, because already-installed builds have it baked in.
 
 ## Prerequisites
 

@@ -192,7 +192,10 @@ osv-scan:
 
 # ============================================================================
 # pages — pinned Jekyll+minima build of site/ → public/. Publishes ONLY site/ output (never docs/).
-# The custom hostname (privacy.jonwhitefang.uk) is configured against the durable Pages owner (Phase 2).
+# NOTE: the URL Play points at is NOT served by this job. Phase 2 resolved to an apex path on the website
+# deployment (https://jonwhitefang.uk/legal/steps-of-babylon-privacy/) — off-forge on purpose, and the
+# `privacy.` subdomain + "durable Pages owner" idea this comment used to describe was REJECTED (ADR-0044).
+# This job still publishes site/ as the canonical source-of-record build.
 # ============================================================================
 pages:
   stage: pages

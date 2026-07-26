@@ -102,9 +102,12 @@ Client-side Play purchase signature verification (#124, **ADR-0005 amendment**).
 
 Committed-secret defense is layered:
 
-- **GitLab Secret Push Protection** — enabled at the project level; blocks a push that introduces a
-  recognized secret. Confirmed available on our tier by the Phase-0 migration spike, so the
-  prevention→detection downgrade the migration plan contemplated did **not** materialise (ADR-0044).
+- **GitLab Secret Push Protection** — blocks a push that introduces a recognized secret. The Phase-0 spike
+  confirmed the feature **exists on our tier** (`secret_push_protection_enabled` is present on the project's
+  security settings), so the prevention→detection downgrade the plan contemplated is avoidable — but it was
+  observed **`false`**, and actually **enabling it is a cutover task** (`phase3-cutover-runbook.md` step 5),
+  not a present fact. Until that box is ticked the gitleaks gate below is the only committed-secret defense
+  in CI (ADR-0044).
   *(Pre-cutover this was GitHub-native secret scanning + push protection. Its "non-provider patterns"
   toggle was never enabled — the REST PATCH was a silent no-op on a personal-account repo — and the
   gitleaks gate below covered those custom patterns anyway, so nothing was lost in the move.)*

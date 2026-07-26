@@ -24,19 +24,24 @@ gate cutover (see step 10's note on Pages).
       but any branch you then push to GitLab diverges from the GitHub PR nobody will merge.
 - [ ] Close Renovate/Dependabot PRs (Renovate is re-established on GitLab in Phase 4 — its PRs are
       regenerable, so closing them loses nothing).
-- [ ] Prune stale branches so the import doesn't carry dead refs. **Measured 2026-07-26: 30 remote
-      branches** — mostly spent work (`docs/checkpoint-*`, the ten `i18n/34-pr*` branches,
-      `release/v1.0.13`, two `dependabot/*`, `claude/ux-ui-design-resources-*`). That is also why
-      `COMMITS_ALL_REFS` is 1243 against `COMMITS_HEAD` 794: ~450 commits live only on side branches.
-      Prune **before** capturing the fingerprint at step 2, or the fingerprint enshrines the mess and
-      step 4's branch comparison becomes noise. `git branch -r --merged origin/main` lists the safe ones;
-      an unmerged branch needs a decision, not a delete.
+- [ ] Prune stale branches so the import doesn't carry dead refs. **Measured 2026-07-26: 27 branches**
+      — mostly spent work (`docs/checkpoint-*`, the ten `i18n/34-pr*` branches, `release/v1.0.13`, two
+      `dependabot/*`, `claude/ux-ui-design-resources-*`). Prune **before** capturing the fingerprint at
+      step 2, or the fingerprint enshrines the mess and step 4's branch comparison becomes noise.
+      `git branch -r --merged origin/main` lists the safe ones; an unmerged branch needs a decision,
+      not a delete.
+      > Do **not** reach for `rev-list --all` to reason about branch sprawl. A GitHub mirror of this repo
+      > carries **293 `refs/pull/*` refs** (measured), so `--all` reads 1244 while branches+tags read
+      > 805 — that gap is PR refs, *not* side-branch commits. It is also why the fingerprint records
+      > `COMMITS_BRANCHES_TAGS`: a GitLab import has no `refs/pull/*`, so an `--all` comparison would
+      > fail on a perfectly healthy import.
 - [ ] Run `/checkpoint` — the last GitHub-era memory write.
 - [ ] Confirm `git status` clean and `origin/main` == local `main`.
 
-> **Dependabot alert check:** at time of writing there is **1 open high alert on `main`** (alert 34). Alerts
-> do NOT migrate — GitLab has no equivalent inbox on our tier. Either resolve it before cutover or record it
-> in `docs/agent/BACKLOG.md` as a plain item, or it silently disappears.
+> **Dependabot alert check:** alert 34 (`google-protobuf` in the Pages `Gemfile.lock`) was **resolved
+> 2026-07-26** (PR #444 — patched 3.25.8 plus an explicit security floor). Re-check for *new* alerts at
+> quiesce time: alerts do NOT migrate, and GitLab has no equivalent inbox on our tier, so anything still
+> open must be resolved or recorded in `docs/agent/BACKLOG.md` or it silently disappears.
 
 ## Step 2 — Record the fingerprint
 
@@ -55,50 +60,23 @@ the remote flip at step 8.
 > full fingerprint, `verify` returned MATCH → exit 0 against an identical mirror and MISMATCH → exit 1 when
 > HEAD differed, with all 13 tag lines comparing byte-identically across a mirror clone. **As of that test
 > every `v*` tag is annotated** — the pre-condition holds today; re-confirm at capture time.
->
-> **Why it mirror-clones the source instead of reading your checkout:** a local checkout's
-> `rev-list --all` sees only the refs it happens to have fetched, while a mirror sees every ref the remote
-> advertises. On this repo that is **808 vs 1243** — comparing the two would abort a perfectly good cutover
-> on a false `COMMITS_ALL_REFS` mismatch. Capture and verify therefore measure identically.
 
-<details><summary>What the script records (equivalent inline commands, for reference)</summary>
+**What it records, and why each field is shaped that way** — read the script for the authoritative version;
+this list is a summary, deliberately *not* a second copy of the commands (an earlier draft kept an
+"equivalent" inline block and it immediately drifted out of equivalence):
 
-```bash
-#!/usr/bin/env bash
-set -euo pipefail          # a failed count must ABORT, not write a blank field
+| Field | Why |
+|---|---|
+| `HEAD` | The obvious one. |
+| `COMMITS_HEAD` | Commits reachable from the default branch. |
+| `COMMITS_BRANCHES_TAGS` | Branches + tags **only** — *not* `rev-list --all`. `--all` includes every ref the forge advertises, and those sets are forge-specific: a GitHub mirror of this repo carries **293 `refs/pull/*`** refs, so `--all` reads 1244 vs 805 for branches+tags. A GitLab import has no `refs/pull/*`, so an `--all` comparison would fail on a healthy import. |
+| `ISSUES_OPEN` / `ISSUES_CLOSED` / `PRS` | Counted via `gh`, each validated as numeric **and** checked for a non-zero exit — a `gh` that prints partial output then fails would otherwise bake a plausible-looking wrong number into the oracle. |
+| branch inventory | Recorded for a human comparison at step 4; not diffed, because step 1's pruning legitimately changes the set. |
+| `v*` tag inventory | Name, peeled SHA, **object type**, and a hash of the message. See below. |
 
-# Capture the gh counts into variables FIRST. `echo "$(gh …)"` would exit 0 even when gh fails,
-# so a transient API error would silently produce `ISSUES_OPEN ` and still commit a passing-looking
-# fingerprint — which then becomes the oracle the whole import is verified against.
-gh auth status >/dev/null 2>&1 || { echo "gh not authenticated — counts would be blank. Abort."; exit 1; }
-num() { case "$1" in ''|*[!0-9]*) echo "FAILED to read $2 (got '$1')" >&2; exit 1;; esac; printf '%s' "$1"; }
-issues_open=$(num "$(gh issue list -s open   -L 999 --json number -q 'length')" ISSUES_OPEN)
-issues_closed=$(num "$(gh issue list -s closed -L 999 --json number -q 'length')" ISSUES_CLOSED)
-prs=$(num "$(gh pr list -s all -L 999 --json number -q 'length')" PRS)
-
-{
-  echo "HEAD $(git rev-parse HEAD)"
-  echo "COMMITS_HEAD $(git rev-list --count HEAD)"
-  # ALL refs, not just HEAD-reachable: step 1 allows PRs to be parked, and a parked branch's commits
-  # are invisible to `rev-list HEAD`. In this repo the two numbers differ (792 vs 798), so a dropped
-  # or corrupted side branch would pass every other field in this fingerprint.
-  echo "COMMITS_ALL_REFS $(git rev-list --all --count)"
-  echo "ISSUES_OPEN $issues_open"
-  echo "ISSUES_CLOSED $issues_closed"
-  echo "PRS $prs"
-  echo "--- branch inventory (name | sha) ---"
-  git for-each-ref --format='%(refname:short) | %(objectname)' refs/remotes/origin \
-    | grep -v '^origin/HEAD'
-  echo "--- v* tag inventory (name | peeled-sha | type | msg-sha) ---"
-  for t in $(git tag -l 'v*' --sort=v:refname); do
-    sha=$(git rev-parse "$t^{commit}"); type=$(git cat-file -t "$t")   # MUST be 'tag' (annotated)
-    msg=$(git tag -l --format='%(contents)' "$t" | git hash-object --stdin)
-    echo "$t | $sha | $type | $msg"
-  done
-} | tee docs/migration/fingerprint-github.txt
-```
-
-</details>
+> **Why it mirror-clones the source rather than reading your checkout:** `verify` measures a mirror of the
+> import, so `capture` must measure a mirror too or the two aren't comparable — a working checkout's ref set
+> depends on what it happens to have fetched.
 
 **Why the tag loop is the load-bearing part.** The release lane reads the **annotated tag message** to build
 Play's "What's new" (`ci/prepare-whatsnew.sh`). A tag that arrives as *lightweight* still points at the right
@@ -134,8 +112,9 @@ type + message hash) against the committed fingerprint. **Exit 0 = match; non-ze
 
 - [ ] `verify` exited 0. **A `type` column reading `commit` instead of `tag` means an annotated tag arrived
       lightweight** — the failure that silently degrades the next Play release's "What's new".
-- [ ] Branch inventory compared by hand against the fingerprint's `--- branch inventory ---` block (the
-      script prints it but does not diff it, because step 1's pruning legitimately changes it).
+- [ ] Branch inventory compared by hand. On a MATCH the script prints **both** the import's branches and
+      the fingerprint's recorded block, side by side; it deliberately does not diff them, because step 1's
+      pruning legitimately changes the set between capture and import.
 - [ ] Issue/MR counts sanity-checked against `ISSUES_OPEN`/`ISSUES_CLOSED`/`PRS` — remember GitLab splits
       PRs into MRs with their own `iid` space, so compare *totals*, never per-number.
 - [ ] Sampled issues/MRs spot-checked for authorship, labels, comment/review threads, attachments — sample

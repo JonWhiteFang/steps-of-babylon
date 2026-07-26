@@ -39,6 +39,21 @@ Interim commits within a branch are fine; the **two mandatory steps** run before
 | PR-3 | Phase 3 | `chore/gitlab-automation` | `gh`→`glab` automation + cutover runbook | Task 3.2 Step 6 |
 | PR-4 | Phase 4 | `docs/gitlab-sweep` | Doc sweep + ADR-0044 | Task 4.4 (via `/checkpoint`) |
 
+> **⛔ PR-3 and PR-4 must NOT merge before the cutover.** Both are written in the post-cutover present
+> tense, which is correct for when they land and *false* until then. PR-3 additionally repoints
+> `/checkpoint`, `/release`, the backlog regen and the forum procedures at `glab`, so merging it early
+> breaks all four against a project that does not exist yet. Keep both as **drafts**: PR-3 lands at
+> cutover **step 9**, PR-4 after **step 10**. (Codex flagged exactly this on the PR-4 diff — the docs
+> assert GitLab CI is live while `origin` still points at GitHub, `instrumented.yml` still gates PRs, and
+> Dependabot is still configured. The mitigation is the merge gate, not hedged prose: hedged prose would
+> have to be un-hedged at cutover, which is a step someone will forget.)
+>
+> **Scope boundary PR-4 must respect:** the **privacy-URL swap belongs to PR-2 (Task 2.2), never to the
+> Task-4.2 sweep.** A first draft of PR-4 changed README/release-checklist/plan-31 to advertise
+> `«NEW_URL»` as the hosted policy URL — while that URL was not live, the app constant still pointed at
+> the old one, and Play pointed at a typo'd 404. That would have published a link to a non-existent page.
+> Task 4.2 changes **forge names and tooling only**; URLs move when PR-2 moves them.
+
 Phases 0/3-cutover/4-human are infra/human operations, not PRs.
 
 ---

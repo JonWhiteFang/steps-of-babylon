@@ -1,7 +1,10 @@
 # ADR-0044: Migrate from GitHub to GitLab (archived GitHub as the historical-number resolver)
 
-**Status:** Accepted (2026-07-23; decisions final, **cutover not yet executed** — Phases 0–3 authored and
-proven, Phase 3's cutover sitting and Phase 4 outstanding) · **Requested by:** developer (consolidation)
+**Status:** Accepted (2026-07-23; decisions final, **cutover not yet executed**). Phase 0 spike *run*;
+Phase 1 CI port *proven green on a scratch import*; Phases 2–4 **authored but not executed** — Phase 2's
+code half waits on the new URL going live, and Phase 3's cutover sitting plus all of Phase 4 are
+outstanding.
+**Requested by:** developer (consolidation)
 
 > This ADR is deliberately written *before* the cutover, because every decision below is already made and
 > several are non-obvious enough to be worth recording while the reasoning is fresh. What it does **not**
@@ -127,8 +130,9 @@ Each was verified as lost rather than assumed ported:
 | Dependabot **alerts** (not PRs) | No equivalent inbox on our tier — cutover step 1 says resolve-or-record, since alerts vanish silently |
 | Issue/PR **numbering** | Archived GitHub as resolver (above) — the deliberate core of this ADR |
 
-Secret Push Protection was confirmed **available** on our tier (Phase-0 Q3), so the
-prevention→detection downgrade contemplated in the plan did not materialise.
+Secret Push Protection was confirmed **available** on our tier (Phase-0 Q3 — the setting exists), so the
+prevention→detection downgrade contemplated in the plan is avoidable. It was observed `false`, and
+**enabling it is an unticked cutover task** (runbook step 5) — an available mitigation, not a delivered one.
 
 ### Follow-ups
 - Cutover sitting (runbook steps 1–10) and Phase 4 remain. Renovate needs a GitLab project access token

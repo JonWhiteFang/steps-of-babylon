@@ -31,6 +31,40 @@ All notable changes to Steps of Babylon are documented here.
   `when` expression with identical branch order and semantics.
 - **1339 → 1352 JVM tests** (+5 resolver, +5 ScatterSplit, +2 `EnemyState`, +1 SCATTER integration).
   detekt + `koverVerifyDebug` green. No schema change.
+### Added — GitLab migration Phase 4 authored: ADR-0044 + forge doc sweep + a tested cutover tool (PR-4, docs-only)
+
+- **`docs/agent/DECISIONS/ADR-0044-gitlab-migration.md`** — the migration ADR. Written *before* the cutover
+  (with a status line that says so) because the decisions are all made and several are non-obvious: numbering
+  **cannot** be preserved, so archiving GitHub is a functional dependency of the docs rather than tidiness;
+  GitLab Pages was rejected for the privacy policy even though it was this project's own first proposal (a
+  Pages custom domain moves the forge coupling instead of removing it); the old privacy URL keeps a full
+  **copy** rather than a redirect, because GitHub Pages has no server-side 301 and a `meta refresh` pointer
+  drops the `#delete-data` fragment for a non-JS fetcher such as a Play validator. Every accepted regression
+  is tabled with its mitigation, and the instrumented lane's demotion is labelled as the one with **no
+  automated backstop** rather than presented as parity.
+- **`tools/migration-fingerprint.sh`** — `capture` / `verify` for the cutover oracle, replacing the runbook's
+  inline copy-paste at the highest-stakes step. **Both modes were exercised against the live repo before
+  anyone needs them:** capture wrote a full fingerprint and confirmed every `v*` tag is annotated; verify
+  returned MATCH/exit 0 against an identical mirror and MISMATCH/exit 1 when HEAD differed, with all 13 tag
+  lines comparing byte-identically across a mirror clone. Testing found a real bug in the first version —
+  `COMMITS_ALL_REFS` read **808** locally but **1243** from a mirror, because a local checkout's
+  `rev-list --all` sees only the refs it happens to have fetched, which would have aborted a good cutover on
+  a false mismatch. Capture now mirror-clones the source so both sides measure identically.
+- **Forge sweep:** README badge + privacy links, `CLAUDE.md`'s CI/CD line and issue pointer, `tech.md`'s
+  Continuous Integration section rewritten to the actual 10 jobs, `security-model.md`'s secret-scanning
+  layer (GitLab Secret Push Protection — confirmed available, so the prevention→detection downgrade never
+  materialised), `structure.md`'s tree, `plan-31-walkthrough.md`'s privacy-host section, and
+  `release-checklist.md`'s two Pages claims. `ADR-0018` + `plan-32-ci.md` get **amended-status pointers
+  only** — bodies unedited as the historical record.
+- **Two real gaps closed, both found by sweeping wider than the plan's file list:** `plan-FORWARD.md` was
+  still directing *future* closed-track tester feedback at the soon-to-be-archived repo, and
+  `source-files.md` had never received entries for `.gitlab-ci.yml`, `ci/*.sh`, `renovate.json` or `Gemfile`
+  (PR-1's task list said it would add them; `structure.md` got them and this index did not).
+- **Cutover runbook hardened further:** step 1 now carries a *measured* pruning note — 30 remote branches
+  today, ~450 commits living only on side branches — which must be pruned **before** the fingerprint is
+  captured or it enshrines the mess.
+- Docs-only apart from one comment in `app/build.gradle.kts`; no logic, tests, resources or schema. Test
+  count unchanged.
 
 ### Security — `google-protobuf` 3.23.4 → 3.25.8 in the Pages `Gemfile.lock` (CI-only, no app impact)
 

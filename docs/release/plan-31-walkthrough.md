@@ -80,12 +80,13 @@ Project constants you will paste repeatedly:
 The Play Console listing requires a **public URL** to the privacy policy.
 The canonical policy text lives at `site/index.md`.
 
-### B1. Host = the website deployment, deliberately NOT a forge
+### B1. Host = moving off-forge, deliberately
 
-The URL Play points at is **`https://jonwhitefang.uk/legal/steps-of-babylon-privacy/`**, served by the
-website deployment (Cloudflare Workers). The policy *text* stays canonical in `site/index.md` here, and
-this project's `pages` job (in `.gitlab-ci.yml`) still builds **only** the top-level `site/` folder, so the
-internal `docs/` tree is never served publicly.
+**Today** the URL Play points at is `https://jonwhitefang.github.io/steps-of-babylon/`. **It is relocating**
+to `https://jonwhitefang.uk/legal/steps-of-babylon-privacy/`, served by the website deployment (Cloudflare
+Workers) — pending that URL being confirmed live and a release embedding it shipping (ADR-0044). The policy
+*text* stays canonical in `site/index.md` here, and this project's `pages` job (in `.gitlab-ci.yml`) still
+builds **only** the top-level `site/` folder, so the internal `docs/` tree is never served publicly.
 
 **Why not a forge's Pages (ADR-0044):** a Pages custom domain makes the *hostname* forge-neutral but leaves
 the *serving* coupled to a forge — moving from GitHub Pages to GitLab Pages would just swap which forge, and
@@ -96,7 +97,7 @@ this URL is baked into every shipped build.
 >    offline once.
 > 2. A GitHub Actions Pages workflow scoped to `site/` — fixed the leak and made publishing
 >    version-controlled. **Don't ever revert to a branch source pointed at `/docs`.**
-> 3. Off-forge hosting (current) — removes the forge dependency entirely.
+> 3. Off-forge hosting (**decided, not yet live**) — removes the forge dependency entirely.
 >
 > The old `https://jonwhitefang.github.io/steps-of-babylon/` keeps serving a **full copy** of the policy
 > indefinitely, because already-installed builds have that URL baked in. It is a *copy*, not a redirect:
