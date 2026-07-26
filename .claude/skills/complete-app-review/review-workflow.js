@@ -340,7 +340,7 @@ const lows = survivors.filter(r => r.finalSeverity === 'low')
 const issuePlan = {
   convention: 'Med+ → one issue each (dedup against existing issues first); ALL Lows → a single [Audit] tracker issue (mirror #128).',
   filingMode: 'propose-then-confirm — present this plan to the developer; only run `glab issue create` after go-ahead.',
-  dedupHint: 'Before filing, run `glab issue list --all --per-page 100` (GitLab caps per_page at 100; the number field is iid); skip any finding already covered (match on finding ID in title or the described defect). NOTE: a re-run against a near-unchanged HEAD will re-surface findings already filed — dedup hard.',
+  dedupHint: 'Before filing, enumerate EVERY issue with `glab api --paginate "projects/:id/issues?per_page=100"` (pipe to jq for iid+title). This repo has >150 issues across all states and GitLab caps per_page at 100, so a single `glab issue list --per-page 100` silently misses the older half and you WILL refile duplicates. The number field is iid; skip any finding already covered (match on finding ID in title or the described defect). NOTE: a re-run against a near-unchanged HEAD will re-surface findings already filed — dedup hard.',
   labelNote: 'suggestedLabels are pre-mapped to labels that exist in THIS repo (no `area:*` except battle/missions/economy/billing/ui). Verify with `glab label list` before filing; a nonexistent label makes `glab issue create` fail.',
   backlink: `Each issue body should backlink to ${REPORT_PATH} (and its section/finding-ID anchor).`,
   proposedIndividualIssues: medPlus.map(r => ({

@@ -38,12 +38,31 @@ This is the artifact the whole cutover is verified against. Write it to
 `docs/migration/fingerprint-github.txt` and **commit it** — it must survive the flip.
 
 ```bash
+#!/usr/bin/env bash
+set -euo pipefail          # a failed count must ABORT, not write a blank field
+
+# Capture the gh counts into variables FIRST. `echo "$(gh …)"` would exit 0 even when gh fails,
+# so a transient API error would silently produce `ISSUES_OPEN ` and still commit a passing-looking
+# fingerprint — which then becomes the oracle the whole import is verified against.
+gh auth status >/dev/null 2>&1 || { echo "gh not authenticated — counts would be blank. Abort."; exit 1; }
+num() { case "$1" in ''|*[!0-9]*) echo "FAILED to read $2 (got '$1')" >&2; exit 1;; esac; printf '%s' "$1"; }
+issues_open=$(num "$(gh issue list -s open   -L 999 --json number -q 'length')" ISSUES_OPEN)
+issues_closed=$(num "$(gh issue list -s closed -L 999 --json number -q 'length')" ISSUES_CLOSED)
+prs=$(num "$(gh pr list -s all -L 999 --json number -q 'length')" PRS)
+
 {
   echo "HEAD $(git rev-parse HEAD)"
-  echo "COMMITS $(git rev-list --count HEAD)"
-  echo "ISSUES_OPEN $(gh issue list -s open -L 999 --json number -q 'length')"
-  echo "ISSUES_CLOSED $(gh issue list -s closed -L 999 --json number -q 'length')"
-  echo "PRS $(gh pr list -s all -L 999 --json number -q 'length')"
+  echo "COMMITS_HEAD $(git rev-list --count HEAD)"
+  # ALL refs, not just HEAD-reachable: step 1 allows PRs to be parked, and a parked branch's commits
+  # are invisible to `rev-list HEAD`. In this repo the two numbers differ (792 vs 798), so a dropped
+  # or corrupted side branch would pass every other field in this fingerprint.
+  echo "COMMITS_ALL_REFS $(git rev-list --all --count)"
+  echo "ISSUES_OPEN $issues_open"
+  echo "ISSUES_CLOSED $issues_closed"
+  echo "PRS $prs"
+  echo "--- branch inventory (name | sha) ---"
+  git for-each-ref --format='%(refname:short) | %(objectname)' refs/remotes/origin \
+    | grep -v '^origin/HEAD'
   echo "--- v* tag inventory (name | peeled-sha | type | msg-sha) ---"
   for t in $(git tag -l 'v*' --sort=v:refname); do
     sha=$(git rev-parse "$t^{commit}"); type=$(git cat-file -t "$t")   # MUST be 'tag' (annotated)
@@ -59,7 +78,8 @@ commit and still triggers the pipeline — it just has no message, so the next r
 "Bug fixes and improvements." to the Play listing. `git cat-file -t` must print `tag`, not `commit`, for
 every one. The `msg-sha` column pins the message *content*, not just its presence.
 
-- [ ] `gh` is authenticated (`gh auth status`) — the issue/PR counts silently become empty otherwise.
+- [ ] Script ran to completion (it aborts on any failed count — no blank fields).
+- [ ] `COMMITS_ALL_REFS` and the branch inventory are present, not just `COMMITS_HEAD`.
 - [ ] Fingerprint committed.
 
 ## Step 3 — Run GitLab's GitHub importer
@@ -73,9 +93,27 @@ and drops every issue, MR, comment, review thread, and label, which is most of w
 
 ## Step 4 — Verify the fingerprint  ⛔ MISMATCH → ABORT
 
-- [ ] `git rev-list --count` and `HEAD` match the fingerprint.
-- [ ] **Re-run the step-2 tag loop against the import.** Every `v*` tag must match on all three of
-      peeled-SHA, `type == tag`, and msg-sha. This is the single most likely thing to be silently wrong.
+> **Verify against the IMPORT, not your existing checkout.** `origin` still points at GitHub until step 8,
+> so re-running the step-2 commands in the working tree would re-measure *GitHub* and pass no matter what
+> the import did. Clone the GitLab project separately:
+
+```bash
+git clone --mirror git@gitlab.com:kn0ck3r-group/steps-of-babylon.git /tmp/sob-import.git
+cd /tmp/sob-import.git          # a --mirror clone carries every branch AND every tag object
+git rev-parse HEAD
+git rev-list --count HEAD ; git rev-list --all --count
+git for-each-ref --format='%(refname:short) | %(objectname)' refs/heads
+for t in $(git tag -l 'v*' --sort=v:refname); do
+  echo "$t | $(git rev-parse "$t^{commit}") | $(git cat-file -t "$t") | $(git tag -l --format='%(contents)' "$t" | git hash-object --stdin)"
+done
+```
+
+- [ ] `HEAD`, `COMMITS_HEAD`, and **`COMMITS_ALL_REFS`** all match the fingerprint.
+- [ ] The branch inventory matches (allowing for the `origin/` prefix difference — mirror refs are `refs/heads`).
+- [ ] **Every `v*` tag matches on all three of** peeled-SHA, `type == tag`, and msg-sha. This is the single
+      most likely thing to be silently wrong.
+- [ ] Issue/MR counts match the fingerprint's `ISSUES_OPEN`/`ISSUES_CLOSED`/`PRS` (via `glab`/the UI —
+      remember GitLab splits PRs into MRs, so compare the *total*, not per-number).
 - [ ] Spot-check sampled issues and MRs for: authorship attribution, labels, comment threads, review threads,
       attachments. Sample across the range (an early issue, a recent one, one with review comments, one with
       an image).
@@ -127,8 +165,15 @@ Ten inputs, all as **protected** CI variables on release-eligible protected refs
 - [ ] **Confirm `RELEASE_VALIDATE_ONLY` is NOT set on this project.** It was `true` on the scratch project so
       Fastlane ran `--validate_only`. If it leaks onto the real project, tags will appear to succeed while
       publishing nothing to Play — a silent no-op release.
-- [ ] Verify protected-variable availability by running a pipeline on a protected ref (variables are absent
-      on unprotected refs by design; a release job that can't see them fails confusingly).
+- [ ] Confirm in the UI that each of the ten exists, is marked **Protected**, and (for
+      `PLAY_SERVICE_ACCOUNT_JSON`) has type **File**. Check for stray whitespace/newlines in the pasted
+      values — a trailing newline in `KEYSTORE_STORE_PASSWORD` fails the signing step, not the variable check.
+- [ ] **Do NOT treat a green pipeline on protected `main` as proof these variables work.** Nothing in an
+      ordinary `main` pipeline reads them: the only consumers are `release-build`/`release-publish`, whose
+      rules require `$CI_COMMIT_TAG =~ /^v/ && $CI_COMMIT_REF_PROTECTED == "true"`. A protected-`main` run
+      would go green with all ten variables missing. **The first real proof is the first owner-pushed `v*`
+      tag** (Phase 4, Task 4.1 Step 3) — which is exactly why that step is a required success criterion and
+      is owner-witnessed end-to-end rather than assumed.
 
 ## Step 7 — Prove the gate
 

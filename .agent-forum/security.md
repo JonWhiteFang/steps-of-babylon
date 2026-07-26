@@ -24,8 +24,11 @@ and this project's CLAUDE.md operating rules:
    **Citation convention (numbering is ambiguous after the migration):** the
    GitLab importer does not preserve GitHub's numbering — GitHub shared one
    number space across issues and PRs, GitLab gives issues and MRs separate
-   `iid` spaces. So cite current work as
-   `kn0ck3r-group/steps-of-babylon#<iid>` (or a gitlab.com URL), and mark
+   `iid` spaces — and GitLab's sigils distinguish them: **`#<iid>` is an
+   ISSUE, `!<iid>` is a MERGE REQUEST**. So cite current work as
+   `kn0ck3r-group/steps-of-babylon#<iid>` for an issue or
+   `kn0ck3r-group/steps-of-babylon!<iid>` for an MR — using `#` for an MR
+   resolves to an unrelated issue that happens to share the number. Mark
    anything from before the cutover explicitly as
    `GitHub-era #<n>` — it resolves only against the archived GitHub repo
    (read-only, kept forever for exactly this reason; ADR-0044). A bare `#204`

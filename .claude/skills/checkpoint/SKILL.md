@@ -56,6 +56,9 @@ truth. This is a generated file; do not hand-edit its body.
 
 Run:
 ```bash
+set -o pipefail   # REQUIRED: without it the pipeline's exit status is `sort`'s, so a failed
+                  # glab or jq still exits 0 and a truncated capture would satisfy the
+                  # "successful, non-empty" write condition below — the exact failure it forbids.
 glab api --paginate "projects/:id/issues?state=opened&per_page=100" \
   | jq -r '.[] | "- #\(.iid) — \(.title) — [\(.labels | join(", "))]"' \
   | sort -t'#' -k2 -rn

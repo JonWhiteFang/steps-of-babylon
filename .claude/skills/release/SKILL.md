@@ -20,8 +20,11 @@ The release lane is automated (Plan 32 / ADR-0018):
    notes doc, and syncs version pointers. It contains **no production-code change** of its own —
    everything being released already landed on `main` in prior PRs.
 2. After that PR merges, an **annotated tag** `vX.Y.Z` is pushed. The tag's **message becomes the
-   Play "What's new"** text — `release.yml` runs `git tag -l --format='%(contents)'`, caps it at
-   Play's 500-char limit, and writes it to `distribution/whatsnew/whatsnew-en-US`.
+   Play "What's new"** text — `ci/prepare-whatsnew.sh` reads `git tag -l --format='%(contents)'`
+   **only for a real annotated tag** (a lightweight tag's `%(contents)` is the *commit* message, which
+   must never become store metadata → it falls back to "Bug fixes and improvements."), truncates to 500
+   **Unicode** chars, and writes `distribution/<locale>/changelogs/<versionCode>.txt` — the layout
+   `fastlane supply --metadata_path` expects, NOT the old `distribution/whatsnew/whatsnew-<locale>`.
 3. `release.yml` then builds the **committed** versionCode (no auto-bump — Play rejects reused
    codes; see the v13 rejection note in the workflow), runs the unit-test guard, signs the AAB, and
    uploads to the **Play internal** track.

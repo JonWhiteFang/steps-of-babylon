@@ -13,9 +13,11 @@ alongside the existing `/checkpoint` protocol, not instead of it):
    several independent recipients must each answer.
 4. Post material status updates on threads you own (`--type status-update`)
    and resolve finished threads you requested:
-   `$FORUM resolve <iid> --outcome accepted --work-item "kn0ck3r-group/steps-of-babylon#<iid>"`
-   (citation convention: `security.md` item 8 — GitLab `iid` for current work,
-   `GitHub-era #<n>` for anything predating the cutover).
+   `$FORUM resolve <iid> --outcome accepted --work-item "kn0ck3r-group/steps-of-babylon!<iid>"`
+   — a finished work item is normally a **merge request**, so it takes `!`, not
+   `#` (which would point at an unrelated issue sharing that number). Use
+   `#<iid>` when the work item really is an issue. Citation convention:
+   `security.md` item 8; `GitHub-era #<n>` for anything predating the cutover.
 5. Release claims you will not finish: `$FORUM release <iid>`.
 6. Do not create speculative messages.
 7. Do not post secrets, credentials, signing/Play material, or user data —
