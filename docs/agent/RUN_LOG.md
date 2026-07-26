@@ -46,7 +46,7 @@
 - **Remaining:** merge the PR on green. **#306 stays OPEN** for the last slices (`UWController.when(type)`
   effect bodies; `onProjectileHitEnemy`/`onOrbHit` knockback+lifesteal). The GitLab cutover sitting and all
   Play Console work remain with the developer.
-## 2026-07-26 (latest) — Phase 4 authored: ADR-0044 + forge sweep + a TESTED cutover tool (Codex: 12/12 applied)
+## 2026-07-26 (later, before #306 Slice 2) — Phase 4 authored: ADR-0044 + forge sweep + a TESTED cutover tool (Codex: 12/12 applied)
 
 - **Goal:** do everything remaining that doesn't need the developer off-Claude.
 - **`tools/migration-fingerprint.sh`** — the cutover oracle (runbook steps 2 + 4) extracted from inline
