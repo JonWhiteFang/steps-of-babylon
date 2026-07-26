@@ -3,7 +3,11 @@
 **Status:** Accepted (merged to `main` via PR #100, 2026-06-03; post-merge setup — secrets, `release` environment, Play service account — completed 2026-06-04; pipeline fully live). **Branch protection was NOT actually configured at that time** (the workflows ran on PRs but nothing *required* them); it was applied 2026-06-16 — see the **2026-06-16 amendment** below.
 **Date:** 2026-06-03
 **Supersedes:** The deliberate "No CI for v1.0" posture documented in `devdocs/archaeology/intro2deployment.md` §4, `philosophy.md`, and the gap-analysis docs (all historical — left intact).
-**Superseded by:** None
+**Superseded by:** **ADR-0044 (GitHub->GitLab migration, 2026-07-23)** — the *mechanism* moved to GitLab CI
+(one `.gitlab-ci.yml` replacing these workflows; the instrumented lane retired to a local device run). The
+decision recorded below — *that* the project has CI, and the shape of the gates it enforces — still stands and
+was ported deliberately rather than rewritten. **This ADR's body is left unedited as the historical record;**
+read ADR-0044 for what runs today.
 
 ## Amendment — 2026-06-16: branch protection actually enforced
 

@@ -15,17 +15,14 @@ The committed Baseline Profile lives at `app/src/release/generated/baselineProfi
 ## Root Layout
 
 ```
-.github/
-├── workflows/          # CI: ci.yml (PR gate) + instrumented.yml (emulator) + release.yml (Play internal) + pages.yml (privacy-policy → GitHub Pages, site/ only) + dependency-submission.yml — SHA-pinned (Plan 32 / ADR-0018). ci.yml + instrumented.yml share a `changes` classifier that skips the heavy gates for docs/tooling-only diffs (`docs/**`, `*.md`, `.claude/**`, `.mcp.json`); everything else runs the full gate.
-└── dependabot.yml      # gradle + github-actions weekly updates
-.gitlab-ci.yml          # GitLab CI pipeline — authored + PROVEN on a scratch import (2026-07-23); INERT on GitHub, active only after the GitLab cutover. Replaces 6 of the 7 .github/workflows (instrumented demoted to local-only per the Phase-0 spike). See docs/migration/.
+.gitlab-ci.yml          # THE CI pipeline (ADR-0044, replacing ADR-0018's GitHub Actions): 10 jobs — classify (docs-only fast path via ci/classify-diff.sh) + core-gate + ktlint + gitleaks + osv-scan + pages + release-build/release-publish/release-object + renovate. Every image/binary/gem digest- or checksum-pinned. NO instrumented job: gitlab.com shared runners have no /dev/kvm, so connectedDebugAndroidTest is a human pre-release device run (release-checklist.md) — the one accepted regression with no CI backstop. Merge is gated on the WHOLE pipeline, not named checks.
 ci/                     # GitLab CI helpers (INERT until cutover): classify-diff.sh (docs-only classifier + test), validate-wrapper.sh (#212 wrapper-jar guard port), prepare-whatsnew.sh (Play changelog), ci/fastlane/ (locked fastlane 2.237.0 for the release publisher).
-renovate.json           # Self-hosted Renovate policy (dependabot carryover) — active on GitLab post-cutover.
-Gemfile / Gemfile.lock  # Pinned Jekyll 4.3.3 + minima 2.5.1 for the GitLab Pages job (site/ privacy policy).
+renovate.json           # Self-hosted Renovate policy (carries the old Dependabot grouping: all-gradle + gradle-wrapper + ci-images), run weekly by the `renovate` job. Replaces Dependabot, which does not exist on GitLab.
+Gemfile / Gemfile.lock  # Pinned Jekyll 4.3.3 + minima 2.5.1 for the `pages` job (site/ privacy policy). Carries an explicit google-protobuf >= 3.25.5 security floor on a transitive gem. NO `BUNDLED WITH` — a stale value broke the pages job once; keep it out. PLATFORMS stays `ruby`-only.
 .claude/                # Claude Code config (ADR-0019): settings.json (hooks wiring) + hooks/ (session-preflight, guard-sensitive-edits [schema/migration/version guards], ktlint-format-edited, prefer-structural-tools) + skills/ (checkpoint, complete-app-review, release, adversarial-review, new-migration) + agents/ (concurrency-reviewer, android-test-writer). Tooling-only, never built/shipped.
 .mcp.json               # Shared MCP server config (context7 for live API docs); API key read from CONTEXT7_API_KEY env var, never committed
 AGENTS.md               # Thin redirect pointer to CLAUDE.md + docs/agent/START_HERE.md for non-Claude agents (#386, ai-1)
-site/                   # PUBLIC web root published to GitHub Pages by pages.yml — site/index.md = canonical privacy policy + site/_config.yml; ONLY this dir is served publicly (internal docs/ is not)
+site/                   # PUBLIC web root — site/index.md = canonical privacy-policy TEXT + site/_config.yml; ONLY this dir is ever published (internal docs/ is not). Built by the `pages` job. NOTE: the URL Play points at is served by the website deployment, not by this project's Pages (ADR-0044 — forge-independent serving)
 config/                 # Lint tooling config (ADR-0037): config/detekt/ (detekt.yml + baseline.xml) + config/ktlint/ (baseline.xml). CI-enforced, baseline-gated.
 baselineprofile/        # :baselineprofile module — dev tooling; generates baseline-prof.txt; never ships
 macrobenchmark/         # :macrobenchmark module — dev tooling; StartupBenchmark + JourneyBenchmark; never ships, not CI-gated on timings

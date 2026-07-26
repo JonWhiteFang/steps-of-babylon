@@ -39,6 +39,21 @@ Interim commits within a branch are fine; the **two mandatory steps** run before
 | PR-3 | Phase 3 | `chore/gitlab-automation` | `gh`→`glab` automation + cutover runbook | Task 3.2 Step 6 |
 | PR-4 | Phase 4 | `docs/gitlab-sweep` | Doc sweep + ADR-0044 | Task 4.4 (via `/checkpoint`) |
 
+> **⛔ PR-3 and PR-4 must NOT merge before the cutover.** Both are written in the post-cutover present
+> tense, which is correct for when they land and *false* until then. PR-3 additionally repoints
+> `/checkpoint`, `/release`, the backlog regen and the forum procedures at `glab`, so merging it early
+> breaks all four against a project that does not exist yet. Keep both as **drafts**: PR-3 lands at
+> cutover **step 9**, PR-4 after **step 10**. (Codex flagged exactly this on the PR-4 diff — the docs
+> assert GitLab CI is live while `origin` still points at GitHub, `instrumented.yml` still gates PRs, and
+> Dependabot is still configured. The mitigation is the merge gate, not hedged prose: hedged prose would
+> have to be un-hedged at cutover, which is a step someone will forget.)
+>
+> **Scope boundary PR-4 must respect:** the **privacy-URL swap belongs to PR-2 (Task 2.2), never to the
+> Task-4.2 sweep.** A first draft of PR-4 changed README/release-checklist/plan-31 to advertise
+> `«NEW_URL»` as the hosted policy URL — while that URL was not live, the app constant still pointed at
+> the old one, and Play pointed at a typo'd 404. That would have published a link to a non-existent page.
+> Task 4.2 changes **forge names and tooling only**; URLs move when PR-2 moves them.
+
 Phases 0/3-cutover/4-human are infra/human operations, not PRs.
 
 ---
@@ -937,7 +952,20 @@ git commit -m "chore: migrate load-bearing automation gh→glab / GitHub→GitLa
 
 ### Task 4.2: Doc & cross-project sweep
 
-**Files:** Modify `README.md`, `CLAUDE.md`, `docs/steering/tech.md`, `docs/steering/security-model.md`, `docs/steering/source-files.md`, `docs/release/release-checklist.md`, `docs/plans/plan-32-ci.md`, `docs/agent/DECISIONS/ADR-0018-ci-github-actions.md`, `app/build.gradle.kts` (comment-only), `.agent-forum/message-guidance.md`, `.agent-forum/security.md`; cross-repo MR: `agents/babylon-agent.yaml`
+**Files:** Modify `README.md`, `CLAUDE.md`, `docs/steering/tech.md`, `docs/steering/security-model.md`, `docs/steering/source-files.md`, `docs/release/release-checklist.md`, `docs/plans/plan-32-ci.md`, `docs/agent/DECISIONS/ADR-0018-ci-github-actions.md`, `app/build.gradle.kts` (comment-only); cross-repo MR: `agents/babylon-agent.yaml`
+
+**Three files added to this list 2026-07-26** (a repo-wide sweep + the PR-3 Codex review found them; none was covered by any phase's file list, and all three direct **future** work at GitHub rather than being historical citations):
+- **`docs/plans/plan-FORWARD.md:143`** — "triage issues filed against `JonWhiteFang/steps-of-babylon`" in the *closed-track* step list. This is the live promotion plan: tester feedback in Phase 2 of the launch would be filed against an archived, read-only repo. **Highest-priority of the three.**
+- **`docs/steering/structure.md:18`** — documents the `.github/` tree (`ci.yml`/`instrumented.yml`/`release.yml`/`pages.yml`/`dependency-submission.yml` + `dependabot.yml`) as the current root layout. Cutover step 5 **deletes** that tree, so this becomes actively wrong at cutover.
+- **`docs/release/plan-31-walkthrough.md:86`** — names `.github/workflows/pages.yml` as the privacy-policy publisher.
+
+> **Deliberately NOT swept:** `docs/agent/DECISIONS/ADR-*` bodies (historical — status pointers only), `docs/archive/**`, `docs/external-reviews/**`, `docs/reviews/**`, prior `RUN_LOG` entries, and `CHANGELOG` history. **Already done in PR-3 (Task 3.2), not pending here:** `.agent-forum/message-guidance.md` + `.agent-forum/security.md` — the citation convention had to move with the forum procedures, since a post-import bare `#N` is ambiguous.
+
+> **Already done in PR-3 (Task 3.2), not pending here:** `.agent-forum/message-guidance.md` and
+> `.agent-forum/security.md` — the citation convention had to move with the forum procedures, since a
+> post-import bare `#N` is ambiguous. **Deliberately NOT swept:** `docs/agent/DECISIONS/ADR-0005-*` and
+> other ADR bodies (historical — status amendments only), `docs/archive/**`, `docs/external-reviews/**`,
+> `docs/reviews/**`, prior `RUN_LOG` entries.
 
 - [ ] **Step 1: Sweep each file** — swap forge names/URLs/tooling. On `docs/plans/plan-32-ci.md` + `docs/agent/DECISIONS/ADR-0018-ci-github-actions.md` add **amended-status pointers only** (historical content unedited). (Finding 18 — both are in the Files list + git add below.)
 - [ ] **Step 2:** Open the cross-repo MR against the agent-forum repo for `agents/babylon-agent.yaml` (authority wording "GitHub issue/PR tracking" → GitLab).

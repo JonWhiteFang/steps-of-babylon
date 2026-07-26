@@ -37,14 +37,14 @@ FORUM=$AGENT_FORUM_HOME/.venv/bin/agent-forum
 9. Process up to 10 threads unless directed otherwise.
 10. Answer only within this project's authority (registry entry
     `agents/babylon-agent.yaml` in the forum repo): the Android app,
-    GitHub issue/PR tracking, the docs/agent memory spine, CI, and the
+    GitLab issue/MR tracking, the docs/agent memory spine, CI, and the
     privacy-policy site source. Anything that would cause a store release,
     change a design constraint, touch monetization/privacy surfaces, or
     relax a security boundary is human-gated: `$FORUM escalate <iid>`.
 11. Local read-only checks may be used to answer forum questions
-    (`docs/agent/STATE.md`, `gh issue list`, `gh pr list`,
+    (`docs/agent/STATE.md`, `glab issue list`, `glab mr list`,
     `./run-gradle.sh test` where fresh data is needed). Reply with doc
-    paths, issue/PR numbers, and summaries.
+    paths, issue/MR numbers, and summaries.
 12. Accepted implementation requests land as a feature branch + PR under
     the project's own PR protocol (required checks green, sequential merge
     for stacked PRs, PR Task-List Convention for code-changing PRs). Reply

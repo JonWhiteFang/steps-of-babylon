@@ -31,6 +31,40 @@ All notable changes to Steps of Babylon are documented here.
   `when` expression with identical branch order and semantics.
 - **1339 → 1352 JVM tests** (+5 resolver, +5 ScatterSplit, +2 `EnemyState`, +1 SCATTER integration).
   detekt + `koverVerifyDebug` green. No schema change.
+### Added — GitLab migration Phase 4 authored: ADR-0044 + forge doc sweep + a tested cutover tool (PR-4, docs-only)
+
+- **`docs/agent/DECISIONS/ADR-0044-gitlab-migration.md`** — the migration ADR. Written *before* the cutover
+  (with a status line that says so) because the decisions are all made and several are non-obvious: numbering
+  **cannot** be preserved, so archiving GitHub is a functional dependency of the docs rather than tidiness;
+  GitLab Pages was rejected for the privacy policy even though it was this project's own first proposal (a
+  Pages custom domain moves the forge coupling instead of removing it); the old privacy URL keeps a full
+  **copy** rather than a redirect, because GitHub Pages has no server-side 301 and a `meta refresh` pointer
+  drops the `#delete-data` fragment for a non-JS fetcher such as a Play validator. Every accepted regression
+  is tabled with its mitigation, and the instrumented lane's demotion is labelled as the one with **no
+  automated backstop** rather than presented as parity.
+- **`tools/migration-fingerprint.sh`** — `capture` / `verify` for the cutover oracle, replacing the runbook's
+  inline copy-paste at the highest-stakes step. **Both modes were exercised against the live repo before
+  anyone needs them:** capture wrote a full fingerprint and confirmed every `v*` tag is annotated; verify
+  returned MATCH/exit 0 against an identical mirror and MISMATCH/exit 1 when HEAD differed, with all 13 tag
+  lines comparing byte-identically across a mirror clone. Testing found a real bug in the first version —
+  `COMMITS_ALL_REFS` read **808** locally but **1243** from a mirror, because a local checkout's
+  `rev-list --all` sees only the refs it happens to have fetched, which would have aborted a good cutover on
+  a false mismatch. Capture now mirror-clones the source so both sides measure identically.
+- **Forge sweep:** README badge + privacy links, `CLAUDE.md`'s CI/CD line and issue pointer, `tech.md`'s
+  Continuous Integration section rewritten to the actual 10 jobs, `security-model.md`'s secret-scanning
+  layer (GitLab Secret Push Protection — confirmed available, so the prevention→detection downgrade never
+  materialised), `structure.md`'s tree, `plan-31-walkthrough.md`'s privacy-host section, and
+  `release-checklist.md`'s two Pages claims. `ADR-0018` + `plan-32-ci.md` get **amended-status pointers
+  only** — bodies unedited as the historical record.
+- **Two real gaps closed, both found by sweeping wider than the plan's file list:** `plan-FORWARD.md` was
+  still directing *future* closed-track tester feedback at the soon-to-be-archived repo, and
+  `source-files.md` had never received entries for `.gitlab-ci.yml`, `ci/*.sh`, `renovate.json` or `Gemfile`
+  (PR-1's task list said it would add them; `structure.md` got them and this index did not).
+- **Cutover runbook hardened further:** step 1 now carries a *measured* pruning note — 30 remote branches
+  today, ~450 commits living only on side branches — which must be pruned **before** the fingerprint is
+  captured or it enshrines the mess.
+- Docs-only apart from one comment in `app/build.gradle.kts`; no logic, tests, resources or schema. Test
+  count unchanged.
 
 ### Security — `google-protobuf` 3.23.4 → 3.25.8 in the Pages `Gemfile.lock` (CI-only, no app impact)
 
@@ -50,6 +84,32 @@ All notable changes to Steps of Babylon are documented here.
   three of the pages job's assertions pass (`index.html` exists, privacy heading present, `#delete-data`
   anchor preserved). Worth doing by hand because `pages.yml` only triggers on `site/**`, so this PR's
   GitHub CI does not exercise the Pages build at all.
+### Added — GitLab migration Phase 3: cutover runbook + `gh`→`glab` automation port (PR #443, docs/skills-only)
+
+- **`docs/migration/phase3-cutover-runbook.md`** — the executable ten-step cutover (quiesce → fingerprint →
+  import → verify → recreate gating → load ten protected release variables → prove the gate → flip remotes →
+  land the automation → archive). Abort is free through step 9; step 10 archives, never deletes.
+- **Automation ported to `glab`** across `/checkpoint`, `/release`, `/complete-app-review`, `/new-migration`
+  and the four `.agent-forum` procedure docs. Flags verified against the installed `glab` 1.109.0, which
+  caught three things a naive binary swap would have broken: GitLab caps `per_page` at **100** (so `gh`'s
+  `--limit 200` can't be ported — the backlog regen now uses `glab api --paginate`); the issue number is
+  **`iid`** and `labels` is an array of **plain strings** (the old `[.labels[].name]` yields nulls); and
+  **`glab issue create`/`mr create` have no `--body-file`**.
+- **Two semantic corrections, not just binary swaps:** `/release` no longer claims the MR pipeline covers the
+  instrumented suite — it does not after cutover (no `/dev/kvm` on shared runners), so the device run is a
+  human pre-tag gate now recorded in `release-checklist.md`; and the forum citation convention now
+  distinguishes GitLab `#<iid>` (issue) / `!<iid>` (MR) from `GitHub-era #<n>`, because a bare `#204` becomes
+  ambiguous once issues and MRs have separate number spaces.
+- **Codex Review Gate: 9 findings (7 major, 1 minor, 1 consistency) — all verified against the code and
+  applied, 0 refuted.** Three were *vacuous verifications* that would have passed while proving nothing: the
+  import check re-measured GitHub (`origin` points there until step 8), the protected-variable check ran on
+  `main` where no job reads those variables, and the fingerprint masked failed `gh` counts into blank fields.
+  Also fixed: a fingerprint blind to parked branches (`rev-list --all` 798 vs `HEAD` 792), a dedup command
+  that truncated at 100 of 155 issues, and a missing `pipefail` that let a truncated capture overwrite the
+  backlog. Sweep gaps found in two docs that direct *future* work at GitHub (`plan-FORWARD.md` closed-track
+  triage; `structure.md`'s `.github/` tree).
+- **Not merged with this PR** — it lands at cutover step 9. Merging earlier would break `/checkpoint` and
+  `/release` against a GitLab project that does not exist yet.
 
 ### Changed — GitLab migration Phase 2: privacy-policy host decided (plan amendment, docs-only)
 

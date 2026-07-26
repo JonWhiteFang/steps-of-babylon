@@ -13,7 +13,7 @@ The body file becomes the `## Request` section. Include, in prose:
 - the exact question/request and the decision needed;
 - only the context needed to assess it — reference committed artifacts
   (`docs/agent/STATE.md`, `docs/agent/DECISIONS/ADR-*`, `docs/plans/...`,
-  issue/PR numbers as plain text `JonWhiteFang/steps-of-babylon#<n>`)
+  issue/MR numbers per the citation convention in `security.md` item 8)
   rather than pasting them;
 - constraints (non-negotiable design constraints, PR-only workflow,
   store-release hard gate, cosmetic-only monetization);

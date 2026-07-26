@@ -166,7 +166,7 @@ android {
     // Scoped to the task graph so it fires only when a release-producing task actually runs —
     // debug builds, unit tests, and the PR gate's `assembleDebug` are unaffected (they configure
     // the release block above but never assemble it). The release CI lane injects the key from
-    // the PLAY_LICENSE_KEY secret (see .github/workflows/release.yml).
+    // the PLAY_LICENSE_KEY protected CI variable (see the release-build job in .gitlab-ci.yml).
     gradle.taskGraph.whenReady {
         // Match ANY release-artifact-producing task, not just the two the current lane uses, so a
         // future product flavor (`bundleProdRelease`), `packageRelease`, or the umbrella `bundle`

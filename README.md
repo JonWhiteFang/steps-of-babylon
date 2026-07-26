@@ -2,7 +2,7 @@
 
 ![Steps of Babylon](docs/release/store-assets/play-store-feature-graphic-1024x500.png)
 
-[![CI](https://github.com/JonWhiteFang/steps-of-babylon/actions/workflows/ci.yml/badge.svg)](https://github.com/JonWhiteFang/steps-of-babylon/actions/workflows/ci.yml)
+[![pipeline status](https://gitlab.com/kn0ck3r-group/steps-of-babylon/badges/main/pipeline.svg)](https://gitlab.com/kn0ck3r-group/steps-of-babylon/-/pipelines)
 
 An Android idle tower defense game where real-world walking drives all progression. Players earn **Steps** by physically walking, then spend them to upgrade an ancient ziggurat that fights wave-based battles against mythic enemies.
 
@@ -23,7 +23,13 @@ The app does NOT request location permissions; GPS / Exploration Mode was droppe
 - Project site: <https://jonwhitefang.uk/projects/steps-of-babylon>
 - Privacy policy (hosted): <https://jonwhitefang.github.io/steps-of-babylon/>
 - Data deletion: <https://jonwhitefang.github.io/steps-of-babylon/#delete-data>
-- Canonical source: [site/index.md](site/index.md) — the published Pages page IS the single source of truth (built from `site/` by `.github/workflows/pages.yml`; internal `docs/` is not published)
+- Canonical source: [site/index.md](site/index.md) — the single source of truth for the policy *text*; the
+  hosted page is rendered from it.
+  > **Moving (ADR-0044):** the policy is relocating to
+  > `https://jonwhitefang.uk/legal/steps-of-babylon-privacy/` — off-forge on purpose, since a Pages custom
+  > domain would only move the forge coupling rather than remove it. **The links above stay authoritative
+  > until that URL is confirmed live and a release embedding it has shipped**; the github.io URL then keeps
+  > serving a full copy indefinitely, because already-installed builds have it baked in.
 
 ## Prerequisites
 
@@ -146,7 +152,7 @@ If you're picking this up cold, read [docs/agent/START_HERE.md](docs/agent/START
 | [Step Tracking](docs/step-tracking.md) | Sensor stack, anti-cheat, background service |
 | [Monetization](docs/monetization.md) | IAP, ads, and economy rules |
 | [Security Model](docs/steering/security-model.md) | Consolidated view: encryption, anti-cheat, economy atomicity, purchase verification |
-| [Privacy Policy](site/index.md) | Canonical privacy policy (published to GitHub Pages) |
+| [Privacy Policy](site/index.md) | Canonical privacy-policy text (rendered at the hosted URL; ADR-0044) |
 
 ## Tech Stack
 

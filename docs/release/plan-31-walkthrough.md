@@ -80,19 +80,31 @@ Project constants you will paste repeatedly:
 The Play Console listing requires a **public URL** to the privacy policy.
 The canonical policy text lives at `site/index.md`.
 
-### B1. Host = GitHub Pages, published from `site/` by a workflow
+### B1. Host = moving off-forge, deliberately
 
-The policy is published to GitHub Pages automatically by
-`.github/workflows/pages.yml`, which builds **only** the top-level `site/`
-folder (so the internal `docs/` tree is never served publicly). Pages is set to
-**Source = GitHub Actions** (not "Deploy from a branch"). On every push to `main`
-that touches `site/**`, the workflow rebuilds and the URL is
-`https://<user>.github.io/<repo>/` (here: `https://jonwhitefang.github.io/steps-of-babylon/`).
+**Today** the URL Play points at is `https://jonwhitefang.github.io/steps-of-babylon/`. **It is relocating**
+to `https://jonwhitefang.uk/legal/steps-of-babylon-privacy/`, served by the website deployment (Cloudflare
+Workers) — pending that URL being confirmed live and a release embedding it shipping (ADR-0044). The policy
+*text* stays canonical in `site/index.md` here, and this project's `pages` job (in `.gitlab-ci.yml`) still
+builds **only** the top-level `site/` folder, so the internal `docs/` tree is never served publicly.
 
-> History: Pages was originally a "Deploy from branch → `/docs`" config, which
-> served the whole `docs/` tree (internal dev docs included) and silently went
-> offline once. The workflow approach scopes publishing to `site/` only and keeps
-> it version-controlled. Don't revert to a branch source pointed at `/docs`.
+**Why not a forge's Pages (ADR-0044):** a Pages custom domain makes the *hostname* forge-neutral but leaves
+the *serving* coupled to a forge — moving from GitHub Pages to GitLab Pages would just swap which forge, and
+this URL is baked into every shipped build.
+
+> History, in order:
+> 1. "Deploy from branch → `/docs`" — served the whole internal `docs/` tree publicly and silently went
+>    offline once.
+> 2. A GitHub Actions Pages workflow scoped to `site/` — fixed the leak and made publishing
+>    version-controlled. **Don't ever revert to a branch source pointed at `/docs`.**
+> 3. Off-forge hosting (**decided, not yet live**) — removes the forge dependency entirely.
+>
+> The old `https://jonwhitefang.github.io/steps-of-babylon/` keeps serving a **full copy** of the policy
+> indefinitely, because already-installed builds have that URL baked in. It is a *copy*, not a redirect:
+> GitHub Pages has no server-side 301, so a `meta refresh` pointer would not reliably carry the
+> `#delete-data` fragment and would be invisible to a non-JS fetcher such as a Play validator. Because
+> archiving makes it read-only, revising the policy needs the **unarchive → update → re-archive** procedure
+> in `docs/migration/phase3-cutover-runbook.md`.
 
 Alternatives: any static host (Netlify, Vercel), or a single `privacy.html` on
 your own domain. The URL just needs to resolve to readable HTML and stay up.
