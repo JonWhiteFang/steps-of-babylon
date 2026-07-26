@@ -24,7 +24,13 @@ gate cutover (see step 10's note on Pages).
       but any branch you then push to GitLab diverges from the GitHub PR nobody will merge.
 - [ ] Close Renovate/Dependabot PRs (Renovate is re-established on GitLab in Phase 4 — its PRs are
       regenerable, so closing them loses nothing).
-- [ ] Prune stale branches (`git branch -r --merged origin/main`) so the import doesn't carry dead refs.
+- [ ] Prune stale branches so the import doesn't carry dead refs. **Measured 2026-07-26: 30 remote
+      branches** — mostly spent work (`docs/checkpoint-*`, the ten `i18n/34-pr*` branches,
+      `release/v1.0.13`, two `dependabot/*`, `claude/ux-ui-design-resources-*`). That is also why
+      `COMMITS_ALL_REFS` is 1243 against `COMMITS_HEAD` 794: ~450 commits live only on side branches.
+      Prune **before** capturing the fingerprint at step 2, or the fingerprint enshrines the mess and
+      step 4's branch comparison becomes noise. `git branch -r --merged origin/main` lists the safe ones;
+      an unmerged branch needs a decision, not a delete.
 - [ ] Run `/checkpoint` — the last GitHub-era memory write.
 - [ ] Confirm `git status` clean and `origin/main` == local `main`.
 
@@ -34,8 +40,28 @@ gate cutover (see step 10's note on Pages).
 
 ## Step 2 — Record the fingerprint
 
-This is the artifact the whole cutover is verified against. Write it to
-`docs/migration/fingerprint-github.txt` and **commit it** — it must survive the flip.
+This is the artifact the whole cutover is verified against, and it is captured once under time
+pressure — so it is a **script**, not a copy-paste:
+
+```bash
+./tools/migration-fingerprint.sh capture      # writes docs/migration/fingerprint-github.txt
+```
+
+It aborts rather than writing a partial file if `gh` is missing/unauthenticated or any count comes back
+blank or non-numeric, and it warns if any `v*` tag is lightweight. **Commit the output** — it must survive
+the remote flip at step 8.
+
+> **Both modes were tested end-to-end on 2026-07-26** (against the live GitHub repo): `capture` produced a
+> full fingerprint, `verify` returned MATCH → exit 0 against an identical mirror and MISMATCH → exit 1 when
+> HEAD differed, with all 13 tag lines comparing byte-identically across a mirror clone. **As of that test
+> every `v*` tag is annotated** — the pre-condition holds today; re-confirm at capture time.
+>
+> **Why it mirror-clones the source instead of reading your checkout:** a local checkout's
+> `rev-list --all` sees only the refs it happens to have fetched, while a mirror sees every ref the remote
+> advertises. On this repo that is **808 vs 1243** — comparing the two would abort a perfectly good cutover
+> on a false `COMMITS_ALL_REFS` mismatch. Capture and verify therefore measure identically.
+
+<details><summary>What the script records (equivalent inline commands, for reference)</summary>
 
 ```bash
 #!/usr/bin/env bash
@@ -72,6 +98,8 @@ prs=$(num "$(gh pr list -s all -L 999 --json number -q 'length')" PRS)
 } | tee docs/migration/fingerprint-github.txt
 ```
 
+</details>
+
 **Why the tag loop is the load-bearing part.** The release lane reads the **annotated tag message** to build
 Play's "What's new" (`ci/prepare-whatsnew.sh`). A tag that arrives as *lightweight* still points at the right
 commit and still triggers the pipeline — it just has no message, so the next release would silently publish
@@ -79,7 +107,7 @@ commit and still triggers the pipeline — it just has no message, so the next r
 every one. The `msg-sha` column pins the message *content*, not just its presence.
 
 - [ ] Script ran to completion (it aborts on any failed count — no blank fields).
-- [ ] `COMMITS_ALL_REFS` and the branch inventory are present, not just `COMMITS_HEAD`.
+- [ ] It printed `OK: every v* tag is annotated` (not a lightweight-tag warning).
 - [ ] Fingerprint committed.
 
 ## Step 3 — Run GitLab's GitHub importer
@@ -93,27 +121,25 @@ and drops every issue, MR, comment, review thread, and label, which is most of w
 
 ## Step 4 — Verify the fingerprint  ⛔ MISMATCH → ABORT
 
-> **Verify against the IMPORT, not your existing checkout.** `origin` still points at GitHub until step 8,
-> so re-running the step-2 commands in the working tree would re-measure *GitHub* and pass no matter what
-> the import did. Clone the GitLab project separately:
-
 ```bash
-git clone --mirror git@gitlab.com:kn0ck3r-group/steps-of-babylon.git /tmp/sob-import.git
-cd /tmp/sob-import.git          # a --mirror clone carries every branch AND every tag object
-git rev-parse HEAD
-git rev-list --count HEAD ; git rev-list --all --count
-git for-each-ref --format='%(refname:short) | %(objectname)' refs/heads
-for t in $(git tag -l 'v*' --sort=v:refname); do
-  echo "$t | $(git rev-parse "$t^{commit}") | $(git cat-file -t "$t") | $(git tag -l --format='%(contents)' "$t" | git hash-object --stdin)"
-done
+./tools/migration-fingerprint.sh verify git@gitlab.com:kn0ck3r-group/steps-of-babylon.git
 ```
 
-- [ ] `HEAD`, `COMMITS_HEAD`, and **`COMMITS_ALL_REFS`** all match the fingerprint.
-- [ ] The branch inventory matches (allowing for the `origin/` prefix difference — mirror refs are `refs/heads`).
-- [ ] **Every `v*` tag matches on all three of** peeled-SHA, `type == tag`, and msg-sha. This is the single
-      most likely thing to be silently wrong.
-- [ ] Issue/MR counts match the fingerprint's `ISSUES_OPEN`/`ISSUES_CLOSED`/`PRS` (via `glab`/the UI —
-      remember GitLab splits PRs into MRs, so compare the *total*, not per-number).
+It mirror-clones the **import** and diffs HEAD, both commit counts, and every `v*` tag (peeled SHA + object
+type + message hash) against the committed fingerprint. **Exit 0 = match; non-zero = ABORT.**
+
+> **Why it clones rather than reading your working tree:** `origin` still points at GitHub until step 8, so
+> re-running the capture locally would re-measure *GitHub* and pass no matter what the importer did. This is
+> the single easiest way to "verify" a cutover while proving nothing.
+
+- [ ] `verify` exited 0. **A `type` column reading `commit` instead of `tag` means an annotated tag arrived
+      lightweight** — the failure that silently degrades the next Play release's "What's new".
+- [ ] Branch inventory compared by hand against the fingerprint's `--- branch inventory ---` block (the
+      script prints it but does not diff it, because step 1's pruning legitimately changes it).
+- [ ] Issue/MR counts sanity-checked against `ISSUES_OPEN`/`ISSUES_CLOSED`/`PRS` — remember GitLab splits
+      PRs into MRs with their own `iid` space, so compare *totals*, never per-number.
+- [ ] Sampled issues/MRs spot-checked for authorship, labels, comment/review threads, attachments — sample
+      across the range (an early issue, a recent one, one with review comments, one with an image).
 - [ ] Spot-check sampled issues and MRs for: authorship attribution, labels, comment threads, review threads,
       attachments. Sample across the range (an early issue, a recent one, one with review comments, one with
       an image).
