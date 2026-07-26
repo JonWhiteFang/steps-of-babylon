@@ -56,17 +56,25 @@ truth. This is a generated file; do not hand-edit its body.
 
 Run:
 ```bash
-gh issue list --state open --limit 200 --json number,title,labels \
-  --jq '.[] | "- #\(.number) — \(.title) — [\([.labels[].name] | join(", "))]"'
+glab api --paginate "projects/:id/issues?state=opened&per_page=100" \
+  | jq -r '.[] | "- #\(.iid) — \(.title) — [\(.labels | join(", "))]"' \
+  | sort -t'#' -k2 -rn
 ```
 Write the result into `docs/agent/BACKLOG.md` under a **GENERATED — do not hand-edit** header that names
 this exact command and a "last generated: <today's date>" line (stamp the current date at run time).
-**Sort the lines by descending issue number** (the `--jq` output already emits newest-first from `gh`,
-but sort explicitly so regeneration is reproducible and diffs stay meaningful). Do not hand-group or
+The `sort` is explicit so regeneration is reproducible and diffs stay meaningful. Do not hand-group or
 reorder — determinism is the point of a generated file.
 
+> **Why `glab api --paginate` and not `glab issue list`.** Three GitLab-vs-GitHub differences bite here:
+> (1) GitLab's API caps `per_page` at **100**, so a `--limit 200`-style flag cannot be ported — `--paginate`
+> is what makes the capture complete rather than silently truncated; (2) the issue number is **`iid`**
+> (project-scoped), not `number`; (3) `labels` is an array of **plain strings**, so it is
+> `.labels | join(", ")` — the GitHub-era `[.labels[].name]` would yield nulls against GitLab.
+> `glab issue list --output json --jq` also works and needs no external `jq`, but it paginates only via
+> explicit `--page`/`--per-page`, so it can quietly stop at one page.
+
 **Write only on a successful, non-empty capture.** Capture the command output first; write
-`docs/agent/BACKLOG.md` ONLY if the command exited 0 AND produced at least one line. If `gh` is
+`docs/agent/BACKLOG.md` ONLY if the pipeline exited 0 AND produced at least one line. If `glab` is
 absent/unauthenticated (command errors) OR returns nothing, **log a one-line skip and leave any existing
 `docs/agent/BACKLOG.md` untouched** — never overwrite it with a truncated or empty file.
 

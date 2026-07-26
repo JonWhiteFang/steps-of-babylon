@@ -95,7 +95,14 @@ Search for the OLD version string and the OLD test count and update the current-
 ### 10. Commit + open the release PR
 - Commit on `release/vX.Y.Z` with a message summarizing the promotion (version bump, CHANGELOG
   promote, release notes, pointer sync).
-- `gh pr create` targeting `main`. The PR runs the normal CI gate + instrumented lane.
+- `glab mr create --push --target-branch main --title "<title>" --description "$(cat <notes-file>)"`
+  (`glab mr create` has no `--body-file`; `-d` takes the text, or `-d -` opens an editor).
+  The MR runs the whole pipeline — **and GitLab gates merge on the pipeline as a whole**, not on named
+  checks, so every job in it blocks the merge.
+- **The instrumented suite is NOT in that pipeline.** It was demoted to local-only (no `/dev/kvm` on
+  gitlab.com shared runners — ADR-0044), so `./run-gradle.sh :app:connectedDebugAndroidTest` on a
+  connected API-34+ device is a **human step before tagging**, per `docs/release/release-checklist.md`.
+  Do not report "CI covered the instrumented tests" — it no longer does.
 - **Stop here and hand back to the developer to review/merge.** Do not self-merge a release.
 
 ### 11. After the PR merges — push the annotated tag (the release trigger)
@@ -103,11 +110,21 @@ This is the step that actually ships. Do it only once the PR is merged to `main`
 - Switch to `main`, pull.
 - Create an **annotated** tag whose message IS the approved "What's new" text:
   `git tag -a vX.Y.Z -m "<the ≤500-char What's-new text>"`
-  (Annotated, not lightweight — `release.yml` reads the tag *message* for Play. A lightweight tag
-  falls back to a generic line.)
-- `git push origin vX.Y.Z` → triggers `release.yml` → signed AAB → Play internal track.
-- Watch the run: `gh run watch` (or `gh run list --workflow=release.yml`). Report success/failure
-  back to the developer; the AAB lands on the Play **internal** track, not production.
+  (Annotated, not lightweight — `ci/prepare-whatsnew.sh` reads the tag *message* for Play. A lightweight
+  tag falls back to the generic "Bug fixes and improvements." line.)
+- **`v*` tags are protected, owner-only push.** That protection is both the store-release hard gate and
+  what makes the release lane's protected CI variables visible — the agent never pushes the tag.
+- `git push origin vX.Y.Z` → triggers the three release jobs in `.gitlab-ci.yml`
+  (`release-build` → `release-publish` → `release-object`) → signed AAB → Play internal track + a GitLab
+  Release carrying the AAB as a durable Generic-Package-Registry asset.
+- Watch it: `glab ci status --branch vX.Y.Z --wait` (blocks until the pipeline finishes — the `gh run watch`
+  equivalent), or `glab ci view vX.Y.Z` for the job tree, or `glab ci list` to find the pipeline.
+  *Caveat: `--branch` is the ref flag and has not yet been exercised against a real tag pipeline (the first
+  owner-witnessed GitLab release is Phase-4 Task 4.1 Step 3) — if it doesn't resolve the tag, fall back to
+  `glab ci list` and `glab ci get --pipeline-id <id>`.*
+- Report success/failure back to the developer; the AAB lands on the Play **internal** track, not production.
+- If `release-publish` succeeds but you see no Play change, check that **`RELEASE_VALIDATE_ONLY` is not set**
+  on the project — it makes Fastlane run `--validate_only`, which looks green while publishing nothing.
 
 ## Guardrails
 - The PR carries **no production-code change** — if you find yourself editing engine/domain/UI code,

@@ -937,7 +937,13 @@ git commit -m "chore: migrate load-bearing automation gh→glab / GitHub→GitLa
 
 ### Task 4.2: Doc & cross-project sweep
 
-**Files:** Modify `README.md`, `CLAUDE.md`, `docs/steering/tech.md`, `docs/steering/security-model.md`, `docs/steering/source-files.md`, `docs/release/release-checklist.md`, `docs/plans/plan-32-ci.md`, `docs/agent/DECISIONS/ADR-0018-ci-github-actions.md`, `app/build.gradle.kts` (comment-only), `.agent-forum/message-guidance.md`, `.agent-forum/security.md`; cross-repo MR: `agents/babylon-agent.yaml`
+**Files:** Modify `README.md`, `CLAUDE.md`, `docs/steering/tech.md`, `docs/steering/security-model.md`, `docs/steering/source-files.md`, `docs/release/release-checklist.md`, `docs/plans/plan-32-ci.md`, `docs/agent/DECISIONS/ADR-0018-ci-github-actions.md`, `app/build.gradle.kts` (comment-only), **`docs/release/plan-31-walkthrough.md`** (added 2026-07-26 — a repo-wide sweep found its `.github/workflows/pages.yml` publisher reference at `:86`, which no phase's file list covered; `.agent-forum/message-guidance.md` + `security.md` were already converted early in PR-3); cross-repo MR: `agents/babylon-agent.yaml`
+
+> **Already done in PR-3 (Task 3.2), not pending here:** `.agent-forum/message-guidance.md` and
+> `.agent-forum/security.md` — the citation convention had to move with the forum procedures, since a
+> post-import bare `#N` is ambiguous. **Deliberately NOT swept:** `docs/agent/DECISIONS/ADR-0005-*` and
+> other ADR bodies (historical — status amendments only), `docs/archive/**`, `docs/external-reviews/**`,
+> `docs/reviews/**`, prior `RUN_LOG` entries.
 
 - [ ] **Step 1: Sweep each file** — swap forge names/URLs/tooling. On `docs/plans/plan-32-ci.md` + `docs/agent/DECISIONS/ADR-0018-ci-github-actions.md` add **amended-status pointers only** (historical content unedited). (Finding 18 — both are in the Files list + git add below.)
 - [ ] **Step 2:** Open the cross-repo MR against the agent-forum repo for `agents/babylon-agent.yaml` (authority wording "GitHub issue/PR tracking" → GitLab).

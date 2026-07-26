@@ -317,7 +317,7 @@ function sevLabel(s) {
 }
 // Map a finder's dimension key (r.area) to labels that ACTUALLY EXIST in this repo. The repo has NO
 // `area:reliability`/`area:architecture`/etc. — only the domain labels below — so emit those instead.
-// `gh issue create` fails on a nonexistent label, so the plan must only propose real ones.
+// `glab issue create` fails on a nonexistent label, so the plan must only propose real ones.
 function domainLabels(area) {
   const m = {
     'product-ux': ['ux'], 'accessibility': ['accessibility', 'ux'],
@@ -325,6 +325,9 @@ function domainLabels(area) {
     'state-mgmt': ['architecture'], 'data-persistence': ['data-integrity'],
     'security': ['data-integrity'], 'privacy': ['monetization'],
     'performance': ['performance'], 'reliability': [], 'offline-network': [],
+    // `github_actions` is a legacy Dependabot-era label name. The GitLab importer carries labels
+    // across, so it still EXISTS post-migration and stays valid here — do not "fix" the name to
+    // something GitLab-flavoured unless you first create that label, or filing will fail.
     'testing': ['testing'], 'build-ci-release': ['github_actions'],
     'dependencies': ['dependencies'], 'docs-maintainability': ['documentation'],
     'documentation': ['documentation'], 'i18n-l10n': ['i18n'], 'i18n': ['i18n'],
@@ -336,9 +339,9 @@ const medPlus = survivors.filter(r => r.finalSeverity !== 'low')
 const lows = survivors.filter(r => r.finalSeverity === 'low')
 const issuePlan = {
   convention: 'Med+ → one issue each (dedup against existing issues first); ALL Lows → a single [Audit] tracker issue (mirror #128).',
-  filingMode: 'propose-then-confirm — present this plan to the developer; only run `gh issue create` after go-ahead.',
-  dedupHint: 'Before filing, run `gh issue list --state all --limit 200`; skip any finding already covered (match on finding ID in title or the described defect). NOTE: a re-run against a near-unchanged HEAD will re-surface findings already filed — dedup hard.',
-  labelNote: 'suggestedLabels are pre-mapped to labels that exist in THIS repo (no `area:*` except battle/missions/economy/billing/ui). Verify with `gh label list` before filing; a nonexistent label makes `gh issue create` fail.',
+  filingMode: 'propose-then-confirm — present this plan to the developer; only run `glab issue create` after go-ahead.',
+  dedupHint: 'Before filing, run `glab issue list --all --per-page 100` (GitLab caps per_page at 100; the number field is iid); skip any finding already covered (match on finding ID in title or the described defect). NOTE: a re-run against a near-unchanged HEAD will re-surface findings already filed — dedup hard.',
+  labelNote: 'suggestedLabels are pre-mapped to labels that exist in THIS repo (no `area:*` except battle/missions/economy/billing/ui). Verify with `glab label list` before filing; a nonexistent label makes `glab issue create` fail.',
   backlink: `Each issue body should backlink to ${REPORT_PATH} (and its section/finding-ID anchor).`,
   proposedIndividualIssues: medPlus.map(r => ({
     title: `[Audit] ${r.title}`,
