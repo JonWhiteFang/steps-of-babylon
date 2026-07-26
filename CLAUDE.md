@@ -183,7 +183,7 @@ See `docs/StepsOfBabylon_GDD.md` for the full game design document.
 - **Build:** Gradle 9.6.0 (Kotlin DSL), version catalog at `gradle/libs.versions.toml` (never hardcode versions). Multi-module since #26: `:app` (the shipped application) + `:baselineprofile` & `:macrobenchmark` (`com.android.test` dev-tooling modules — Baseline Profile generation + Macrobenchmark; never shipped, never CI-gated on timings).
 - **CI/CD note (#26):** the PR gate also type-checks the two benchmark modules; perf benchmarks run locally on a device, not in CI (emulator timings are unreliable).
 - **Security:** SQLCipher (DB encryption), Android Keystore (key management), R8 (obfuscation), network security config (cleartext blocked)
-- **CI/CD:** GitHub Actions — PR gate (lint + unit + assembleDebug + schema-drift), instrumented emulator suite, a release lane that ships a signed AAB to the Play internal track on a `v*` tag, and a Pages lane (`pages.yml`) that publishes the hosted privacy policy from the top-level `site/` folder only (never the internal `docs/` tree). See `docs/plans/plan-32-ci.md` + ADR-0018.
+- **CI/CD:** **GitLab CI** — one `.gitlab-ci.yml` (10 jobs): a docs-only fast-path classifier, the core gate (unit + lint + assembleDebug + unsigned assembleRelease + Kover ratchet + benchmark type-check + schema-drift + detekt), ktlint, gitleaks, osv-scan, a `pages` job publishing the top-level `site/` folder only (never the internal `docs/` tree), and a three-job release lane (`release-build` → `release-publish` → `release-object`) shipping a signed AAB to the Play internal track on a **protected, owner-only** `v*` tag. **Merge is gated on the whole pipeline, not named checks.** There is deliberately **no instrumented job** — gitlab.com shared runners have no `/dev/kvm`, so `:app:connectedDebugAndroidTest` is a human pre-release device run (`docs/release/release-checklist.md`); that is the one accepted regression with no CI backstop. Dependency updates come from self-hosted **Renovate** (`renovate.json`), not Dependabot. See **ADR-0044** (migration + accepted regressions) + `docs/migration/`; ADR-0018 and `docs/plans/plan-32-ci.md` are the superseded GitHub-Actions record.
 
 ## Architecture
 
@@ -383,7 +383,8 @@ from game logic — the simulation has been extracted to a pure-domain core:
 ## Known fragile zones & active risk
 
 `docs/agent/STATE.md` holds the live "do-not-touch / fragile zones" list. For known open defects,
-check the GitHub issues labelled `severity:major` / `severity:minor` and the dated reports under
+check the GitLab issues labelled `severity:major` / `severity:minor` (historical `#N` citations resolve
+against the **archived GitHub** repo — ADR-0044) and the dated reports under
 `docs/external-reviews/`. Do not assume the codebase is defect-free because tests pass — several
 known concurrency/economy issues are reachability-confirmed but not yet fixed.
 

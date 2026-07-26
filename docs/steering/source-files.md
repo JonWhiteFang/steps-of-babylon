@@ -411,6 +411,24 @@ docs/performance/battery-audit.md                                             # 
 docs/performance/startup-baseline.md                                          # Gate-G cold-start timing baseline: measurement methodology, pre/post profile numbers, target thresholds. (#26)
 ```
 
+## CI Pipeline & Migration Tooling
+
+Repo-root-relative. The pipeline itself (ADR-0044, superseding ADR-0018's GitHub Actions). These entries were
+missed by the Phase-1 doc sweep — `structure.md` gained them, this index did not — and are added here by the
+Phase-4 sweep.
+
+```
+.gitlab-ci.yml                          # THE CI pipeline: 10 jobs (classify, core-gate, ktlint, gitleaks, osv-scan, pages, release-build/publish/object, renovate). Every image/binary/gem digest- or checksum-pinned. NO instrumented job (no /dev/kvm on shared runners) — that suite is a human pre-release device run. Merge gates on the WHOLE pipeline, not named checks. Trigger matrix enumerates MR/branch-push/TAG-push/schedule/web; tag pushes arrive as source `push` with CI_COMMIT_TAG set, so a branch-only rule would silently kill every release.
+ci/classify-diff.sh                     # Docs-only fast-path classifier → dotenv `CODE=true|false`. FAIL-SAFE INVERSION: false only when EVERY changed path is allowlisted (docs/**, *.md, .claude/**, .mcp.json); unknown path OR unknown/invalid diff base ⇒ true (full gate). Not expressible as rules:changes — that is why it is a script.
+ci/classify-diff.test.sh                # Self-test for the classifier: docs-only ⇒ false, code ⇒ true, unknown-base ⇒ true. Run `bash ci/classify-diff.test.sh`.
+ci/validate-wrapper.sh                  # Validates gradle/wrapper/gradle-wrapper.jar against a pinned SHA-256 BEFORE any Gradle invocation (#212 port — GitLab has no first-party wrapper-validation action). Renovate updates the hash on a wrapper bump.
+ci/prepare-whatsnew.sh                  # Play "What's new" from the tag message → distribution/<locale>/changelogs/<versionCode>.txt (the layout `fastlane supply --metadata_path` expects). Reads %(contents) ONLY for a genuinely ANNOTATED tag — a lightweight tag's %(contents) is the commit message and must never become store metadata → falls back to a generic line. Truncates to 500 UNICODE chars (byte-truncation can split a codepoint).
+ci/fastlane/Gemfile + Gemfile.lock      # Pinned fastlane 2.237.0 (+ locked transitive graph) for release-publish. Fastlane publishes no usable Docker image, so the job gem-installs from this lock on a pinned ruby.
+renovate.json                           # Self-hosted Renovate policy: config:recommended + dependencyDashboard + weekly, pinDigests, groups all-gradle / gradle-wrapper / ci-images (#255 carryover). Replaces Dependabot, which does not exist on GitLab.
+Gemfile / Gemfile.lock                  # Pinned Jekyll 4.3.3 + minima 2.5.1 for the `pages` job. Carries an explicit `google-protobuf >= 3.25.5, < 4` SECURITY FLOOR on a transitive gem (sass-embedded → protobuf); an unconstrained bundle update cascades to protobuf 4.x. NO `BUNDLED WITH` (a stale value broke the pages job) and PLATFORMS stays `ruby`-only — bundler on Windows re-adds both; strip them.
+tools/migration-fingerprint.sh          # `capture` / `verify` for the cutover oracle (runbook steps 2 + 4). capture mirror-clones the SOURCE so both sides measure identically (a local checkout's rev-list --all sees only fetched refs: 808 vs 1243 on this repo), validates every gh count numerically (echo "$(gh …)" exits 0 even when gh fails → a blank field in the oracle), records tag object TYPE (a lightweight-imported tag still fires the release pipeline but has no message) and hashes the tag message. verify mirror-clones the IMPORT — reading the local checkout would re-measure GitHub, since origin points there until step 8 — and exits non-zero on any mismatch. Both modes tested against the live repo 2026-07-26.
+```
+
 ## Gradle / CI Modules
 
 All paths are repo-root-relative. These modules are siblings of `:app` in `settings.gradle.kts`.

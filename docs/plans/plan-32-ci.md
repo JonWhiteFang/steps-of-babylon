@@ -1,5 +1,10 @@
 # Plan 32 — CI/CD Pipeline (GitHub Actions)
 
+> **Superseded in mechanism by ADR-0044 (2026-07-23):** CI now runs on **GitLab CI** via one
+> `.gitlab-ci.yml`. This plan is retained unedited as the historical record of how CI was introduced and
+> which gates it was designed to enforce — those gates were ported, not redesigned. For what runs today see
+> `docs/steering/tech.md` -> Continuous Integration, plus ADR-0044 and `docs/migration/`.
+
 **Status:** ✅ Merged to `main` via PR #100 (2026-06-03)
 **Dependencies:** Plan 29 (Testing & QA — the suites CI runs), Plan 30 (Release Prep — signing config + AAB), Plan 31 (Play Console — the internal track + service account the release lane uploads to)
 **Layer:** Repository infrastructure (`.github/`) — no app code change

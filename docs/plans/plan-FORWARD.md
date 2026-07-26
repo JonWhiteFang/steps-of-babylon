@@ -28,7 +28,7 @@ snapshot.
 ## Phase 1 — Closed-Test Readiness Gate
 
 The gate is the developer's judgment, made explicit. Each item is satisfied-by a specific V1X
-sub-plan / GitHub issue, or is marked **deferred — not a blocker** with a one-line rationale (never
+sub-plan / tracked issue, or is marked **deferred — not a blocker** with a one-line rationale (never
 silently dropped). Promotion to closed test happens when the developer is satisfied with the ticked
 state — the checklist informs that call, it does not replace it.
 
@@ -140,7 +140,9 @@ closed: gathering soak signal or exposing testers is the whole point of closed t
 
 1. Promote the internal build to the closed track in Play Console.
 2. Recruit ≥12 testers; distribute the closed-track opt-in URL.
-3. Collect ≥14 days of closed-track feedback; triage issues filed against `JonWhiteFang/steps-of-babylon`.
+3. Collect ≥14 days of closed-track feedback; triage issues filed against
+   **`gitlab.com/kn0ck3r-group/steps-of-babylon`** (the archived GitHub repo is read-only — it resolves
+   historical `#N` citations only, and tester feedback filed there would go nowhere; ADR-0044).
 4. Apply for production access (Google review 1–3 days).
 5. Promote closed → production with a staged rollout; cut the production release tag after rollout reaches 100%. (Note: `v1.0.0` was never tagged — the versionName advanced past 1.0.0 to avoid a versionCode collision, and several `v1.0.x` tags already exist — see CHANGELOG; the production tag will be whatever versionName ships at GA.)
 
