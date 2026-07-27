@@ -122,7 +122,7 @@ and drops every issue, MR, comment, review thread, and label, which is most of w
 ## Step 4 — Verify the fingerprint  ⛔ MISMATCH → ABORT
 
 ```bash
-./tools/migration-fingerprint.sh verify git@gitlab.com:kn0ck3r-group/steps-of-babylon.git
+./tools/migration-fingerprint.sh verify https://gitlab.com/kn0ck3r-group/steps-of-babylon.git
 ```
 
 It mirror-clones the **import** and diffs HEAD, both commit counts, and every `v*` tag (peeled SHA + object
@@ -213,9 +213,18 @@ Ten inputs, all as **protected** CI variables on release-eligible protected refs
 ```bash
 git remote rename origin github-archive
 git remote set-url --push github-archive DISABLED      # push to the archive fails loudly, not silently
-git remote add origin git@gitlab.com:kn0ck3r-group/steps-of-babylon.git
+git remote add origin https://gitlab.com/kn0ck3r-group/steps-of-babylon.git
 git fetch origin && git rev-parse origin/main && git ls-remote --tags origin | grep 'v'
 ```
+
+> **HTTPS, not SSH — decided 2026-07-27, and it is a working constraint, not a preference.** SSH to
+> gitlab.com is not configured on the dev machine (`ssh -T git@gitlab.com` → `Permission denied
+> (publickey)`), while `glab` is already authenticated as `kn0ck3r` **over HTTPS**. Had step 8 kept the
+> `git@` URL it would have failed here, in the middle of the one window where the forges are ambiguous.
+> The fingerprint script takes the clone URL as an argument and never assumes a scheme, so nothing else
+> needed changing. First HTTPS push authenticates through Git Credential Manager (`credential.helper =
+> manager`) — if it prompts awkwardly mid-cutover, `glab auth git-credential` is the non-interactive
+> fallback. Switching to SSH later is a one-line `git remote set-url`, so this closes nothing off.
 
 - [ ] `git rev-parse origin/main` matches the fingerprint HEAD.
 - [ ] `git ls-remote --tags origin` lists every `v*` tag.

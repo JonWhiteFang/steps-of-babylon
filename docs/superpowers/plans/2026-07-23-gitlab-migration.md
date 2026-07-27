@@ -881,10 +881,14 @@ already-installed versions. Content unchanged; URL/host + publisher-infra refs o
    ```bash
    git remote rename origin github-archive
    git remote set-url --push github-archive DISABLED
-   git remote add origin git@gitlab.com:kn0ck3r-group/steps-of-babylon.git
+   git remote add origin https://gitlab.com/kn0ck3r-group/steps-of-babylon.git
    git fetch origin && git rev-parse origin/main && git ls-remote --tags origin | grep 'v'
    # authenticated non-release round-trip: push a throwaway branch + open+close an MR via glab
    ```
+
+   > **HTTPS, not SSH** (owner decision 2026-07-27): SSH to gitlab.com is not configured on the dev
+   > machine, `glab` is already authenticated over HTTPS, and the fingerprint script is scheme-agnostic.
+   > Rationale + the credential-helper fallback are recorded in the cutover runbook's step 8.
 
 9. **Update load-bearing automation in-repo** (Task 3.2 diff — merges as part of cutover).
 10. **Archive the GitHub repo.** Pages keeps serving the old policy URL — as a **full copy of the policy

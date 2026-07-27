@@ -58,6 +58,12 @@ step 3), the `origin` URL (cutover step 8: `git@gitlab.com:kn0ck3r-group/steps-o
 Renovate `RENOVATE_REPOSITORIES`/token scoping, the forum registry citation paths, and every doc-sweep URL.
 Amend the spec's `Target state` + the plan's cutover runbook + Phase-4 sweep accordingly before Phase 1.
 
+> **Amended 2026-07-27 (pointer only — the finding above is left as recorded on 2026-07-23).** The `origin`
+> URL named above is now **HTTPS**: `https://gitlab.com/kn0ck3r-group/steps-of-babylon.git`. SSH to
+> gitlab.com is not configured on the dev machine and `glab` is authenticated over HTTPS, so cutover step 8
+> would have failed on the `git@` form. The namespace correction this section records is unaffected — only
+> the transport changed. Operative copy: `docs/migration/phase3-cutover-runbook.md` step 8.
+
 ## Spike run record (2026-07-23)
 
 - Project imported as `kn0ck3r/sob-spike`, transferred to `kn0ck3r-group/sob-spike` (personal namespace had 0 minutes).
