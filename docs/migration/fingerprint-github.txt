@@ -1,0 +1,31 @@
+# ⚠️ DRY RUN — 2026-07-27. NOT the cutover oracle. RE-RUN `capture` AT THE SITTING.
+# Produced while proving the tooling (it found and fixed the refs/pull/* defect). COMMITS_BRANCHES_TAGS
+# counts commits on every branch, so each commit pushed after this line was written makes the number
+# below stale — and `verify` would then correctly ABORT. Re-capture immediately before the import,
+# after the last pre-cutover commit. Overwriting this file removes this banner, which is the signal
+# that it is real.
+HEAD 400dfb3ee77289630038c46992fefe05e89343da
+COMMITS_HEAD 811
+COMMITS_BRANCHES_TAGS 825
+--- v* tag inventory (name | peeled-sha | type | msg-sha) ---
+v1.0.1 | 7c281622088c84e4917ec4c892dc2b5558143818 | tag | ad1610ea52f43792e1d4e5fdf9c04543e9663f5d
+v1.0.2 | 5298fae92383dbb443b16768fb86264e3de4c174 | tag | 78114644b6b991134694f435c66dcecf7bfbd9b3
+v1.0.3 | 6f3ed6e2025b504b0ab1564286ded93a512bf638 | tag | b445112915fa60446aafeb627a8f2a31625fec96
+v1.0.4 | 1972f1a7063275901ed81df47885b63a55d4a5f3 | tag | f19a396a6de67815d14d3f4fb4d47688df0ba299
+v1.0.5 | 92a66f8ad15a63d1ff1a394fa14f53d16dd24f27 | tag | 538f1efc492e44b1612abd4756861fdb64fa6b11
+v1.0.6 | 76fed39c3da612c7aec7b3c0433f27cfc5f6fb9b | tag | 0085362614d5daf791c095039d94db0d90f430b8
+v1.0.7 | 2e103305869fd892d82c11dcc3fd46f935ddcb65 | tag | 8873d0dbe898c4053be53e13b3cd6e5fc628278f
+v1.0.8 | 26cc086418f459ba75af08d8b768991b05fd5f46 | tag | 4a89ee4fe6371a9f33bd253d5128c62ffcb671da
+v1.0.9 | a060651f836c391ea16a952f4af7f8c88d328e18 | tag | 0f695ee8be3ba6341f6592b6314e0eb18526fb61
+v1.0.10 | ffa99735501d0e2d3627943b87993752b625fa6d | tag | 32a4eb108fba72a4239cf6e530132cf8908081c3
+v1.0.11 | 3915fd183be9fbc90742a8194ee68560d220dbf9 | tag | ddc4b8a57fb29cef6bfc8b89cf1d3c5d8ebd1ef8
+v1.0.12 | 8aa7c3e0991fa45cb7dccf62ca240ca4ab9c0005 | tag | c91a6dccc82846beae2ee94be1f458410422c1f2
+v1.0.13 | 4ba353e2bb3b1261986d713e372b9126ebdfb1cb | tag | 7c2e19329e447a79f675f46deac6a226c355e291
+ISSUES_OPEN 18
+ISSUES_CLOSED 137
+PRS 291
+--- branch inventory (name | sha) ---
+chore/gitlab-automation | cd502674ecd0288a027e07dccd1cd03993f5175f
+docs/gitlab-sweep | 1872de6e4267f6851637bf047f549ed7c738e63b
+docs/phase1-tooling-gap-spec | 8d8412f1b448c2f4e2615346c3db238e1b8b71fd
+main | 400dfb3ee77289630038c46992fefe05e89343da

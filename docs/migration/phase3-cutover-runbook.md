@@ -24,16 +24,23 @@ gate cutover (see step 10's note on Pages).
       but any branch you then push to GitLab diverges from the GitHub PR nobody will merge.
 - [ ] Close Renovate/Dependabot PRs (Renovate is re-established on GitLab in Phase 4 — its PRs are
       regenerable, so closing them loses nothing).
-- [ ] Prune stale branches so the import doesn't carry dead refs. **Measured 2026-07-26: 30 remote
-      branches** — mostly spent work (`docs/checkpoint-*`, the ten `i18n/34-pr*` branches,
-      `release/v1.0.13`, two `dependabot/*`, `claude/ux-ui-design-resources-*`). That is also why
-      `COMMITS_ALL_REFS` is 1243 against `COMMITS_HEAD` 794: ~450 commits live only on side branches.
+- [x] Prune stale branches so the import doesn't carry dead refs. **DONE 2026-07-27: 27 → 4 remote
+      branches** — 22 fully-merged ones deleted, each verified zero-commits-ahead of `main` with
+      `git merge-base --is-ancestor` before deletion (`git branch -r --merged origin/main` lists the safe
+      ones; an unmerged branch needs a decision, not a delete). Kept: `main`, the two parked migration
+      drafts, and `docs/phase1-tooling-gap-spec` (an orphaned Phase-1 spec+plan absent from `main` —
+      decision pending, deliberately not deleted in a hygiene sweep).
       Prune **before** capturing the fingerprint at step 2, or the fingerprint enshrines the mess and
-      step 4's branch comparison becomes noise. `git branch -r --merged origin/main` lists the safe ones;
-      an unmerged branch needs a decision, not a delete.
-- [ ] Run `/checkpoint` — the last GitHub-era memory write.
+      step 4's branch comparison becomes noise.
+- [x] Land or park every open PR — **DONE 2026-07-27**: #439 merged, #440 closed, checkpoint PR #448
+      merged. Open PRs are now exactly the two intentional DO-NOT-MERGE drafts (#443, #446).
+- [x] Run `/checkpoint` — the last GitHub-era memory write. **DONE 2026-07-27 (PR #448).**
 - [ ] Confirm `git status` clean and `origin/main` == local `main`.
 
+> **Dependabot alert check — CLEARED 2026-07-27: 0 open alerts.** The high alert below (alert 34,
+> `google-protobuf` in the Pages `Gemfile.lock`) was resolved before cutover, so nothing is lost to the
+> non-migrating alert inbox. Re-confirm at cutover time; the guidance below still applies to any new one.
+>
 > **Dependabot alert check:** at time of writing there is **1 open high alert on `main`** (alert 34). Alerts
 > do NOT migrate — GitLab has no equivalent inbox on our tier. Either resolve it before cutover or record it
 > in `docs/agent/BACKLOG.md` as a plain item, or it silently disappears.
@@ -51,15 +58,37 @@ It aborts rather than writing a partial file if `gh` is missing/unauthenticated 
 blank or non-numeric, and it warns if any `v*` tag is lightweight. **Commit the output** — it must survive
 the remote flip at step 8.
 
+> 🔴 **This is the LAST thing you do before the import — after the final pre-cutover commit.**
+> `COMMITS_BRANCHES_TAGS` counts commits reachable from *every* branch, so **any commit pushed to any
+> branch after the capture invalidates it**, and step 4 will then correctly ABORT on a number that was
+> only ever stale. That includes the commit that lands the fingerprint itself, which is why the field
+> that matters most for a strict match is `COMMITS_HEAD` (tracks `main` alone) and why the branch
+> inventory is hand-compared rather than diffed.
+>
+> A **dry-run capture exists in the repo already** (2026-07-27, carrying a `# ⚠️ DRY RUN` banner). It was
+> produced while proving the tooling — and it earned its keep: it exposed the `refs/pull/*` defect above.
+> It is **not** the oracle. Re-running `capture` overwrites it and drops the banner, which is how you tell
+> a real fingerprint from the dry run at a glance.
+
 > **Both modes were tested end-to-end on 2026-07-26** (against the live GitHub repo): `capture` produced a
 > full fingerprint, `verify` returned MATCH → exit 0 against an identical mirror and MISMATCH → exit 1 when
 > HEAD differed, with all 13 tag lines comparing byte-identically across a mirror clone. **As of that test
 > every `v*` tag is annotated** — the pre-condition holds today; re-confirm at capture time.
 >
-> **Why it mirror-clones the source instead of reading your checkout:** a local checkout's
-> `rev-list --all` sees only the refs it happens to have fetched, while a mirror sees every ref the remote
-> advertises. On this repo that is **808 vs 1243** — comparing the two would abort a perfectly good cutover
-> on a false `COMMITS_ALL_REFS` mismatch. Capture and verify therefore measure identically.
+> **Why it mirror-clones the source instead of reading your checkout:** in a working checkout
+> `--branches` means only the branches you happen to have locally (1 here); in a mirror it means every
+> branch the remote advertises (4 here). Comparing those would abort a perfectly good cutover on a false
+> mismatch. Capture and verify therefore both measure a mirror.
+>
+> ⚠️ **The field counts `--branches --tags`, NOT `--all` — fixed 2026-07-27, and this one would have bitten.**
+> The first capture recorded `COMMITS_ALL_REFS 1264`. GitHub advertises **295 `refs/pull/*` refs**
+> contributing **439 commits reachable from nothing else** (`--all` 1264 vs `--branches --tags` 825).
+> GitLab has no `refs/pull/*` — it has its own `refs/merge_requests/*` — so an `--all` number captured
+> from GitHub can never equal an `--all` number from the import, and step 4's strict `diff` would have
+> exited 1 and told you to abort a perfectly good cutover, **every single time**. The field is now
+> `COMMITS_BRANCHES_TAGS`, which is forge-neutral and still catches the dropped-side-branch case it
+> exists for. `verify` **refuses** (before cloning) any fingerprint still carrying the retired
+> `COMMITS_ALL_REFS` field rather than silently diffing unlike quantities.
 
 <details><summary>What the script records (equivalent inline commands, for reference)</summary>
 
@@ -79,10 +108,12 @@ prs=$(num "$(gh pr list -s all -L 999 --json number -q 'length')" PRS)
 {
   echo "HEAD $(git rev-parse HEAD)"
   echo "COMMITS_HEAD $(git rev-list --count HEAD)"
-  # ALL refs, not just HEAD-reachable: step 1 allows PRs to be parked, and a parked branch's commits
-  # are invisible to `rev-list HEAD`. In this repo the two numbers differ (792 vs 798), so a dropped
-  # or corrupted side branch would pass every other field in this fingerprint.
-  echo "COMMITS_ALL_REFS $(git rev-list --all --count)"
+  # Branches + tags, not just HEAD-reachable: step 1 allows PRs to be parked, and a parked branch's
+  # commits are invisible to `rev-list HEAD`. In this repo the two numbers differ (811 vs 825), so a
+  # dropped or corrupted side branch would pass every other field in this fingerprint.
+  # NOT `--all`: that pulls in GitHub's refs/pull/* (295 refs, 439 extra commits here), which GitLab
+  # has no equivalent of, so an --all capture could never match the import. See the note above.
+  echo "COMMITS_BRANCHES_TAGS $(git rev-list --branches --tags --count)"
   echo "ISSUES_OPEN $issues_open"
   echo "ISSUES_CLOSED $issues_closed"
   echo "PRS $prs"

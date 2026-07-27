@@ -15,8 +15,17 @@
 # Design notes (each one is a bug this script exists to prevent):
 #  - `set -euo pipefail` + explicit numeric validation: `echo "$(gh …)"` exits 0 even when gh fails,
 #    which would bake a BLANK count into the oracle and still look successful.
-#  - COMMITS_ALL_REFS as well as COMMITS_HEAD: the runbook allows PRs to be parked, and a parked
+#  - COMMITS_BRANCHES_TAGS as well as COMMITS_HEAD: the runbook allows PRs to be parked, and a parked
 #    branch's commits are invisible to `rev-list HEAD`. These two numbers genuinely differ here.
+#  - That field counts `--branches --tags`, NOT `--all`, and the distinction is load-bearing.
+#    `--all` includes every ref the forge advertises, and GitHub advertises `refs/pull/*`: measured
+#    2026-07-27 on this repo, 295 pull refs contributing 439 commits reachable from nothing else
+#    (`--all` 1264 vs `--branches --tags` 825). GitLab has no `refs/pull/*` — it has its own
+#    `refs/merge_requests/*` — so an `--all` capture from GitHub can NEVER equal an `--all` count from
+#    the import, and `verify`'s strict diff would abort a perfectly good cutover every single time.
+#    Branches + tags is the forge-neutral set, and still catches the dropped-side-branch case the
+#    field exists for. (The earlier local-vs-mirror note below fixed a different asymmetry; it did
+#    not fix this one, because both sides of THAT comparison were GitHub.)
 #  - Tag TYPE is recorded, not just the peeled SHA. A `v*` tag that arrives LIGHTWEIGHT still points
 #    at the right commit and still triggers the release pipeline — it just has no message, so
 #    ci/prepare-whatsnew.sh would silently publish the generic line as Play "What's new".
@@ -35,7 +44,8 @@ die() { echo "ERROR: $*" >&2; exit 1; }
 git_fields() {
   echo "HEAD $(git rev-parse HEAD)"
   echo "COMMITS_HEAD $(git rev-list --count HEAD)"
-  echo "COMMITS_ALL_REFS $(git rev-list --all --count)"
+  # --branches --tags, never --all: see the design note on forge-specific pseudo-refs (refs/pull/*).
+  echo "COMMITS_BRANCHES_TAGS $(git rev-list --branches --tags --count)"
   echo "--- v* tag inventory (name | peeled-sha | type | msg-sha) ---"
   local t sha type msg
   for t in $(git tag -l 'v*' --sort=v:refname); do
@@ -53,9 +63,11 @@ cmd_capture() {
 
   # Measure the git fields from a MIRROR of the source, not from this working checkout.
   # Why: `verify` measures a mirror clone of the import, and the two are not comparable otherwise —
-  # a local checkout's `rev-list --all` sees only the refs it happens to have fetched, while a mirror
-  # sees every ref the remote advertises. Measured here: 808 local vs 1243 mirror on the same repo.
-  # Comparing those would abort a perfectly good cutover on a false COMMITS_ALL_REFS mismatch.
+  # in a working checkout `--branches` means refs/heads, i.e. only the branches you happen to have
+  # checked out locally (here: 1), while in a mirror it means every branch the remote advertises
+  # (here: 4). Comparing those would abort a perfectly good cutover on a false mismatch.
+  # This is a SEPARATE asymmetry from the refs/pull one in the header note — both sides here are
+  # GitHub; that one is GitHub-vs-GitLab. Mirroring fixes this; --branches --tags fixes that.
   local src_url; src_url="$(git remote get-url origin)" || die "no 'origin' remote to fingerprint."
   local srctmp; srctmp="$(mktemp -d)"
   # shellcheck disable=SC2064
@@ -115,6 +127,13 @@ cmd_verify() {
   [ -f "$fp" ] || die "fingerprint not found: $fp (run 'capture' first, before the import)"
   local fp_abs; fp_abs="$(cd "$(dirname "$fp")" && pwd)/$(basename "$fp")"
 
+  # Refuse a pre-2026-07-27 fingerprint BEFORE the clone: those recorded COMMITS_ALL_REFS (an --all
+  # count, inflated by GitHub's refs/pull/*). Diffing against one would compare unlike quantities,
+  # and this is knowable up front — no reason to spend minutes mirror-cloning first.
+  if grep -q '^COMMITS_ALL_REFS ' "$fp_abs"; then
+    die "fingerprint '$fp' uses the retired COMMITS_ALL_REFS field (an --all count, inflated by GitHub refs/pull/*). Re-run 'capture' before the import."
+  fi
+
   local tmp; tmp="$(mktemp -d)"
   # shellcheck disable=SC2064
   trap "rm -rf '$tmp'" EXIT
@@ -123,7 +142,7 @@ cmd_verify() {
 
   local actual; actual="$(cd "$tmp/import.git" && git_fields)"
   # Compare only the git-side fields; issue/MR counts are checked in the UI (GitLab splits PRs into MRs).
-  local expected; expected="$(grep -E '^(HEAD|COMMITS_HEAD|COMMITS_ALL_REFS|v[0-9]|--- v\*)' "$fp_abs" || true)"
+  local expected; expected="$(grep -E '^(HEAD|COMMITS_HEAD|COMMITS_BRANCHES_TAGS|v[0-9]|--- v\*)' "$fp_abs" || true)"
 
   echo
   if diff <(printf '%s\n' "$expected") <(printf '%s\n' "$actual"); then
