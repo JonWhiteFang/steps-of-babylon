@@ -1,4 +1,59 @@
-## 2026-07-26 (latest) — #306 Slice 2 IMPLEMENTED: enemy damage/death hoisted to pure domain (Codex SAFE)
+## 2026-07-27 (latest) — GitLab migration: cutover step 1 (quiesce GitHub) done; Phase 2 measured still blocked
+
+- **Goal:** continue the GitHub→GitLab migration. Phases 0–4 are authored and Codex-gated; the developer
+  chose to do the agent-doable prep (cutover step 1, "quiesce GitHub") rather than run the full sitting.
+- **No production code, tests, or configuration touched.** This was repo hygiene plus two measurements.
+
+### Cutover step 1 — quiesce
+
+- **Merged #439** (Dependabot `all-actions`, 5 SHA-pinned bumps: `actions/checkout` v7.0.0→v7.0.1,
+  `actions/setup-java` v5.3.0→v5.6.0). The first merge attempt was **refused by branch protection, not by a
+  failing check** — the branch was `BEHIND` after the #306 merge and `main` requires up-to-date branches.
+  `gh pr update-branch` re-triggered the gate; all 6 checks green (`build-and-test` 2m3s, `connected` 2m30s),
+  then merged as `aafa901`.
+- **Closed #440 unmerged** (Dependabot `all-gradle`, 22 bumps) — red on `build-and-test` + `connected`, and
+  Dependabot is retired at cutover in favour of self-hosted Renovate whose `renovate.json` carries the same
+  grouping intent. The bumps get re-raised on GitLab against a green baseline instead of being bisected here.
+  Rationale posted as a closing comment on the PR.
+- **Pruned 22 fully-merged remote branches.** Each was verified zero-commits-ahead of `main` with
+  `git merge-base --is-ancestor` *before* deletion — no branch was deleted on name or age. Remote branches
+  27 → 4; open PRs → 2, both intentional drafts.
+- **Kept `docs/phase1-tooling-gap-spec` and flagged it.** 4 commits, 1,688 lines of Phase-1 tooling
+  spec+plan, **never opened a PR and not present on `main`**, while `2026-07-03-phase2-tooling*` and
+  `2026-07-03-phase4-release-ops-tooling` are. The Phase-1 tooling work shipped, so this is an orphaned
+  design record, not pending work. Deliberately not deleted in a hygiene sweep — decision pending.
+
+### Phase 2 — measured, still blocked
+
+- Re-ran the AF-17 acceptance check from a plain non-browser client (curl, no UA spoofing):
+  `https://jonwhitefang.uk/legal/steps-of-babylon-privacy/` → **403**, body = Cloudflare "Attention
+  Required!" (Super Bot Fight Mode). The **apex `/` and a deliberately-nonexistent path 403 identically**,
+  which is the informative part: the block precedes routing, so this is not about whether the page shipped.
+  The scoped `http_request_sbfm` skip is undeployed or not matching.
+- Old URL `https://jonwhitefang.github.io/steps-of-babylon/` → **200**. No live exposure.
+- **`PRIVACY_POLICY_URL` unchanged** — Task 2.2 stays gated on Task 2.1 exactly as agreed in AF-17 round 2.
+- **The status update did not post.** `agent-forum reply` hit the two-unresolved-round limit and
+  **auto-escalated AF-17 to the human owner** instead. The drafted body is unsent; the claim was released.
+  (Also worth knowing for future sessions: the forum CLI needs `PYTHONIOENCODING=utf-8` on this Windows box
+  or `read` crashes on a `charmap` encode error, and the token comes from `agent-forum/.env.local`, not
+  `~/.agent-forum-token` as `startup.md` states.)
+
+### Docs synced
+
+- `CHANGELOG.md` (quiesce entry + the privacy-URL note), `docs/agent/STATE.md` (objective rotated;
+  Slice 2 demoted to merged; runbook-not-on-main noted), this RUN_LOG entry, `docs/agent/BACKLOG.md` regenerated.
+
+### What remains
+
+- **Cutover steps 2–10 need the developer:** fingerprint capture, GitLab importer, fingerprint verify,
+  merge gating + protected `main`/`v*`, the ten protected CI vars with `RELEASE_VALIDATE_ONLY` unset,
+  gate proof, remote flip, land PR #443, archive GitHub. The runbook is on PR #443's branch, not `main`.
+- **Decide the `docs/phase1-tooling-gap-spec` orphan** — merge the design record onto `main`, or let the
+  archived GitHub repo hold it.
+- **Phase 2 waits on website-agent.** AF-17 is escalated to the human owner, so a reply there is a
+  developer action now.
+
+## 2026-07-26 — #306 Slice 2 IMPLEMENTED: enemy damage/death hoisted to pure domain (Codex SAFE)
 
 - **Goal:** with every GitLab-migration phase authored and the cutover blocked on the developer, pick up the
   other unblocked track — the #306 Slice 2 code work whose spec+plan were merged but never implemented.

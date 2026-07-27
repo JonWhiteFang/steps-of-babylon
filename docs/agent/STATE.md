@@ -34,7 +34,27 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — #306 Slice 2 (enemy damage/death hoist) IMPLEMENTED, PR open (2026-07-26).** ADR-0012 Phase 5
+- **CURRENT — GitLab migration Phase 3, cutover step 1 (quiesce GitHub) DONE (2026-07-27).** Repo hygiene
+  only; no production code/tests/config touched. Merged #439 (5 SHA-pinned Actions bumps — needed a
+  branch-update first: it was `BEHIND` and `main` requires up-to-date branches, so protection refused the
+  merge, not a red check); closed #440 (22 Gradle bumps) unmerged as red + superseded by Renovate at cutover;
+  **pruned 22 fully-merged remote branches** (each verified zero-commits-ahead before deletion), 27 → 4.
+  Open PRs now 2, both intentional drafts. **The remaining cutover steps 2–10 need the developer** — GitLab
+  importer run, the ten protected CI vars, `RELEASE_VALIDATE_ONLY` confirmed unset, remote flip, archive.
+  - **Kept an orphan branch pending a decision: `docs/phase1-tooling-gap-spec`** — 1,688 lines of Phase-1
+    tooling spec+plan, never opened a PR, **not on `main`**, while the Phase-2/Phase-4 equivalents are.
+    Either merge the design record onto `main` or let archived GitHub hold it. Not urgent (the importer
+    carries branches over) but it is a real gap in the design record.
+  - **Phase 2 is measurably still blocked.** Probed the new privacy URL from a plain non-browser client:
+    `https://jonwhitefang.uk/legal/steps-of-babylon-privacy/` **403s** (Cloudflare "Attention Required!" —
+    Super Bot Fight Mode), and so do the apex and a nonexistent path, so the block precedes routing. The
+    scoped WAF skip is undeployed or not matching. Old github.io URL still 200 → no live exposure.
+    `PRIVACY_POLICY_URL` stays unchanged. **Phase 2 does NOT gate the cutover** — only the *release that
+    embeds the new URL* is ordered after website-agent's confirmation.
+  - **AF-17 auto-escalated to the human owner** on the two-unresolved-round limit when we tried to post the
+    403 measurement — the drafted status update was NOT posted and the claim is released.
+
+- *Previous — #306 Slice 2 (enemy damage/death hoist) MERGED 2026-07-27 (PR #447, `2efc651`).* ADR-0012 Phase 5
   Slice 2, mirroring Slice 1's ziggurat hoist. New pure-domain `DamageableEnemy` port (`Damageable` +
   `var armorHits`), `EnemyDamageResolver` (corpse-guard #146 → armor-absorb #17 → **no-floor** HP subtract →
   death detect) and `ScatterSplit` (SCATTER child count/HP/damage/offset). `EnemyState` owns enemy
@@ -60,18 +80,18 @@ the med/low backlog (#262) remain.
   - **#306 stays OPEN** for the remaining slices: `UWController.when(type)` effect bodies and
     `onProjectileHitEnemy`/`onOrbHit` knockback+lifesteal.
 
-- *Previous — GitHub→GitLab migration: Phases 0–4 all authored, Codex-gated and green; **the cutover sitting
-  is the only thing left and it needs the developer**.* Phase 1 MERGED (PR #441 `d58722b`); the Phase-2
-  hostname decision MERGED (#442); the gem bump (#444) and Play-Console findings (#445) MERGED; **PR #443
-  (Phase 3) and #446 (Phase 4) are DRAFTS that must not merge until cutover steps 9 and 10** — both are
-  written in the post-cutover present tense and are false until then. Plan
-  `docs/superpowers/plans/2026-07-23-gitlab-migration.md`; runbook
-  `docs/migration/phase3-cutover-runbook.md`; ADR-0044. Phase 2's *code* half is still blocked on the
-  website agent confirming the new privacy URL live. All Play Console work is deferred by owner decision
-  until after the migration — including a **404 in the Console's declared privacy URL**
+- *Background for the CURRENT entry — GitHub→GitLab migration: Phases 0–4 all authored, Codex-gated and
+  green; with quiesce done, **the cutover sitting is the only thing left and it needs the developer**.*
+  Phase 1 MERGED (PR #441 `d58722b`); the Phase-2 hostname decision MERGED (#442); the gem bump (#444) and
+  Play-Console findings (#445) MERGED; **PR #443 (Phase 3) and #446 (Phase 4) are DRAFTS that must not merge
+  until cutover steps 9 and 10** — both are written in the post-cutover present tense and are false until
+  then. Plan `docs/superpowers/plans/2026-07-23-gitlab-migration.md`; ADR-0044. **Note the cutover runbook
+  `docs/migration/phase3-cutover-runbook.md` is NOT on `main`** — it lives on PR #443's branch, so driving
+  the cutover means checking out `chore/gitlab-automation` first. All Play Console work is deferred by owner
+  decision until after the migration — including a **404 in the Console's declared privacy URL**
   (`steps-of-bablylon`, see `docs/release/data-safety-form.md`).
 
-- *Previous (superseded by the CURRENT entry above — implementation is now done) — #306 Slice 2: spec + plan reviewed & merged (docs-only, PR #433
+- *Previous (superseded — Slice 2 implementation is merged; see its bullet above) — #306 Slice 2: spec + plan reviewed & merged (docs-only, PR #433
   `52040a7`); implementation shipped 2026-07-26 — see the CURRENT entry.* The next slice of the ADR-0012 Phase 5 effect-resolution hoist.
   Design: move enemy `currentHp`/`maxHp`/`armorHits` into the pure-domain `EnemyState` behind a new
   `DamageableEnemy : Damageable` port; hoist the corpse-guard(#146)/armor-absorb(#17)/no-floor-HP/death

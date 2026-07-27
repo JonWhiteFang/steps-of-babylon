@@ -4,6 +4,38 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Chore — GitLab migration Phase 3, cutover step 1: quiesce GitHub
+
+- Repo hygiene ahead of the single-sitting cutover (plan `docs/superpowers/plans/2026-07-23-gitlab-migration.md`,
+  runbook step 1). **No production code, tests, or configuration touched.**
+- **Merged #439** (Dependabot `all-actions`, 5 bumps — `actions/checkout` v7.0.0→v7.0.1, `actions/setup-java`
+  v5.3.0→v5.6.0, all SHA-pinned) after updating the branch onto `main`; the branch was `BEHIND` and
+  `main` requires up-to-date branches, so the first merge attempt was refused by protection, not by a failing check.
+- **Closed #440** (Dependabot `all-gradle`, 22 bumps) unmerged — red on `build-and-test` + `connected`, and
+  Dependabot is retired at cutover in favour of self-hosted Renovate. `renovate.json` carries the same grouping
+  intent (`gradle-wrapper` / `all-gradle` / `ci-images`, `pinDigests: true`), so the bumps get re-raised on
+  GitLab against a green baseline rather than bisected here. No dependency change is dropped — only the vehicle.
+- **Pruned 22 fully-merged remote branches** (verified zero commits ahead of `main` each, via
+  `git merge-base --is-ancestor`, before deletion). Remote branch count 27 → 4.
+- **Kept 4 branches:** `main`; the two parked migration drafts `chore/gitlab-automation` (#443) and
+  `docs/gitlab-sweep` (#446), both correctly marked DO-NOT-MERGE-until-cutover; and
+  `docs/phase1-tooling-gap-spec` — **an orphan carrying 1,688 lines of Phase-1 tooling spec+plan that never
+  opened a PR and is not on `main`**, while the Phase-2 and Phase-4 equivalents are. Left in place pending a
+  decision (merge the design record onto `main`, or let the archived GitHub repo hold it).
+- Open PR count is now 2, both intentional drafts.
+
+### Note — the new privacy-policy URL is not live yet (Phase 2 stays blocked)
+
+- Re-ran the AF-17 acceptance check from a plain non-browser client on 2026-07-27:
+  `https://jonwhitefang.uk/legal/steps-of-babylon-privacy/` returns **403**, body = Cloudflare's
+  "Attention Required!" interstitial (Super Bot Fight Mode). The apex `/` and a deliberately-nonexistent path
+  return 403 identically, so the block precedes routing — this is not about whether the page shipped. The
+  scoped `http_request_sbfm` skip is either undeployed or not matching.
+- Old URL `https://jonwhitefang.github.io/steps-of-babylon/` still returns **200** — no live exposure from this.
+- **`PRIVACY_POLICY_URL` therefore stays unchanged** (Task 2.2 remains gated on Task 2.1, exactly as agreed).
+  Reporting the measurement on AF-17 hit the forum's two-unresolved-round limit and auto-escalated to the
+  human owner instead of posting; the drafted status update is unsent.
+
 ### Changed — #306 Slice 2: enemy damage/death resolution hoisted to pure domain (ADR-0012 Phase 5)
 
 - **Behaviour-preserving refactor**, no gameplay change. Mirrors Slice 1's ziggurat hoist, applied to enemies.
