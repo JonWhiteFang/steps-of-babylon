@@ -130,6 +130,11 @@ In non-TTY environments (CI, etc.), use `./run-gradle.sh <task>` instead of `./g
 
 ## Continuous Integration
 
+> **GitLab migration in flight (2026-07-23):** a `.gitlab-ci.yml` porting six of these seven workflows
+> (instrumented demoted to local-only) is authored on `ci/gitlab-pipeline` and **proven green on a scratch
+> import**, but stays INERT until the cutover — the descriptions below remain the live CI until then. Detail:
+> `docs/migration/`, spec/plan under `docs/superpowers/{specs,plans}/…gitlab-migration…`, ADR-0044 (at cutover).
+
 GitHub Actions (Plan 32 / ADR-0018). Workflows under `.github/workflows/`, all third-party actions SHA-pinned (Dependabot-maintained):
 
 - `ci.yml` — PR + push:main gate: a `gradle/actions/wrapper-validation` step first (#212), then `./gradlew testDebugUnitTest lintDebug assembleDebug` + a Room schema-drift guard. The drift guard catches both modified AND new-untracked schema JSON (#254: `git add -N` + `git diff` + a `git status --porcelain` belt). Secret-free.

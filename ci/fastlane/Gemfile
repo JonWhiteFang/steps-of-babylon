@@ -1,0 +1,5 @@
+# Pinned Fastlane for the release-publish job (uploads the AAB to Play via `supply`). fastlane
+# publishes no Docker image, so the release job runs `bundle install` from this locked Gemfile on
+# the pinned ruby image → the FULL transitive dependency graph is reproducible (Gemfile.lock committed).
+source "https://rubygems.org"
+gem "fastlane", "2.237.0"

@@ -7,9 +7,13 @@ import kotlin.math.hypot
  * `presentation/battle/entities/EnemyEntity` for V1X-09 Phase 2 (ADR-0012).
  *
  * No Android imports. Owns the (x, y) position, the attack cooldown, and the captured
- * initial distance used by the RANGED stop-distance rule. The presentation [EnemyEntity]
- * delegates motion/attack here and keeps HP/armor/death/knockback wiring, the attack
- * callbacks (which need the entity reference), and the Canvas `render()`.
+ * initial distance used by the RANGED stop-distance rule — and, since #306 Slice 2, **enemy HP + armor**
+ * behind the [DamageableEnemy] port. The presentation `EnemyEntity` delegates motion/attack/HP here and
+ * keeps only the death wiring (flipping `isAlive`, firing `onDeath`), the attack callbacks (which need the
+ * entity reference), and the Canvas `render()`.
+ *
+ * **Threading:** this object is mutated from the game-loop thread inside `GameEngine`'s held
+ * `entitiesLock`. It declares no monitor of its own and must not acquire one.
  *
  * Movement is a homing step toward the target; once within [stopDistance] the enemy stops
  * and [update] returns `true` each time the attack cooldown elapses (so the entity can fire
@@ -21,7 +25,13 @@ class EnemyState(
     private val speed: Float,
     private val isRanged: Boolean,
     private val attackInterval: Float,
-) {
+    initialHp: Double = 0.0,
+    override val maxHp: Double = 0.0,
+    initialArmorHits: Int = 0,
+) : DamageableEnemy {
+    override var currentHp: Double = initialHp
+    override var armorHits: Int = initialArmorHits
+
     var x: Float = 0f
         private set
     var y: Float = 0f
@@ -65,7 +75,7 @@ class EnemyState(
         return false
     }
 
-    /** Shifts the position by a knockback impulse (HP/armor stay on the entity). */
+    /** Shifts the position by a knockback impulse. */
     fun applyKnockback(
         forceX: Float,
         forceY: Float,

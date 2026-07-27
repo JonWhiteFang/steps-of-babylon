@@ -1,5 +1,40 @@
 # Play Console — Data Safety form (Steps of Babylon)
 
+> ## ⚠️ OPEN DEFECT (found 2026-07-26): the live privacy-policy URL in Play Console is a 404
+>
+> **Play Console → App content → Privacy policy** holds
+> `https://jonwhitefang.github.io/steps-of-bablylon/` — note **`bablylon`**, a transposed `l`. Verified by
+> fetch on 2026-07-26: the misspelled path returns **404**; the correct
+> `https://jonwhitefang.github.io/steps-of-babylon/` returns **200** (and its `#delete-data` anchor
+> resolves). Console field last edited **2026-05-13**, so the declared policy has been unreachable since
+> at least that date.
+>
+> **Blast radius is the Console only.** The in-app `PRIVACY_POLICY_URL` constant is spelled correctly and
+> is pinned by `PrivacyPolicyUrlTest`, and `site/index.md` publishes to the correct path. But this breaks
+> Play's expectation that the in-app link matches the Data-Safety declaration, and a 404 in a
+> compliance-required field is the kind of thing that blocks a closed-track promotion.
+>
+> **Not yet checked (same visit, same likely cause):** whether the **Data safety** form's separate
+> **deletion URL** and the **Sign in details** section carry the same typo. If they were typed in the same
+> sitting, assume they do until verified.
+>
+> **Deferred by owner decision (2026-07-26): all Play Console work happens AFTER the GitHub→GitLab
+> migration.** The fix then folds into the migration plan's **Task 2.3**, which already owns setting every
+> Play URL field to the new hostname — so the corrected value to enter is
+> `https://jonwhitefang.uk/legal/steps-of-babylon-privacy/`, not the old github.io URL. Recorded here
+> rather than left in chat because chat is not this project's source of truth.
+>
+> **Also unresolved from that visit:** (a) whether the **Health apps** declaration is submitted at all —
+> it rendered as an editable 3-step wizard with no "Last edited" date observed, and it is mandatory for a
+> Health Connect app; (b) whether steps 2–3 of that wizard hold their own privacy URL; (c) the
+> **developer name as displayed on Play** vs the policy text's "Whitefang Games" (a mismatch turns the
+> Task-2.2 URL swap into a wording change needing the policy owner).
+>
+> **Correction to a prior instruction:** the Health apps form lists `ACTIVITY_RECOGNITION` alongside
+> `READ_STEPS`/`READ_EXERCISE`. That is **correct and must not be removed** — Play counts it as a health
+> permission and the step-counter sensor requires it on API 29+. An earlier note in this session wrongly
+> called it over-declaration.
+
 **Status:** authored 2026-06-18 for #192 (PRIV-1/SEC-1); **SUBMITTED in Play Console 2026-06-24.** This was
 the **manual Play Console action** accompanying the in-app + hosted privacy-policy rewrite. The repo cannot
 inspect or set the live form — it was applied by the developer in **Play Console → App content → Data
@@ -81,7 +116,11 @@ the top-level `site/` folder ONLY, so the internal `docs/` tree is never publish
       collection marked Optional.
 - [x] App's own on-device data (Steps, Health Connect, progress, purchases) NOT declared as collected.
 - [x] "Contains ads" set to Yes.
-- [x] Privacy-policy URL points to the hosted page and the page shows the **June 20, 2026** effective date
+- [ ] ~~Privacy-policy URL points to the hosted page~~ — **THIS CHECK WAS RECORDED AS PASSING AND WAS
+      FALSE.** The Console URL is misspelled (`steps-of-bablylon`, 404). See the OPEN DEFECT block at the
+      top of this file. The *page content* half of the check did hold — the correctly-spelled page shows the
+      June 20, 2026 effective date with the AdMob disclosure — but the declared URL never reached it.
+- [x] The hosted page (at its correct URL) shows the **June 20, 2026** effective date
       with the AdMob/advertising-ID disclosure — incl. the four declared categories (Device/other IDs,
       Approximate location, App interactions, Diagnostics) (GitHub Pages may cache — confirm the live page updated).
 - [x] Data-deletion question answered Yes with the deletion URL.

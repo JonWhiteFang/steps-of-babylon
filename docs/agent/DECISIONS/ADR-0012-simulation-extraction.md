@@ -105,8 +105,40 @@ Thread-safety unchanged: the resolver holds no monitor and runs inside the engin
 only `presentation/battle/engine`; extending it to `domain/battle/**` is deferred forward-hardening ahead
 of the larger #306 slices (enemy HP + UW effect bodies).
 
-**Explicitly still NOT done (remaining #306 slices):** enemy `takeDamage`/`onDeath`/SCATTER child spawn;
-all `UWController.when(type)` effect bodies; `onProjectileHitEnemy`/`onOrbHit` knockback+lifesteal.
+**Phase 5 (#306, Slice 2 — enemy damage/death resolution, 2026-07-26):** Same shape as Slice 1, applied to
+enemies. New `domain/battle/entity/DamageableEnemy` port extends `Damageable` with `var armorHits` — armor is
+enemy-specific (the ziggurat has none), so it lives on the sub-port rather than widening `Damageable`.
+`EnemyState` implements it and now owns `currentHp`/`maxHp`/`armorHits`; the three constructor parameters are
+**defaulted** so the movement-only test helpers keep compiling. New pure
+`domain/battle/engine/EnemyDamageResolver` lifts the corpse-guard (#146) / armor-absorb (#17) /
+**no-floor** HP subtraction / death-detection arithmetic out of `EnemyEntity.takeDamage`, returning
+`Outcome(dealt, died)`. The no-floor property is deliberate and test-pinned: enemy HP goes negative on
+overkill, unlike the ziggurat's `coerceAtLeast(0.0)`. `EnemyEntity.takeDamage` becomes a thin adapter that
+flips `isAlive` and fires the `onDeath` cascade; `isAlive` is passed *into* the resolver rather than
+re-derived from HP, which is what preserves the #146 guard. New pure `domain/battle/engine/ScatterSplit`
+holds the SCATTER-on-death child descriptors (count 2..3, half the parent's maxHp/damage, and the
+`(i - count / 2f) * 15f` fan — **float** division, documented against being "tidied" to integer);
+`CombatResolver` maps descriptors onto `EnemyEntity` children and now rolls the count off its injected
+`random` (identical in production, deterministic under test).
+
+Behaviour-preserving, and proven rather than asserted: the SCATTER characterization test was run green
+against the pre-hoist inline path (by stashing only `CombatResolver.kt`) and again after the hoist.
+`EnemyEntity` keeps `currentHp`/`maxHp`/`armorHits` as delegating accessors, so `BattleAnnouncer`,
+`BattleRenderer`, `WaveSpawner` and `render()` are untouched — and **no `EnemyEntity(...)` call site changed**,
+because a plain constructor parameter legally shadows its same-named member inside property initializers.
+(The plan had specified renaming `currentHp` → `initialHp` across an estimated 6 sites — really ~20 — on the
+premise that the shadowing was illegal; the premise was false.) `armorHits` tightens to a read-only accessor
+now that only the resolver decrements it. Thread-safety unchanged: the resolver and `ScatterSplit` hold no
+monitor and run inside the engine's held `entitiesLock`. The Slice-1 caveat still applies —
+`BattleEngineLockScanTest` does not scan `domain/battle/**`.
+
+**Correction to the Slice-1 note above:** it predicted the enemy slice would declare
+`EnemyState : EntityProtocol, Damageable`. It does not — `EnemyState` implements `DamageableEnemy` only.
+`EntityProtocol.update(dt): Unit` clashes with `EnemyState.update(dt): Boolean` (the boolean signals
+"attack cooldown elapsed"), so the `EntityProtocol` role stays on the presentation `Entity`.
+
+**Explicitly still NOT done (remaining #306 slices):** all `UWController.when(type)` effect bodies;
+`onProjectileHitEnemy`/`onOrbHit` knockback+lifesteal.
 
 ## References
 

@@ -1,5 +1,6 @@
 package com.whitefang.stepsofbabylon.presentation.battle.engine
 
+import com.whitefang.stepsofbabylon.domain.battle.engine.ScatterSplit
 import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationEvent
 import com.whitefang.stepsofbabylon.domain.battle.engine.SimulationMath
 import com.whitefang.stepsofbabylon.domain.battle.engine.ZigguratDamageResolver
@@ -213,29 +214,40 @@ class CombatResolver(
 
         if (enemy.enemyType == EnemyType.SCATTER) {
             val zig = host.ziggurat ?: return
-            val childCount = (2..3).random()
-            repeat(childCount) { i ->
-                val child =
-                    EnemyEntity(
-                        enemyType = EnemyType.BASIC,
-                        currentHp = enemy.maxHp * 0.5,
-                        maxHp = enemy.maxHp * 0.5,
-                        speed = EnemyScaler.scaleSpeed(EnemyType.SCATTER) * host.conditions.enemySpeedMultiplier,
-                        damage = enemy.damage * 0.5,
-                        targetX = zig.originX,
-                        targetY = zig.originY,
-                        onDeath = ::handleEnemyDeath,
-                        // R3-02: SCATTER child enemies also forward their attacker reference so
-                        // THORN_DAMAGE reflects against them (same fix as the wave-spawner path —
-                        // these melee-hit lambdas previously dropped the attacker).
-                        onMeleeHit = { atk, dmg -> applyDamageToZiggurat(dmg, atk) },
-                    ).apply {
-                        x = enemy.x + (i - childCount / 2f) * 15f
-                        y = enemy.y
-                        initDistance()
-                    }
-                host.addPending(child)
-            }
+            // Child count / HP / damage / spawn-offset arithmetic is hoisted to the pure-domain
+            // ScatterSplit (#306 Slice 2). What stays here is presentation-only: mapping each descriptor
+            // onto an EnemyEntity, the child speed (needs EnemyScaler + host conditions), the ziggurat
+            // target, and the onDeath/onMeleeHit lambdas. The count now rolls off the INJECTED `random`
+            // rather than the global `(2..3).random()` — identical in production (the default IS
+            // Random.Default) and it makes the split deterministic under test.
+            val childSpeed = EnemyScaler.scaleSpeed(EnemyType.SCATTER) * host.conditions.enemySpeedMultiplier
+            ScatterSplit
+                .children(
+                    parentMaxHp = enemy.maxHp,
+                    parentDamage = enemy.damage,
+                    random = random,
+                ).forEach { descriptor ->
+                    val child =
+                        EnemyEntity(
+                            enemyType = EnemyType.BASIC,
+                            currentHp = descriptor.hp,
+                            maxHp = descriptor.maxHp,
+                            speed = childSpeed,
+                            damage = descriptor.damage,
+                            targetX = zig.originX,
+                            targetY = zig.originY,
+                            onDeath = ::handleEnemyDeath,
+                            // R3-02: SCATTER child enemies also forward their attacker reference so
+                            // THORN_DAMAGE reflects against them (same fix as the wave-spawner path —
+                            // these melee-hit lambdas previously dropped the attacker).
+                            onMeleeHit = { atk, dmg -> applyDamageToZiggurat(dmg, atk) },
+                        ).apply {
+                            x = enemy.x + descriptor.offsetX
+                            y = enemy.y
+                            initDistance()
+                        }
+                    host.addPending(child)
+                }
         }
     }
 }

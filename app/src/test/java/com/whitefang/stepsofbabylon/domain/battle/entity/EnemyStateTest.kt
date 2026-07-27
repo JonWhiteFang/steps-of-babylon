@@ -65,4 +65,41 @@ class EnemyStateTest {
         assertEquals(60f, s.x, 1e-4f)
         assertEquals(45f, s.y, 1e-4f)
     }
+
+    @Test
+    fun `seeds currentHp maxHp and armorHits from the constructor`() {
+        val s =
+            EnemyState(
+                targetX = 100f,
+                targetY = 0f,
+                speed = 50f,
+                isRanged = false,
+                attackInterval = 1f,
+                initialHp = 30.0,
+                maxHp = 40.0,
+                initialArmorHits = 2,
+            )
+        assertEquals(30.0, s.currentHp, 1e-9)
+        assertEquals(40.0, s.maxHp, 1e-9)
+        assertEquals(2, s.armorHits)
+    }
+
+    @Test
+    fun `exposes currentHp and armorHits as mutable via the DamageableEnemy port`() {
+        val s: DamageableEnemy =
+            EnemyState(
+                targetX = 100f,
+                targetY = 0f,
+                speed = 50f,
+                isRanged = false,
+                attackInterval = 1f,
+                initialHp = 10.0,
+                maxHp = 10.0,
+                initialArmorHits = 1,
+            )
+        s.currentHp -= 4.0
+        s.armorHits--
+        assertEquals(6.0, s.currentHp, 1e-9)
+        assertEquals(0, s.armorHits)
+    }
 }

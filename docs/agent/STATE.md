@@ -34,8 +34,45 @@ the med/low backlog (#262) remain.
 
 ## Current objective
 
-- **CURRENT — #306 Slice 2 (enemy damage/death hoist): spec + plan REVIEWED & MERGED (docs-only, PR #433
-  `52040a7`); implementation NOT started.** The next slice of the ADR-0012 Phase 5 effect-resolution hoist.
+- **CURRENT — #306 Slice 2 (enemy damage/death hoist) IMPLEMENTED, PR open (2026-07-26).** ADR-0012 Phase 5
+  Slice 2, mirroring Slice 1's ziggurat hoist. New pure-domain `DamageableEnemy` port (`Damageable` +
+  `var armorHits`), `EnemyDamageResolver` (corpse-guard #146 → armor-absorb #17 → **no-floor** HP subtract →
+  death detect) and `ScatterSplit` (SCATTER child count/HP/damage/offset). `EnemyState` owns enemy
+  HP/armor; `EnemyEntity.takeDamage` is a thin adapter that only flips `isAlive` + fires `onDeath`.
+  **Behaviour-preserving and proven so** — the SCATTER characterization test was run green against the
+  pre-hoist inline path (stashing only `CombatResolver.kt`) and again after the hoist; the `takeDamage`
+  call-site set is unchanged at 7. **1339 → 1352 JVM tests.** No schema change.
+  - **Codex Review Gate PASSED — concurrency round SAFE, zero findings** (the resolver is the only
+    post-construction HP/armor mutator; all 7 callers run inside the held `entitiesLock`; the shared
+    resolver instance is stateless; no new monitor or lock-order edge; #146/#125 double-credit still
+    unreachable). 3 minor findings applied, incl. strengthening the SCATTER test so a
+    `currentHp`/`maxHp` mix-up can no longer pass unnoticed (verified by injecting the regression).
+  - **Three defects found IN THE PLAN itself** (it had passed a Codex review): its `resolve()` used 3
+    guard-clause returns and so would have **failed detekt's `ReturnCount`** gate; its `ScatterSplit` KDoc
+    claimed integer division where its own tests correctly asserted float; and its central "sharp edge" —
+    renaming the `currentHp` ctor param at ~6 call sites — rested on a **false premise**. A plain parameter
+    legally shadows its same-named member inside property initializers, so **zero call sites changed**
+    (ast-grep counted 21 construction sites across 6 files, not 6).
+  - **Accepted trade-off, documented on the resolver:** one `Outcome` allocation per hit where the inline
+    path allocated none, on a hot path (~O(10k)/sec at 40 enemies + 2 UWs + 4×). Not "fixed", because the
+    alternative — encoding `dealt`+`died` into a primitive — would mean re-deriving death from HP, which is
+    the #146 invariant. If a profiler shows it, the fix is a caller-owned result holder.
+  - **#306 stays OPEN** for the remaining slices: `UWController.when(type)` effect bodies and
+    `onProjectileHitEnemy`/`onOrbHit` knockback+lifesteal.
+
+- *Previous — GitHub→GitLab migration: Phases 0–4 all authored, Codex-gated and green; **the cutover sitting
+  is the only thing left and it needs the developer**.* Phase 1 MERGED (PR #441 `d58722b`); the Phase-2
+  hostname decision MERGED (#442); the gem bump (#444) and Play-Console findings (#445) MERGED; **PR #443
+  (Phase 3) and #446 (Phase 4) are DRAFTS that must not merge until cutover steps 9 and 10** — both are
+  written in the post-cutover present tense and are false until then. Plan
+  `docs/superpowers/plans/2026-07-23-gitlab-migration.md`; runbook
+  `docs/migration/phase3-cutover-runbook.md`; ADR-0044. Phase 2's *code* half is still blocked on the
+  website agent confirming the new privacy URL live. All Play Console work is deferred by owner decision
+  until after the migration — including a **404 in the Console's declared privacy URL**
+  (`steps-of-bablylon`, see `docs/release/data-safety-form.md`).
+
+- *Previous (superseded by the CURRENT entry above — implementation is now done) — #306 Slice 2: spec + plan reviewed & merged (docs-only, PR #433
+  `52040a7`); implementation shipped 2026-07-26 — see the CURRENT entry.* The next slice of the ADR-0012 Phase 5 effect-resolution hoist.
   Design: move enemy `currentHp`/`maxHp`/`armorHits` into the pure-domain `EnemyState` behind a new
   `DamageableEnemy : Damageable` port; hoist the corpse-guard(#146)/armor-absorb(#17)/no-floor-HP/death
   arithmetic into a pure `EnemyDamageResolver`; move SCATTER child-descriptor math into a pure `ScatterSplit`;
@@ -123,6 +160,20 @@ duplicated here (per the one-page rule). For the current objective and what's in
   guards listed under fragile zones below.
 
 ## Known issues / debt
+
+- **⚠️ OPEN (2026-07-26) — the privacy-policy URL declared in Play Console is a 404.** The Console holds
+  `https://jonwhitefang.github.io/steps-of-bablylon/` (transposed `l`); verified by fetch — misspelled path
+  **404**, correct path **200**. Field last edited 2026-05-13, so the declared policy has been unreachable
+  since then. **The app is unaffected** (`PRIVACY_POLICY_URL` is correct and test-pinned) — this is a
+  Console-only defect, but it breaks Play's in-app-link-matches-declaration expectation and would block the
+  closed-track promotion. Not yet checked: whether the Data-safety **deletion URL** and **Sign in details**
+  carry the same typo. **Also open from the same visit:** the **Health apps** declaration may be unsubmitted
+  (it rendered as an editable 3-step wizard, and it is mandatory for a Health Connect app), and the
+  **Play-displayed developer name** vs the policy's "Whitefang Games" is unverified (a mismatch turns the
+  Task-2.2 URL swap into a wording change). **Deferred by owner decision: all Play Console work happens
+  AFTER the GitLab migration**, folding into the plan's Task 2.3 — so the value to enter then is the NEW
+  hostname, not the old github.io URL. Full record + the corrected acceptance checklist:
+  `docs/release/data-safety-form.md`.
 
 - **CLOSED-TRACK PROMOTION BLOCKERS (2026-06-17 complete-app review, Gate H) — all 3 MERGED:** **#190**
   (crash visibility + game-loop guard — REL-1/REL-2) + **#191** (two reachable battle CMEs — CONC-1/CONC-2)

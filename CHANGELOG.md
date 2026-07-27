@@ -4,6 +4,94 @@ All notable changes to Steps of Babylon are documented here.
 
 ## [Unreleased]
 
+### Changed — #306 Slice 2: enemy damage/death resolution hoisted to pure domain (ADR-0012 Phase 5)
+
+- **Behaviour-preserving refactor**, no gameplay change. Mirrors Slice 1's ziggurat hoist, applied to enemies.
+- **Added (pure domain, no Android):** `domain/battle/entity/DamageableEnemy.kt` (extends `Damageable` with
+  `var armorHits` — armor is enemy-specific, so it sits on a sub-port rather than widening `Damageable`);
+  `domain/battle/engine/EnemyDamageResolver.kt` (corpse guard #146 → armor absorb #17 → **no-floor** HP
+  subtraction → death detect); `domain/battle/engine/ScatterSplit.kt` (SCATTER child count/HP/damage/offset).
+- **Changed:** `EnemyState` implements `DamageableEnemy` and owns enemy `currentHp`/`maxHp`/`armorHits`;
+  `EnemyEntity.takeDamage` is now a thin adapter that flips `isAlive` and fires the `onDeath` cascade;
+  `CombatResolver`'s SCATTER branch maps `ScatterSplit` descriptors onto children and rolls the count off its
+  injected `random` (identical in production, deterministic under test).
+- **No `EnemyEntity(...)` call site changed.** The plan specified renaming the `currentHp` constructor
+  parameter to `initialHp` across an estimated 6 sites — actually ~20 — on the premise that a mutable
+  delegating property cannot share a name with the parameter it reads. That premise is false: a plain
+  (non-`val`) parameter shadows the same-named member inside property initializers, an idiom this file
+  already used for `armorHits`. So `WaveSpawner`, `CombatResolver` and four test files are untouched.
+- **Two invariants preserved deliberately, both test-pinned:** enemy HP has **no floor** (overkill goes
+  negative, unlike the ziggurat's `coerceAtLeast(0.0)`), and the SCATTER fan uses **float** division
+  (`count / 2f` → 1.5f for three children), documented against being "tidied" to integer division.
+- **Behaviour preservation was proven, not asserted:** the SCATTER characterization test was run green
+  against the pre-hoist inline path (stashing only `CombatResolver.kt`), then green again after the hoist.
+  The `takeDamage` call-site set is unchanged at 7 (`CombatResolver` ×3, `UWController` ×4).
+- **Also fixed a defect in the plan itself:** its `resolve()` used three guard-clause returns, which trips
+  detekt's `ReturnCount` limit of 2 — as written it would have failed the CI gate. Rewritten as a single
+  `when` expression with identical branch order and semantics.
+- **1339 → 1352 JVM tests** (+5 resolver, +5 ScatterSplit, +2 `EnemyState`, +1 SCATTER integration).
+  detekt + `koverVerifyDebug` green. No schema change.
+
+### Security — `google-protobuf` 3.23.4 → 3.25.8 in the Pages `Gemfile.lock` (CI-only, no app impact)
+
+- Clears the one open high Dependabot alert (#34): `google-protobuf < 3.25.5` carries a DoS advisory, and
+  the root `Gemfile.lock` (the Jekyll/minima lockfile added in Phase 1 for the privacy-policy site) pinned
+  3.23.4. **CI-only — nothing in this Gemfile ships in the app**, and the app has no protobuf dependency.
+- Fixed via an explicit **security floor** on a transitive gem — `gem "google-protobuf", ">= 3.25.5", "< 4"`
+  in the `Gemfile`. A plain `bundle lock --update=google-protobuf` was rejected because it cascades: it
+  also upgrades `sass-embedded` (1.58.3 → 1.102.0) and therefore jumps protobuf to **4.35.1**, churning a
+  Pages toolchain already proven green on the Phase-1 scratch import. The `< 4` bound keeps the resolution
+  inside the 3.x line `sass-embedded 1.58.3` asks for (`~> 3.21`). Net lockfile diff: **two lines**.
+- Three bundler-on-Windows artifacts were stripped so the lock still matches what Linux CI resolves:
+  the `x64-mingw-ucrt` platform + its gem variants, and a re-added **`BUNDLED WITH`** — the latter matters
+  because Phase 1 removed it deliberately (a stale `BUNDLED WITH` was one of the nine env-parity bugs that
+  broke the pages job). `PLATFORMS` stays `ruby`-only.
+- **Verified locally, not assumed:** `bundle exec jekyll build --source site` succeeds on 3.25.8 and all
+  three of the pages job's assertions pass (`index.html` exists, privacy heading present, `#delete-data`
+  anchor preserved). Worth doing by hand because `pages.yml` only triggers on `site/**`, so this PR's
+  GitHub CI does not exercise the Pages build at all.
+
+### Changed — GitLab migration Phase 2: privacy-policy host decided (plan amendment, docs-only)
+
+- The Phase-2 `«NEW_URL»` token is **resolved**: the hosted privacy policy moves to
+  **`https://jonwhitefang.uk/legal/steps-of-babylon-privacy/`** — an apex path served by the website
+  deployment (Cloudflare Workers). The plan's own recommendation (a `privacy.` subdomain on a standalone
+  GitLab Pages project) was **declined**: a Pages custom domain makes the *hostname* forge-neutral but
+  leaves the *serving* forge-coupled, which is the dependency Phase 2 exists to shed. Conditional on a
+  scoped Cloudflare WAF exception (that zone's Super Bot Fight Mode currently 403s HTML documents to
+  non-browser clients — a Play validator getting a 403 is a compliance failure).
+- **Old-URL decision reversed from "optionally 301":** the github.io URL keeps serving a **full copy** of
+  the policy text, not a redirect. GitHub Pages has no server-side 301, so a `meta refresh` pointer gives
+  no guaranteed `#delete-data` propagation and is invisible to a non-JS fetcher. The repo is still archived
+  at cutover (it remains the historical `#N` citation resolver), with a written
+  **unarchive → update → re-archive** procedure so a future policy revision reaches both copies in one
+  sitting — otherwise archiving would freeze one of two divergent live policies, one being the URL declared
+  to Google.
+- **Play field inventory grew from 2 to 4** (+2 to verify in Console): the store-listing privacy URL and the
+  Data-safety deletion URL, **plus** the Health apps declaration (the app reads Health Connect, so that form
+  holds its own privacy link — the repo has no record of its current value) and whether Play exposes a
+  per-locale privacy URL now that Spanish ships. Also recorded: the in-app URL lives in **three** places
+  (the `PRIVACY_POLICY_URL` constant + the `hc_privacy_policy_body` prose in both `values/` and `values-es/`).
+- **Open content gate:** the policy must identify the developer *as shown on Play*. The text says "Whitefang
+  Games"; the repo does not record the Console's displayed developer name. If it differs, that is a wording
+  change requiring the policy owner and "URL/host only" no longer describes PR-2.
+- **Docs-only** — no production code, tests, resources, or schema; the shipped URL is unchanged and the test
+  count is unchanged. The `PRIVACY_POLICY_URL` change itself is PR-2, gated on the new URL being verified
+  live (Task 2.2 does not land before that confirmation).
+
+### Changed — Review procedure: Codex Review Gate (PR #438, ADR-0043)
+
+- The multi-agent-Workflow **Adversarial Review Gate** is replaced by the **Codex Review Gate**: every
+  design spec, implementation plan, and **final implementation** (pre-merge diff — a new third stage) is
+  reviewed via the codex MCP server (read-only sandbox, repo cwd, code-grounded `file:line` findings,
+  default-to-refuted application, no advancing on unaddressed critical/major). `/codex-review` replaces
+  `/adversarial-review`. The mandatory `concurrency-reviewer` subagent lane (#372, ADR-0038) is **folded
+  in** as a mandatory Codex concurrency round on the same surface — the invariant briefing moved verbatim
+  to `.claude/skills/codex-review/concurrency-invariants.md`; the tier-4 hook advisory points at it;
+  trigger surface + build tripwires unchanged (ADR-0038 status amended). **Docs/config-only** — no
+  production code, tests, or schema; test count unchanged. First live run same session: the
+  GitLab-migration design spec (19 findings, 19 verified+applied, 0 refuted).
+
 ### Added — Tone Bible (#425, #391 free-lane C5)
 
 - `docs/steering/tone-bible.md` — the single reference for the game's written voice (grounded, encouraging,
